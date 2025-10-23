@@ -107,7 +107,9 @@
       "WebSearch",
       "Bash(git commit -m \"Render text on Canvas with CTLine via withCGContext\")",
       "Bash(git commit -m \"Show NSTextView only when editing\")",
-      "Bash(git commit -m \"Paint gradients directly to CGContext\")"
+      "Bash(git commit -m \"Paint gradients directly to CGContext\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

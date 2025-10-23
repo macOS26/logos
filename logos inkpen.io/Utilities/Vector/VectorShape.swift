@@ -373,7 +373,6 @@ struct VectorShape: Hashable, Identifiable {
     var isRoundedRectangle: Bool = false
     var originalBounds: CGRect?
     var cornerRadii: [Double] = []
-    var isTextObject: Bool = false  // Only for decoding/migrating old files
     var textContent: String? = nil
     var typography: TypographyProperties? = nil
     var cursorPosition: Int? = nil
@@ -669,7 +668,7 @@ extension VectorShape: Codable {
         case isCompoundPath, isClippingPath, clippedByShapeID
         case isWarpObject, originalPath, warpEnvelope, originalEnvelope, warpedBounds
         case isRoundedRectangle, originalBounds, cornerRadii
-        case isTextObject, textContent, typography
+        case textContent, typography
         case cursorPosition, areaSize, isEditing, textPosition
     }
 
@@ -746,7 +745,6 @@ extension VectorShape: Codable {
         try container.encodeIfPresent(originalBounds, forKey: .originalBounds)
         if !cornerRadii.isEmpty { try container.encode(cornerRadii, forKey: .cornerRadii) }
 
-        // Note: isTextObject is NOT encoded to new files - only decoded from old files for migration
         try container.encodeIfPresent(textContent, forKey: .textContent)
         try container.encodeIfPresent(typography, forKey: .typography)
         try container.encodeIfPresent(cursorPosition, forKey: .cursorPosition)
@@ -824,7 +822,6 @@ extension VectorShape: Codable {
         originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
         cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
 
-        isTextObject = try container.decodeIfPresent(Bool.self, forKey: .isTextObject) ?? false
         textContent = try container.decodeIfPresent(String.self, forKey: .textContent)
         typography = try container.decodeIfPresent(TypographyProperties.self, forKey: .typography)
         cursorPosition = try container.decodeIfPresent(Int.self, forKey: .cursorPosition)

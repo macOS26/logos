@@ -214,9 +214,6 @@ struct LayerCanvasView: View, Equatable {
                     // Skip shapes with typography (handled by SwiftUI)
                     if shape.typography != nil { continue }
 
-                    // Skip if shape needs SwiftUI fallback (gradients or inside/outside strokes)
-                    if needsSwiftUIFallback(shape) { continue }
-
                     renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
 
                 case .text(let shape):
@@ -229,30 +226,9 @@ struct LayerCanvasView: View, Equatable {
                 }
             }
         }
-        .allowsHitTesting(false)  // Canvas is render-only, hit testing done by DrawingCanvas gestures
     }
 
-    /// Check if shape needs SwiftUI fallback (gradients or inside/outside strokes)
-    private func needsSwiftUIFallback(_ shape: VectorShape) -> Bool {
-        // Check for gradients
-        if shape.fillStyle?.gradient != nil { return true }
-        if shape.strokeStyle?.gradient != nil { return true }
-
-        // Check for inside/outside stroke placement
-        if let strokeStyle = shape.strokeStyle {
-            if strokeStyle.placement == .inside || strokeStyle.placement == .outside {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    /// FAST PATH: Direct Canvas rendering for simple paths (no gradients, no inside/outside strokes)
     private func renderShape(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
-        // NOTE: Gradients and inside/outside strokes are filtered out by needsSwiftUIFallback()
-        // This method only handles simple center strokes and solid fills - O(1) drawing!
-
         // Create CGPath from VectorPath
         let cgPath = createCGPath(from: shape.path, transform: shape.transform)
 
@@ -271,34 +247,189 @@ struct LayerCanvasView: View, Equatable {
             transformedPath = scaledPath
         }
 
-        // Render fill (simple solid colors only)
+        var ctx = context
+
+        // Render fill
         if viewMode == .color, let fillStyle = shape.fillStyle {
-            if fillStyle.color != .clear {
-                context.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+            if let gradient = fillStyle.gradient {
+                // Use CGImage for gradient rendering - pass fillStyle for opacity
+                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
+            } else if fillStyle.color != .clear {
+                ctx.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
             }
         }
 
-        // Render stroke (center placement only)
+        // Render stroke
         if viewMode == .keyline {
             // Always use 1px for keyline mode
-            context.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0)
-        } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
-            // Only center strokes reach here (inside/outside filtered by needsSwiftUIFallback)
-            context.stroke(
-                Path(transformedPath),
-                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
-                style: SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * zoomLevel,
-                    lineCap: strokeStyle.lineCap.cgLineCap,
-                    lineJoin: strokeStyle.lineJoin.cgLineJoin,
-                    miterLimit: strokeStyle.miterLimit
-                )
+            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0)
+        } else if let strokeStyle = shape.strokeStyle {
+            if strokeStyle.placement == .center {
+                // Standard center stroke
+                if let gradient = strokeStyle.gradient {
+                    renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
+                } else if strokeStyle.color != .clear {
+                    ctx.stroke(
+                        Path(transformedPath),
+                        with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                        style: SwiftUI.StrokeStyle(
+                            lineWidth: strokeStyle.width * zoomLevel,
+                            lineCap: strokeStyle.lineCap.cgLineCap,
+                            lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                            miterLimit: strokeStyle.miterLimit
+                        )
+                    )
+                }
+            } else {
+                // Inside or outside stroke - use path operations
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: transformedPath, in: &ctx)
+            }
+        }
+    }
+
+    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
+        // Use PathOperations.outlineStroke for inside/outside strokes
+        // Need to scale the stroke style for zoom level
+        let scaledStrokeStyle = StrokeStyle(
+            color: strokeStyle.color,
+            width: strokeStyle.width * zoomLevel,
+            placement: strokeStyle.placement,
+            dashPattern: strokeStyle.dashPattern,
+            lineCap: strokeStyle.lineCap.cgLineCap,
+            lineJoin: strokeStyle.lineJoin.cgLineJoin,
+            miterLimit: strokeStyle.miterLimit,
+            opacity: strokeStyle.opacity,
+            blendMode: strokeStyle.blendMode
+        )
+
+        // Get the outlined stroke path
+        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: scaledStrokeStyle) else {
+            return
+        }
+
+        // Render the outlined path as a filled shape
+        if let gradient = strokeStyle.gradient {
+            // For outlined strokes, we treat it as a fill but still need stroke opacity
+            // Pass isStroke: false since path is already outlined, but pass strokeStyle for opacity
+            renderGradientToContext(gradient: gradient, path: outlinedPath, isStroke: false, strokeStyle: strokeStyle, fillStyle: nil, in: &context)
+        } else if strokeStyle.color != .clear {
+            // Simple fill using SwiftUI's Path
+            context.fill(
+                Path(outlinedPath),
+                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity))
             )
         }
     }
 
-    // NOTE: Gradient and inside/outside stroke rendering removed from LayerCanvasView
-    // These are now handled by ShapeView fallback (see needsSwiftUIFallback)
+    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
+        // Paint gradient directly to CGContext (like we do for CoreText)
+        context.withCGContext { cgContext in
+            cgContext.saveGState()
+
+            // Apply opacity based on whether we have fillStyle or strokeStyle
+            // Note: For outlined strokes, isStroke is false but we still use strokeStyle
+            if let fillStyle = fillStyle {
+                cgContext.setAlpha(CGFloat(fillStyle.opacity))
+            } else if let strokeStyle = strokeStyle {
+                cgContext.setAlpha(CGFloat(strokeStyle.opacity))
+            }
+
+            // Create stroked path if needed
+            let finalPath: CGPath
+            if isStroke, let strokeStyle = strokeStyle {
+                cgContext.setLineWidth(strokeStyle.width * zoomLevel)
+                cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
+                cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
+                cgContext.setMiterLimit(strokeStyle.miterLimit)
+                cgContext.addPath(path)
+                cgContext.replacePathWithStrokedPath()
+                finalPath = cgContext.path ?? path
+            } else {
+                finalPath = path
+            }
+
+            // Render gradient directly
+            renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
+
+            cgContext.restoreGState()
+        }
+    }
+
+    private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
+        cgContext.saveGState()
+
+        let pathBounds = path.boundingBoxOfPath
+        let colors = gradient.stops.map { stop -> CGColor in
+            if case .clear = stop.color {
+                return stop.color.cgColor
+            } else {
+                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+            }
+        }
+        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+            cgContext.restoreGState()
+            return
+        }
+
+        cgContext.addPath(path)
+        cgContext.clip()
+
+        switch gradient {
+        case .linear(let linear):
+            let originX = linear.originPoint.x
+            let originY = linear.originPoint.y
+            let scale = CGFloat(linear.scaleX)
+            let scaledOriginX = originX * scale
+            let scaledOriginY = originY * scale
+            let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
+            let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
+            let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)
+            let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
+            let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
+            let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)
+
+            let startX = centerX - cos(gradientAngle) * scaledLength / 2
+            let startY = centerY - sin(gradientAngle) * scaledLength / 2
+            let endX = centerX + cos(gradientAngle) * scaledLength / 2
+            let endY = centerY + sin(gradientAngle) * scaledLength / 2
+            let startPoint = CGPoint(x: startX, y: startY)
+            let endPoint = CGPoint(x: endX, y: endY)
+
+            cgContext.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+
+        case .radial(let radial):
+            let originX = radial.originPoint.x
+            let originY = radial.originPoint.y
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
+                                 y: pathBounds.minY + pathBounds.height * originY)
+
+            cgContext.saveGState()
+            cgContext.translateBy(x: center.x, y: center.y)
+
+            let angleRadians = CGFloat(radial.angle * .pi / 180.0)
+            cgContext.rotate(by: angleRadians)
+
+            let scaleX = CGFloat(radial.scaleX)
+            let scaleY = CGFloat(radial.scaleY)
+            cgContext.scaleBy(x: scaleX, y: scaleY)
+
+            let focalPoint: CGPoint
+            if let focal = radial.focalPoint {
+                focalPoint = CGPoint(x: focal.x, y: focal.y)
+            } else {
+                focalPoint = CGPoint.zero
+            }
+
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+            cgContext.drawRadialGradient(cgGradient, startCenter: focalPoint, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
+
+            cgContext.restoreGState()
+        }
+
+        cgContext.restoreGState()
+    }
 
     private func renderText(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
         // Convert VectorShape to VectorText (same as PDF export)
@@ -452,7 +583,7 @@ struct IsolatedLayerView: View {
    
     var body: some View {
         ZStack {
-            // Render simple paths directly in Canvas (FAST PATH)
+            // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
                 objects: objects,
                 zoomLevel: zoomLevel,
@@ -461,45 +592,6 @@ struct IsolatedLayerView: View {
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta
             )
-
-            // Fallback: Render shapes with gradients or inside/outside strokes using ShapeView
-            ForEach(objects.filter { object in
-                guard object.isVisible else { return false }
-
-                // Only render shapes that need SwiftUI fallback
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape):
-                    // Skip text shapes (handled separately)
-                    if shape.typography != nil { return false }
-
-                    // Check if needs fallback
-                    return needsSwiftUIFallback(shape)
-                case .clipMask:
-                    return false
-                case .text:
-                    return false
-                }
-            }, id: \.id) { object in
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape):
-                    ShapeView(
-                        shape: shape,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        isSelected: selectedObjectIDs.contains(object.id),
-                        viewMode: viewMode,
-                        isCanvasLayer: object.layerIndex == 1,
-                        isPasteboardLayer: object.layerIndex == 0,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        liveScaleTransform: liveScaleTransform,
-                        liveGradientOriginX: liveGradientOriginX,
-                        liveGradientOriginY: liveGradientOriginY
-                    )
-                default:
-                    EmptyView()
-                }
-            }
 
             // For text editor only - filter .text objects first
             ForEach(objects.filter { object in
@@ -524,22 +616,6 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-    }
-
-    /// Check if shape needs SwiftUI fallback (gradients or inside/outside strokes)
-    private func needsSwiftUIFallback(_ shape: VectorShape) -> Bool {
-        // Check for gradients
-        if shape.fillStyle?.gradient != nil { return true }
-        if shape.strokeStyle?.gradient != nil { return true }
-
-        // Check for inside/outside stroke placement
-        if let strokeStyle = shape.strokeStyle {
-            if strokeStyle.placement == .inside || strokeStyle.placement == .outside {
-                return true
-            }
-        }
-
-        return false
     }
 
     private func renderLayerToCache() {
