@@ -312,8 +312,8 @@ struct TransformationControls: View {
         var combinedBounds: CGRect?
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
+            if let newVectorObject = document.snapshot.objects[objectID] {
+                switch newVectorObject.objectType {
                 case .text(let shape):
                     let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                     let shapeBounds = CGRect(
@@ -366,8 +366,8 @@ struct TransformationControls: View {
         let scaleY = newHeight / currentBounds.height
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID),
-               case .shape(var shape) = unifiedObject.objectType {
+            if let newVectorObject = document.snapshot.objects[objectID],
+               case .shape(var shape) = newVectorObject.objectType {
 
                 if shape.isGroupContainer {
                     var transformedGroupedShapes: [VectorShape] = []
