@@ -300,9 +300,9 @@ extension DrawingCanvas {
     }
 
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
-        print("      🟢 applyDragDeltaToShape: shape.id=\(shape.id), name=\(shape.name), delta=\(delta)")
-        print("         isGroupContainer=\(shape.isGroupContainer), hasImage=\(ImageContentRegistry.containsImage(shape, in: document))")
-        print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
+        // print("      🟢 applyDragDeltaToShape: shape.id=\(shape.id), name=\(shape.name), delta=\(delta)")
+        // print("         isGroupContainer=\(shape.isGroupContainer), hasImage=\(ImageContentRegistry.containsImage(shape, in: document))")
+        // print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
 
         if ImageContentRegistry.containsImage(shape, in: document) {
             var updatedShape = shape
