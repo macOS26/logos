@@ -172,23 +172,22 @@ struct ProfessionalTextCanvas: View {
                 }
             }
 
-            // When entering blue mode (editing), show cursor at click position
+            // When entering blue mode (editing), position cursor at mouse location
             if oldState != .blue && textBoxState == .blue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     if let window = NSApp.keyWindow,
                        let textView = window.firstResponder as? NSTextView,
                        let layoutManager = textView.layoutManager,
-                       let textContainer = textView.textContainer,
-                       let clickPos = self.clickLocation {
+                       let textContainer = textView.textContainer {
 
-                        // Convert click location to text view coordinates
-                        let textViewPoint = CGPoint(
-                            x: clickPos.x - viewModel.textBoxFrame.minX,
-                            y: clickPos.y - viewModel.textBoxFrame.minY
-                        )
+                        // Get current mouse location in window coordinates
+                        let mouseLocationInWindow = window.mouseLocationOutsideOfEventStream
 
-                        // Get character index at click point
-                        let glyphIndex = layoutManager.glyphIndex(for: textViewPoint, in: textContainer)
+                        // Convert to text view coordinates
+                        let mouseLocationInTextView = textView.convert(mouseLocationInWindow, from: nil)
+
+                        // Get character index at mouse point
+                        let glyphIndex = layoutManager.glyphIndex(for: mouseLocationInTextView, in: textContainer)
                         let characterIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
 
                         // Set cursor at that position
