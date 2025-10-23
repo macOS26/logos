@@ -71,6 +71,8 @@ extension DrawingCanvas {
     }
 
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
+        print("🟡 handleSelectionConversion: \(oldTool.rawValue) -> \(newTool.rawValue)")
+        print("🟡 selectedObjectIDs BEFORE: \(document.viewState.selectedObjectIDs)")
 
         if newTool == .selection {
             if !selectedObjectIDs.isEmpty {
@@ -102,17 +104,20 @@ extension DrawingCanvas {
 
         // Maintain selection when switching to font tool
         else if newTool == .font {
-            // Keep document.viewState.selectedObjectIDs unchanged
+            print("🟡 Switching to .font, keeping selection unchanged")
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font {
+            print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             syncDirectSelectionWithDocument()
         }
+
+        print("🟡 selectedObjectIDs AFTER: \(document.viewState.selectedObjectIDs)")
     }
 
     internal func clearToolState() {
