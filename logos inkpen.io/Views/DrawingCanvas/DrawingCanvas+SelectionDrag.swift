@@ -282,16 +282,21 @@ extension DrawingCanvas {
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
         guard let unifiedObject = document.findObject(by: objectID) else {
-            // print("🔴 DRAG: Could not find object \(objectID)")
+            print("🔴 DRAG: Could not find object \(objectID)")
             return
         }
 
+        let inSnapshot = document.snapshot.objects[objectID] != nil
+        let inUnified = document.unifiedObjects.contains(where: { $0.id == objectID })
+        print("🔵 DRAG: objectID=\(objectID), type=\(unifiedObject.objectType), delta=\(delta)")
+        print("   📍 Location: inSnapshot=\(inSnapshot), inUnified=\(inUnified)")
+
         switch unifiedObject.objectType {
         case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-            // print("🔵 DRAG: Applying drag to \(unifiedObject.objectType) with ID \(objectID), isGroupContainer=\(shape.isGroupContainer)")
+            print("   ✅ DRAG: Treating as shape, name=\(shape.name), bounds=\(shape.bounds), transform=\(shape.transform)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
-            // print("🟡 DRAG: Skipping text object \(objectID)")
+            print("   ⚠️ DRAG: Skipping TEXT object \(objectID)")
             return
         }
     }
@@ -302,6 +307,9 @@ extension DrawingCanvas {
     }
 
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
+        print("      🟢 applyDragDeltaToShape: shape.id=\(shape.id), name=\(shape.name), delta=\(delta)")
+        print("         isGroupContainer=\(shape.isGroupContainer), hasImage=\(ImageContentRegistry.containsImage(shape, in: document))")
+        print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
 
         if ImageContentRegistry.containsImage(shape, in: document) {
             var updatedShape = shape
