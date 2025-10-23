@@ -711,12 +711,22 @@ struct PageOriginCrosshair: View {
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             isDragging = true
-                            currentDragLocation = value.location
+                            // Adjust for the center of the crosshair (rulerThickness/2, rulerThickness/2)
+                            let adjustedLocation = CGPoint(
+                                x: value.location.x + rulerThickness / 2,
+                                y: value.location.y + rulerThickness / 2
+                            )
+                            currentDragLocation = adjustedLocation
                         }
                         .onEnded { value in
                             isDragging = false
                             currentDragLocation = nil
-                            updatePageOrigin(screenLocation: value.location)
+                            // Adjust for the center of the crosshair
+                            let adjustedLocation = CGPoint(
+                                x: value.location.x + rulerThickness / 2,
+                                y: value.location.y + rulerThickness / 2
+                            )
+                            updatePageOrigin(screenLocation: adjustedLocation)
                         }
                 )
 
