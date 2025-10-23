@@ -305,11 +305,7 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
-        print("🟢 updateGradientOriginXOptimized called with newX: \(newX)")
-        guard let gradient = currentGradient else {
-            print("❌ No current gradient for origin X update")
-            return
-        }
+        guard let gradient = currentGradient else { return }
 
         switch gradient {
         case .linear(var linear):
@@ -563,12 +559,7 @@ struct GradientFillSection: View {
     }
 
     func applyGradientToSelectedShapes() {
-        print("🔵 applyGradientToSelectedShapes called")
-        guard let newGradient = currentGradient else {
-            print("❌ No current gradient")
-            return
-        }
-        print("🔵 Applying gradient to \(selectedObjectIDs.count) selected objects")
+        guard let newGradient = currentGradient else { return }
 
         // Capture old gradients before applying
         var oldGradients: [UUID: VectorGradient?] = [:]
@@ -613,18 +604,11 @@ struct GradientFillSection: View {
     }
 
     func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
-        print("🔶 applyGradientToSelectedShapesOptimized - isLiveDrag: \(isLiveDrag)")
-        guard let gradient = currentGradient else {
-            print("❌ No gradient to apply")
-            return
-        }
-        print("🔶 Gradient type: \(gradient)")
+        guard let gradient = currentGradient else { return }
 
         if isLiveDrag {
             for objectID in selectedObjectIDs {
-                print("  🔸 Processing object (live): \(objectID)")
                 if let newVectorObject = document.snapshot.objects[objectID] {
-                    print("    Found object type: \(newVectorObject.objectType)")
                     var shape = newVectorObject.shape
 
                     switch document.viewState.activeColorTarget {
@@ -645,11 +629,7 @@ struct GradientFillSection: View {
                         )
                     }
 
-                    // Create new VectorObject with updated shape
                     let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
-
-                    // Update the snapshot for live drag
-                    print("    ✅ Updating shape gradient (live)")
                     document.snapshot.objects[objectID] = updatedObject
                 }
             }
@@ -657,18 +637,14 @@ struct GradientFillSection: View {
         }
 
         for objectID in selectedObjectIDs {
-            print("  🔸 Processing object: \(objectID)")
             if let newVectorObject = document.snapshot.objects[objectID] {
-                print("    Found object type: \(newVectorObject.objectType)")
                 var shape = newVectorObject.shape
 
                 switch document.viewState.activeColorTarget {
                 case .fill:
-                    print("    Applying gradient to FILL")
                     let currentOpacity = shape.fillStyle?.opacity ?? 1.0
                     shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
                 case .stroke:
-                    print("    Applying gradient to STROKE")
                     let currentStroke = shape.strokeStyle
                     shape.strokeStyle = StrokeStyle(
                         gradient: gradient,
@@ -682,15 +658,8 @@ struct GradientFillSection: View {
                     )
                 }
 
-                // Create new VectorObject with updated shape
                 let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
-
-                // Update the snapshot
-                print("    📝 Updating document.snapshot.objects[\(objectID)]")
                 document.snapshot.objects[objectID] = updatedObject
-                print("    ✅ Snapshot updated directly")
-            } else {
-                print("  ❌ Object not found in snapshot: \(objectID)")
             }
         }
     }
