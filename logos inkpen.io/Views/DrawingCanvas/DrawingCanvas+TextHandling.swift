@@ -677,6 +677,20 @@ extension DrawingCanvas {
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // Don't create new text if there's already a text object selected (user is resizing via handles)
+        let hasSelectedText = document.viewState.selectedObjectIDs.contains { id in
+            if let obj = document.findObject(by: id),
+               case .text = obj.objectType {
+                return true
+            }
+            return false
+        }
+
+        if hasSelectedText {
+            // User is resizing via TransformBoxHandles, not creating new text
+            return
+        }
+
         // EXACT same pattern as finishShapeDrawing for rectangles
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let endLocation = screenToCanvas(value.location, geometry: geometry)
