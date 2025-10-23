@@ -179,8 +179,8 @@ struct StrokeFillPanel: View {
 
     private var hasSelectedImages: Bool {
         return document.viewState.selectedObjectIDs.contains { objectID in
-            if let unifiedObject = document.snapshot.objects[objectID] {
-                switch unifiedObject.objectType {
+            if let newVectorObject = document.snapshot.objects[objectID] {
+                switch newVectorObject.objectType {
                 case .text:
                     return false
                 case .shape(let shape),
