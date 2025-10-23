@@ -207,31 +207,30 @@ struct LayerCanvasView: View {
     let dragPreviewDelta: CGPoint
 
     var body: some View {
-        Canvas { context, size in
-            // Calculate viewport bounds for culling (O(1))
-            let viewportBounds = calculateViewportBounds(size: size)
-
-            // Apply canvas transform ONCE to entire context (O(1))
-            var transformedContext = context
-            transformedContext.transform = CGAffineTransform.identity
-                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                .scaledBy(x: zoomLevel, y: zoomLevel)
-
-            // Filter and batch render-ready objects
+        GeometryReader { geometry in
+            let viewportBounds = calculateViewportBounds(size: geometry.size)
             let objectsToRender = filterVisibleObjects(viewport: viewportBounds)
 
-            // Batch render all objects (better cache locality)
-            for (shape, isSelected) in objectsToRender {
-                if shape.typography != nil {
-                    renderText(shape, in: transformedContext, isSelected: isSelected)
-                } else {
-                    renderShape(shape, in: transformedContext, isSelected: isSelected)
+            Canvas { context, size in
+                // Apply canvas transform ONCE to entire context (O(1))
+                var transformedContext = context
+                transformedContext.transform = CGAffineTransform.identity
+                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                    .scaledBy(x: zoomLevel, y: zoomLevel)
+
+                // Batch render all objects (better cache locality)
+                for (shape, isSelected) in objectsToRender {
+                    if shape.typography != nil {
+                        renderText(shape, in: transformedContext, isSelected: isSelected)
+                    } else {
+                        renderShape(shape, in: transformedContext, isSelected: isSelected)
+                    }
                 }
             }
         }
     }
 
-    // MARK: - Object Filtering (outside view body for performance)
+    // MARK: - Object Filtering (outside Canvas for performance)
 
     private func filterVisibleObjects(viewport: CGRect) -> [(shape: VectorShape, isSelected: Bool)] {
         // Pre-allocate array to avoid reallocation during filtering
