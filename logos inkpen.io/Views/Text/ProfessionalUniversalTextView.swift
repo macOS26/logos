@@ -35,9 +35,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.wantsLayer = true
         textView.layer?.masksToBounds = false
 
-        // Use textObject.bounds directly - same as TransformBoxHandles
-        let fixedWidth = viewModel.textObject.bounds.width
-        let fixedHeight = viewModel.textObject.bounds.height
+        // Use same bounds calculation as TransformBoxHandles
+        let fixedWidth = viewModel.textObject.areaSize?.width ?? viewModel.textObject.bounds.width
+        let fixedHeight = viewModel.textObject.areaSize?.height ?? viewModel.textObject.bounds.height
 
         textView.textContainer?.widthTracksTextView = false
         textView.textContainer?.heightTracksTextView = false
@@ -208,9 +208,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         needsFormatUpdate = true
 
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
-        // Use textObject.bounds directly - same as TransformBoxHandles
-        let newWidth = viewModel.textObject.bounds.width
-        let newHeight = viewModel.textObject.bounds.height
+        // Use same bounds calculation as TransformBoxHandles
+        let newWidth = viewModel.textObject.areaSize?.width ?? viewModel.textObject.bounds.width
+        let newHeight = viewModel.textObject.areaSize?.height ?? viewModel.textObject.bounds.height
 
         if abs(currentContainerWidth - newWidth) > 1.0 {
 
@@ -269,9 +269,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
         }
 
-        // Use textObject.bounds directly - same as TransformBoxHandles
-        let safeWidth = viewModel.textObject.bounds.width
-        let safeHeight = viewModel.textObject.bounds.height
+        // Use same bounds calculation as TransformBoxHandles
+        let safeWidth = viewModel.textObject.areaSize?.width ?? viewModel.textObject.bounds.width
+        let safeHeight = viewModel.textObject.areaSize?.height ?? viewModel.textObject.bounds.height
         let newFrame = CGRect(
             x: 0, y: 0,
             width: safeWidth,
