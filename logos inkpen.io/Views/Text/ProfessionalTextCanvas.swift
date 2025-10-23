@@ -175,11 +175,16 @@ struct ProfessionalTextCanvas: View {
         let isTextToolActive = document.viewState.currentTool == .font
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id)
 
+        print("🔴 updateTextBoxState for \(textObjectID): isTextToolActive=\(isTextToolActive), isThisTextSelected=\(isThisTextSelected)")
+
         if isTextToolActive && isThisTextSelected {
+            print("🔴 Setting textBoxState to .blue")
             textBoxState = .blue
         } else if isThisTextSelected {
+            print("🔴 Setting textBoxState to .green")
             textBoxState = .green
         } else {
+            print("🔴 Setting textBoxState to .gray")
             textBoxState = .gray
         }
 
