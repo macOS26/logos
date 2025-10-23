@@ -76,15 +76,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.string = viewModel.text
         textView.font = viewModel.selectedFont
 
-        let textColor: NSColor
+        // Text color is clear since we render separately via Canvas
+        textView.textColor = NSColor.clear
+
+        // Cursor color based on view mode
+        let cursorColor: NSColor
         if viewMode == .keyline {
-            textColor = NSColor.black
+            cursorColor = NSColor.black
         } else {
             let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
-            textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+            cursorColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
         }
-        textView.textColor = textColor
-        textView.insertionPointColor = textColor
+        textView.insertionPointColor = cursorColor
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = viewModel.textAlignment
@@ -95,7 +98,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
         textView.typingAttributes = [
             .font: textView.font ?? viewModel.selectedFont,
-            .foregroundColor: textColor,
+            .foregroundColor: NSColor.clear,
             .paragraphStyle: paragraphStyle
         ]
 
@@ -145,6 +148,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             if nsView.string.count > 0 {
                 let range = NSRange(location: 0, length: nsView.string.count)
                 nsView.textStorage?.addAttribute(.font, value: newFont, range: range)
+                nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)
 
                 if let textContainer = nsView.textContainer {
                     nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
@@ -155,19 +159,23 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             needsFormatUpdate = true
         }
 
-        let newTextColor: NSColor
+        // Text color is always clear - we render separately via Canvas
+        let currentColor = nsView.textColor ?? NSColor.clear
+        if currentColor != NSColor.clear {
+            nsView.textColor = NSColor.clear
+            needsFormatUpdate = true
+        }
+
+        // Update cursor color based on view mode
+        let newCursorColor: NSColor
         if viewMode == .keyline {
-            newTextColor = NSColor.black
+            newCursorColor = NSColor.black
         } else {
             let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
-            newTextColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+            newCursorColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
         }
-        let currentColor = nsView.textColor ?? NSColor.black
-
-        if currentColor != newTextColor {
-            nsView.textColor = newTextColor
-            nsView.insertionPointColor = newTextColor
-            needsFormatUpdate = true
+        if nsView.insertionPointColor != newCursorColor {
+            nsView.insertionPointColor = newCursorColor
         }
 
         let newAlignment = viewModel.textAlignment
@@ -184,7 +192,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
             nsView.typingAttributes = [
                 .font: nsView.font ?? newFont,
-                .foregroundColor: newTextColor,
+                .foregroundColor: NSColor.clear,
                 .paragraphStyle: paragraphStyle
             ]
         }
@@ -197,6 +205,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                safeRange.location >= 0,
                safeRange.location + safeRange.length <= textStorage.length {
                 textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: safeRange)
+                textStorage.addAttribute(.foregroundColor, value: NSColor.clear, range: safeRange)
 
                 if let textContainer = nsView.textContainer {
                     nsView.layoutManager?.ensureLayout(for: textContainer)
@@ -390,15 +399,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                     textView.font = newFont
                 }
 
-                let textColor: NSColor
+                // Text color is always clear - rendered separately via Canvas
+                textView.textColor = NSColor.clear
+
+                // Cursor color based on view mode
+                let cursorColor: NSColor
                 if self.parent.viewMode == .keyline {
-                    textColor = NSColor.black
+                    cursorColor = NSColor.black
                 } else {
                     let baseColor = NSColor(typography.fillColor.color)
-                    textColor = baseColor.withAlphaComponent(typography.fillOpacity)
+                    cursorColor = baseColor.withAlphaComponent(typography.fillOpacity)
                 }
-                textView.textColor = textColor
-                textView.insertionPointColor = textColor
+                textView.insertionPointColor = cursorColor
 
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = typography.alignment.nsTextAlignment
@@ -410,7 +422,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
                 textView.typingAttributes = [
                     .font: newFont,
-                    .foregroundColor: textColor,
+                    .foregroundColor: NSColor.clear,
                     .paragraphStyle: paragraphStyle
                 ]
 
@@ -418,6 +430,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                     let range = NSRange(location: 0, length: textView.string.count)
                     textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                     textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+                    textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)
                 }
 
                 if let textContainer = textView.textContainer {

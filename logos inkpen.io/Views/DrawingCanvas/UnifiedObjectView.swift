@@ -210,12 +210,7 @@ struct LayerCanvasView: View {
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
             guard object.isVisible else { return false }
-            switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.typography == nil
-            case .text(let shape):
-                return shape.isEditing != true
-            }
+            return true
         }
     }
 
@@ -231,16 +226,12 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
-            // Render shapes with viewport culling (O(n) where n = visible objects)
             for object in visibleObjects {
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
                     let isSelected = selectedObjectIDs.contains(object.id)
                     renderShape(shape, in: transformedContext, isSelected: isSelected)
-
                 case .text(let shape):
-                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
                     let isSelected = selectedObjectIDs.contains(object.id)
                     renderText(shape, in: transformedContext, isSelected: isSelected)
                 }
