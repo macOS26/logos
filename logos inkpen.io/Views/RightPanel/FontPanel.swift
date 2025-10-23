@@ -119,9 +119,11 @@ struct FontPanel: View {
         }
         .onChange(of: document.viewState.selectedObjectIDs) { oldIDs, newIDs in
 
-            if let firstID = newIDs.first, let newSelectedText = document.findText(by: firstID) {
-                if newSelectedText.id != lastLoggedSelection {
-                    lastLoggedSelection = newSelectedText.id
+            if let firstID = newIDs.first,
+               let obj = document.snapshot.objects[firstID],
+               case .text(let shape) = obj.objectType {
+                if shape.id != lastLoggedSelection {
+                    lastLoggedSelection = shape.id
                 }
             } else {
                 if lastLoggedSelection != nil {
