@@ -105,6 +105,16 @@ extension DrawingCanvas {
         // Maintain selection when switching to font tool
         else if newTool == .font {
             print("🟡 Switching to .font, keeping selection unchanged")
+
+            // Find first text object in selection and set it to editing
+            for selectedID in document.viewState.selectedObjectIDs {
+                if let obj = document.snapshot.objects[selectedID],
+                   case .text = obj.objectType {
+                    print("🟡 Setting first text \(selectedID) to isEditing=true")
+                    document.setTextEditingInUnified(id: selectedID, isEditing: true)
+                    break
+                }
+            }
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
