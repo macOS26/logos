@@ -42,6 +42,16 @@ struct HorizontalRuler: View {
 
                 Canvas { context, size in
                     drawHorizontalRuler(context: context, size: size)
+                } symbols: {
+                    // Define reusable tick symbols
+                    ForEach([4, 6, 8, 10, 12, 16], id: \.self) { height in
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: 0))
+                            path.addLine(to: CGPoint(x: 0, y: CGFloat(height)))
+                        }
+                        .stroke(Color.primary, lineWidth: height >= 12 ? 1.0 : 0.5)
+                        .tag("tick_\(height)")
+                    }
                 }
             }
             .contentShape(Path { path in
@@ -208,14 +218,24 @@ struct HorizontalRuler: View {
                     }
                 }
 
-                context.stroke(
-                    Path { path in
-                        path.move(to: CGPoint(x: rulerX, y: size.height - tickHeight))
-                        path.addLine(to: CGPoint(x: rulerX, y: size.height))
-                    },
-                    with: .color(.primary),
-                    lineWidth: lineWidth
-                )
+                // Use Canvas symbols for tick marks
+                let tickSymbol = context.resolveSymbol(id: "tick_\(Int(tickHeight))")
+
+                if let tickSymbol = tickSymbol {
+                    var modifiedContext = context
+                    modifiedContext.opacity = lineWidth  // Use lineWidth as opacity for consistency
+                    modifiedContext.draw(tickSymbol, at: CGPoint(x: rulerX, y: size.height - tickHeight/2))
+                } else {
+                    // Fallback to path drawing if symbol not available
+                    context.stroke(
+                        Path { path in
+                            path.move(to: CGPoint(x: rulerX, y: size.height - tickHeight))
+                            path.addLine(to: CGPoint(x: rulerX, y: size.height))
+                        },
+                        with: .color(.primary),
+                        lineWidth: lineWidth
+                    )
+                }
 
                 if labelUsesMajor {
                     var labelText: String
@@ -264,6 +284,16 @@ struct VerticalRuler: View {
                     var ctx = context
                     ctx.translateBy(x: 0, y: 0.5)
                     drawVerticalRuler(context: ctx, size: size)
+                } symbols: {
+                    // Define reusable tick symbols for vertical ruler
+                    ForEach([3, 4, 6, 8, 10, 12, 16], id: \.self) { width in
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: 0))
+                            path.addLine(to: CGPoint(x: CGFloat(width), y: 0))
+                        }
+                        .stroke(Color.primary, lineWidth: width >= 12 ? 1.0 : 0.5)
+                        .tag("htick_\(width)")
+                    }
                 }
             }
             .contentShape(Path { path in
@@ -428,14 +458,24 @@ struct VerticalRuler: View {
                     }
                 }
 
-                context.stroke(
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width - tickWidth, y: rulerY))
-                        path.addLine(to: CGPoint(x: size.width, y: rulerY))
-                    },
-                    with: .color(.primary),
-                    lineWidth: lineWidth
-                )
+                // Use Canvas symbols for tick marks
+                let tickSymbol = context.resolveSymbol(id: "htick_\(Int(tickWidth))")
+
+                if let tickSymbol = tickSymbol {
+                    var modifiedContext = context
+                    modifiedContext.opacity = lineWidth  // Use lineWidth as opacity for consistency
+                    modifiedContext.draw(tickSymbol, at: CGPoint(x: size.width - tickWidth/2, y: rulerY))
+                } else {
+                    // Fallback to path drawing if symbol not available
+                    context.stroke(
+                        Path { path in
+                            path.move(to: CGPoint(x: size.width - tickWidth, y: rulerY))
+                            path.addLine(to: CGPoint(x: size.width, y: rulerY))
+                        },
+                        with: .color(.primary),
+                        lineWidth: lineWidth
+                    )
+                }
 
                 if labelUsesMajor {
                     var labelText: String
