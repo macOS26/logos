@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RulersView: View {
-    @ObservedObject var document: VectorDocument
+    var document: VectorDocument
     let geometry: GeometryProxy
 
     private let rulerThickness: CGFloat = 20
@@ -9,63 +9,85 @@ struct RulersView: View {
     var body: some View {
         if document.gridSettings.showRulers {
             ZStack {
-                HorizontalRuler(document: document, geometry: geometry)
-                    .frame(height: rulerThickness)
-                    .position(x: geometry.size.width / 2, y: rulerThickness / 2)
+                // Horizontal Ruler
+                Canvas { context, size in
+                    // Draw background
+                    context.fill(
+                        Path(CGRect(origin: .zero, size: size)),
+                        with: .color(Color.ui.controlBackground)
+                    )
 
-                VerticalRuler(document: document, geometry: geometry)
-                    .frame(width: rulerThickness)
-                    .position(x: rulerThickness / 2, y: geometry.size.height / 2)
+                    // Draw bottom border
+                    context.stroke(
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: size.height - 0.5))
+                            path.addLine(to: CGPoint(x: size.width, y: size.height - 0.5))
+                        },
+                        with: .color(Color.ui.lightGrayBorder),
+                        lineWidth: 0.5
+                    )
+
+                    // Draw ruler ticks and labels
+                    drawHorizontalRuler(context: context, size: size, document: document)
+                }
+                .frame(height: rulerThickness)
+                .position(x: geometry.size.width / 2, y: rulerThickness / 2)
+                .contentShape(Path { path in
+                    path.addRect(CGRect(x: rulerThickness, y: 0, width: max(0, geometry.size.width - rulerThickness), height: rulerThickness))
+                })
+                .contextMenu {
+                    Text("Units").font(.caption).foregroundColor(.secondary)
+                    ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                        Button(unit.rawValue) {
+                            document.settings.changeUnit(to: unit)
+                            document.onSettingsChanged()
+                        }
+                    }
+                }
+
+                // Vertical Ruler
+                Canvas { context, size in
+                    // Draw background
+                    context.fill(
+                        Path(CGRect(origin: .zero, size: size)),
+                        with: .color(Color.ui.controlBackground)
+                    )
+
+                    // Draw right border
+                    context.stroke(
+                        Path { path in
+                            path.move(to: CGPoint(x: size.width - 0.5, y: 0))
+                            path.addLine(to: CGPoint(x: size.width - 0.5, y: size.height))
+                        },
+                        with: .color(Color.ui.lightGrayBorder),
+                        lineWidth: 0.5
+                    )
+
+                    // Draw ruler ticks and labels
+                    var ctx = context
+                    ctx.translateBy(x: 0, y: 0.5)
+                    drawVerticalRuler(context: ctx, size: size, document: document)
+                }
+                .frame(width: rulerThickness)
+                .position(x: rulerThickness / 2, y: geometry.size.height / 2)
+                .contentShape(Path { path in
+                    path.addRect(CGRect(x: 0, y: rulerThickness, width: rulerThickness, height: max(0, geometry.size.height - rulerThickness)))
+                })
+                .contextMenu {
+                    Text("Units").font(.caption).foregroundColor(.secondary)
+                    ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                        Button(unit.rawValue) {
+                            document.settings.changeUnit(to: unit)
+                            document.onSettingsChanged()
+                        }
+                    }
+                }
 
                 PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness)
             }
         }
     }
-}
-
-struct HorizontalRuler: View {
-    @ObservedObject var document: VectorDocument
-    let geometry: GeometryProxy
-
-    private let rulerThickness: CGFloat = 20
-
-    var body: some View {
-        GeometryReader { rulerGeometry in
-            ZStack {
-                Rectangle()
-                    .fill(Color.ui.controlBackground)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5),
-                        alignment: .bottom
-                    )
-
-                Canvas { context, size in
-                    drawHorizontalRuler(context: context, size: size)
-                }
-            }
-            .contentShape(Path { path in
-                let size = rulerGeometry.size
-                let hitRect = CGRect(x: rulerThickness, y: 0, width: max(0, size.width - rulerThickness), height: size.height)
-                path.addRect(hitRect)
-            })
-            .contextMenu {
-                Text("Units").font(.caption).foregroundColor(.secondary)
-                ForEach(MeasurementUnit.allCases, id: \.self) { unit in
-                    Button(unit.rawValue) { setDocumentUnits(unit) }
-                }
-            }
-            .onTapGesture {
-            }
-        }
-    }
-
-    private func setDocumentUnits(_ unit: MeasurementUnit) {
-        document.settings.changeUnit(to: unit)
-        document.onSettingsChanged()
-    }
-
-    private func drawHorizontalRuler(context: GraphicsContext, size: CGSize) {
+    private func drawHorizontalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
         let zoomLevel = document.viewState.zoomLevel
@@ -76,12 +98,18 @@ struct HorizontalRuler: View {
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-        var x = floor(startX / tickSpacing) * tickSpacing
+
+        // Align ticks with page origin
+        let offsetFromOrigin = startX - pageOrigin.x
+        var x = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.x
+
         while x <= endX {
             let rulerX = x * zoomLevel + canvasOffset.x
 
             if rulerX >= 0 && rulerX <= size.width {
-                var isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                // Calculate tick position relative to page origin for proper alignment
+                let relativePosition = x - pageOrigin.x
+                var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
@@ -90,7 +118,7 @@ struct HorizontalRuler: View {
                         tickHeight = 16
                         lineWidth = 1.0
                     } else {
-                        let positionInMajor = abs(x.truncatingRemainder(dividingBy: 50.0))
+                        let positionInMajor = abs(relativePosition.truncatingRemainder(dividingBy: 50.0))
                         if abs(positionInMajor - 25.0) < 0.001 {
                             tickHeight = 10
                             lineWidth = 0.75
@@ -108,11 +136,11 @@ struct HorizontalRuler: View {
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
-                    let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
-                    let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
-                    let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
-                    let isEighth = abs(x.truncatingRemainder(dividingBy: eighthStep)) < epsilon
-                    let isThreePoint = abs(x.truncatingRemainder(dividingBy: 3.0)) < epsilon
+                    let isMajor = abs(relativePosition.truncatingRemainder(dividingBy: majorStep)) < epsilon
+                    let isHalf = abs(relativePosition.truncatingRemainder(dividingBy: halfStep)) < epsilon
+                    let isQuarter = abs(relativePosition.truncatingRemainder(dividingBy: quarterStep)) < epsilon
+                    let isEighth = abs(relativePosition.truncatingRemainder(dividingBy: eighthStep)) < epsilon
+                    let isThreePoint = abs(relativePosition.truncatingRemainder(dividingBy: 3.0)) < epsilon
 
                     if zoomLevel < 3.0 {
                         if isMajor {
@@ -138,13 +166,13 @@ struct HorizontalRuler: View {
                         if isMajor {
                             tickHeight = 16
                             lineWidth = 1.0
-                        } else if abs(x.truncatingRemainder(dividingBy: 6.0)) < epsilon {
+                        } else if abs(relativePosition.truncatingRemainder(dividingBy: 6.0)) < epsilon {
                             tickHeight = 12
                             lineWidth = 0.75
-                        } else if abs(x.truncatingRemainder(dividingBy: 3.0)) < epsilon {
+                        } else if abs(relativePosition.truncatingRemainder(dividingBy: 3.0)) < epsilon {
                             tickHeight = 8
                             lineWidth = 0.6
-                        } else if abs(x.truncatingRemainder(dividingBy: 1.0)) < epsilon {
+                        } else if abs(relativePosition.truncatingRemainder(dividingBy: 1.0)) < epsilon {
                             tickHeight = 4
                             lineWidth = 0.5
                         } else {
@@ -190,16 +218,16 @@ struct HorizontalRuler: View {
                     if isMajorTick {
                         tickHeight = 16
                         lineWidth = 1.0
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
+                    } else if abs(relativePosition.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
                         tickHeight = 12
                         lineWidth = 0.75
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
+                    } else if abs(relativePosition.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
                         tickHeight = 8
                         lineWidth = 0.6
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
+                    } else if abs(relativePosition.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
                         tickHeight = 4
                         lineWidth = 0.5
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 16)) < 0.001 {
+                    } else if abs(relativePosition.truncatingRemainder(dividingBy: pointsPerUnit / 16)) < 0.001 {
                         tickHeight = 3
                         lineWidth = 0.5
                     } else {
@@ -240,52 +268,8 @@ struct HorizontalRuler: View {
             x += loopStep
         }
     }
-}
 
-struct VerticalRuler: View {
-    @ObservedObject var document: VectorDocument
-    let geometry: GeometryProxy
-
-    private let rulerThickness: CGFloat = 20
-
-    var body: some View {
-        GeometryReader { rulerGeometry in
-            ZStack {
-                Rectangle()
-                    .fill(Color.ui.controlBackground)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5),
-                        alignment: .trailing
-                    )
-                    .offset(y: 0.5)
-
-                Canvas { context, size in
-                    var ctx = context
-                    ctx.translateBy(x: 0, y: 0.5)
-                    drawVerticalRuler(context: ctx, size: size)
-                }
-            }
-            .contentShape(Path { path in
-                let size = rulerGeometry.size
-                let hitRect = CGRect(x: 0, y: rulerThickness, width: size.width, height: max(0, size.height - rulerThickness))
-                path.addRect(hitRect)
-            })
-            .contextMenu {
-                Text("Units").font(.caption).foregroundColor(.secondary)
-                ForEach(MeasurementUnit.allCases, id: \.self) { unit in
-                    Button(unit.rawValue) {
-                        document.settings.changeUnit(to: unit)
-                        document.onSettingsChanged()
-                    }
-                }
-            }
-            .onTapGesture {
-            }
-        }
-    }
-
-    private func drawVerticalRuler(context: GraphicsContext, size: CGSize) {
+    private func drawVerticalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
         let zoomLevel = document.viewState.zoomLevel
@@ -568,43 +552,25 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
 }
 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
+    // Avoid showing -0
+    let roundedValue = value.rounded()
+    if abs(roundedValue) < 0.01 {
+        return "0"
+    }
+
     switch unit {
     case .inches:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     case .centimeters:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     case .millimeters:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     case .points:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     case .pixels:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     case .picas:
-        if value < 0 {
-            return String(format: "-%.0f", abs(value))
-        } else {
-            return String(format: "%.0f", value)
-        }
+        return String(format: "%.0f", roundedValue)
     }
 }
 
