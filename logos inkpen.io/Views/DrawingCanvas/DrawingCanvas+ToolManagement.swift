@@ -100,8 +100,13 @@ extension DrawingCanvas {
             }
         }
 
+        // Maintain selection when switching to font tool
+        else if newTool == .font {
+            // Keep document.viewState.selectedObjectIDs unchanged
+        }
+
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
-                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus {
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font {
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
