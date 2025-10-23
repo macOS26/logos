@@ -217,12 +217,9 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
-            // Pre-filter and batch objects by type (single pass, O(n))
-            var shapesToRender: [(shape: VectorShape, isSelected: Bool)] = []
-            var textsToRender: [(shape: VectorShape, isSelected: Bool)] = []
-
-            shapesToRender.reserveCapacity(objects.count) // Avoid reallocation
-            textsToRender.reserveCapacity(objects.count / 10) // Estimate ~10% text
+            // Pre-filter and batch objects (single pass, O(n))
+            var objectsToRender: [(shape: VectorShape, isSelected: Bool)] = []
+            objectsToRender.reserveCapacity(objects.count) // Avoid reallocation
 
             for object in objects {
                 guard object.isVisible else { continue }
@@ -233,24 +230,24 @@ struct LayerCanvasView: View {
                     guard shape.typography == nil else { continue }
                     // Viewport culling - SIMD AABB test (O(1))
                     guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                    shapesToRender.append((shape, selectedObjectIDs.contains(object.id)))
+                    objectsToRender.append((shape, selectedObjectIDs.contains(object.id)))
 
                 case .text(let shape):
-                    // Filter out editing text, cull viewport
+                    // Filter out editing text (blue mode - handled by SwiftUI NSTextView)
                     guard shape.isEditing != true else { continue }
+                    // Render non-editing text (green/gray mode) on Canvas
                     guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                    textsToRender.append((shape, selectedObjectIDs.contains(object.id)))
+                    objectsToRender.append((shape, selectedObjectIDs.contains(object.id)))
                 }
             }
 
-            // Batch render shapes (better cache locality)
-            for (shape, isSelected) in shapesToRender {
-                renderShape(shape, in: transformedContext, isSelected: isSelected)
-            }
-
-            // Batch render text (better cache locality)
-            for (shape, isSelected) in textsToRender {
-                renderText(shape, in: transformedContext, isSelected: isSelected)
+            // Batch render all objects (better cache locality)
+            for (shape, isSelected) in objectsToRender {
+                if shape.typography != nil {
+                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                } else {
+                    renderShape(shape, in: transformedContext, isSelected: isSelected)
+                }
             }
         }
     }
