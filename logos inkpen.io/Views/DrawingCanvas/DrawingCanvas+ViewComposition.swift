@@ -208,9 +208,10 @@ extension DrawingCanvas {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
             // Get full data of selected objects in this layer for Equatable comparison
-            let selectedData = Dictionary(uniqueKeysWithValues:
+            let selectedData = Dictionary(
                 objects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
-                       .map { ($0.id, $0) }
+                       .map { ($0.id, $0) },
+                uniquingKeysWith: { first, _ in first }
             )
 
             IsolatedLayerView(
