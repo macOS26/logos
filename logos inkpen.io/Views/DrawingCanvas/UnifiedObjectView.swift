@@ -217,31 +217,40 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
+            // Pre-filter and batch objects by type (single pass, O(n))
+            var shapesToRender: [(shape: VectorShape, isSelected: Bool)] = []
+            var textsToRender: [(shape: VectorShape, isSelected: Bool)] = []
+
+            shapesToRender.reserveCapacity(objects.count) // Avoid reallocation
+            textsToRender.reserveCapacity(objects.count / 10) // Estimate ~10% text
+
             for object in objects {
                 guard object.isVisible else { continue }
 
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     // Skip shapes with typography (handled by SwiftUI)
-                    if shape.typography != nil { continue }
-
-                    // Viewport culling - skip objects outside viewport (O(1) per object)
-                    if !isObjectInViewport(shape.bounds, viewport: viewportBounds) { continue }
-
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderShape(shape, in: transformedContext, isSelected: isSelected)
+                    guard shape.typography == nil else { continue }
+                    // Viewport culling - SIMD AABB test (O(1))
+                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                    shapesToRender.append((shape, selectedObjectIDs.contains(object.id)))
 
                 case .text(let shape):
-                    // Filter out text objects that are in editing mode (blue mode)
-                    if shape.isEditing == true { continue }
-
-                    // Viewport culling for text
-                    if !isObjectInViewport(shape.bounds, viewport: viewportBounds) { continue }
-
-                    // Render text on Canvas when NOT editing (green/gray mode)
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                    // Filter out editing text, cull viewport
+                    guard shape.isEditing != true else { continue }
+                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                    textsToRender.append((shape, selectedObjectIDs.contains(object.id)))
                 }
+            }
+
+            // Batch render shapes (better cache locality)
+            for (shape, isSelected) in shapesToRender {
+                renderShape(shape, in: transformedContext, isSelected: isSelected)
+            }
+
+            // Batch render text (better cache locality)
+            for (shape, isSelected) in textsToRender {
+                renderText(shape, in: transformedContext, isSelected: isSelected)
             }
         }
     }
@@ -262,6 +271,23 @@ struct LayerCanvasView: View {
     private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
         // Fast AABB intersection test (O(1))
         return bounds.intersects(viewport)
+    }
+
+    private func isObjectInViewportSIMD(_ bounds: CGRect, viewport: CGRect) -> Bool {
+        // SIMD-accelerated AABB intersection test (O(1), vectorized)
+        // Pack bounds into SIMD vectors for parallel comparison
+        let objMin = SIMD2<Double>(bounds.minX, bounds.minY)
+        let objMax = SIMD2<Double>(bounds.maxX, bounds.maxY)
+        let vpMin = SIMD2<Double>(viewport.minX, viewport.minY)
+        let vpMax = SIMD2<Double>(viewport.maxX, viewport.maxY)
+
+        // Vectorized intersection test (2 comparisons in parallel)
+        // Check overlap: objMax >= vpMin AND objMin <= vpMax
+        let overlapMin = objMax .>= vpMin
+        let overlapMax = objMin .<= vpMax
+
+        // Combine results: all components must overlap (reduce with AND)
+        return all(overlapMin) && all(overlapMax)
     }
 
     // MARK: - Optimized Shape Rendering
