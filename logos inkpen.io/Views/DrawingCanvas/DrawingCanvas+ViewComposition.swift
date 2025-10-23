@@ -192,7 +192,6 @@ extension DrawingCanvas {
                         zoomLevel: document.viewState.zoomLevel,
                         canvasOffset: document.viewState.canvasOffset
                     )
-                    .equatable()
                     .allowsHitTesting(false)
                 }
             }
