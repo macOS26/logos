@@ -234,7 +234,7 @@ extension VectorDocument {
     }
 
     func selectAll() {
-        let visibleObjects = unifiedObjects.filter { object in
+        let visibleObjects = snapshot.objects.values.filter { object in
             // Skip invisible or locked objects
             guard object.isVisible && !object.isLocked else { return false }
 
@@ -267,7 +267,7 @@ extension VectorDocument {
 
         if !visibleObjects.isEmpty {
             viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
-            
+
         }
     }
 

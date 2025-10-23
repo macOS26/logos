@@ -159,8 +159,8 @@ class DocumentState: ObservableObject {
         canCopy = hasSelection
         canPaste = ClipboardManager.shared.canPaste()
 
-        func isShape(_ unifiedObject: VectorObject) -> Bool {
-            switch unifiedObject.objectType {
+        func isShape(_ newVectorObject: VectorObject) -> Bool {
+            switch newVectorObject.objectType {
             case .shape, .warp, .group, .clipGroup, .clipMask:
                 return true
             case .text:
@@ -168,55 +168,55 @@ class DocumentState: ObservableObject {
             }
         }
 
-        let selectedShapes = document.unifiedObjects.filter { unifiedObject in
-            document.viewState.selectedObjectIDs.contains(unifiedObject.id) && isShape(unifiedObject)
+        let selectedShapes = document.unifiedObjects.filter { newVectorObject in
+            document.viewState.selectedObjectIDs.contains(newVectorObject.id) && isShape(newVectorObject)
         }
         let selectedShapeCount = selectedShapes.count
 
         let totalSelectedCount = document.viewState.selectedObjectIDs.count
         canGroup = totalSelectedCount > 1
-        canUngroup = selectedShapes.contains { unifiedObject in
-            if case .group(let shape) = unifiedObject.objectType {
+        canUngroup = selectedShapes.contains { newVectorObject in
+            if case .group(let shape) = newVectorObject.objectType {
                 return shape.isGroupContainer
             }
             return false
         }
         canFlatten = selectedShapeCount > 1
-        canUnflatten = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .group(let shape) = unifiedObject.objectType {
+        canUnflatten = selectedShapeCount == 1 && selectedShapes.contains { newVectorObject in
+            if case .group(let shape) = newVectorObject.objectType {
                 return shape.isGroup
             }
             return false
         }
         canMakeCompoundPath = selectedShapeCount > 1
-        canReleaseCompoundPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
+        canReleaseCompoundPath = selectedShapeCount == 1 && selectedShapes.contains { newVectorObject in
+            if case .shape(let shape) = newVectorObject.objectType {
                 return shape.isTrueCompoundPath
             }
             return false
         }
         canMakeLoopingPath = selectedShapeCount > 1
-        canReleaseLoopingPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
+        canReleaseLoopingPath = selectedShapeCount == 1 && selectedShapes.contains { newVectorObject in
+            if case .shape(let shape) = newVectorObject.objectType {
                 return shape.isTrueLoopingPath
             }
             return false
         }
-        canUnwrapWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .warp = unifiedObject.objectType {
+        canUnwrapWarpObject = selectedShapeCount == 1 && selectedShapes.contains { newVectorObject in
+            if case .warp = newVectorObject.objectType {
                 return true
             }
             return false
         }
-        canExpandWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .warp = unifiedObject.objectType {
+        canExpandWarpObject = selectedShapeCount == 1 && selectedShapes.contains { newVectorObject in
+            if case .warp = newVectorObject.objectType {
                 return true
             }
             return false
         }
         canEmbedLinkedImages = {
-            for unifiedObject in selectedShapes {
-                switch unifiedObject.objectType {
+            for newVectorObject in selectedShapes {
+                switch newVectorObject.objectType {
                 case .shape(let shape),
                      .warp(let shape),
                      .group(let shape),
