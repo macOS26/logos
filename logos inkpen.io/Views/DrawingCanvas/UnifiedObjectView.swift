@@ -229,6 +229,7 @@ struct LayerCanvasView: View, Equatable {
                 }
             }
         }
+        .allowsHitTesting(false)  // Canvas is render-only, hit testing done by DrawingCanvas gestures
     }
 
     /// Check if shape needs SwiftUI fallback (gradients or inside/outside strokes)
