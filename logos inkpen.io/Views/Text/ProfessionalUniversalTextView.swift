@@ -35,8 +35,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.wantsLayer = true
         textView.layer?.masksToBounds = false
 
-        let fixedWidth = viewModel.textBoxFrame.width
-        let fixedHeight = viewModel.textBoxFrame.height
+        // Use textObject.bounds directly - same as TransformBoxHandles
+        let fixedWidth = viewModel.textObject.bounds.width
+        let fixedHeight = viewModel.textObject.bounds.height
 
         textView.textContainer?.widthTracksTextView = false
         textView.textContainer?.heightTracksTextView = false
@@ -207,8 +208,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         needsFormatUpdate = true
 
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
-        let newWidth = viewModel.textBoxFrame.width
-        let newHeight = viewModel.textBoxFrame.height
+        // Use textObject.bounds directly - same as TransformBoxHandles
+        let newWidth = viewModel.textObject.bounds.width
+        let newHeight = viewModel.textObject.bounds.height
 
         if abs(currentContainerWidth - newWidth) > 1.0 {
 
@@ -267,8 +269,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
         }
 
-        let safeWidth = viewModel.textBoxFrame.width
-        let safeHeight = viewModel.textBoxFrame.height
+        // Use textObject.bounds directly - same as TransformBoxHandles
+        let safeWidth = viewModel.textObject.bounds.width
+        let safeHeight = viewModel.textObject.bounds.height
         let newFrame = CGRect(
             x: 0, y: 0,
             width: safeWidth,
