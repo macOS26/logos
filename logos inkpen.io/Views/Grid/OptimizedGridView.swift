@@ -95,8 +95,9 @@ struct OptimizedGridView: View {
                     }
                 }
             }
-
+          
         }
+        .drawingGroup()
     }
 
     // Creates separate tile patterns for minor and major lines

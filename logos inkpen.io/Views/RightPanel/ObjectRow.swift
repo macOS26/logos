@@ -116,8 +116,8 @@ struct ObjectRow: View {
                 return true
             },
             set: { newValue in
-                guard let object = document.snapshot.objects[objectId] else { return }
-                switch object.objectType {
+                guard let index = document.findObjectIndex(by: objectId) else { return }
+                switch document.unifiedObjects[index].objectType {
                 case .text(let shape),
                      .shape(let shape),
                      .warp(let shape),
@@ -155,8 +155,8 @@ struct ObjectRow: View {
                 return false
             },
             set: { newValue in
-                guard let object = document.snapshot.objects[objectId] else { return }
-                switch object.objectType {
+                guard let index = document.findObjectIndex(by: objectId) else { return }
+                switch document.unifiedObjects[index].objectType {
                 case .text(let shape),
                      .shape(let shape),
                      .warp(let shape),
@@ -188,14 +188,14 @@ struct ObjectRow: View {
                 return true
             },
             set: { newValue in
-                guard let object = document.snapshot.objects[objectId] else { return }
-                if case .shape(var parentShape) = object.objectType {
+                guard let objIndex = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isVisible = newValue
-
-                        document.snapshot.objects[objectId] = VectorObject(
+                        
+                        document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
-                            layerIndex: layerIndex
+                            layerIndex: layerIndex,
                         )
                     }
                 }
@@ -214,13 +214,13 @@ struct ObjectRow: View {
                 return false
             },
             set: { newValue in
-                guard let object = document.snapshot.objects[objectId] else { return }
-                if case .shape(var parentShape) = object.objectType {
+                guard let objIndex = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isLocked = newValue
-                        document.snapshot.objects[objectId] = VectorObject(
+                        document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
-                            layerIndex: layerIndex
+                            layerIndex: layerIndex,
                         )
                     }
                 }

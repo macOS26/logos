@@ -61,6 +61,7 @@ struct GridCanvasView: View {
                 canvasOffset: canvasOffset
             )
         }
+        .drawingGroup()
     }
 
     private func drawGridLines(

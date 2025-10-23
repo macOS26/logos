@@ -34,29 +34,32 @@ class TransformCommand: BaseCommand {
                                   to document: VectorDocument) {
 
         for id in objectIDs {
-            guard let obj = document.snapshot.objects[id] else { continue }
+            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
+                var obj = document.unifiedObjects[index]
 
-            let updatedObj: VectorObject
-            switch obj.objectType {
-            case .text(var shape):
-                if let transform = transforms[id] {
-                    shape.transform = transform
-                }
-                if let position = positions[id] {
-                    shape.textPosition = position
-                }
-                updatedObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                switch obj.objectType {
+                case .text(var shape):
+                    if let transform = transforms[id] {
+                        shape.transform = transform
+                    }
+                    if let position = positions[id] {
+                        shape.textPosition = position
+                    }
+                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                    document.unifiedObjects[index] = obj
 
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if let transform = transforms[id] {
-                    shape.transform = transform
+                case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                    if let transform = transforms[id] {
+                        shape.transform = transform
+                    }
+                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                    document.unifiedObjects[index] = obj
                 }
-                updatedObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+
+                // Also update snapshot
+                document.snapshot.objects[id] = obj
             }
-
-            document.snapshot.objects[id] = updatedObj
         }
 
-        document.changeNotifier.notifyLayersChanged()
     }
 }

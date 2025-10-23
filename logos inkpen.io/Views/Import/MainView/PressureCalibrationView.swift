@@ -220,6 +220,7 @@ struct PressureCalibrationView: View {
                         context.draw(Text(pressureText).font(.caption).foregroundColor(.black), at: CGPoint(x: 10, y: size.height - 30))
                     }
                 }
+                .drawingGroup()
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in

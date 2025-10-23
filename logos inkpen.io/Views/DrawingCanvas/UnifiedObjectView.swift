@@ -170,6 +170,7 @@ struct PasteboardBackgroundView: View {
                 with: .color(.black.opacity(0.2))
             )
         }
+        .drawingGroup()
     }
 }
 
@@ -193,6 +194,7 @@ struct CanvasBackgroundView: View {
                 with: .color(backgroundColor)
             )
         }
+        .drawingGroup()
     }
 }
 

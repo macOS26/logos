@@ -29,9 +29,10 @@ class VisibilityCommand: BaseCommand {
     
     private func applyValues(_ values: [UUID: Bool], to document: VectorDocument) {
         for id in objectIDs {
-            guard let obj = document.snapshot.objects[id],
+            guard let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
                   let value = values[id] else { continue }
-
+            var obj = document.unifiedObjects[index]
+            
             if case .shape(var shape) = obj.objectType {
                 switch property {
                 case .visibility:
@@ -39,9 +40,9 @@ class VisibilityCommand: BaseCommand {
                 case .locked:
                     shape.isLocked = value
                 }
-                document.snapshot.objects[id] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.unifiedObjects[index] = obj
             }
         }
-        document.changeNotifier.notifyLayersChanged()
     }
 }

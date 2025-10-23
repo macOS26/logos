@@ -450,6 +450,10 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.snapshot.objects[objectId] = updatedObject
+                        // Also update unifiedObjects if it exists there
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = updatedObject
+                        }
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -466,6 +470,10 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
+                            // Also update unifiedObjects if it exists there
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = updatedObject
+                            }
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
@@ -500,6 +508,10 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.snapshot.objects[objectId] = updatedObject
+                        // Also update unifiedObjects if it exists there
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = updatedObject
+                        }
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -516,6 +528,10 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
+                            // Also update unifiedObjects if it exists there
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = updatedObject
+                            }
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
