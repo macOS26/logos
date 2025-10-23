@@ -244,18 +244,18 @@ struct ProfessionalLayerRow: View {
 
             if isExpanded {
                 VStack(spacing: 0) {
-                    ForEach(layerObjects, id: \.id) { unifiedObject in
-                        let index = layerObjects.firstIndex(where: { $0.id == unifiedObject.id }) ?? 0
+                    ForEach(layerObjects, id: \.id) { newVectorObject in
+                        let index = layerObjects.firstIndex(where: { $0.id == newVectorObject.id }) ?? 0
                         let isLast = index == layerObjects.count - 1
-                        switch unifiedObject.objectType {
+                        switch newVectorObject.objectType {
                         case .text(let shape):
                             ObjectRow(
                                 objectType: .text,
                                 objectId: shape.id,
                                 name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
-                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
                                 layerIndex: layerIndex,
                                 document: document,
@@ -268,9 +268,9 @@ struct ProfessionalLayerRow: View {
                                 objectType: .group,
                                 objectId: shape.id,
                                 name: shape.name,
-                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
                                 layerIndex: layerIndex,
                                 document: document,
@@ -285,9 +285,9 @@ struct ProfessionalLayerRow: View {
                                 objectType: .shape,
                                 objectId: shape.id,
                                 name: shape.name,
-                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
                                 layerIndex: layerIndex,
                                 document: document,
