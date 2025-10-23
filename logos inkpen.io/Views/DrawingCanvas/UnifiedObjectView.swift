@@ -220,6 +220,7 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
+
         Canvas { context, size in
             // Calculate viewport bounds for culling (O(1))
             let viewportBounds = calculateViewportBounds(size: size)
