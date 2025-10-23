@@ -154,7 +154,7 @@ struct ProfessionalTextCanvas: View {
         let isTextToolActive = document.viewState.currentTool == .font
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id)
 
-        if isTextToolActive && currentTextObject.isEditing {
+        if isTextToolActive && isThisTextSelected {
             textBoxState = .blue
         } else if isThisTextSelected {
             textBoxState = .green
