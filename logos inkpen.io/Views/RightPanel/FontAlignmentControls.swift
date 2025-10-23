@@ -65,18 +65,15 @@ struct FontAlignmentControls: View {
     private func updateAlignment(_ alignment: TextAlignment) {
         document.fontManager.selectedTextAlignment = alignment
 
-        if let textID = document.viewState.selectedObjectIDs.first,
-           let freshText = document.findText(by: textID) {
-            var updatedTypography = freshText.typography
-            updatedTypography.alignment = alignment
-
-            // Use command system for undo/redo
-            let command = TextTypographyCommand(
-                textID: textID,
-                oldTypography: freshText.typography,
-                newTypography: updatedTypography
-            )
-            document.commandManager.execute(command)
+        for textID in document.viewState.selectedObjectIDs {
+            document.updateShapeByID(textID) { shape in
+                var typography = shape.typography ?? TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
+                typography.alignment = alignment
+                shape.typography = typography
+            }
         }
     }
 }

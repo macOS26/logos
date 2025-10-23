@@ -49,31 +49,21 @@ struct FontPickerView: View {
                     }
                     return document.fontManager.selectedFontFamily
                 },
-                set: { newFamily in
+                set: { (newFamily: String) in
                     document.fontManager.selectedFontFamily = newFamily
                     let defaultVariant = document.fontManager.getAvailableVariantNames(for: newFamily).first ?? "Regular"
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    if let textID = document.viewState.selectedObjectIDs.first,
-                       let freshText = document.findText(by: textID) {
-                        var updatedTypography = freshText.typography
-                        updatedTypography.fontFamily = newFamily
-                        updatedTypography.fontVariant = defaultVariant
-
-                        // Use command system for undo/redo
-                        let command = TextTypographyCommand(
-                            textID: textID,
-                            oldTypography: freshText.typography,
-                            newTypography: updatedTypography
-                        )
-                        document.commandManager.execute(command)
-
-                        // Send preview notification so text view updates immediately
-                        NotificationCenter.default.post(
-                            name: Notification.Name("TextPreviewUpdate"),
-                            object: nil,
-                            userInfo: ["textID": textID, "typography": updatedTypography]
-                        )
+                    for textID in document.viewState.selectedObjectIDs {
+                        document.updateShapeByID(textID) { shape in
+                            var typography = shape.typography ?? TypographyProperties(
+                                strokeColor: shape.strokeStyle?.color ?? .black,
+                                fillColor: shape.fillStyle?.color ?? .black
+                            )
+                            typography.fontFamily = newFamily
+                            typography.fontVariant = defaultVariant
+                            shape.typography = typography
+                        }
                     }
                 }
             )) {
@@ -98,28 +88,18 @@ struct FontPickerView: View {
                     }
                     return document.fontManager.selectedFontVariant
                 },
-                set: { newVariant in
+                set: { (newVariant: String) in
                     document.fontManager.selectedFontVariant = newVariant
 
-                    if let textID = document.viewState.selectedObjectIDs.first,
-                       let freshText = document.findText(by: textID) {
-                        var updatedTypography = freshText.typography
-                        updatedTypography.fontVariant = newVariant
-
-                        // Use command system for undo/redo
-                        let command = TextTypographyCommand(
-                            textID: textID,
-                            oldTypography: freshText.typography,
-                            newTypography: updatedTypography
-                        )
-                        document.commandManager.execute(command)
-
-                        // Send preview notification so text view updates immediately
-                        NotificationCenter.default.post(
-                            name: Notification.Name("TextPreviewUpdate"),
-                            object: nil,
-                            userInfo: ["textID": textID, "typography": updatedTypography]
-                        )
+                    for textID in document.viewState.selectedObjectIDs {
+                        document.updateShapeByID(textID) { shape in
+                            var typography = shape.typography ?? TypographyProperties(
+                                strokeColor: shape.strokeStyle?.color ?? .black,
+                                fillColor: shape.fillStyle?.color ?? .black
+                            )
+                            typography.fontVariant = newVariant
+                            shape.typography = typography
+                        }
                     }
                 }
             )) {

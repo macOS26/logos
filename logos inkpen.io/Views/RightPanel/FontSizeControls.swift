@@ -6,7 +6,6 @@ struct FontSizeControls: View {
     let selectedText: VectorText?
     let editingText: VectorText?
 
-    // LOCAL @State variables for preview during editing
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
     @State private var isDraggingLineHeight = false
@@ -16,8 +15,6 @@ struct FontSizeControls: View {
     @State private var currentFontSizeState: CGFloat = 12.0
     @State private var currentLineSpacingState: CGFloat = 0.0
     @State private var currentLineHeightState: CGFloat = 12.0
-    @State private var previewTypography: TypographyProperties? = nil
-    @State private var editingTextID: UUID? = nil
 
     private var currentFontSize: CGFloat {
         if let selectedText = selectedText {
@@ -77,9 +74,6 @@ struct FontSizeControls: View {
                             updateFontSize(preview, isPreview: false)
                         }
                         previewFontSize = nil
-                        if let textID = document.viewState.selectedObjectIDs.first {
-                            document.clearTextPreviewTypography(id: textID)
-                        }
                     }
                 })
                 .controlSize(.regular)
@@ -161,14 +155,14 @@ struct FontSizeControls: View {
             syncFontStates()
         }
         .onChange(of: editingText?.id) { oldID, newID in
-            // When editing ends (editingText becomes nil), apply the preview typography to document
-            if oldID != nil && newID == nil && previewTypography != nil, let textID = editingTextID {
-                // Editing finished - save preview to document
-                document.updateTextTypographyInUnified(id: textID, typography: previewTypography!)
-                // Clear preview state
-                previewTypography = nil
-                editingTextID = nil
-            }
+//            // When editing ends (editingText becomes nil), apply the preview typography to document
+//            if oldID != nil && newID == nil && previewTypography != nil, let textID = editingTextID {
+//                // Editing finished - save preview to document
+//                document.updateTextTypographyInUnified(id: textID, typography: previewTypography!)
+//                // Clear preview state
+//                previewTypography = nil
+//                editingTextID = nil
+//            }
             syncFontStates()
         }
     }
@@ -183,127 +177,55 @@ struct FontSizeControls: View {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
 
-        if let textID = document.viewState.selectedObjectIDs.first {
-            // Initialize previewTypography once if not already set
-            if previewTypography == nil, let freshText = document.findText(by: textID) {
-                previewTypography = freshText.typography
-                editingTextID = textID
-            }
-
-            // Use cached previewTypography for updates
-            if var updatedTypography = previewTypography {
-                let oldFontSize = updatedTypography.fontSize
-                let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
-                updatedTypography.fontSize = newSize
-                updatedTypography.lineHeight = newSize * lineHeightRatio
-
-                // Update cached preview
-                previewTypography = updatedTypography
-
-                // Always post notification for live preview
-                document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
-
-                // Only update fontManager and document when dragging ends
-                if !isPreview {
-                    document.fontManager.selectedFontSize = newSize
-                    document.fontManager.selectedLineHeight = newSize
-
-                    // Use command system for undo/redo
-                    if let freshText = document.findText(by: textID) {
-                        let command = TextTypographyCommand(
-                            textID: textID,
-                            oldTypography: freshText.typography,
-                            newTypography: updatedTypography
-                        )
-                        document.commandManager.execute(command)
-                    }
-
-                    previewTypography = nil
-                    editingTextID = nil
-                }
+        for textID in document.viewState.selectedObjectIDs {
+            document.updateShapeByID(textID) { shape in
+                var typography = shape.typography ?? TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
+                let oldFontSize = typography.fontSize
+                let lineHeightRatio = typography.lineHeight / oldFontSize
+                typography.fontSize = newSize
+                typography.lineHeight = newSize * lineHeightRatio
+                shape.typography = typography
             }
         }
+
+        document.fontManager.selectedFontSize = newSize
+        document.fontManager.selectedLineHeight = newSize
     }
 
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
 
-        if let textID = document.viewState.selectedObjectIDs.first {
-            // Initialize previewTypography once if not already set
-            if previewTypography == nil, let freshText = document.findText(by: textID) {
-                previewTypography = freshText.typography
-                editingTextID = textID
-            }
-
-            // Use cached previewTypography for updates
-            if var updatedTypography = previewTypography {
-                updatedTypography.lineSpacing = Double(newSpacing)
-
-                // Update cached preview
-                previewTypography = updatedTypography
-
-                // Always post notification for live preview
-                document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
-
-                // Only update fontManager and document when dragging ends
-                if !isPreview {
-                    document.fontManager.selectedLineSpacing = Double(newSpacing)
-
-                    // Use command system for undo/redo
-                    if let freshText = document.findText(by: textID) {
-                        let command = TextTypographyCommand(
-                            textID: textID,
-                            oldTypography: freshText.typography,
-                            newTypography: updatedTypography
-                        )
-                        document.commandManager.execute(command)
-                    }
-
-                    previewTypography = nil
-                    editingTextID = nil
-                }
+        for textID in document.viewState.selectedObjectIDs {
+            document.updateShapeByID(textID) { shape in
+                var typography = shape.typography ?? TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
+                typography.lineSpacing = Double(newSpacing)
+                shape.typography = typography
             }
         }
+
+        document.fontManager.selectedLineSpacing = Double(newSpacing)
     }
 
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
 
-        if let textID = document.viewState.selectedObjectIDs.first {
-            // Initialize previewTypography once if not already set
-            if previewTypography == nil, let freshText = document.findText(by: textID) {
-                previewTypography = freshText.typography
-                editingTextID = textID
-            }
-
-            // Use cached previewTypography for updates
-            if var updatedTypography = previewTypography {
-                updatedTypography.lineHeight = Double(newHeight)
-
-                // Update cached preview
-                previewTypography = updatedTypography
-
-                // Always post notification for live preview
-                document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
-
-                // Only update fontManager and document when dragging ends
-                if !isPreview {
-                    document.fontManager.selectedLineHeight = Double(newHeight)
-
-                    // Use command system for undo/redo
-                    if let freshText = document.findText(by: textID) {
-                        let command = TextTypographyCommand(
-                            textID: textID,
-                            oldTypography: freshText.typography,
-                            newTypography: updatedTypography
-                        )
-                        document.commandManager.execute(command)
-                    }
-
-                    previewTypography = nil
-                    editingTextID = nil
-                }
+        for textID in document.viewState.selectedObjectIDs {
+            document.updateShapeByID(textID) { shape in
+                var typography = shape.typography ?? TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
+                typography.lineHeight = Double(newHeight)
+                shape.typography = typography
             }
         }
+
+        document.fontManager.selectedLineHeight = Double(newHeight)
     }
 }
