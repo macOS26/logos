@@ -361,141 +361,123 @@ struct TransformBoxHandles: View {
     }
 
     private func endScaling() {
-        print("🔴 END SCALING CALLED for shape id: \(shape.id)")
         isScaling = false
         document.isHandleScalingActive = false
         document.viewState.scalePreviewDimensions = .zero
 
-        var oldShapes: [UUID: VectorShape] = [:]
-        if let unifiedObj = document.findObject(by: shape.id) {
-            print("🔴 Found unified object, type: \(unifiedObj.objectType)")
-            switch unifiedObj.objectType {
-            case .shape(let oldShape), .text(let oldShape), .warp(let oldShape), .group(let oldShape), .clipGroup(let oldShape), .clipMask(let oldShape):
-                oldShapes[shape.id] = oldShape
-            }
-        }
+        guard let oldObj = document.snapshot.objects[shape.id] else { return }
+        let oldShape = oldObj.shape
 
-        if let unifiedObject = document.findObject(by: shape.id) {
-            if case .text(let currentShape) = unifiedObject.objectType {
-                // Text boxes: resize areaSize and textPosition
-                let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
-                let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
+        if oldShape.typography != nil {
+            // Text boxes: resize areaSize and textPosition
+            let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
+            let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
 
-                if let originalAreaSize = currentShape.areaSize, let originalPosition = currentShape.textPosition {
-                    let newWidth = originalAreaSize.width * scaleX
-                    let newHeight = originalAreaSize.height * scaleY
+            if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
+                let newWidth = originalAreaSize.width * scaleX
+                let newHeight = originalAreaSize.height * scaleY
 
-                    let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
-                    let transformedBounds = originalBounds.applying(previewTransform)
-                    let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
+                let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
+                let transformedBounds = originalBounds.applying(previewTransform)
+                let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
 
-                    document.updateTextAreaSizeInUnified(id: currentShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
-                    document.updateTextBoundsInUnified(id: currentShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
-                    document.updateTextPositionInUnified(id: currentShape.id, position: newPosition)
-                }
-            } else {
-                // Regular shapes: apply transform to path coordinates
-                document.updateEntireShapeInUnified(id: shape.id) { s in
-                    s.transform = previewTransform
-                }
-                applyTransformToPath(shapeID: shape.id, transform: previewTransform)
-            }
-            previewTransform = .identity
-
-            document.updateTransformPanelValues()
-
-            var newShapes: [UUID: VectorShape] = [:]
-            if let unifiedObj = document.findObject(by: shape.id) {
-                switch unifiedObj.objectType {
-                case .shape(let newShape), .text(let newShape), .warp(let newShape), .group(let newShape), .clipGroup(let newShape), .clipMask(let newShape):
-                    newShapes[shape.id] = newShape
-                }
-            }
-
-            if !oldShapes.isEmpty && !newShapes.isEmpty {
-                let command = ShapeModificationCommand(
-                    objectIDs: [shape.id],
-                    oldShapes: oldShapes,
-                    newShapes: newShapes
-                )
-                document.executeCommand(command)
+                document.updateTextAreaSizeInUnified(id: oldShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
+                document.updateTextBoundsInUnified(id: oldShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+                document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
             }
         } else {
-            Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
+            // Regular shapes: apply transform to path coordinates
+            document.updateEntireShapeInUnified(id: shape.id) { s in
+                s.transform = previewTransform
+            }
+            applyTransformToPath(shapeID: shape.id, transform: previewTransform)
         }
+        previewTransform = .identity
+
+        document.updateTransformPanelValues()
+
+        guard let newObj = document.snapshot.objects[shape.id] else { return }
+        let newShape = newObj.shape
+
+        let command = ShapeModificationCommand(
+            objectIDs: [shape.id],
+            oldShapes: [shape.id: oldShape],
+            newShapes: [shape.id: newShape]
+        )
+        document.executeCommand(command)
     }
 
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
         let t = transform
         if t.isIdentity { return }
 
-        guard let unifiedObj = document.findObject(by: shapeID) else { return }
+        guard let targetObj = document.snapshot.objects[shapeID] else { return }
+        let targetShape = targetObj.shape
 
-        switch unifiedObj.objectType {
-        case .shape(let targetShape), .warp(let targetShape), .group(let targetShape), .clipGroup(let targetShape), .clipMask(let targetShape):
-            if targetShape.isGroupContainer {
-                document.updateEntireShapeInUnified(id: shapeID) { shape in
-                    var transformedGroupedShapes: [VectorShape] = []
-                    for var groupedShape in shape.groupedShapes {
-                        var transformedElements: [PathElement] = []
-                        for element in groupedShape.path.elements {
-                            switch element {
-                            case .move(let to):
-                                transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                            case .line(let to):
-                                transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                            case .curve(let to, let c1, let c2):
-                                transformedElements.append(.curve(
-                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                                    control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
-                                    control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
-                                ))
-                            case .quadCurve(let to, let c):
-                                transformedElements.append(.quadCurve(
-                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                                    control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
-                                ))
-                            case .close:
-                                transformedElements.append(.close)
-                            }
-                        }
-                        groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
-                        groupedShape.updateBounds()
-                        transformedGroupedShapes.append(groupedShape)
-                    }
-                    shape.groupedShapes = transformedGroupedShapes
-                    shape.transform = .identity
-                }
-            } else {
-                var transformedElements: [PathElement] = []
-                for element in targetShape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                    case .line(let to):
-                        transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                    case .curve(let to, let c1, let c2):
-                        transformedElements.append(.curve(
-                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                            control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
-                            control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
-                        ))
-                    case .quadCurve(let to, let c):
-                        transformedElements.append(.quadCurve(
-                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                            control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
-                        ))
-                    case .close:
-                        transformedElements.append(.close)
-                    }
-                }
-
-                let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-                document.updateShapeTransformAndPathInUnified(id: shapeID, path: newPath, transform: .identity)
-            }
-        case .text:
+        if targetShape.typography != nil {
             // Text objects don't use path transforms
-            break
+            return
+        }
+
+        if targetShape.isGroupContainer {
+            document.updateEntireShapeInUnified(id: shapeID) { shape in
+                var transformedGroupedShapes: [VectorShape] = []
+                for var groupedShape in shape.groupedShapes {
+                    var transformedElements: [PathElement] = []
+                    for element in groupedShape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        case .line(let to):
+                            transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        case .curve(let to, let c1, let c2):
+                            transformedElements.append(.curve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                                control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
+                                control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
+                            ))
+                        case .quadCurve(let to, let c):
+                            transformedElements.append(.quadCurve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                                control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
+                            ))
+                        case .close:
+                            transformedElements.append(.close)
+                        }
+                    }
+                    groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                    groupedShape.updateBounds()
+                    transformedGroupedShapes.append(groupedShape)
+                }
+                shape.groupedShapes = transformedGroupedShapes
+                shape.transform = .identity
+            }
+        } else {
+            var transformedElements: [PathElement] = []
+            for element in targetShape.path.elements {
+                switch element {
+                case .move(let to):
+                    transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                case .line(let to):
+                    transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                case .curve(let to, let c1, let c2):
+                    transformedElements.append(.curve(
+                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
+                        control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
+                    ))
+                case .quadCurve(let to, let c):
+                    transformedElements.append(.quadCurve(
+                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
+                    ))
+                case .close:
+                    transformedElements.append(.close)
+                }
+            }
+
+            let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+            document.updateShapeTransformAndPathInUnified(id: shapeID, path: newPath, transform: .identity)
         }
     }
 }
