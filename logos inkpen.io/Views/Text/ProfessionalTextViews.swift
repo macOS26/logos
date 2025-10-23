@@ -79,30 +79,19 @@ struct ProfessionalTextBoxView: View {
 
 struct ProfessionalTextDisplayView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    let shape: VectorShape
     let dragOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     let viewMode: ViewMode
-
-    private var textBounds: CGRect {
-        guard let textPosition = shape.textPosition,
-              let areaSize = shape.areaSize else {
-            return .zero
-        }
-        return CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
-    }
-
     var body: some View {
         Group {
             ProfessionalTextContentView(
                 viewModel: viewModel,
-                shape: shape,
                 textBoxState: textBoxState,
                 viewMode: viewMode
             )
             .position(
-                x: textBounds.minX + dragOffset.width + textBounds.width / 2,
-                y: textBounds.minY + dragOffset.height + textBounds.height / 2
+                x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
+                y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2
             )
         }
     }
@@ -110,25 +99,15 @@ struct ProfessionalTextDisplayView: View {
 
 struct ProfessionalTextContentView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    let shape: VectorShape
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     var viewMode: ViewMode = .color
-
-    private var textBounds: CGRect {
-        guard let textPosition = shape.textPosition,
-              let areaSize = shape.areaSize else {
-            return .zero
-        }
-        return CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
-    }
-
     var body: some View {
         let shouldAllowHitTesting = textBoxState == .blue
         ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState, viewMode: viewMode)
             .allowsHitTesting(shouldAllowHitTesting)
             .frame(
-                width: textBounds.width,
-                height: textBounds.height,
+                width: viewModel.textBoxFrame.width,
+                height: viewModel.textBoxFrame.height,
                 alignment: .topLeading
             )
             .onAppear {

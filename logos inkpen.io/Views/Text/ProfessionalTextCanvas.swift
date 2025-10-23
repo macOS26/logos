@@ -21,28 +21,35 @@ struct ProfessionalTextCanvas: View {
 
     var body: some View {
         ZStack {
-            if let textShape = document.findObject(by: textObjectID),
-               case .text(let shape) = textShape.objectType {
-                ProfessionalTextDisplayView(
-                    viewModel: viewModel,
-                    shape: shape,
-                    dragOffset: dragOffset,
-                    textBoxState: textBoxState,
-                    viewMode: viewMode
-                )
+            ProfessionalTextBoxView(
+                viewModel: viewModel,
+                dragOffset: dragOffset,
+                resizeOffset: resizeOffset,
+                textBoxState: textBoxState,
+                isResizeHandleActive: isResizeHandleActive,
+                onTextBoxSelect: handleTextBoxSelect,
+                zoomLevel: CGFloat(document.viewState.zoomLevel),
+                viewMode: viewMode
+            )
 
-                // Use the same TransformBoxHandles as the arrow selection tool
-                if (textBoxState == .green || textBoxState == .blue) {
-                    TransformBoxHandles(
-                        document: document,
-                        shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
-                        isShiftPressed: false,
-                        transformOrigin: document.viewState.transformOrigin,
-                        strokeColor: Color.blue.opacity(0.5)
-                    )
-                }
+            ProfessionalTextDisplayView(
+                viewModel: viewModel,
+                dragOffset: dragOffset,
+                textBoxState: textBoxState,
+                viewMode: viewMode
+            )
+
+            if textBoxState == .blue {
+                ProfessionalResizeHandleView(
+                    viewModel: viewModel,
+                    dragOffset: dragOffset,
+                    resizeOffset: resizeOffset,
+                    zoomLevel: CGFloat(document.viewState.zoomLevel),
+                    viewMode: viewMode,
+                    onResizeChanged: handleResizeChanged,
+                    onResizeEnded: handleResizeEnded,
+                    onResizeStarted: handleResizeStarted
+                )
             }
         }
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)

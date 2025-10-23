@@ -10,16 +10,12 @@ struct TextScaleHandles: View {
     private let handleSize: CGFloat = 8
 
     var body: some View {
-        // Use areaSize if available (user-resized text), otherwise use bounds
-        let width = textObject.areaSize?.width ?? textObject.bounds.width
-        let height = textObject.areaSize?.height ?? textObject.bounds.height
-
-        // Absolute bounds should match textBoxFrame from ProfessionalTextViewModel
+        let bounds = textObject.bounds
         let absoluteBounds = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: width,
-            height: height
+            width: bounds.width,
+            height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
 
