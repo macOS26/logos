@@ -51,16 +51,19 @@ struct ProfessionalTextBoxView: View {
 
     var body: some View {
         ZStack {
+            // Use textObject.bounds directly - same as TransformBoxHandles
+            let bounds = viewModel.textObject.bounds
+            let position = viewModel.textObject.position
             Rectangle()
                 .fill(Color.clear)
                 .stroke(getBorderColor(), lineWidth: 1.0 / max(zoomLevel, 0.0001))
                 .frame(
-                    width: viewModel.textBoxFrame.width + resizeOffset.width,
-                    height: viewModel.textBoxFrame.height + resizeOffset.height
+                    width: bounds.width + resizeOffset.width,
+                    height: bounds.height + resizeOffset.height
                 )
                 .position(
-                    x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2 + resizeOffset.width / 2,
-                    y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2 + resizeOffset.height / 2
+                    x: position.x + dragOffset.width + bounds.width / 2 + resizeOffset.width / 2,
+                    y: position.y + dragOffset.height + bounds.height / 2 + resizeOffset.height / 2
                 )
                 .onTapGesture(count: 1) { location in
                     onTextBoxSelect(location)
@@ -81,14 +84,17 @@ struct ProfessionalTextDisplayView: View {
     let viewMode: ViewMode
     var body: some View {
         Group {
+            // Use textObject.bounds directly - same as TransformBoxHandles
+            let bounds = viewModel.textObject.bounds
+            let position = viewModel.textObject.position
             ProfessionalTextContentView(
                 viewModel: viewModel,
                 textBoxState: textBoxState,
                 viewMode: viewMode
             )
             .position(
-                x: viewModel.textObject.position.x + dragOffset.width + viewModel.textBoxFrame.width / 2,
-                y: viewModel.textObject.position.y + dragOffset.height + viewModel.textBoxFrame.height / 2
+                x: position.x + dragOffset.width + bounds.width / 2,
+                y: position.y + dragOffset.height + bounds.height / 2
             )
         }
     }
@@ -100,11 +106,13 @@ struct ProfessionalTextContentView: View {
     var viewMode: ViewMode = .color
     var body: some View {
         let shouldAllowHitTesting = textBoxState == .blue
+        // Use textObject.bounds directly - same as TransformBoxHandles
+        let bounds = viewModel.textObject.bounds
         ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState, viewMode: viewMode)
             .allowsHitTesting(shouldAllowHitTesting)
             .frame(
-                width: viewModel.textBoxFrame.width,
-                height: viewModel.textBoxFrame.height,
+                width: bounds.width,
+                height: bounds.height,
                 alignment: .topLeading
             )
             .onAppear {
