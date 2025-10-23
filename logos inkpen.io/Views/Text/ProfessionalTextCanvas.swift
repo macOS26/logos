@@ -12,6 +12,7 @@ struct ProfessionalTextCanvas: View {
     @State private var resizeOffset: CGSize = .zero
     @State private var textBoxState: TextBoxState = .gray
     @State private var isResizeHandleActive = false
+    @State private var clickLocation: CGPoint? = nil
 
     enum TextBoxState {
         case gray
@@ -171,10 +172,37 @@ struct ProfessionalTextCanvas: View {
                 }
             }
 
+            // When entering blue mode (editing), show cursor at click position
+            if oldState != .blue && textBoxState == .blue {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    if let window = NSApp.keyWindow,
+                       let textView = window.firstResponder as? NSTextView,
+                       let layoutManager = textView.layoutManager,
+                       let textContainer = textView.textContainer,
+                       let clickPos = self.clickLocation {
+
+                        // Convert click location to text view coordinates
+                        let textViewPoint = CGPoint(
+                            x: clickPos.x - viewModel.textBoxFrame.minX,
+                            y: clickPos.y - viewModel.textBoxFrame.minY
+                        )
+
+                        // Get character index at click point
+                        let glyphIndex = layoutManager.glyphIndex(for: textViewPoint, in: textContainer)
+                        let characterIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+
+                        // Set cursor at that position
+                        textView.setSelectedRange(NSRange(location: characterIndex, length: 0))
+                    }
+                }
+            }
         }
     }
 
     private func handleTextBoxSelect(location: CGPoint) {
+        // Store click location for cursor positioning
+        clickLocation = location
+
         for unifiedObj in document.unifiedObjects {
             guard case .text(let shape) = unifiedObj.objectType,
                   shape.id != viewModel.textObject.id,
