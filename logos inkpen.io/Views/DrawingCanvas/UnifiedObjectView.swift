@@ -217,29 +217,8 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
-            // Pre-filter and batch objects (single pass, O(n))
-            var objectsToRender: [(shape: VectorShape, isSelected: Bool)] = []
-            objectsToRender.reserveCapacity(objects.count) // Avoid reallocation
-
-            for object in objects {
-                guard object.isVisible else { continue }
-
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    // Skip shapes with typography (handled by SwiftUI)
-                    guard shape.typography == nil else { continue }
-                    // Viewport culling - SIMD AABB test (O(1))
-                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                    objectsToRender.append((shape, selectedObjectIDs.contains(object.id)))
-
-                case .text(let shape):
-                    // Filter out editing text (blue mode - handled by SwiftUI NSTextView)
-                    guard shape.isEditing != true else { continue }
-                    // Render non-editing text (green/gray mode) on Canvas
-                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                    objectsToRender.append((shape, selectedObjectIDs.contains(object.id)))
-                }
-            }
+            // Filter and batch render-ready objects
+            let objectsToRender = filterVisibleObjects(viewport: viewportBounds)
 
             // Batch render all objects (better cache locality)
             for (shape, isSelected) in objectsToRender {
@@ -250,6 +229,36 @@ struct LayerCanvasView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Object Filtering (outside view body for performance)
+
+    private func filterVisibleObjects(viewport: CGRect) -> [(shape: VectorShape, isSelected: Bool)] {
+        // Pre-allocate array to avoid reallocation during filtering
+        var result: [(shape: VectorShape, isSelected: Bool)] = []
+        result.reserveCapacity(objects.count)
+
+        for object in objects {
+            guard object.isVisible else { continue }
+
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                // Skip shapes with typography (handled by SwiftUI)
+                guard shape.typography == nil else { continue }
+                // Viewport culling - SIMD AABB test (O(1))
+                guard isObjectInViewportSIMD(shape.bounds, viewport: viewport) else { continue }
+                result.append((shape, selectedObjectIDs.contains(object.id)))
+
+            case .text(let shape):
+                // Filter out editing text (blue mode - handled by SwiftUI NSTextView)
+                guard shape.isEditing != true else { continue }
+                // Render non-editing text (green/gray mode) on Canvas
+                guard isObjectInViewportSIMD(shape.bounds, viewport: viewport) else { continue }
+                result.append((shape, selectedObjectIDs.contains(object.id)))
+            }
+        }
+
+        return result
     }
 
     // MARK: - Viewport Culling (O(1) operations)
