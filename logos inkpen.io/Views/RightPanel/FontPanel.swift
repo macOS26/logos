@@ -10,8 +10,8 @@ struct FontPanel: View {
         guard !document.viewState.selectedObjectIDs.isEmpty,
               let textID = document.viewState.selectedObjectIDs.first else { return nil }
 
-        if let unifiedObj = document.findObject(by: textID),
-           case .text(let shape) = unifiedObj.objectType {
+        if let newVectorObj = document.findObject(by: textID),
+           case .text(let shape) = newVectorObj.objectType {
             if let typography = shape.typography {
                 return typography
             } else {
@@ -31,8 +31,8 @@ struct FontPanel: View {
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
 
-        if let unifiedObj = document.findObject(by: textID),
-           case .text(let shape) = unifiedObj.objectType {
+        if let newVectorObj = document.findObject(by: textID),
+           case .text(let shape) = newVectorObj.objectType {
             return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
         return nil
@@ -42,8 +42,8 @@ struct FontPanel: View {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
 
-        if let unifiedObj = document.findObject(by: textID),
-           case .text(let shape) = unifiedObj.objectType {
+        if let newVectorObj = document.findObject(by: textID),
+           case .text(let shape) = newVectorObj.objectType {
             return VectorText.from(shape)
         }
 
@@ -57,13 +57,13 @@ struct FontPanel: View {
     }
 
     private var editingText: VectorText? {
-        if let unifiedObj = document.unifiedObjects.first(where: { obj in
+        if let newVectorObj = document.snapshot.objects.values.first(where: { obj in
             if case .text(let shape) = obj.objectType {
                 return shape.isEditing == true
             }
             return false
         }) {
-            if case .text(let shape) = unifiedObj.objectType {
+            if case .text(let shape) = newVectorObj.objectType {
                 return VectorText.from(shape)
             }
         }
@@ -130,7 +130,7 @@ struct FontPanel: View {
             }
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            let freshEditingText = document.unifiedObjects.first { obj in
+            let freshEditingText = document.snapshot.objects.values.first { obj in
                 if case .text(let shape) = obj.objectType {
                     return shape.isEditing == true
                 }
