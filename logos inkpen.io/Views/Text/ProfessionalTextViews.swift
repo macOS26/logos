@@ -15,11 +15,8 @@ struct ProfessionalTextBoxView: View {
             return Color.black.opacity(0.5)
         }
 
-        switch textBoxState {
-        case .gray : return Color.clear
-        case .green: return Color.clear
-        case .blue : return Color.blue.opacity(0.5)
-        }
+        // All states use clear - TransformBoxHandles shows the bounding box
+        return Color.clear
     }
 
     private func getOppositeHueColor(from vectorColor: VectorColor) -> Color {
