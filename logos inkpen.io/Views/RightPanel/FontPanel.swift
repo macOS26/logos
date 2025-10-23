@@ -10,7 +10,7 @@ struct FontPanel: View {
         guard !document.viewState.selectedObjectIDs.isEmpty,
               let textID = document.viewState.selectedObjectIDs.first else { return nil }
 
-        if let newVectorObj = document.findObject(by: textID),
+        if let newVectorObj = document.snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             if let typography = shape.typography {
                 return typography
@@ -31,7 +31,7 @@ struct FontPanel: View {
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
 
-        if let newVectorObj = document.findObject(by: textID),
+        if let newVectorObj = document.snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
@@ -42,7 +42,7 @@ struct FontPanel: View {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
 
-        if let newVectorObj = document.findObject(by: textID),
+        if let newVectorObj = document.snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return VectorText.from(shape)
         }
