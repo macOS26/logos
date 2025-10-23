@@ -5,6 +5,7 @@ extension DrawingCanvas {
 
     func handleFontToolTap(at location: CGPoint) {
         lastTapLocation = location
+        print("🟡 handleFontToolTap at \(location)")
 
         // Don't create new text if there's already a text object selected or in edit mode
         let hasSelectedOrEditingText = document.viewState.selectedObjectIDs.contains { id in
@@ -17,12 +18,15 @@ extension DrawingCanvas {
 
         if hasSelectedOrEditingText {
             // Ignore tap - text is already selected/editing
+            print("🟡 Ignoring tap - text already selected/editing")
             return
         }
 
         if let existingTextID = findTextAt(location: location) {
+            print("🟡 Found existing text at location: \(existingTextID)")
             startEditingText(textID: existingTextID, at: location)
         } else {
+            print("🟡 Creating new text at location")
             createNewTextAt(location: location)
         }
     }
