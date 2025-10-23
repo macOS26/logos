@@ -75,6 +75,7 @@ struct ProfessionalTextCanvas: View {
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
         }
         .onChange(of: document.viewState.currentTool) { oldTool, newTool in
+            print("🟢 ProfessionalTextCanvas.onChange currentTool: \(oldTool.rawValue) -> \(newTool.rawValue) for text \(textObjectID)")
             handleToolChange(oldTool: oldTool, newTool: newTool)
         }
     }
