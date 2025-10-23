@@ -211,6 +211,12 @@ struct LayerCanvasView: View {
             // Calculate viewport bounds for culling (O(1))
             let viewportBounds = calculateViewportBounds(size: size)
 
+            // Apply canvas transform ONCE to entire context (O(1))
+            var transformedContext = context
+            transformedContext.transform = CGAffineTransform.identity
+                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                .scaledBy(x: zoomLevel, y: zoomLevel)
+
             for object in objects {
                 guard object.isVisible else { continue }
 
@@ -222,7 +228,8 @@ struct LayerCanvasView: View {
                     // Viewport culling - skip objects outside viewport (O(1) per object)
                     if !isObjectInViewport(shape.bounds, viewport: viewportBounds) { continue }
 
-                    renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderShape(shape, in: transformedContext, isSelected: isSelected)
 
                 case .text(let shape):
                     // Filter out text objects that are in editing mode (blue mode)
@@ -233,7 +240,7 @@ struct LayerCanvasView: View {
 
                     // Render text on Canvas when NOT editing (green/gray mode)
                     let isSelected = selectedObjectIDs.contains(object.id)
-                    renderText(shape, in: context, isSelected: isSelected)
+                    renderText(shape, in: transformedContext, isSelected: isSelected)
                 }
             }
         }
@@ -265,42 +272,34 @@ struct LayerCanvasView: View {
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
         guard hasVisibleFill || hasVisibleStroke else { return }
 
-        // Create CGPath once (amortized O(n) where n = path elements)
+        // Create CGPath with shape transform applied (amortized O(n) where n = path elements)
         let cgPath = createCGPath(from: shape.path, transform: shape.transform)
 
-        // Calculate transform once (O(1))
-        var canvasTransform = CGAffineTransform.identity
-            .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-            .scaledBy(x: zoomLevel, y: zoomLevel)
-
-        if isSelected && dragPreviewDelta != .zero {
-            canvasTransform = canvasTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-        }
-
-        // Transform path once (O(1))
-        guard let transformedPath = cgPath.copy(using: &canvasTransform) else { return }
-
+        // Apply drag delta if selected (O(1))
         var ctx = context
+        if isSelected && dragPreviewDelta != .zero {
+            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
 
         // Render fill (O(1) for solid, O(n) for gradient where n = stops)
         if viewMode == .color, let fillStyle = shape.fillStyle {
             if let gradient = fillStyle.gradient {
-                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
+                renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
             } else if fillStyle.color != .clear {
-                ctx.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                ctx.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
             }
         }
 
         // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
         if viewMode == .keyline {
-            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0)
+            ctx.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
                 if let gradient = strokeStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
                 } else if strokeStyle.color != .clear {
                     ctx.stroke(
-                        Path(transformedPath),
+                        Path(cgPath),
                         with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                         style: SwiftUI.StrokeStyle(
                             lineWidth: strokeStyle.width * zoomLevel,
@@ -311,7 +310,7 @@ struct LayerCanvasView: View {
                     )
                 }
             } else {
-                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: transformedPath, in: &ctx)
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &ctx)
             }
         }
     }
@@ -487,16 +486,14 @@ struct LayerCanvasView: View {
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
 
-        context.withCGContext { cgContext in
+        // Apply drag delta if selected (O(1))
+        var ctx = context
+        if isSelected && dragPreviewDelta != .zero {
+            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
+
+        ctx.withCGContext { cgContext in
             cgContext.saveGState()
-
-            // Apply transforms once (O(1))
-            cgContext.translateBy(x: canvasOffset.x, y: canvasOffset.y)
-            cgContext.scaleBy(x: zoomLevel, y: zoomLevel)
-
-            if isSelected && dragPreviewDelta != .zero {
-                cgContext.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-            }
 
             cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
