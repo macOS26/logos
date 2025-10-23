@@ -206,22 +206,23 @@ struct LayerCanvasView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
-    @State private var cachedShapes: [(VectorShape, Bool)] = []
-    @State private var cachedTexts: [(VectorShape, Bool)] = []
-    @State private var lastViewportBounds: CGRect = .zero
+    // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
+    private var visibleObjects: [VectorObject] {
+        objects.filter { object in
+            guard object.isVisible else { return false }
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.typography == nil
+            case .text(let shape):
+                return shape.isEditing != true
+            }
+        }
+    }
 
     var body: some View {
         Canvas { context, size in
             // Calculate viewport bounds for culling (O(1))
             let viewportBounds = calculateViewportBounds(size: size)
-
-            // Only re-filter if viewport changed (O(1) comparison)
-            if viewportBounds != lastViewportBounds {
-                let filtered = filterVisibleObjects(viewportBounds: viewportBounds)
-                cachedShapes = filtered.shapes
-                cachedTexts = filtered.texts
-                lastViewportBounds = viewportBounds
-            }
 
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
@@ -229,47 +230,21 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
-            // Batch render shapes (better cache locality)
-            for (shape, isSelected) in cachedShapes {
-                renderShape(shape, in: transformedContext, isSelected: isSelected)
-            }
+            // Render shapes with viewport culling (O(n) where n = visible objects)
+            for object in visibleObjects {
+                switch object.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderShape(shape, in: transformedContext, isSelected: isSelected)
 
-            // Batch render text (better cache locality)
-            for (shape, isSelected) in cachedTexts {
-                renderText(shape, in: transformedContext, isSelected: isSelected)
-            }
-        }
-    }
-
-    // MARK: - Object Filtering (O(n) - called once per render)
-
-    private func filterVisibleObjects(viewportBounds: CGRect) -> (shapes: [(VectorShape, Bool)], texts: [(VectorShape, Bool)]) {
-        var shapesToRender: [(VectorShape, Bool)] = []
-        var textsToRender: [(VectorShape, Bool)] = []
-
-        shapesToRender.reserveCapacity(objects.count) // Avoid reallocation
-        textsToRender.reserveCapacity(objects.count / 10) // Estimate ~10% text
-
-        for object in objects {
-            guard object.isVisible else { continue }
-
-            switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                // Skip shapes with typography (handled by SwiftUI)
-                guard shape.typography == nil else { continue }
-                // Viewport culling - SIMD AABB test (O(1))
-                guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                shapesToRender.append((shape, selectedObjectIDs.contains(object.id)))
-
-            case .text(let shape):
-                // Filter out editing text, cull viewport
-                guard shape.isEditing != true else { continue }
-                guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
-                textsToRender.append((shape, selectedObjectIDs.contains(object.id)))
+                case .text(let shape):
+                    guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                }
             }
         }
-
-        return (shapesToRender, textsToRender)
     }
 
     // MARK: - Viewport Culling (O(1) operations)
