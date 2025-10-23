@@ -60,7 +60,7 @@ struct SelectionHandlesView: View {
                                                              .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                                              .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                                    if (document.viewState.currentTool == .selection || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                                    if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
                                         TransformBoxHandles(
                                             document: document,
                                             shape: shape,
@@ -131,7 +131,7 @@ struct SelectionHandlesView: View {
                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                if (document.viewState.currentTool == .selection || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
                     TransformBoxHandles(
                         document: document,
                         shape: shape,
