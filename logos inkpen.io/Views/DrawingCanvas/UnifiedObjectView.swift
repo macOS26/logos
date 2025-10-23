@@ -302,7 +302,7 @@ struct LayerCanvasView: View {
                         Path(cgPath),
                         with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                         style: SwiftUI.StrokeStyle(
-                            lineWidth: strokeStyle.width * zoomLevel,
+                            lineWidth: strokeStyle.width,
                             lineCap: strokeStyle.lineCap.cgLineCap,
                             lineJoin: strokeStyle.lineJoin.cgLineJoin,
                             miterLimit: strokeStyle.miterLimit
@@ -317,21 +317,10 @@ struct LayerCanvasView: View {
 
     private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
         // Use PathOperations.outlineStroke for inside/outside strokes
-        // Need to scale the stroke style for zoom level
-        let scaledStrokeStyle = StrokeStyle(
-            color: strokeStyle.color,
-            width: strokeStyle.width * zoomLevel,
-            placement: strokeStyle.placement,
-            dashPattern: strokeStyle.dashPattern,
-            lineCap: strokeStyle.lineCap.cgLineCap,
-            lineJoin: strokeStyle.lineJoin.cgLineJoin,
-            miterLimit: strokeStyle.miterLimit,
-            opacity: strokeStyle.opacity,
-            blendMode: strokeStyle.blendMode
-        )
+        // No need to scale - canvas context is already scaled
 
         // Get the outlined stroke path
-        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: scaledStrokeStyle) else {
+        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: strokeStyle) else {
             return
         }
 
@@ -365,7 +354,7 @@ struct LayerCanvasView: View {
             // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                cgContext.setLineWidth(strokeStyle.width * zoomLevel)
+                cgContext.setLineWidth(strokeStyle.width)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
                 cgContext.setMiterLimit(strokeStyle.miterLimit)
