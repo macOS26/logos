@@ -127,8 +127,9 @@ struct ProfessionalTextCanvas: View {
             if let firstTextID = firstTextID, firstTextID == textObjectID {
                 print("🔵 Entering edit mode for text \(textObjectID)")
 
-                for unifiedObj in document.unifiedObjects {
-                    guard case .text(let shape) = unifiedObj.objectType,
+                // Stop editing other text objects using snapshot
+                for (_, obj) in document.snapshot.objects {
+                    guard case .text(let shape) = obj.objectType,
                           shape.id != viewModel.textObject.id,
                           shape.isEditing == true else { continue }
 
@@ -221,8 +222,9 @@ struct ProfessionalTextCanvas: View {
         // Store click location for cursor positioning
         clickLocation = location
 
-        for unifiedObj in document.unifiedObjects {
-            guard case .text(let shape) = unifiedObj.objectType,
+        // Stop editing other text objects using snapshot
+        for (_, obj) in document.snapshot.objects {
+            guard case .text(let shape) = obj.objectType,
                   shape.id != viewModel.textObject.id,
                   shape.isEditing == true else { continue }
 
