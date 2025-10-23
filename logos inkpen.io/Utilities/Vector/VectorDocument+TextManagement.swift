@@ -119,20 +119,19 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedTexts = viewState.selectedObjectIDs.compactMap { textID in findText(by: textID) }
+        let selectedTexts = viewState.selectedObjectIDs.compactMap { textID -> VectorText? in
+            guard let obj = snapshot.objects[textID],
+                  case .text(let shape) = obj.objectType else { return nil }
+            return VectorText.from(shape)
+        }
 
         // Save old state for undo
         let oldSelection = viewState.selectedObjectIDs
         let removedTextIDs = Array(viewState.selectedObjectIDs)
-        let removedTextObjects = unifiedObjects.filter { obj in
-            if case .text(let shape) = obj.objectType {
-                return viewState.selectedObjectIDs.contains(shape.id)
-            }
-            return false
-        }
+        let removedTextObjects = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
 
         var newShapeIDs: Set<UUID> = []
-        let shapesBefore = unifiedObjects.compactMap { obj -> UUID? in
+        let shapesBefore = snapshot.objects.values.compactMap { obj -> UUID? in
             switch obj.objectType {
             case .shape(let shape),
                  .warp(let shape),
@@ -151,7 +150,7 @@ extension VectorDocument {
             viewModel.convertToPath()
         }
 
-        let shapesAfter = unifiedObjects.compactMap { obj -> UUID? in
+        let shapesAfter = snapshot.objects.values.compactMap { obj -> UUID? in
             switch obj.objectType {
             case .shape(let shape),
                  .warp(let shape),
@@ -169,16 +168,11 @@ extension VectorDocument {
 
         if !newShapeIDs.isEmpty {
             // Capture new shape objects for undo
-            let addedShapeObjects = unifiedObjects.filter { obj in
-                newShapeIDs.contains(obj.id)
-            }
+            let addedShapeObjects = newShapeIDs.compactMap { snapshot.objects[$0] }
 
-            // Remove text objects
-            unifiedObjects.removeAll { obj in
-                if case .text(let shape) = obj.objectType {
-                    return viewState.selectedObjectIDs.contains(shape.id)
-                }
-                return false
+            // Remove text objects from snapshot
+            for textID in removedTextIDs {
+                snapshot.objects.removeValue(forKey: textID)
             }
 
             viewState.selectedObjectIDs.removeAll()
