@@ -152,7 +152,7 @@ struct TransformBoxHandles: View {
                 }
                 .simultaneousGesture(
                     isDisabled ? nil :
-                    DragGesture(minimumDistance: 0.5)
+                    DragGesture(minimumDistance: 3.0)
                         .onChanged { value in
                             if !isScaling {
                                 beginScaling(startValue: value)
@@ -160,7 +160,9 @@ struct TransformBoxHandles: View {
                             updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
                         }
                         .onEnded { _ in
-                            endScaling()
+                            if isScaling {
+                                endScaling()
+                            }
                         }
                 )
                 }
