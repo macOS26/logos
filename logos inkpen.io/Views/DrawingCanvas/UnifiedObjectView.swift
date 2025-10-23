@@ -199,14 +199,20 @@ struct CanvasBackgroundView: View {
 }
 
 struct LayerCanvasView: View {
-    let objectsToRender: [(shape: VectorShape, isSelected: Bool)]
+    let objects: [VectorObject]
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
     var body: some View {
         Canvas { context, size in
+            // Calculate viewport bounds for culling (O(1))
+            let viewportBounds = calculateViewportBounds(size: size)
+
+            // Filter objects by viewport ONCE (O(n))
+            let (shapesToRender, textsToRender) = filterVisibleObjects(viewportBounds: viewportBounds)
 
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
@@ -214,15 +220,82 @@ struct LayerCanvasView: View {
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
-            // Batch render all objects (better cache locality)
-            for (shape, isSelected) in objectsToRender {
-                if shape.typography != nil {
-                    renderText(shape, in: transformedContext, isSelected: isSelected)
-                } else {
-                    renderShape(shape, in: transformedContext, isSelected: isSelected)
-                }
+            // Batch render shapes (better cache locality)
+            for (shape, isSelected) in shapesToRender {
+                renderShape(shape, in: transformedContext, isSelected: isSelected)
+            }
+
+            // Batch render text (better cache locality)
+            for (shape, isSelected) in textsToRender {
+                renderText(shape, in: transformedContext, isSelected: isSelected)
             }
         }
+    }
+
+    // MARK: - Object Filtering (O(n) - called once per render)
+
+    private func filterVisibleObjects(viewportBounds: CGRect) -> (shapes: [(VectorShape, Bool)], texts: [(VectorShape, Bool)]) {
+        var shapesToRender: [(VectorShape, Bool)] = []
+        var textsToRender: [(VectorShape, Bool)] = []
+
+        shapesToRender.reserveCapacity(objects.count) // Avoid reallocation
+        textsToRender.reserveCapacity(objects.count / 10) // Estimate ~10% text
+
+        for object in objects {
+            guard object.isVisible else { continue }
+
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                // Skip shapes with typography (handled by SwiftUI)
+                guard shape.typography == nil else { continue }
+                // Viewport culling - SIMD AABB test (O(1))
+                guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                shapesToRender.append((shape, selectedObjectIDs.contains(object.id)))
+
+            case .text(let shape):
+                // Filter out editing text, cull viewport
+                guard shape.isEditing != true else { continue }
+                guard isObjectInViewportSIMD(shape.bounds, viewport: viewportBounds) else { continue }
+                textsToRender.append((shape, selectedObjectIDs.contains(object.id)))
+            }
+        }
+
+        return (shapesToRender, textsToRender)
+    }
+
+    // MARK: - Viewport Culling (O(1) operations)
+
+    private func calculateViewportBounds(size: CGSize) -> CGRect {
+        // Convert viewport to document space with padding for smooth scrolling
+        let padding: CGFloat = 200.0 // Extra padding to preload nearby objects
+        let minX = (-canvasOffset.x - padding) / zoomLevel
+        let minY = (-canvasOffset.y - padding) / zoomLevel
+        let maxX = (size.width - canvasOffset.x + padding) / zoomLevel
+        let maxY = (size.height - canvasOffset.y + padding) / zoomLevel
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
+        // Fast AABB intersection test (O(1))
+        return bounds.intersects(viewport)
+    }
+
+    private func isObjectInViewportSIMD(_ bounds: CGRect, viewport: CGRect) -> Bool {
+        // SIMD-accelerated AABB intersection test (O(1), vectorized)
+        // Pack bounds into SIMD vectors for parallel comparison
+        let objMin = SIMD2<Double>(bounds.minX, bounds.minY)
+        let objMax = SIMD2<Double>(bounds.maxX, bounds.maxY)
+        let vpMin = SIMD2<Double>(viewport.minX, viewport.minY)
+        let vpMax = SIMD2<Double>(viewport.maxX, viewport.maxY)
+
+        // Vectorized intersection test (2 comparisons in parallel)
+        // Check overlap: objMax >= vpMin AND objMin <= vpMax
+        let overlapMin = objMax .>= vpMin
+        let overlapMax = objMin .<= vpMax
+
+        // Combine results: all components must overlap (reduce with AND)
+        return all(overlapMin) && all(overlapMax)
     }
 
     // MARK: - Optimized Shape Rendering
@@ -545,35 +618,24 @@ struct IsolatedLayerView: View {
     let selectedObjectData: [UUID: VectorObject]  // Full data of selected objects
 
     @State private var cachedImage: NSImage?
-    @State private var filteredObjects: [(shape: VectorShape, isSelected: Bool)] = []
 
     // Track if this layer has selection
     private var hasSelection: Bool {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
     }
 
+   
     var body: some View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
-                objectsToRender: filteredObjects,
+                objects: objects,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
+                selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta
             )
-            .onAppear {
-                updateFilteredObjects()
-            }
-            .onChange(of: objects.count) { _ in
-                updateFilteredObjects()
-            }
-            .onChange(of: zoomLevel) { _ in
-                updateFilteredObjects()
-            }
-            .onChange(of: canvasOffset) { _ in
-                updateFilteredObjects()
-            }
 
             // For text editor only - filter .text objects first
             ForEach(objects.filter { object in
@@ -598,19 +660,6 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-    }
-
-    private func updateFilteredObjects() {
-        // Get viewport from window size - this is a workaround since we can't get geometry here
-        // The cache will handle the actual filtering
-        let viewport = CGRect(x: -10000, y: -10000, width: 20000, height: 20000) // Large viewport as fallback
-
-        filteredObjects = RenderCache.shared.getFilteredObjects(
-            key: layerID.uuidString,
-            objects: objects,
-            viewport: viewport,
-            selectedObjectIDs: selectedObjectIDs
-        )
     }
 
     private func renderLayerToCache() {
