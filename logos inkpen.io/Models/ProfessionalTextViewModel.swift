@@ -422,10 +422,21 @@ class ProfessionalTextViewModel: ObservableObject {
                     opacity: textObject.typography.fillOpacity
                 ),
                 transform: .identity,
-                isGroup: false
+                isGroup: false,
+                textContent: nil,
+                typography: nil,
+                cursorPosition: nil,
+                areaSize: nil,
+                isEditing: nil,
+                textPosition: nil
             )
 
-            document.addShapeWithoutUndo(outlineShape, to: targetLayerIndex)
+            // Force type to .shape (NOT .text)
+            let shapeObject = VectorObject(id: outlineShape.id, layerIndex: targetLayerIndex, objectType: .shape(outlineShape))
+            document.snapshot.objects[outlineShape.id] = shapeObject
+            if !document.snapshot.layers[targetLayerIndex].objectIDs.contains(outlineShape.id) {
+                document.snapshot.layers[targetLayerIndex].objectIDs.append(outlineShape.id)
+            }
             createdShapeIDs.append(outlineShape.id)
         }
 
