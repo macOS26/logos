@@ -380,7 +380,7 @@ struct ProfessionalLayerRow: View {
     }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
-        guard document.findObject(by: objectID) != nil else { return }
+        guard document.snapshot.objects[objectID] != nil else { return }
 
         document.selectedLayerIndex = layerIndex
 
