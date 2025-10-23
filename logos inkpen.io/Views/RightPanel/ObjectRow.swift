@@ -102,7 +102,7 @@ struct ObjectRow: View {
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: {
-                if let object = document.findObject(by: objectId) {
+                if let object = document.snapshot.objects[objectId] {
                     switch object.objectType {
                     case .text(let shape),
                          .shape(let shape),
@@ -141,7 +141,7 @@ struct ObjectRow: View {
     private var isLockedBinding: Binding<Bool> {
         Binding(
             get: {
-                if let object = document.findObject(by: objectId) {
+                if let object = document.snapshot.objects[objectId] {
                     switch object.objectType {
                     case .text(let shape),
                          .shape(let shape),
@@ -180,7 +180,7 @@ struct ObjectRow: View {
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.findObject(by: objectId),
+                if let object = document.snapshot.objects[objectId],
                    case .shape(let parentShape) = object.objectType,
                    let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
                     return child.isVisible
@@ -208,7 +208,7 @@ struct ObjectRow: View {
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.findObject(by: objectId),
+                if let object = document.snapshot.objects[objectId],
                    case .shape(let parentShape) = object.objectType,
                    let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
                     return child.isLocked
@@ -489,7 +489,7 @@ struct ObjectRow: View {
     private var objectIcon: String {
         switch objectType {
         case .shape:
-            if let object = document.findObject(by: objectId),
+            if let object = document.snapshot.objects[objectId],
                case .shape(let shape) = object.objectType {
                 if shape.isWarpObject {
                     return "waveform.path"
@@ -515,7 +515,7 @@ struct ObjectRow: View {
     }
 
     private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
-        if let object = document.findObject(by: objectId),
+        if let object = document.snapshot.objects[objectId],
            case .shape(let parentShape) = object.objectType,
            parentShape.isClippingGroup,
            index == 0 {
@@ -529,7 +529,7 @@ struct ObjectRow: View {
     }
 
     private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
-        if let object = document.findObject(by: objectId),
+        if let object = document.snapshot.objects[objectId],
            case .shape(let parentShape) = object.objectType,
            parentShape.isClippingGroup,
            index == 0 {
