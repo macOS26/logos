@@ -206,13 +206,22 @@ struct LayerCanvasView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
+    @State private var cachedShapes: [(VectorShape, Bool)] = []
+    @State private var cachedTexts: [(VectorShape, Bool)] = []
+    @State private var lastViewportBounds: CGRect = .zero
+
     var body: some View {
         Canvas { context, size in
             // Calculate viewport bounds for culling (O(1))
             let viewportBounds = calculateViewportBounds(size: size)
 
-            // Filter objects by viewport ONCE (O(n))
-            let (shapesToRender, textsToRender) = filterVisibleObjects(viewportBounds: viewportBounds)
+            // Only re-filter if viewport changed (O(1) comparison)
+            if viewportBounds != lastViewportBounds {
+                let filtered = filterVisibleObjects(viewportBounds: viewportBounds)
+                cachedShapes = filtered.shapes
+                cachedTexts = filtered.texts
+                lastViewportBounds = viewportBounds
+            }
 
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
@@ -221,12 +230,12 @@ struct LayerCanvasView: View {
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
             // Batch render shapes (better cache locality)
-            for (shape, isSelected) in shapesToRender {
+            for (shape, isSelected) in cachedShapes {
                 renderShape(shape, in: transformedContext, isSelected: isSelected)
             }
 
             // Batch render text (better cache locality)
-            for (shape, isSelected) in textsToRender {
+            for (shape, isSelected) in cachedTexts {
                 renderText(shape, in: transformedContext, isSelected: isSelected)
             }
         }
