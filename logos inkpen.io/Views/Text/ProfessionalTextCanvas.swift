@@ -170,6 +170,16 @@ struct ProfessionalTextCanvas: View {
                     window.makeFirstResponder(nil)
                 }
             }
+
+            // When entering blue mode (editing), select all text
+            if oldState != .blue && textBoxState == .blue {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    if let window = NSApp.keyWindow,
+                       let textView = window.firstResponder as? NSTextView {
+                        textView.selectAll(nil)
+                    }
+                }
+            }
         }
     }
 
