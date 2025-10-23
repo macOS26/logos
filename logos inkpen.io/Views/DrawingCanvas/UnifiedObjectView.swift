@@ -207,24 +207,23 @@ struct LayerCanvasView: View {
     let dragPreviewDelta: CGPoint
 
     var body: some View {
-        GeometryReader { geometry in
-            let viewportBounds = calculateViewportBounds(size: geometry.size)
-            let objectsToRender = filterVisibleObjects(viewport: viewportBounds)
+        Canvas { context, size in
+            // Calculate viewport and filter objects
+            let viewportBounds = self.calculateViewportBounds(size: size)
+            let objectsToRender = self.filterVisibleObjects(viewport: viewportBounds)
 
-            Canvas { context, size in
-                // Apply canvas transform ONCE to entire context (O(1))
-                var transformedContext = context
-                transformedContext.transform = CGAffineTransform.identity
-                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                    .scaledBy(x: zoomLevel, y: zoomLevel)
+            // Apply canvas transform ONCE to entire context (O(1))
+            var transformedContext = context
+            transformedContext.transform = CGAffineTransform.identity
+                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                .scaledBy(x: zoomLevel, y: zoomLevel)
 
-                // Batch render all objects (better cache locality)
-                for (shape, isSelected) in objectsToRender {
-                    if shape.typography != nil {
-                        renderText(shape, in: transformedContext, isSelected: isSelected)
-                    } else {
-                        renderShape(shape, in: transformedContext, isSelected: isSelected)
-                    }
+            // Batch render all objects (better cache locality)
+            for (shape, isSelected) in objectsToRender {
+                if shape.typography != nil {
+                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                } else {
+                    renderShape(shape, in: transformedContext, isSelected: isSelected)
                 }
             }
         }
