@@ -29,7 +29,7 @@ class LayerObjectOrderCommand: BaseCommand {
 
         // Update VectorLayer in layers array if needed
         if layerIndex < document.layers.count {
-            var vectorLayer = document.layers[layerIndex]
+            _ = document.layers[layerIndex]
             // VectorLayer might have different structure, just update snapshot is enough
             // The layers array should be synced from snapshot elsewhere
         }
