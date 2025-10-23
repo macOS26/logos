@@ -292,6 +292,7 @@ extension DrawingCanvas {
         currentDrawingPoints.removeAll()
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
+        currentDragDelta = .zero
     }
 
     private func startEyedropperColorPick() {
