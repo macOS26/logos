@@ -90,8 +90,8 @@ struct ProfessionalTextDisplayView: View {
                 viewMode: viewMode
             )
             .position(
-                x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
-                y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2
+                x: viewModel.textObject.position.x + dragOffset.width + viewModel.textBoxFrame.width / 2,
+                y: viewModel.textObject.position.y + dragOffset.height + viewModel.textBoxFrame.height / 2
             )
         }
     }
