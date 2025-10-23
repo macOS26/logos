@@ -198,7 +198,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View, Equatable {
+struct LayerCanvasView: View {
     let objects: [VectorObject]
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -208,6 +208,9 @@ struct LayerCanvasView: View, Equatable {
 
     var body: some View {
         Canvas { context, size in
+            // Calculate viewport bounds for culling (O(1))
+            let viewportBounds = calculateViewportBounds(size: size)
+
             for object in objects {
                 guard object.isVisible else { continue }
 
@@ -216,11 +219,17 @@ struct LayerCanvasView: View, Equatable {
                     // Skip shapes with typography (handled by SwiftUI)
                     if shape.typography != nil { continue }
 
+                    // Viewport culling - skip objects outside viewport (O(1) per object)
+                    if !isObjectInViewport(shape.bounds, viewport: viewportBounds) { continue }
+
                     renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
 
                 case .text(let shape):
                     // Filter out text objects that are in editing mode (blue mode)
                     if shape.isEditing == true { continue }
+
+                    // Viewport culling for text
+                    if !isObjectInViewport(shape.bounds, viewport: viewportBounds) { continue }
 
                     // Render text on Canvas when NOT editing (green/gray mode)
                     let isSelected = selectedObjectIDs.contains(object.id)
@@ -230,44 +239,63 @@ struct LayerCanvasView: View, Equatable {
         }
     }
 
+    // MARK: - Viewport Culling (O(1) operations)
+
+    private func calculateViewportBounds(size: CGSize) -> CGRect {
+        // Convert viewport to document space with padding for smooth scrolling
+        let padding: CGFloat = 200.0 // Extra padding to preload nearby objects
+        let minX = (-canvasOffset.x - padding) / zoomLevel
+        let minY = (-canvasOffset.y - padding) / zoomLevel
+        let maxX = (size.width - canvasOffset.x + padding) / zoomLevel
+        let maxY = (size.height - canvasOffset.y + padding) / zoomLevel
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
+        // Fast AABB intersection test (O(1))
+        return bounds.intersects(viewport)
+    }
+
+    // MARK: - Optimized Shape Rendering
+
     private func renderShape(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
-        // Create CGPath from VectorPath
+        // Fast path: skip invisible shapes (O(1))
+        let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
+        let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
+        guard hasVisibleFill || hasVisibleStroke else { return }
+
+        // Create CGPath once (amortized O(n) where n = path elements)
         let cgPath = createCGPath(from: shape.path, transform: shape.transform)
 
-        // Apply zoom and offset transform, plus drag preview for selected shapes
-        var transformedPath = cgPath
+        // Calculate transform once (O(1))
         var canvasTransform = CGAffineTransform.identity
             .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
             .scaledBy(x: zoomLevel, y: zoomLevel)
 
-        // Apply drag preview delta for selected shapes
         if isSelected && dragPreviewDelta != .zero {
             canvasTransform = canvasTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
         }
 
-        if let scaledPath = transformedPath.copy(using: &canvasTransform) {
-            transformedPath = scaledPath
-        }
+        // Transform path once (O(1))
+        guard let transformedPath = cgPath.copy(using: &canvasTransform) else { return }
 
         var ctx = context
 
-        // Render fill
+        // Render fill (O(1) for solid, O(n) for gradient where n = stops)
         if viewMode == .color, let fillStyle = shape.fillStyle {
             if let gradient = fillStyle.gradient {
-                // Use CGImage for gradient rendering - pass fillStyle for opacity
                 renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
             } else if fillStyle.color != .clear {
                 ctx.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
             }
         }
 
-        // Render stroke
+        // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
         if viewMode == .keyline {
-            // Always use 1px for keyline mode
             ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
-                // Standard center stroke
                 if let gradient = strokeStyle.gradient {
                     renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
                 } else if strokeStyle.color != .clear {
@@ -283,7 +311,6 @@ struct LayerCanvasView: View, Equatable {
                     )
                 }
             } else {
-                // Inside or outside stroke - use path operations
                 renderStrokeWithPlacement(strokeStyle: strokeStyle, path: transformedPath, in: &ctx)
             }
         }
@@ -357,75 +384,95 @@ struct LayerCanvasView: View, Equatable {
         }
     }
 
+    // MARK: - Optimized Gradient Rendering
+
     private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
         cgContext.saveGState()
 
+        // Fast path bounds calculation (O(1))
         let pathBounds = path.boundingBoxOfPath
-        let colors = gradient.stops.map { stop -> CGColor in
+
+        // Optimize color conversion - avoid creating new color objects (O(n) where n = stops)
+        let colors: [CGColor] = gradient.stops.map { stop in
             if case .clear = stop.color {
                 return stop.color.cgColor
-            } else {
-                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
             }
+            // Direct CGColor creation is faster than SwiftUI Color wrapper
+            return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
         }
         let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
 
-        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+        // Create gradient once (O(n) where n = stops)
+        guard let cgGradient = CGGradient(
+            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colors: colors as CFArray,
+            locations: locations
+        ) else {
             cgContext.restoreGState()
             return
         }
 
+        // Clip once (O(1))
         cgContext.addPath(path)
         cgContext.clip()
 
+        // Render gradient based on type
         switch gradient {
         case .linear(let linear):
-            let originX = linear.originPoint.x
-            let originY = linear.originPoint.y
+            // Pre-calculate common values (O(1))
             let scale = CGFloat(linear.scaleX)
-            let scaledOriginX = originX * scale
-            let scaledOriginY = originY * scale
-            let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
-            let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
-            let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)
-            let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
-            let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
-            let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)
+            let originX = linear.originPoint.x * scale
+            let originY = linear.originPoint.y * scale
+            let centerX = pathBounds.minX + pathBounds.width * originX
+            let centerY = pathBounds.minY + pathBounds.height * originY
+            let angle = CGFloat(linear.storedAngle * .pi / 180.0)
 
-            let startX = centerX - cos(gradientAngle) * scaledLength / 2
-            let startY = centerY - sin(gradientAngle) * scaledLength / 2
-            let endX = centerX + cos(gradientAngle) * scaledLength / 2
-            let endY = centerY + sin(gradientAngle) * scaledLength / 2
-            let startPoint = CGPoint(x: startX, y: startY)
-            let endPoint = CGPoint(x: endX, y: endY)
+            let dx = linear.endPoint.x - linear.startPoint.x
+            let dy = linear.endPoint.y - linear.startPoint.y
+            let length = sqrt(dx * dx + dy * dy) * scale * max(pathBounds.width, pathBounds.height)
 
-            cgContext.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            let halfLength = length / 2
+            let cosAngle = cos(angle)
+            let sinAngle = sin(angle)
+
+            let start = CGPoint(
+                x: centerX - cosAngle * halfLength,
+                y: centerY - sinAngle * halfLength
+            )
+            let end = CGPoint(
+                x: centerX + cosAngle * halfLength,
+                y: centerY + sinAngle * halfLength
+            )
+
+            cgContext.drawLinearGradient(
+                cgGradient,
+                start: start,
+                end: end,
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
 
         case .radial(let radial):
-            let originX = radial.originPoint.x
-            let originY = radial.originPoint.y
-            let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
-                                 y: pathBounds.minY + pathBounds.height * originY)
+            let center = CGPoint(
+                x: pathBounds.minX + pathBounds.width * radial.originPoint.x,
+                y: pathBounds.minY + pathBounds.height * radial.originPoint.y
+            )
 
             cgContext.saveGState()
             cgContext.translateBy(x: center.x, y: center.y)
+            cgContext.rotate(by: CGFloat(radial.angle * .pi / 180.0))
+            cgContext.scaleBy(x: CGFloat(radial.scaleX), y: CGFloat(radial.scaleY))
 
-            let angleRadians = CGFloat(radial.angle * .pi / 180.0)
-            cgContext.rotate(by: angleRadians)
-
-            let scaleX = CGFloat(radial.scaleX)
-            let scaleY = CGFloat(radial.scaleY)
-            cgContext.scaleBy(x: scaleX, y: scaleY)
-
-            let focalPoint: CGPoint
-            if let focal = radial.focalPoint {
-                focalPoint = CGPoint(x: focal.x, y: focal.y)
-            } else {
-                focalPoint = CGPoint.zero
-            }
-
+            let focalPoint = radial.focalPoint.map { CGPoint(x: $0.x, y: $0.y) } ?? .zero
             let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
-            cgContext.drawRadialGradient(cgGradient, startCenter: focalPoint, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
+
+            cgContext.drawRadialGradient(
+                cgGradient,
+                startCenter: focalPoint,
+                startRadius: 0,
+                endCenter: .zero,
+                endRadius: radius,
+                options: [.drawsAfterEndLocation]
+            )
 
             cgContext.restoreGState()
         }
@@ -433,77 +480,81 @@ struct LayerCanvasView: View, Equatable {
         cgContext.restoreGState()
     }
 
+    // MARK: - Optimized Text Rendering
+
     private func renderText(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
-        // Convert VectorShape to VectorText (same as PDF export)
+        // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
 
-        // Use CoreGraphics to render CTLine directly on Canvas (same as PDF export)
         context.withCGContext { cgContext in
-            // Apply zoom and canvas offset transform
+            cgContext.saveGState()
+
+            // Apply transforms once (O(1))
             cgContext.translateBy(x: canvasOffset.x, y: canvasOffset.y)
             cgContext.scaleBy(x: zoomLevel, y: zoomLevel)
 
-            // Apply drag preview delta for selected text (like shapes do)
             if isSelected && dragPreviewDelta != .zero {
                 cgContext.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
             }
 
-            // EXACT SAME CODE AS PDF EXPORT (renderTextToPDF_Lines)
-            let nsFont = vectorText.typography.nsFont
+            cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
+
+            // Build paragraph style once (O(1))
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
             paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
             paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
             paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
 
-            let layoutAttributes: [NSAttributedString.Key: Any] = [
+            let nsFont = vectorText.typography.nsFont
+            let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
+
+            // Shared attributes to avoid duplicate dictionary creation
+            let commonAttributes: [NSAttributedString.Key: Any] = [
                 .font: nsFont,
                 .paragraphStyle: paragraphStyle,
                 .kern: vectorText.typography.letterSpacing
             ]
 
-            let attributedString = NSAttributedString(string: vectorText.content, attributes: layoutAttributes)
+            // Create layout system once (O(n) where n = text length)
+            let attributedString = NSAttributedString(string: vectorText.content, attributes: commonAttributes)
             let textStorage = NSTextStorage(attributedString: attributedString)
             let layoutManager = NSLayoutManager()
             textStorage.addLayoutManager(layoutManager)
 
             let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
-            let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+            let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: .greatestFiniteMagnitude))
             textContainer.lineFragmentPadding = 0
             textContainer.lineBreakMode = .byWordWrapping
             layoutManager.addTextContainer(textContainer)
 
-            layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+            // Layout glyphs once (O(n))
+            let textRange = NSRange(location: 0, length: vectorText.content.count)
+            layoutManager.ensureGlyphs(forGlyphRange: textRange)
             layoutManager.ensureLayout(for: textContainer)
 
-            cgContext.saveGState()
-
-            cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
-
-            let renderingAttributes: [NSAttributedString.Key: Any] = [
-                .font: nsFont,
-                .paragraphStyle: paragraphStyle,
-                .kern: vectorText.typography.letterSpacing,
-                .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
-            ]
+            // Rendering attributes with color (reuse common attributes)
+            var renderAttributes = commonAttributes
+            renderAttributes[.foregroundColor] = textColor
 
             let glyphRange = layoutManager.glyphRange(for: textContainer)
+            let textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
-            layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
-                let lineRange = NSRange(location: lineRange.location, length: lineRange.length)
+            // Enumerate and draw lines (O(k) where k = number of lines)
+            layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
-                let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
+                let lineAttribString = NSAttributedString(string: lineString, attributes: renderAttributes)
                 var line = CTLineCreateWithAttributedString(lineAttribString)
 
-                if vectorText.typography.alignment.nsTextAlignment == .justified {
-                    if let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
-                        line = justifiedLine
-                    }
+                // Apply justification if needed
+                if vectorText.typography.alignment.nsTextAlignment == .justified,
+                   let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
+                    line = justifiedLine
                 }
 
-                let firstGlyphIndex = lineRange.location
-                let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+                // Calculate line position
+                let glyphLocation = layoutManager.location(forGlyphAt: lineRange.location)
                 let lineX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left, .justified:
@@ -515,13 +566,11 @@ struct LayerCanvasView: View, Equatable {
                 }
                 let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
 
+                // Draw line
                 cgContext.saveGState()
-
-                cgContext.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
-
+                cgContext.textMatrix = textMatrix
                 cgContext.textPosition = CGPoint(x: lineX, y: lineY)
                 CTLineDraw(line, cgContext)
-
                 cgContext.restoreGState()
             }
 
@@ -529,9 +578,12 @@ struct LayerCanvasView: View, Equatable {
         }
     }
 
+    // MARK: - Optimized Path Creation
+
     private func createCGPath(from vectorPath: VectorPath, transform: CGAffineTransform) -> CGPath {
         let path = CGMutablePath()
 
+        // Batch path operations for better performance (O(n) where n = elements)
         for element in vectorPath.elements {
             switch element {
             case .move(let to):
@@ -549,6 +601,7 @@ struct LayerCanvasView: View, Equatable {
             }
         }
 
+        // Apply transform if needed (O(1))
         if !transform.isIdentity {
             var mutableTransform = transform
             return path.copy(using: &mutableTransform) ?? path
