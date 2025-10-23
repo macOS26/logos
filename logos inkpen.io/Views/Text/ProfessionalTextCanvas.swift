@@ -40,18 +40,7 @@ struct ProfessionalTextCanvas: View {
                 viewMode: viewMode
             )
 
-            if textBoxState == .blue {
-                ProfessionalResizeHandleView(
-                    viewModel: viewModel,
-                    dragOffset: dragOffset,
-                    resizeOffset: resizeOffset,
-                    zoomLevel: CGFloat(document.viewState.zoomLevel),
-                    viewMode: viewMode,
-                    onResizeChanged: handleResizeChanged,
-                    onResizeEnded: handleResizeEnded,
-                    onResizeStarted: handleResizeStarted
-                )
-            }
+            // ResizeHandles removed - now using TransformBoxHandles from SelectionHandlesView
         }
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
         .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
