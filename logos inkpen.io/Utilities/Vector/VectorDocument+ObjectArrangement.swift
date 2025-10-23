@@ -39,7 +39,7 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
         let layer = snapshot.layers[selectedLayerIndex]
-        var oldObjectIDs = layer.objectIDs
+        let oldObjectIDs = layer.objectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
         // Separate selected and unselected objects
@@ -65,7 +65,7 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
         let layer = snapshot.layers[selectedLayerIndex]
-        var oldObjectIDs = layer.objectIDs
+        let oldObjectIDs = layer.objectIDs
         var newObjectIDs = oldObjectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
@@ -97,7 +97,7 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
         let layer = snapshot.layers[selectedLayerIndex]
-        var oldObjectIDs = layer.objectIDs
+        let oldObjectIDs = layer.objectIDs
         var newObjectIDs = oldObjectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
@@ -129,7 +129,7 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
         let layer = snapshot.layers[selectedLayerIndex]
-        var oldObjectIDs = layer.objectIDs
+        let oldObjectIDs = layer.objectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
         // Separate selected and unselected objects
