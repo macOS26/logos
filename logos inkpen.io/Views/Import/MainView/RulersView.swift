@@ -280,12 +280,18 @@ struct RulersView: View {
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-        var y = floor(startY / tickSpacing) * tickSpacing
+
+        // Align ticks with page origin (same fix as horizontal ruler)
+        let offsetFromOrigin = startY - pageOrigin.y
+        var y = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.y
+
         while y <= endY {
             let rulerY = y * zoomLevel + canvasOffset.y
 
             if rulerY >= 0 && rulerY <= size.height {
-                var isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                // Calculate tick position relative to page origin for proper alignment
+                let relativePosition = y - pageOrigin.y
+                var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
