@@ -105,25 +105,36 @@ struct ProfessionalTextCanvas: View {
     }
 
     private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        let isThisTextSelected = document.viewState.selectedObjectIDs.contains(textObjectID)
-
-        if oldTool != .font && newTool == .font && (textBoxState == .green || isThisTextSelected) {
-
-            for unifiedObj in document.unifiedObjects {
-                guard case .text(let shape) = unifiedObj.objectType,
-                      shape.id != viewModel.textObject.id,
-                      shape.isEditing == true else { continue }
-
-                document.setTextEditingInUnified(id: shape.id, isEditing: false)
+        // When switching to font tool, find first text object in selection and edit it
+        if oldTool != .font && newTool == .font {
+            // Find first text object in selectedObjectIDs
+            var firstTextID: UUID? = nil
+            for selectedID in document.viewState.selectedObjectIDs {
+                if let obj = document.findObject(by: selectedID),
+                   case .text = obj.objectType {
+                    firstTextID = selectedID
+                    break
+                }
             }
 
-            viewModel.startEditing()
+            // If this text is the first one selected, enter edit mode
+            if let firstTextID = firstTextID, firstTextID == textObjectID {
+                for unifiedObj in document.unifiedObjects {
+                    guard case .text(let shape) = unifiedObj.objectType,
+                          shape.id != viewModel.textObject.id,
+                          shape.isEditing == true else { continue }
 
-            document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: true)
+                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                }
 
-            textBoxState = .blue
+                viewModel.startEditing()
 
-            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
+                document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: true)
+
+                textBoxState = .blue
+
+                updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
+            }
         }
 
         if oldTool == .font && newTool != .font && viewModel.isEditing {
