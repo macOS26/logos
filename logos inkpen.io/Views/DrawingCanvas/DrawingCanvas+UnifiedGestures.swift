@@ -88,11 +88,15 @@ extension DrawingCanvas {
             handleBezierPenTap(at: canvasLocation)
 
         case .font:
-            if let existingTextID = findTextAt(location: canvasLocation) {
-                startEditingText(textID: existingTextID, at: canvasLocation)
-            } else {
-                // Click on empty canvas - deselect all text
-                handleAggressiveBackgroundTap(at: canvasLocation)
+            // Same pattern as square tool - clear selection if no modifiers
+            if !isShiftPressed && !isCommandPressed {
+                if let existingTextID = findTextAt(location: canvasLocation) {
+                    startEditingText(textID: existingTextID, at: canvasLocation)
+                } else {
+                    // Click on empty canvas - deselect all text
+                    document.viewState.selectedObjectIDs = []
+                    handleAggressiveBackgroundTap(at: canvasLocation)
+                }
             }
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
