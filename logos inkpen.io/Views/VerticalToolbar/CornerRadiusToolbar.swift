@@ -166,8 +166,8 @@ struct CornerRadiusToolbar: View {
     private func getSelectedShape() -> VectorShape? {
         guard document.viewState.selectedObjectIDs.count == 1,
               let selectedID = document.viewState.selectedObjectIDs.first else { return nil }
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
+        for (_, newVectorObject) in document.snapshot.objects {
+            if case .shape(let shape) = newVectorObject.objectType,
                shape.id == selectedID {
                 return shape
             }
