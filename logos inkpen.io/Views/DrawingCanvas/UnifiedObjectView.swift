@@ -272,8 +272,8 @@ struct LayerCanvasView: View {
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
         guard hasVisibleFill || hasVisibleStroke else { return }
 
-        // Create CGPath with shape transform applied (amortized O(n) where n = path elements)
-        let cgPath = createCGPath(from: shape.path, transform: shape.transform)
+        // Use cached CGPath (O(1) on cache hit)
+        let cgPath = shape.cachedCGPath
 
         // Apply drag delta if selected (O(1))
         var ctx = context
@@ -564,37 +564,6 @@ struct LayerCanvasView: View {
         }
     }
 
-    // MARK: - Optimized Path Creation
-
-    private func createCGPath(from vectorPath: VectorPath, transform: CGAffineTransform) -> CGPath {
-        let path = CGMutablePath()
-
-        // Batch path operations for better performance (O(n) where n = elements)
-        for element in vectorPath.elements {
-            switch element {
-            case .move(let to):
-                path.move(to: to.cgPoint)
-            case .line(let to):
-                path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
-                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
-                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-            case .close:
-                if !path.isEmpty {
-                    path.closeSubpath()
-                }
-            }
-        }
-
-        // Apply transform if needed (O(1))
-        if !transform.isIdentity {
-            var mutableTransform = transform
-            return path.copy(using: &mutableTransform) ?? path
-        }
-
-        return path
-    }
 }
 
 struct IsolatedLayerView: View {

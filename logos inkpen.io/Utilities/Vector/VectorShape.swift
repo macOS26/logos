@@ -344,11 +344,15 @@ enum GeometricShapeType: String, CaseIterable, Codable {
 struct VectorShape: Hashable, Identifiable {
     var id: UUID
     var name: String
-    var path: VectorPath
+    var path: VectorPath {
+        didSet { _cachedCGPath = nil }
+    }
     var geometricType: GeometricShapeType?
     var strokeStyle: StrokeStyle?
     var fillStyle: FillStyle?
-    var transform: CGAffineTransform
+    var transform: CGAffineTransform {
+        didSet { _cachedCGPath = nil }
+    }
     var isVisible: Bool
     var isLocked: Bool
     var opacity: Double
@@ -380,6 +384,43 @@ struct VectorShape: Hashable, Identifiable {
     var isEditing: Bool? = nil
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
+
+    // Cached CGPath - invalidated when path or transform changes
+    private var _cachedCGPath: CGPath?
+
+    var cachedCGPath: CGPath {
+        if let cached = _cachedCGPath {
+            return cached
+        }
+        return buildCGPath()
+    }
+
+    private func buildCGPath() -> CGPath {
+        let mutablePath = CGMutablePath()
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                mutablePath.move(to: to.cgPoint)
+            case .line(let to):
+                mutablePath.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                mutablePath.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                mutablePath.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                if !mutablePath.isEmpty {
+                    mutablePath.closeSubpath()
+                }
+            }
+        }
+
+        if !transform.isIdentity {
+            var mutableTransform = transform
+            return mutablePath.copy(using: &mutableTransform) ?? mutablePath
+        }
+
+        return mutablePath
+    }
 
     init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
         self.id = UUID()
