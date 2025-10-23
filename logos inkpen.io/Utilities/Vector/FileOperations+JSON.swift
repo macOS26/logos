@@ -18,13 +18,13 @@ extension FileOperations {
     }
 
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
-        // Encode VectorDocument directly - no snapshot copy needed
+        // Encode document.snapshot only
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
 
         do {
-            let jsonData = try encoder.encode(document)
+            let jsonData = try encoder.encode(document.snapshot)
             return jsonData
         } catch {
             Log.error("❌ JSON data export failed: \(error)", category: .error)
@@ -39,10 +39,13 @@ extension FileOperations {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 
-            let document = try decoder.decode(VectorDocument.self, from: jsonData)
+            let snapshot = try decoder.decode(DocumentSnapshot.self, from: jsonData)
+            let document = VectorDocument()
+            document.snapshot = snapshot
+
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
+            for (_, object) in document.snapshot.objects {
+                if case .shape(let shape) = object.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
@@ -59,10 +62,13 @@ extension FileOperations {
         decoder.dateDecodingStrategy = .iso8601
 
         do {
-            let document = try decoder.decode(VectorDocument.self, from: data)
+            let snapshot = try decoder.decode(DocumentSnapshot.self, from: data)
+            let document = VectorDocument()
+            document.snapshot = snapshot
+
             ImageContentRegistry.setBaseDirectory(nil, for: document)
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
+            for (_, object) in document.snapshot.objects {
+                if case .shape(let shape) = object.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
