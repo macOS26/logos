@@ -152,7 +152,7 @@ struct TransformBoxHandles: View {
                 }
                 .simultaneousGesture(
                     isDisabled ? nil :
-                    DragGesture(minimumDistance: 3.0)
+                    DragGesture(minimumDistance: 0.5)
                         .onChanged { value in
                             if !isScaling {
                                 beginScaling(startValue: value)
@@ -160,9 +160,7 @@ struct TransformBoxHandles: View {
                             updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
                         }
                         .onEnded { _ in
-                            if isScaling {
-                                endScaling()
-                            }
+                            endScaling()
                         }
                 )
                 }
@@ -474,9 +472,12 @@ struct TransformBoxHandles: View {
             }
             updatedShape.groupedShapes = transformedGroupedShapes
             updatedShape.transform = .identity
+            updatedShape.updateBounds()
 
-            let updatedObject = VectorObject(id: shapeID, layerIndex: targetObj.layerIndex, objectType: VectorObject.determineType(for: updatedShape))
+            // Update snapshot directly
+            let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
+            print("🔵 Updated snapshot with transformed group")
             print("🔵 Finished group transform")
         } else {
             print("🔵 Regular shape, transforming path elements")
@@ -503,14 +504,18 @@ struct TransformBoxHandles: View {
                 }
             }
 
+            let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+            print("🔵 Updating shape with new path, \(transformedElements.count) elements")
+
             var updatedShape = targetShape
-            updatedShape.path = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+            updatedShape.path = newPath
             updatedShape.transform = .identity
             updatedShape.updateBounds()
 
-            print("🔵 Updating shape with new path, \(transformedElements.count) elements")
-            let updatedObject = VectorObject(id: shapeID, layerIndex: targetObj.layerIndex, objectType: VectorObject.determineType(for: updatedShape))
+            // Update snapshot directly
+            let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
+            print("🔵 Updated snapshot with transformed shape")
             print("🔵 Finished regular shape transform")
         }
     }
