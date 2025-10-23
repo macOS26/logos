@@ -286,17 +286,10 @@ extension DrawingCanvas {
             return
         }
 
-        let inSnapshot = document.snapshot.objects[objectID] != nil
-        let inUnified = document.unifiedObjects.contains(where: { $0.id == objectID })
-        print("🔵 DRAG: objectID=\(objectID), type=\(unifiedObject.objectType), delta=\(delta)")
-        print("   📍 Location: inSnapshot=\(inSnapshot), inUnified=\(inUnified)")
-
         switch unifiedObject.objectType {
         case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-            print("   ✅ DRAG: Treating as shape, name=\(shape.name), bounds=\(shape.bounds), transform=\(shape.transform)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
-            print("   ⚠️ DRAG: Skipping TEXT object \(objectID)")
             return
         }
     }
