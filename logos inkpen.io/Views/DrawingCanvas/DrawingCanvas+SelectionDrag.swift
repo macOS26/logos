@@ -187,67 +187,53 @@ extension DrawingCanvas {
             guard document.selectedLayerIndex != nil else { return }
 
             var oldShapes: [UUID: VectorShape] = [:]
+            var newShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
-            let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
 
-            for unifiedObject in selectedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
-                    oldShapes[unifiedObject.id] = shape
-                    affectedObjectIDs.insert(unifiedObject.id)
+            // Build old/new shapes from snapshot
+            for objectID in document.viewState.selectedObjectIDs {
+                if let oldShape = document.findShape(by: objectID) {
+                    affectedObjectIDs.insert(objectID)
+                    oldShapes[objectID] = oldShape
 
-                    if shape.isClippingPath {
-                        let allShapes = document.getShapesForLayer(unifiedObject.layerIndex)
-                        for clippedShape in allShapes {
-                            if clippedShape.clippedByShapeID == shape.id {
-                                if let clippedObj = document.unifiedObjects.first(where: { $0.id == clippedShape.id }) {
-                                    oldShapes[clippedObj.id] = clippedShape
-                                    affectedObjectIDs.insert(clippedObj.id)
+                    // Create new shape with drag applied
+                    var newShape = oldShape
+                    newShape.path = applyDeltaToPath(oldShape.path, delta: currentDragDelta)
+
+                    if oldShape.isWarpObject && !oldShape.warpEnvelope.isEmpty {
+                        var updatedWarpEnvelope: [CGPoint] = []
+                        for corner in oldShape.warpEnvelope {
+                            updatedWarpEnvelope.append(CGPoint(x: corner.x + currentDragDelta.x, y: corner.y + currentDragDelta.y))
+                        }
+                        newShape.warpEnvelope = updatedWarpEnvelope
+                    }
+
+                    newShape.updateBounds()
+                    newShapes[objectID] = newShape
+
+                    // Handle clipping paths
+                    if oldShape.isClippingPath {
+                        for (clippedID, clippedObj) in document.snapshot.objects {
+                            switch clippedObj.objectType {
+                            case .shape(let clippedShape), .warp(let clippedShape), .group(let clippedShape), .clipGroup(let clippedShape), .clipMask(let clippedShape):
+                                if clippedShape.clippedByShapeID == oldShape.id {
+                                    oldShapes[clippedID] = clippedShape
+                                    affectedObjectIDs.insert(clippedID)
+
+                                    var newClippedShape = clippedShape
+                                    newClippedShape.path = applyDeltaToPath(clippedShape.path, delta: currentDragDelta)
+                                    newClippedShape.updateBounds()
+                                    newShapes[clippedID] = newClippedShape
                                 }
+                            case .text:
+                                break
                             }
                         }
                     }
                 }
             }
 
-            // print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
-            for unifiedObject in selectedObjects {
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    // print("🟣 DRAG FINISH: Text object \(shape.id)")
-                    document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(unifiedObject.id)
-                    oldShapes[unifiedObject.id] = shape
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
-                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(unifiedObject.id)
-                    oldShapes[unifiedObject.id] = shape
-                }
-            }
-
-            syncUnifiedObjectsAfterMovement()
-
-            var newShapes: [UUID: VectorShape] = [:]
-            for objectID in affectedObjectIDs {
-                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                    switch unifiedObject.objectType {
-                    case .text(let shape):
-                        if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
-                           case .text(let updatedShape) = document.unifiedObjects[index].objectType {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
-                        }
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        if let updatedShape = document.findShape(by: shape.id) {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
-                        }
-                    }
-                }
-            }
-
+            // Execute command - this will apply changes AND register for undo
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: Array(affectedObjectIDs),
@@ -278,6 +264,45 @@ extension DrawingCanvas {
             cachedSelectionBoundsForDrag = nil
             document.cachedSelectionBounds = nil
         }
+    }
+
+    private func applyDeltaToPath(_ path: VectorPath, delta: CGPoint) -> VectorPath {
+        var updatedElements: [PathElement] = []
+
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                updatedElements.append(.move(to: VectorPoint(newPoint)))
+
+            case .line(let to):
+                let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                updatedElements.append(.line(to: VectorPoint(newPoint)))
+
+            case .curve(let to, let control1, let control2):
+                let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
+                let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
+                updatedElements.append(.curve(
+                    to: VectorPoint(newTo),
+                    control1: VectorPoint(newControl1),
+                    control2: VectorPoint(newControl2)
+                ))
+
+            case .quadCurve(let to, let control):
+                let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
+                updatedElements.append(.quadCurve(
+                    to: VectorPoint(newTo),
+                    control: VectorPoint(newControl)
+                ))
+
+            case .close:
+                updatedElements.append(.close)
+            }
+        }
+
+        return VectorPath(elements: updatedElements, isClosed: path.isClosed)
     }
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {

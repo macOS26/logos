@@ -204,6 +204,7 @@ extension DrawingCanvas {
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
             resetShapeDrawingState()
+            print("🔵 After shape creation: isDrawing=\(isDrawing), currentDragDelta=\(currentDragDelta)")
 
         case .font:
             finishTextBoxDrawing(value: value, geometry: geometry)
