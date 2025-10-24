@@ -32,6 +32,7 @@ class DocumentViewState: ObservableObject {
     // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
     @Published var objectUpdateTrigger: UInt = 0
+    @Published var layerUpdateTriggers: [UUID: UInt] = [:]  // Per-layer update triggers keyed by Layer.id
     @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]

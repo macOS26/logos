@@ -387,12 +387,29 @@ struct VectorShape: Hashable, Identifiable {
 
     // Cached CGPath - invalidated when path or transform changes
     private var _cachedCGPath: CGPath?
+    private var _cacheUpdateTrigger: UInt = 0
+
+    func cachedCGPath(updateTrigger: UInt? = nil) -> CGPath {
+        // If trigger provided and different, rebuild cache
+        if let trigger = updateTrigger, _cacheUpdateTrigger != trigger {
+            return buildCGPath()
+        }
+
+        if let cached = _cachedCGPath {
+            return cached
+        }
+        return buildCGPath()
+    }
 
     var cachedCGPath: CGPath {
         if let cached = _cachedCGPath {
             return cached
         }
         return buildCGPath()
+    }
+
+    mutating func invalidateCGPathCache() {
+        _cachedCGPath = nil
     }
 
     private func buildCGPath() -> CGPath {
