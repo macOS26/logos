@@ -8,16 +8,18 @@ struct ProfessionalDirectSelectionView: View {
     let selectedObjectIDs: Set<UUID>
     let geometry: GeometryProxy
     let coincidentPointTolerance: Double
+    let dragPreviewDelta: CGPoint
 
     var body: some View {
         Canvas { context, size in
-            var ctx = context
             let zoom = document.viewState.zoomLevel
             let offset = document.viewState.canvasOffset
-            let dragOffset = document.currentDragOffset
 
-            // Translate entire context by drag offset
-            ctx.translateBy(x: dragOffset.x * zoom, y: dragOffset.y * zoom)
+            // Apply drag delta to entire context if dragging selected objects
+            var ctx = context
+            if !selectedObjectIDs.isEmpty && dragPreviewDelta != .zero {
+                ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+            }
 
             // Draw outlines and ALL anchor points for selected shapes
             for objectID in selectedObjectIDs {
