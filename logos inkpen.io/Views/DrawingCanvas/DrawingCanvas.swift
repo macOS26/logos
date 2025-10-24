@@ -110,6 +110,7 @@ struct DrawingCanvas: View {
     @State internal var isDraggingHandle = false
     @State internal var dragStartLocation: CGPoint = .zero
     @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
+    @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
 
     internal func syncDirectSelectionWithDocument() {
         viewState.selectedObjectIDs = selectedObjectIDs
@@ -192,8 +193,17 @@ struct DrawingCanvas: View {
                 .onAppear {
                     // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
+                    cachedObjectCount = document.snapshot.objects.count
                     spatialIndex.rebuild(from: document.snapshot)
                     rebuildLockedObjectsCache()
+                }
+                .onChange(of: document.snapshot.objects.count) { _, newCount in
+                    // Rebuild spatial index only when object count changes
+                    if newCount != cachedObjectCount {
+                        cachedObjectCount = newCount
+                        spatialIndex.rebuild(from: document.snapshot)
+                        rebuildLockedObjectsCache()
+                    }
                 }
         }
     }
