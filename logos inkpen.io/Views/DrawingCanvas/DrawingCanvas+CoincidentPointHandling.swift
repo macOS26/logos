@@ -58,6 +58,7 @@ extension DrawingCanvas {
         if !addToSelection {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
+            visibleHandles.removeAll()
         }
 
         selectedPoints.insert(pointID)
@@ -70,6 +71,33 @@ extension DrawingCanvas {
         let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
         for endpointID in closedPathEndpoints {
             selectedPoints.insert(endpointID)
+        }
+
+        // Show handles for selected points
+        showHandlesForSelectedPoints()
+    }
+
+    private func showHandlesForSelectedPoints() {
+        for pointID in selectedPoints {
+            guard let object = document.snapshot.objects[pointID.shapeID],
+                  case .shape(let shape) = object.objectType,
+                  pointID.elementIndex < shape.path.elements.count else { continue }
+
+            let element = shape.path.elements[pointID.elementIndex]
+
+            // Add incoming handle (control2) if it's a curve
+            if case .curve = element {
+                let incomingHandle = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex, handleType: .control2)
+                visibleHandles.insert(incomingHandle)
+            }
+
+            // Add outgoing handle (control1) if next element is a curve
+            if pointID.elementIndex + 1 < shape.path.elements.count {
+                if case .curve = shape.path.elements[pointID.elementIndex + 1] {
+                    let outgoingHandle = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex + 1, handleType: .control1)
+                    visibleHandles.insert(outgoingHandle)
+                }
+            }
         }
     }
 
