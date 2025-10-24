@@ -15,12 +15,14 @@ class MoveObjectToLayerCommand: BaseCommand {
         for move in moves {
             applyMove(objectID: move.objectID, toLayerIndex: move.newLayerIndex, document: document)
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     override func undo(on document: VectorDocument) {
         for move in moves.reversed() {
             applyMove(objectID: move.objectID, toLayerIndex: move.oldLayerIndex, document: document)
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     private func applyMove(objectID: UUID, toLayerIndex: Int, document: VectorDocument) {
