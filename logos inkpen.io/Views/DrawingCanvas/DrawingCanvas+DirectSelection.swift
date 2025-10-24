@@ -70,7 +70,8 @@ extension DrawingCanvas {
                 elementIndex: elementIndex
             )
 
-            if isShiftPressed && selectedPoints.contains(pointID) {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed && selectedPoints.contains(pointID) {
                 let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
                 let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
                 selectedPoints.remove(pointID)
@@ -81,7 +82,7 @@ extension DrawingCanvas {
                     selectedPoints.remove(endpointID)
                 }
             } else {
-                selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
+                selectPointWithCoincidents(pointID, addToSelection: isShiftCurrentlyPressed)
             }
             return true
         }
@@ -145,10 +146,11 @@ extension DrawingCanvas {
             let metadata = handleMetadata[nearestIndex]
             let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: metadata.elementIndex, handleType: metadata.handleType)
 
-            if isShiftPressed && selectedHandles.contains(handleID) {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed && selectedHandles.contains(handleID) {
                 selectedHandles.remove(handleID)
             } else {
-                if !isShiftPressed {
+                if !isShiftCurrentlyPressed {
                     selectedHandles.removeAll()
                     selectedPoints.removeAll()
                     visibleHandles.removeAll()
