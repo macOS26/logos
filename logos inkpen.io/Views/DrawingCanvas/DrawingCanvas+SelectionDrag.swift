@@ -258,6 +258,7 @@ extension DrawingCanvas {
             }
 
             document.updateTransformPanelValues()
+            document.viewState.objectUpdateTrigger &+= 1
 
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
