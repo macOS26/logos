@@ -6,6 +6,9 @@ struct SpatialIndex {
     private var grid: [GridCell: Set<UUID>] = [:]
     private var objectBounds: [UUID: CGRect] = [:] // Cache bounds for fast updates
 
+    // Per-layer spatial index cache for O(1) layer lookups
+    private var layerGrids: [UUID: [GridCell: [UUID]]] = [:] // layerID -> grid -> objectIDs in order
+
     struct GridCell: Hashable {
         let x: Int
         let y: Int
@@ -15,30 +18,43 @@ struct SpatialIndex {
     mutating func rebuild(from snapshot: DocumentSnapshot) {
         grid.removeAll(keepingCapacity: true)
         objectBounds.removeAll(keepingCapacity: true)
+        layerGrids.removeAll(keepingCapacity: true)
 
-        // Build index for all visible objects
-        for (id, object) in snapshot.objects {
-            guard object.isVisible else { continue }
+        // Build per-layer spatial indexes
+        for layer in snapshot.layers {
+            guard layer.isVisible else { continue }
 
-            // Check if layer is visible
-            if let layer = snapshot.layers.first(where: { $0.objectIDs.contains(id) }),
-               !layer.isVisible {
-                continue
+            var layerGrid: [GridCell: [UUID]] = [:]
+
+            for objectID in layer.objectIDs {
+                guard let object = snapshot.objects[objectID], object.isVisible else { continue }
+
+                let bounds = object.shape.bounds.applying(object.shape.transform)
+                objectBounds[objectID] = bounds
+
+                let cells = cellsForBounds(bounds)
+                for cell in cells {
+                    grid[cell, default: []].insert(objectID)
+                    layerGrid[cell, default: []].append(objectID)
+                }
             }
 
-            let bounds = object.shape.bounds.applying(object.shape.transform)
-            objectBounds[id] = bounds
-
-            let cells = cellsForBounds(bounds)
-            for cell in cells {
-                grid[cell, default: []].insert(id)
-            }
+            layerGrids[layer.id] = layerGrid
         }
     }
 
     /// Update index for a single object (more efficient than full rebuild)
     mutating func updateObject(_ objectID: UUID, in snapshot: DocumentSnapshot) {
-        // Remove old entries
+        // Find which layer this object belongs to
+        var targetLayerID: UUID?
+        for layer in snapshot.layers {
+            if layer.objectIDs.contains(objectID) {
+                targetLayerID = layer.id
+                break
+            }
+        }
+
+        // Remove old entries from global grid
         if let oldBounds = objectBounds[objectID] {
             let oldCells = cellsForBounds(oldBounds)
             for cell in oldCells {
@@ -46,17 +62,23 @@ struct SpatialIndex {
                 if grid[cell]?.isEmpty == true {
                     grid.removeValue(forKey: cell)
                 }
+
+                // Remove from all layer grids
+                for layerID in layerGrids.keys {
+                    layerGrids[layerID]?[cell]?.removeAll { $0 == objectID }
+                }
             }
         }
 
         // Add new entries if object exists and is visible
-        if let object = snapshot.objects[objectID], object.isVisible {
+        if let object = snapshot.objects[objectID], object.isVisible, let layerID = targetLayerID {
             let bounds = object.shape.bounds.applying(object.shape.transform)
             objectBounds[objectID] = bounds
 
             let cells = cellsForBounds(bounds)
             for cell in cells {
                 grid[cell, default: []].insert(objectID)
+                layerGrids[layerID, default: [:]][cell, default: []].append(objectID)
             }
         } else {
             objectBounds.removeValue(forKey: objectID)
@@ -87,39 +109,27 @@ struct SpatialIndex {
         return candidates
     }
 
-    /// Find the topmost object at a point using spatial index
+    /// Find the topmost object at a point using per-layer spatial cache (O(1))
     func hitTest(at point: CGPoint, in snapshot: DocumentSnapshot, testFunction: (VectorObject, CGPoint) -> Bool) -> VectorObject? {
-        // Get candidate objects from spatial index (O(1) lookup)
-        let candidateIDs = candidateObjectIDs(at: point)
+        let cell = GridCell(
+            x: Int(floor(point.x / gridSize)),
+            y: Int(floor(point.y / gridSize))
+        )
 
-        guard !candidateIDs.isEmpty else { return nil }
-
-        // Build list of candidates with their layer order
-        var candidates: [(object: VectorObject, layerIndex: Int, objectIndex: Int)] = []
-
-        for (layerIndex, layer) in snapshot.layers.enumerated().reversed() {
+        // Iterate layers from top to bottom (reversed)
+        for layer in snapshot.layers.reversed() {
             guard layer.isVisible else { continue }
 
-            for (objectIndex, objectID) in layer.objectIDs.enumerated().reversed() {
-                guard candidateIDs.contains(objectID),
-                      let object = snapshot.objects[objectID] else { continue }
+            // O(1) lookup in layer's spatial grid
+            guard let objectIDs = layerGrids[layer.id]?[cell] else { continue }
 
-                candidates.append((object, layerIndex, objectIndex))
-            }
-        }
+            // Test objects in reverse order (top to bottom within layer)
+            for objectID in objectIDs.reversed() {
+                guard let object = snapshot.objects[objectID] else { continue }
 
-        // Sort by layer order (already mostly sorted)
-        candidates.sort { a, b in
-            if a.layerIndex != b.layerIndex {
-                return a.layerIndex > b.layerIndex
-            }
-            return a.objectIndex > b.objectIndex
-        }
-
-        // Test candidates in order
-        for candidate in candidates {
-            if testFunction(candidate.object, point) {
-                return candidate.object
+                if testFunction(object, point) {
+                    return object
+                }
             }
         }
 
