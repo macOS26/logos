@@ -28,11 +28,13 @@ class VisibilityCommand: BaseCommand {
     }
     
     private func applyValues(_ values: [UUID: Bool], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
+
         for id in objectIDs {
             guard let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
                   let value = values[id] else { continue }
             var obj = document.unifiedObjects[index]
-            
+
             if case .shape(var shape) = obj.objectType {
                 switch property {
                 case .visibility:
@@ -42,7 +44,20 @@ class VisibilityCommand: BaseCommand {
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+
+                // Update snapshot
+                document.snapshot.objects[id] = obj
+
+                // Track affected layer
+                affectedLayers.insert(obj.layerIndex)
             }
+        }
+
+        // Trigger update for each affected layer
+        for layerIndex in affectedLayers {
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
+            let layerID = document.snapshot.layers[layerIndex].id
+            document.viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
         }
     }
 }
