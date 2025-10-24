@@ -183,10 +183,25 @@ extension DrawingCanvas {
             return true
         }
 
-        selectedObjectIDs.removeAll()
-        selectedObjectIDs.insert(shape.id)
-        selectedPoints.removeAll()
-        selectedHandles.removeAll()
+        let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+
+        if isShiftCurrentlyPressed {
+            // Shift-select: toggle shape selection
+            if selectedObjectIDs.contains(shape.id) {
+                selectedObjectIDs.remove(shape.id)
+            } else {
+                selectedObjectIDs.insert(shape.id)
+            }
+            // Keep existing points/handles when shift-selecting shapes
+        } else {
+            // Normal select: clear and select only this shape
+            selectedObjectIDs.removeAll()
+            selectedObjectIDs.insert(shape.id)
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            visibleHandles.removeAll()
+        }
+
         syncDirectSelectionWithDocument()
         return true
     }
