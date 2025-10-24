@@ -304,4 +304,22 @@ final class VectorDocument: ObservableObject, Codable {
         rebuildIndexCache()
         changeNotifier.notifyGeneralChange()
     }
+
+    // MARK: - Layer Update Triggers
+
+    /// Triggers updates for specific layers by their indices
+    func triggerLayerUpdates(for layerIndices: Set<Int>) {
+        for layerIndex in layerIndices {
+            guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { continue }
+            let layerID = snapshot.layers[layerIndex].id
+            viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
+        }
+    }
+
+    /// Triggers update for a single layer by index
+    func triggerLayerUpdate(for layerIndex: Int) {
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+        let layerID = snapshot.layers[layerIndex].id
+        viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
+    }
 }
