@@ -15,11 +15,10 @@ struct ProfessionalDirectSelectionView: View {
             let zoom = document.viewState.zoomLevel
             let offset = document.viewState.canvasOffset
 
-            // Apply drag delta to entire context if dragging selected objects
-            var ctx = context
-            if !selectedObjectIDs.isEmpty && dragPreviewDelta != .zero {
-                ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-            }
+            // Hide overlay during drag
+            guard dragPreviewDelta == .zero else { return }
+
+            let ctx = context
 
             // Draw outlines and ALL anchor points for selected shapes
             for objectID in selectedObjectIDs {
