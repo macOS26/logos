@@ -30,6 +30,8 @@ class DeleteObjectCommand: BaseCommand {
 
         // Also remove from viewState selection
         document.viewState.selectedObjectIDs = document.viewState.selectedObjectIDs.subtracting(idsToRemove)
+
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     override func undo(on document: VectorDocument) {
@@ -49,5 +51,7 @@ class DeleteObjectCommand: BaseCommand {
                 document.unifiedObjects.append(obj)
             }
         }
+
+        document.viewState.objectUpdateTrigger &+= 1
     }
 }
