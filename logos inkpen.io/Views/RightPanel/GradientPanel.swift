@@ -102,7 +102,8 @@ struct GradientFillSection: View {
                 updateOriginY: { newY in
                     localOriginY = newY
                     updateGradientOriginYOptimized(newY, applyToShapes: true, isLiveDrag: true)
-                }
+                },
+                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
             )
 
             GradientScaleControlView(
@@ -113,7 +114,8 @@ struct GradientFillSection: View {
                 getAspectRatio: getGradientAspectRatio,
                 updateAspectRatio: updateGradientAspectRatio,
                 getRadius: getGradientRadius,
-                updateRadius: updateGradientRadius
+                updateRadius: updateGradientRadius,
+                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
             )
 
             GradientPreviewAndStopsView(
@@ -630,6 +632,7 @@ struct GradientFillSection: View {
                     document.snapshot.objects[objectID] = updatedObject
                 }
             }
+            document.viewState.objectUpdateTrigger &+= 1
             return
         }
 
@@ -659,6 +662,7 @@ struct GradientFillSection: View {
                 document.snapshot.objects[objectID] = updatedObject
             }
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     func addGradientToSwatches() {
