@@ -130,15 +130,55 @@ struct GradientAngleControlView: View {
                 HStack(spacing: 8) {
                     Slider(value: Binding(
                         get: { angle },
-                        set: onAngleChange
+                        set: { newAngle in
+                            // Update snapshot directly
+                            for objectID in document.viewState.selectedObjectIDs {
+                                if let obj = document.snapshot.objects[objectID] {
+                                    var shape = obj.shape
+                                    if let fillStyle = shape.fillStyle, var fillGradient = fillStyle.gradient {
+                                        switch fillGradient {
+                                        case .linear(var linear):
+                                            linear.angle = newAngle
+                                            fillGradient = .linear(linear)
+                                        case .radial(var radial):
+                                            radial.angle = newAngle
+                                            fillGradient = .radial(radial)
+                                        }
+                                        shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
+                                        document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                                    }
+                                }
+                            }
+                            onAngleChange(newAngle)
+                        }
                     ), in: -180...180, onEditingChanged: { _ in
-                        
+
                     })
                     .controlSize(.regular)
 
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
-                        setValue: onAngleChange
+                        setValue: { newAngle in
+                            // Update snapshot directly
+                            for objectID in document.viewState.selectedObjectIDs {
+                                if let obj = document.snapshot.objects[objectID] {
+                                    var shape = obj.shape
+                                    if let fillStyle = shape.fillStyle, var fillGradient = fillStyle.gradient {
+                                        switch fillGradient {
+                                        case .linear(var linear):
+                                            linear.angle = newAngle
+                                            fillGradient = .linear(linear)
+                                        case .radial(var radial):
+                                            radial.angle = newAngle
+                                            fillGradient = .radial(radial)
+                                        }
+                                        shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
+                                        document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                                    }
+                                }
+                            }
+                            onAngleChange(newAngle)
+                        }
                     ))
                     .gradientTextField(width: 60)
                 }
