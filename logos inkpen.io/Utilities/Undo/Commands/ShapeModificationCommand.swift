@@ -37,5 +37,7 @@ class ShapeModificationCommand: BaseCommand {
                 document.snapshot.objects[id] = updatedObj
             }
         }
+
+        document.viewState.objectUpdateTrigger &+= 1
     }
 }

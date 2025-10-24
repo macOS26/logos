@@ -29,8 +29,12 @@ class ModifyPathCommand: BaseCommand {
                 shape.path = path
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+
+                // Update snapshot
+                document.snapshot.objects[objectID] = obj
             }
         }
 
+        document.viewState.objectUpdateTrigger &+= 1
     }
 }
