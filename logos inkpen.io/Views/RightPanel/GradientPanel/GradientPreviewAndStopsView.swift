@@ -168,7 +168,8 @@ struct GradientPreviewAndStopsView: View {
                         Spacer()
                         Button(action: addColorStop) {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundColor(Color.ui.primaryBlue)
+                                .foregroundColor(.green)
+                                .font(.system(size: 16))
                         }
                         .buttonStyle(BorderlessButtonStyle())
                     }

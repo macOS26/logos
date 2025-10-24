@@ -145,7 +145,8 @@ struct GradientFillSection: View {
             GradientApplyButtonView(
                 currentGradient: currentGradient,
                 onApply: applyGradientToSelectedShapes,
-                onAddSwatch: addGradientToSwatches
+                onAddSwatch: addGradientToSwatches,
+                addColorStop: addColorStop
             )
         }
         .padding()
