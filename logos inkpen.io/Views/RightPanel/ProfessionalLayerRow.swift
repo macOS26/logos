@@ -424,5 +424,7 @@ struct ProfessionalLayerRow: View {
             selectionRangeMin = nil
             selectionRangeMax = nil
         }
+
+        document.viewState.objectUpdateTrigger &+= 1
     }
 }
