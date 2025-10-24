@@ -40,271 +40,124 @@ extension DrawingCanvas {
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
         let pointSelectionRadius: Double = 6.0 / document.viewState.zoomLevel
         let handleSelectionRadius: Double = 4.0 / document.viewState.zoomLevel
-        let pointCount = shape.path.elements.filter {
-            switch $0 {
-            case .close: return false
-            default: return true
-            }
-        }.count
 
-        if pointCount >= 50 {
-            var points: [CGPoint] = []
-            var elementIndices: [Int] = []
+        // Always use Metal GPU for point selection
+        var points: [CGPoint] = []
+        var elementIndices: [Int] = []
 
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                switch element {
-                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                    points.append(CGPoint(x: to.x, y: to.y))
-                    elementIndices.append(elementIndex)
-                case .close:
-                    continue
-                }
-            }
-
-            if let nearestIndex = MetalComputeEngine.shared.findNearestPointGPU(
-                points: points,
-                tapLocation: location,
-                selectionRadius: pointSelectionRadius,
-                transform: shape.transform
-            ) {
-                let elementIndex = elementIndices[nearestIndex]
-                let pointID = PointID(
-                    shapeID: shape.id,
-                    pathIndex: 0,
-                    elementIndex: elementIndex
-                )
-
-                if isShiftPressed && selectedPoints.contains(pointID) {
-                    let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
-                    let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
-                    selectedPoints.remove(pointID)
-                    for coincidentPoint in coincidentPoints {
-                        selectedPoints.remove(coincidentPoint)
-                    }
-                    for endpointID in closedPathEndpoints {
-                        selectedPoints.remove(endpointID)
-                    }
-                } else {
-                    selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                }
-                return true
-            }
-        } else {
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                let point: VectorPoint
-
-                switch element {
-                case .move(let to), .line(let to):
-                    point = to
-                case .curve(let to, _, _):
-                    point = to
-                case .quadCurve(let to, _):
-                    point = to
-                case .close:
-                    continue
-                }
-
-                let pointLocation = CGPoint(x: point.x, y: point.y).applying(shape.transform)
-                if distance(location, pointLocation) <= pointSelectionRadius {
-                    let pointID = PointID(
-                        shapeID: shape.id,
-                        pathIndex: 0,
-                        elementIndex: elementIndex
-                    )
-
-                    if isShiftPressed && selectedPoints.contains(pointID) {
-                        let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
-                        let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
-                        selectedPoints.remove(pointID)
-                        for coincidentPoint in coincidentPoints {
-                            selectedPoints.remove(coincidentPoint)
-                        }
-                        for endpointID in closedPathEndpoints {
-                            selectedPoints.remove(endpointID)
-                        }
-                    } else {
-                        selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                    }
-                    return true
-                }
+        for (elementIndex, element) in shape.path.elements.enumerated() {
+            switch element {
+            case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                points.append(CGPoint(x: to.x, y: to.y))
+                elementIndices.append(elementIndex)
+            case .close:
+                continue
             }
         }
 
-        let handleCount = shape.path.elements.filter {
-            switch $0 {
-            case .curve: return true
-            case .quadCurve: return true
-            default: return false
+        guard !points.isEmpty else { return false }
+
+        if let nearestIndex = MetalComputeEngine.shared.findNearestPointGPU(
+            points: points,
+            tapLocation: location,
+            selectionRadius: pointSelectionRadius,
+            transform: shape.transform
+        ) {
+            let elementIndex = elementIndices[nearestIndex]
+            let pointID = PointID(
+                shapeID: shape.id,
+                pathIndex: 0,
+                elementIndex: elementIndex
+            )
+
+            if isShiftPressed && selectedPoints.contains(pointID) {
+                let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+                let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
+                selectedPoints.remove(pointID)
+                for coincidentPoint in coincidentPoints {
+                    selectedPoints.remove(coincidentPoint)
+                }
+                for endpointID in closedPathEndpoints {
+                    selectedPoints.remove(endpointID)
+                }
+            } else {
+                selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
             }
-        }.count
+            return true
+        }
 
-        if handleCount >= 50 {
-            var handlePoints: [CGPoint] = []
-            var anchorPoints: [CGPoint] = []
-            var handleMetadata: [(elementIndex: Int, handleType: HandleType)] = []
+        // Always use Metal GPU for handle selection
+        var handlePoints: [CGPoint] = []
+        var anchorPoints: [CGPoint] = []
+        var handleMetadata: [(elementIndex: Int, handleType: HandleType)] = []
 
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                switch element {
-                case .curve(let to, _, let control2):
+        for (elementIndex, element) in shape.path.elements.enumerated() {
+            switch element {
+            case .curve(let to, _, let control2):
+                let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                if !handle2Collapsed {
                     handlePoints.append(CGPoint(x: control2.x, y: control2.y))
                     anchorPoints.append(CGPoint(x: to.x, y: to.y))
                     handleMetadata.append((elementIndex: elementIndex, handleType: .control2))
+                }
 
-                    if elementIndex + 1 < shape.path.elements.count,
-                       case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                if elementIndex + 1 < shape.path.elements.count,
+                   case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                    let handle1Collapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                    if !handle1Collapsed {
                         handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
                         anchorPoints.append(CGPoint(x: to.x, y: to.y))
                         handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
-                    }
-
-                case .quadCurve(let to, let control):
-                    handlePoints.append(CGPoint(x: control.x, y: control.y))
-                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
-                    handleMetadata.append((elementIndex: elementIndex, handleType: .control1))
-
-                case .move(let to), .line(let to):
-                    if elementIndex + 1 < shape.path.elements.count,
-                       case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
-                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
-                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
-                        handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
-                    }
-
-                case .close:
-                    continue
-                }
-            }
-
-            if let nearestIndex = MetalComputeEngine.shared.findNearestHandleGPU(
-                handlePoints: handlePoints,
-                anchorPoints: anchorPoints,
-                tapLocation: location,
-                selectionRadius: handleSelectionRadius,
-                transform: shape.transform
-            ) {
-                let metadata = handleMetadata[nearestIndex]
-                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: metadata.elementIndex, handleType: metadata.handleType)
-
-                if isShiftPressed && selectedHandles.contains(handleID) {
-                    selectedHandles.remove(handleID)
-                } else {
-                    if !isShiftPressed {
-                        selectedHandles.removeAll()
-                        selectedPoints.removeAll()
-                        visibleHandles.removeAll()
-                    }
-                    selectedHandles.insert(handleID)
-
-                    selectCoincidentHandles(for: handleID, shape: shape)
-                }
-                return true
-            }
-        } else {
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                switch element {
-                case .curve(let to, _, let control2):
-                let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-                if !handle2Collapsed {
-                    let handle2Location = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
-                    if distance(location, handle2Location) <= handleSelectionRadius {
-                        let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
-                        if isShiftPressed && selectedHandles.contains(handleID) {
-                            selectedHandles.remove(handleID)
-                        } else {
-                            if !isShiftPressed {
-                                selectedHandles.removeAll()
-                                selectedPoints.removeAll()
-                                visibleHandles.removeAll()
-                            }
-                            selectedHandles.insert(handleID)
-
-                            selectCoincidentHandles(for: handleID, shape: shape)
-
-                        }
-                        return true
-                    }
-                }
-
-                if elementIndex + 1 < shape.path.elements.count {
-                    if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
-                        let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                        if !outgoingHandleCollapsed {
-                            let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y).applying(shape.transform)
-                            if distance(location, outgoingHandleLocation) <= handleSelectionRadius {
-                                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
-                                if isShiftPressed && selectedHandles.contains(handleID) {
-                                    selectedHandles.remove(handleID)
-                                } else {
-                                    if !isShiftPressed {
-                                        selectedHandles.removeAll()
-                                        selectedPoints.removeAll()
-                                        visibleHandles.removeAll()
-                                    }
-                                    selectedHandles.insert(handleID)
-
-                                    selectCoincidentHandles(for: handleID, shape: shape)
-
-                                }
-                                return true
-                            }
-                        }
                     }
                 }
 
             case .quadCurve(let to, let control):
                 let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
                 if !quadHandleCollapsed {
-                    let handleLocation = CGPoint(x: control.x, y: control.y).applying(shape.transform)
-                    if distance(location, handleLocation) <= handleSelectionRadius {
-                        let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
-                        if isShiftPressed && selectedHandles.contains(handleID) {
-                            selectedHandles.remove(handleID)
-                        } else {
-                            if !isShiftPressed {
-                                selectedHandles.removeAll()
-                                selectedPoints.removeAll()
-                                visibleHandles.removeAll()
-                            }
-                            selectedHandles.insert(handleID)
-
-                            selectCoincidentHandles(for: handleID, shape: shape)
-
-                        }
-                        return true
-                    }
+                    handlePoints.append(CGPoint(x: control.x, y: control.y))
+                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                    handleMetadata.append((elementIndex: elementIndex, handleType: .control1))
                 }
 
             case .move(let to), .line(let to):
-                if elementIndex + 1 < shape.path.elements.count {
-                    if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
-                        let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                        if !outgoingHandleCollapsed {
-                            let handleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y).applying(shape.transform)
-                            if distance(location, handleLocation) <= handleSelectionRadius {
-                                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
-                                if isShiftPressed && selectedHandles.contains(handleID) {
-                                    selectedHandles.remove(handleID)
-                                } else {
-                                    if !isShiftPressed {
-                                        selectedHandles.removeAll()
-                                        selectedPoints.removeAll()
-                                        visibleHandles.removeAll()
-                                    }
-                                    selectedHandles.insert(handleID)
-
-                                    selectCoincidentHandles(for: handleID, shape: shape)
-
-                                }
-                                return true
-                            }
-                        }
+                if elementIndex + 1 < shape.path.elements.count,
+                   case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                    if !outgoingHandleCollapsed {
+                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
+                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                        handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
                     }
                 }
 
-                case .close:
-                    continue
-                }
+            case .close:
+                continue
             }
+        }
+
+        if !handlePoints.isEmpty, let nearestIndex = MetalComputeEngine.shared.findNearestHandleGPU(
+            handlePoints: handlePoints,
+            anchorPoints: anchorPoints,
+            tapLocation: location,
+            selectionRadius: handleSelectionRadius,
+            transform: shape.transform
+        ) {
+            let metadata = handleMetadata[nearestIndex]
+            let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: metadata.elementIndex, handleType: metadata.handleType)
+
+            if isShiftPressed && selectedHandles.contains(handleID) {
+                selectedHandles.remove(handleID)
+            } else {
+                if !isShiftPressed {
+                    selectedHandles.removeAll()
+                    selectedPoints.removeAll()
+                    visibleHandles.removeAll()
+                }
+                selectedHandles.insert(handleID)
+
+                selectCoincidentHandles(for: handleID, shape: shape)
+            }
+            return true
         }
 
         return false
