@@ -14,28 +14,26 @@ struct ProfessionalDirectSelectionView: View {
             let zoom = document.viewState.zoomLevel
             let offset = document.viewState.canvasOffset
 
-            // Draw blue outlines for selected shapes
+            // Draw outlines and ALL anchor points for selected shapes
             for objectID in selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID],
                       case .shape(let shape) = object.objectType else { continue }
 
                 drawOutline(shape, context: context, zoom: zoom, offset: offset)
-            }
 
-            // Draw selected points
-            for pointID in selectedPoints {
-                guard let object = document.snapshot.objects[pointID.shapeID],
-                      case .shape(let shape) = object.objectType,
-                      pointID.elementIndex < shape.path.elements.count else { continue }
+                // Draw ALL anchor points for this shape
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    if let point = extractPoint(element) {
+                        let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                        let isSelected = selectedPoints.contains(pointID)
 
-                let element = shape.path.elements[pointID.elementIndex]
-                if let point = extractPoint(element) {
-                    let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
-                    let screenPos = CGPoint(x: transformed.x * zoom + offset.x, y: transformed.y * zoom + offset.y)
+                        let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+                        let screenPos = CGPoint(x: transformed.x * zoom + offset.x, y: transformed.y * zoom + offset.y)
 
-                    let rect = CGRect(x: screenPos.x - 4, y: screenPos.y - 4, width: 8, height: 8)
-                    context.fill(Path(rect), with: .color(.blue))
-                    context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0)
+                        let rect = CGRect(x: screenPos.x - 4, y: screenPos.y - 4, width: 8, height: 8)
+                        context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0)
+                    }
                 }
             }
 
