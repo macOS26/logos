@@ -61,5 +61,6 @@ class TransformCommand: BaseCommand {
             }
         }
 
+        document.viewState.objectUpdateTrigger &+= 1
     }
 }
