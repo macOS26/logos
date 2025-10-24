@@ -17,340 +17,158 @@ struct ProfessionalDirectSelectionView: View {
     }
 
     var body: some View {
-        ZStack {
-            ForEach(Array(document.snapshot.objects.values), id: \.id) { object in
-                if case .shape(let shape) = object.objectType {
-                    if shape.isVisible && selectedObjectIDs.contains(shape.id) {
-                        if shape.isGroupContainer {
-                            ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
-                                let groupedShape = shape.groupedShapes[groupedShapeIndex]
-                                if groupedShape.isVisible {
-                                    professionalBezierDisplay(for: groupedShape)
-                                }
-                            }
-                        } else {
-                            professionalBezierDisplay(for: shape)
+        Canvas { context, size in
+            let zoom = document.viewState.zoomLevel
+            let offset = document.viewState.canvasOffset
+
+            // Only iterate through selected objects (not all objects!)
+            for objectID in selectedObjectIDs {
+                guard let object = document.snapshot.objects[objectID],
+                      case .shape(let shape) = object.objectType,
+                      shape.isVisible else { continue }
+
+                if shape.isGroupContainer {
+                    for groupedShape in shape.groupedShapes where groupedShape.isVisible {
+                        drawShape(groupedShape, context: context, zoom: zoom, offset: offset)
+                    }
+                } else {
+                    drawShape(shape, context: context, zoom: zoom, offset: offset)
+                }
+            }
+        }
+    }
+
+    private func drawShape(_ shape: VectorShape, context: GraphicsContext, zoom: CGFloat, offset: CGPoint) {
+        var ctx = context
+
+        // Draw blue outline
+        var outlinePath = Path()
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                outlinePath.move(to: CGPoint(x: to.x, y: to.y))
+            case .line(let to):
+                outlinePath.addLine(to: CGPoint(x: to.x, y: to.y))
+            case .curve(let to, let c1, let c2):
+                outlinePath.addCurve(to: CGPoint(x: to.x, y: to.y), control1: CGPoint(x: c1.x, y: c1.y), control2: CGPoint(x: c2.x, y: c2.y))
+            case .quadCurve(let to, let control):
+                outlinePath.addQuadCurve(to: CGPoint(x: to.x, y: to.y), control: CGPoint(x: control.x, y: control.y))
+            case .close:
+                outlinePath.closeSubpath()
+            }
+        }
+
+        ctx.concatenate(shape.transform)
+        ctx.scaleBy(x: zoom, y: zoom)
+        ctx.translateBy(x: offset.x / zoom, y: offset.y / zoom)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.0 / zoom)
+
+        // Draw all points and handles
+        for (elementIndex, element) in shape.path.elements.enumerated() {
+            let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+
+            // Draw anchor point
+            if let point = extractPoint(element) {
+                let rawLoc = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
+                let transformed = rawLoc.applying(shape.transform)
+                let screenPos = CGPoint(x: transformed.x * zoom + offset.x, y: transformed.y * zoom + offset.y)
+
+                let isSelected = selectedPoints.contains(pointID)
+                let hasCoincident = !findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance).isEmpty
+
+                let rect = CGRect(x: screenPos.x - 4, y: screenPos.y - 4, width: 8, height: 8)
+                context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
+                context.stroke(Path(rect), with: .color(hasCoincident ? .orange : .blue), lineWidth: hasCoincident ? 2.0 : 1.0)
+            }
+
+            // Draw handles for curves
+            switch element {
+            case .curve(let to, _, let control2):
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let isPointSelected = selectedPoints.contains(pointID)
+                let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
+                let anyCoincidentSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
+
+                let incomingHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
+                let isIncomingVisible = selectedHandles.contains(incomingHandleID) || visibleHandles.contains(incomingHandleID)
+
+                var outgoingHandleID: HandleID?
+                var isOutgoingVisible = false
+                if elementIndex + 1 < shape.path.elements.count, case .curve = shape.path.elements[elementIndex + 1] {
+                    outgoingHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
+                    isOutgoingVisible = selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)
+                }
+
+                let shouldShow = isPointSelected || anyCoincidentSelected || isIncomingVisible || isOutgoingVisible
+
+                if shouldShow {
+                    let anchorLoc = CGPoint(x: to.x, y: to.y)
+                    let control2Loc = CGPoint(x: control2.x, y: control2.y)
+
+                    // Incoming handle
+                    if abs(control2.x - to.x) >= 0.1 || abs(control2.y - to.y) >= 0.1 {
+                        drawHandle(from: anchorLoc, to: control2Loc, shape: shape, isSelected: selectedHandles.contains(incomingHandleID), context: context, zoom: zoom, offset: offset)
+                    }
+
+                    // Outgoing handle
+                    if elementIndex + 1 < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                        if abs(nextControl1.x - to.x) >= 0.1 || abs(nextControl1.y - to.y) >= 0.1 {
+                            let control1Loc = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                            drawHandle(from: anchorLoc, to: control1Loc, shape: shape, isSelected: selectedHandles.contains(outgoingHandleID!), context: context, zoom: zoom, offset: offset)
                         }
                     }
                 }
-            }
 
-            ForEach(Array(selectedHandles), id: \.self) { handleID in
-                if let handleInfo = getHandleInfo(handleID),
-                   let shape = getShapeForHandle(handleID) {
-                    Path { path in
-                        path.move(to: handleInfo.pointLocation)
-                        path.addLine(to: handleInfo.handleLocation)
+            case .move(let to), .line(let to):
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let isPointSelected = selectedPoints.contains(pointID)
+                let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
+                let anyCoincidentSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
+
+                var outgoingHandleID: HandleID?
+                var isOutgoingVisible = false
+                if elementIndex + 1 < shape.path.elements.count, case .curve = shape.path.elements[elementIndex + 1] {
+                    outgoingHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
+                    isOutgoingVisible = selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)
+                }
+
+                let shouldShow = isPointSelected || anyCoincidentSelected || isOutgoingVisible
+
+                if shouldShow, elementIndex + 1 < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                    let anchorLoc = CGPoint(x: to.x, y: to.y)
+                    let control1Loc = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                    if abs(nextControl1.x - to.x) >= 0.1 || abs(nextControl1.y - to.y) >= 0.1 {
+                        drawHandle(from: anchorLoc, to: control1Loc, shape: shape, isSelected: selectedHandles.contains(outgoingHandleID!), context: context, zoom: zoom, offset: offset)
                     }
-                    .stroke(Color.blue.opacity(0.5), lineWidth: 1.0 / document.viewState.zoomLevel)
-                    .transformEffect(shape.transform)
-                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
-
-                    let transformedHandle = CGPoint(x: handleInfo.handleLocation.x, y: handleInfo.handleLocation.y).applying(shape.transform)
-                    Circle()
-                        .fill(Color.orange)
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 8, height: 8)
-                        .position(CGPoint(
-                            x: transformedHandle.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-                            y: transformedHandle.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
-                        ))
                 }
-            }
 
-            ForEach(Array(selectedPoints), id: \.self) { pointID in
-                if let pointLocation = getPointLocation(pointID),
-                   let shape = getShapeForPoint(pointID) {
-                    let transformedPoint = CGPoint(x: pointLocation.x, y: pointLocation.y).applying(shape.transform)
-                    Rectangle()
-                        .fill(Color.orange)
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 10, height: 10)
-                        .position(CGPoint(
-                            x: transformedPoint.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-                            y: transformedPoint.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
-                        ))
-                }
+            default:
+                break
             }
         }
     }
 
-    @ViewBuilder
-    private func professionalBezierDisplay(for shape: VectorShape) -> some View {
-        ZStack {
-            // Draw blue 1pt stroke around the selected shape
-            Path { path in
-                for element in shape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        path.move(to: CGPoint(x: to.x, y: to.y))
-                    case .line(let to):
-                        path.addLine(to: CGPoint(x: to.x, y: to.y))
-                    case .curve(let to, let c1, let c2):
-                        path.addCurve(
-                            to: CGPoint(x: to.x, y: to.y),
-                            control1: CGPoint(x: c1.x, y: c1.y),
-                            control2: CGPoint(x: c2.x, y: c2.y)
-                        )
-                    case .quadCurve(let to, let control):
-                        path.addQuadCurve(
-                            to: CGPoint(x: to.x, y: to.y),
-                            control: CGPoint(x: control.x, y: control.y)
-                        )
-                    case .close:
-                        path.closeSubpath()
-                    }
-                }
-            }
-            .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
-            .transformEffect(shape.transform)
-            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
-            .allowsHitTesting(false)
-
-            ForEach(Array(shape.path.elements.enumerated()), id: \.offset) { elementIndex, element in
-                bezierElementView(shape: shape, elementIndex: elementIndex, element: element)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func bezierElementView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
-        Group {
-            bezierHandlesView(shape: shape, elementIndex: elementIndex, element: element)
-
-            bezierAnchorPointView(shape: shape, elementIndex: elementIndex, element: element)
-        }
-    }
-
-    @ViewBuilder
-    private func bezierHandlesView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
-        switch element {
-        case .curve(let to, _, let control2):
-            bezierCurveHandles(shape: shape, elementIndex: elementIndex, to: to, control2: control2)
-        case .move(let to), .line(let to):
-            bezierLineHandles(shape: shape, elementIndex: elementIndex, to: to)
-        default:
-            EmptyView()
-        }
-    }
-
-    private func bezierCurveHandles(shape: VectorShape, elementIndex: Int, to: VectorPoint, control2: VectorPoint) -> some View {
-        let pointID = PointID(
-            shapeID: shape.id,
-            pathIndex: 0,
-            elementIndex: elementIndex
-        )
-        let isPointSelected = selectedPoints.contains(pointID)
-        let incomingHandleID = HandleID(
-            shapeID: shape.id,
-            pathIndex: 0,
-            elementIndex: elementIndex,
-            handleType: .control2
-        )
-        let isIncomingHandleSelected = selectedHandles.contains(incomingHandleID)
-        let isIncomingHandleVisible = selectedHandles.contains(incomingHandleID) || visibleHandles.contains(incomingHandleID)
-        let outgoingHandleID: HandleID? = {
-            if elementIndex + 1 < shape.path.elements.count {
-                return HandleID(
-                    shapeID: shape.id,
-                    pathIndex: 0,
-                    elementIndex: elementIndex + 1,
-                    handleType: .control1
-                )
-            }
-            return nil
-        }()
-        let isOutgoingHandleSelected = outgoingHandleID != nil ? selectedHandles.contains(outgoingHandleID!) : false
-        let isOutgoingHandleVisible = outgoingHandleID != nil ? (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)) : false
-        let shouldShowBothHandlesAtThisPoint = isIncomingHandleVisible || isOutgoingHandleVisible
-
-        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
-        let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
-        let anyCoincidentHandleSelected: Bool = {
-            if shape.path.elements.last == .close {
-                let lastPointIndex = shape.path.elements.count - 2
-                if elementIndex == 0 {
-                    let lastPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex, handleType: .control2)
-                    let lastPointOutgoingHandle: HandleID? = lastPointIndex + 1 < shape.path.elements.count ?
-                        HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex + 1, handleType: .control1) : nil
-
-                    return selectedHandles.contains(lastPointIncomingHandle) || visibleHandles.contains(lastPointIncomingHandle) ||
-                           (lastPointOutgoingHandle != nil && (selectedHandles.contains(lastPointOutgoingHandle!) || visibleHandles.contains(lastPointOutgoingHandle!)))
-                } else if elementIndex == lastPointIndex {
-                    let firstPointOutgoingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 1, handleType: .control1)
-                    var firstPointHasIncomingHandle = false
-                    if case .curve = shape.path.elements[0] {
-                        let firstPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 0, handleType: .control2)
-                        firstPointHasIncomingHandle = selectedHandles.contains(firstPointIncomingHandle) || visibleHandles.contains(firstPointIncomingHandle)
-                    }
-
-                    return selectedHandles.contains(firstPointOutgoingHandle) || visibleHandles.contains(firstPointOutgoingHandle) || firstPointHasIncomingHandle
-                }
-            }
-            return false
-        }()
-
-        let shouldShowHandles = isPointSelected || anyCoincidentPointSelected || shouldShowBothHandlesAtThisPoint || anyCoincidentHandleSelected
-
-        return Group {
-            if shouldShowHandles {
-            let anchorLocation = CGPoint(x: to.x, y: to.y)
-            let control2Location = CGPoint(x: control2.x, y: control2.y)
-            let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-            if !incomingHandleCollapsed {
-                bezierHandleLineAndCircle(from: anchorLocation, to: control2Location, shape: shape, isSelected: isIncomingHandleSelected)
-            }
-
-            if elementIndex + 1 < shape.path.elements.count {
-                let nextElement = shape.path.elements[elementIndex + 1]
-                if case .curve(_, let nextControl1, _) = nextElement {
-                    let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                    if !outgoingHandleCollapsed {
-                        bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape, isSelected: isOutgoingHandleSelected)
-                    }
-                }
-            }
-        }
-        }
-    }
-
-    private func bezierLineHandles(shape: VectorShape, elementIndex: Int, to: VectorPoint) -> some View {
-        let pointID = PointID(
-            shapeID: shape.id,
-            pathIndex: 0,
-            elementIndex: elementIndex
-        )
-        let isPointSelected = selectedPoints.contains(pointID)
-        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
-        let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
-        let outgoingHandleID: HandleID? = {
-            if elementIndex + 1 < shape.path.elements.count {
-                let nextElement = shape.path.elements[elementIndex + 1]
-                if case .curve = nextElement {
-                    return HandleID(
-                        shapeID: shape.id,
-                        pathIndex: 0,
-                        elementIndex: elementIndex + 1,
-                        handleType: .control1
-                    )
-                }
-            }
-            return nil
-        }()
-
-        let isOutgoingHandleSelected = outgoingHandleID != nil && selectedHandles.contains(outgoingHandleID!)
-        let isOutgoingHandleVisible = outgoingHandleID != nil && (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!))
-        let anyCoincidentHandleSelected: Bool = {
-            if shape.path.elements.last == .close {
-                let lastPointIndex = shape.path.elements.count - 2
-                if elementIndex == 0 {
-                    if case .curve = shape.path.elements[lastPointIndex] {
-                        let lastPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex, handleType: .control2)
-                        if selectedHandles.contains(lastPointIncomingHandle) || visibleHandles.contains(lastPointIncomingHandle) {
-                            return true
-                        }
-                    }
-                    if lastPointIndex + 1 < shape.path.elements.count {
-                        if case .curve = shape.path.elements[lastPointIndex + 1] {
-                            let lastPointOutgoingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex + 1, handleType: .control1)
-                            if selectedHandles.contains(lastPointOutgoingHandle) || visibleHandles.contains(lastPointOutgoingHandle) {
-                                return true
-                            }
-                        }
-                    }
-                } else if elementIndex == lastPointIndex {
-                    if case .curve = shape.path.elements[0] {
-                        let firstPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 0, handleType: .control2)
-                        if selectedHandles.contains(firstPointIncomingHandle) || visibleHandles.contains(firstPointIncomingHandle) {
-                            return true
-                        }
-                    }
-                    if shape.path.elements.count > 1 {
-                        if case .curve = shape.path.elements[1] {
-                            let firstPointOutgoingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 1, handleType: .control1)
-                            if selectedHandles.contains(firstPointOutgoingHandle) || visibleHandles.contains(firstPointOutgoingHandle) {
-                                return true
-                            }
-                        }
-                    }
-                }
-            }
-            return false
-        }()
-
-        let shouldShowHandles = isPointSelected || anyCoincidentPointSelected || isOutgoingHandleVisible || anyCoincidentHandleSelected
-
-        return Group {
-            if shouldShowHandles {
-            let anchorLocation = CGPoint(x: to.x, y: to.y)
-
-            if elementIndex + 1 < shape.path.elements.count {
-                let nextElement = shape.path.elements[elementIndex + 1]
-                if case .curve(_, let nextControl1, _) = nextElement {
-                    let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                    if !outgoingHandleCollapsed {
-                        bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape, isSelected: isOutgoingHandleSelected)
-                    }
-                }
-            }
-        }
-        }
-    }
-
-    @ViewBuilder
-    private func bezierHandleLineAndCircle(from: CGPoint, to: CGPoint, shape: VectorShape, isSelected: Bool = false) -> some View {
+    private func drawHandle(from: CGPoint, to: CGPoint, shape: VectorShape, isSelected: Bool, context: GraphicsContext, zoom: CGFloat, offset: CGPoint) {
         let offsetFrom = CGPoint(x: from.x + dragOffset.x, y: from.y + dragOffset.y)
         let offsetTo = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
 
-        Path { path in
-            path.move(to: offsetFrom)
-            path.addLine(to: offsetTo)
-        }
-        .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
-        .transformEffect(shape.transform)
-        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+        let transformedFrom = offsetFrom.applying(shape.transform)
+        let transformedTo = offsetTo.applying(shape.transform)
 
-        let transformedTo = CGPoint(x: offsetTo.x, y: offsetTo.y).applying(shape.transform)
-        Circle()
-            .fill(isSelected ? Color.orange : Color.blue)
-            .stroke(Color.white, lineWidth: 0.5)
-            .frame(width: 6, height: 6)
-            .position(CGPoint(
-                x: transformedTo.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-                y: transformedTo.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
-            ))
+        let screenFrom = CGPoint(x: transformedFrom.x * zoom + offset.x, y: transformedFrom.y * zoom + offset.y)
+        let screenTo = CGPoint(x: transformedTo.x * zoom + offset.x, y: transformedTo.y * zoom + offset.y)
+
+        var linePath = Path()
+        linePath.move(to: screenFrom)
+        linePath.addLine(to: screenTo)
+        context.stroke(linePath, with: .color(.blue), lineWidth: 1.0)
+
+        let circle = Circle().path(in: CGRect(x: screenTo.x - 3, y: screenTo.y - 3, width: 6, height: 6))
+        context.fill(circle, with: .color(isSelected ? .orange : .blue))
+        context.stroke(circle, with: .color(.white), lineWidth: 0.5)
     }
 
-    @ViewBuilder
-    private func bezierAnchorPointView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
-        if let point = extractPointFromElement(element) {
-            let rawPointLocation = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
-            let transformedPointLocation = rawPointLocation.applying(shape.transform)
-            let pointID = PointID(
-                shapeID: shape.id,
-                pathIndex: 0,
-                elementIndex: elementIndex
-            )
-            let isPointSelected = selectedPoints.contains(pointID)
-            let hasCoincidentPoints = !findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance).isEmpty
-
-            Rectangle()
-                .fill(isPointSelected ? Color.blue : Color.white)
-                .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
-                .frame(width: 8, height: 8)
-                .position(CGPoint(
-                    x: transformedPointLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-                    y: transformedPointLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
-                ))
-        }
-    }
-
-    private func extractPointFromElement(_ element: PathElement) -> VectorPoint? {
+    private func extractPoint(_ element: PathElement) -> VectorPoint? {
         switch element {
         case .move(let to), .line(let to):
             return to
@@ -359,111 +177,5 @@ struct ProfessionalDirectSelectionView: View {
         case .close:
             return nil
         }
-    }
-
-    private func getAnchorPointForHandle(_ handleID: HandleID) -> Int? {
-        if handleID.handleType == .control1 && handleID.elementIndex > 0 {
-            return handleID.elementIndex - 1
-        } else if handleID.handleType == .control2 {
-            return handleID.elementIndex
-        }
-        return nil
-    }
-
-    private func getPointLocation(_ pointID: PointID) -> CGPoint? {
-        if let object = document.snapshot.objects[pointID.shapeID],
-           case .shape(let shape) = object.objectType {
-                    if pointID.elementIndex < shape.path.elements.count {
-                        let element = shape.path.elements[pointID.elementIndex]
-
-                        switch element {
-                        case .move(let to), .line(let to):
-                            return CGPoint(x: to.x, y: to.y)
-                        case .curve(let to, _, _):
-                            return CGPoint(x: to.x, y: to.y)
-                        case .quadCurve(let to, _):
-                            return CGPoint(x: to.x, y: to.y)
-                        case .close:
-                            return nil
-                        }
-                    }
-        }
-        return nil
-    }
-
-    private func getHandleInfo(_ handleID: HandleID) -> (pointLocation: CGPoint, handleLocation: CGPoint)? {
-        if let object = document.snapshot.objects[handleID.shapeID],
-           case .shape(let shape) = object.objectType {
-            return getHandleInfoFromShape(shape, handleID: handleID)
-        }
-        return nil
-    }
-
-    private func getHandleInfoFromShape(_ shape: VectorShape, handleID: HandleID) -> (pointLocation: CGPoint, handleLocation: CGPoint)? {
-        if handleID.elementIndex < shape.path.elements.count {
-            let element = shape.path.elements[handleID.elementIndex]
-
-            switch element {
-            case .curve(let to, let control1, let control2):
-                if handleID.handleType == .control1 {
-                    if handleID.elementIndex > 0 {
-                        let prevElement = shape.path.elements[handleID.elementIndex - 1]
-                        switch prevElement {
-                        case .move(let prevTo), .line(let prevTo):
-                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
-                            let handleLocation = CGPoint(x: control1.x + dragOffset.x, y: control1.y + dragOffset.y)
-                            return (pointLocation, handleLocation)
-                        case .curve(let prevTo, _, _):
-                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
-                            let handleLocation = CGPoint(x: control1.x + dragOffset.x, y: control1.y + dragOffset.y)
-                            return (pointLocation, handleLocation)
-                        default:
-                            return nil
-                        }
-                    }
-                } else {
-                    let pointLocation = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
-                    let handleLocation = CGPoint(x: control2.x + dragOffset.x, y: control2.y + dragOffset.y)
-                    return (pointLocation, handleLocation)
-                }
-            case .quadCurve(let to, let control):
-                if handleID.handleType == .control1 {
-                    if handleID.elementIndex > 0 {
-                        let prevElement = shape.path.elements[handleID.elementIndex - 1]
-                        switch prevElement {
-                        case .move(let prevTo), .line(let prevTo), .curve(let prevTo, _, _):
-                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
-                            let handleLocation = CGPoint(x: control.x + dragOffset.x, y: control.y + dragOffset.y)
-                            return (pointLocation, handleLocation)
-                        default:
-                            return nil
-                        }
-                    }
-                } else {
-                    let pointLocation = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
-                    let handleLocation = CGPoint(x: control.x + dragOffset.x, y: control.y + dragOffset.y)
-                    return (pointLocation, handleLocation)
-                }
-            default:
-                return nil
-            }
-        }
-        return nil
-    }
-
-    private func getShapeForHandle(_ handleID: HandleID) -> VectorShape? {
-        if let object = document.snapshot.objects[handleID.shapeID],
-           case .shape(let shape) = object.objectType {
-            return shape
-        }
-        return nil
-    }
-
-    private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        if let object = document.snapshot.objects[pointID.shapeID],
-           case .shape(let shape) = object.objectType {
-            return shape
-        }
-        return nil
     }
 }
