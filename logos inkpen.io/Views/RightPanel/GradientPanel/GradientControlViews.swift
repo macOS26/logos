@@ -197,6 +197,7 @@ struct GradientOriginControlView: View {
     @Binding var originY: Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
+    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -249,6 +250,7 @@ struct GradientScaleControlView: View {
     let updateAspectRatio: (Double) -> Void
     let getRadius: (VectorGradient) -> Double
     let updateRadius: (Double) -> Void
+    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {

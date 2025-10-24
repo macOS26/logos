@@ -142,6 +142,7 @@ class PaintSelectionOperations {
                 document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     /// Update fill opacity for selected objects with undo/redo support
@@ -228,6 +229,7 @@ class PaintSelectionOperations {
                 document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
             }
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     /// Update stroke opacity for selected objects (live update during dragging)
@@ -241,6 +243,7 @@ class PaintSelectionOperations {
                 document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     /// Update stroke placement for selected objects
