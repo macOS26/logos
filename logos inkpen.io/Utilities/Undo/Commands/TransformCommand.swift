@@ -63,11 +63,6 @@ class TransformCommand: BaseCommand {
             }
         }
 
-        // Trigger update for each affected layer
-        for layerIndex in affectedLayers {
-            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
-            let layerID = document.snapshot.layers[layerIndex].id
-            document.viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
-        }
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
