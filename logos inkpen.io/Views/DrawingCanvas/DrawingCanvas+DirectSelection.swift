@@ -7,8 +7,8 @@ extension DrawingCanvas {
         for shapeID in selectedObjectIDs {
             if let object = document.snapshot.objects[shapeID],
                case .shape(let shape) = object.objectType {
-                // Find the layer containing this object
-                let layer = document.snapshot.layers.first { $0.objectIDs.contains(shapeID) }
+                // Use O(1) layer index lookup
+                let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
 
                 if layer?.isLocked == true || shape.isLocked {
                     selectedObjectIDs.removeAll()
@@ -311,83 +311,29 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Iterate layers in reverse order (top to bottom)
-        for layer in document.snapshot.layers.reversed() {
-            if !layer.isVisible || layer.isLocked { continue }
-
-            // Get objects for this layer in reverse order
-            for objectID in layer.objectIDs.reversed() {
-                guard let object = document.snapshot.objects[objectID],
-                      object.isVisible else { continue }
-
-                let shape = object.shape
-
-                var isHit = false
-                let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-
-                if isBackgroundShape {
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    isHit = shapeBounds.contains(location)
-                } else if shape.isGroupContainer {
-                    for groupedShape in shape.groupedShapes {
-                        if !groupedShape.isVisible { continue }
-
-                        let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
-
-                        if isStrokeOnly && groupedShape.strokeStyle != nil {
-                            let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
-                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
-                                isHit = true
-                                break
-                            }
-                        } else {
-                            let basePathTolerance: Double = 8.0
-                            let pathTolerance = max(2.0, basePathTolerance / document.viewState.zoomLevel)
-
-                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: pathTolerance) {
-                                isHit = true
-                                break
-                            }
-                        }
-                    }
-                } else {
-                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
-
-                    if isStrokeOnly && shape.strokeStyle != nil {
-                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                    } else {
-                        let basePathTolerance: Double = 8.0
-                        let pathTolerance = max(2.0, basePathTolerance / document.viewState.zoomLevel)
-
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: pathTolerance)
-                    }
-                }
-
-                if isHit {
-                    if layer.isLocked || shape.isLocked {
-
-                        selectedObjectIDs.removeAll()
-                        selectedPoints.removeAll()
-                        selectedHandles.removeAll()
-                        syncDirectSelectionWithDocument()
-                        return true
-                    }
-
-                    selectedObjectIDs.removeAll()
-                    selectedObjectIDs.insert(shape.id)
-                    selectedPoints.removeAll()
-                    selectedHandles.removeAll()
-                    syncDirectSelectionWithDocument()
-
-                    return true
-                }
-            }
+        // Use same optimized hit test as selection tool
+        guard let hitObject = findObjectAtLocationOptimized(location) else {
+            return false
         }
 
-        return false
+        let shape = hitObject.shape
+
+        // Check if locked using O(1) index lookup
+        let layer = hitObject.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[hitObject.layerIndex] : nil
+        if layer?.isLocked == true || shape.isLocked {
+            selectedObjectIDs.removeAll()
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            syncDirectSelectionWithDocument()
+            return true
+        }
+
+        selectedObjectIDs.removeAll()
+        selectedObjectIDs.insert(shape.id)
+        selectedPoints.removeAll()
+        selectedHandles.removeAll()
+        syncDirectSelectionWithDocument()
+        return true
     }
 
     internal func handleDirectSelectionTap(at location: CGPoint) {

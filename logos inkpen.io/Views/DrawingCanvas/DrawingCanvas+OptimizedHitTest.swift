@@ -14,9 +14,9 @@ extension DrawingCanvas {
                 return false
             }
 
-            // Check if layer is locked
-            if let layer = document.snapshot.layers.first(where: { $0.objectIDs.contains(object.id) }),
-               layer.isLocked {
+            // Check if layer is locked using O(1) index lookup
+            let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
+            if layer?.isLocked == true {
                 return false
             }
 
