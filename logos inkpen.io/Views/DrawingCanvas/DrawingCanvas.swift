@@ -197,8 +197,13 @@ struct DrawingCanvas: View {
                     spatialIndex.rebuild(from: document.snapshot)
                     rebuildLockedObjectsCache()
                 }
+                .onChange(of: document.viewState.objectUpdateTrigger) { _, _ in
+                    // Rebuild spatial index when objects are updated (moved, transformed, visibility changed)
+                    spatialIndex.rebuild(from: document.snapshot)
+                    rebuildLockedObjectsCache()
+                }
                 .onChange(of: document.snapshot.objects.count) { _, newCount in
-                    // Rebuild spatial index only when object count changes
+                    // Rebuild spatial index when objects are added/removed
                     if newCount != cachedObjectCount {
                         cachedObjectCount = newCount
                         spatialIndex.rebuild(from: document.snapshot)
