@@ -206,6 +206,15 @@ struct LayerCanvasView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
+    // Pre-render cache: stores rendered GraphicsContext for each object by UUID
+    @State private var preRenderCache: [UUID: CachedRender] = [:]
+
+    // Cache entry: stores both the hash and rendered image
+    private struct CachedRender {
+        let objectHash: Int
+        let renderedImage: GraphicsContext.ResolvedImage
+    }
+
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -217,9 +226,6 @@ struct LayerCanvasView: View {
     var body: some View {
 
         Canvas { context, size in
-            // Calculate viewport bounds for culling (O(1))
-            let viewportBounds = calculateViewportBounds(size: size)
-
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
             transformedContext.transform = CGAffineTransform.identity
@@ -227,13 +233,25 @@ struct LayerCanvasView: View {
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
             for object in visibleObjects {
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderShape(shape, in: transformedContext, isSelected: isSelected)
-                case .text(let shape):
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                let isSelected = selectedObjectIDs.contains(object.id)
+                let currentHash = object.hashValue
+
+                // Check cache: if hash matches, use cached render
+                if let cached = preRenderCache[object.id], cached.objectHash == currentHash {
+                    // Draw cached image (O(1))
+                    var ctx = transformedContext
+                    if isSelected && dragPreviewDelta != .zero {
+                        ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                    }
+                    ctx.draw(cached.renderedImage, at: .zero)
+                } else {
+                    // Render to temporary Image, resolve it, cache it, then draw
+                    switch object.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        renderAndCacheShape(shape, objectID: object.id, objectHash: currentHash, in: transformedContext, isSelected: isSelected, context: context)
+                    case .text(let shape):
+                        renderAndCacheText(shape, objectID: object.id, objectHash: currentHash, in: transformedContext, isSelected: isSelected, context: context)
+                    }
                 }
             }
         }
@@ -272,6 +290,68 @@ struct LayerCanvasView: View {
 
         // Combine results: all components must overlap (reduce with AND)
         return all(overlapMin) && all(overlapMax)
+    }
+
+    // MARK: - Pre-Render Cache Functions
+
+    private func renderAndCacheShape(_ shape: VectorShape, objectID: UUID, objectHash: Int, in transformedContext: GraphicsContext, isSelected: Bool, context: GraphicsContext) {
+        // Get shape bounds for sizing the cached image
+        let bounds = shape.bounds
+        let cacheSize = CGSize(width: max(1, bounds.width + 100), height: max(1, bounds.height + 100))
+
+        // Render shape to Image
+        let image = Image(size: cacheSize) { tempContext in
+            // Adjust context to render at origin
+            var shapeContext = tempContext
+            shapeContext.translateBy(x: -bounds.minX + 50, y: -bounds.minY + 50)
+            renderShape(shape, in: shapeContext, isSelected: false) // Render without selection for cache
+        }
+
+        // Resolve to cached image
+        let resolvedImage = context.resolve(image)
+
+        // Store in cache
+        DispatchQueue.main.async {
+            preRenderCache[objectID] = CachedRender(objectHash: objectHash, renderedImage: resolvedImage)
+        }
+
+        // Draw immediately (without cache transform since we just rendered)
+        var ctx = transformedContext
+        if isSelected && dragPreviewDelta != .zero {
+            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
+        ctx.translateBy(x: bounds.minX - 50, y: bounds.minY - 50)
+        ctx.draw(resolvedImage, at: .zero)
+    }
+
+    private func renderAndCacheText(_ shape: VectorShape, objectID: UUID, objectHash: Int, in transformedContext: GraphicsContext, isSelected: Bool, context: GraphicsContext) {
+        // Get text bounds for sizing the cached image
+        let bounds = shape.bounds
+        let cacheSize = CGSize(width: max(1, bounds.width + 100), height: max(1, bounds.height + 100))
+
+        // Render text to Image
+        let image = Image(size: cacheSize) { tempContext in
+            // Adjust context to render at origin
+            var textContext = tempContext
+            textContext.translateBy(x: -bounds.minX + 50, y: -bounds.minY + 50)
+            renderText(shape, in: textContext, isSelected: false) // Render without selection for cache
+        }
+
+        // Resolve to cached image
+        let resolvedImage = context.resolve(image)
+
+        // Store in cache
+        DispatchQueue.main.async {
+            preRenderCache[objectID] = CachedRender(objectHash: objectHash, renderedImage: resolvedImage)
+        }
+
+        // Draw immediately (without cache transform since we just rendered)
+        var ctx = transformedContext
+        if isSelected && dragPreviewDelta != .zero {
+            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
+        ctx.translateBy(x: bounds.minX - 50, y: bounds.minY - 50)
+        ctx.draw(resolvedImage, at: .zero)
     }
 
     // MARK: - Optimized Shape Rendering
