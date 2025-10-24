@@ -109,6 +109,7 @@ struct DrawingCanvas: View {
     @State internal var isDraggingPoint = false
     @State internal var isDraggingHandle = false
     @State internal var dragStartLocation: CGPoint = .zero
+    @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
 
     internal func syncDirectSelectionWithDocument() {
         viewState.selectedObjectIDs = selectedObjectIDs
@@ -120,6 +121,21 @@ struct DrawingCanvas: View {
                   viewState.currentTool == .convertAnchorPoint ||
                     viewState.currentTool == .penPlusMinus {
             viewState.selectedObjectIDs.removeAll()
+        }
+    }
+
+    internal func rebuildLockedObjectsCache() {
+        lockedObjectIDs.removeAll(keepingCapacity: true)
+        for layer in document.snapshot.layers where layer.isLocked {
+            for objectID in layer.objectIDs {
+                lockedObjectIDs.insert(objectID)
+            }
+        }
+        // Also add individually locked objects
+        for (id, object) in document.snapshot.objects {
+            if object.shape.isLocked {
+                lockedObjectIDs.insert(id)
+            }
         }
     }
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
@@ -173,20 +189,11 @@ struct DrawingCanvas: View {
                         }
                     }
                 }
-                .onChange(of: viewState.scalePreviewDimensions) { _, newValue in
-                    liveScaleDimensions = newValue
-                }
-                .onChange(of: document.snapshot) { _, _ in
-                    // Rebuild spatial index when document changes
-                    spatialIndex.rebuild(from: document.snapshot)
-                }
-                .onChange(of: document.viewState.selectedObjectIDs) { _, newValue in
-                    // Sync local selectedObjectIDs with document's viewState
-                    selectedObjectIDs = newValue
-                }
                 .onAppear {
-                    // Initial sync of selectedObjectIDs
+                    // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
+                    spatialIndex.rebuild(from: document.snapshot)
+                    rebuildLockedObjectsCache()
                 }
         }
     }

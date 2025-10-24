@@ -36,19 +36,16 @@ extension DrawingCanvas {
 
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
 
+        // O(1) lock check - any selected object locked?
         for pointID in selectedPoints {
-            if let layer = document.snapshot.layers.first(where: { $0.objectIDs.contains(pointID.shapeID) }) {
-                if layer.isLocked {
-                    return
-                }
+            if lockedObjectIDs.contains(pointID.shapeID) {
+                return
             }
         }
 
         for handleID in selectedHandles {
-            if let layer = document.snapshot.layers.first(where: { $0.objectIDs.contains(handleID.shapeID) }) {
-                if layer.isLocked {
-                    return
-                }
+            if lockedObjectIDs.contains(handleID.shapeID) {
+                return
             }
         }
 
@@ -121,15 +118,12 @@ extension DrawingCanvas {
             }
         }
 
+        // Update bounds using O(1) snapshot lookup - don't iterate layers
         for shapeID in affectedShapeIDs {
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                   var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                    shape.updateBounds()
-                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
-                    break
-                }
+            if let object = document.snapshot.objects[shapeID], case .shape(var shape) = object.objectType {
+                shape.updateBounds()
+                let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
+                document.snapshot.objects[shapeID] = updatedObject
             }
         }
 
@@ -162,28 +156,20 @@ extension DrawingCanvas {
         originalPointPositions.removeAll()
         originalHandlePositions.removeAll()
 
+        // O(1) bounds update using snapshot
+        var affectedShapeIDs = Set<UUID>()
         for pointID in selectedPoints {
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }),
-                   let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                    var updatedShape = shape
-                    updatedShape.updateBounds()
-                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                    break
-                }
-            }
+            affectedShapeIDs.insert(pointID.shapeID)
         }
         for handleID in selectedHandles {
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let shapeIndex = shapes.firstIndex(where: { $0.id == handleID.shapeID }),
-                   let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                    var updatedShape = shape
-                    updatedShape.updateBounds()
-                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                    break
-                }
+            affectedShapeIDs.insert(handleID.shapeID)
+        }
+
+        for shapeID in affectedShapeIDs {
+            if let object = document.snapshot.objects[shapeID], case .shape(var shape) = object.objectType {
+                shape.updateBounds()
+                let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
+                document.snapshot.objects[shapeID] = updatedObject
             }
         }
 
