@@ -148,9 +148,10 @@ struct GradientFillSection: View {
         .padding()
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
-        .onChange(of: selectedObjectIDs) { _, _ in updateSelectedGradient() }
-        .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
-        .onReceive(document.objectWillChange) { _ in
+        .onChange(of: selectedObjectIDs) { _, _ in
+            updateSelectedGradient()
+        }
+        .onChange(of: snapshot.objects) { _, _ in
             if editingGradientStopId == nil && !isEditingAngle {
                 updateSelectedGradientDisplay()
             }
