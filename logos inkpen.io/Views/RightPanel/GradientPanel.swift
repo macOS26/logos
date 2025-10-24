@@ -86,7 +86,8 @@ struct GradientFillSection: View {
             GradientAngleControlView(
                 currentGradient: currentGradient,
                 document: document,
-                onAngleChange: updateGradientAngle
+                onAngleChange: updateGradientAngle,
+                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
             )
 
             GradientOriginControlView(
@@ -254,7 +255,7 @@ struct GradientFillSection: View {
             normalizedAngle += 360
         }
 
-        isEditingAngle = true
+        //isEditingAngle = true
 
         switch gradient {
         case .linear(var linear):
@@ -267,9 +268,9 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.isEditingAngle = false
-        }
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+//            self.isEditingAngle = false
+//        }
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {

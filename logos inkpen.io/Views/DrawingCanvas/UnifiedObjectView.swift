@@ -586,6 +586,7 @@ struct IsolatedLayerView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let objectUpdateTrigger: UInt
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode

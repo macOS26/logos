@@ -107,6 +107,7 @@ struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
+    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if let gradient = currentGradient {
             let angle: Double = {
@@ -149,6 +150,7 @@ struct GradientAngleControlView: View {
                                     }
                                 }
                             }
+                            objectUpdateTrigger &+= 1
                             onAngleChange(newAngle)
                         }
                     ), in: -180...180, onEditingChanged: { _ in
@@ -177,6 +179,7 @@ struct GradientAngleControlView: View {
                                     }
                                 }
                             }
+                            objectUpdateTrigger &+= 1
                             onAngleChange(newAngle)
                         }
                     ))
