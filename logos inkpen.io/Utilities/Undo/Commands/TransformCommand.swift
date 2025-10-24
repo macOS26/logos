@@ -32,6 +32,7 @@ class TransformCommand: BaseCommand {
     private func applyTransforms(_ transforms: [UUID: CGAffineTransform],
                                   positions: [UUID: CGPoint],
                                   to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
@@ -58,9 +59,15 @@ class TransformCommand: BaseCommand {
 
                 // Also update snapshot
                 document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             }
         }
 
-        document.viewState.objectUpdateTrigger &+= 1
+        // Trigger update for each affected layer
+        for layerIndex in affectedLayers {
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
+            let layerID = document.snapshot.layers[layerIndex].id
+            document.viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
+        }
     }
 }
