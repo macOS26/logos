@@ -19,10 +19,12 @@ class ObjectReorderCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyReorder(forward: true, to: document)
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     override func undo(on document: VectorDocument) {
         applyReorder(forward: false, to: document)
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     private func applyReorder(forward: Bool, to document: VectorDocument) {
