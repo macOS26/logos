@@ -11,15 +11,20 @@ struct ProfessionalDirectSelectionView: View {
 
     var body: some View {
         Canvas { context, size in
+            var ctx = context
             let zoom = document.viewState.zoomLevel
             let offset = document.viewState.canvasOffset
+            let dragOffset = document.currentDragOffset
+
+            // Translate entire context by drag offset
+            ctx.translateBy(x: dragOffset.x * zoom, y: dragOffset.y * zoom)
 
             // Draw outlines and ALL anchor points for selected shapes
             for objectID in selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID],
                       case .shape(let shape) = object.objectType else { continue }
 
-                drawOutline(shape, context: context, zoom: zoom, offset: offset)
+                drawOutline(shape, context: ctx, zoom: zoom, offset: offset)
 
                 // Draw ALL anchor points for this shape
                 for (elementIndex, element) in shape.path.elements.enumerated() {
@@ -31,8 +36,8 @@ struct ProfessionalDirectSelectionView: View {
                         let screenPos = CGPoint(x: transformed.x * zoom + offset.x, y: transformed.y * zoom + offset.y)
 
                         let rect = CGRect(x: screenPos.x - 4, y: screenPos.y - 4, width: 8, height: 8)
-                        context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0)
+                        ctx.fill(Path(rect), with: .color(isSelected ? .blue : .white))
+                        ctx.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0)
                     }
                 }
             }
@@ -43,7 +48,7 @@ struct ProfessionalDirectSelectionView: View {
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                drawHandle(handleID, shape: shape, context: context, zoom: zoom, offset: offset, isSelected: true)
+                drawHandle(handleID, shape: shape, context: ctx, zoom: zoom, offset: offset, isSelected: true)
             }
 
             // Draw visible handles
@@ -52,7 +57,7 @@ struct ProfessionalDirectSelectionView: View {
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                drawHandle(handleID, shape: shape, context: context, zoom: zoom, offset: offset, isSelected: false)
+                drawHandle(handleID, shape: shape, context: ctx, zoom: zoom, offset: offset, isSelected: false)
             }
         }
     }
