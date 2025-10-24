@@ -151,11 +151,6 @@ struct GradientFillSection: View {
         .onChange(of: selectedObjectIDs) { _, _ in
             updateSelectedGradient()
         }
-        .onChange(of: snapshot.objects) { _, _ in
-            if editingGradientStopId == nil && !isEditingAngle {
-                updateSelectedGradientDisplay()
-            }
-        }
     }
 
     private func turnOffEditingState() {
