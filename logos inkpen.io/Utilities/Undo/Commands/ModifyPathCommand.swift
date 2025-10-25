@@ -21,20 +21,22 @@ class ModifyPathCommand: BaseCommand {
     }
 
     private func applyPath(_ path: VectorPath, to document: VectorDocument) {
+        guard var obj = document.snapshot.objects[objectID] else { return }
 
-        if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-            var obj = document.unifiedObjects[index]
+        if case .shape(var shape) = obj.objectType {
+            shape.path = path
+            shape.updateBounds()
+            obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
 
-            if case .shape(var shape) = obj.objectType {
-                shape.path = path
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+            // Update snapshot
+            document.snapshot.objects[objectID] = obj
+
+            // Update unifiedObjects for legacy code
+            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                 document.unifiedObjects[index] = obj
-
-                // Update snapshot
-                document.snapshot.objects[objectID] = obj
-
-                document.triggerLayerUpdate(for: obj.layerIndex)
             }
+
+            document.triggerLayerUpdate(for: obj.layerIndex)
         }
     }
 }

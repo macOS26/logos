@@ -145,8 +145,8 @@ extension DrawingCanvas {
     }
 
     private func findAnchorPointAt(location: CGPoint, tolerance: Double) -> PointID? {
-        for unifiedObject in document.unifiedObjects.reversed() {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for newVectorObject in document.snapshot.objects.values.reversed() {
+            if case .shape(let shape) = newVectorObject.objectType {
                 if !shape.isVisible || shape.isLocked { continue }
 
             for (elementIndex, element) in shape.path.elements.enumerated() {
@@ -168,11 +168,11 @@ extension DrawingCanvas {
     }
 
     private func findCurveSegmentAt(location: CGPoint, tolerance: Double) -> (layerIndex: Int, shapeIndex: Int, elementIndex: Int)? {
-        for unifiedObject in document.unifiedObjects.reversed() {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for newVectorObject in document.snapshot.objects.values.reversed() {
+            if case .shape(let shape) = newVectorObject.objectType {
                 if !shape.isVisible || shape.isLocked { continue }
 
-                let layerIndex = unifiedObject.layerIndex
+                let layerIndex = newVectorObject.layerIndex
                 let shapesInLayer = document.getShapesForLayer(layerIndex)
                 guard let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == shape.id }) else { continue }
 
