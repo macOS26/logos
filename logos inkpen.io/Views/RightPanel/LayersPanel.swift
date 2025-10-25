@@ -242,7 +242,7 @@ struct LayersPanel: View {
                             if !isEditing {
                                 document.snapshot.layers[layerIndex].opacity = layerOpacityState
                                 layerPreviewOpacities.removeValue(forKey: document.snapshot.layers[layerIndex].id)
-                                document.changeNotifier.notifyLayersChanged()
+                                document.triggerLayerUpdate(for: layerIndex)
                             }
                         }
                     )
@@ -273,7 +273,7 @@ struct LayersPanel: View {
                         var updatedLayer = document.snapshot.layers[layerIndex]
                         updatedLayer.blendMode = newValue
                         document.snapshot.layers[layerIndex] = updatedLayer
-                        document.changeNotifier.notifyLayersChanged()
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
                 )) {
                     ForEach(BlendMode.allCases, id: \.self) { mode in
@@ -295,7 +295,7 @@ struct LayersPanel: View {
                         set: { newColor in
                             if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
                                 document.snapshot.layers[layerIndex].color = LayerColor(name: match.name)
-                                document.changeNotifier.notifyLayersChanged()
+                                document.triggerLayerUpdate(for: layerIndex)
                             }
                         }
                     ),
@@ -431,7 +431,7 @@ struct LayersPanel: View {
             if !document.processedLayersDuringDrag.contains(index) {
                 document.snapshot.layers[index].isVisible.toggle()
                 document.processedLayersDuringDrag.insert(index)
-                document.changeNotifier.notifyLayersChanged()
+                document.triggerLayerUpdate(for: index)
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
@@ -451,7 +451,7 @@ struct LayersPanel: View {
                         )
                         document.snapshot.objects[objectId] = updatedObject
                         document.processedObjectsDuringDrag.insert(objectId)
-                        document.changeNotifier.notifyObjectChanged(objectId)
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
                 }
             }
@@ -467,7 +467,7 @@ struct LayersPanel: View {
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
                             document.processedObjectsDuringDrag.insert(childShapeId)
-                            document.changeNotifier.notifyObjectChanged(parentObjectId)
+                            document.triggerLayerUpdate(for: layerIndex)
                         }
                     }
                 }
@@ -481,7 +481,7 @@ struct LayersPanel: View {
             if !document.processedLayersDuringDrag.contains(index) {
                 document.snapshot.layers[index].isLocked.toggle()
                 document.processedLayersDuringDrag.insert(index)
-                document.changeNotifier.notifyLayersChanged()
+                document.triggerLayerUpdate(for: index)
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
@@ -501,7 +501,7 @@ struct LayersPanel: View {
                         )
                         document.snapshot.objects[objectId] = updatedObject
                         document.processedObjectsDuringDrag.insert(objectId)
-                        document.changeNotifier.notifyObjectChanged(objectId)
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
                 }
             }
@@ -517,7 +517,7 @@ struct LayersPanel: View {
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
                             document.processedObjectsDuringDrag.insert(childShapeId)
-                            document.changeNotifier.notifyObjectChanged(parentObjectId)
+                            document.triggerLayerUpdate(for: layerIndex)
                         }
                     }
                 }
