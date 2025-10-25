@@ -9,6 +9,7 @@ class StrokePropertiesCommand: BaseCommand {
         case lineCap
         case miterLimit
         case imageOpacity
+        case scaleWithTransform
     }
 
     private let objectIDs: [UUID]
@@ -23,6 +24,8 @@ class StrokePropertiesCommand: BaseCommand {
     private let newMiterLimits: [UUID: Double]?
     private let oldOpacities: [UUID: Double]?
     private let newOpacities: [UUID: Double]?
+    private let oldScaleWithTransform: [UUID: Bool]?
+    private let newScaleWithTransform: [UUID: Bool]?
 
     init(objectIDs: [UUID],
          placement old: [UUID: StrokePlacement],
@@ -39,6 +42,8 @@ class StrokePropertiesCommand: BaseCommand {
         self.newMiterLimits = nil
         self.oldOpacities = nil
         self.newOpacities = nil
+        self.oldScaleWithTransform = nil
+        self.newScaleWithTransform = nil
     }
 
     init(objectIDs: [UUID],
@@ -56,6 +61,8 @@ class StrokePropertiesCommand: BaseCommand {
         self.newMiterLimits = nil
         self.oldOpacities = nil
         self.newOpacities = nil
+        self.oldScaleWithTransform = nil
+        self.newScaleWithTransform = nil
     }
 
     init(objectIDs: [UUID],
@@ -73,6 +80,8 @@ class StrokePropertiesCommand: BaseCommand {
         self.newMiterLimits = nil
         self.oldOpacities = nil
         self.newOpacities = nil
+        self.oldScaleWithTransform = nil
+        self.newScaleWithTransform = nil
     }
 
     init(objectIDs: [UUID],
@@ -90,6 +99,8 @@ class StrokePropertiesCommand: BaseCommand {
         self.newMiterLimits = new
         self.oldOpacities = nil
         self.newOpacities = nil
+        self.oldScaleWithTransform = nil
+        self.newScaleWithTransform = nil
     }
 
     init(objectIDs: [UUID],
@@ -107,6 +118,27 @@ class StrokePropertiesCommand: BaseCommand {
         self.newMiterLimits = nil
         self.oldOpacities = old
         self.newOpacities = new
+        self.oldScaleWithTransform = nil
+        self.newScaleWithTransform = nil
+    }
+
+    init(objectIDs: [UUID],
+         scaleWithTransform old: [UUID: Bool],
+         new: [UUID: Bool]) {
+        self.objectIDs = objectIDs
+        self.propertyType = .scaleWithTransform
+        self.oldPlacements = nil
+        self.newPlacements = nil
+        self.oldLineJoins = nil
+        self.newLineJoins = nil
+        self.oldLineCaps = nil
+        self.newLineCaps = nil
+        self.oldMiterLimits = nil
+        self.newMiterLimits = nil
+        self.oldOpacities = nil
+        self.newOpacities = nil
+        self.oldScaleWithTransform = old
+        self.newScaleWithTransform = new
     }
 
     override func execute(on document: VectorDocument) {
@@ -121,6 +153,8 @@ class StrokePropertiesCommand: BaseCommand {
             applyMiterLimits(newMiterLimits!, to: document)
         case .imageOpacity:
             applyImageOpacities(newOpacities!, to: document)
+        case .scaleWithTransform:
+            applyScaleWithTransform(newScaleWithTransform!, to: document)
         }
     }
 
@@ -136,6 +170,8 @@ class StrokePropertiesCommand: BaseCommand {
             applyMiterLimits(oldMiterLimits!, to: document)
         case .imageOpacity:
             applyImageOpacities(oldOpacities!, to: document)
+        case .scaleWithTransform:
+            applyScaleWithTransform(oldScaleWithTransform!, to: document)
         }
     }
 
@@ -225,6 +261,25 @@ class StrokePropertiesCommand: BaseCommand {
             switch obj.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.opacity = opacity
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.unifiedObjects[index] = obj
+            case .text:
+                continue
+            }
+        }
+
+    }
+
+    private func applyScaleWithTransform(_ scaleValues: [UUID: Bool], to document: VectorDocument) {
+
+        for id in objectIDs {
+            guard let scaleWithTransform = scaleValues[id],
+                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
+            var obj = document.unifiedObjects[index]
+
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.strokeStyle?.scaleWithTransform = scaleWithTransform
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             case .text:

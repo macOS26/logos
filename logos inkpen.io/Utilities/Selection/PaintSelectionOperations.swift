@@ -414,6 +414,40 @@ class PaintSelectionOperations {
         }
     }
 
+    /// Update stroke scale with transform for selected objects
+    func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool, document: VectorDocument) {
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
+            var oldScaleValues: [UUID: Bool] = [:]
+            var newScaleValues: [UUID: Bool] = [:]
+
+            for shapeID in activeShapeIDs {
+                if let obj = document.snapshot.objects[shapeID] {
+                    switch obj.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        oldScaleValues[shapeID] = shape.strokeStyle?.scaleWithTransform ?? false
+                        newScaleValues[shapeID] = scaleWithTransform
+                    case .text:
+                        continue
+                    }
+                }
+            }
+
+            if !oldScaleValues.isEmpty {
+                let command = StrokePropertiesCommand(
+                    objectIDs: Array(activeShapeIDs),
+                    scaleWithTransform: oldScaleValues,
+                    new: newScaleValues
+                )
+                document.executeCommand(command)
+            }
+
+            for shapeID in activeShapeIDs {
+                document.updateShapeStrokeScaleWithTransformInUnified(id: shapeID, scaleWithTransform: scaleWithTransform)
+            }
+        }
+    }
+
     // MARK: - Image Operations
 
     /// Update opacity for selected images
