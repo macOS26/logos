@@ -32,21 +32,21 @@ struct ProfessionalDirectSelectionView: View {
 
                 drawOutline(shape, context: &context, zoom: zoom)
 
-                // Apply shape transform for points (same as outline)
-                var ctx = context
-                ctx.concatenate(shape.transform)
-
                 // Draw ALL anchor points for this shape
+                // Transform position but NOT the point size
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     if let point = extractPoint(element) {
                         let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                         let isSelected = selectedPoints.contains(pointID)
 
-                        // Draw in local coordinates - shape transform already applied
-                        let pointSize: CGFloat = 2.0
-                        let rect = CGRect(x: point.x - pointSize/2, y: point.y - pointSize/2, width: pointSize, height: pointSize)
-                        ctx.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        ctx.stroke(Path(rect), with: .color(.blue), lineWidth: 0.5)
+                        // Transform position only
+                        let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+
+                        // Divide by zoom to counteract canvas transform scaling
+                        let pointSize: CGFloat = 4.0 / zoom
+                        let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
+                        context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0 / zoom)
                     }
                 }
             }
@@ -93,7 +93,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 0.5)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.0 / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
@@ -121,20 +121,20 @@ struct ProfessionalDirectSelectionView: View {
 
         guard let anchor = anchorPoint, let handle = handlePoint else { return }
 
-        // Apply shape transform and draw in local coordinates
-        var ctx = context
-        ctx.concatenate(shape.transform)
+        // Transform positions only, not the handle size
+        let transformedAnchor = anchor.applying(shape.transform)
+        let transformedHandle = handle.applying(shape.transform)
 
         var linePath = Path()
-        linePath.move(to: anchor)
-        linePath.addLine(to: handle)
-        ctx.stroke(linePath, with: .color(.blue), lineWidth: 0.5)
+        linePath.move(to: transformedAnchor)
+        linePath.addLine(to: transformedHandle)
+        context.stroke(linePath, with: .color(.blue), lineWidth: 1.0 / zoom)
 
-        // Fixed document-space size - scales with shape transform and zoom
-        let handleSize: CGFloat = 3.0
-        let circle = Circle().path(in: CGRect(x: handle.x - handleSize/2, y: handle.y - handleSize/2, width: handleSize, height: handleSize))
-        ctx.fill(circle, with: .color(isSelected ? .orange : .blue))
-        ctx.stroke(circle, with: .color(.white), lineWidth: 0.25)
+        // Divide by zoom to counteract canvas transform scaling
+        let handleSize: CGFloat = 6.0 / zoom
+        let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
+        context.fill(circle, with: .color(isSelected ? .orange : .blue))
+        context.stroke(circle, with: .color(.white), lineWidth: 1.0 / zoom)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
