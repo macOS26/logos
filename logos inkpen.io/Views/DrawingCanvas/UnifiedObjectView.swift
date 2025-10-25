@@ -231,13 +231,17 @@ struct LayerCanvasView: View {
                 let isSelected = selectedObjectIDs.contains(object.id)
 
                 // Apply selection transform (with drag delta and/or live scale) for selected objects
+                // For text objects, DON'T apply liveScaleTransform - they reflow instead
+                let isTextObject = if case .text = object.objectType { true } else { false }
+
                 if isSelected {
                     if dragPreviewDelta != .zero {
                         context.transform = baseTransform
                             .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                    } else if liveScaleTransform != .identity {
+                    } else if liveScaleTransform != .identity && !isTextObject {
                         // Apply live scale transform in document space, then convert to screen space
                         // Concatenation order: liveScaleTransform (applied first) then baseTransform (applied second)
+                        // Text objects skip this - they reflow instead of transform
                         context.transform = liveScaleTransform.concatenating(baseTransform)
                     } else {
                         context.transform = baseTransform
@@ -260,7 +264,8 @@ struct LayerCanvasView: View {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     renderShape(shape, context: &context, isSelected: isSelected, liveScaleFactor: scaleFactor)
                 case .text(let shape):
-                    renderText(shape, context: &context, isSelected: isSelected)
+                    // For text, pass liveScaleTransform so it can reflow (don't transform)
+                    renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
                 }
             }
         }
@@ -506,7 +511,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -541,7 +546,23 @@ struct LayerCanvasView: View {
             let layoutManager = NSLayoutManager()
             textStorage.addLayoutManager(layoutManager)
 
-            let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+            // Calculate text box width - use scaled width during live preview for reflow
+            var textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+            var textPosition = vectorText.position
+
+            if liveScaleTransform != .identity {
+                // Apply live scale transform to get new dimensions and position
+                let originalBounds = CGRect(
+                    x: vectorText.position.x,
+                    y: vectorText.position.y,
+                    width: textBoxWidth,
+                    height: vectorText.areaSize?.height ?? vectorText.bounds.height
+                )
+                let scaledBounds = originalBounds.applying(liveScaleTransform)
+                textBoxWidth = scaledBounds.width
+                textPosition = CGPoint(x: scaledBounds.minX, y: scaledBounds.minY)
+            }
+
             let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: .greatestFiniteMagnitude))
             textContainer.lineFragmentPadding = 0
             textContainer.lineBreakMode = .byWordWrapping
@@ -571,18 +592,18 @@ struct LayerCanvasView: View {
                     line = justifiedLine
                 }
 
-                // Calculate line position
+                // Calculate line position using scaled position during live preview
                 let glyphLocation = layoutManager.location(forGlyphAt: lineRange.location)
                 let lineX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left, .justified:
-                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                    lineX = textPosition.x + lineUsedRect.origin.x + glyphLocation.x
                 case .center, .right:
-                    lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                    lineX = textPosition.x + lineRect.origin.x + glyphLocation.x
                 default:
-                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                    lineX = textPosition.x + lineUsedRect.origin.x + glyphLocation.x
                 }
-                let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+                let lineY = textPosition.y + lineRect.origin.y + glyphLocation.y
 
                 // Draw line
                 cgContext.saveGState()
