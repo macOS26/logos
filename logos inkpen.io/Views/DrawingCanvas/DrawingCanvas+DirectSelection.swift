@@ -157,6 +157,11 @@ extension DrawingCanvas {
                 }
                 selectedHandles.insert(handleID)
 
+                // Show the opposite handle (incoming/outgoing pair)
+                let oppositeHandleType: HandleType = (handleID.handleType == .control1) ? .control2 : .control1
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex, handleType: oppositeHandleType)
+                visibleHandles.insert(oppositeHandleID)
+
                 selectCoincidentHandles(for: handleID, shape: shape)
             }
             return true
