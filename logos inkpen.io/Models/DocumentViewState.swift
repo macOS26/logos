@@ -42,13 +42,17 @@ class DocumentViewState: ObservableObject {
     @Published var isDraggingVisibility: Bool = false
     @Published var isDraggingLock: Bool = false
 
+    // MARK: - Gradient Live State
+    @Published var liveGradientOriginX: Double? = nil
+    @Published var liveGradientOriginY: Double? = nil
+
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
             PublishedSelectedObjectIDs = selectedObjectIDs
         }
     }
-    
+
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
     init() {}
 }
