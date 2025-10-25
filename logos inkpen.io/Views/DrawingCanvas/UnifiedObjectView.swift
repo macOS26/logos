@@ -246,9 +246,16 @@ struct LayerCanvasView: View {
                     context.transform = baseTransform
                 }
 
+                // Calculate scale factor if live scaling is active
+                let scaleFactor: CGFloat = if isSelected && liveScaleTransform != .identity {
+                    sqrt(liveScaleTransform.a * liveScaleTransform.a + liveScaleTransform.b * liveScaleTransform.b)
+                } else {
+                    1.0
+                }
+
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    renderShape(shape, context: &context, isSelected: isSelected)
+                    renderShape(shape, context: &context, isSelected: isSelected, liveScaleFactor: scaleFactor)
                 case .text(let shape):
                     renderText(shape, context: &context, isSelected: isSelected)
                 }
@@ -293,7 +300,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Shape Rendering
 
-    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool) {
+    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleFactor: CGFloat = 1.0) {
         // Fast path: skip invisible shapes (O(1))
         let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
@@ -315,17 +322,17 @@ struct LayerCanvasView: View {
 
         // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
         if viewMode == .keyline {
-            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / liveScaleFactor)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
                 if let gradient = strokeStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context, liveScaleFactor: liveScaleFactor)
                 } else if strokeStyle.color != .clear {
                     context.stroke(
                         Path(cgPath),
                         with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                         style: SwiftUI.StrokeStyle(
-                            lineWidth: strokeStyle.width,
+                            lineWidth: strokeStyle.width / liveScaleFactor,
                             lineCap: strokeStyle.lineCap.cgLineCap,
                             lineJoin: strokeStyle.lineJoin.cgLineJoin,
                             miterLimit: strokeStyle.miterLimit
@@ -333,17 +340,19 @@ struct LayerCanvasView: View {
                     )
                 }
             } else {
-                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context, liveScaleFactor: liveScaleFactor)
             }
         }
     }
 
-    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
+    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext, liveScaleFactor: CGFloat = 1.0) {
         // Use PathOperations.outlineStroke for inside/outside strokes
-        // No need to scale - canvas context is already scaled
+        // Compensate stroke width for live scaling
+        var adjustedStrokeStyle = strokeStyle
+        adjustedStrokeStyle.width = strokeStyle.width / liveScaleFactor
 
         // Get the outlined stroke path
-        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: strokeStyle) else {
+        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: adjustedStrokeStyle) else {
             return
         }
 
@@ -361,7 +370,7 @@ struct LayerCanvasView: View {
         }
     }
 
-    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
+    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext, liveScaleFactor: CGFloat = 1.0) {
         // Paint gradient directly to CGContext (like we do for CoreText)
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -377,7 +386,8 @@ struct LayerCanvasView: View {
             // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                cgContext.setLineWidth(strokeStyle.width)
+                // Compensate stroke width for live scaling
+                cgContext.setLineWidth(strokeStyle.width / liveScaleFactor)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
                 cgContext.setMiterLimit(strokeStyle.miterLimit)
