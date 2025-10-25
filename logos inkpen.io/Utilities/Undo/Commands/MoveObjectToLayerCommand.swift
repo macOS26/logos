@@ -12,17 +12,23 @@ class MoveObjectToLayerCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
+        var affectedLayers = Set<Int>()
         for move in moves {
             applyMove(objectID: move.objectID, toLayerIndex: move.newLayerIndex, document: document)
+            affectedLayers.insert(move.oldLayerIndex)
+            affectedLayers.insert(move.newLayerIndex)
         }
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     override func undo(on document: VectorDocument) {
+        var affectedLayers = Set<Int>()
         for move in moves.reversed() {
             applyMove(objectID: move.objectID, toLayerIndex: move.oldLayerIndex, document: document)
+            affectedLayers.insert(move.oldLayerIndex)
+            affectedLayers.insert(move.newLayerIndex)
         }
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func applyMove(objectID: UUID, toLayerIndex: Int, document: VectorDocument) {
