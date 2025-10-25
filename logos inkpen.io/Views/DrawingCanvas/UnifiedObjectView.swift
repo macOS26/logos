@@ -230,39 +230,25 @@ struct LayerCanvasView: View {
             for object in visibleObjects {
                 let isSelected = selectedObjectIDs.contains(object.id)
 
-                // Apply selection transform (with drag delta and/or live scale) for selected objects
-                // For text objects, DON'T apply liveScaleTransform - they reflow instead
+                // Apply selection transform (with drag delta) for selected objects
+                // For liveScaleTransform, we apply it to the path geometry directly (not context)
+                // to keep stroke width constant while scaling the shape
                 let isTextObject = if case .text = object.objectType { true } else { false }
 
-                if isSelected {
-                    if dragPreviewDelta != .zero {
-                        context.transform = baseTransform
-                            .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                    } else if liveScaleTransform != .identity && !isTextObject {
-                        // Apply live scale transform in document space, then convert to screen space
-                        // Concatenation order: liveScaleTransform (applied first) then baseTransform (applied second)
-                        // Text objects skip this - they reflow instead of transform
-                        context.transform = liveScaleTransform.concatenating(baseTransform)
-                    } else {
-                        context.transform = baseTransform
-                    }
+                if isSelected && dragPreviewDelta != .zero {
+                    context.transform = baseTransform
+                        .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                 } else {
                     context.transform = baseTransform
                 }
 
-                // Calculate scale factor if live scaling is active
-                // Extract scale from transform matrix (ignoring rotation/translation)
-                let scaleFactor: CGFloat = if isSelected && liveScaleTransform != .identity {
-                    // For a transform with scale and translation: sqrt(a² + c²) gives X scale
-                    // We use X scale for uniform stroke compensation
-                    sqrt(liveScaleTransform.a * liveScaleTransform.a + liveScaleTransform.c * liveScaleTransform.c)
-                } else {
-                    1.0
-                }
+                // Pass liveScaleTransform to renderShape so it can apply it to the path geometry
+                // This keeps stroke width constant during scaling
+                let shapeTransform = (isSelected && !isTextObject) ? liveScaleTransform : .identity
 
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    renderShape(shape, context: &context, isSelected: isSelected, liveScaleFactor: scaleFactor)
+                    renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
                 case .text(let shape):
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
                     renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
@@ -308,14 +294,23 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Shape Rendering
 
-    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleFactor: CGFloat = 1.0) {
+    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity) {
         // Fast path: skip invisible shapes (O(1))
         let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
         guard hasVisibleFill || hasVisibleStroke else { return }
 
         // Use cached CGPath (O(1) on cache hit)
-        let cgPath = shape.cachedCGPath
+        // If scaleTransform is active, apply it to the path geometry to scale the shape
+        // while keeping stroke width constant
+        let cgPath: CGPath
+        if scaleTransform != .identity {
+            let mutablePath = CGMutablePath()
+            mutablePath.addPath(shape.cachedCGPath, transform: scaleTransform)
+            cgPath = mutablePath
+        } else {
+            cgPath = shape.cachedCGPath
+        }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -329,18 +324,19 @@ struct LayerCanvasView: View {
         }
 
         // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
+        // Stroke width stays constant regardless of scale transform
         if viewMode == .keyline {
-            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / liveScaleFactor)
+            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
                 if let gradient = strokeStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context, liveScaleFactor: liveScaleFactor)
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
                 } else if strokeStyle.color != .clear {
                     context.stroke(
                         Path(cgPath),
                         with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                         style: SwiftUI.StrokeStyle(
-                            lineWidth: strokeStyle.width / liveScaleFactor,
+                            lineWidth: strokeStyle.width,
                             lineCap: strokeStyle.lineCap.cgLineCap,
                             lineJoin: strokeStyle.lineJoin.cgLineJoin,
                             miterLimit: strokeStyle.miterLimit
@@ -348,19 +344,17 @@ struct LayerCanvasView: View {
                     )
                 }
             } else {
-                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context, liveScaleFactor: liveScaleFactor)
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
             }
         }
     }
 
-    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext, liveScaleFactor: CGFloat = 1.0) {
+    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
         // Use PathOperations.outlineStroke for inside/outside strokes
-        // Compensate stroke width for live scaling
-        var adjustedStrokeStyle = strokeStyle
-        adjustedStrokeStyle.width = strokeStyle.width / liveScaleFactor
+        // Stroke width stays constant (no scaling compensation needed)
 
         // Get the outlined stroke path
-        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: adjustedStrokeStyle) else {
+        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: strokeStyle) else {
             return
         }
 
@@ -378,7 +372,7 @@ struct LayerCanvasView: View {
         }
     }
 
-    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext, liveScaleFactor: CGFloat = 1.0) {
+    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
         // Paint gradient directly to CGContext (like we do for CoreText)
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -394,8 +388,8 @@ struct LayerCanvasView: View {
             // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                // Compensate stroke width for live scaling
-                cgContext.setLineWidth(strokeStyle.width / liveScaleFactor)
+                // Stroke width stays constant (no scaling compensation)
+                cgContext.setLineWidth(strokeStyle.width)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
                 cgContext.setMiterLimit(strokeStyle.miterLimit)
