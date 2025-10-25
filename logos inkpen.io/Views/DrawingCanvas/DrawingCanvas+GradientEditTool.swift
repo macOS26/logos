@@ -40,10 +40,10 @@ extension DrawingCanvas {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient, dragStartGradient: selectedGradient)
+                        handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
                     }
                     .onEnded { value in
-                        handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape, dragStartGradient: selectedGradient)
+                        handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape)
                     }
             )
         }
@@ -108,7 +108,12 @@ extension DrawingCanvas {
         }
     }
     
-    private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient, dragStartGradient: VectorGradient) {
+    private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
+        // Capture gradient at start of drag
+        if dragStartGradient == nil {
+            dragStartGradient = gradient
+        }
+
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         let shapeBounds = shape.bounds
 
@@ -123,13 +128,15 @@ extension DrawingCanvas {
         updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
     }
 
-    private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, dragStartGradient: VectorGradient) {
+    private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
         // Get the final gradient from the document (it was already applied during drag)
         guard let finalShape = document.findShape(by: shape.id),
               let fillStyle = finalShape.fillStyle,
-              case .gradient(let finalGradient) = fillStyle.color else {
+              case .gradient(let finalGradient) = fillStyle.color,
+              let startGradient = dragStartGradient else {
             liveGradientOriginX = nil
             liveGradientOriginY = nil
+            dragStartGradient = nil
             return
         }
 
@@ -137,7 +144,7 @@ extension DrawingCanvas {
         let command = GradientCommand(
             objectIDs: [shape.id],
             target: .fill,
-            oldGradients: [shape.id: dragStartGradient],
+            oldGradients: [shape.id: startGradient],
             newGradients: [shape.id: finalGradient],
             oldOpacities: [shape.id: fillStyle.opacity],
             newOpacities: [shape.id: fillStyle.opacity]
@@ -147,6 +154,7 @@ extension DrawingCanvas {
         // Clear live state
         liveGradientOriginX = nil
         liveGradientOriginY = nil
+        dragStartGradient = nil
     }
     
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
