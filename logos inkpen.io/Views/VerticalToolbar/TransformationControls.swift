@@ -508,6 +508,7 @@ struct TransformationControls: View {
                             }
                             document.updateTextBoundsInUnified(id: shape.id, bounds: shape.bounds)
                         }
+                        document.triggerLayerUpdate(for: layerIndex)
                         break
                     }
                 }
