@@ -229,8 +229,8 @@ extension DrawingCanvas {
                 liveScaleTransform: liveScaleTransform,
                 layerOpacity: layerOpacity,
                 layerBlendMode: layerBlendMode,
-                liveGradientOriginX: liveGradientOriginX,
-                liveGradientOriginY: liveGradientOriginY,
+                liveGradientOriginX: document.viewState.liveGradientOriginX,
+                liveGradientOriginY: document.viewState.liveGradientOriginY,
                 selectedObjectData: selectedData
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
