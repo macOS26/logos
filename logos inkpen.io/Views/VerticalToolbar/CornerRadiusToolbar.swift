@@ -240,6 +240,7 @@ struct CornerRadiusToolbar: View {
                 )
 
                 document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
+                document.triggerLayerUpdate(for: layerIndex)
 
                 if let newShape = getSelectedShape() {
                     let command = ShapeModificationCommand(
