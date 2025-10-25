@@ -46,7 +46,62 @@ struct TransformBoxHandles: View {
             .allowsHitTesting(false)
 
             if isScaling && !previewTransform.isIdentity {
-                if shape.isGroupContainer {
+                // Check if this is multi-selection (Combined Selection)
+                if shape.name == "Combined Selection" {
+                    // Render preview for all selected objects
+                    ForEach(Array(document.viewState.selectedObjectIDs), id: \.self) { objectID in
+                        if let obj = document.snapshot.objects[objectID] {
+                            let objShape = obj.shape
+
+                            if objShape.typography != nil {
+                                // Text object preview
+                                if let originalPosition = objShape.textPosition, let originalAreaSize = objShape.areaSize {
+                                    let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
+                                    let transformedBounds = originalBounds.applying(previewTransform)
+
+                                    Rectangle()
+                                        .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
+                                        .frame(width: transformedBounds.width, height: transformedBounds.height)
+                                        .position(x: transformedBounds.midX, y: transformedBounds.midY)
+                                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                                        .allowsHitTesting(false)
+                                }
+                            } else {
+                                // Regular shape preview - apply existing transform then preview
+                                let combinedTransform = objShape.transform.concatenating(previewTransform)
+
+                                Path { path in
+                                    for element in objShape.path.elements {
+                                        switch element {
+                                        case .move(let to):
+                                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            path.move(to: p)
+                                        case .line(let to):
+                                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            path.addLine(to: p)
+                                        case .curve(let to, let c1, let c2):
+                                            let tp = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let tc1 = CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)
+                                            let tc2 = CGPoint(x: c2.x, y: c2.y).applying(combinedTransform)
+                                            path.addCurve(to: tp, control1: tc1, control2: tc2)
+                                        case .quadCurve(let to, let c):
+                                            let tp = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let tc = CGPoint(x: c.x, y: c.y).applying(combinedTransform)
+                                            path.addQuadCurve(to: tp, control: tc)
+                                        case .close:
+                                            path.closeSubpath()
+                                        }
+                                    }
+                                }
+                                .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
+                                .scaleEffect(zoomLevel, anchor: .topLeading)
+                                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                                .allowsHitTesting(false)
+                            }
+                        }
+                    }
+                } else if shape.isGroupContainer {
                     ForEach(shape.groupedShapes.indices, id: \.self) { index in
                         let groupedShape = shape.groupedShapes[index]
                         Path { path in
