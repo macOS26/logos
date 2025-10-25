@@ -370,6 +370,14 @@ struct TransformBoxHandles: View {
         document.isHandleScalingActive = false
         document.viewState.scalePreviewDimensions = .zero
 
+        // Check if this is multi-selection (virtual combined shape)
+        if shape.name == "Combined Selection" {
+            applyMultiSelectionScaling()
+            previewTransform = .identity
+            document.updateTransformPanelValues()
+            return
+        }
+
         guard let oldObj = document.snapshot.objects[shape.id] else {
             print("🔴 Cannot find shape \(shape.id) in snapshot.objects")
             return
@@ -522,5 +530,141 @@ struct TransformBoxHandles: View {
             print("🔵 Updated snapshot with transformed shape")
             print("🔵 Finished regular shape transform")
         }
+    }
+
+    private func applyMultiSelectionScaling() {
+        print("🟣 MULTI-SELECTION SCALING")
+
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var affectedLayers = Set<Int>()
+
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let oldObj = document.snapshot.objects[objectID] else {
+                print("🔴 Cannot find object \(objectID) in snapshot")
+                continue
+            }
+
+            let oldShape = oldObj.shape
+            oldShapes[objectID] = oldShape
+            affectedLayers.insert(oldObj.layerIndex)
+
+            if oldShape.typography != nil {
+                // Text objects: transform areaSize and textPosition
+                if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
+                    let originalBounds = CGRect(
+                        x: originalPosition.x,
+                        y: originalPosition.y,
+                        width: originalAreaSize.width,
+                        height: originalAreaSize.height
+                    )
+                    let transformedBounds = originalBounds.applying(previewTransform)
+
+                    let newWidth = transformedBounds.width
+                    let newHeight = transformedBounds.height
+                    let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
+
+                    document.updateTextAreaSizeInUnified(id: oldShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
+                    document.updateTextBoundsInUnified(id: oldShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+                    document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
+                }
+            } else {
+                // Regular shapes: apply existing transform first, then preview transform
+                let combinedTransform = oldShape.transform.concatenating(previewTransform)
+
+                // Apply combined transform to path
+                if oldShape.isGroupContainer {
+                    var updatedShape = oldShape
+                    var transformedGroupedShapes: [VectorShape] = []
+                    for var groupedShape in updatedShape.groupedShapes {
+                        var transformedElements: [PathElement] = []
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                transformedElements.append(.move(to: VectorPoint(p)))
+                            case .line(let to):
+                                let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                transformedElements.append(.line(to: VectorPoint(p)))
+                            case .curve(let to, let c1, let c2):
+                                transformedElements.append(.curve(
+                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                    control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)),
+                                    control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(combinedTransform))
+                                ))
+                            case .quadCurve(let to, let c):
+                                transformedElements.append(.quadCurve(
+                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                    control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(combinedTransform))
+                                ))
+                            case .close:
+                                transformedElements.append(.close)
+                            }
+                        }
+                        groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                        groupedShape.updateBounds()
+                        transformedGroupedShapes.append(groupedShape)
+                    }
+                    updatedShape.groupedShapes = transformedGroupedShapes
+                    updatedShape.transform = .identity
+                    updatedShape.updateBounds()
+
+                    let updatedObject = VectorObject(shape: updatedShape, layerIndex: oldObj.layerIndex)
+                    document.snapshot.objects[objectID] = updatedObject
+                } else {
+                    var transformedElements: [PathElement] = []
+                    for element in oldShape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                            transformedElements.append(.move(to: VectorPoint(p)))
+                        case .line(let to):
+                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                            transformedElements.append(.line(to: VectorPoint(p)))
+                        case .curve(let to, let c1, let c2):
+                            transformedElements.append(.curve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)),
+                                control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(combinedTransform))
+                            ))
+                        case .quadCurve(let to, let c):
+                            transformedElements.append(.quadCurve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(combinedTransform))
+                            ))
+                        case .close:
+                            transformedElements.append(.close)
+                        }
+                    }
+
+                    let newPath = VectorPath(elements: transformedElements, isClosed: oldShape.path.isClosed)
+                    var updatedShape = oldShape
+                    updatedShape.path = newPath
+                    updatedShape.transform = .identity
+                    updatedShape.updateBounds()
+
+                    let updatedObject = VectorObject(shape: updatedShape, layerIndex: oldObj.layerIndex)
+                    document.snapshot.objects[objectID] = updatedObject
+                }
+            }
+
+            // Get the updated shape for undo
+            if let updatedObj = document.snapshot.objects[objectID] {
+                newShapes[objectID] = updatedObj.shape
+            }
+        }
+
+        // Create undo command for all modified objects
+        let command = ShapeModificationCommand(
+            objectIDs: Array(document.viewState.selectedObjectIDs),
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        )
+        document.executeCommand(command)
+
+        // Trigger layer updates
+        document.triggerLayerUpdates(for: affectedLayers)
+
+        print("🟣 Completed multi-selection scaling for \(document.viewState.selectedObjectIDs.count) objects")
     }
 }
