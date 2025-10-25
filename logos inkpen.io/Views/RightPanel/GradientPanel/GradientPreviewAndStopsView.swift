@@ -193,53 +193,19 @@ struct GradientPreviewAndStopsView: View {
     @State private var dragStartGradient: VectorGradient? = nil
     @State private var dragStartOpacities: [UUID: Double] = [:]
 
+    @State private var isDragging = false
+
     private func createPreviewContent(geometry: GeometryProxy) -> some View {
         let fullWidth = geometry.size.width
         let squareSize = fullWidth
 
         return createGradientPreview(geometry: geometry, squareSize: squareSize)
             .contentShape(Rectangle())
-            .simultaneousGesture(
-                // Tap gesture for snap points
-                DragGesture(minimumDistance: 0)
-                    .onEnded { value in
-                        // Check if tap is near a snap point (within 12pt radius)
-                        let snapPoints: [(x: CGFloat, y: CGFloat)] = [
-                            (0, 0), (0.5, 0), (1, 0),
-                            (0, 0.5), (0.5, 0.5), (1, 0.5),
-                            (0, 1), (0.5, 1), (1, 1),
-                            (0.25, 0.25), (0.75, 0.25),
-                            (0.25, 0.75), (0.75, 0.75),
-                            (0.25, 0.5), (0.75, 0.5),
-                            (0.5, 0.25), (0.5, 0.75)
-                        ]
-
-                        let tapLocation = value.location
-                        let snapRadius: CGFloat = 12.0
-
-                        for point in snapPoints {
-                            let pointPos = CGPoint(x: point.x * fullWidth, y: point.y * fullWidth)
-                            let distance = sqrt(pow(tapLocation.x - pointPos.x, 2) + pow(tapLocation.y - pointPos.y, 2))
-
-                            if distance <= snapRadius {
-                                // Snap to this point
-                                updateOriginX(point.x, true)
-                                updateOriginY(point.y, true)
-                                return
-                            }
-                        }
-
-                        // No snap point hit, use tap location
-                        let normalizedX = max(0.0, min(1.0, tapLocation.x / fullWidth))
-                        let normalizedY = max(0.0, min(1.0, tapLocation.y / fullWidth))
-                        updateOriginX(normalizedX, true)
-                        updateOriginY(normalizedY, true)
-                    }
-            )
             .gesture(
-                DragGesture(minimumDistance: 1)
+                DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        if dragStartGradient == nil {
+                        if !isDragging {
+                            isDragging = true
                             dragStartGradient = currentGradient
                             // Capture old opacities
                             for objectID in document.viewState.selectedObjectIDs {
@@ -248,12 +214,24 @@ struct GradientPreviewAndStopsView: View {
                                 }
                             }
                         }
+
+                        // Set live state directly
                         let normalizedX = max(0.0, min(1.0, value.location.x / fullWidth))
                         let normalizedY = max(0.0, min(1.0, value.location.y / fullWidth))
+
+                        document.viewState.liveGradientOriginX = normalizedX
+                        document.viewState.liveGradientOriginY = normalizedY
+
                         updateOriginXOptimized(normalizedX, true, true)
                         updateOriginYOptimized(normalizedY, true, true)
                     }
-                    .onEnded { _ in
+                    .onEnded { value in
+                        isDragging = false
+
+                        // Clear live state
+                        document.viewState.liveGradientOriginX = nil
+                        document.viewState.liveGradientOriginY = nil
+
                         applyGradientToSelectedShapesOptimized(false)
 
                         // Create undo command
