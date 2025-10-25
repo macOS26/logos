@@ -56,6 +56,9 @@ struct OptimizedGridView: View {
             let tileStartY = Int(floor(visibleStartY / tileSize))
             let tileEndY = Int(ceil(visibleEndY / tileSize))
 
+            // Guard against invalid ranges
+            guard tileStartX <= tileEndX && tileStartY <= tileEndY else { return }
+
             // Draw grid using the tile patterns as reusable "symbols"
             // Only draw visible tiles, reusing the same patterns
             for tileX in tileStartX...tileEndX {
