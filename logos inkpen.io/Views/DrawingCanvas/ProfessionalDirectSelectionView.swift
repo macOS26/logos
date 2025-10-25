@@ -128,13 +128,13 @@ struct ProfessionalDirectSelectionView: View {
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)
-        context.stroke(linePath, with: .color(.blue), lineWidth: 1.0 / zoom)
+        context.stroke(linePath, with: .color(.blue), lineWidth: 0.5)
 
-        // Divide by zoom to counteract canvas transform scaling
-        let handleSize: CGFloat = 6.0 / zoom
+        // Fixed document-space size - scales with zoom
+        let handleSize: CGFloat = 2.0
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
-        context.stroke(circle, with: .color(.white), lineWidth: 1.0 / zoom)
+        context.stroke(circle, with: .color(.white), lineWidth: 0.25)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
