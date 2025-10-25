@@ -359,7 +359,8 @@ struct TransformBoxHandles: View {
             var sx = 1.0 + (dxCanvas / denomX)
             var sy = 1.0 + (dyCanvas / denomY)
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let ux = dxCanvas / denomX
                 let uy = dyCanvas / denomY
                 let useX = abs(ux) >= abs(uy)
@@ -424,7 +425,8 @@ struct TransformBoxHandles: View {
         if isCorner {
             scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
             scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let uniformScale = max(scaleX, scaleY)
                 scaleX = uniformScale
                 scaleY = uniformScale
