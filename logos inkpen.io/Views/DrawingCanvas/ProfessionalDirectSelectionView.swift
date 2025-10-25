@@ -43,10 +43,10 @@ struct ProfessionalDirectSelectionView: View {
                         let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
                         // Fixed document-space size - scales with zoom
-                        let pointSize: CGFloat = 0.3
+                        let pointSize: CGFloat = 0.6
                         let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                         context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 0.05)
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 0.1)
                     }
                 }
             }
@@ -93,7 +93,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 0.05)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 0.1)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
@@ -128,13 +128,13 @@ struct ProfessionalDirectSelectionView: View {
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)
-        context.stroke(linePath, with: .color(.blue), lineWidth: 0.05)
+        context.stroke(linePath, with: .color(.blue), lineWidth: 0.1)
 
         // Fixed document-space size - scales with zoom
-        let handleSize: CGFloat = 0.2
+        let handleSize: CGFloat = 0.4
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
-        context.stroke(circle, with: .color(.white), lineWidth: 0.025)
+        context.stroke(circle, with: .color(.white), lineWidth: 0.05)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
