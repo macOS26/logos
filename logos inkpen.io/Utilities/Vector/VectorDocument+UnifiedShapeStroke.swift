@@ -43,227 +43,77 @@ extension VectorDocument {
     }
 
     func createFillStyleInUnified(id: UUID, color: VectorColor, opacity: Double) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.fillStyle = FillStyle(
-                    color: color,
-                    opacity: opacity
-                )
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.fillStyle = FillStyle(color: color, opacity: opacity)
         }
     }
 
     func createStrokeStyleInUnified(id: UUID, color: VectorColor, width: Double, placement: StrokePlacement, lineCap: CGLineCap, lineJoin: CGLineJoin, miterLimit: Double, opacity: Double) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle = StrokeStyle(
-                    color: color,
-                    width: width,
-                    placement: placement,
-                    lineCap: lineCap,
-                    lineJoin: lineJoin,
-                    miterLimit: miterLimit,
-                    opacity: opacity
-                )
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.strokeStyle = StrokeStyle(
+                color: color,
+                width: width,
+                placement: placement,
+                lineCap: lineCap,
+                lineJoin: lineJoin,
+                miterLimit: miterLimit,
+                opacity: opacity
+            )
         }
     }
 
     func updateShapePathUnified(id: UUID, path: VectorPath) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.path = path
-                shape.updateBounds()
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.path = path
+            shape.updateBounds()
         }
     }
 
     func updateShapeCornerRadiiInUnified(id: UUID, cornerRadii: [Double], path: VectorPath) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.cornerRadii = cornerRadii
-                shape.path = path
-                shape.updateBounds()
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.cornerRadii = cornerRadii
+            shape.path = path
+            shape.updateBounds()
         }
     }
 
     func updateShapeGradientInUnified(id: UUID, gradient: VectorGradient, target: ColorTarget) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                switch target {
-                case .fill:
-                    let currentOpacity = shape.fillStyle?.opacity ?? 1.0
-                    shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
-                case .stroke:
-                    let currentStroke = shape.strokeStyle
-                    shape.strokeStyle = StrokeStyle(
-                        gradient: gradient,
-                        width: currentStroke?.width ?? defaultStrokeWidth,
-                        placement: currentStroke?.placement ?? strokeDefaults.placement,
-                        lineCap: currentStroke?.lineCap.cgLineCap ?? strokeDefaults.lineCap,
-                        lineJoin: currentStroke?.lineJoin.cgLineJoin ?? strokeDefaults.lineJoin,
-                        miterLimit: currentStroke?.miterLimit ?? strokeDefaults.miterLimit,
-                        opacity: currentStroke?.opacity ?? 1.0
-                    )
-                }
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+        updateShapeByID(id) { shape in
+            switch target {
+            case .fill:
+                let currentOpacity = shape.fillStyle?.opacity ?? 1.0
+                shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
+            case .stroke:
+                let currentStroke = shape.strokeStyle
+                shape.strokeStyle = StrokeStyle(
+                    gradient: gradient,
+                    width: currentStroke?.width ?? defaultStrokeWidth,
+                    placement: currentStroke?.placement ?? strokeDefaults.placement,
+                    lineCap: currentStroke?.lineCap.cgLineCap ?? strokeDefaults.lineCap,
+                    lineJoin: currentStroke?.lineJoin.cgLineJoin ?? strokeDefaults.lineJoin,
+                    miterLimit: currentStroke?.miterLimit ?? strokeDefaults.miterLimit,
+                    opacity: currentStroke?.opacity ?? 1.0
                 )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
             }
         }
     }
 
     func updateShapeTransformAndPathInUnified(id: UUID, path: VectorPath? = nil, transform: CGAffineTransform? = nil) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
+        updateShapeByID(id) { shape in
+            if let path = path {
+                shape.path = path
             }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if let path = path {
-                    shape.path = path
-                }
-                if let transform = transform {
-                    shape.transform = transform
-                }
-                shape.updateBounds()
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
+            if let transform = transform {
+                shape.transform = transform
             }
+            shape.updateBounds()
         }
     }
 
     func updateEntireShapeInUnified(id: UUID, updater: (inout VectorShape) -> Void) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            switch unifiedObjects[objectIndex].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                updater(&shape)
-                shape.updateBounds()
-
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-                // Notify granular change for live updates
-                changeNotifier.notifyObjectChanged(id)
-
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            updater(&shape)
+            shape.updateBounds()
         }
     }
 }
