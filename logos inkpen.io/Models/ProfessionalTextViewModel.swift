@@ -484,7 +484,87 @@ class ProfessionalTextViewModel: ObservableObject {
             }
         }
 
+        // Convert near-180-degree handles to perfectly smooth curves
+        elements = makeCurvesSmooth(elements)
+
         return VectorPath(elements: elements, isClosed: false)
+    }
+
+    /// Convert curves with nearly-aligned handles (close to 180 degrees) into perfectly smooth curves
+    private func makeCurvesSmooth(_ elements: [PathElement]) -> [PathElement] {
+        var smoothedElements: [PathElement] = []
+        let angleTolerance = 10.0 * .pi / 180.0  // 10 degrees tolerance
+
+        for i in 0..<elements.count {
+            let currentElement = elements[i]
+
+            // Only process curve elements
+            guard case .curve(let to, let control1, let control2) = currentElement else {
+                smoothedElements.append(currentElement)
+                continue
+            }
+
+            // Get the previous anchor point (outgoing handle)
+            var previousAnchor: VectorPoint? = nil
+            var previousControl2: VectorPoint? = nil
+
+            for j in stride(from: i - 1, through: 0, by: -1) {
+                switch elements[j] {
+                case .move(let point), .line(let point):
+                    previousAnchor = point
+                    break
+                case .curve(let point, _, let ctrl2):
+                    previousAnchor = point
+                    previousControl2 = ctrl2
+                    break
+                case .quadCurve(let point, _):
+                    previousAnchor = point
+                    break
+                case .close:
+                    continue
+                }
+                if previousAnchor != nil { break }
+            }
+
+            guard let prevAnchor = previousAnchor else {
+                smoothedElements.append(currentElement)
+                continue
+            }
+
+            // Check if incoming handle (control1) and outgoing handle from previous point are ~180 degrees
+            if let prevCtrl2 = previousControl2 {
+                // Vector from previous anchor to its control2 (outgoing)
+                let outgoingVec = CGVector(dx: prevCtrl2.x - prevAnchor.x, dy: prevCtrl2.y - prevAnchor.y)
+                // Vector from current anchor (prevAnchor) to control1 (incoming)
+                let incomingVec = CGVector(dx: control1.x - prevAnchor.x, dy: control1.y - prevAnchor.y)
+
+                let outgoingAngle = atan2(outgoingVec.dy, outgoingVec.dx)
+                let incomingAngle = atan2(incomingVec.dy, incomingVec.dx)
+
+                var angleDiff = abs(outgoingAngle - incomingAngle)
+                if angleDiff > .pi { angleDiff = 2 * .pi - angleDiff }
+
+                // If close to 180 degrees (π radians), make them perfectly aligned
+                if abs(angleDiff - .pi) < angleTolerance {
+                    // Make incoming handle perfectly opposite to outgoing
+                    let avgLength = (sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) +
+                                   sqrt(incomingVec.dx * incomingVec.dx + incomingVec.dy * incomingVec.dy)) / 2.0
+
+                    let smoothedControl1 = VectorPoint(
+                        prevAnchor.x - outgoingVec.dx / sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) * avgLength,
+                        prevAnchor.y - outgoingVec.dy / sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) * avgLength
+                    )
+
+                    smoothedElements.append(.curve(to: to, control1: smoothedControl1, control2: control2))
+                    continue
+                }
+            }
+
+            // No smoothing needed
+            smoothedElements.append(currentElement)
+        }
+
+        return smoothedElements
     }
 
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
