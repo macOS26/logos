@@ -40,11 +40,11 @@ struct ProfessionalDirectSelectionView: View {
 
                         let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
-                        // Size in DOCUMENT space (will be scaled by canvas transform)
-                        let pointSize: CGFloat = 8.0 / zoom
+                        // Divide by zoom to keep consistent screen size (canvas transform will scale it back up)
+                        let pointSize: CGFloat = 4.0 / zoom
                         let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                         context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0 / zoom)
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 0.5 / zoom)
                     }
                 }
             }
@@ -91,7 +91,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.0 / zoom)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 0.5 / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
@@ -126,13 +126,13 @@ struct ProfessionalDirectSelectionView: View {
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)
-        context.stroke(linePath, with: .color(.blue), lineWidth: 1.0 / zoom)
+        context.stroke(linePath, with: .color(.blue), lineWidth: 0.5 / zoom)
 
-        // Fixed size in document space - canvas transform makes it correct screen size
-        let handleSize: CGFloat = 6.0 / zoom
+        // Divide by zoom to keep consistent screen size (canvas transform will scale it back up)
+        let handleSize: CGFloat = 3.0 / zoom
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
-        context.stroke(circle, with: .color(.white), lineWidth: 0.5 / zoom)
+        context.stroke(circle, with: .color(.white), lineWidth: 0.25 / zoom)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
