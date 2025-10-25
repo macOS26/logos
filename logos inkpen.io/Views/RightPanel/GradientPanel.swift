@@ -158,6 +158,18 @@ struct GradientFillSection: View {
         .onChange(of: document.viewState.liveGradientOriginX) { _, newValue in
             if let newX = newValue {
                 localOriginX = newX
+                // Also update currentGradient to match
+                if let gradient = currentGradient {
+                    switch gradient {
+                    case .linear(var linear):
+                        linear.originPoint.x = newX
+                        currentGradient = .linear(linear)
+                    case .radial(var radial):
+                        radial.originPoint.x = newX
+                        radial.focalPoint = CGPoint(x: newX, y: radial.originPoint.y)
+                        currentGradient = .radial(radial)
+                    }
+                }
             } else {
                 // Drag ended, sync from document gradient
                 syncLocalStateFromDocument()
@@ -166,6 +178,18 @@ struct GradientFillSection: View {
         .onChange(of: document.viewState.liveGradientOriginY) { _, newValue in
             if let newY = newValue {
                 localOriginY = newY
+                // Also update currentGradient to match
+                if let gradient = currentGradient {
+                    switch gradient {
+                    case .linear(var linear):
+                        linear.originPoint.y = newY
+                        currentGradient = .linear(linear)
+                    case .radial(var radial):
+                        radial.originPoint.y = newY
+                        radial.focalPoint = CGPoint(x: radial.originPoint.x, y: newY)
+                        currentGradient = .radial(radial)
+                    }
+                }
             } else {
                 // Drag ended, sync from document gradient
                 syncLocalStateFromDocument()
