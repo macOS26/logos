@@ -29,8 +29,8 @@ extension DrawingCanvas {
         var nearestPoint: CGPoint?
         var nearestDistance = snapTolerance
 
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for newVectorObject in document.snapshot.objects.values {
+            if case .shape(let shape) = newVectorObject.objectType {
                 if let currentId = currentShapeId, shape.id == currentId {
                     continue
                 }
