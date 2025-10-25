@@ -177,7 +177,7 @@ extension VectorDocument {
             unifiedObjects.append(unifiedObject)
         }
 
-        viewState.objectUpdateTrigger &+= 1
+        triggerLayerUpdate(for: layerIndex)
         print("📊 Snapshot now has \(snapshot.objects.count) objects total")
     }
 

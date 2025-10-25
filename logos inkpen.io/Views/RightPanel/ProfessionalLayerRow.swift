@@ -425,6 +425,7 @@ struct ProfessionalLayerRow: View {
             selectionRangeMax = nil
         }
 
-        document.viewState.objectUpdateTrigger &+= 1
+        // Trigger update for the current layer (selection visualization)
+        document.triggerLayerUpdate(for: layerIndex)
     }
 }

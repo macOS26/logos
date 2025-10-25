@@ -258,7 +258,7 @@ extension DrawingCanvas {
             }
 
             document.updateTransformPanelValues()
-            document.viewState.objectUpdateTrigger &+= 1
+            // Note: Layer triggers handled by ShapeModificationCommand
 
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
