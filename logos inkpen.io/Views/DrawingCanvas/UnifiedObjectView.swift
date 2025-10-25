@@ -236,8 +236,9 @@ struct LayerCanvasView: View {
                         context.transform = baseTransform
                             .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                     } else if liveScaleTransform != .identity {
-                        // Apply live scale transform
-                        context.transform = baseTransform.concatenating(liveScaleTransform)
+                        // Apply live scale transform in document space, then convert to screen space
+                        // Concatenation order: liveScaleTransform (applied first) then baseTransform (applied second)
+                        context.transform = liveScaleTransform.concatenating(baseTransform)
                     } else {
                         context.transform = baseTransform
                     }
