@@ -9,12 +9,14 @@ struct StrokePropertiesSection: View {
     let strokeLineJoin: CGLineJoin
     let strokeLineCap: CGLineCap
     let strokeMiterLimit: Double
+    let strokeScaleWithTransform: Bool
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
     let onUpdateLineJoin: (CGLineJoin) -> Void
     let onUpdateLineCap: (CGLineCap) -> Void
     let onUpdateMiterLimit: (Double) -> Void
+    let onUpdateScaleWithTransform: (Bool) -> Void
     let onStrokeWidthEditingChanged: (Bool) -> Void
     let onStrokeOpacityEditingChanged: (Bool) -> Void
     let onMiterLimitEditingChanged: (Bool) -> Void
@@ -198,6 +200,19 @@ struct StrokePropertiesSection: View {
                 ), in: 1...20, onEditingChanged: onMiterLimitEditingChanged)
                 .controlSize(.regular)
                 .tint(.blue)
+            }
+
+            HStack {
+                Toggle(isOn: Binding(
+                    get: { strokeScaleWithTransform },
+                    set: { onUpdateScaleWithTransform($0) }
+                )) {
+                    Text("Scale Stroke")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                .help("Scale stroke width when transforming shapes")
             }
         }
         .padding(.horizontal, 12)
