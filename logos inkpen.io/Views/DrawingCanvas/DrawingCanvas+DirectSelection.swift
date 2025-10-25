@@ -157,7 +157,8 @@ extension DrawingCanvas {
                 }
                 selectedHandles.insert(handleID)
 
-                // Show the opposite handle (incoming/outgoing pair)
+                // Make BOTH handles visible (the selected one and its opposite)
+                visibleHandles.insert(handleID)  // Selected handle must be visible too!
                 let oppositeHandleType: HandleType = (handleID.handleType == .control1) ? .control2 : .control1
                 let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex, handleType: oppositeHandleType)
                 visibleHandles.insert(oppositeHandleID)
