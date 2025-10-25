@@ -205,6 +205,7 @@ struct LayerCanvasView: View {
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
+    let liveScaleTransform: CGAffineTransform
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -229,10 +230,17 @@ struct LayerCanvasView: View {
             for object in visibleObjects {
                 let isSelected = selectedObjectIDs.contains(object.id)
 
-                // Apply selection transform (with drag delta) for selected objects
-                if isSelected && dragPreviewDelta != .zero {
-                    context.transform = baseTransform
-                        .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                // Apply selection transform (with drag delta and/or live scale) for selected objects
+                if isSelected {
+                    if dragPreviewDelta != .zero {
+                        context.transform = baseTransform
+                            .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                    } else if liveScaleTransform != .identity {
+                        // Apply live scale transform
+                        context.transform = baseTransform.concatenating(liveScaleTransform)
+                    } else {
+                        context.transform = baseTransform
+                    }
                 } else {
                     context.transform = baseTransform
                 }
@@ -611,7 +619,8 @@ struct IsolatedLayerView: View {
                 canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
-                dragPreviewDelta: dragPreviewDelta
+                dragPreviewDelta: dragPreviewDelta,
+                liveScaleTransform: liveScaleTransform
             )
 
             // For text editor only - filter .text objects first
@@ -637,6 +646,7 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .id(objectUpdateTrigger)  // Force re-render when layer trigger updates
     }
 
     private func renderLayerToCache() {
