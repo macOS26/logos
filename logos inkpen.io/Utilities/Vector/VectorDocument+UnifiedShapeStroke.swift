@@ -32,16 +32,6 @@ extension VectorDocument {
         }
     }
 
-    func updateShapeStrokeScaleWithTransformInUnified(id: UUID, scaleWithTransform: Bool) {
-        updateShapeByID(id) { shape in
-            if shape.strokeStyle == nil {
-                shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, opacity: defaultStrokeOpacity, scaleWithTransform: scaleWithTransform)
-            } else {
-                shape.strokeStyle?.scaleWithTransform = scaleWithTransform
-            }
-        }
-    }
-
     func createFillStyleInUnified(id: UUID, color: VectorColor, opacity: Double) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             switch obj.objectType {

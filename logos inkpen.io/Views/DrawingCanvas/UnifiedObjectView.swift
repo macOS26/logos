@@ -230,36 +230,21 @@ struct LayerCanvasView: View {
             for object in visibleObjects {
                 let isSelected = selectedObjectIDs.contains(object.id)
 
-                // Determine if object is text or shape with scaleWithTransform enabled
+                // Apply selection transform (with drag delta) for selected objects
+                // For liveScaleTransform, we apply it to the path geometry directly (not context)
+                // to keep stroke width constant while scaling the shape
                 let isTextObject = if case .text = object.objectType { true } else { false }
-                let strokeScalesWithTransform = if case .shape(let shape) = object.objectType {
-                    shape.strokeStyle?.scaleWithTransform ?? false
-                } else if case .warp(let shape) = object.objectType {
-                    shape.strokeStyle?.scaleWithTransform ?? false
-                } else if case .group(let shape) = object.objectType {
-                    shape.strokeStyle?.scaleWithTransform ?? false
-                } else if case .clipGroup(let shape) = object.objectType {
-                    shape.strokeStyle?.scaleWithTransform ?? false
-                } else if case .clipMask(let shape) = object.objectType {
-                    shape.strokeStyle?.scaleWithTransform ?? false
-                } else {
-                    false
-                }
 
-                // Apply transforms based on object properties
                 if isSelected && dragPreviewDelta != .zero {
                     context.transform = baseTransform
                         .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                } else if isSelected && liveScaleTransform != .identity && strokeScalesWithTransform && !isTextObject {
-                    // If stroke scales with transform, apply transform to context (scales both path and stroke)
-                    context.transform = liveScaleTransform.concatenating(baseTransform)
                 } else {
                     context.transform = baseTransform
                 }
 
-                // Pass liveScaleTransform to renderShape only if stroke doesn't scale with transform
+                // Pass liveScaleTransform to renderShape so it can apply it to the path geometry
                 // This keeps stroke width constant during scaling
-                let shapeTransform = (isSelected && !isTextObject && !strokeScalesWithTransform) ? liveScaleTransform : .identity
+                let shapeTransform = (isSelected && !isTextObject) ? liveScaleTransform : .identity
 
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
@@ -315,14 +300,11 @@ struct LayerCanvasView: View {
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
         guard hasVisibleFill || hasVisibleStroke else { return }
 
-        // Check if stroke should scale with transform
-        let strokeScalesWithTransform = shape.strokeStyle?.scaleWithTransform ?? false
-
         // Use cached CGPath (O(1) on cache hit)
-        // If scaleTransform is active and stroke doesn't scale, apply transform to path geometry only
-        // If stroke scales with transform, apply transform to context instead (legacy behavior)
+        // If scaleTransform is active, apply it to the path geometry to scale the shape
+        // while keeping stroke width constant
         let cgPath: CGPath
-        if scaleTransform != .identity && !strokeScalesWithTransform {
+        if scaleTransform != .identity {
             let mutablePath = CGMutablePath()
             mutablePath.addPath(shape.cachedCGPath, transform: scaleTransform)
             cgPath = mutablePath
@@ -592,15 +574,6 @@ struct LayerCanvasView: View {
             let glyphRange = layoutManager.glyphRange(for: textContainer)
             let textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
-            // Calculate text bounds for selection outline
-            let usedRect = layoutManager.usedRect(for: textContainer)
-            let textBounds = CGRect(
-                x: textPosition.x,
-                y: textPosition.y,
-                width: usedRect.width,
-                height: usedRect.height
-            )
-
             // Enumerate and draw lines (O(k) where k = number of lines)
             layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
@@ -631,23 +604,6 @@ struct LayerCanvasView: View {
                 cgContext.textMatrix = textMatrix
                 cgContext.textPosition = CGPoint(x: lineX, y: lineY)
                 CTLineDraw(line, cgContext)
-                cgContext.restoreGState()
-            }
-
-            // Draw selection outline if selected
-            if isSelected {
-                cgContext.saveGState()
-                cgContext.setAlpha(1.0)
-
-                // Use a blue outline that contrasts with any text color
-                cgContext.setStrokeColor(NSColor.systemBlue.cgColor)
-                cgContext.setLineWidth(1.0)
-
-                // Add slight padding around text
-                let padding: CGFloat = 2.0
-                let outlineRect = textBounds.insetBy(dx: -padding, dy: -padding)
-
-                cgContext.stroke(outlineRect)
                 cgContext.restoreGState()
             }
 

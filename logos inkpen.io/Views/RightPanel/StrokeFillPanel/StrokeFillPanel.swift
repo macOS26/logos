@@ -514,10 +514,6 @@ struct StrokeFillPanel: View {
         PaintSelectionOperations.shared.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
     }
 
-    private func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool) {
-        PaintSelectionOperations.shared.updateStrokeScaleWithTransform(scaleWithTransform, document: document)
-    }
-
     private func updateImageOpacity(_ opacity: Double) {
         PaintSelectionOperations.shared.updateImageOpacity(opacity, document: document)
     }
