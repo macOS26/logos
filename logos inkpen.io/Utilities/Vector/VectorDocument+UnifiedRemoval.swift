@@ -3,64 +3,67 @@ import SwiftUI
 extension VectorDocument {
 
     func removeShapeFromUnifiedSystem(id: UUID) {
-        unifiedObjects.removeAll { obj in
-            switch obj.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if shape.id == id {
-                    ImageContentRegistry.remove(for: id, in: self)
-                    return true
-                }
-            case .text:
-                break
-            }
-            return false
+        guard let object = snapshot.objects[id] else { return }
+        let layerIndex = object.layerIndex
+
+        // Remove from snapshot
+        snapshot.objects.removeValue(forKey: id)
+
+        // Remove from layer's objectIDs
+        if layerIndex >= 0 && layerIndex < snapshot.layers.count {
+            snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
         }
 
+        ImageContentRegistry.remove(for: id, in: self)
         viewState.selectedObjectIDs.remove(id)
+
+        // Trigger layer update
+        if layerIndex >= 0 && layerIndex < snapshot.layers.count {
+            triggerLayerUpdate(for: layerIndex)
+        }
     }
 
     func removeTextFromUnifiedSystem(id: UUID) {
+        guard let object = snapshot.objects[id] else { return }
+        let layerIndex = object.layerIndex
 
-        unifiedObjects.removeAll { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
+        // Remove from snapshot
+        snapshot.objects.removeValue(forKey: id)
+
+        // Remove from layer's objectIDs
+        if layerIndex >= 0 && layerIndex < snapshot.layers.count {
+            snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
         }
 
         viewState.selectedObjectIDs.remove(id)
 
-    }
-
-    func updateEntireTextInUnified(id: UUID, updater: (inout VectorText) -> Void) {
-        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            if case .text(let shape) = unifiedObjects[unifiedIndex].objectType,
-               var vectorText = VectorText.from(shape) {
-
-                updater(&vectorText)
-
-                let updatedShape = VectorShape.from(vectorText)
-                let layerIndex = unifiedObjects[unifiedIndex].layerIndex
-                unifiedObjects[unifiedIndex] = VectorObject(
-                    shape: updatedShape,
-                    layerIndex: layerIndex,
-                )
-
-            }
+        // Trigger layer update
+        if layerIndex >= 0 && layerIndex < snapshot.layers.count {
+            triggerLayerUpdate(for: layerIndex)
         }
     }
 
+    func updateEntireTextInUnified(id: UUID, updater: (inout VectorText) -> Void) {
+        guard let object = snapshot.objects[id] else { return }
+        guard case .text(let shape) = object.objectType,
+              var vectorText = VectorText.from(shape) else { return }
+
+        updater(&vectorText)
+
+        let updatedShape = VectorShape.from(vectorText)
+        let layerIndex = object.layerIndex
+        let updatedObject = VectorObject(
+            shape: updatedShape,
+            layerIndex: layerIndex
+        )
+
+        // Update snapshot ONLY
+        snapshot.objects[id] = updatedObject
+        triggerLayerUpdate(for: layerIndex)
+    }
+
     func getTextCount() -> Int {
-        return unifiedObjects.filter { obj in
+        return snapshot.objects.values.filter { obj in
             if case .text = obj.objectType {
                 return true
             }
@@ -69,30 +72,27 @@ extension VectorDocument {
     }
 
     func hasTextObjects() -> Bool {
-        return unifiedObjects.contains { obj in
+        return snapshot.objects.values.contains { obj in
             if case .text = obj.objectType {
                 return true
             }
             return false
         }
     }
+
     func getTextByID(_ id: UUID) -> VectorText? {
-        for unifiedObject in unifiedObjects {
-            if case .text(let shape) = unifiedObject.objectType,
-               shape.id == id,
-               var vectorText = VectorText.from(shape) {
-                vectorText.layerIndex = unifiedObject.layerIndex
-                return vectorText
-            }
-        }
-        return nil
+        guard let object = snapshot.objects[id] else { return nil }
+        guard case .text(let shape) = object.objectType,
+              var vectorText = VectorText.from(shape) else { return nil }
+        vectorText.layerIndex = object.layerIndex
+        return vectorText
     }
 
     func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
-        for unifiedObject in unifiedObjects {
-            if case .text(let shape) = unifiedObject.objectType,
+        for object in snapshot.objects.values {
+            if case .text(let shape) = object.objectType,
                var vectorText = VectorText.from(shape) {
-                vectorText.layerIndex = unifiedObject.layerIndex
+                vectorText.layerIndex = object.layerIndex
                 if predicate(vectorText) {
                     return vectorText
                 }
@@ -102,12 +102,22 @@ extension VectorDocument {
     }
 
     func removeAllText() {
-        unifiedObjects.removeAll { obj in
-            if case .text = obj.objectType {
-                return true
+        var affectedLayers = Set<Int>()
+
+        for (id, object) in snapshot.objects {
+            if case .text = object.objectType {
+                affectedLayers.insert(object.layerIndex)
+                snapshot.objects.removeValue(forKey: id)
+
+                // Remove from layer's objectIDs
+                let layerIndex = object.layerIndex
+                if layerIndex >= 0 && layerIndex < snapshot.layers.count {
+                    snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
+                }
             }
-            return false
         }
 
+        // Trigger updates for all affected layers
+        triggerLayerUpdates(for: affectedLayers)
     }
 }
