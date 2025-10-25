@@ -8,8 +8,8 @@ extension DrawingCanvas {
         if let selectedGradient = getSelectedShapeGradient(document: document),
            let selectedShape = getSelectedShapeWithGradient() {
             // Use live state if dragging, otherwise get from document
-            let originX = liveGradientOriginX ?? getGradientOriginX(selectedGradient)
-            let originY = liveGradientOriginY ?? getGradientOriginY(selectedGradient)
+            let originX = document.viewState.liveGradientOriginX ?? getGradientOriginX(selectedGradient)
+            let originY = document.viewState.liveGradientOriginY ?? getGradientOriginY(selectedGradient)
 
             let shapeBounds = selectedShape.bounds
             let centerX = shapeBounds.minX + shapeBounds.width * originX
@@ -121,8 +121,8 @@ extension DrawingCanvas {
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
         // Update live state for immediate UI feedback
-        liveGradientOriginX = relativeX
-        liveGradientOriginY = relativeY
+        document.viewState.liveGradientOriginX = relativeX
+        document.viewState.liveGradientOriginY = relativeY
 
         // Apply live update to shape (like Grade panel does)
         updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
@@ -134,8 +134,8 @@ extension DrawingCanvas {
               let fillStyle = finalShape.fillStyle,
               case .gradient(let finalGradient) = fillStyle.color,
               let startGradient = dragStartGradient else {
-            liveGradientOriginX = nil
-            liveGradientOriginY = nil
+            document.viewState.liveGradientOriginX = nil
+            document.viewState.liveGradientOriginY = nil
             dragStartGradient = nil
             return
         }
@@ -152,8 +152,8 @@ extension DrawingCanvas {
         document.commandManager.execute(command)
 
         // Clear live state
-        liveGradientOriginX = nil
-        liveGradientOriginY = nil
+        document.viewState.liveGradientOriginX = nil
+        document.viewState.liveGradientOriginY = nil
         dragStartGradient = nil
     }
     
