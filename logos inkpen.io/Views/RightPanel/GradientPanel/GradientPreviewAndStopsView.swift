@@ -24,6 +24,10 @@ struct GradientPreviewAndStopsView: View {
     let activateGradientStop: (UUID, VectorColor) -> Void
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
+        // Force redraw when live state changes
+        let liveOriginX = document.viewState.liveGradientOriginX
+        let liveOriginY = document.viewState.liveGradientOriginY
+
         return Canvas { context, size in
             guard let gradient = currentGradient else {
                 // Draw gray background if no gradient
@@ -32,9 +36,13 @@ struct GradientPreviewAndStopsView: View {
                 return
             }
 
+            // Use live origin if available
+            let originX = liveOriginX ?? getOriginX(gradient)
+            let originY = liveOriginY ?? getOriginY(gradient)
+
             // Draw gradient background using CGContext
             context.withCGContext { cgContext in
-                renderGradientToCGContext(gradient: gradient, context: cgContext, size: size)
+                renderGradientToCGContext(gradient: gradient, context: cgContext, size: size, liveOriginX: originX, liveOriginY: originY)
             }
 
             // Draw border
@@ -98,9 +106,7 @@ struct GradientPreviewAndStopsView: View {
                 context.draw(text, at: CGPoint(x: label.x, y: label.y), anchor: UnitPoint(x: label.alignX, y: label.alignY))
             }
 
-            // Draw centerpoint dot
-            let originX = document.viewState.liveGradientOriginX ?? getOriginX(gradient)
-            let originY = document.viewState.liveGradientOriginY ?? getOriginY(gradient)
+            // Draw centerpoint dot (use originX/originY already declared above)
             let clampedX = max(0.0, min(1.0, originX))
             let clampedY = max(0.0, min(1.0, originY))
             let dotPos = CGPoint(x: clampedX * size.width, y: clampedY * size.height)
@@ -112,7 +118,7 @@ struct GradientPreviewAndStopsView: View {
         .frame(width: squareSize, height: squareSize)
     }
 
-    private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize) {
+    private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize, liveOriginX: Double, liveOriginY: Double) {
         context.saveGState()
 
         let pathBounds = CGRect(origin: .zero, size: size)
@@ -136,11 +142,9 @@ struct GradientPreviewAndStopsView: View {
 
         switch gradient {
         case .linear(let linear):
-            let originX = linear.originPoint.x
-            let originY = linear.originPoint.y
             let scale = CGFloat(linear.scaleX)
-            let scaledOriginX = originX * scale
-            let scaledOriginY = originY * scale
+            let scaledOriginX = liveOriginX * Double(scale)
+            let scaledOriginY = liveOriginY * Double(scale)
             let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
             let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
             let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)
@@ -158,10 +162,8 @@ struct GradientPreviewAndStopsView: View {
             context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 
         case .radial(let radial):
-            let originX = radial.originPoint.x
-            let originY = radial.originPoint.y
-            let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
-                                 y: pathBounds.minY + pathBounds.height * originY)
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * liveOriginX,
+                                 y: pathBounds.minY + pathBounds.height * liveOriginY)
 
             context.saveGState()
             context.translateBy(x: center.x, y: center.y)
