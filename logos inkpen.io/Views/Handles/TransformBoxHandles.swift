@@ -384,6 +384,15 @@ struct TransformBoxHandles: View {
             // Update live scale transform when live preview is enabled
             if settings.liveScalingPreview {
                 liveScaleTransform = scaleTransform
+
+                // Trigger layer updates for all selected objects
+                var affectedLayers = Set<Int>()
+                for objectID in document.viewState.selectedObjectIDs {
+                    if let obj = document.snapshot.objects[objectID] {
+                        affectedLayers.insert(obj.layerIndex)
+                    }
+                }
+                document.triggerLayerUpdates(for: affectedLayers)
             }
             return
         }
@@ -440,6 +449,15 @@ struct TransformBoxHandles: View {
         // Update live scale transform when live preview is enabled
         if settings.liveScalingPreview {
             liveScaleTransform = scaleTransform
+
+            // Trigger layer updates for all selected objects
+            var affectedLayers = Set<Int>()
+            for objectID in document.viewState.selectedObjectIDs {
+                if let obj = document.snapshot.objects[objectID] {
+                    affectedLayers.insert(obj.layerIndex)
+                }
+            }
+            document.triggerLayerUpdates(for: affectedLayers)
         }
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
