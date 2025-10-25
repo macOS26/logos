@@ -27,27 +27,35 @@ struct ProfessionalDirectSelectionView: View {
 
             // Draw outlines and ALL anchor points for selected shapes
             for objectID in selectedObjectIDs {
-                guard let object = document.snapshot.objects[objectID],
-                      case .shape(let shape) = object.objectType else { continue }
+                guard let object = document.snapshot.objects[objectID] else { continue }
 
-                drawOutline(shape, context: &context, zoom: zoom)
+                switch object.objectType {
+                case .shape(let shape):
+                    drawOutline(shape, context: &context, zoom: zoom)
 
-                // Draw ALL anchor points for this shape
-                // Transform position but NOT the point size
-                for (elementIndex, element) in shape.path.elements.enumerated() {
-                    if let point = extractPoint(element) {
-                        let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-                        let isSelected = selectedPoints.contains(pointID)
+                    // Draw ALL anchor points for this shape
+                    // Transform position but NOT the point size
+                    for (elementIndex, element) in shape.path.elements.enumerated() {
+                        if let point = extractPoint(element) {
+                            let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                            let isSelected = selectedPoints.contains(pointID)
 
-                        // Transform position only
-                        let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+                            // Transform position only
+                            let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
-                        // Fixed screen size - divide by zoom to counteract canvas transform
-                        let pointSize: CGFloat = 7.0 / zoom
-                        let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
-                        context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.4 / zoom)
+                            // Fixed screen size - divide by zoom to counteract canvas transform
+                            let pointSize: CGFloat = 7.0 / zoom
+                            let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
+                            context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
+                            context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.4 / zoom)
+                        }
                     }
+
+                case .text(let shape):
+                    drawTextOutline(shape, context: &context, zoom: zoom)
+
+                default:
+                    break
                 }
             }
 
@@ -94,6 +102,29 @@ struct ProfessionalDirectSelectionView: View {
         var ctx = context
         ctx.concatenate(shape.transform)
         ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.4 / zoom)
+    }
+
+    private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
+        // Determine outline color based on view mode
+        let isKeylineMode = document.viewState.viewMode == .keyline
+        let outlineColor: Color = isKeylineMode ? .black : .red
+
+        // Get text bounds from areaSize or bounds
+        let textBounds: CGRect
+        if let areaSize = shape.areaSize {
+            textBounds = CGRect(origin: .zero, size: areaSize)
+        } else {
+            textBounds = shape.bounds
+        }
+
+        // Create rectangle path in local coordinates
+        var outlinePath = Path()
+        outlinePath.addRect(textBounds)
+
+        // Apply shape transform and draw
+        var ctx = context
+        ctx.concatenate(shape.transform)
+        ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: 1.4 / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
