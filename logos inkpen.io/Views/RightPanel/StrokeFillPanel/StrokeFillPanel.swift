@@ -396,7 +396,7 @@ struct StrokeFillPanel: View {
                     case .brush:
                         VariableStrokeSection(document: document)
                     case .marker:
-                        MarkerSettingsSection(document: document)
+                        MarkerSettingsSection()
                     default:
                         EmptyView()
                     }
