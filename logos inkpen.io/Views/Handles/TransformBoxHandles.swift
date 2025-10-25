@@ -354,8 +354,8 @@ struct TransformBoxHandles: View {
             let preciseZoom = CGFloat(zoomLevel)
             let dxCanvas = (dragValue.location.x - startLocation.x) / preciseZoom
             let dyCanvas = (dragValue.location.y - startLocation.y) / preciseZoom
-            let denomX = max(20.0, bounds.width)
-            let denomY = max(20.0, bounds.height)
+            let denomX = abs(bounds.width) > 0 ? bounds.width : 1.0
+            let denomY = abs(bounds.height) > 0 ? bounds.height : 1.0
             var sx = 1.0 + (dxCanvas / denomX)
             var sy = 1.0 + (dyCanvas / denomY)
 
@@ -369,10 +369,7 @@ struct TransformBoxHandles: View {
                 sy = 1.0 + u
             }
 
-            let maxScale: CGFloat = 10.0
-            let minScale: CGFloat = 0.0
-            sx = min(max(sx, minScale), maxScale)
-            sy = min(max(sy, minScale), maxScale)
+            // No min/max constraints - allow free scaling
 
             let scaleTransform = CGAffineTransform.identity
                 .translatedBy(x: anchor.x, y: anchor.y)
@@ -411,11 +408,6 @@ struct TransformBoxHandles: View {
             y: dragValue.location.y - anchorScreenY
         )
 
-        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        let adaptiveMinDistanceX = min(20.0, max(2.0, abs(baseBounds.width) * 0.05))
-        let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
-        let maxScale: CGFloat = 10.0
-        let minScale: CGFloat = 0.0
         var scaleX: CGFloat = 1.0
         var scaleY: CGFloat = 1.0
         let isCorner = [0,2,4,6].contains(index)
@@ -423,8 +415,8 @@ struct TransformBoxHandles: View {
         let isLeftRight = [3,7].contains(index)
 
         if isCorner {
-            scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-            scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+            scaleX = abs(startDistance.x) > 0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+            scaleY = abs(startDistance.y) > 0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let uniformScale = max(scaleX, scaleY)
@@ -432,13 +424,12 @@ struct TransformBoxHandles: View {
                 scaleY = uniformScale
             }
         } else if isTopBottom {
-            scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+            scaleY = abs(startDistance.y) > 0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         } else if isLeftRight {
-            scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+            scaleX = abs(startDistance.x) > 0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         }
 
-        scaleX = min(max(scaleX, minScale), maxScale)
-        scaleY = min(max(scaleY, minScale), maxScale)
+        // No min/max constraints - allow free scaling
 
         let scaleTransform = CGAffineTransform.identity
             .translatedBy(x: anchor.x, y: anchor.y)
