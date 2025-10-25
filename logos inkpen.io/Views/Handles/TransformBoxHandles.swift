@@ -489,22 +489,24 @@ struct TransformBoxHandles: View {
         print("🟢 Found old shape in snapshot, transform: \(oldShape.transform)")
 
         if oldShape.typography != nil {
-            print("🟢 Processing text box transform")
-            // Text boxes: resize areaSize and textPosition
-            let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
-            let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
-
+            print("🟢 Processing text box reflow")
+            // Text boxes: reflow text to new size instead of transforming
             if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
-                let newWidth = originalAreaSize.width * scaleX
-                let newHeight = originalAreaSize.height * scaleY
-
                 let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                 let transformedBounds = originalBounds.applying(previewTransform)
+
+                let newWidth = transformedBounds.width
+                let newHeight = transformedBounds.height
                 let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
 
                 document.updateTextAreaSizeInUnified(id: oldShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
                 document.updateTextBoundsInUnified(id: oldShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
                 document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
+
+                // Trigger layer update for text reflow
+                if let obj = document.snapshot.objects[oldShape.id] {
+                    document.triggerLayerUpdates(for: [obj.layerIndex])
+                }
             }
         } else {
             print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
