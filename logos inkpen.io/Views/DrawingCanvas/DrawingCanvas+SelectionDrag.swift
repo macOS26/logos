@@ -32,6 +32,7 @@ extension DrawingCanvas {
             }
         }
 
+        // Calculate combined bounding box in DOCUMENT coordinates (with transforms applied)
         var combinedBounds: CGRect?
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
@@ -43,10 +44,12 @@ extension DrawingCanvas {
                  .clipGroup(let shape),
                  .clipMask(let shape):
                 let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                // Apply transform to get bounds in document coordinates
+                let transformedBounds = bounds.applying(shape.transform)
                 if let existing = combinedBounds {
-                    combinedBounds = existing.union(bounds)
+                    combinedBounds = existing.union(transformedBounds)
                 } else {
-                    combinedBounds = bounds
+                    combinedBounds = transformedBounds
                 }
             }
         }
