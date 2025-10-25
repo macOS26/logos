@@ -11,11 +11,13 @@ struct TransformBoxHandles: View {
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
+    @Binding var liveScaleTransform: CGAffineTransform
 
     @State private var isScaling: Bool = false
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
+    @ObservedObject private var settings = ApplicationSettings.shared
 
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
@@ -50,7 +52,8 @@ struct TransformBoxHandles: View {
             }
             .allowsHitTesting(false)
 
-            if isScaling && !previewTransform.isIdentity {
+            // Only show red preview lines if live preview is disabled
+            if isScaling && !previewTransform.isIdentity && !settings.liveScalingPreview {
                 // Check if this is multi-selection (Combined Selection)
                 if shape.name == "Combined Selection" {
                     // Render preview for all selected objects
@@ -338,6 +341,11 @@ struct TransformBoxHandles: View {
         startLocation = startValue.startLocation
         initialTransform = .identity
         document.isHandleScalingActive = true
+
+        // Reset live scale transform when live preview is enabled
+        if settings.liveScalingPreview {
+            liveScaleTransform = .identity
+        }
     }
 
     private func updateScaling(forHandle index: Int, dragValue: DragGesture.Value, bounds: CGRect) {
@@ -372,6 +380,11 @@ struct TransformBoxHandles: View {
 
             previewTransform = scaleTransform
             document.isHandleScalingActive = true
+
+            // Update live scale transform when live preview is enabled
+            if settings.liveScalingPreview {
+                liveScaleTransform = scaleTransform
+            }
             return
         }
 
@@ -424,6 +437,11 @@ struct TransformBoxHandles: View {
         previewTransform = scaleTransform
         document.isHandleScalingActive = true
 
+        // Update live scale transform when live preview is enabled
+        if settings.liveScalingPreview {
+            liveScaleTransform = scaleTransform
+        }
+
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
         document.viewState.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
@@ -434,6 +452,11 @@ struct TransformBoxHandles: View {
         isScaling = false
         document.isHandleScalingActive = false
         document.viewState.scalePreviewDimensions = .zero
+
+        // Reset live scale transform
+        if settings.liveScalingPreview {
+            liveScaleTransform = .identity
+        }
 
         // Check if this is multi-selection (virtual combined shape)
         if shape.name == "Combined Selection" {

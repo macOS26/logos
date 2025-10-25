@@ -73,7 +73,8 @@ struct SelectionHandlesView: View {
                                                 canvasOffset: document.viewState.canvasOffset,
                                                 isShiftPressed: isShiftPressed,
                                                 transformOrigin: document.viewState.transformOrigin,
-                                                strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                                                strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
+                                                liveScaleTransform: $liveScaleTransform
                                             )
                                     } else if document.viewState.currentTool == .scale {
                                         ScaleHandles(
@@ -145,7 +146,8 @@ struct SelectionHandlesView: View {
                         canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.viewState.transformOrigin,
-                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
+                        liveScaleTransform: $liveScaleTransform
                     )
                 } else if document.viewState.currentTool == .scale {
                     ScaleHandles(
@@ -233,7 +235,8 @@ struct SelectionHandlesView: View {
                     canvasOffset: document.viewState.canvasOffset,
                     isShiftPressed: isShiftPressed,
                     transformOrigin: document.viewState.transformOrigin,
-                    strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                    strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
+                    liveScaleTransform: $liveScaleTransform
                 )
             }
         }

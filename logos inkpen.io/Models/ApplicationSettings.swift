@@ -93,5 +93,10 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
     }
 
+    // MARK: - Transform Settings
+    @Published var liveScalingPreview: Bool = UserDefaults.standard.object(forKey: "liveScalingPreview") as? Bool ?? false {
+        didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
+    }
+
     private init() {}
 }

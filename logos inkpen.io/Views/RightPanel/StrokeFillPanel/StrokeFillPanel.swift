@@ -380,6 +380,8 @@ struct StrokeFillPanel: View {
                         EmptyView()
                     }
 
+                    TransformPreferencesSection()
+
                 Spacer()
             }
             .padding()
