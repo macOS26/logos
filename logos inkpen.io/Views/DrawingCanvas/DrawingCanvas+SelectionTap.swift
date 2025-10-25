@@ -14,64 +14,18 @@ extension DrawingCanvas {
         }
 
         if isCommandPressed && document.viewState.currentTool == .selection {
-            var hitShape: VectorShape?
-            var hitLayerIndex: Int?
-            outerHit: for unifiedObject in document.unifiedObjects.reversed() {
-                if unifiedObject.layerIndex < document.layers.count {
-                    let layer = document.layers[unifiedObject.layerIndex]
-                    if layer.isLocked { continue }
-                }
-
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    if !shape.isVisible { continue }
-                    // Get text position from transform and create hit area
-                    let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                    let textArea = CGRect(x: textPos.x, y: textPos.y, width: shape.bounds.width, height: shape.bounds.height)
-                    if textArea.contains(validatedLocation) {
-                        hitShape = shape
-                        hitLayerIndex = unifiedObject.layerIndex
-                        break outerHit
-                    }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    if !shape.isVisible { continue }
-                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                    if isBackgroundShape { continue }
-
-                    let baseTolerance: CGFloat = 8.0
-                    let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
-                    let isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
-
-                    if isHit {
-                        hitShape = shape
-                        hitLayerIndex = unifiedObject.layerIndex
-                        break outerHit
-                    }
-                }
+            // Cmd+Click: Use path-based hit test and switch to direct selection
+            guard let hitObject = findObjectWithPathHitTest(validatedLocation) else {
+                return
             }
-            if let shape = hitShape, let layerIndex = hitLayerIndex {
-                let isAlreadySelected = document.viewState.selectedObjectIDs.contains(shape.id)
-                if isAlreadySelected {
-                    document.viewState.currentTool = .directSelection
-                    selectedObjectIDs = [shape.id]
-                    selectedPoints.removeAll()
-                    selectedHandles.removeAll()
-                    syncDirectSelectionWithDocument()
-                    document.selectedLayerIndex = layerIndex
-                } else {
-                    document.viewState.selectedObjectIDs.removeAll()
-                    if isShiftPressed {
-                        document.viewState.selectedObjectIDs.insert(shape.id)
-                    } else {
-                        document.viewState.selectedObjectIDs = [shape.id]
-                    }
-                    document.selectedLayerIndex = layerIndex
-                }
-            }
+
+            // Always switch to direct selection tool
+            document.viewState.currentTool = .directSelection
+            selectedObjectIDs = [hitObject.id]
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            syncDirectSelectionWithDocument()
+            document.selectedLayerIndex = hitObject.layerIndex
             return
         }
 
