@@ -605,6 +605,7 @@ struct GradientFillSection: View {
 
     func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
+        var affectedLayers = Set<Int>()
 
         if isLiveDrag {
             for objectID in selectedObjectIDs {
@@ -631,9 +632,10 @@ struct GradientFillSection: View {
 
                     let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
                     document.snapshot.objects[objectID] = updatedObject
+                    affectedLayers.insert(updatedObject.layerIndex)
                 }
             }
-            document.viewState.objectUpdateTrigger &+= 1
+            document.triggerLayerUpdates(for: affectedLayers)
             return
         }
 
@@ -661,9 +663,10 @@ struct GradientFillSection: View {
 
                 let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
                 document.snapshot.objects[objectID] = updatedObject
+                affectedLayers.insert(updatedObject.layerIndex)
             }
         }
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     func addGradientToSwatches() {
