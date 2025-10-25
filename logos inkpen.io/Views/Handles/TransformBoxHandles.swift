@@ -95,19 +95,20 @@ struct TransformBoxHandles: View {
                         for element in shape.path.elements {
                             switch element {
                             case .move(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                // Apply shape transform first, then preview transform
+                                let p = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
                                 path.move(to: p)
                             case .line(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                let p = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
                                 path.addLine(to: p)
                             case .curve(let to, let c1, let c2):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let tc1 = CGPoint(x: c1.x, y: c1.y).applying(previewTransform)
-                                let tc2 = CGPoint(x: c2.x, y: c2.y).applying(previewTransform)
+                                let tp = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let tc1 = CGPoint(x: c1.x, y: c1.y).applying(shape.transform).applying(previewTransform)
+                                let tc2 = CGPoint(x: c2.x, y: c2.y).applying(shape.transform).applying(previewTransform)
                                 path.addCurve(to: tp, control1: tc1, control2: tc2)
                             case .quadCurve(let to, let c):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let tc = CGPoint(x: c.x, y: c.y).applying(previewTransform)
+                                let tp = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let tc = CGPoint(x: c.x, y: c.y).applying(shape.transform).applying(previewTransform)
                                 path.addQuadCurve(to: tp, control: tc)
                             case .close:
                                 path.closeSubpath()
