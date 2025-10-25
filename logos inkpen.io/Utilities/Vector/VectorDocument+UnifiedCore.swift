@@ -15,25 +15,15 @@ extension VectorDocument {
     func setShapeAtIndex(layerIndex: Int, shapeIndex: Int, shape: VectorShape) {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return }
-        let oldShape = shapes[shapeIndex]
 
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let s) = obj.objectType {
-                return s.id == oldShape.id
-            }
-            return false
-        }) {
-            let objectType = VectorObject.determineType(for: shape)
-            let updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+        let objectType = VectorObject.determineType(for: shape)
+        let updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
 
-            // Update snapshot.objects (primary)
-            snapshot.objects[shape.id] = updatedObject
+        // Update snapshot ONLY
+        snapshot.objects[shape.id] = updatedObject
 
-            // Update unifiedObjects (for compatibility)
-            unifiedObjects[index] = updatedObject
-
-            changeNotifier.notifyObjectChanged(shape.id)
-        }
+        // Trigger layer update
+        triggerLayerUpdate(for: layerIndex)
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
@@ -156,33 +146,13 @@ extension VectorDocument {
             }
         }
 
-        // Add to snapshot
+        // Add to snapshot ONLY
         snapshot.objects[shape.id] = unifiedObject
         if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
             snapshot.layers[layerIndex].objectIDs.append(shape.id)
-            print("✅ Added shape \(shape.id) to layer \(layerIndex), layer now has \(snapshot.layers[layerIndex].objectIDs.count) objects")
-
-            // Debug: Check if we can retrieve it immediately
-            let testObjects = snapshot.layers[layerIndex].objectIDs.compactMap { id in
-                snapshot.objects[id]
-            }.filter { $0.isVisible }
-            print("🔍 TEST: Can retrieve \(testObjects.count) visible objects from layer \(layerIndex)")
-            if testObjects.isEmpty && !snapshot.layers[layerIndex].objectIDs.isEmpty {
-                print("   ❌ Objects exist but can't retrieve them!")
-                print("   Object visible? \(unifiedObject.isVisible)")
-            }
-        }
-
-        // Keep unifiedObjects in sync for now (for undo/redo)
-        let existingIndex = unifiedObjects.firstIndex { $0.id == shape.id }
-        if let existingIndex = existingIndex {
-            unifiedObjects[existingIndex] = unifiedObject
-        } else {
-            unifiedObjects.append(unifiedObject)
         }
 
         triggerLayerUpdate(for: layerIndex)
-        print("📊 Snapshot now has \(snapshot.objects.count) objects total")
     }
 
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
