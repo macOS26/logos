@@ -24,7 +24,11 @@ struct GradientPreviewAndStopsView: View {
     let activateGradientStop: (UUID, VectorColor) -> Void
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
-        Canvas { context, size in
+        // Capture live values to force view update
+        let liveX = document.viewState.liveGradientOriginX
+        let liveY = document.viewState.liveGradientOriginY
+
+        return Canvas { context, size in
             guard let gradient = currentGradient else {
                 // Draw gray background if no gradient
                 context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.gray.opacity(0.3)))
@@ -32,9 +36,9 @@ struct GradientPreviewAndStopsView: View {
                 return
             }
 
-            // Use live origin if available
-            let originX = document.viewState.liveGradientOriginX ?? getOriginX(gradient)
-            let originY = document.viewState.liveGradientOriginY ?? getOriginY(gradient)
+            // Use captured live origin
+            let originX = liveX ?? getOriginX(gradient)
+            let originY = liveY ?? getOriginY(gradient)
 
             // Draw gradient background using CGContext
             context.withCGContext { cgContext in
@@ -112,7 +116,6 @@ struct GradientPreviewAndStopsView: View {
             context.stroke(dotCircle, with: .color(.black), lineWidth: 1)
         }
         .frame(width: squareSize, height: squareSize)
-        .id("\(document.viewState.liveGradientOriginX ?? 0)-\(document.viewState.liveGradientOriginY ?? 0)")
     }
 
     private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize, liveOriginX: Double, liveOriginY: Double) {
