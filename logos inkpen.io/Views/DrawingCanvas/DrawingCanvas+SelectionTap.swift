@@ -13,21 +13,7 @@ extension DrawingCanvas {
             return
         }
 
-        if isCommandPressed && document.viewState.currentTool == .selection {
-            // Cmd+Click: Use path-based hit test and switch to direct selection
-            guard let hitObject = findObjectWithPathHitTest(validatedLocation) else {
-                return
-            }
-
-            // Always switch to direct selection tool
-            document.viewState.currentTool = .directSelection
-            selectedObjectIDs = [hitObject.id]
-            selectedPoints.removeAll()
-            selectedHandles.removeAll()
-            syncDirectSelectionWithDocument()
-            document.selectedLayerIndex = hitObject.layerIndex
-            return
-        }
+        // Note: Cmd key temporary switch to direct selection is handled by AppEventMonitor
 
         if isControlPressed && document.viewState.currentTool == .selection {
             var clickedShape: VectorShape?

@@ -64,6 +64,26 @@ final class AppEventMonitor {
             return nil
         }
 
+        // Cmd key - temporary direct selection when on arrow tool
+        if event.type == .flagsChanged {
+            let cmdPressed = event.modifierFlags.contains(.command)
+
+            // Cmd pressed: switch arrow tool to direct selection
+            if cmdPressed && activeDoc.viewState.currentTool == .selection && temporaryTool == nil {
+                previousTool = .selection
+                temporaryTool = .directSelection
+                activeDoc.viewState.currentTool = .directSelection
+            }
+            // Cmd released: switch back to arrow tool
+            else if !cmdPressed && temporaryTool == .directSelection {
+                if let previous = previousTool {
+                    activeDoc.viewState.currentTool = previous
+                    temporaryTool = nil
+                    previousTool = nil
+                }
+            }
+        }
+
         // Tab key - deselect all
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
