@@ -159,9 +159,23 @@ extension DrawingCanvas {
 
                 // Make BOTH handles visible (the selected one and its opposite)
                 visibleHandles.insert(handleID)  // Selected handle must be visible too!
-                let oppositeHandleType: HandleType = (handleID.handleType == .control1) ? .control2 : .control1
-                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex, handleType: oppositeHandleType)
-                visibleHandles.insert(oppositeHandleID)
+
+                // Find the opposite handle at the same anchor point
+                if handleID.handleType == .control2 {
+                    // control2 at element i = incoming handle to anchor at element i
+                    // Opposite is outgoing = control1 at element i+1
+                    if handleID.elementIndex + 1 < shape.path.elements.count {
+                        let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex + 1, handleType: .control1)
+                        visibleHandles.insert(oppositeHandleID)
+                    }
+                } else if handleID.handleType == .control1 {
+                    // control1 at element i = outgoing from anchor at element i-1
+                    // Opposite is incoming = control2 at element i-1
+                    if handleID.elementIndex > 0 {
+                        let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex - 1, handleType: .control2)
+                        visibleHandles.insert(oppositeHandleID)
+                    }
+                }
 
                 selectCoincidentHandles(for: handleID, shape: shape)
             }
