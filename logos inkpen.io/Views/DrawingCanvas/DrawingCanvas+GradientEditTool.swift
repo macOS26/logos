@@ -195,17 +195,29 @@ extension DrawingCanvas {
     
     private func updateGradientOriginXYOptimized(_ newX: Double, _ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
-        
+
+        let newGradient: VectorGradient
         switch selectedGradient {
         case .linear(var linear):
             linear.originPoint.x = newX
             linear.originPoint.y = newY
-            updateShapeGradientOptimized(shape: shape, newGradient: .linear(linear), isLiveDrag: isLiveDrag)
+            newGradient = .linear(linear)
         case .radial(var radial):
             radial.originPoint.x = newX
             radial.originPoint.y = newY
             radial.focalPoint = CGPoint(x: newX, y: newY)
-            updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
+            newGradient = .radial(radial)
+        }
+
+        // Update snapshot.objects directly for immediate feedback (like GradientPanel does)
+        if let newVectorObject = document.snapshot.objects[shape.id] {
+            var updatedShape = newVectorObject.shape
+            let currentOpacity = updatedShape.fillStyle?.opacity ?? 1.0
+            updatedShape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
+
+            let updatedObject = VectorObject(shape: updatedShape, layerIndex: newVectorObject.layerIndex)
+            document.snapshot.objects[shape.id] = updatedObject
+            document.triggerLayerUpdates(for: [updatedObject.layerIndex])
         }
     }
     
