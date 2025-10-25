@@ -166,8 +166,8 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Use same optimized hit test as selection tool
-        guard let hitObject = findObjectAtLocationOptimized(location) else {
+        // Use path-only hit test for direct selection (not bounding box)
+        guard let hitObject = findObjectWithPathHitTest(location) else {
             return false
         }
 

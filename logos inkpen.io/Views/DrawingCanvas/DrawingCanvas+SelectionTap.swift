@@ -189,6 +189,24 @@ extension DrawingCanvas {
         }
     }
 
+    /// Path-only hit test for direct selection (no bounding box)
+    internal func performPathOnlyHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
+        if shape.typography != nil {
+            let textBounds = CGRect(
+                x: shape.transform.tx,
+                y: shape.transform.ty,
+                width: shape.bounds.width,
+                height: shape.bounds.height
+            )
+            return textBounds.contains(location)
+        }
+
+        // Direct selection always uses path hit test
+        let baseTolerance: CGFloat = 8.0
+        let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
+        return PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+    }
+
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
         if shape.typography != nil {
             let textBounds = CGRect(
