@@ -197,8 +197,45 @@ struct GradientPreviewAndStopsView: View {
 
         return createGradientPreview(geometry: geometry, squareSize: squareSize)
             .contentShape(Rectangle())
-            .gesture(
+            .simultaneousGesture(
+                // Tap gesture for snap points
                 DragGesture(minimumDistance: 0)
+                    .onEnded { value in
+                        // Check if tap is near a snap point (within 12pt radius)
+                        let snapPoints: [(x: CGFloat, y: CGFloat)] = [
+                            (0, 0), (0.5, 0), (1, 0),
+                            (0, 0.5), (0.5, 0.5), (1, 0.5),
+                            (0, 1), (0.5, 1), (1, 1),
+                            (0.25, 0.25), (0.75, 0.25),
+                            (0.25, 0.75), (0.75, 0.75),
+                            (0.25, 0.5), (0.75, 0.5),
+                            (0.5, 0.25), (0.5, 0.75)
+                        ]
+
+                        let tapLocation = value.location
+                        let snapRadius: CGFloat = 12.0
+
+                        for point in snapPoints {
+                            let pointPos = CGPoint(x: point.x * fullWidth, y: point.y * fullWidth)
+                            let distance = sqrt(pow(tapLocation.x - pointPos.x, 2) + pow(tapLocation.y - pointPos.y, 2))
+
+                            if distance <= snapRadius {
+                                // Snap to this point
+                                updateOriginX(point.x, true)
+                                updateOriginY(point.y, true)
+                                return
+                            }
+                        }
+
+                        // No snap point hit, use tap location
+                        let normalizedX = max(0.0, min(1.0, tapLocation.x / fullWidth))
+                        let normalizedY = max(0.0, min(1.0, tapLocation.y / fullWidth))
+                        updateOriginX(normalizedX, true)
+                        updateOriginY(normalizedY, true)
+                    }
+            )
+            .gesture(
+                DragGesture(minimumDistance: 1)
                     .onChanged { value in
                         if dragStartGradient == nil {
                             dragStartGradient = currentGradient
