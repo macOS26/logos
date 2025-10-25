@@ -155,6 +155,22 @@ struct GradientFillSection: View {
         .onChange(of: selectedObjectIDs) { _, _ in
             updateSelectedGradient()
         }
+        .onChange(of: document.viewState.liveGradientOriginX) { _, newValue in
+            if let newX = newValue {
+                localOriginX = newX
+            } else {
+                // Drag ended, sync from document gradient
+                syncLocalStateFromDocument()
+            }
+        }
+        .onChange(of: document.viewState.liveGradientOriginY) { _, newValue in
+            if let newY = newValue {
+                localOriginY = newY
+            } else {
+                // Drag ended, sync from document gradient
+                syncLocalStateFromDocument()
+            }
+        }
     }
 
     private func turnOffEditingState() {
@@ -244,6 +260,20 @@ struct GradientFillSection: View {
                 localOriginY = linear.originPoint.y
             case .radial(let radial):
                 gradientType = .radial
+                localOriginX = radial.originPoint.x
+                localOriginY = radial.originPoint.y
+            }
+        }
+    }
+
+    private func syncLocalStateFromDocument() {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+            currentGradient = selectedGradient
+            switch selectedGradient {
+            case .linear(let linear):
+                localOriginX = linear.originPoint.x
+                localOriginY = linear.originPoint.y
+            case .radial(let radial):
                 localOriginX = radial.originPoint.x
                 localOriginY = radial.originPoint.y
             }
