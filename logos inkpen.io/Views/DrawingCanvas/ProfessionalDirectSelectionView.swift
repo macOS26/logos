@@ -18,7 +18,7 @@ struct ProfessionalDirectSelectionView: View {
             // Hide overlay during drag
             guard dragPreviewDelta == .zero else { return }
 
-            // Apply canvas transform once (same as LayerCanvasView)
+            // Apply canvas transform GLOBALLY (EXACT same as LayerCanvasView)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: offset.x, y: offset.y)
                 .scaledBy(x: zoom, y: zoom)
@@ -30,9 +30,9 @@ struct ProfessionalDirectSelectionView: View {
                 guard let object = document.snapshot.objects[objectID],
                       case .shape(let shape) = object.objectType else { continue }
 
-                drawOutline(shape, context: &context)
+                drawOutline(shape, context: &context, zoom: zoom)
 
-                // Draw ALL anchor points for this shape (in document coordinates)
+                // Draw ALL anchor points for this shape IN DOCUMENT COORDINATES
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     if let point = extractPoint(element) {
                         let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
@@ -40,7 +40,7 @@ struct ProfessionalDirectSelectionView: View {
 
                         let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
-                        // Fixed size in document space - canvas transform makes it correct screen size
+                        // Size in DOCUMENT space (will be scaled by canvas transform)
                         let pointSize: CGFloat = 8.0 / zoom
                         let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                         context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
@@ -55,7 +55,7 @@ struct ProfessionalDirectSelectionView: View {
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                drawHandle(handleID, shape: shape, context: &context, isSelected: true)
+                drawHandle(handleID, shape: shape, context: &context, zoom: zoom, isSelected: true)
             }
 
             // Draw visible handles
@@ -64,15 +64,15 @@ struct ProfessionalDirectSelectionView: View {
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                drawHandle(handleID, shape: shape, context: &context, isSelected: false)
+                drawHandle(handleID, shape: shape, context: &context, zoom: zoom, isSelected: false)
             }
         }
     }
 
-    private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext) {
-        let zoom = document.viewState.zoomLevel
-
+    private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
         var outlinePath = Path()
+
+        // Build path in local coordinates
         for element in shape.path.elements {
             switch element {
             case .move(let to):
@@ -94,8 +94,7 @@ struct ProfessionalDirectSelectionView: View {
         ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.0 / zoom)
     }
 
-    private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, isSelected: Bool) {
-        let zoom = document.viewState.zoomLevel
+    private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
         let element = shape.path.elements[handleID.elementIndex]
 
         var anchorPoint: CGPoint?
