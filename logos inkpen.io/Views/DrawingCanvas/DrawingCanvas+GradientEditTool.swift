@@ -1,12 +1,27 @@
 import SwiftUI
 import Combine
 
-extension DrawingCanvas {
-    
-    @ViewBuilder
-    func gradientEditTool(geometry: GeometryProxy) -> some View {
-        if let selectedGradient = getSelectedShapeGradient(document: document),
-           let selectedShape = getSelectedShapeWithGradient() {
+struct GradientCenterPointCanvasView: View {
+    let document: VectorDocument
+    let geometry: GeometryProxy
+    let onDragChanged: (DragGesture.Value) -> Void
+    let onDragEnded: (DragGesture.Value) -> Void
+
+    var body: some View {
+        Canvas { context, size in
+            guard let selectedGradient = getSelectedShapeGradient(document: document),
+                  let selectedShape = getSelectedShapeWithGradient(document: document) else { return }
+
+            let zoom = document.viewState.zoomLevel
+            let offset = document.viewState.canvasOffset
+
+            // Apply canvas transform (same as direct selection)
+            let baseTransform = CGAffineTransform.identity
+                .translatedBy(x: offset.x, y: offset.y)
+                .scaledBy(x: zoom, y: zoom)
+
+            context.transform = baseTransform
+
             // Use live state if dragging, otherwise get from document
             let originX = document.viewState.liveGradientOriginX ?? getGradientOriginX(selectedGradient)
             let originY = document.viewState.liveGradientOriginY ?? getGradientOriginY(selectedGradient)
@@ -15,36 +30,120 @@ extension DrawingCanvas {
             let centerX = shapeBounds.minX + shapeBounds.width * originX
             let centerY = shapeBounds.minY + shapeBounds.height * originY
             let centerPoint = CGPoint(x: centerX, y: centerY)
-            let screenPoint = canvasToScreen(centerPoint, geometry: geometry)
-            
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.8))
-                    .stroke(Color.white, lineWidth: 2.0)
-                    .frame(width: 16, height: 16)
-                
-                switch selectedGradient {
-                case .radial:
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 6, height: 6)
-                case .linear:
-                    Rectangle()
-                        .fill(Color.white)
-                        .frame(width: 8, height: 2)
-                        .rotationEffect(.degrees(45))
-                }
+
+            // Fixed screen size - divide by zoom
+            let outerSize: CGFloat = 16.0 / zoom
+            let innerSize: CGFloat = 6.0 / zoom
+            let strokeWidth: CGFloat = 2.0 / zoom
+
+            // Draw outer circle
+            let outerRect = CGRect(
+                x: centerPoint.x - outerSize/2,
+                y: centerPoint.y - outerSize/2,
+                width: outerSize,
+                height: outerSize
+            )
+            let outerCircle = Path(ellipseIn: outerRect)
+            context.fill(outerCircle, with: .color(.blue.opacity(0.8)))
+            context.stroke(outerCircle, with: .color(.white), lineWidth: strokeWidth)
+
+            // Draw inner indicator based on gradient type
+            switch selectedGradient {
+            case .radial:
+                let innerRect = CGRect(
+                    x: centerPoint.x - innerSize/2,
+                    y: centerPoint.y - innerSize/2,
+                    width: innerSize,
+                    height: innerSize
+                )
+                let innerCircle = Path(ellipseIn: innerRect)
+                context.fill(innerCircle, with: .color(.white))
+
+            case .linear:
+                let lineWidth: CGFloat = 8.0 / zoom
+                let lineHeight: CGFloat = 2.0 / zoom
+                let lineRect = CGRect(
+                    x: centerPoint.x - lineWidth/2,
+                    y: centerPoint.y - lineHeight/2,
+                    width: lineWidth,
+                    height: lineHeight
+                )
+                var linePath = Path(lineRect)
+                // Rotate 45 degrees
+                let rotation = CGAffineTransform(rotationAngle: .pi / 4)
+                let translated = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
+                linePath = linePath.applying(CGAffineTransform(translationX: -centerPoint.x, y: -centerPoint.y))
+                linePath = linePath.applying(rotation)
+                linePath = linePath.applying(translated)
+                context.fill(linePath, with: .color(.white))
             }
-            .position(screenPoint)
-            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
+        }
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged(onDragChanged)
+                .onEnded(onDragEnded)
+        )
+    }
+
+    private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
+        guard let shape = document.findShape(by: firstSelectedID),
+              let fillStyle = shape.fillStyle,
+              case .gradient(let gradient) = fillStyle.color else {
+            return nil
+        }
+        return gradient
+    }
+
+    private func getSelectedShapeWithGradient(document: VectorDocument) -> VectorShape? {
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
+        guard let shape = document.findShape(by: firstSelectedID),
+              let fillStyle = shape.fillStyle,
+              case .gradient = fillStyle.color else {
+            return nil
+        }
+        return shape
+    }
+
+    private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.originPoint.x
+        case .radial(let radial):
+            return radial.originPoint.x
+        }
+    }
+
+    private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.originPoint.y
+        case .radial(let radial):
+            return radial.originPoint.y
+        }
+    }
+}
+
+extension DrawingCanvas {
+
+    @ViewBuilder
+    func gradientEditTool(geometry: GeometryProxy) -> some View {
+        if getSelectedShapeGradient(document: document) != nil,
+           getSelectedShapeWithGradient() != nil {
+            GradientCenterPointCanvasView(
+                document: document,
+                geometry: geometry,
+                onDragChanged: { value in
+                    if let selectedShape = getSelectedShapeWithGradient(),
+                       let selectedGradient = getSelectedShapeGradient(document: document) {
                         handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
                     }
-                    .onEnded { value in
+                },
+                onDragEnded: { value in
+                    if let selectedShape = getSelectedShapeWithGradient() {
                         handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape)
                     }
+                }
             )
         }
     }
