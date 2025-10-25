@@ -189,92 +189,61 @@ extension VectorDocument {
     }
 
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
-        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
-            if case .shape(let existingShape) = unifiedObject.objectType {
-                return existingShape.id == shape.id
-            }
-            return false
-        }
-
-        if let existingIndex = existingIndex {
-            unifiedObjects.remove(at: existingIndex)
-        }
-
-        if isUndoRedoOperation {
-            if findObject(by: shape.id) != nil {
-                let objectType = VectorObject.determineType(for: shape)
-                let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
-                unifiedObjects.append(unifiedObject)
-                return
-            }
-        }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let objectType = VectorObject.determineType(for: shape)
-        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
-        unifiedObjects.append(unifiedObject)
+        let newVectorObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+
+        // Update snapshot ONLY
+        snapshot.objects[shape.id] = newVectorObject
+        if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
+            snapshot.layers[layerIndex].objectIDs.append(shape.id)
+        }
+        triggerLayerUpdate(for: layerIndex)
     }
 
     func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
-        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
-            if case .shape(let existingShape) = unifiedObject.objectType {
-                return existingShape.id == shape.id
-            }
-            return false
-        }
-
-        if let existingIndex = existingIndex {
-            unifiedObjects.remove(at: existingIndex)
-        }
-
-        // Find the first object that should be "behind" (i.e., we insert before it)
-        var insertIndex: Int?
-        for (index, unifiedObj) in unifiedObjects.enumerated() {
-            if unifiedObj.layerIndex == layerIndex {
-                if case .shape(let existingShape) = unifiedObj.objectType {
-                    if behindShapeIDs.contains(existingShape.id) {
-                        insertIndex = index
-                        break
-                    }
-                }
-            }
-        }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let objectType = VectorObject.determineType(for: shape)
-        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
-        if let insertIndex = insertIndex {
-            unifiedObjects.insert(unifiedObject, at: insertIndex)
-        } else {
-            unifiedObjects.append(unifiedObject)
+        let newVectorObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+
+        // Update snapshot ONLY
+        snapshot.objects[shape.id] = newVectorObject
+
+        // Find insertion point in layer's objectIDs
+        var insertIndex: Int?
+        for (index, objectID) in snapshot.layers[layerIndex].objectIDs.enumerated() {
+            if behindShapeIDs.contains(objectID) {
+                insertIndex = index
+                break
+            }
         }
+
+        if let insertIndex = insertIndex {
+            snapshot.layers[layerIndex].objectIDs.insert(shape.id, at: insertIndex)
+        } else {
+            if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
+                snapshot.layers[layerIndex].objectIDs.append(shape.id)
+            }
+        }
+        triggerLayerUpdate(for: layerIndex)
     }
 
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
-
-        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
-            if case .text(let existingShape) = unifiedObject.objectType {
-                return existingShape.id == text.id
-            }
-            return false
-        }
-
-        if let existingIndex = existingIndex {
-            unifiedObjects.remove(at: existingIndex)
-        }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         var textWithLayer = text
         textWithLayer.layerIndex = layerIndex
         let textShape = VectorShape.from(textWithLayer)
 
-        if isUndoRedoOperation {
-            if findObject(by: text.id) != nil {
-                let unifiedObject = VectorObject(id: textShape.id, layerIndex: layerIndex, objectType: .text(textShape))
-                unifiedObjects.append(unifiedObject)
-                return
-            }
+        let newVectorObject = VectorObject(id: textShape.id, layerIndex: layerIndex, objectType: .text(textShape))
+
+        // Update snapshot ONLY
+        snapshot.objects[textShape.id] = newVectorObject
+        if !snapshot.layers[layerIndex].objectIDs.contains(textShape.id) {
+            snapshot.layers[layerIndex].objectIDs.append(textShape.id)
         }
-
-        let unifiedObject = VectorObject(id: textShape.id, layerIndex: layerIndex, objectType: .text(textShape))
-        unifiedObjects.append(unifiedObject)
-
+        triggerLayerUpdate(for: layerIndex)
     }
 }
