@@ -414,6 +414,19 @@ class PaintSelectionOperations {
         }
     }
 
+    /// Update stroke scale with transform for selected objects
+    func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool, document: VectorDocument) {
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeScaleWithTransformInUnified(id: shape.id, scaleWithTransform: scaleWithTransform)
+            case .text:
+                continue
+            }
+        }
+    }
+
     // MARK: - Image Operations
 
     /// Update opacity for selected images
