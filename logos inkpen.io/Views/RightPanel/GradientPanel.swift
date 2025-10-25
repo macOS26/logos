@@ -227,6 +227,9 @@ struct GradientFillSection: View {
                 localOriginY = radial.originPoint.y
             }
             gradientId = UUID()
+            // Clear live state when switching to different gradient
+            document.viewState.liveGradientOriginX = nil
+            document.viewState.liveGradientOriginY = nil
         }
     }
 
@@ -317,6 +320,11 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
         }
         if applyToShapes {
+            if isLiveDrag {
+                document.viewState.liveGradientOriginX = newX
+            } else {
+                document.viewState.liveGradientOriginX = nil
+            }
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
@@ -334,6 +342,11 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
         }
         if applyToShapes {
+            if isLiveDrag {
+                document.viewState.liveGradientOriginY = newY
+            } else {
+                document.viewState.liveGradientOriginY = nil
+            }
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
