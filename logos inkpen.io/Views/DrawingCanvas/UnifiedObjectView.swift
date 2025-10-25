@@ -248,9 +248,9 @@ struct LayerCanvasView: View {
 
                 // Calculate scale factor if live scaling is active
                 // For a scale transform: .a = scaleX, .d = scaleY
+                // Use max to get the actual scaling being applied
                 let scaleFactor: CGFloat = if isSelected && liveScaleTransform != .identity {
-                    // Use average of x and y scale
-                    (abs(liveScaleTransform.a) + abs(liveScaleTransform.d)) / 2.0
+                    max(abs(liveScaleTransform.a), abs(liveScaleTransform.d))
                 } else {
                     1.0
                 }
