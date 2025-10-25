@@ -42,11 +42,11 @@ struct ProfessionalDirectSelectionView: View {
                         // Transform position only
                         let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
-                        // Divide by zoom to counteract canvas transform scaling
-                        let pointSize: CGFloat = 4.0 / zoom
+                        // Fixed document-space size - scales with zoom
+                        let pointSize: CGFloat = 3.0
                         let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                         context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0 / zoom)
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: 0.5)
                     }
                 }
             }
@@ -93,7 +93,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.0 / zoom)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 0.5)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
