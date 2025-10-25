@@ -200,6 +200,22 @@ struct SelectionHandlesView: View {
         return combinedBounds
     }
 
+    private func createCombinedShape(from bounds: CGRect) -> VectorShape {
+        var combinedShape = VectorShape(
+            name: "Combined Selection",
+            path: VectorPath(elements: [
+                .move(to: VectorPoint(0, 0)),
+                .line(to: VectorPoint(bounds.width, 0)),
+                .line(to: VectorPoint(bounds.width, bounds.height)),
+                .line(to: VectorPoint(0, bounds.height)),
+                .close
+            ], isClosed: true)
+        )
+        combinedShape.bounds = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height)
+        combinedShape.transform = CGAffineTransform(translationX: bounds.origin.x, y: bounds.origin.y)
+        return combinedShape
+    }
+
     @ViewBuilder
     private func renderCombinedSelectionBox() -> some View {
         if let bounds = combinedSelectionBounds {
@@ -209,23 +225,16 @@ struct SelectionHandlesView: View {
                                      .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
             if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
-                // Render combined bounding box using Canvas
-                Canvas { context, size in
-                    let zoom = document.viewState.zoomLevel
-                    let offset = document.viewState.canvasOffset
-
-                    let screenRect = CGRect(
-                        x: bounds.origin.x * zoom + offset.x,
-                        y: bounds.origin.y * zoom + offset.y,
-                        width: bounds.width * zoom,
-                        height: bounds.height * zoom
-                    )
-
-                    let path = Path(screenRect)
-                    let strokeColor = isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
-                    context.stroke(path, with: .color(strokeColor), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
-                }
-                .allowsHitTesting(false)
+                // Render TransformBoxHandles for the combined selection
+                TransformBoxHandles(
+                    document: document,
+                    shape: createCombinedShape(from: bounds),
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset,
+                    isShiftPressed: isShiftPressed,
+                    transformOrigin: document.viewState.transformOrigin,
+                    strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                )
             }
         }
     }
