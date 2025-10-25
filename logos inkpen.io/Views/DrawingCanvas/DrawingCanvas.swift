@@ -95,6 +95,7 @@ struct DrawingCanvas: View {
 
     @State internal var liveGradientOriginX: Double? = nil
     @State internal var liveGradientOriginY: Double? = nil
+    @State internal var dragStartGradient: VectorGradient? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
     //internal let metalPerformanceMonitor = PerformanceMonitor()

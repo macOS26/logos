@@ -217,12 +217,9 @@ struct LayerCanvasView: View {
     var body: some View {
 
         Canvas { context, size in
-            // Calculate viewport bounds for culling (O(1))
-            let viewportBounds = calculateViewportBounds(size: size)
 
             // Apply canvas transform ONCE to entire context (O(1))
-            var transformedContext = context
-            transformedContext.transform = CGAffineTransform.identity
+            context.transform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
@@ -230,10 +227,10 @@ struct LayerCanvasView: View {
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     let isSelected = selectedObjectIDs.contains(object.id)
-                    renderShape(shape, in: transformedContext, isSelected: isSelected)
+                    renderShape(shape, context: &context, isSelected: isSelected)
                 case .text(let shape):
                     let isSelected = selectedObjectIDs.contains(object.id)
-                    renderText(shape, in: transformedContext, isSelected: isSelected)
+                    renderText(shape, context: &context, isSelected: isSelected)
                 }
             }
         }
@@ -276,7 +273,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Shape Rendering
 
-    private func renderShape(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
+    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool) {
         // Fast path: skip invisible shapes (O(1))
         let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
@@ -286,29 +283,28 @@ struct LayerCanvasView: View {
         let cgPath = shape.cachedCGPath
 
         // Apply drag delta if selected (O(1))
-        var ctx = context
         if isSelected && dragPreviewDelta != .zero {
-            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+            context.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
         }
 
         // Render fill (O(1) for solid, O(n) for gradient where n = stops)
         if viewMode == .color, let fillStyle = shape.fillStyle {
             if let gradient = fillStyle.gradient {
-                renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
+                renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &context)
             } else if fillStyle.color != .clear {
-                ctx.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
             }
         }
 
         // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
         if viewMode == .keyline {
-            ctx.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
                 if let gradient = strokeStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
                 } else if strokeStyle.color != .clear {
-                    ctx.stroke(
+                    context.stroke(
                         Path(cgPath),
                         with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                         style: SwiftUI.StrokeStyle(
@@ -320,7 +316,7 @@ struct LayerCanvasView: View {
                     )
                 }
             } else {
-                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &ctx)
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
             }
         }
     }
@@ -480,18 +476,17 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
 
         // Apply drag delta if selected (O(1))
-        var ctx = context
         if isSelected && dragPreviewDelta != .zero {
-            ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+            context.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
         }
 
-        ctx.withCGContext { cgContext in
+        context.withCGContext { cgContext in
             cgContext.saveGState()
 
             cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
