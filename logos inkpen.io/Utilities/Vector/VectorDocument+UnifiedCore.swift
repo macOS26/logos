@@ -68,25 +68,19 @@ extension VectorDocument {
                 updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipMask(shape))
             }
 
-            // Update snapshot
+            // Update snapshot ONLY
             snapshot.objects[shapeID] = updatedObject
 
-            // Keep unifiedObjects in sync (needed for selection and ordering)
-            // Use cached index for O(1) update instead of O(n) search
-            if let index = unifiedObjectIndexCache[shapeID], index < unifiedObjects.count {
-                unifiedObjects[index] = updatedObject
-            }
-
-            // Notify only this specific object changed (unless silent)
+            // Trigger layer update (unless silent)
             if !silent {
-                changeNotifier.notifyObjectChanged(shapeID)
+                triggerLayerUpdate(for: layerIndex)
             }
             return
         }
 
         // Check in groups for child shapes
-        for groupIndex in unifiedObjects.indices {
-            switch unifiedObjects[groupIndex].objectType {
+        for (groupID, groupObject) in snapshot.objects {
+            switch groupObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
                 if groupShape.isGroupContainer {
                     if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
@@ -94,22 +88,24 @@ extension VectorDocument {
                         update(&childShape)
                         groupShape.groupedShapes[childIndex] = childShape
 
-                        let layerIndex = unifiedObjects[groupIndex].layerIndex
+                        let layerIndex = groupObject.layerIndex
                         // Preserve the existing group type (group or clipGroup)
-                        let objectType = unifiedObjects[groupIndex].objectType
                         let updatedType: VectorObject.ObjectType
-                        switch objectType {
+                        switch groupObject.objectType {
                         case .clipGroup:
                             updatedType = .clipGroup(groupShape)
                         default:
                             updatedType = .group(groupShape)
                         }
                         let updatedObject = VectorObject(id: groupShape.id, layerIndex: layerIndex, objectType: updatedType)
-                        unifiedObjects[groupIndex] = updatedObject
-                        unifiedObjectIndexCache[groupShape.id] = groupIndex
 
-                        // Notify that the group changed (since child changed)
-                        changeNotifier.notifyObjectChanged(groupShape.id)
+                        // Update snapshot ONLY
+                        snapshot.objects[groupID] = updatedObject
+
+                        // Trigger layer update (unless silent)
+                        if !silent {
+                            triggerLayerUpdate(for: layerIndex)
+                        }
                         return
                     }
                 }
@@ -120,26 +116,27 @@ extension VectorDocument {
     }
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
-        // Array position IS the order now - no sorting needed
-        // Use unifiedObjects since it maintains proper draw order
-        return unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
-            .compactMap { object -> VectorShape? in
-                switch object.objectType {
-                case .shape(let shape):
-                    return shape
-                case .text(let shape):
-                    return shape
-                case .group(let shape):
-                    return shape
-                case .warp(let shape):
-                    return shape
-                case .clipGroup(let shape):
-                    return shape
-                case .clipMask(let shape):
-                    return shape
-                }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return [] }
+
+        // Use snapshot.layers for proper ordering
+        let layer = snapshot.layers[layerIndex]
+        return layer.objectIDs.compactMap { objectID in
+            guard let object = snapshot.objects[objectID] else { return nil }
+            switch object.objectType {
+            case .shape(let shape):
+                return shape
+            case .text(let shape):
+                return shape
+            case .group(let shape):
+                return shape
+            case .warp(let shape):
+                return shape
+            case .clipGroup(let shape):
+                return shape
+            case .clipMask(let shape):
+                return shape
             }
+        }
     }
 
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
