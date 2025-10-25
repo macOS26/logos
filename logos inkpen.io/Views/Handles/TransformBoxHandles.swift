@@ -369,7 +369,7 @@ struct TransformBoxHandles: View {
             }
 
             let maxScale: CGFloat = 10.0
-            let minScale: CGFloat = 0.1
+            let minScale: CGFloat = 0.0
             sx = min(max(sx, minScale), maxScale)
             sy = min(max(sy, minScale), maxScale)
 
@@ -414,7 +414,7 @@ struct TransformBoxHandles: View {
         let adaptiveMinDistanceX = min(20.0, max(2.0, abs(baseBounds.width) * 0.05))
         let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
         let maxScale: CGFloat = 10.0
-        let minScale: CGFloat = 0.1
+        let minScale: CGFloat = 0.0
         var scaleX: CGFloat = 1.0
         var scaleY: CGFloat = 1.0
         let isCorner = [0,2,4,6].contains(index)
