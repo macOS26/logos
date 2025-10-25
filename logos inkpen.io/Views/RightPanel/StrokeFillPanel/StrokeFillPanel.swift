@@ -177,6 +177,23 @@ struct StrokeFillPanel: View {
         return document.strokeDefaults.miterLimit
     }
 
+    private var strokeScaleWithTransform: Bool {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
+            case .text:
+                return false
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.scaleWithTransform ?? false
+            }
+        }
+        return false
+    }
+
     private var hasSelectedImages: Bool {
         return document.viewState.selectedObjectIDs.contains { objectID in
             if let newVectorObject = document.snapshot.objects[objectID] {
@@ -269,6 +286,7 @@ struct StrokeFillPanel: View {
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
                         strokeMiterLimit: strokeMiterLimitState,
+                        strokeScaleWithTransform: strokeScaleWithTransform,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             updateStrokeWidthLive(value, isEditing: true)
@@ -292,6 +310,9 @@ struct StrokeFillPanel: View {
                         onUpdateMiterLimit: { value in
                             strokeMiterLimitState = value
                             updateStrokeMiterLimitDirectNoUndo(value)
+                        },
+                        onUpdateScaleWithTransform: { value in
+                            updateStrokeScaleWithTransform(value)
                         },
                         onStrokeWidthEditingChanged: { isEditing in
                             if isEditing {
@@ -491,6 +512,10 @@ struct StrokeFillPanel: View {
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
         PaintSelectionOperations.shared.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
+    }
+
+    private func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool) {
+        PaintSelectionOperations.shared.updateStrokeScaleWithTransform(scaleWithTransform, document: document)
     }
 
     private func updateImageOpacity(_ opacity: Double) {
