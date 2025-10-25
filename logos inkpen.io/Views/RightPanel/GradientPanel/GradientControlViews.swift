@@ -200,6 +200,10 @@ struct GradientOriginControlView: View {
     @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if currentGradient != nil {
+            // Use live state if available, otherwise use local state
+            let effectiveOriginX = document.viewState.liveGradientOriginX ?? originX
+            let effectiveOriginY = document.viewState.liveGradientOriginY ?? originY
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Origin Point")
@@ -215,8 +219,8 @@ struct GradientOriginControlView: View {
 
                 HStack(spacing: 8) {
                     GradientSliderControl(
-                        label: "X: \(formatNumberForDisplay(originX))",
-                        value: originX,
+                        label: "X: \(formatNumberForDisplay(effectiveOriginX))",
+                        value: effectiveOriginX,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginX,
@@ -226,8 +230,8 @@ struct GradientOriginControlView: View {
                     )
 
                     GradientSliderControl(
-                        label: "Y: \(formatNumberForDisplay(originY))",
-                        value: originY,
+                        label: "Y: \(formatNumberForDisplay(effectiveOriginY))",
+                        value: effectiveOriginY,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginY,
