@@ -131,14 +131,16 @@ extension DrawingCanvas {
 
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                    let topLeftX = initialCenter.x - bounds.width/2 + canvasDelta.x
-                    let topLeftY = initialCenter.y - bounds.height/2 + canvasDelta.y
+                    // Calculate transformed bounds size in document coordinates
+                    let transformedBounds = bounds.applying(shape.transform)
+                    let topLeftX = initialCenter.x - transformedBounds.width/2 + canvasDelta.x
+                    let topLeftY = initialCenter.y - transformedBounds.height/2 + canvasDelta.y
                     let targetTopLeft = CGPoint(x: topLeftX, y: topLeftY)
                     let snappedTopLeft = applySnapping(to: targetTopLeft)
 
                     let snappedCenter = CGPoint(
-                        x: snappedTopLeft.x + bounds.width/2,
-                        y: snappedTopLeft.y + bounds.height/2
+                        x: snappedTopLeft.x + transformedBounds.width/2,
+                        y: snappedTopLeft.y + transformedBounds.height/2
                     )
 
                     canvasDelta = CGPoint(x: snappedCenter.x - initialCenter.x, y: snappedCenter.y - initialCenter.y)
