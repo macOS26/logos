@@ -64,17 +64,17 @@ final class AppEventMonitor {
             return nil
         }
 
-        // Cmd key - temporary direct selection when on arrow tool
+        // Cmd key - temporary direct selection from any tool
         if event.type == .flagsChanged {
             let cmdPressed = event.modifierFlags.contains(.command)
 
-            // Cmd pressed: switch arrow tool to direct selection
-            if cmdPressed && activeDoc.viewState.currentTool == .selection && temporaryTool == nil {
-                previousTool = .selection
+            // Cmd pressed: switch current tool to direct selection
+            if cmdPressed && activeDoc.viewState.currentTool != .directSelection && temporaryTool == nil {
+                previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .directSelection
                 activeDoc.viewState.currentTool = .directSelection
             }
-            // Cmd released: switch back to arrow tool
+            // Cmd released: switch back to previous tool
             else if !cmdPressed && temporaryTool == .directSelection {
                 if let previous = previousTool {
                     activeDoc.viewState.currentTool = previous
