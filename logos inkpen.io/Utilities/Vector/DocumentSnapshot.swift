@@ -1,6 +1,7 @@
 import Foundation
 
-struct DocumentSnapshot: Equatable, Codable {
+struct
+DocumentSnapshot: Equatable, Codable {
     var objects: [UUID: VectorObject]
     var layers: [Layer]  // In stack order
     var settings: DocumentSettings

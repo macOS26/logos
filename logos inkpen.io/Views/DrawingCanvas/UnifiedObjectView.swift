@@ -206,12 +206,6 @@ struct LayerCanvasView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
-    // Pre-render cache: stores GraphicsContext for each object by UUID
-    @State private var preRenderCache: [UUID: GraphicsContext] = [:]
-
-    // Track object hashes separately to detect changes
-    @State private var objectHashes: [UUID: Int] = [:]
-
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -223,6 +217,9 @@ struct LayerCanvasView: View {
     var body: some View {
 
         Canvas { context, size in
+            // Calculate viewport bounds for culling (O(1))
+            let viewportBounds = calculateViewportBounds(size: size)
+
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
             transformedContext.transform = CGAffineTransform.identity
@@ -230,31 +227,13 @@ struct LayerCanvasView: View {
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
             for object in visibleObjects {
-                let isSelected = selectedObjectIDs.contains(object.id)
-                let currentHash = object.hashValue
-
-                // Check if object hash changed
-                if let cachedHash = objectHashes[object.id], cachedHash == currentHash,
-                   let cachedContext = preRenderCache[object.id] {
-                    // Object unchanged - use cached GraphicsContext (O(1))
-                    var ctx = cachedContext
-                    if isSelected && dragPreviewDelta != .zero {
-                        ctx.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                    }
-                } else {
-                    // Object changed or not cached - render WITHOUT drag transform (cache the base render)
-                    var renderContext = transformedContext
-
-                    switch object.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        renderShape(shape, in: renderContext, isSelected: isSelected)
-                    case .text(let shape):
-                        renderText(shape, in: renderContext, isSelected: isSelected)
-                    }
-
-                    // Cache the context WITHOUT drag transform
-                    preRenderCache[object.id] = renderContext
-                    objectHashes[object.id] = currentHash
+                switch object.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderShape(shape, in: transformedContext, isSelected: isSelected)
+                case .text(let shape):
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderText(shape, in: transformedContext, isSelected: isSelected)
                 }
             }
         }
