@@ -214,47 +214,34 @@ struct LayerCanvasView: View {
         }
     }
 
-    // Split visible objects into unselected and selected
-    private var unselectedObjects: [VectorObject] {
-        visibleObjects.filter { !selectedObjectIDs.contains($0.id) }
-    }
-
-    private var selectedObjects: [VectorObject] {
-        visibleObjects.filter { selectedObjectIDs.contains($0.id) }
-    }
-
     var body: some View {
-        ZStack {
-            // Base canvas - unselected objects (normal transform, no drag delta)
-            Canvas { context, size in
-                context.transform = CGAffineTransform.identity
-                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                    .scaledBy(x: zoomLevel, y: zoomLevel)
+        Canvas { context, size in
 
-                for object in unselectedObjects {
-                    switch object.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        renderShape(shape, context: &context, isSelected: false)
-                    case .text(let shape):
-                        renderText(shape, context: &context, isSelected: false)
-                    }
+            // Apply base canvas transform (no drag delta)
+            let baseTransform = CGAffineTransform.identity
+                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                .scaledBy(x: zoomLevel, y: zoomLevel)
+
+            context.transform = baseTransform
+
+            // Render objects in original stacking order
+            // Selected objects share the same drag delta transform
+            for object in visibleObjects {
+                let isSelected = selectedObjectIDs.contains(object.id)
+
+                // Apply selection transform (with drag delta) for selected objects
+                if isSelected && dragPreviewDelta != .zero {
+                    context.transform = baseTransform
+                        .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                } else {
+                    context.transform = baseTransform
                 }
-            }
 
-            // Selection canvas - selected objects only (with drag delta)
-            Canvas { context, size in
-                context.transform = CGAffineTransform.identity
-                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                    .scaledBy(x: zoomLevel, y: zoomLevel)
-                    .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-
-                for object in selectedObjects {
-                    switch object.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        renderShape(shape, context: &context, isSelected: true)
-                    case .text(let shape):
-                        renderText(shape, context: &context, isSelected: true)
-                    }
+                switch object.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    renderShape(shape, context: &context, isSelected: isSelected)
+                case .text(let shape):
+                    renderText(shape, context: &context, isSelected: isSelected)
                 }
             }
         }
