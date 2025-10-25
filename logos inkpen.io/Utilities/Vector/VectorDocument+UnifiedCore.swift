@@ -24,7 +24,14 @@ extension VectorDocument {
             return false
         }) {
             let objectType = VectorObject.determineType(for: shape)
-            unifiedObjects[index] = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+            let updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+
+            // Update snapshot.objects (primary)
+            snapshot.objects[shape.id] = updatedObject
+
+            // Update unifiedObjects (for compatibility)
+            unifiedObjects[index] = updatedObject
+
             changeNotifier.notifyObjectChanged(shape.id)
         }
     }
