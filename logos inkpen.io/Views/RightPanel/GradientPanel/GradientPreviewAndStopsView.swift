@@ -90,12 +90,12 @@ struct GradientPreviewAndStopsView: View {
 
             // Draw labels
             let labels: [(text: String, x: CGFloat, y: CGFloat, alignX: CGFloat, alignY: CGFloat)] = [
-                ("(0,0)", 6, 10, 0, 0),
-                ("(0.5,0)", size.width/2, 10, 0.5, 0),
-                ("(1,0)", size.width - 6, 10, 1, 0),
-                ("(0,1)", 6, size.height - 2, 0, 1),
-                ("(0.5,1)", size.width/2, size.height - 2, 0.5, 1),
-                ("(1,1)", size.width - 6, size.height - 2, 1, 1)
+                ("(0,0)", 12, 12, 0, 0),
+                ("(0.5,0)", size.width/2, 12, 0.5, 0),
+                ("(1,0)", size.width - 12, 12, 1, 0),
+                ("(0,1)", 12, size.height - 12, 0, 1),
+                ("(0.5,1)", size.width/2, size.height - 12, 0.5, 1),
+                ("(1,1)", size.width - 12, size.height - 12, 1, 1)
             ]
 
             for label in labels {
