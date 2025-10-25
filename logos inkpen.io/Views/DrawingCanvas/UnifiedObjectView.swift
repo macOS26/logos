@@ -219,9 +219,11 @@ struct LayerCanvasView: View {
         Canvas { context, size in
 
             // Apply canvas transform ONCE to entire context (O(1))
+            // Include drag delta in transform so all selected objects move together
             context.transform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
+                .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
 
             for object in visibleObjects {
                 switch object.objectType {
@@ -282,10 +284,7 @@ struct LayerCanvasView: View {
         // Use cached CGPath (O(1) on cache hit)
         let cgPath = shape.cachedCGPath
 
-        // Apply drag delta if selected (O(1))
-        if isSelected && dragPreviewDelta != .zero {
-            context.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-        }
+        // Drag delta is now applied at canvas level, not per-object
 
         // Render fill (O(1) for solid, O(n) for gradient where n = stops)
         if viewMode == .color, let fillStyle = shape.fillStyle {
@@ -481,10 +480,7 @@ struct LayerCanvasView: View {
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
 
-        // Apply drag delta if selected (O(1))
-        if isSelected && dragPreviewDelta != .zero {
-            context.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-        }
+        // Drag delta is now applied at canvas level, not per-object
 
         context.withCGContext { cgContext in
             cgContext.saveGState()
