@@ -214,25 +214,47 @@ struct LayerCanvasView: View {
         }
     }
 
+    // Split visible objects into unselected and selected
+    private var unselectedObjects: [VectorObject] {
+        visibleObjects.filter { !selectedObjectIDs.contains($0.id) }
+    }
+
+    private var selectedObjects: [VectorObject] {
+        visibleObjects.filter { selectedObjectIDs.contains($0.id) }
+    }
+
     var body: some View {
+        ZStack {
+            // Base canvas - unselected objects (normal transform, no drag delta)
+            Canvas { context, size in
+                context.transform = CGAffineTransform.identity
+                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                    .scaledBy(x: zoomLevel, y: zoomLevel)
 
-        Canvas { context, size in
+                for object in unselectedObjects {
+                    switch object.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        renderShape(shape, context: &context, isSelected: false)
+                    case .text(let shape):
+                        renderText(shape, context: &context, isSelected: false)
+                    }
+                }
+            }
 
-            // Apply canvas transform ONCE to entire context (O(1))
-            // Include drag delta in transform so all selected objects move together
-            context.transform = CGAffineTransform.identity
-                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                .scaledBy(x: zoomLevel, y: zoomLevel)
-                .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+            // Selection canvas - selected objects only (with drag delta)
+            Canvas { context, size in
+                context.transform = CGAffineTransform.identity
+                    .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                    .scaledBy(x: zoomLevel, y: zoomLevel)
+                    .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
 
-            for object in visibleObjects {
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderShape(shape, context: &context, isSelected: isSelected)
-                case .text(let shape):
-                    let isSelected = selectedObjectIDs.contains(object.id)
-                    renderText(shape, context: &context, isSelected: isSelected)
+                for object in selectedObjects {
+                    switch object.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        renderShape(shape, context: &context, isSelected: true)
+                    case .text(let shape):
+                        renderText(shape, context: &context, isSelected: true)
+                    }
                 }
             }
         }
