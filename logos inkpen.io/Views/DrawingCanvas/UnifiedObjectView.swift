@@ -247,10 +247,11 @@ struct LayerCanvasView: View {
                 }
 
                 // Calculate scale factor if live scaling is active
-                // For a scale transform: .a = scaleX, .d = scaleY
-                // Use max to get the actual scaling being applied
+                // Extract scale from transform matrix (ignoring rotation/translation)
                 let scaleFactor: CGFloat = if isSelected && liveScaleTransform != .identity {
-                    max(abs(liveScaleTransform.a), abs(liveScaleTransform.d))
+                    // For a transform with scale and translation: sqrt(a² + c²) gives X scale
+                    // We use X scale for uniform stroke compensation
+                    sqrt(liveScaleTransform.a * liveScaleTransform.a + liveScaleTransform.c * liveScaleTransform.c)
                 } else {
                     1.0
                 }
