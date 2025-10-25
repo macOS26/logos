@@ -26,29 +26,16 @@ struct GradientPreviewAndStopsView: View {
     private func calculateDotPosition(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> CGPoint {
         guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
 
-        switch gradient {
-        case .linear:
-            let originX = getOriginX(gradient)
-            let originY = getOriginY(gradient)
-            let clampedX = max(0.0, min(1.0, originX))
-            let clampedY = max(0.0, min(1.0, originY))
+        // Use live state if available, otherwise use gradient origin
+        let originX = document.viewState.liveGradientOriginX ?? getOriginX(gradient)
+        let originY = document.viewState.liveGradientOriginY ?? getOriginY(gradient)
+        let clampedX = max(0.0, min(1.0, originX))
+        let clampedY = max(0.0, min(1.0, originY))
 
-            return CGPoint(
-                x: clampedX * squareSize,
-                y: clampedY * squareSize
-            )
-
-        case .radial:
-            let originX = getOriginX(gradient)
-            let originY = getOriginY(gradient)
-            let clampedX = max(0.0, min(1.0, originX))
-            let clampedY = max(0.0, min(1.0, originY))
-
-            return CGPoint(
-                x: clampedX * squareSize,
-                y: clampedY * squareSize
-            )
-        }
+        return CGPoint(
+            x: clampedX * squareSize,
+            y: clampedY * squareSize
+        )
     }
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
