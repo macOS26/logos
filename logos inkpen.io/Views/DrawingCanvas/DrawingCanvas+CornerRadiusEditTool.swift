@@ -63,8 +63,8 @@ extension DrawingCanvas {
     internal func getSelectedRectangleShape() -> VectorShape? {
         guard document.viewState.selectedObjectIDs.count == 1 else { return nil }
 
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for newVectorObject in document.snapshot.objects.values {
+            if case .shape(let shape) = newVectorObject.objectType {
                 if document.viewState.selectedObjectIDs.contains(shape.id) && isRectangleBasedShape(shape) {
                     return shape
                 }
@@ -387,19 +387,15 @@ extension DrawingCanvas {
     }
 
     private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
-        document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)
+        guard var obj = document.snapshot.objects[shape.id] else { return }
 
-        if isLiveDrag {
-            if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                if case .shape(let unifiedShape) = unifiedObj.objectType {
-                    return unifiedShape.id == shape.id
-                }
-                return false
-            }) {
-                let objectType = VectorObject.determineType(for: shape)
-                document.unifiedObjects[unifiedIndex] = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
-            }
-        }
+        // Update the object with new shape data
+        let objectType = VectorObject.determineType(for: shape)
+        obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+        document.snapshot.objects[shape.id] = obj
+
+        // Trigger layer update for spatial index
+        document.triggerLayerUpdate(for: layerIndex)
     }
 
     private func updateCornerRadius(shapeID: UUID, cornerIndex: Int, radiusChange: Double) {
