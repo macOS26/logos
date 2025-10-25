@@ -499,65 +499,49 @@ class ProfessionalTextViewModel: ObservableObject {
             let currentElement = elements[i]
 
             // Only process curve elements
-            guard case .curve(let to, let control1, let control2) = currentElement else {
+            guard case .curve(let anchor, let incomingHandle, let outgoingHandle) = currentElement else {
                 smoothedElements.append(currentElement)
                 continue
             }
 
-            // Get the previous anchor point (outgoing handle)
-            var previousAnchor: VectorPoint? = nil
-            var previousControl2: VectorPoint? = nil
+            // For a smooth curve, incoming and outgoing handles must be 180° apart from the anchor
+            // Vector from anchor to incoming handle
+            let incomingVec = CGVector(dx: incomingHandle.x - anchor.x, dy: incomingHandle.y - anchor.y)
+            // Vector from anchor to outgoing handle
+            let outgoingVec = CGVector(dx: outgoingHandle.x - anchor.x, dy: outgoingHandle.y - anchor.y)
 
-            for j in stride(from: i - 1, through: 0, by: -1) {
-                switch elements[j] {
-                case .move(let point), .line(let point):
-                    previousAnchor = point
-                    break
-                case .curve(let point, _, let ctrl2):
-                    previousAnchor = point
-                    previousControl2 = ctrl2
-                    break
-                case .quadCurve(let point, _):
-                    previousAnchor = point
-                    break
-                case .close:
-                    continue
-                }
-                if previousAnchor != nil { break }
-            }
+            let incomingAngle = atan2(incomingVec.dy, incomingVec.dx)
+            let outgoingAngle = atan2(outgoingVec.dy, outgoingVec.dx)
 
-            guard let prevAnchor = previousAnchor else {
-                smoothedElements.append(currentElement)
+            var angleDiff = abs(incomingAngle - outgoingAngle)
+            if angleDiff > .pi { angleDiff = 2 * .pi - angleDiff }
+
+            // If handles are close to 180 degrees apart (π radians), make them perfectly aligned
+            if abs(angleDiff - .pi) < angleTolerance {
+                let incomingLength = sqrt(incomingVec.dx * incomingVec.dx + incomingVec.dy * incomingVec.dy)
+                let outgoingLength = sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy)
+
+                // Use the average length for symmetry
+                let avgLength = (incomingLength + outgoingLength) / 2.0
+
+                // Make them perfectly opposite using the outgoing handle's direction
+                let outgoingNormalized = CGVector(
+                    dx: outgoingVec.dx / outgoingLength,
+                    dy: outgoingVec.dy / outgoingLength
+                )
+
+                let smoothedIncoming = VectorPoint(
+                    anchor.x - outgoingNormalized.dx * avgLength,
+                    anchor.y - outgoingNormalized.dy * avgLength
+                )
+
+                let smoothedOutgoing = VectorPoint(
+                    anchor.x + outgoingNormalized.dx * avgLength,
+                    anchor.y + outgoingNormalized.dy * avgLength
+                )
+
+                smoothedElements.append(.curve(to: anchor, control1: smoothedIncoming, control2: smoothedOutgoing))
                 continue
-            }
-
-            // Check if incoming handle (control1) and outgoing handle from previous point are ~180 degrees
-            if let prevCtrl2 = previousControl2 {
-                // Vector from previous anchor to its control2 (outgoing)
-                let outgoingVec = CGVector(dx: prevCtrl2.x - prevAnchor.x, dy: prevCtrl2.y - prevAnchor.y)
-                // Vector from current anchor (prevAnchor) to control1 (incoming)
-                let incomingVec = CGVector(dx: control1.x - prevAnchor.x, dy: control1.y - prevAnchor.y)
-
-                let outgoingAngle = atan2(outgoingVec.dy, outgoingVec.dx)
-                let incomingAngle = atan2(incomingVec.dy, incomingVec.dx)
-
-                var angleDiff = abs(outgoingAngle - incomingAngle)
-                if angleDiff > .pi { angleDiff = 2 * .pi - angleDiff }
-
-                // If close to 180 degrees (π radians), make them perfectly aligned
-                if abs(angleDiff - .pi) < angleTolerance {
-                    // Make incoming handle perfectly opposite to outgoing
-                    let avgLength = (sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) +
-                                   sqrt(incomingVec.dx * incomingVec.dx + incomingVec.dy * incomingVec.dy)) / 2.0
-
-                    let smoothedControl1 = VectorPoint(
-                        prevAnchor.x - outgoingVec.dx / sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) * avgLength,
-                        prevAnchor.y - outgoingVec.dy / sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy) * avgLength
-                    )
-
-                    smoothedElements.append(.curve(to: to, control1: smoothedControl1, control2: control2))
-                    continue
-                }
             }
 
             // No smoothing needed
