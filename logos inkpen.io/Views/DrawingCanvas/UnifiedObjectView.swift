@@ -246,12 +246,14 @@ struct LayerCanvasView: View {
                     context.transform = baseTransform
                 }
 
-                // Calculate scale factor if live scaling is active
-                // Extract scale from transform matrix (ignoring rotation/translation)
+                // Calculate INVERSE scale factor if live scaling is active
+                // For scale transform: .a = scaleX, .d = scaleY
+                // We invert to compensate the canvas transform scaling
                 let scaleFactor: CGFloat = if isSelected && liveScaleTransform != .identity {
-                    // For a transform with scale and translation: sqrt(a² + c²) gives X scale
-                    // We use X scale for uniform stroke compensation
-                    sqrt(liveScaleTransform.a * liveScaleTransform.a + liveScaleTransform.c * liveScaleTransform.c)
+                    // Use average of X and Y scale for uniform stroke compensation
+                    let scaleX = abs(liveScaleTransform.a)
+                    let scaleY = abs(liveScaleTransform.d)
+                    (scaleX + scaleY) / 2.0
                 } else {
                     1.0
                 }
