@@ -32,12 +32,17 @@ struct TransformBoxHandles: View {
 
                 guard !isKeylineMode else { return }
 
+                // Apply preview transform to bounds if scaling
+                let displayBounds = (isScaling && !previewTransform.isIdentity)
+                    ? transformedBounds.applying(previewTransform)
+                    : transformedBounds
+
                 // Convert bounds to screen coordinates
                 let screenRect = CGRect(
-                    x: transformedBounds.origin.x * zoom + offset.x,
-                    y: transformedBounds.origin.y * zoom + offset.y,
-                    width: transformedBounds.width * zoom,
-                    height: transformedBounds.height * zoom
+                    x: displayBounds.origin.x * zoom + offset.x,
+                    y: displayBounds.origin.y * zoom + offset.y,
+                    width: displayBounds.width * zoom,
+                    height: displayBounds.height * zoom
                 )
 
                 let path = Path(screenRect)
@@ -178,8 +183,13 @@ struct TransformBoxHandles: View {
             }
 
             if !isKeylineMode {
+                // Apply preview transform to bounds for handle positioning if scaling
+                let displayBounds = (isScaling && !previewTransform.isIdentity)
+                    ? transformedBounds.applying(previewTransform)
+                    : transformedBounds
+
                 ForEach(0..<9) { index in
-                    let pt = handlePosition(index: index, in: transformedBounds)
+                    let pt = handlePosition(index: index, in: displayBounds)
                     let isAnchorPoint = isHandleTheAnchor(index: index)
                     let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
                     let isDisabled = isAnchorPoint || isAdjacentToAnchor
@@ -200,8 +210,8 @@ struct TransformBoxHandles: View {
                 .position(
                     (shape.typography != nil || containsTextBoxInGroup()) ?
                     CGPoint(
-                        x: (transformedBounds.midX + (pt.x - transformedBounds.midX)) * zoomLevel + canvasOffset.x,
-                        y: (transformedBounds.midY + (pt.y - transformedBounds.midY)) * zoomLevel + canvasOffset.y
+                        x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x,
+                        y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y
                     )
                     :
                     CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
