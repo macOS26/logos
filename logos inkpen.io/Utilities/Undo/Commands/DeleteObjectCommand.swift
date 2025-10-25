@@ -14,6 +14,12 @@ class DeleteObjectCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         let idsToRemove = Set(objects.map { $0.id })
+        var affectedLayers = Set<Int>()
+
+        // Track affected layers
+        for obj in objects {
+            affectedLayers.insert(obj.layerIndex)
+        }
 
         // Remove from snapshot.objects dictionary (O(1) per object)
         for id in idsToRemove {
@@ -31,13 +37,16 @@ class DeleteObjectCommand: BaseCommand {
         // Also remove from viewState selection
         document.viewState.selectedObjectIDs = document.viewState.selectedObjectIDs.subtracting(idsToRemove)
 
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     override func undo(on document: VectorDocument) {
+        var affectedLayers = Set<Int>()
+
         // Restore to snapshot.objects dictionary
         for obj in objects {
             document.snapshot.objects[obj.id] = obj
+            affectedLayers.insert(obj.layerIndex)
 
             // Add back to appropriate layer
             if obj.layerIndex < document.snapshot.layers.count {
@@ -52,6 +61,6 @@ class DeleteObjectCommand: BaseCommand {
             }
         }
 
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }

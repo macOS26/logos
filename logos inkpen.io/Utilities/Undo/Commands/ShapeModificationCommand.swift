@@ -23,6 +23,8 @@ class ShapeModificationCommand: BaseCommand {
     }
 
     private func applyShapes(_ shapes: [UUID: VectorShape], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
+
         for id in objectIDs {
             if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
                let shape = shapes[id] {
@@ -35,9 +37,10 @@ class ShapeModificationCommand: BaseCommand {
 
                 // Also update snapshot
                 document.snapshot.objects[id] = updatedObj
+                affectedLayers.insert(updatedObj.layerIndex)
             }
         }
 
-        document.viewState.objectUpdateTrigger &+= 1
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }

@@ -32,9 +32,9 @@ class ModifyPathCommand: BaseCommand {
 
                 // Update snapshot
                 document.snapshot.objects[objectID] = obj
+
+                document.triggerLayerUpdate(for: obj.layerIndex)
             }
         }
-
-        document.viewState.objectUpdateTrigger &+= 1
     }
 }
