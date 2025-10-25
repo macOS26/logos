@@ -75,9 +75,10 @@ extension DrawingCanvas {
                  .clipGroup(let shape),
                  .clipMask(let shape):
                 let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                let centerX = bounds.midX
-                let centerY = bounds.midY
-                initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                // Calculate center in DOCUMENT coordinates (not local bounds)
+                let localCenter = CGPoint(x: bounds.midX, y: bounds.midY)
+                let documentCenter = localCenter.applying(shape.transform)
+                initialObjectPositions[unifiedObject.id] = documentCenter
 
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
