@@ -36,7 +36,9 @@ struct ProfessionalDirectSelectionView: View {
                         let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
                         let screenPos = CGPoint(x: transformed.x * zoom + offset.x, y: transformed.y * zoom + offset.y)
 
-                        let rect = CGRect(x: screenPos.x - 4, y: screenPos.y - 4, width: 8, height: 8)
+                        // Scale point size inversely with zoom to keep consistent screen size
+                        let pointSize: CGFloat = 8.0 / zoom
+                        let rect = CGRect(x: screenPos.x - pointSize/2, y: screenPos.y - pointSize/2, width: pointSize, height: pointSize)
                         ctx.fill(Path(rect), with: .color(isSelected ? .blue : .white))
                         ctx.stroke(Path(rect), with: .color(.blue), lineWidth: 1.0)
                     }
@@ -122,7 +124,9 @@ struct ProfessionalDirectSelectionView: View {
         linePath.addLine(to: screenHandle)
         context.stroke(linePath, with: .color(.blue), lineWidth: 1.0)
 
-        let circle = Circle().path(in: CGRect(x: screenHandle.x - 3, y: screenHandle.y - 3, width: 6, height: 6))
+        // Scale handle size inversely with zoom to keep consistent screen size
+        let handleSize: CGFloat = 6.0 / zoom
+        let circle = Circle().path(in: CGRect(x: screenHandle.x - handleSize/2, y: screenHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
         context.stroke(circle, with: .color(.white), lineWidth: 0.5)
     }
