@@ -415,18 +415,22 @@ struct TransformBoxHandles: View {
         let isLeftRight = [3,7].contains(index)
 
         if isCorner {
-            scaleX = abs(startDistance.x) > 0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-            scaleY = abs(startDistance.y) > 0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+            // Allow negative scale for flipping/mirroring
+            scaleX = abs(startDistance.x) > 0 ? currentDistance.x / startDistance.x : 1.0
+            scaleY = abs(startDistance.y) > 0 ? currentDistance.y / startDistance.y : 1.0
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                let uniformScale = max(scaleX, scaleY)
+                // For uniform scaling, use the one with larger absolute value but preserve sign
+                let absScaleX = abs(scaleX)
+                let absScaleY = abs(scaleY)
+                let uniformScale = absScaleX >= absScaleY ? scaleX : scaleY
                 scaleX = uniformScale
                 scaleY = uniformScale
             }
         } else if isTopBottom {
-            scaleY = abs(startDistance.y) > 0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+            scaleY = abs(startDistance.y) > 0 ? currentDistance.y / startDistance.y : 1.0
         } else if isLeftRight {
-            scaleX = abs(startDistance.x) > 0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+            scaleX = abs(startDistance.x) > 0 ? currentDistance.x / startDistance.x : 1.0
         }
 
         // No min/max constraints - allow free scaling
