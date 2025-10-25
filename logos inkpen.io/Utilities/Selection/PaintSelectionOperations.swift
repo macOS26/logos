@@ -133,8 +133,11 @@ class PaintSelectionOperations {
 
     /// Update fill opacity for selected objects (live update during dragging)
     func updateFillOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
+        var affectedLayers = Set<Int>()
+
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
+            affectedLayers.insert(object.layerIndex)
             switch object.objectType {
             case .text(let shape):
                 document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
@@ -142,7 +145,8 @@ class PaintSelectionOperations {
                 document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
-        document.viewState.objectUpdateTrigger &+= 1
+
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     /// Update fill opacity for selected objects with undo/redo support
@@ -218,8 +222,11 @@ class PaintSelectionOperations {
 
     /// Update stroke width for selected objects (live update during dragging)
     func updateStrokeWidthLive(_ width: Double, document: VectorDocument, isEditing: Bool) {
+        var affectedLayers = Set<Int>()
+
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
+            affectedLayers.insert(object.layerIndex)
             switch object.objectType {
             case .text(let shape):
                 if shape.typography?.hasStroke == true {
@@ -229,13 +236,17 @@ class PaintSelectionOperations {
                 document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
             }
         }
-        document.viewState.objectUpdateTrigger &+= 1
+
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     /// Update stroke opacity for selected objects (live update during dragging)
     func updateStrokeOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
+        var affectedLayers = Set<Int>()
+
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
+            affectedLayers.insert(object.layerIndex)
             switch object.objectType {
             case .text:
                 break
@@ -243,7 +254,8 @@ class PaintSelectionOperations {
                 document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
-        document.viewState.objectUpdateTrigger &+= 1
+
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     /// Update stroke placement for selected objects
