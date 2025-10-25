@@ -392,7 +392,7 @@ struct StrokeFillPanel: View {
 
                     switch document.viewState.currentTool {
                     case .freehand:
-                        FreehandSettingsSection(document: document)
+                        FreehandSettingsSection()
                     case .brush:
                         VariableStrokeSection(document: document)
                     case .marker:

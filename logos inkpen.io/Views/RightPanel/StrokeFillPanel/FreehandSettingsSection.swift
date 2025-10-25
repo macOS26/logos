@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct FreehandSettingsSection: View {
-    @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
     @ObservedObject private var settings = ApplicationSettings.shared
 
