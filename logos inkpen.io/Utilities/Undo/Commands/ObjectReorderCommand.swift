@@ -18,16 +18,18 @@ class ObjectReorderCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        applyReorder(forward: true, to: document)
-        document.viewState.objectUpdateTrigger &+= 1
+        let affectedLayers = applyReorder(forward: true, to: document)
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     override func undo(on document: VectorDocument) {
-        applyReorder(forward: false, to: document)
-        document.viewState.objectUpdateTrigger &+= 1
+        let affectedLayers = applyReorder(forward: false, to: document)
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
-    private func applyReorder(forward: Bool, to document: VectorDocument) {
+    private func applyReorder(forward: Bool, to document: VectorDocument) -> Set<Int> {
+        var affectedLayers = Set<Int>()
+
         switch reorderType {
         case .moveObjectToLayer(let objectID, let oldLayerIndex, let newLayerIndex, let oldIndex, let newIndex):
             let targetLayer = forward ? newLayerIndex : oldLayerIndex
@@ -41,15 +43,27 @@ class ObjectReorderCommand: BaseCommand {
                     layerIndex: targetLayer
                 )
                 document.unifiedObjects.insert(updatedObj, at: min(targetIndex, document.unifiedObjects.count))
+                affectedLayers.insert(oldLayerIndex)
+                affectedLayers.insert(newLayerIndex)
             }
 
         case .moveUp(let objectIDs, let oldIndices, let newIndices):
             let indexDict = forward ? newIndices : oldIndices
             moveObjectsToIndices(objectIDs: objectIDs, targetIndices: indexDict, document: document)
+            for id in objectIDs {
+                if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                    affectedLayers.insert(obj.layerIndex)
+                }
+            }
 
         case .moveDown(let objectIDs, let oldIndices, let newIndices):
             let indexDict = forward ? newIndices : oldIndices
             moveObjectsToIndices(objectIDs: objectIDs, targetIndices: indexDict, document: document)
+            for id in objectIDs {
+                if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                    affectedLayers.insert(obj.layerIndex)
+                }
+            }
 
         case .reorderBetween(let sourceID, _, let oldIndex, let newIndex):
             let targetIndex = forward ? newIndex : oldIndex
@@ -57,24 +71,29 @@ class ObjectReorderCommand: BaseCommand {
             if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == sourceID }) {
                 let obj = document.unifiedObjects.remove(at: currentIndex)
                 document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
+                affectedLayers.insert(obj.layerIndex)
             }
 
-        case .bringToFront(let objectID, let oldIndex, let newIndex, _):
+        case .bringToFront(let objectID, let oldIndex, let newIndex, let layerIndex):
             let targetIndex = forward ? newIndex : oldIndex
 
             if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                 let obj = document.unifiedObjects.remove(at: currentIndex)
                 document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
+                affectedLayers.insert(layerIndex)
             }
 
-        case .sendToBack(let objectID, let oldIndex, let newIndex, _):
+        case .sendToBack(let objectID, let oldIndex, let newIndex, let layerIndex):
             let targetIndex = forward ? newIndex : oldIndex
 
             if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                 let obj = document.unifiedObjects.remove(at: currentIndex)
                 document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
+                affectedLayers.insert(layerIndex)
             }
         }
+
+        return affectedLayers
     }
 
     private func moveObjectsToIndices(objectIDs: [UUID], targetIndices: [UUID: Int], document: VectorDocument) {
