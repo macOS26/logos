@@ -113,8 +113,9 @@ struct StrokeStyle: Hashable {
     var miterLimit: Double
     var opacity: Double
     var blendMode: BlendMode
+    var scaleWithTransform: Bool
 
-    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal, scaleWithTransform: Bool = false) {
         self.color = color
         self.width = width
         self.placement = placement
@@ -124,9 +125,10 @@ struct StrokeStyle: Hashable {
         self.miterLimit = miterLimit
         self.opacity = opacity
         self.blendMode = blendMode
+        self.scaleWithTransform = scaleWithTransform
     }
 
-    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal, scaleWithTransform: Bool = false) {
         self.color = .gradient(gradient)
         self.width = width
         self.placement = placement
@@ -136,6 +138,7 @@ struct StrokeStyle: Hashable {
         self.miterLimit = miterLimit
         self.opacity = opacity
         self.blendMode = blendMode
+        self.scaleWithTransform = scaleWithTransform
     }
 
     var isGradient: Bool {
@@ -159,7 +162,7 @@ struct StrokeStyle: Hashable {
 
 extension StrokeStyle: Codable {
     enum CodingKeys: String, CodingKey {
-        case color, width, placement, dashPattern, lineCap, lineJoin, miterLimit, opacity, blendMode
+        case color, width, placement, dashPattern, lineCap, lineJoin, miterLimit, opacity, blendMode, scaleWithTransform
     }
 
     func encode(to encoder: Encoder) throws {
@@ -183,6 +186,10 @@ extension StrokeStyle: Codable {
         if blendMode != .normal {
             try container.encode(blendMode, forKey: .blendMode)
         }
+
+        if scaleWithTransform {
+            try container.encode(scaleWithTransform, forKey: .scaleWithTransform)
+        }
     }
 
     init(from decoder: Decoder) throws {
@@ -196,6 +203,7 @@ extension StrokeStyle: Codable {
         miterLimit = try container.decode(Double.self, forKey: .miterLimit)
         opacity = try container.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
         blendMode = try container.decodeIfPresent(BlendMode.self, forKey: .blendMode) ?? .normal
+        scaleWithTransform = try container.decodeIfPresent(Bool.self, forKey: .scaleWithTransform) ?? false
     }
 }
 
