@@ -23,24 +23,27 @@ struct TransformBoxHandles: View {
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
         let isKeylineMode = document.viewState.viewMode == .keyline
-        let effectiveStrokeColor = isKeylineMode ? Color.clear : strokeColor
 
         ZStack {
-            if shape.typography != nil {
-                Rectangle()
-                    .stroke(effectiveStrokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
-                    .frame(width: transformedBounds.width, height: transformedBounds.height)
-                    .position(x: transformedBounds.midX, y: transformedBounds.midY)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .allowsHitTesting(false)
-            } else {
-                Path(transformedBounds)
-                    .stroke(effectiveStrokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .allowsHitTesting(false)
+            // Render transform box outline using Canvas (like direct selection)
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
+
+                guard !isKeylineMode else { return }
+
+                // Convert bounds to screen coordinates
+                let screenRect = CGRect(
+                    x: transformedBounds.origin.x * zoom + offset.x,
+                    y: transformedBounds.origin.y * zoom + offset.y,
+                    width: transformedBounds.width * zoom,
+                    height: transformedBounds.height * zoom
+                )
+
+                let path = Path(screenRect)
+                context.stroke(path, with: .color(strokeColor), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
+            .allowsHitTesting(false)
 
             if isScaling && !previewTransform.isIdentity {
                 if shape.isGroupContainer {
