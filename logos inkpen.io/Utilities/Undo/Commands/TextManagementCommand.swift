@@ -23,37 +23,46 @@ class TextManagementCommand: BaseCommand {
         switch operation {
         case .addText(let textID, let shape, let layerIndex):
             let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
-            document.unifiedObjects.append(newObject)
+            document.snapshot.objects[textID] = newObject
+            if layerIndex < document.snapshot.layers.count {
+                document.snapshot.layers[layerIndex].objectIDs.append(textID)
+            }
             document.viewState.selectedObjectIDs = [textID]
 
         case .removeText(let textIDs, _):
-            document.unifiedObjects.removeAll { obj in
-                switch obj.objectType {
-                case .text(let shape):
-                    return textIDs.contains(shape.id)
-                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
-                    return false
+            for textID in textIDs {
+                if let obj = document.snapshot.objects[textID] {
+                    document.snapshot.objects.removeValue(forKey: textID)
+                    if obj.layerIndex < document.snapshot.layers.count {
+                        document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == textID }
+                    }
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
 
         case .duplicateText(_, let duplicatedObjects):
             for obj in duplicatedObjects {
-                document.unifiedObjects.append(obj)
+                document.snapshot.objects[obj.id] = obj
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                }
             }
             document.viewState.selectedObjectIDs = newSelection
 
         case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
-            document.unifiedObjects.removeAll { obj in
-                switch obj.objectType {
-                case .text(let shape):
-                    return removedTextIDs.contains(shape.id)
-                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
-                    return false
+            for textID in removedTextIDs {
+                if let obj = document.snapshot.objects[textID] {
+                    document.snapshot.objects.removeValue(forKey: textID)
+                    if obj.layerIndex < document.snapshot.layers.count {
+                        document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == textID }
+                    }
                 }
             }
             for obj in addedObjects {
-                document.unifiedObjects.append(obj)
+                document.snapshot.objects[obj.id] = obj
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                }
             }
             document.viewState.selectedObjectIDs = newSelection
         }
@@ -62,26 +71,48 @@ class TextManagementCommand: BaseCommand {
     override func undo(on document: VectorDocument) {
         switch operation {
         case .addText(let textID, _, _):
-            document.unifiedObjects.removeAll { $0.id == textID }
+            if let obj = document.snapshot.objects[textID] {
+                document.snapshot.objects.removeValue(forKey: textID)
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == textID }
+                }
+            }
             document.viewState.selectedObjectIDs = oldSelection
 
         case .removeText(_, let removedObjects):
             for obj in removedObjects {
-                document.unifiedObjects.append(obj)
+                document.snapshot.objects[obj.id] = obj
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                }
             }
             document.viewState.selectedObjectIDs = oldSelection
 
         case .duplicateText(_, let duplicatedObjects):
-            let duplicatedIDs = duplicatedObjects.map { $0.id }
-            document.unifiedObjects.removeAll { duplicatedIDs.contains($0.id) }
+            for obj in duplicatedObjects {
+                if let layerIdx = document.snapshot.objects[obj.id]?.layerIndex {
+                    document.snapshot.objects.removeValue(forKey: obj.id)
+                    if layerIdx < document.snapshot.layers.count {
+                        document.snapshot.layers[layerIdx].objectIDs.removeAll { $0 == obj.id }
+                    }
+                }
+            }
             document.viewState.selectedObjectIDs = oldSelection
 
         case .convertToOutlines(_, let removedObjects, let addedShapeIDs, _):
-            document.unifiedObjects.removeAll { obj in
-                addedShapeIDs.contains(obj.id)
+            for shapeID in addedShapeIDs {
+                if let obj = document.snapshot.objects[shapeID] {
+                    document.snapshot.objects.removeValue(forKey: shapeID)
+                    if obj.layerIndex < document.snapshot.layers.count {
+                        document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == shapeID }
+                    }
+                }
             }
             for obj in removedObjects {
-                document.unifiedObjects.append(obj)
+                document.snapshot.objects[obj.id] = obj
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                }
             }
             document.viewState.selectedObjectIDs = oldSelection
         }
