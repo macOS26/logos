@@ -982,6 +982,7 @@ class ClipboardManager {
                             textToCopy.append(vectorText)
                         }
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -1083,17 +1084,6 @@ class ClipboardManager {
                 if layerName == "Canvas" || layerName == "Pasteboard" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
-                }
-            }
-
-            // Find the lowest array index of selected objects in this layer
-            var insertionIndex = document.unifiedObjects.count
-
-            if !originalSelectedObjectIDs.isEmpty {
-                for (index, obj) in document.unifiedObjects.enumerated() {
-                    if originalSelectedObjectIDs.contains(obj.id) && obj.layerIndex == layerIndex {
-                        insertionIndex = min(insertionIndex, index)
-                    }
                 }
             }
 
