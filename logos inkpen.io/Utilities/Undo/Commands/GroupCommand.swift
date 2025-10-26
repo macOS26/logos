@@ -43,10 +43,19 @@ class GroupCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        // Find the index of the first removed object to preserve order
-        let insertionIndex = document.unifiedObjects.firstIndex { removedObjectIDs.contains($0.id) } ?? document.unifiedObjects.count
+        guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
 
-        document.unifiedObjects.removeAll { removedObjectIDs.contains($0.id) }
+        // Find the index in layer.objectIDs for insertion
+        let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
+            ?? document.snapshot.layers[layerIndex].objectIDs.count
+
+        // Remove from snapshot.objects
+        for id in removedObjectIDs {
+            document.snapshot.objects.removeValue(forKey: id)
+        }
+
+        // Remove from layer.objectIDs
+        document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
         // Insert objects at the correct position in the order they appear in addedObjectIDs
         for (offset, objectID) in addedObjectIDs.enumerated() {
@@ -55,10 +64,12 @@ class GroupCommand: BaseCommand {
                 shape: shape,
                 layerIndex: layerIndex
             )
-            document.unifiedObjects.insert(newObject, at: insertionIndex + offset)
+            document.snapshot.objects[objectID] = newObject
+            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
         }
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
+        document.triggerLayerUpdate(for: layerIndex)
     }
 
     override func undo(on document: VectorDocument) {
@@ -68,11 +79,20 @@ class GroupCommand: BaseCommand {
             print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
         }
 
-        // Find the index where the grouped object was to restore original order
-        let insertionIndex = document.unifiedObjects.firstIndex { addedObjectIDs.contains($0.id) } ?? document.unifiedObjects.count
+        guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
+
+        // Find the index in layer.objectIDs where the grouped object was to restore original order
+        let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { addedObjectIDs.contains($0) }
+            ?? document.snapshot.layers[layerIndex].objectIDs.count
         print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
 
-        document.unifiedObjects.removeAll { addedObjectIDs.contains($0.id) }
+        // Remove from snapshot.objects
+        for id in addedObjectIDs {
+            document.snapshot.objects.removeValue(forKey: id)
+        }
+
+        // Remove from layer.objectIDs
+        document.snapshot.layers[layerIndex].objectIDs.removeAll { addedObjectIDs.contains($0) }
 
         // Insert objects at the correct position in the order they appear in removedObjectIDs
         for (offset, objectID) in removedObjectIDs.enumerated() {
@@ -81,10 +101,12 @@ class GroupCommand: BaseCommand {
                 shape: shape,
                 layerIndex: layerIndex
             )
-            document.unifiedObjects.insert(restoredObject, at: insertionIndex + offset)
+            document.snapshot.objects[objectID] = restoredObject
+            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
             print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
+        document.triggerLayerUpdate(for: layerIndex)
     }
 }
