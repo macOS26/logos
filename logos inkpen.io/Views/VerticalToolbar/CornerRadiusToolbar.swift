@@ -18,7 +18,7 @@ struct CornerRadiusToolbar: View {
         .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
             updateCornerValues()
         }
-        .onChange(of: document.layers) { _, _ in
+        .onChange(of: document.snapshot.layers) { _, _ in
             updateCornerValues()
         }
         .onReceive(document.objectWillChange) { _ in

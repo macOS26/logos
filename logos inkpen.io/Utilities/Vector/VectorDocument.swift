@@ -9,8 +9,7 @@ final class VectorDocument: ObservableObject, Codable {
     // View-only state (doesn't trigger document saves)
     var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings
-    var layers: [VectorLayer] = []
-    var layerIndex: Int = 0
+    var layerIndex: Int = 0  // DEPRECATED - tracks active layer for operations
     var selectedLayerIndex: Int?
     
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
@@ -170,7 +169,6 @@ final class VectorDocument: ObservableObject, Codable {
         _encodableUnifiedObjects = []
         
         settings = decodedSettings
-        layers = decodedLayers  // Legacy - TODO: remove
         snapshot = decodedSnapshot
         layerIndex = snapshot.layers.count
         

@@ -13,8 +13,8 @@ struct LayerView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    private var layer: VectorLayer {
-        document.layers[layerIndex]
+    private var layer: Layer {
+        document.snapshot.layers[layerIndex]
     }
 
     private var isCanvasLayer: Bool {

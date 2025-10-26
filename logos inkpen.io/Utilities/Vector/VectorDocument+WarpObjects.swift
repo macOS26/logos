@@ -26,7 +26,7 @@ extension VectorDocument {
 
         for obj in selectedWarpObjects {
             if case .warp(let shape) = obj.objectType,
-               let layerIndex = obj.layerIndex < layers.count ? obj.layerIndex : nil {
+               let layerIndex = obj.layerIndex < snapshot.layers.count ? obj.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
 
@@ -79,7 +79,7 @@ extension VectorDocument {
 
         for obj in selectedWarpObjects {
             if case .warp(let shape) = obj.objectType,
-               let layerIndex = obj.layerIndex < layers.count ? obj.layerIndex : nil {
+               let layerIndex = obj.layerIndex < snapshot.layers.count ? obj.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
 

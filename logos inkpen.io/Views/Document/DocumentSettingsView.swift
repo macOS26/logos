@@ -290,30 +290,30 @@ struct DocumentSettingsView: View {
             Picker("", selection: Binding(
                     get: {
                         if let selectedId = document.settings.selectedLayerId,
-                           let layer = document.layers.first(where: { $0.id == selectedId }) {
+                           let layer = document.snapshot.layers.first(where: { $0.id == selectedId }) {
                             return layer.id
-                        } else if let firstLayer = document.layers.first {
+                        } else if let firstLayer = document.snapshot.layers.first {
                             return firstLayer.id
                         } else {
                             return UUID()
                         }
                     },
                     set: { newLayerId in
-                        if let selectedLayer = document.layers.first(where: { $0.id == newLayerId }) {
+                        if let selectedLayer = document.snapshot.layers.first(where: { $0.id == newLayerId }) {
                             document.settings.selectedLayerId = selectedLayer.id
                             document.settings.selectedLayerName = selectedLayer.name
-                            document.layerIndex = document.layers.firstIndex(where: { $0.id == newLayerId }) ?? 0
+                            document.layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == newLayerId }) ?? 0
                             document.onSettingsChanged()
                         }
                     }
                 )) {
-                    ForEach(document.layers) { layer in
+                    ForEach(document.snapshot.layers) { layer in
                         Text(layer.name).tag(layer.id)
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .disabled(document.layers.isEmpty)
+                .disabled(document.snapshot.layers.isEmpty)
         }
     }
 

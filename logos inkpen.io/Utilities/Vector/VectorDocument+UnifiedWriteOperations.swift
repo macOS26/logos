@@ -4,7 +4,7 @@ import Combine
 extension VectorDocument {
 
     func appendShapeToLayerUnified(layerIndex: Int, shape: VectorShape) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
@@ -14,7 +14,7 @@ extension VectorDocument {
     }
 
     func removeShapesUnified(layerIndex: Int, where condition: (VectorShape) -> Bool) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let shapesToRemove = snapshot.objects.values.compactMap { obj -> UUID? in
             if obj.layerIndex == layerIndex,
@@ -31,13 +31,13 @@ extension VectorDocument {
     }
 
     func insertShapeUnified(layerIndex: Int, shape: VectorShape, at index: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
 
     func appendShapesUnified(layerIndex: Int, shapes: [VectorShape]) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         for shape in shapes {
             addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
@@ -45,7 +45,7 @@ extension VectorDocument {
     }
 
     func removeShapeAtIndexUnified(layerIndex: Int, shapeIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let shapesInLayer = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapesInLayer.count else { return }
@@ -55,7 +55,7 @@ extension VectorDocument {
     }
 
     func setShapesForLayerUnified(layerIndex: Int, shapes: [VectorShape]) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let existingShapes = getShapesForLayer(layerIndex)
         for shape in existingShapes {

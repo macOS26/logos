@@ -24,7 +24,7 @@ extension DrawingCanvas {
     }
 
     private func insertPointOnCurve(layerIndex: Int, shapeIndex: Int, elementIndex: Int, at location: CGPoint) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               shapeIndex < document.getShapeCount(layerIndex: layerIndex),
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }

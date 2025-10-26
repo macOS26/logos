@@ -432,7 +432,7 @@ struct RotateHandles: View {
         }
 
         if let unifiedObject = document.findObject(by: shape.id),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+        let layerIndex = unifiedObject.layerIndex < document.snapshot.layers.count ? unifiedObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
 

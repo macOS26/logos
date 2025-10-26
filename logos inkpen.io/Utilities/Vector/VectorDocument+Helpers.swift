@@ -81,7 +81,8 @@ extension VectorDocument {
         _encodableSettings = settings
         // Convert snapshot.layers to legacy VectorLayer for backwards compatibility
         _encodableLayers = snapshot.layers.map { layer in
-            var vectorLayer = VectorLayer(name: layer.name, color: layer.color)
+            let swiftUIColor = Color.layerColorPalette.first { $0.name == layer.color.name }?.color ?? .blue
+            var vectorLayer = VectorLayer(name: layer.name, color: swiftUIColor)
             vectorLayer.id = layer.id
             vectorLayer.isVisible = layer.isVisible
             vectorLayer.isLocked = layer.isLocked

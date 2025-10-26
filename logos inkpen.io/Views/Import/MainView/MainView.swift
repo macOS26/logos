@@ -106,7 +106,7 @@ struct MainView: View {
                 isPresented: $showingNewDocumentSetup,
                 onDocumentCreated: { newDocument, suggestedURL in
                     document.settings = newDocument.settings
-                    document.layers = newDocument.layers
+                    document.snapshot.layers = newDocument.snapshot.layers
                     document.colorSwatches = newDocument.colorSwatches
                     document.documentColorDefaults = newDocument.documentColorDefaults
 
@@ -266,7 +266,7 @@ struct MainView: View {
         document.viewState.zoomLevel = 1.0
         document.viewState.canvasOffset = .zero
         document.settings = importedDoc.settings
-        document.layers = importedDoc.layers
+        document.snapshot.layers = importedDoc.snapshot.layers
         document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
@@ -463,7 +463,7 @@ struct MainView: View {
 
                     await MainActor.run {
                         document.snapshot.objects = savedState.snapshot.objects
-                        document.layers = savedState.layers
+                        document.snapshot.layers = savedState.snapshot.layers
                         document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                     }
                 } else {

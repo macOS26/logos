@@ -11,8 +11,8 @@ extension DrawingCanvas {
         let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
         for object in selectedObjects {
-            if object.layerIndex < document.layers.count {
-                let layer = document.layers[object.layerIndex]
+            if object.layerIndex < document.snapshot.layers.count {
+                let layer = document.snapshot.layers[object.layerIndex]
                 if layer.isLocked {
                     return
                 }
@@ -98,8 +98,8 @@ extension DrawingCanvas {
         let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
         for object in selectedObjects {
-            if object.layerIndex < document.layers.count {
-                let layer = document.layers[object.layerIndex]
+            if object.layerIndex < document.snapshot.layers.count {
+                let layer = document.snapshot.layers[object.layerIndex]
                 if layer.isLocked {
                     return
                 }
@@ -171,7 +171,7 @@ extension DrawingCanvas {
                 document.activeLayerIndexDuringDrag = obj.layerIndex
 
                 // Set all layers that are at 100% opacity to 0.9999999999 during drag
-                for layer in document.layers {
+                for layer in document.snapshot.layers {
                     if layer.opacity == 1.0 {
                         layerPreviewOpacities[layer.id] = 0.9999999999
                     }

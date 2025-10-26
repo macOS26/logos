@@ -322,8 +322,8 @@ extension DrawingCanvas {
             let layer = document.snapshot.layers[layerIndex]
 
             // Check layer visibility/lock using legacy layers array
-            if layerIndex < document.layers.count {
-                let legacyLayer = document.layers[layerIndex]
+            if layerIndex < document.snapshot.layers.count {
+                let legacyLayer = document.snapshot.layers[layerIndex]
                 if !legacyLayer.isVisible || legacyLayer.isLocked {
                     continue
                 }
@@ -377,8 +377,8 @@ extension DrawingCanvas {
             let layer = document.snapshot.layers[layerIndex]
 
             // Check layer visibility/lock using legacy layers array
-            if layerIndex < document.layers.count {
-                let legacyLayer = document.layers[layerIndex]
+            if layerIndex < document.snapshot.layers.count {
+                let legacyLayer = document.snapshot.layers[layerIndex]
                 if !legacyLayer.isVisible || legacyLayer.isLocked {
                     continue
                 }

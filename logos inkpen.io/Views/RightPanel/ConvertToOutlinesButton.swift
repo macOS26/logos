@@ -42,8 +42,8 @@ struct ConvertToOutlinesButton: View {
         }
 
         if let layerIndex = document.selectedLayerIndex,
-           layerIndex >= 0 && layerIndex < document.layers.count {
-            let layer = document.layers[layerIndex]
+           layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
+            let layer = document.snapshot.layers[layerIndex]
             if layer.isLocked {
                 Log.error("❌ CONVERT TO OUTLINES: Layer '\(layer.name)' is locked", category: .error)
                 return

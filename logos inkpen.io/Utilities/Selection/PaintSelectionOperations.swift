@@ -165,7 +165,7 @@ class PaintSelectionOperations {
                     newOpacities[objectID] = opacity
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
-                    if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
+                    if let layerIndex = obj.layerIndex < document.snapshot.layers.count ? obj.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                         document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                     }

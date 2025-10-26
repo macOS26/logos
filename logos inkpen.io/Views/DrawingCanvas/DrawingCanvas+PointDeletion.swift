@@ -6,7 +6,7 @@ extension DrawingCanvas {
         let pointsByShape = Dictionary(grouping: selectedPoints) { $0.shapeID }
 
         for (shapeID, points) in pointsByShape {
-            for layerIndex in document.layers.indices {
+            for layerIndex in document.snapshot.layers.indices {
                 let shapes = document.getShapesForLayer(layerIndex)
                 if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                    let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {

@@ -89,7 +89,7 @@ class SVGToInkPenImporter: ObservableObject {
 
             let document = createVectorDocumentFromSVG(svgDoc, svgData: data)
 
-            addResult("Import Complete", success: true, message: "Created document with \(document.layers.count) layers")
+            addResult("Import Complete", success: true, message: "Created document with \(document.snapshot.layers.count) layers")
             isImporting = false
 
             return document
@@ -123,7 +123,7 @@ class SVGToInkPenImporter: ObservableObject {
 
         let document = createVectorDocumentFromSVG(svgDoc, svgData: data, name: name)
 
-        addResult("Import Complete", success: true, message: "Created document with \(document.layers.count) layers")
+        addResult("Import Complete", success: true, message: "Created document with \(document.snapshot.layers.count) layers")
         isImporting = false
 
         return document
@@ -133,20 +133,24 @@ class SVGToInkPenImporter: ObservableObject {
         let svgSize = svgDoc.size
         let settings = createDocumentSettings(from: svgSize)
 
-        let mainLayer = VectorLayer(
+        let shapes = extractShapesFromSVG(svgDoc, svgData: svgData)
+        let document = VectorDocument(settings: settings)
+
+        // Add imported layer
+        document.snapshot.layers.append(Layer(
             name: name,
+            objectIDs: [],
             isVisible: true,
             isLocked: false,
             opacity: 1.0,
-            blendMode: .normal
-        )
+            blendMode: .normal,
+            color: .blue
+        ))
 
-        let shapes = extractShapesFromSVG(svgDoc, svgData: svgData)
-        let document = VectorDocument(settings: settings)
-        document.layers = [mainLayer]
-
+        // Add shapes to the last layer (imported layer)
+        let importedLayerIndex = document.snapshot.layers.count - 1
         for shape in shapes {
-            document.addShapeToUnifiedSystem(shape, layerIndex: 0)
+            document.addShapeToUnifiedSystem(shape, layerIndex: importedLayerIndex)
         }
 
         addResult("Shapes Extracted", success: true, message: "Created \(shapes.count) shapes from SVG")
@@ -324,7 +328,7 @@ struct SVGImportView: View {
 
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Size: \(Int(document.settings.width)) × \(Int(document.settings.height)) \(document.settings.unit.rawValue)")
-                        Text("Layers: \(document.layers.count)")
+                        Text("Layers: \(document.snapshot.layers.count)")
                         Text("Total Shapes: \(document.snapshot.objects.count)")
                     }
                     .font(.caption)

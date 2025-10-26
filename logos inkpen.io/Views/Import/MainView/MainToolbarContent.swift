@@ -77,7 +77,7 @@ struct MainToolbarContent: ToolbarContent {
                      .clipGroup(let shape),
                      .clipMask(let shape):
 
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                    if let layerIndex = unifiedObject.layerIndex < document.snapshot.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if shapes.contains(where: { $0.id == shape.id }) {
 
@@ -403,7 +403,7 @@ struct MainToolbarContent: ToolbarContent {
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
 
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                    if let layerIndex = unifiedObject.layerIndex < document.snapshot.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if shapes.contains(where: { $0.id == shape.id }) {
                             document.lockShapeInUnified(id: shape.id)
@@ -480,7 +480,7 @@ struct MainToolbarContent: ToolbarContent {
                      .clipMask(let shape):
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                    if let layerIndex = unifiedObject.layerIndex < document.snapshot.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if shapes.contains(where: { $0.id == shape.id }) {
                             document.hideShapeInUnified(id: shape.id)
