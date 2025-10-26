@@ -41,6 +41,10 @@ extension VectorDocument {
                 update(&shape)
                 updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape))
 
+            case .image(var shape):
+                update(&shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .image(shape))
+
             case .warp(var shape):
                 update(&shape)
                 updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .warp(shape))
@@ -114,6 +118,8 @@ extension VectorDocument {
             guard let object = snapshot.objects[objectID] else { return nil }
             switch object.objectType {
             case .shape(let shape):
+                return shape
+            case .image(let shape):
                 return shape
             case .text(let shape):
                 return shape

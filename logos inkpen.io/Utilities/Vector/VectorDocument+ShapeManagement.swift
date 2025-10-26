@@ -101,6 +101,7 @@ extension VectorDocument {
             switch object.objectType {
             case .shape(let shape),
                  .text(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -135,6 +136,7 @@ extension VectorDocument {
             if let obj = snapshot.objects[objectID] {
                 switch obj.objectType {
                 case .shape(let shape),
+                 .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -156,6 +158,7 @@ extension VectorDocument {
             if let obj = snapshot.objects[shapeID] {
                 switch obj.objectType {
                 case .shape(let shape),
+                 .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -218,6 +221,7 @@ extension VectorDocument {
                 switch object.objectType {
                 case .text(let shape),
                      .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -264,6 +268,7 @@ extension VectorDocument {
             switch object.objectType {
             case .shape(let shape),
                  .text(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -290,7 +295,7 @@ extension VectorDocument {
             if let obj = snapshot.objects[objectID],
                obj.layerIndex == layerIndex {
                 switch obj.objectType {
-                case .shape, .warp, .group, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                     selectedShapes.append(obj)
                 case .text:
                     break
@@ -303,6 +308,7 @@ extension VectorDocument {
         for obj in selectedShapes {
             switch obj.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),

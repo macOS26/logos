@@ -147,7 +147,7 @@ class StrokePropertiesCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.placement = placement
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
@@ -166,7 +166,7 @@ class StrokePropertiesCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
@@ -185,7 +185,7 @@ class StrokePropertiesCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineCap = LineCap(lineCap)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
@@ -204,7 +204,7 @@ class StrokePropertiesCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.miterLimit = miterLimit
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
@@ -223,7 +223,7 @@ class StrokePropertiesCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.opacity = opacity
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj

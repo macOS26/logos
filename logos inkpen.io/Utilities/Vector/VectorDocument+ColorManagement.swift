@@ -115,7 +115,7 @@ extension VectorDocument {
                         oldOpacities[objectID] = shape.typography?.strokeOpacity ?? defaultStrokeOpacity
                         newOpacities[objectID] = defaultStrokeOpacity
                     }
-                case .shape(let shape), .warp(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
                     switch viewState.activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.fillStyle?.color ?? .black
@@ -208,7 +208,7 @@ extension VectorDocument {
                                 updateShapeByID(childShape.id) { shape in
                                     applyColorToShape(&shape, color: color, isText: true)
                                 }
-                            case .shape, .warp, .clipGroup, .clipMask:
+                            case .shape, .image, .warp, .clipGroup, .clipMask:
                                 updateShapeByID(childShape.id) { shape in
                                     applyColorToShape(&shape, color: color, isText: false)
                                 }
@@ -223,7 +223,7 @@ extension VectorDocument {
                     updateShapeByID(objectID) { shape in
                         applyColorToShape(&shape, color: color, isText: true)
                     }
-                case .shape, .warp, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .clipGroup, .clipMask:
                     updateShapeByID(objectID) { shape in
                         applyColorToShape(&shape, color: color, isText: false)
                     }
@@ -248,6 +248,7 @@ extension VectorDocument {
                     return shape.typography?.fillColor
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),

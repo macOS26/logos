@@ -31,7 +31,7 @@ class TextManagementCommand: BaseCommand {
                 switch obj.objectType {
                 case .text(let shape):
                     return textIDs.contains(shape.id)
-                case .shape, .warp, .group, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                     return false
                 }
             }
@@ -48,7 +48,7 @@ class TextManagementCommand: BaseCommand {
                 switch obj.objectType {
                 case .text(let shape):
                     return removedTextIDs.contains(shape.id)
-                case .shape, .warp, .group, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                     return false
                 }
             }

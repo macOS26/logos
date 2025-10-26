@@ -19,6 +19,7 @@ extension VectorDocument {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(var shape),
+                     .image(var shape),
                      .warp(var shape),
                      .group(var shape),
                      .clipGroup(var shape),

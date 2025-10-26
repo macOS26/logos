@@ -25,6 +25,7 @@ extension VectorDocument {
         return snapshot.objects.values.compactMap { object in
             switch object.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -141,6 +142,7 @@ extension VectorDocument {
                     }
                 case .shape(let shape),
                      .text(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
@@ -163,6 +165,7 @@ extension VectorDocument {
         for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
@@ -188,6 +191,7 @@ extension VectorDocument {
         for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -304,6 +308,7 @@ extension VectorDocument {
         }
         switch object.objectType {
         case .shape(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
@@ -359,6 +364,7 @@ extension VectorDocument {
             guard let object = snapshot.objects[objectID] else { return nil }
             switch object.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),

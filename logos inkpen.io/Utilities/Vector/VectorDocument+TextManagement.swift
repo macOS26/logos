@@ -137,6 +137,7 @@ extension VectorDocument {
         let shapesBefore = snapshot.objects.values.compactMap { obj -> UUID? in
             switch obj.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -156,6 +157,7 @@ extension VectorDocument {
         let shapesAfter = snapshot.objects.values.compactMap { obj -> UUID? in
             switch obj.objectType {
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),

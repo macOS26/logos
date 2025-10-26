@@ -24,6 +24,7 @@ extension VectorDocument {
             switch obj.objectType {
             case .text: typeName = "TEXT"
             case .shape: typeName = "SHAPE"
+            case .image: typeName = "IMAGE"
             case .warp: typeName = "WARP"
             case .group: typeName = "GROUP"
             case .clipGroup: typeName = "CLIPGROUP"
@@ -36,6 +37,7 @@ extension VectorDocument {
             switch obj.objectType {
             case .text(let shape),
                  .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -85,6 +87,7 @@ extension VectorDocument {
                 switch obj.objectType {
                 case .text(let shape),
                      .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -171,7 +174,7 @@ extension VectorDocument {
                     } else {
                         newSelectedShapeIDs.insert(objectID)
                     }
-                case .shape, .warp, .clipMask, .text:
+                case .shape, .image, .warp, .clipMask, .text:
                     print("🟡 UNGROUP: Not a group, keeping selected")
                     newSelectedShapeIDs.insert(objectID)
                 }
@@ -263,6 +266,7 @@ extension VectorDocument {
                 switch obj.objectType {
                 case .text(let shape),
                      .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -315,6 +319,7 @@ extension VectorDocument {
                 switch obj.objectType {
                 case .text(let shape),
                      .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),

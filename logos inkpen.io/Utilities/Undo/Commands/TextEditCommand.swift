@@ -30,7 +30,7 @@ class TextEditCommand: BaseCommand {
                 shape.textContent = content
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
-            case .shape, .warp, .group, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                 break
             }
         }

@@ -54,6 +54,8 @@ class LayerReorderCommand: BaseCommand {
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 case .text(let shape):
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .image(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 case .group(let shape):
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 case .clipGroup(let shape):

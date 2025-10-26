@@ -8,6 +8,7 @@ struct VectorObject: Identifiable, Hashable {
     enum ObjectType: Hashable {
         case shape(VectorShape)
         case text(VectorShape)
+        case image(VectorShape)
         case warp(VectorShape)
         case group(VectorShape)
         case clipGroup(VectorShape)
@@ -25,6 +26,8 @@ struct VectorObject: Identifiable, Hashable {
     static func determineType(for shape: VectorShape) -> ObjectType {
         if shape.typography != nil {
             return .text(shape)
+        } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
+            return .image(shape)
         } else if shape.isClippingPath {
             return .clipMask(shape)
         } else if shape.isClippingGroup {
@@ -49,6 +52,7 @@ struct VectorObject: Identifiable, Hashable {
         switch objectType {
         case .shape(let shape),
              .text(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
@@ -61,6 +65,7 @@ struct VectorObject: Identifiable, Hashable {
         switch objectType {
         case .shape(let shape),
              .text(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
@@ -73,6 +78,7 @@ struct VectorObject: Identifiable, Hashable {
         switch objectType {
         case .shape(let shape),
              .text(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
@@ -101,6 +107,9 @@ extension VectorObject: Codable {
             try objectContainer.encode(shape, forKey: .shape)
         case .text(let shape):
             try objectContainer.encode("text", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .image(let shape):
+            try objectContainer.encode("image", forKey: .type)
             try objectContainer.encode(shape, forKey: .shape)
         case .warp(let shape):
             try objectContainer.encode("warp", forKey: .type)
@@ -133,6 +142,8 @@ extension VectorObject: Codable {
                 objectType = .shape(shape)
             case "text":
                 objectType = .text(shape)
+            case "image":
+                objectType = .image(shape)
             case "warp":
                 objectType = .warp(shape)
             case "group":
@@ -148,6 +159,8 @@ extension VectorObject: Codable {
             // Fallback for old files - infer from shape properties
             if shape.typography != nil {
                 objectType = .text(shape)
+            } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
+                objectType = .image(shape)
             } else if shape.isClippingPath {
                 objectType = .clipMask(shape)
             } else if shape.isClippingGroup {

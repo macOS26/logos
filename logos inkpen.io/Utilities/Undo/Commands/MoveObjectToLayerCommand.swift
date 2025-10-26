@@ -56,6 +56,7 @@ class MoveObjectToLayerCommand: BaseCommand {
         switch object.objectType {
         case .text(let shape),
              .shape(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
