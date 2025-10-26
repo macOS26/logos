@@ -321,8 +321,8 @@ extension DrawingCanvas {
     }
 
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for object in document.snapshot.objects.values {
+            if case .shape(let shape) = object.objectType {
                 if shape.id == pointID.shapeID {
                     return shape
                 }

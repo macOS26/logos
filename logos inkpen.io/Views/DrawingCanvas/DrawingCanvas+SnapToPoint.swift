@@ -15,9 +15,9 @@ extension DrawingCanvas {
         var nearestSnapPoint: SnapPoint?
         var nearestDistance = threshold
 
-        for unifiedObject in document.unifiedObjects {
-            switch unifiedObject.objectType {
-            case .shape(let shape), .text(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+        for object in document.snapshot.objects.values {
+            switch object.objectType {
+            case .shape(let shape), .text(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 if !shape.isVisible || shape.isLocked {
                     continue
                 }
