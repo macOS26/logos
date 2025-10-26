@@ -26,14 +26,14 @@ class PasteboardDiagnostics {
 
         var test = LayerStructureTest()
 
-        test.layerCount = document.layers.count
+        test.layerCount = document.snapshot.layers.count
         test.expectedLayerCount = 3
         test.layerCountCorrect = (test.layerCount == test.expectedLayerCount)
 
-        if document.layers.count >= 3 {
-            test.pasteboardLayerName = document.layers[0].name
-            test.canvasLayerName = document.layers[1].name
-            test.workingLayerName = document.layers[2].name
+        if document.snapshot.layers.count >= 3 {
+            test.pasteboardLayerName = document.snapshot.layers[0].name
+            test.canvasLayerName = document.snapshot.layers[1].name
+            test.workingLayerName = document.snapshot.layers[2].name
 
             test.layerNamesCorrect = (
                 test.pasteboardLayerName == "Pasteboard" &&
@@ -41,9 +41,9 @@ class PasteboardDiagnostics {
                 test.workingLayerName == "Layer 1"
             )
 
-            test.pasteboardLocked = document.layers[0].isLocked
-            test.canvasLocked = document.layers[1].isLocked
-            test.workingLayerLocked = document.layers[2].isLocked
+            test.pasteboardLocked = document.snapshot.layers[0].isLocked
+            test.canvasLocked = document.snapshot.layers[1].isLocked
+            test.workingLayerLocked = document.snapshot.layers[2].isLocked
 
             test.lockStatusCorrect = (
                 test.pasteboardLocked == true &&
@@ -63,7 +63,7 @@ class PasteboardDiagnostics {
 
         var test = BackgroundShapesTest()
 
-        if document.layers.count >= 2 {
+        if document.snapshot.layers.count >= 2 {
             let pasteboardShapes = document.getShapesForLayer(0)
             test.pasteboardShapeCount = pasteboardShapes.count
             if pasteboardShapes.count > 0 {
@@ -121,7 +121,7 @@ class PasteboardDiagnostics {
 
         var test = HitTestingTest()
 
-        guard document.layers.count >= 3 else {
+        guard document.snapshot.layers.count >= 3 else {
             test.passed = false
             return test
         }
@@ -166,8 +166,8 @@ class PasteboardDiagnostics {
         var testedLayers: [String] = []
         var testedShapes: [String] = []
 
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices.reversed() {
+            let layer = document.snapshot.layers[layerIndex]
             testedLayers.append("Layer \(layerIndex): \(layer.name)")
 
             if !layer.isVisible { continue }
@@ -336,8 +336,8 @@ class PasteboardDiagnostics {
         var testedLayers: [String] = []
         var testedShapes: [String] = []
 
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices.reversed() {
+            let layer = document.snapshot.layers[layerIndex]
             testedLayers.append("Layer \(layerIndex): \(layer.name)")
 
             if !layer.isVisible { continue }
