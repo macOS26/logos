@@ -36,10 +36,10 @@ extension VectorDocument {
             }
         }
 
-        for unifiedObj in unifiedObjects {
-            guard case .text(let shape) = unifiedObj.objectType,
+        for obj in snapshot.objects.values {
+            guard case .text(let shape) = obj.objectType,
                   var textObj = VectorText.from(shape) else { continue }
-            textObj.layerIndex = unifiedObj.layerIndex
+            textObj.layerIndex = obj.layerIndex
             guard textObj.isVisible else { continue }
 
             let textBounds = textObj.bounds
@@ -76,11 +76,11 @@ extension VectorDocument {
             }
         }
 
-        for unifiedObj in unifiedObjects {
-            guard case .text(let shape) = unifiedObj.objectType,
+        for obj in snapshot.objects.values {
+            guard case .text(let shape) = obj.objectType,
                   var textObj = VectorText.from(shape),
                   textObj.isVisible else { continue }
-            textObj.layerIndex = unifiedObj.layerIndex
+            textObj.layerIndex = obj.layerIndex
             if let li = textObj.layerIndex, li >= 2 {
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,
