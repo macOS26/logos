@@ -32,26 +32,34 @@ class ObjectReorderCommand: BaseCommand {
 
         switch reorderType {
         case .moveObjectToLayer(let objectID, let oldLayerIndex, let newLayerIndex, let oldIndex, let newIndex):
+            let sourceLayer = forward ? oldLayerIndex : newLayerIndex
             let targetLayer = forward ? newLayerIndex : oldLayerIndex
             let targetIndex = forward ? newIndex : oldIndex
 
-            if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }),
-               case .shape(let shape) = document.unifiedObjects[currentIndex].objectType {
-                _ = document.unifiedObjects.remove(at: currentIndex)
-                let updatedObj = VectorObject(
-                    shape: shape,
-                    layerIndex: targetLayer
-                )
-                document.unifiedObjects.insert(updatedObj, at: min(targetIndex, document.unifiedObjects.count))
-                affectedLayers.insert(oldLayerIndex)
-                affectedLayers.insert(newLayerIndex)
-            }
+            guard sourceLayer >= 0 && sourceLayer < document.snapshot.layers.count,
+                  targetLayer >= 0 && targetLayer < document.snapshot.layers.count,
+                  var obj = document.snapshot.objects[objectID],
+                  case .shape(let shape) = obj.objectType else { return affectedLayers }
+
+            // Remove from source layer
+            document.snapshot.layers[sourceLayer].objectIDs.removeAll { $0 == objectID }
+
+            // Update layerIndex
+            obj.layerIndex = targetLayer
+            document.snapshot.objects[objectID] = obj
+
+            // Add to target layer
+            let insertIndex = min(targetIndex, document.snapshot.layers[targetLayer].objectIDs.count)
+            document.snapshot.layers[targetLayer].objectIDs.insert(objectID, at: insertIndex)
+
+            affectedLayers.insert(oldLayerIndex)
+            affectedLayers.insert(newLayerIndex)
 
         case .moveUp(let objectIDs, let oldIndices, let newIndices):
             let indexDict = forward ? newIndices : oldIndices
             moveObjectsToIndices(objectIDs: objectIDs, targetIndices: indexDict, document: document)
             for id in objectIDs {
-                if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                if let obj = document.snapshot.objects[id] {
                     affectedLayers.insert(obj.layerIndex)
                 }
             }
@@ -60,7 +68,7 @@ class ObjectReorderCommand: BaseCommand {
             let indexDict = forward ? newIndices : oldIndices
             moveObjectsToIndices(objectIDs: objectIDs, targetIndices: indexDict, document: document)
             for id in objectIDs {
-                if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                if let obj = document.snapshot.objects[id] {
                     affectedLayers.insert(obj.layerIndex)
                 }
             }
@@ -68,52 +76,72 @@ class ObjectReorderCommand: BaseCommand {
         case .reorderBetween(let sourceID, _, let oldIndex, let newIndex):
             let targetIndex = forward ? newIndex : oldIndex
 
-            if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == sourceID }) {
-                let obj = document.unifiedObjects.remove(at: currentIndex)
-                document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
-                affectedLayers.insert(obj.layerIndex)
-            }
+            guard let obj = document.snapshot.objects[sourceID],
+                  obj.layerIndex >= 0 && obj.layerIndex < document.snapshot.layers.count else { return affectedLayers }
+
+            document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == sourceID }
+            let insertIndex = min(targetIndex, document.snapshot.layers[obj.layerIndex].objectIDs.count)
+            document.snapshot.layers[obj.layerIndex].objectIDs.insert(sourceID, at: insertIndex)
+            affectedLayers.insert(obj.layerIndex)
 
         case .bringToFront(let objectID, let oldIndex, let newIndex, let layerIndex):
             let targetIndex = forward ? newIndex : oldIndex
 
-            if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                let obj = document.unifiedObjects.remove(at: currentIndex)
-                document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
-                affectedLayers.insert(layerIndex)
-            }
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count,
+                  document.snapshot.objects[objectID] != nil else { return affectedLayers }
+
+            document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == objectID }
+            let insertIndex = min(targetIndex, document.snapshot.layers[layerIndex].objectIDs.count)
+            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertIndex)
+            affectedLayers.insert(layerIndex)
 
         case .sendToBack(let objectID, let oldIndex, let newIndex, let layerIndex):
             let targetIndex = forward ? newIndex : oldIndex
 
-            if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                let obj = document.unifiedObjects.remove(at: currentIndex)
-                document.unifiedObjects.insert(obj, at: min(targetIndex, document.unifiedObjects.count))
-                affectedLayers.insert(layerIndex)
-            }
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count,
+                  document.snapshot.objects[objectID] != nil else { return affectedLayers }
+
+            document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == objectID }
+            let insertIndex = min(targetIndex, document.snapshot.layers[layerIndex].objectIDs.count)
+            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertIndex)
+            affectedLayers.insert(layerIndex)
         }
 
         return affectedLayers
     }
 
     private func moveObjectsToIndices(objectIDs: [UUID], targetIndices: [UUID: Int], document: VectorDocument) {
-        var objects = document.unifiedObjects
-        var affectedObjects: [(UUID, VectorObject)] = []
+        // Group objects by layer
+        var objectsByLayer: [Int: [(UUID, Int)]] = [:]
 
         for id in objectIDs {
-            if let index = objects.firstIndex(where: { $0.id == id }) {
-                affectedObjects.append((id, objects[index]))
-                objects.remove(at: index)
+            guard let obj = document.snapshot.objects[id],
+                  let targetIndex = targetIndices[id] else { continue }
+
+            if objectsByLayer[obj.layerIndex] == nil {
+                objectsByLayer[obj.layerIndex] = []
             }
+            objectsByLayer[obj.layerIndex]!.append((id, targetIndex))
         }
 
-        for (id, obj) in affectedObjects {
-            if let targetIndex = targetIndices[id] {
-                let insertIndex = min(targetIndex, objects.count)
-                objects.insert(obj, at: insertIndex)
-            }
-        }
+        // Process each layer
+        for (layerIndex, idsAndIndices) in objectsByLayer {
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
 
-        document.unifiedObjects = objects
+            var layerObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+
+            // Remove affected objects
+            let affectedIDs = Set(idsAndIndices.map { $0.0 })
+            layerObjectIDs.removeAll { affectedIDs.contains($0) }
+
+            // Sort by target index and reinsert
+            let sorted = idsAndIndices.sorted { $0.1 < $1.1 }
+            for (id, targetIdx) in sorted {
+                let insertIndex = min(targetIdx, layerObjectIDs.count)
+                layerObjectIDs.insert(id, at: insertIndex)
+            }
+
+            document.snapshot.layers[layerIndex].objectIDs = layerObjectIDs
+        }
     }
 }
