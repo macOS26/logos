@@ -157,11 +157,10 @@ final class VectorDocument: ObservableObject, Codable {
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
-        let decodedLayers = try container.decode([VectorLayer].self, forKey: .layers)
         let decodedSnapshot = try container.decode(DocumentSnapshot.self, forKey: .snapshot)
 
         _encodableSettings = decodedSettings
-        _encodableLayers = decodedLayers
+        _encodableLayers = []
         _encodableCurrentTool = .selection
         _encodableViewMode = .color
         _encodableZoomLevel = 1.0
