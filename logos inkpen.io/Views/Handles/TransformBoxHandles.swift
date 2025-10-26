@@ -22,6 +22,23 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
+    // Scale handles down below 100% zoom
+    private var scaledHandleSize: CGFloat {
+        let baseSize: CGFloat = 10
+        if zoomLevel < 1.0 {
+            return baseSize * zoomLevel
+        }
+        return baseSize
+    }
+
+    private var scaledHitAreaSize: CGFloat {
+        let baseSize: CGFloat = 10
+        if zoomLevel < 1.0 {
+            return baseSize * zoomLevel
+        }
+        return baseSize
+    }
+
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
         let isKeylineMode = document.viewState.viewMode == .keyline
@@ -200,14 +217,14 @@ struct TransformBoxHandles: View {
                     ZStack {
                         Circle()
                             .fill(Color.clear)
-                            .frame(width: handleHitAreaSize, height: handleHitAreaSize)
+                            .frame(width: scaledHitAreaSize, height: scaledHitAreaSize)
                             .contentShape(Circle())
                             .allowsHitTesting(true)
 
                         Circle()
                             .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
                             .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
-                            .frame(width: handleSize, height: handleSize)
+                            .frame(width: scaledHandleSize, height: scaledHandleSize)
                             .allowsHitTesting(false)
                     }
                 .position(
