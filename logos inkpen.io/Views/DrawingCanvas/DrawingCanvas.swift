@@ -201,6 +201,22 @@ struct DrawingCanvas: View {
                     spatialIndex.rebuild(from: document.snapshot)
                     rebuildLockedObjectsCache()
                 }
+                .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
+                    // Rebuild spatial index only for layers that changed (preferred granular approach)
+                    var changedLayerIDs = Set<UUID>()
+
+                    // Find layers with changed trigger values
+                    for (layerID, newValue) in newTriggers {
+                        if oldTriggers[layerID] != newValue {
+                            changedLayerIDs.insert(layerID)
+                        }
+                    }
+
+                    if !changedLayerIDs.isEmpty {
+                        spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
+                        rebuildLockedObjectsCache()
+                    }
+                }
                 .onChange(of: document.snapshot.objects.count) { _, newCount in
                     // Rebuild spatial index when objects are added/removed
                     if newCount != cachedObjectCount {
