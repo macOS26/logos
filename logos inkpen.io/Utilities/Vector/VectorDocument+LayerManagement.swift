@@ -371,41 +371,43 @@ extension VectorDocument {
 
     }
 
-    func moveSelectedObjectsUp() {
-        guard !viewState.selectedObjectIDs.isEmpty else { return }
-
-        var selectedObjects: [VectorObject] = []
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = findObject(by: objectID) {
-                selectedObjects.append(obj)
-            }
-        }
-
-        for selectedObj in selectedObjects {
-            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex < unifiedObjects.count - 1 else { continue }
-
-            unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
-        }
-    }
-
-    func moveSelectedObjectsDown() {
-        guard !viewState.selectedObjectIDs.isEmpty else { return }
-
-        var selectedObjects: [VectorObject] = []
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = findObject(by: objectID) {
-                selectedObjects.append(obj)
-            }
-        }
-
-        for selectedObj in selectedObjects {
-            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex > 0 else { continue }
-
-            unifiedObjects.swapAt(selectedIndex, selectedIndex - 1)
-        }
-    }
+    // COMMENTED OUT - Unused legacy functions that manipulated unifiedObjects array
+    // Object ordering is now handled via Layer.objectIDs in snapshot
+//    func moveSelectedObjectsUp() {
+//        guard !viewState.selectedObjectIDs.isEmpty else { return }
+//
+//        var selectedObjects: [VectorObject] = []
+//        for objectID in viewState.selectedObjectIDs {
+//            if let obj = findObject(by: objectID) {
+//                selectedObjects.append(obj)
+//            }
+//        }
+//
+//        for selectedObj in selectedObjects {
+//            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
+//            guard selectedIndex < unifiedObjects.count - 1 else { continue }
+//
+//            unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
+//        }
+//    }
+//
+//    func moveSelectedObjectsDown() {
+//        guard !viewState.selectedObjectIDs.isEmpty else { return }
+//
+//        var selectedObjects: [VectorObject] = []
+//        for objectID in viewState.selectedObjectIDs {
+//            if let obj = findObject(by: objectID) {
+//                selectedObjects.append(obj)
+//            }
+//        }
+//
+//        for selectedObj in selectedObjects {
+//            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
+//            guard selectedIndex > 0 else { continue }
+//
+//            unifiedObjects.swapAt(selectedIndex, selectedIndex - 1)
+//        }
+//    }
 
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
         guard let sourceObject = snapshot.objects[objectId],
@@ -444,37 +446,39 @@ extension VectorDocument {
         changeNotifier.notifyLayersChanged()
     }
 
-    func moveObjectToTop(objectId: UUID) {
-        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
-            Log.error("❌ Object not found for moving to top", category: .error)
-            return
-        }
-
-        let sourceObject = unifiedObjects[sourceIndex]
-        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
-
-        guard let lastIndex = layerObjects.last?.offset else { return }
-        guard sourceIndex != lastIndex else { return }
-
-        let object = unifiedObjects.remove(at: sourceIndex)
-        unifiedObjects.insert(object, at: lastIndex)
-    }
-
-    func moveObjectToBottom(objectId: UUID) {
-        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
-            Log.error("❌ Object not found for moving to bottom", category: .error)
-            return
-        }
-
-        let sourceObject = unifiedObjects[sourceIndex]
-        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
-
-        guard let firstIndex = layerObjects.first?.offset else { return }
-        guard sourceIndex != firstIndex else { return }
-
-        let object = unifiedObjects.remove(at: sourceIndex)
-        unifiedObjects.insert(object, at: firstIndex)
-    }
+    // COMMENTED OUT - Unused legacy functions that manipulated unifiedObjects array
+    // Object ordering is now handled via Layer.objectIDs in snapshot
+//    func moveObjectToTop(objectId: UUID) {
+//        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+//            Log.error("❌ Object not found for moving to top", category: .error)
+//            return
+//        }
+//
+//        let sourceObject = unifiedObjects[sourceIndex]
+//        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
+//
+//        guard let lastIndex = layerObjects.last?.offset else { return }
+//        guard sourceIndex != lastIndex else { return }
+//
+//        let object = unifiedObjects.remove(at: sourceIndex)
+//        unifiedObjects.insert(object, at: lastIndex)
+//    }
+//
+//    func moveObjectToBottom(objectId: UUID) {
+//        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+//            Log.error("❌ Object not found for moving to bottom", category: .error)
+//            return
+//        }
+//
+//        let sourceObject = unifiedObjects[sourceIndex]
+//        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
+//
+//        guard let firstIndex = layerObjects.first?.offset else { return }
+//        guard sourceIndex != firstIndex else { return }
+//
+//        let object = unifiedObjects.remove(at: sourceIndex)
+//        unifiedObjects.insert(object, at: firstIndex)
+//    }
 
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
         guard let sourceIndex = layers.firstIndex(where: { $0.id == sourceLayerId }),
