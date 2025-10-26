@@ -635,118 +635,90 @@ class PathOperations {
 
 extension ProfessionalPathOperations {
 
-    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
+    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.1) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
         }
 
-        var elements = path.elements
-        var changed = true
+        var firstPointIndex: Int? = nil
+        var lastPointIndex: Int? = nil
 
-        while changed {
-            changed = false
-            var i = 0
-
-            while i < elements.count - 1 {
-                // Skip move and close elements
-                if case .close = elements[i] {
-                    i += 1
-                    continue
+        for (index, element) in path.elements.enumerated() {
+            switch element {
+            case .line, .curve, .quadCurve:
+                if firstPointIndex == nil {
+                    firstPointIndex = index
                 }
-                if case .move = elements[i] {
-                    i += 1
-                    continue
-                }
-
-                // Get endpoint of element i
-                let point1: VectorPoint?
-                switch elements[i] {
-                case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                    point1 = to
-                default:
-                    point1 = nil
-                }
-
-                // Get endpoint of element i+1
-                let point2: VectorPoint?
-                switch elements[i + 1] {
-                case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                    point2 = to
-                default:
-                    point2 = nil
-                }
-
-                // Check if the two endpoints are coincident
-                if let p1 = point1, let p2 = point2, i < elements.count - 2 {
-                    let distance = p1.distance(to: p2)
-
-                    if distance <= tolerance {
-                        // Merge position
-                        let mergedPoint = VectorPoint(
-                            (p1.x + p2.x) / 2.0,
-                            (p1.y + p2.y) / 2.0
-                        )
-
-                        // Get incoming control handle (from element i)
-                        let incomingHandle: VectorPoint
-                        switch elements[i] {
-                        case .curve(_, let c1, _):
-                            incomingHandle = c1
-                        case .quadCurve(_, let c):
-                            incomingHandle = c
-                        default:
-                            incomingHandle = mergedPoint
-                        }
-
-                        // Get outgoing control handle (from element i+1)
-                        let outgoingHandle: VectorPoint
-                        switch elements[i + 1] {
-                        case .curve(_, let c1, _):
-                            outgoingHandle = c1
-                        case .quadCurve(_, let c):
-                            outgoingHandle = c
-                        default:
-                            outgoingHandle = mergedPoint
-                        }
-
-                        // Update element i to end at merged point with smooth handles
-                        switch elements[i] {
-                        case .curve(_, _, let c2):
-                            elements[i] = .curve(to: mergedPoint, control1: incomingHandle, control2: c2)
-                        case .quadCurve:
-                            elements[i] = .curve(to: mergedPoint, control1: incomingHandle, control2: outgoingHandle)
-                        case .line:
-                            elements[i] = .curve(to: mergedPoint, control1: incomingHandle, control2: outgoingHandle)
-                        default:
-                            break
-                        }
-
-                        // Remove element i+1 (the coincident point)
-                        elements.remove(at: i + 1)
-
-                        // Update element i+1 (which was i+2) to use outgoing handle
-                        if i + 1 < elements.count {
-                            switch elements[i + 1] {
-                            case .curve(let to, _, let c2):
-                                elements[i + 1] = .curve(to: to, control1: outgoingHandle, control2: c2)
-                            case .quadCurve(let to, _):
-                                elements[i + 1] = .quadCurve(to: to, control: outgoingHandle)
-                            default:
-                                break
-                            }
-                        }
-
-                        Log.info("  ✓ Merged coincident points at index \(i) (distance: \(String(format: "%.2f", distance)))", category: .general)
-                        changed = true
-                        break
-                    }
-                }
-
-                i += 1
+                lastPointIndex = index
+            default:
+                break
             }
         }
 
-        return VectorPath(elements: elements, isClosed: path.isClosed)
+        var pointData: [(index: Int, position: VectorPoint, element: PathElement)] = []
+        for (index, element) in path.elements.enumerated() {
+            let position: VectorPoint?
+            switch element {
+            case .move(let to), .line(let to):
+                position = to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                position = to
+            case .close:
+                position = nil
+            }
+
+            if let pos = position {
+                pointData.append((index, pos, element))
+            }
+        }
+
+        // Only check adjacent (consecutive) points - this is "mergeADJACENTCoincidentPoints"
+        // Rebuild pointData after each removal to properly handle stacked points
+        var currentPointData = pointData
+        var indicesToRemove: Set<Int> = []
+
+        var changed = true
+        while changed {
+            changed = false
+
+            for i in 0..<(currentPointData.count - 1) {
+                let currentData = currentPointData[i]
+                let nextData = currentPointData[i + 1]
+
+                // Only merge if they are adjacent in the actual path
+                if nextData.index == currentData.index + 1 {
+                    let distance = currentData.position.distance(to: nextData.position)
+
+                    if distance <= tolerance {
+                        let actualElementIndex = nextData.index
+                        let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
+
+                        if !isFirstOrLast {
+                            indicesToRemove.insert(actualElementIndex)
+                            Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
+
+                            // Remove from currentPointData and retry
+                            currentPointData.remove(at: i + 1)
+                            changed = true
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        var cleanedElements: [PathElement] = []
+        for (index, element) in path.elements.enumerated() {
+            if !indicesToRemove.contains(index) {
+                cleanedElements.append(element)
+            }
+        }
+
+        if cleanedElements.isEmpty {
+            return path
+        }
+
+        return VectorPath(elements: cleanedElements, isClosed: path.isClosed)
     }
 
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {

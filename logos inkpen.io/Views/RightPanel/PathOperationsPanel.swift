@@ -562,16 +562,16 @@ struct PathOperationsPanel: View {
         }
 
         let selectedShapes = document.getSelectedShapes()
-        let tolerance: Double = 5.0
+        let tolerance: Double = 1.0
 
-        Log.info("Merging coincident points in \(selectedShapes.count) shapes (tolerance: \(tolerance) pixels)", category: .general)
+        Log.info("Merging ALL coincident points in \(selectedShapes.count) shapes (tolerance: \(tolerance))", category: .general)
 
         for shape in selectedShapes {
             let originalCount = shape.path.elements.count
             let cleanedPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: shape.path, tolerance: tolerance)
             let newCount = cleanedPath.elements.count
 
-            Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements (merged \(originalCount - newCount) points)", category: .general)
+            Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements (removed \(originalCount - newCount))", category: .general)
 
             if newCount != originalCount {
                 document.updateShapePathUnified(id: shape.id, path: cleanedPath)

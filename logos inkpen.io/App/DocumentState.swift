@@ -3,7 +3,7 @@ import Combine
 import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
-    @Published var document: VectorDocument?
+    lazy var document: VectorDocument? = nil
     weak var window: NSWindow?
     private var windowObserver: NSObjectProtocol?
     @Published var canUndo = false
