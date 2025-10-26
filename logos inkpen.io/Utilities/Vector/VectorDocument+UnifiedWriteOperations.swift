@@ -16,7 +16,7 @@ extension VectorDocument {
     func removeShapesUnified(layerIndex: Int, where condition: (VectorShape) -> Bool) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
 
-        let shapesToRemove = unifiedObjects.compactMap { obj -> UUID? in
+        let shapesToRemove = snapshot.objects.values.compactMap { obj -> UUID? in
             if obj.layerIndex == layerIndex,
                case .shape(let shape) = obj.objectType,
                condition(shape) {
