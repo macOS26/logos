@@ -3,7 +3,7 @@ import SwiftUI
 extension VectorDocument {
 
     enum CodingKeys: CodingKey {
-        case settings, layers, snapshot
+        case settings, snapshot, layers
     }
 
     func encode(to encoder: Encoder) throws {
@@ -17,9 +17,8 @@ extension VectorDocument {
         settingsToSave.customCmykSwatches = colorSwatches.cmyk.isEmpty ? nil : colorSwatches.cmyk
         settingsToSave.customHsbSwatches = colorSwatches.hsb.isEmpty ? nil : colorSwatches.hsb
 
-        // Save document content only (no UI state, no legacy arrays)
+        // Save document content only (no UI state)
         try container.encode(settingsToSave, forKey: .settings)
-        try container.encode(snapshot.layers, forKey: .layers)
         try container.encode(snapshot, forKey: .snapshot)
     }
 }
