@@ -16,9 +16,6 @@ class AddObjectCommand: BaseCommand {
         var affectedLayers = Set<Int>()
 
         for obj in objects {
-            document.unifiedObjects.append(obj)
-
-            // Also update snapshot
             let layerIndex = obj.layerIndex
             if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
                 document.snapshot.objects[obj.id] = obj
@@ -33,12 +30,8 @@ class AddObjectCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
-        let idsToRemove = Set(objects.map { $0.id })
         var affectedLayers = Set<Int>()
 
-        document.unifiedObjects.removeAll { idsToRemove.contains($0.id) }
-
-        // Remove from snapshot
         for obj in objects {
             document.snapshot.objects.removeValue(forKey: obj.id)
             let layerIndex = obj.layerIndex
