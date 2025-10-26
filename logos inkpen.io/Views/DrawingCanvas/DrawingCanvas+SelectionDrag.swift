@@ -231,7 +231,7 @@ extension DrawingCanvas {
                 }
             }
 
-            syncUnifiedObjectsAfterMovement()
+            // syncUnifiedObjectsAfterMovement()
 
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
