@@ -35,29 +35,25 @@ class TransformCommand: BaseCommand {
         var affectedLayers = Set<Int>()
 
         for id in objectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
-                var obj = document.unifiedObjects[index]
+            guard var obj = document.snapshot.objects[id] else { continue }
 
-                switch obj.objectType {
-                case .text(var shape):
-                    if let transform = transforms[id] {
-                        shape.transform = transform
-                    }
-                    if let position = positions[id] {
-                        shape.textPosition = position
-                    }
-                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                    document.unifiedObjects[index] = obj
-
-                case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                    if let transform = transforms[id] {
-                        shape.transform = transform
-                    }
-                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                    document.unifiedObjects[index] = obj
+            switch obj.objectType {
+            case .text(var shape):
+                if let transform = transforms[id] {
+                    shape.transform = transform
                 }
+                if let position = positions[id] {
+                    shape.textPosition = position
+                }
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
 
-                // Also update snapshot
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                if let transform = transforms[id] {
+                    shape.transform = transform
+                }
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
             }
