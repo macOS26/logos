@@ -1079,7 +1079,7 @@ extension DrawingCanvas {
             switch unifiedObject.objectType {
             case .text:
                 continue
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 if !shape.isVisible || shape.isLocked { continue }
 
                 let shapeBounds: CGRect
