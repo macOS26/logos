@@ -26,10 +26,11 @@ struct InkpenDocument: FileDocument {
                 var minX: CGFloat = .infinity
                 var minY: CGFloat = .infinity
 
-                for unifiedObj in self.document.snapshot.objects.values {
-                    switch unifiedObj.objectType {
+                for obj in self.document.snapshot.objects.values {
+                    switch obj.objectType {
                     case .text(let shape),
                          .shape(let shape),
+                         .image(let shape),
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
