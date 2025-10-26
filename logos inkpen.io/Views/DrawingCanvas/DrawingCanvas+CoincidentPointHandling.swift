@@ -13,8 +13,8 @@ extension DrawingCanvas {
 			return active.isEmpty ? [targetPointID.shapeID] : active
 		}()
 
-        for layerIndex in document.layers.indices {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices {
+            let layer = document.snapshot.layers[layerIndex]
             if !layer.isVisible { continue }
 
 			let shapes = document.getShapesForLayer(layerIndex)
@@ -156,8 +156,8 @@ extension DrawingCanvas {
         var totalCoincidentGroups = 0
         var processedPoints: Set<PointID> = []
 
-        for layerIndex in document.layers.indices {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices {
+            let layer = document.snapshot.layers[layerIndex]
             if !layer.isVisible { continue }
 
             let shapes = document.getShapesForLayer(layerIndex)
@@ -203,7 +203,7 @@ extension DrawingCanvas {
         for coincidentPointID in coincidentPoints {
             if coincidentPointID == pointID { continue }
 
-            for layerIndex in document.layers.indices {
+            for layerIndex in document.snapshot.layers.indices {
                 let shapes = document.getShapesForLayer(layerIndex)
                 if let shapeIndex = shapes.firstIndex(where: { $0.id == coincidentPointID.shapeID }) {
                     guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
