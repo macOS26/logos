@@ -1047,6 +1047,9 @@ class ClipboardManager {
             if !objectsToAdd.isEmpty {
                 let command = AddObjectCommand(objects: objectsToAdd)
                 document.commandManager.execute(command)
+
+                // Switch to selection tool to make the pasted items immediately draggable
+                document.viewState.currentTool = .selection
             }
 
         } catch {
@@ -1110,6 +1113,9 @@ class ClipboardManager {
             if !objectsToAdd.isEmpty {
                 let command = AddObjectCommand(objects: objectsToAdd)
                 document.commandManager.execute(command)
+
+                // Switch to selection tool to make the pasted items immediately draggable
+                document.viewState.currentTool = .selection
             }
 
         } catch {
