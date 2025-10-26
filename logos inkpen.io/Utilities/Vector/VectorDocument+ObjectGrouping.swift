@@ -10,7 +10,13 @@ extension VectorDocument {
         print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
+        var objectsToRemove: [VectorObject] = []
+
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                objectsToRemove.append(obj)
+            }
+        }
 
         print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
         for (index, obj) in objectsToRemove.enumerated() {
@@ -74,16 +80,17 @@ extension VectorDocument {
               viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            switch obj.objectType {
-            case .text(let shape),
-                 .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                removedShapes[obj.id] = shape
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    removedShapes[obj.id] = shape
+                }
             }
         }
 
@@ -209,7 +216,7 @@ extension VectorDocument {
         guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
+        if snapshot.objects[selectedShapeID] != nil {
             removedShapes[selectedShapeID] = flattenedGroup
         }
 
@@ -251,16 +258,17 @@ extension VectorDocument {
               viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            switch obj.objectType {
-            case .text(let shape),
-                 .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                removedShapes[obj.id] = shape
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    removedShapes[obj.id] = shape
+                }
             }
         }
 
@@ -302,16 +310,17 @@ extension VectorDocument {
               viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            switch obj.objectType {
-            case .text(let shape),
-                 .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                removedShapes[obj.id] = shape
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    removedShapes[obj.id] = shape
+                }
             }
         }
 
@@ -358,7 +367,7 @@ extension VectorDocument {
               compoundShape.isTrueCompoundPath else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
+        if snapshot.objects[selectedShapeID] != nil {
             removedShapes[selectedShapeID] = compoundShape
         }
 
@@ -412,7 +421,7 @@ extension VectorDocument {
               loopingShape.isTrueLoopingPath else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
+        if snapshot.objects[selectedShapeID] != nil {
             removedShapes[selectedShapeID] = loopingShape
         }
 
