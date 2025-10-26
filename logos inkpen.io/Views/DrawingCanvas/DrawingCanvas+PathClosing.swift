@@ -6,7 +6,7 @@ extension DrawingCanvas {
         let selectedShapeIDs = Set(selectedPoints.map { $0.shapeID })
 
         for shapeID in selectedShapeIDs {
-            for layerIndex in document.layers.indices {
+            for layerIndex in document.snapshot.layers.indices {
                 let shapes = document.getShapesForLayer(layerIndex)
                 if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
                     guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
