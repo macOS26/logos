@@ -22,23 +22,21 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
-    // Scale handles down below 100% zoom using a curve for gradual scaling
-    private var scaledHandleSize: CGFloat {
-        let baseSize: CGFloat = 10
-        if zoomLevel < 1.0 {
-            // Use power curve for gradual scaling (0.25 keeps handles larger)
-            return baseSize * pow(zoomLevel, 0.25)
+    // Helper method for curved scaling below 100% zoom
+    private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
+        if zoom < 1.0 {
+            return baseSize * pow(zoom, 0.25)
         }
         return baseSize
     }
 
+    // Scale handles down below 100% zoom using a curve for gradual scaling
+    private var scaledHandleSize: CGFloat {
+        scaleForZoom(10, zoom: zoomLevel)
+    }
+
     private var scaledHitAreaSize: CGFloat {
-        let baseSize: CGFloat = 10
-        if zoomLevel < 1.0 {
-            // Use power curve for gradual scaling (0.25 keeps handles larger)
-            return baseSize * pow(zoomLevel, 0.25)
-        }
-        return baseSize
+        scaleForZoom(10, zoom: zoomLevel)
     }
 
     var body: some View {

@@ -10,6 +10,14 @@ struct ProfessionalDirectSelectionView: View {
     let coincidentPointTolerance: Double
     let dragPreviewDelta: CGPoint
 
+    // Helper method for curved scaling below 100% zoom
+    private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
+        if zoom < 1.0 {
+            return baseSize * pow(zoom, 0.25)
+        }
+        return baseSize
+    }
+
     var body: some View {
         Canvas { context, size in
             let zoom = document.viewState.zoomLevel
@@ -44,15 +52,10 @@ struct ProfessionalDirectSelectionView: View {
                             let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
                             // Scale down below 100% zoom using curve
-                            let basePointSize: CGFloat = 7.0
-                            let scaledPointSize = zoom < 1.0 ? basePointSize * pow(zoom, 0.25) : basePointSize
-                            let pointSize: CGFloat = scaledPointSize / zoom
+                            let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
                             let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                             context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-
-                            let baseStrokeWidth: CGFloat = 1.4
-                            let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
-                            context.stroke(Path(rect), with: .color(.blue), lineWidth: scaledStrokeWidth / zoom)
+                            context.stroke(Path(rect), with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
                         }
                     }
 
@@ -106,10 +109,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-
-        let baseStrokeWidth: CGFloat = 1.4
-        let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaledStrokeWidth / zoom)
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
 
     private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
@@ -132,10 +132,7 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw
         var ctx = context
         ctx.concatenate(shape.transform)
-
-        let baseStrokeWidth: CGFloat = 1.4
-        let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
-        ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaledStrokeWidth / zoom)
+        ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
@@ -170,21 +167,13 @@ struct ProfessionalDirectSelectionView: View {
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)
-
-        let baseLineWidth: CGFloat = 1.4
-        let scaledLineWidth = zoom < 1.0 ? baseLineWidth * pow(zoom, 0.25) : baseLineWidth
-        context.stroke(linePath, with: .color(.blue), lineWidth: scaledLineWidth / zoom)
+        context.stroke(linePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
 
         // Scale down below 100% zoom using curve
-        let baseHandleSize: CGFloat = 5.6
-        let scaledHandleSize = zoom < 1.0 ? baseHandleSize * pow(zoom, 0.25) : baseHandleSize
-        let handleSize: CGFloat = scaledHandleSize / zoom
+        let handleSize = scaleForZoom(5.6, zoom: zoom) / zoom
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
-
-        let baseCircleStroke: CGFloat = 0.7
-        let scaledCircleStroke = zoom < 1.0 ? baseCircleStroke * pow(zoom, 0.25) : baseCircleStroke
-        context.stroke(circle, with: .color(.white), lineWidth: scaledCircleStroke / zoom)
+        context.stroke(circle, with: .color(.white), lineWidth: scaleForZoom(0.7, zoom: zoom) / zoom)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
