@@ -45,8 +45,9 @@ struct GradientPreviewAndStopsView: View {
                 renderGradientToCGContext(gradient: gradient, context: cgContext, size: size, liveOriginX: originX, liveOriginY: originY)
             }
 
-            // Draw border
-            context.stroke(Path(CGRect(origin: .zero, size: size)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
+            // Draw border (inset slightly to prevent clipping)
+            let borderRect = CGRect(x: 1, y: 1, width: size.width - 2, height: size.height - 2)
+            context.stroke(Path(borderRect), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
 
             // Draw grid lines
             for i in 0..<5 {
@@ -116,6 +117,7 @@ struct GradientPreviewAndStopsView: View {
             context.stroke(dotCircle, with: .color(.black), lineWidth: 1)
         }
         .frame(width: squareSize, height: squareSize)
+        .drawingGroup()
     }
 
     private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize, liveOriginX: Double, liveOriginY: Double) {
