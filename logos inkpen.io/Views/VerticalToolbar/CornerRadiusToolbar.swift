@@ -208,7 +208,7 @@ struct CornerRadiusToolbar: View {
 
         let oldShape = selectedShape
 
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
                var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
