@@ -40,8 +40,7 @@ class GradientCommand: BaseCommand {
         for id in objectIDs {
             guard let gradient = gradients[id],
                   let opacity = opacities[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  let obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
@@ -64,8 +63,8 @@ class GradientCommand: BaseCommand {
                         )
                     }
                 }
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                let updatedObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.snapshot.objects[id] = updatedObj
             case .text:
                 break
             }
