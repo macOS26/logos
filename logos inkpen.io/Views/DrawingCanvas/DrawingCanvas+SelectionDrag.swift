@@ -8,17 +8,17 @@ extension DrawingCanvas {
 
         dragUpdateCounter = 0
 
-        let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+        let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-        for unifiedObject in selectedObjects {
-            if unifiedObject.layerIndex < document.layers.count {
-                let layer = document.layers[unifiedObject.layerIndex]
+        for object in selectedObjects {
+            if object.layerIndex < document.layers.count {
+                let layer = document.layers[object.layerIndex]
                 if layer.isLocked {
                     return
                 }
             }
 
-            switch unifiedObject.objectType {
+            switch object.objectType {
             case .text:
                 break
             case .shape(let shape),
@@ -34,8 +34,8 @@ extension DrawingCanvas {
 
         // Calculate combined bounding box in DOCUMENT coordinates (with transforms applied)
         var combinedBounds: CGRect?
-        for unifiedObject in selectedObjects {
-            switch unifiedObject.objectType {
+        for object in selectedObjects {
+            switch object.objectType {
             case .text:
                 break
             case .shape(let shape),
@@ -57,20 +57,20 @@ extension DrawingCanvas {
 
         initialObjectPositions.removeAll()
 
-        for unifiedObject in selectedObjects {
-            switch unifiedObject.objectType {
+        for object in selectedObjects {
+            switch object.objectType {
             case .text(let shape):
                 if let textObject = document.findText(by: shape.id) {
                     let centerX = textObject.position.x + textObject.bounds.width/2
                     let centerY = textObject.position.y + textObject.bounds.height/2
                     let calculatedCenter = CGPoint(x: centerX, y: centerY)
-                    initialObjectPositions[unifiedObject.id] = calculatedCenter
+                    initialObjectPositions[object.id] = calculatedCenter
                 } else {
                     let bounds = shape.bounds
                     let centerX = shape.transform.tx + bounds.width/2
                     let centerY = shape.transform.ty + bounds.height/2
                     let fallbackCenter = CGPoint(x: centerX, y: centerY)
-                    initialObjectPositions[unifiedObject.id] = fallbackCenter
+                    initialObjectPositions[object.id] = fallbackCenter
                 }
             case .shape(let shape),
                  .warp(let shape),
@@ -81,9 +81,9 @@ extension DrawingCanvas {
                 // Calculate center in DOCUMENT coordinates (not local bounds)
                 let localCenter = CGPoint(x: bounds.midX, y: bounds.midY)
                 let documentCenter = localCenter.applying(shape.transform)
-                initialObjectPositions[unifiedObject.id] = documentCenter
+                initialObjectPositions[object.id] = documentCenter
 
-                initialObjectTransforms[unifiedObject.id] = shape.transform
+                initialObjectTransforms[object.id] = shape.transform
             }
         }
     }
@@ -92,17 +92,17 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+        let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-        for unifiedObject in selectedObjects {
-            if unifiedObject.layerIndex < document.layers.count {
-                let layer = document.layers[unifiedObject.layerIndex]
+        for object in selectedObjects {
+            if object.layerIndex < document.layers.count {
+                let layer = document.layers[object.layerIndex]
                 if layer.isLocked {
                     return
                 }
             }
 
-            switch unifiedObject.objectType {
+            switch object.objectType {
             case .text:
                 break
             case .shape(let shape),
@@ -130,7 +130,7 @@ extension DrawingCanvas {
         if document.gridSettings.snapToGrid || document.gridSettings.snapToPoint {
             if let firstObjectID = document.viewState.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
-               let firstObject = document.findObject(by: firstObjectID) {
+               let firstObject = document.snapshot.objects[firstObjectID] {
 
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -151,8 +151,8 @@ extension DrawingCanvas {
             }
         }
 
-        for unifiedObject in selectedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for object in selectedObjects {
+            if case .shape(let shape) = object.objectType {
                 if shape.isClippingPath {
                 }
             }
@@ -194,18 +194,18 @@ extension DrawingCanvas {
 
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
-            let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+            let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-            for unifiedObject in selectedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
-                    oldShapes[unifiedObject.id] = shape
-                    affectedObjectIDs.insert(unifiedObject.id)
+            for object in selectedObjects {
+                if case .shape(let shape) = object.objectType {
+                    oldShapes[object.id] = shape
+                    affectedObjectIDs.insert(object.id)
 
                     if shape.isClippingPath {
-                        let allShapes = document.getShapesForLayer(unifiedObject.layerIndex)
+                        let allShapes = document.getShapesForLayer(object.layerIndex)
                         for clippedShape in allShapes {
                             if clippedShape.clippedByShapeID == shape.id {
-                                if let clippedObj = document.unifiedObjects.first(where: { $0.id == clippedShape.id }) {
+                                if let clippedObj = document.snapshot.objects[clippedShape.id] {
                                     oldShapes[clippedObj.id] = clippedShape
                                     affectedObjectIDs.insert(clippedObj.id)
                                 }
@@ -216,18 +216,18 @@ extension DrawingCanvas {
             }
 
             // print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
-            for unifiedObject in selectedObjects {
-                switch unifiedObject.objectType {
+            for object in selectedObjects {
+                switch object.objectType {
                 case .text(let shape):
                     // print("🟣 DRAG FINISH: Text object \(shape.id)")
                     document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(unifiedObject.id)
-                    oldShapes[unifiedObject.id] = shape
+                    affectedObjectIDs.insert(object.id)
+                    oldShapes[object.id] = shape
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(unifiedObject.id)
-                    oldShapes[unifiedObject.id] = shape
+                    affectedObjectIDs.insert(object.id)
+                    oldShapes[object.id] = shape
                 }
             }
 
@@ -235,11 +235,11 @@ extension DrawingCanvas {
 
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
-                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                    switch unifiedObject.objectType {
+                if let object = document.snapshot.objects[objectID] {
+                    switch object.objectType {
                     case .text(let shape):
-                        if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
-                           case .text(let updatedShape) = document.unifiedObjects[index].objectType {
+                        if let updatedObject = document.snapshot.objects[shape.id],
+                           case .text(let updatedShape) = updatedObject.objectType {
                             newShapes[objectID] = updatedShape
                         } else {
                             newShapes[objectID] = shape
@@ -288,12 +288,12 @@ extension DrawingCanvas {
     }
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
-        guard let unifiedObject = document.findObject(by: objectID) else {
+        guard let object = document.snapshot.objects[objectID] else {
             print("🔴 DRAG: Could not find object \(objectID)")
             return
         }
 
-        switch unifiedObject.objectType {
+        switch object.objectType {
         case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
@@ -450,8 +450,8 @@ extension DrawingCanvas {
         }
 
         if shape.isClippingPath {
-            for unifiedObject in document.unifiedObjects {
-                switch unifiedObject.objectType {
+            for object in document.snapshot.objects.values {
+                switch object.objectType {
                 case .shape(let checkShape), .warp(let checkShape), .group(let checkShape), .clipGroup(let checkShape), .clipMask(let checkShape):
                     if checkShape.clippedByShapeID == shape.id {
                         applyDragDeltaToUnifiedObject(objectID: checkShape.id, delta: delta)
