@@ -399,7 +399,7 @@ extension DrawingCanvas {
     }
 
     private func updateCornerRadius(shapeID: UUID, cornerIndex: Int, radiusChange: Double) {
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
                 guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
@@ -446,7 +446,7 @@ extension DrawingCanvas {
     }
 
     func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
                 guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
@@ -482,7 +482,7 @@ extension DrawingCanvas {
     }
 
     func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
                 guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
