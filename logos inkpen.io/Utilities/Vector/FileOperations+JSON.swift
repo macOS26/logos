@@ -41,8 +41,8 @@ extension FileOperations {
 
             let document = try decoder.decode(VectorDocument.self, from: jsonData)
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
+            for obj in document.snapshot.objects.values {
+                if case .shape(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
@@ -61,8 +61,8 @@ extension FileOperations {
         do {
             let document = try decoder.decode(VectorDocument.self, from: data)
             ImageContentRegistry.setBaseDirectory(nil, for: document)
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
+            for obj in document.snapshot.objects.values {
+                if case .shape(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
