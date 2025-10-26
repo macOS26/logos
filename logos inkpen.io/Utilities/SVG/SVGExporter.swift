@@ -54,7 +54,7 @@ class SVGExporter {
             }
         }
 
-        for (layerIndex, layer) in document.layers.enumerated() {
+        for (layerIndex, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
             if layer.name == "Pasteboard" { continue }
             if !includeBackground && layer.name == "Canvas" {
@@ -63,7 +63,7 @@ class SVGExporter {
 
             svg += "<!-- Layer: \(layer.name) -->\n"
             var layerAttrs = "id=\"layer_\(layerIndex)\" opacity=\"\(layer.opacity)\""
-            if layer.blendMode != .normal {
+            if layer.blendMode != BlendMode.normal {
                 layerAttrs += " style=\"mix-blend-mode: \(layer.blendMode.svgBlendMode)\""
             }
             svg += "<g \(layerAttrs)>\n"
