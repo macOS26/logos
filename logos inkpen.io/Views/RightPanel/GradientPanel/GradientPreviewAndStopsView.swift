@@ -28,11 +28,17 @@ struct GradientPreviewAndStopsView: View {
         let liveX = document.viewState.liveGradientOriginX
         let liveY = document.viewState.liveGradientOriginY
 
+        // Add padding for dots
+        let padding: CGFloat = 8
+        let contentSize = CGSize(width: squareSize, height: squareSize)
+
         return Canvas { context, size in
+            // Translate context to add padding for corner dots
+            context.translateBy(x: padding, y: padding)
             guard let gradient = currentGradient else {
                 // Draw gray background if no gradient
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.gray.opacity(0.3)))
-                context.stroke(Path(CGRect(origin: .zero, size: size)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
+                context.fill(Path(CGRect(origin: .zero, size: contentSize)), with: .color(.gray.opacity(0.3)))
+                context.stroke(Path(CGRect(origin: .zero, size: contentSize)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
                 return
             }
 
@@ -42,18 +48,17 @@ struct GradientPreviewAndStopsView: View {
 
             // Draw gradient background using CGContext
             context.withCGContext { cgContext in
-                renderGradientToCGContext(gradient: gradient, context: cgContext, size: size, liveOriginX: originX, liveOriginY: originY)
+                renderGradientToCGContext(gradient: gradient, context: cgContext, size: contentSize, liveOriginX: originX, liveOriginY: originY)
             }
 
-            // Draw border (inset slightly to prevent clipping)
-            let borderRect = CGRect(x: 1, y: 1, width: size.width - 2, height: size.height - 2)
-            context.stroke(Path(borderRect), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
+            // Draw border
+            context.stroke(Path(CGRect(origin: .zero, size: contentSize)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
 
             // Draw grid lines
             for i in 0..<5 {
                 let position = CGFloat(i) / 4.0
-                let xPos = position * size.width
-                let yPos = position * size.height
+                let xPos = position * contentSize.width
+                let yPos = position * contentSize.height
                 let isCenter = position == 0.5
                 let opacity = isCenter ? 0.9 : 0.3
                 let width: CGFloat = isCenter ? 1.0 : 0.5
@@ -61,20 +66,17 @@ struct GradientPreviewAndStopsView: View {
                 // Vertical line
                 var vLine = Path()
                 vLine.move(to: CGPoint(x: xPos, y: 0))
-                vLine.addLine(to: CGPoint(x: xPos, y: size.height))
+                vLine.addLine(to: CGPoint(x: xPos, y: contentSize.height))
                 context.stroke(vLine, with: .color(.white.opacity(opacity)), lineWidth: width)
 
                 // Horizontal line
                 var hLine = Path()
                 hLine.move(to: CGPoint(x: 0, y: yPos))
-                hLine.addLine(to: CGPoint(x: size.width, y: yPos))
+                hLine.addLine(to: CGPoint(x: contentSize.width, y: yPos))
                 context.stroke(hLine, with: .color(.white.opacity(opacity)), lineWidth: width)
             }
 
-            // Draw grid intersection dots (inset from edges to prevent clipping)
-            let dotRadius: CGFloat = 6
-            let edgeInset: CGFloat = dotRadius + 1 // Inset by dot radius + 1px
-
+            // Draw grid intersection dots
             let gridPoints: [(x: CGFloat, y: CGFloat, isCenter: Bool)] = [
                 (0, 0, false), (0.5, 0, false), (1, 0, false),
                 (0, 0.5, false), (0.5, 0.5, true), (1, 0.5, false),
@@ -86,14 +88,8 @@ struct GradientPreviewAndStopsView: View {
             ]
 
             for point in gridPoints {
-                var xPos = point.x * size.width
-                var yPos = point.y * size.height
-
-                // Clamp to ensure dots stay within bounds
-                xPos = max(edgeInset, min(size.width - edgeInset, xPos))
-                yPos = max(edgeInset, min(size.height - edgeInset, yPos))
-
-                let circle = Path(ellipseIn: CGRect(x: xPos - dotRadius, y: yPos - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
+                let pos = CGPoint(x: point.x * contentSize.width, y: point.y * contentSize.height)
+                let circle = Path(ellipseIn: CGRect(x: pos.x - 6, y: pos.y - 6, width: 12, height: 12))
                 let color = point.isCenter ? Color.green.opacity(0.6) : Color.ui.mediumBlueBackground
                 context.fill(circle, with: .color(color))
             }
@@ -101,11 +97,11 @@ struct GradientPreviewAndStopsView: View {
             // Draw labels
             let labels: [(text: String, x: CGFloat, y: CGFloat, alignX: CGFloat, alignY: CGFloat)] = [
                 ("(0,0)", 12, 12, 0, 0),
-                ("(0.5,0)", size.width/2, 12, 0.5, 0),
-                ("(1,0)", size.width - 12, 12, 1, 0),
-                ("(0,1)", 12, size.height - 12, 0, 1),
-                ("(0.5,1)", size.width/2, size.height - 12, 0.5, 1),
-                ("(1,1)", size.width - 12, size.height - 12, 1, 1)
+                ("(0.5,0)", contentSize.width/2, 12, 0.5, 0),
+                ("(1,0)", contentSize.width - 12, 12, 1, 0),
+                ("(0,1)", 12, contentSize.height - 12, 0, 1),
+                ("(0.5,1)", contentSize.width/2, contentSize.height - 12, 0.5, 1),
+                ("(1,1)", contentSize.width - 12, contentSize.height - 12, 1, 1)
             ]
 
             for label in labels {
@@ -119,14 +115,13 @@ struct GradientPreviewAndStopsView: View {
             // Draw centerpoint dot (use originX/originY already declared above)
             let clampedX = max(0.0, min(1.0, originX))
             let clampedY = max(0.0, min(1.0, originY))
-            let dotPos = CGPoint(x: clampedX * size.width, y: clampedY * size.height)
+            let dotPos = CGPoint(x: clampedX * contentSize.width, y: clampedY * contentSize.height)
 
             let dotCircle = Path(ellipseIn: CGRect(x: dotPos.x - 4, y: dotPos.y - 4, width: 8, height: 8))
             context.fill(dotCircle, with: .color(.white))
             context.stroke(dotCircle, with: .color(.black), lineWidth: 1)
         }
-        .frame(width: squareSize, height: squareSize)
-        .drawingGroup()
+        .frame(width: squareSize + padding * 2, height: squareSize + padding * 2)
     }
 
     private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize, liveOriginX: Double, liveOriginY: Double) {
@@ -210,6 +205,7 @@ struct GradientPreviewAndStopsView: View {
     private func createPreviewContent(geometry: GeometryProxy) -> some View {
         let fullWidth = geometry.size.width
         let squareSize = fullWidth
+        let padding: CGFloat = 8
 
         return createGradientPreview(geometry: geometry, squareSize: squareSize)
             .contentShape(Rectangle())
@@ -230,9 +226,9 @@ struct GradientPreviewAndStopsView: View {
 
                         dragTranslation = value.translation
 
-                        // Set live state directly
-                        let normalizedX = max(0.0, min(1.0, value.location.x / fullWidth))
-                        let normalizedY = max(0.0, min(1.0, value.location.y / fullWidth))
+                        // Set live state directly (account for padding offset)
+                        let normalizedX = max(0.0, min(1.0, (value.location.x - padding) / squareSize))
+                        let normalizedY = max(0.0, min(1.0, (value.location.y - padding) / squareSize))
 
                         document.viewState.liveGradientOriginX = normalizedX
                         document.viewState.liveGradientOriginY = normalizedY
@@ -261,7 +257,7 @@ struct GradientPreviewAndStopsView: View {
                             let snapRadius: CGFloat = 13.0
 
                             for point in snapPoints {
-                                let pointPos = CGPoint(x: point.x * fullWidth, y: point.y * fullWidth)
+                                let pointPos = CGPoint(x: point.x * squareSize + padding, y: point.y * squareSize + padding)
                                 let snapDistance = sqrt(pow(tapLocation.x - pointPos.x, 2) + pow(tapLocation.y - pointPos.y, 2))
 
                                 if snapDistance <= snapRadius {
