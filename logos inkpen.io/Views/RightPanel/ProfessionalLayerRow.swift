@@ -79,17 +79,19 @@ struct ProfessionalLayerRow: View {
     }
 
     var body: some View {
+        let _ = document.viewState.layerUpdateTriggers[layer.id] // Subscribe to layer updates
+
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
                 HStack(spacing: 2) {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 21, height: 1)
-                    
+
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 19, height: 1)
-                    
+
                     Spacer()
                 }
                 .padding(.leading, 2.5)

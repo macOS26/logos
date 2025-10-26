@@ -162,6 +162,10 @@ struct LayersPanel: View {
     }
 
     var body: some View {
+        let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
+        let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
+        let _ = document.snapshot.layers.count // Subscribe to layer count changes
+
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
