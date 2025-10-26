@@ -1,6 +1,6 @@
 import SwiftUI
 import CoreGraphics
-struct UnifiedObjectContentView: View {
+struct VectorObjectView: View {
     let unifiedObject: VectorObject
     var document: VectorDocument
     let zoomLevel: Double
@@ -44,31 +44,31 @@ struct UnifiedObjectContentView: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape):
-                if let _ = shape.clippedByShapeID {
-//                    if let maskUnifiedObject = document.snapshot.objects[clipID] {
-//                        let maskShape = maskUnifiedObject.shape
-//                        let clippedPath = createPreTransformedPath(for: shape)
-//                        let maskPath = createPreTransformedPath(for: maskShape)
-//                        let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
-//                        let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
-//                        let isSelected = isClippedShapeSelected || isMaskShapeSelected
-//
-//                        ClippingMaskShapeView(
-//                            clippedShape: shape,
-//                            maskShape: maskShape,
-//                            clippedPath: clippedPath,
-//                            maskPath: maskPath,
-//                            zoomLevel: zoomLevel,
-//                            canvasOffset: canvasOffset,
-//                            isSelected: isSelected,
-//                            dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
-//                            dragPreviewTrigger: dragPreviewTrigger,
-//                            viewMode: viewMode
-//                        )
-//                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")
-//                    } else {
-//                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
-//                    }
+                if let clipID = shape.clippedByShapeID {
+                    if let maskUnifiedObject = document.snapshot.objects[clipID] {
+                        let maskShape = maskUnifiedObject.shape
+                        let clippedPath = createPreTransformedPath(for: shape)
+                        let maskPath = createPreTransformedPath(for: maskShape)
+                        let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
+                        let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
+                        let isSelected = isClippedShapeSelected || isMaskShapeSelected
+
+                        ClippingMaskShapeView(
+                            clippedShape: shape,
+                            maskShape: maskShape,
+                            clippedPath: clippedPath,
+                            maskPath: maskPath,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            isSelected: isSelected,
+                            dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            viewMode: viewMode
+                        )
+                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")
+                    } else {
+                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+                    }
                 } else {
                     ZStack {
                         renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
@@ -198,7 +198,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View, Equatable {
+struct LayerCanvasView: View {
     let objects: [VectorObject]
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -208,14 +208,7 @@ struct LayerCanvasView: View, Equatable {
     let liveScaleTransform: CGAffineTransform
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
-
-    // Only redraw this layer if layer-specific values changed
-    // Other properties (zoom, offset, etc.) update via computed properties
-    static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
-        return lhs.objectUpdateTrigger == rhs.objectUpdateTrigger &&
-               lhs.objects.count == rhs.objects.count
-    }
-
+    
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -226,13 +219,11 @@ struct LayerCanvasView: View, Equatable {
 
     var body: some View {
         Canvas { context, size in
-
+                        
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
-
-            context.transform = baseTransform
 
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
@@ -247,7 +238,7 @@ struct LayerCanvasView: View, Equatable {
                 if isSelected && dragPreviewDelta != .zero {
                     context.transform = baseTransform
                         .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                } else {
+                } else if objectUpdateTrigger > 0 {
                     context.transform = baseTransform
                 }
 
@@ -647,7 +638,6 @@ struct IsolatedLayerView: View {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
     }
 
-   
     var body: some View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
@@ -669,7 +659,7 @@ struct IsolatedLayerView: View {
                 if case .text = object.objectType { return true }
                 return false
             }, id: \.id) { unifiedObject in
-                UnifiedObjectContentView(
+                VectorObjectView(
                     unifiedObject: unifiedObject,
                     document: document,
                     zoomLevel: zoomLevel,
@@ -686,7 +676,7 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        .id(objectUpdateTrigger)  // Force re-render when layer trigger updates
+        //.id(objectUpdateTrigger)  // Force re-render when layer trigger updates
     }
 
     private func renderLayerToCache() {
