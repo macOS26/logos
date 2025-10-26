@@ -277,22 +277,19 @@ extension VectorDocument {
             return
         }
 
-        // Canvas and Pasteboard layers (0 and 1) cannot contain objects
-        if targetLayerIndex <= 1 {
-            Log.error("❌ Cannot move objects to Canvas or Pasteboard layers", category: .error)
-            return
-        }
+        // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
+        let finalTargetIndex = targetLayerIndex <= 1 ? 2 : targetLayerIndex
 
         let sourceLayerIndex = object.layerIndex
 
-        if sourceLayerIndex == targetLayerIndex {
+        if sourceLayerIndex == finalTargetIndex {
             return
         }
 
         let command = MoveObjectToLayerCommand(
             objectID: objectId,
             oldLayerIndex: sourceLayerIndex,
-            newLayerIndex: targetLayerIndex
+            newLayerIndex: finalTargetIndex
         )
         commandManager.execute(command)
     }
@@ -303,11 +300,8 @@ extension VectorDocument {
             return
         }
 
-        // Canvas and Pasteboard layers (0 and 1) cannot contain objects
-        if targetLayerIndex <= 1 {
-            Log.error("❌ Cannot move objects to Canvas or Pasteboard layers", category: .error)
-            return
-        }
+        // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
+        let finalTargetIndex = targetLayerIndex <= 1 ? 2 : targetLayerIndex
 
         var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
 
@@ -318,8 +312,8 @@ extension VectorDocument {
 
             let sourceLayerIndex = object.layerIndex
 
-            if sourceLayerIndex != targetLayerIndex {
-                moves.append((objectID: objectId, oldLayerIndex: sourceLayerIndex, newLayerIndex: targetLayerIndex))
+            if sourceLayerIndex != finalTargetIndex {
+                moves.append((objectID: objectId, oldLayerIndex: sourceLayerIndex, newLayerIndex: finalTargetIndex))
             }
         }
 
