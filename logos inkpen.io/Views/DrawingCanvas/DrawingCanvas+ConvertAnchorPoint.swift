@@ -23,8 +23,8 @@ extension DrawingCanvas {
     }
 
     func restoreCollapsedHandlesIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices.reversed() {
+            let layer = document.snapshot.layers[layerIndex]
             if !layer.isVisible { continue }
 
             if layer.isLocked {
@@ -95,8 +95,8 @@ extension DrawingCanvas {
     }
 
     func collapseHandleIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices.reversed() {
+            let layer = document.snapshot.layers[layerIndex]
             if !layer.isVisible { continue }
 
             if layer.isLocked {
@@ -175,7 +175,7 @@ extension DrawingCanvas {
     }
 
     func collapseControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
@@ -232,7 +232,7 @@ extension DrawingCanvas {
     }
 
     func collapseControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
@@ -277,7 +277,7 @@ extension DrawingCanvas {
     }
 
     func collapseNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex + 1 < shape.path.elements.count else { return }
 
@@ -320,7 +320,7 @@ extension DrawingCanvas {
     }
 
     func restoreHandlesForCurveElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
@@ -369,7 +369,7 @@ extension DrawingCanvas {
     }
 
     func restoreNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex + 1 < shape.path.elements.count else { return }
 
@@ -425,7 +425,7 @@ extension DrawingCanvas {
     }
 
     func restoreAllHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
@@ -478,7 +478,7 @@ extension DrawingCanvas {
     }
 
     func collapseBothHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
-        guard layerIndex < document.layers.count,
+        guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
@@ -534,8 +534,8 @@ extension DrawingCanvas {
     }
 
     internal func tryToSelectShapeForConvertTool(at location: CGPoint) {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
+        for layerIndex in document.snapshot.layers.indices.reversed() {
+            let layer = document.snapshot.layers[layerIndex]
             if !layer.isVisible { continue }
 
             if layer.isLocked {
