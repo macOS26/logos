@@ -23,8 +23,8 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
     var coincidentPoints: Set<PointID> = []
     let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
 
-    for layerIndex in document.layers.indices {
-        let layer = document.layers[layerIndex]
+    for layerIndex in document.snapshot.layers.indices {
+        let layer = document.snapshot.layers[layerIndex]
         if !layer.isVisible { continue }
 
         let shapes = document.getShapesForLayer(layerIndex)
