@@ -186,37 +186,29 @@ class PaintSelectionOperations {
     }
 
     /// Update fill color for selected objects
-    func updateFillColor(_ color: VectorColor, opacity: Double? = nil) {
-        let selection = CurrentSelection.shared
-        let selectedObjects = selection.getSelectedObjects()
+    func updateFillColor(_ color: VectorColor, opacity: Double? = nil, document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
-        for (_, object) in selectedObjects {
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            affectedLayers.insert(object.layerIndex)
+
             switch object.objectType {
-            case .text(var shape):
-                if shape.typography == nil {
-                    shape.typography = TypographyProperties(strokeColor: .black, fillColor: color)
-                }
-                shape.typography?.fillColor = color
+            case .text(let shape):
+                document.updateTextFillColorInUnified(id: shape.id, color: color)
                 if let opacity = opacity {
-                    shape.typography?.fillOpacity = opacity
+                    document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
                 }
 
-            case .shape(var shape),
-                 .image(var shape),
-                 .warp(var shape),
-                 .group(var shape),
-                 .clipGroup(var shape),
-                 .clipMask(var shape):
-                if shape.fillStyle == nil {
-                    shape.fillStyle = FillStyle(color: color)
-                } else {
-                    shape.fillStyle?.color = color
-                }
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeFillColorInUnified(id: shape.id, color: color)
                 if let opacity = opacity {
-                    shape.fillStyle?.opacity = opacity
+                    document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                 }
             }
         }
+
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     // MARK: - Stroke Operations
@@ -512,42 +504,15 @@ class PaintSelectionOperations {
 
     // MARK: - Shape Operations
 
-    /// Outline selected strokes (convert strokes to filled paths)
-    func outlineSelectedStrokes() {
-        let selection = CurrentSelection.shared
-        let selectedObjects = selection.getSelectedObjects()
-
-        for (_, object) in selectedObjects {
-            switch object.objectType {
-            case .text:
-                break // Text doesn't support outline stroke
-
-            case .shape(var shape),
-                 .image(var shape),
-                 .warp(var shape),
-                 .group(var shape),
-                 .clipGroup(var shape),
-                 .clipMask(var shape):
-                // TODO: Implement stroke to path conversion
-                // This would typically involve converting the stroke to a filled shape
-                // For now, just remove the stroke and make it a fill
-                if let strokeStyle = shape.strokeStyle {
-                    // Convert stroke to fill
-                    shape.fillStyle = FillStyle(color: strokeStyle.color, opacity: strokeStyle.opacity)
-                    shape.strokeStyle = nil
-                }
-            }
-        }
-    }
-
     /// Duplicate selected shapes
-    func duplicateSelectedShapes() {
-        let selection = CurrentSelection.shared
-        let selectedObjects = selection.getSelectedObjects()
+    func duplicateSelectedShapes(document: VectorDocument) {
+        var duplicatedIDs: [UUID] = []
+        var affectedLayers = Set<Int>()
 
-        var duplicatedObjects: [UUID: VectorObject] = [:]
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            affectedLayers.insert(object.layerIndex)
 
-        for (_, object) in selectedObjects {
             // Create a new UUID for the duplicate
             let newID = UUID()
 
@@ -562,12 +527,19 @@ class PaintSelectionOperations {
             let duplicatedObject = VectorObject(shape: duplicatedShape, layerIndex: object.layerIndex)
 
             // Add to snapshot
-            selection.snapshot.objects[newID] = duplicatedObject
-            duplicatedObjects[newID] = duplicatedObject
+            document.snapshot.objects[newID] = duplicatedObject
+
+            // Add to layer
+            if object.layerIndex < document.snapshot.layers.count {
+                document.appendToLayer(layerIndex: object.layerIndex, objectID: newID)
+            }
+
+            duplicatedIDs.append(newID)
         }
 
         // Update selection to the new duplicates
-        selection.viewState.selectedObjectIDs = Set(duplicatedObjects.keys)
+        document.viewState.selectedObjectIDs = Set(duplicatedIDs)
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     // MARK: - Default Values Storage
