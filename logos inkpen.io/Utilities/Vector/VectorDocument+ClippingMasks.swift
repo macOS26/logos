@@ -16,9 +16,9 @@ extension VectorDocument {
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID],
+               case .shape(let shape) = obj.objectType {
                 removedShapes[obj.id] = shape
             }
         }
