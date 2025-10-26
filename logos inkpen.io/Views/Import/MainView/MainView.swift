@@ -462,7 +462,7 @@ struct MainView: View {
                     pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)
 
                     await MainActor.run {
-                        document.unifiedObjects = savedState.unifiedObjects
+                        document.snapshot.objects.values = savedState.snapshot.objects.values
                         document.layers = savedState.layers
                         document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                     }
