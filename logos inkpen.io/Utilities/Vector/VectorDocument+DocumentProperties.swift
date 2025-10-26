@@ -18,10 +18,10 @@ extension VectorDocument {
         var documentBounds = CGRect.zero
         var hasContent = false
 
-        for layer in layers {
+        for layer in snapshot.layers {
             guard layer.isVisible else { continue }
 
-            let layerIndex = layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let layerIndex = snapshot.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
             let shapesInLayer = getShapesForLayer(layerIndex)
             for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
@@ -62,7 +62,7 @@ extension VectorDocument {
         var artworkBounds: CGRect = .zero
         var hasContent = false
 
-        for (layerIndex, layer) in layers.enumerated() where layerIndex >= 2 {
+        for (layerIndex, layer) in snapshot.layers.enumerated() where layerIndex >= 2 {
             guard layer.isVisible else { continue }
             let shapesInLayer = getShapesForLayer(layerIndex)
             for shape in shapesInLayer where shape.isVisible {
