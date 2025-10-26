@@ -94,7 +94,7 @@ struct SVGToInkPenConverter: View {
 
                             VStack(alignment: .leading, spacing: 5) {
                                 Text("Document Size: \(String(format: "%.1f", document.settings.width)) × \(String(format: "%.1f", document.settings.height)) \(document.settings.unit.rawValue)")
-                                Text("Layers: \(document.layers.count)")
+                                Text("Layers: \(document.snapshot.layers.count)")
                                 Text("Total Shapes: \(document.snapshot.objects.count)")
                             }
                             .font(.caption)
