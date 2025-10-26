@@ -22,11 +22,12 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
-    // Scale handles down below 100% zoom
+    // Scale handles down below 100% zoom using a curve for gradual scaling
     private var scaledHandleSize: CGFloat {
         let baseSize: CGFloat = 10
         if zoomLevel < 1.0 {
-            return baseSize * (zoomLevel * 0.5)
+            // Use power curve for gradual scaling (square root gives gentle curve)
+            return baseSize * pow(zoomLevel, 0.5)
         }
         return baseSize
     }
@@ -34,7 +35,8 @@ struct TransformBoxHandles: View {
     private var scaledHitAreaSize: CGFloat {
         let baseSize: CGFloat = 10
         if zoomLevel < 1.0 {
-            return baseSize * (zoomLevel * 0.5)
+            // Use power curve for gradual scaling (square root gives gentle curve)
+            return baseSize * pow(zoomLevel, 0.5)
         }
         return baseSize
     }
