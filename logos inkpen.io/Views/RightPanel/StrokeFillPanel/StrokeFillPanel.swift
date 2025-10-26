@@ -274,7 +274,7 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                PaintSelectionOperations.shared.handleFillOpacityEditingComplete(fillOpacityState, document: document)
+                                PaintSelectionOperations.handleFillOpacityEditingComplete(fillOpacityState, document: document)
                             }
                         }
                     )
@@ -330,21 +330,21 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                PaintSelectionOperations.shared.handleStrokeWidthEditingComplete(strokeWidthState, document: document)
+                                PaintSelectionOperations.handleStrokeWidthEditingComplete(strokeWidthState, document: document)
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                PaintSelectionOperations.shared.handleStrokeOpacityEditingComplete(strokeOpacityState, document: document)
+                                PaintSelectionOperations.handleStrokeOpacityEditingComplete(strokeOpacityState, document: document)
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                PaintSelectionOperations.shared.handleMiterLimitEditingComplete(strokeMiterLimitState, document: document)
+                                PaintSelectionOperations.handleMiterLimitEditingComplete(strokeMiterLimitState, document: document)
                             }
                         }
                     )
@@ -442,7 +442,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacity(_ opacity: Double) {
-        PaintSelectionOperations.shared.updateFillOpacity(opacity, document: document)
+        PaintSelectionOperations.updateFillOpacity(opacity, document: document)
     }
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
@@ -458,15 +458,15 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
-        PaintSelectionOperations.shared.updateFillOpacityLive(opacity, document: document, isEditing: isEditing)
+        PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing)
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
-        PaintSelectionOperations.shared.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing)
+        PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing)
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
-        PaintSelectionOperations.shared.updateStrokeWidthLive(width, document: document, isEditing: isEditing)
+        PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: isEditing)
     }
 
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
@@ -495,11 +495,11 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
-        PaintSelectionOperations.shared.updateStrokeWidthLive(width, document: document, isEditing: false)
+        PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: false)
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
-        PaintSelectionOperations.shared.updateStrokePlacement(placement, document: document)
+        PaintSelectionOperations.updateStrokePlacement(placement, document: document)
     }
 
     private func updateStrokeOpacity(_ opacity: Double) {
@@ -508,35 +508,35 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
-        PaintSelectionOperations.shared.updateStrokeOpacityLive(opacity, document: document, isEditing: false)
+        PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: false)
     }
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
-        PaintSelectionOperations.shared.updateStrokeLineJoin(lineJoin, document: document)
+        PaintSelectionOperations.updateStrokeLineJoin(lineJoin, document: document)
     }
 
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
-        PaintSelectionOperations.shared.updateStrokeLineCap(lineCap, document: document)
+        PaintSelectionOperations.updateStrokeLineCap(lineCap, document: document)
     }
 
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
-        PaintSelectionOperations.shared.updateStrokeMiterLimit(miterLimit, document: document)
+        PaintSelectionOperations.updateStrokeMiterLimit(miterLimit, document: document)
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
-        PaintSelectionOperations.shared.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
+        PaintSelectionOperations.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
     }
 
     private func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool) {
-        PaintSelectionOperations.shared.updateStrokeScaleWithTransform(scaleWithTransform, document: document)
+        PaintSelectionOperations.updateStrokeScaleWithTransform(scaleWithTransform, document: document)
     }
 
     private func updateImageOpacity(_ opacity: Double) {
-        PaintSelectionOperations.shared.updateImageOpacity(opacity, document: document)
+        PaintSelectionOperations.updateImageOpacity(opacity, document: document)
     }
 
     private func applyFillToSelectedShapes() {
-        PaintSelectionOperations.shared.applyFillToSelectedShapes(fillColor: selectedFillColor, fillOpacity: fillOpacity, document: document)
+        PaintSelectionOperations.applyFillToSelectedShapes(fillColor: selectedFillColor, fillOpacity: fillOpacity, document: document)
     }
 
 }
