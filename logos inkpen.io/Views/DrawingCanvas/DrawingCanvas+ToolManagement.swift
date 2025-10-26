@@ -35,8 +35,8 @@ extension DrawingCanvas {
     private func stopAllTextEditing() {
         var stoppedCount = 0
 
-        for unifiedObj in document.unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+        for obj in document.snapshot.objects.values {
+            if case .text(let shape) = obj.objectType, shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 stoppedCount += 1
             }

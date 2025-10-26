@@ -1074,9 +1074,9 @@ extension DrawingCanvas {
         let totalTolerance = handleRadius + tolerance
 
         for objectID in document.viewState.selectedObjectIDs {
-            guard let unifiedObject = document.findObject(by: objectID) else { continue }
+            guard let object = document.findObject(by: objectID) else { continue }
 
-            switch unifiedObject.objectType {
+            switch object.objectType {
             case .text:
                 continue
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):

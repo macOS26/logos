@@ -91,8 +91,8 @@ final class AppEventMonitor {
             activeDoc.viewState.selectedObjectIDs = []
 
             // Clear text editing state
-            for unifiedObj in activeDoc.unifiedObjects {
-                if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+            for newVectorObject in activeDoc.snapshot.objects.values {
+                if case .text(let shape) = newVectorObject.objectType, shape.isEditing == true {
                     activeDoc.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }

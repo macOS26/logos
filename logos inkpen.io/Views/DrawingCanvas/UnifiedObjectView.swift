@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreGraphics
 struct VectorObjectView: View {
-    let unifiedObject: VectorObject
+    let object: VectorObject
     var document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -14,15 +14,15 @@ struct VectorObjectView: View {
     let liveGradientOriginY: Double?
 
     private var layerIsVisible: Bool {
-        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.snapshot.layers.count else {
+        guard object.layerIndex >= 0 && object.layerIndex < document.snapshot.layers.count else {
             return true
         }
-        return document.snapshot.layers[unifiedObject.layerIndex].isVisible
+        return document.snapshot.layers[object.layerIndex].isVisible
     }
 
     var body: some View {
         Group {
-            switch unifiedObject.objectType {
+            switch object.objectType {
             case .text(let shape):
                 // Only show NSTextView when editing (blue mode)
                 // When selected (green) or unselected (gray), render on Canvas
@@ -41,6 +41,7 @@ struct VectorObjectView: View {
             case .clipMask:
                 EmptyView()
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape):
@@ -49,7 +50,7 @@ struct VectorObjectView: View {
                         let maskShape = maskUnifiedObject.shape
                         let clippedPath = createPreTransformedPath(for: shape)
                         let maskPath = createPreTransformedPath(for: maskShape)
-                        let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
+                        let isClippedShapeSelected = selectedObjectIDs.contains(object.id)
                         let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
                         let isSelected = isClippedShapeSelected || isMaskShapeSelected
 
@@ -67,11 +68,11 @@ struct VectorObjectView: View {
                         )
                         .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")
                     } else {
-                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(object.id))
                     }
                 } else {
                     ZStack {
-                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(object.id))
 
                         if shape.isGroupContainer {
                             let _ = print("🟢 RENDER GROUP: isGroupContainer=true, groupedShapes.count=\(shape.groupedShapes.count)")
@@ -111,8 +112,8 @@ struct VectorObjectView: View {
             canvasOffset: canvasOffset,
             isSelected: isSelected,
             viewMode: viewMode,
-            isCanvasLayer: unifiedObject.layerIndex == 1,
-            isPasteboardLayer: unifiedObject.layerIndex == 0,
+            isCanvasLayer: object.layerIndex == 1,
+            isPasteboardLayer: object.layerIndex == 0,
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger,
             liveScaleTransform: liveScaleTransform,
@@ -706,9 +707,9 @@ struct IsolatedLayerView: View {
                 guard object.isVisible else { return false }
                 if case .text = object.objectType { return true }
                 return false
-            }, id: \.id) { unifiedObject in
+            }, id: \.id) { object in
                 VectorObjectView(
-                    unifiedObject: unifiedObject,
+                    object: object,
                     document: document,
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset,
@@ -754,7 +755,7 @@ struct IsolatedLayerView: View {
         // Render all shapes in this layer using Core Graphics
         for object in objects where object.isVisible {
             switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 FileOperations.drawShapeInPDF(shape, context: context)
             case .text(let shape):
                 if let text = VectorText.from(shape) {

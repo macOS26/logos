@@ -33,8 +33,8 @@ extension DrawingCanvas {
 
     func handleAggressiveBackgroundTap(at location: CGPoint) {
 
-        let tapHitsText = document.unifiedObjects.contains { unifiedObj in
-            switch unifiedObj.objectType {
+        let tapHitsText = document.snapshot.objects.values.contains { obj in
+            switch obj.objectType {
             case .text(let shape):
                 if !shape.isVisible || shape.isLocked { return false }
 
@@ -72,7 +72,7 @@ extension DrawingCanvas {
                     }
                 }
                 return false
-            case .shape, .warp, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .clipGroup, .clipMask:
                 return false
             }
         }
@@ -80,8 +80,8 @@ extension DrawingCanvas {
         if !tapHitsText {
             document.viewState.selectedObjectIDs.removeAll()
 
-            for unifiedObj in document.unifiedObjects {
-                switch unifiedObj.objectType {
+            for obj in document.snapshot.objects.values {
+                switch obj.objectType {
                 case .text(let shape):
                     if shape.isEditing == true {
                         document.setTextEditingInUnified(id: shape.id, isEditing: false)
@@ -92,7 +92,7 @@ extension DrawingCanvas {
                             document.setTextEditingInUnified(id: childShape.id, isEditing: false)
                         }
                     }
-                case .shape, .warp, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .clipGroup, .clipMask:
                     break
                 }
             }
@@ -102,8 +102,8 @@ extension DrawingCanvas {
     }
 
     func findTextAt(location: CGPoint) -> UUID? {
-        for unifiedObj in document.unifiedObjects {
-            switch unifiedObj.objectType {
+        for obj in document.snapshot.objects.values {
+            switch obj.objectType {
             case .text(let shape):
                 if !shape.isVisible || shape.isLocked { continue }
 
@@ -122,7 +122,7 @@ extension DrawingCanvas {
             case .group(let shape):
                 for childShape in shape.groupedShapes {
                     if childShape.typography != nil, var textObj = VectorText.from(childShape) {
-                        textObj.layerIndex = unifiedObj.layerIndex
+                        textObj.layerIndex = obj.layerIndex
                         if !textObj.isVisible || textObj.isLocked { continue }
 
                         let textBounds = CGRect(
@@ -137,7 +137,7 @@ extension DrawingCanvas {
                         }
                     }
                 }
-            case .shape, .warp, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .clipGroup, .clipMask:
                 break
             }
         }
@@ -147,8 +147,8 @@ extension DrawingCanvas {
 
     func startEditingText(textID: UUID, at location: CGPoint) {
 
-        for unifiedObj in document.unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType,
+        for obj in document.snapshot.objects.values {
+            if case .text(let shape) = obj.objectType,
                shape.id != textID,
                shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
@@ -601,10 +601,10 @@ extension DrawingCanvas {
 
     func handleCanvasBackgroundTap(at location: CGPoint) {
 
-        let hitAnyTextBox = document.unifiedObjects.contains { unifiedObj in
-            guard case .text(let shape) = unifiedObj.objectType,
+        let hitAnyTextBox = document.snapshot.objects.values.contains { obj in
+            guard case .text(let shape) = obj.objectType,
                   var textObj = VectorText.from(shape) else { return false }
-            textObj.layerIndex = unifiedObj.layerIndex
+            textObj.layerIndex = obj.layerIndex
             let textFrame = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
@@ -617,8 +617,8 @@ extension DrawingCanvas {
         if !hitAnyTextBox {
             document.viewState.selectedObjectIDs.removeAll()
 
-            for unifiedObj in document.unifiedObjects {
-                if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+            for obj in document.snapshot.objects.values {
+                if case .text(let shape) = obj.objectType, shape.isEditing == true {
                     document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
@@ -637,8 +637,8 @@ extension DrawingCanvas {
         }
 
         if !isDrawing {
-            for unifiedObj in document.unifiedObjects {
-                if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+            for obj in document.snapshot.objects.values {
+                if case .text(let shape) = obj.objectType, shape.isEditing == true {
                     document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
@@ -761,8 +761,8 @@ extension DrawingCanvas {
         let tolerance: Double = 15.0
         let totalTolerance = handleRadius + tolerance
 
-        for unifiedObj in document.unifiedObjects {
-            guard case .text(let shape) = unifiedObj.objectType else { continue }
+        for obj in document.snapshot.objects.values {
+            guard case .text(let shape) = obj.objectType else { continue }
             if !shape.isVisible || shape.isLocked { continue }
 
             // Use transform.tx/ty for text position

@@ -521,17 +521,18 @@ private struct BrushPreviewStyleModifier: ViewModifier {
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
         if dragDelta != .zero && !document.viewState.selectedObjectIDs.isEmpty {
-            let draggedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
-            ForEach(draggedObjects, id: \.id) { unifiedObject in
-                draggedObjectView(unifiedObject, dragDelta: dragDelta)
+            let draggedObjects = document.snapshot.objects.values.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+            ForEach(draggedObjects, id: \.id) { object in
+                draggedObjectView(object, dragDelta: dragDelta)
             }
         }
     }
 
     @ViewBuilder
-    private func draggedObjectView(_ unifiedObject: VectorObject, dragDelta: CGPoint) -> some View {
-        switch unifiedObject.objectType {
+    private func draggedObjectView(_ object: VectorObject, dragDelta: CGPoint) -> some View {
+        switch object.objectType {
         case .shape(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),

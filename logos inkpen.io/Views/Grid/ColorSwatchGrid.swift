@@ -16,13 +16,14 @@ struct ColorSwatchGrid: View {
 
     private var currentFillColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
-            switch unifiedObject.objectType {
+           let object = document.findObject(by: firstSelectedObjectID) {
+            switch object.objectType {
             case .text(let shape):
                 if let typography = shape.typography {
                     return typography.fillColor
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -38,8 +39,8 @@ struct ColorSwatchGrid: View {
 
     private var currentStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
-            switch unifiedObject.objectType {
+           let object = document.findObject(by: firstSelectedObjectID) {
+            switch object.objectType {
             case .text(let shape):
                 if let typography = shape.typography, typography.hasStroke {
                     return typography.strokeColor
@@ -47,6 +48,7 @@ struct ColorSwatchGrid: View {
                     return .clear
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -64,13 +66,14 @@ struct ColorSwatchGrid: View {
 
     private var currentFillOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
-            switch unifiedObject.objectType {
+           let object = document.findObject(by: firstSelectedObjectID) {
+            switch object.objectType {
             case .text(let shape):
                 if let typography = shape.typography {
                     return typography.fillOpacity
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -86,13 +89,14 @@ struct ColorSwatchGrid: View {
 
     private var currentStrokeOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
-            switch unifiedObject.objectType {
+           let object = document.findObject(by: firstSelectedObjectID) {
+            switch object.objectType {
             case .text(let shape):
                 if let typography = shape.typography {
                     return typography.strokeOpacity
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
