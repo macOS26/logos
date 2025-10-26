@@ -210,7 +210,7 @@ struct DocumentBasedMainView: View {
 
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.settings = importedDoc.settings
-        document.layers = importedDoc.layers
+        document.snapshot.layers = importedDoc.snapshot.layers
         document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
 
