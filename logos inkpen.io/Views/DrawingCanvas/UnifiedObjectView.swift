@@ -207,6 +207,7 @@ struct LayerCanvasView: View {
     let dragPreviewDelta: CGPoint
     let liveScaleTransform: CGAffineTransform
     let objectUpdateTrigger: UInt
+    let dragPreviewTrigger: Bool
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -651,7 +652,8 @@ struct IsolatedLayerView: View {
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,
                 liveScaleTransform: liveScaleTransform,
-                objectUpdateTrigger: objectUpdateTrigger
+                objectUpdateTrigger: objectUpdateTrigger,
+                dragPreviewTrigger: dragPreviewTrigger
             )
 
             // For text editor only - filter .text objects first
