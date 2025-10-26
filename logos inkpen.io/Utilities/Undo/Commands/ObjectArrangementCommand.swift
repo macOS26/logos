@@ -23,23 +23,38 @@ class ObjectArrangementCommand: BaseCommand {
     }
 
     private func applyIndices(_ targetIndices: [UUID: Int], to document: VectorDocument) {
-        var objects = document.unifiedObjects
-        var affectedObjects: [(UUID, VectorObject)] = []
+        // Group objects by layer
+        var objectsByLayer: [Int: [(UUID, Int)]] = [:]
 
         for id in affectedObjectIDs {
-            if let index = objects.firstIndex(where: { $0.id == id }) {
-                affectedObjects.append((id, objects[index]))
-                objects.remove(at: index)
+            guard let obj = document.snapshot.objects[id],
+                  let targetIndex = targetIndices[id] else { continue }
+
+            if objectsByLayer[obj.layerIndex] == nil {
+                objectsByLayer[obj.layerIndex] = []
             }
+            objectsByLayer[obj.layerIndex]!.append((id, targetIndex))
         }
 
-        for (id, obj) in affectedObjects {
-            if let targetIndex = targetIndices[id] {
-                let insertIndex = min(targetIndex, objects.count)
-                objects.insert(obj, at: insertIndex)
-            }
-        }
+        // Process each layer
+        for (layerIndex, idsAndIndices) in objectsByLayer {
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
 
-        document.unifiedObjects = objects
+            var layerObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+
+            // Remove affected objects
+            let affectedIDs = Set(idsAndIndices.map { $0.0 })
+            layerObjectIDs.removeAll { affectedIDs.contains($0) }
+
+            // Sort by target index and reinsert
+            let sorted = idsAndIndices.sorted { $0.1 < $1.1 }
+            for (id, targetIdx) in sorted {
+                let insertIndex = min(targetIdx, layerObjectIDs.count)
+                layerObjectIDs.insert(id, at: insertIndex)
+            }
+
+            document.snapshot.layers[layerIndex].objectIDs = layerObjectIDs
+            document.triggerLayerUpdate(for: layerIndex)
+        }
     }
 }
