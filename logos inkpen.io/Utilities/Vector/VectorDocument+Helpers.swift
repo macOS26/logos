@@ -81,7 +81,7 @@ extension VectorDocument {
         _encodableSettings = settings
         // Convert snapshot.layers to legacy VectorLayer for backwards compatibility
         _encodableLayers = snapshot.layers.map { layer in
-            var vectorLayer = VectorLayer(name: layer.name, color: layer.color.name)
+            var vectorLayer = VectorLayer(name: layer.name, color: layer.color)
             vectorLayer.id = layer.id
             vectorLayer.isVisible = layer.isVisible
             vectorLayer.isLocked = layer.isLocked
