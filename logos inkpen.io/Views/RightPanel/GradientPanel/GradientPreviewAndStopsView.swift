@@ -194,6 +194,7 @@ struct GradientPreviewAndStopsView: View {
     @State private var dragStartOpacities: [UUID: Double] = [:]
 
     @State private var isDragging = false
+    @State private var dragTranslation: CGSize = .zero
 
     private func createPreviewContent(geometry: GeometryProxy) -> some View {
         let fullWidth = geometry.size.width
@@ -206,6 +207,7 @@ struct GradientPreviewAndStopsView: View {
                     .onChanged { value in
                         if !isDragging {
                             isDragging = true
+                            dragTranslation = .zero
                             dragStartGradient = currentGradient
                             // Capture old opacities
                             for objectID in document.viewState.selectedObjectIDs {
@@ -214,6 +216,8 @@ struct GradientPreviewAndStopsView: View {
                                 }
                             }
                         }
+
+                        dragTranslation = value.translation
 
                         // Set live state directly
                         let normalizedX = max(0.0, min(1.0, value.location.x / fullWidth))
@@ -227,6 +231,38 @@ struct GradientPreviewAndStopsView: View {
                     }
                     .onEnded { value in
                         isDragging = false
+
+                        // Check if this was a tap (minimal drag)
+                        let distance = sqrt(pow(dragTranslation.width, 2) + pow(dragTranslation.height, 2))
+                        if distance < 3 {
+                            // This was a tap - check for snap points
+                            let snapPoints: [(x: CGFloat, y: CGFloat)] = [
+                                (0, 0), (0.5, 0), (1, 0),
+                                (0, 0.5), (0.5, 0.5), (1, 0.5),
+                                (0, 1), (0.5, 1), (1, 1),
+                                (0.25, 0.25), (0.75, 0.25),
+                                (0.25, 0.75), (0.75, 0.75),
+                                (0.25, 0.5), (0.75, 0.5),
+                                (0.5, 0.25), (0.5, 0.75)
+                            ]
+
+                            let tapLocation = value.location
+                            let snapRadius: CGFloat = 15.0
+
+                            for point in snapPoints {
+                                let pointPos = CGPoint(x: point.x * fullWidth, y: point.y * fullWidth)
+                                let snapDistance = sqrt(pow(tapLocation.x - pointPos.x, 2) + pow(tapLocation.y - pointPos.y, 2))
+
+                                if snapDistance <= snapRadius {
+                                    // Snap to this point
+                                    document.viewState.liveGradientOriginX = point.x
+                                    document.viewState.liveGradientOriginY = point.y
+                                    updateOriginXOptimized(point.x, true, true)
+                                    updateOriginYOptimized(point.y, true, true)
+                                    break
+                                }
+                            }
+                        }
 
                         // Clear live state
                         document.viewState.liveGradientOriginX = nil
