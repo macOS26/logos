@@ -10,7 +10,7 @@ extension VectorDocument {
         var newValues: [UUID: Bool] = [:]
 
         for id in allIDs {
-            if let obj = unifiedObjects.first(where: { $0.id == id }) {
+            if let obj = snapshot.objects[id] {
                 switch obj.objectType {
                 case .text(let shape),
                      .shape(let shape),
@@ -36,13 +36,17 @@ extension VectorDocument {
     }
 
     func unlockAllObjects() {
-        guard let layerIndex = selectedLayerIndex else { return }
+        guard let layerIndex = selectedLayerIndex,
+              layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         var affectedIDs: [UUID] = []
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
 
-        for obj in unifiedObjects where obj.layerIndex == layerIndex {
+        let layer = snapshot.layers[layerIndex]
+        for objectID in layer.objectIDs {
+            guard let obj = snapshot.objects[objectID] else { continue }
+
             switch obj.objectType {
             case .text(let shape),
                  .shape(let shape),
@@ -77,7 +81,7 @@ extension VectorDocument {
         var newValues: [UUID: Bool] = [:]
 
         for id in allIDs {
-            if let obj = unifiedObjects.first(where: { $0.id == id }) {
+            if let obj = snapshot.objects[id] {
                 switch obj.objectType {
                 case .text(let shape),
                      .shape(let shape),
@@ -103,31 +107,41 @@ extension VectorDocument {
     }
 
     func showAllObjects() {
-        guard let layerIndex = selectedLayerIndex else { return }
+        guard let layerIndex = selectedLayerIndex,
+              layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         var affectedIDs: [UUID] = []
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
-        let shapes = getShapesForLayer(layerIndex)
-        for (shapeIndex, shape) in shapes.enumerated() {
-            if !shape.isVisible {
-                affectedIDs.append(shape.id)
-                oldValues[shape.id] = false
-                newValues[shape.id] = true
 
-                var updatedShape = shape
-                updatedShape.isVisible = true
-                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            }
-        }
+        let layer = snapshot.layers[layerIndex]
+        for objectID in layer.objectIDs {
+            guard let obj = snapshot.objects[objectID] else { continue }
 
-        for unifiedObj in unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType, shape.isVisible == false {
-                affectedIDs.append(shape.id)
-                oldValues[shape.id] = false
-                newValues[shape.id] = true
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if !shape.isVisible {
+                    affectedIDs.append(shape.id)
+                    oldValues[shape.id] = false
+                    newValues[shape.id] = true
 
-                showTextInUnified(id: shape.id)
+                    if case .text = obj.objectType {
+                        showTextInUnified(id: shape.id)
+                    } else {
+                        // For shapes, update via setShapeAtIndex
+                        let shapes = getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
+                            var updatedShape = shape
+                            updatedShape.isVisible = true
+                            setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                        }
+                    }
+                }
             }
         }
 
