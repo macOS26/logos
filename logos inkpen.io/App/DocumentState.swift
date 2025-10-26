@@ -402,7 +402,7 @@ class DocumentState: ObservableObject {
                 do {
                     var svgContent: String
 
-                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                    if convertTextToOutlines && document.snapshot.objects.values.contains(where: { obj in
                         if case .text = obj.objectType { return true }
                         return false
                     }) {
@@ -516,7 +516,7 @@ class DocumentState: ObservableObject {
                 do {
                     var pdfData: Data
 
-                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                    if convertTextToOutlines && document.snapshot.objects.values.contains(where: { obj in
                         if case .text = obj.objectType { return true }
                         return false
                     }) {
@@ -831,7 +831,7 @@ class DocumentState: ObservableObject {
                 do {
                     var svgContent: String
 
-                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                    if convertTextToOutlines && document.snapshot.objects.values.contains(where: { obj in
                         if case .text = obj.objectType { return true }
                         return false
                     }) {

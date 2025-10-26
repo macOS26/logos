@@ -84,7 +84,6 @@ extension VectorDocument {
         _encodableViewMode = viewState.viewMode
         _encodableZoomLevel = viewState.zoomLevel
         _encodableCanvasOffset = viewState.canvasOffset
-        _encodableUnifiedObjects = unifiedObjects
     }
 
     var currentSwatches: [VectorColor] {

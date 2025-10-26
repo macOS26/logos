@@ -36,14 +36,6 @@ final class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    var unifiedObjects: [VectorObject] = [] {
-        didSet {
-            // Only trigger full refresh when objects are added/removed
-            if oldValue.count != unifiedObjects.count {
-                changeNotifier.notifyGeneralChange()
-            }
-        }
-    }
 
     // Lightweight change notifier
     let changeNotifier = DocumentChangeNotifier()
@@ -132,8 +124,6 @@ final class VectorDocument: ObservableObject, Codable {
 
         createCanvasAndWorkingLayers()
 
-        migrateToNewStructure()
-
         self.selectedLayerIndex = 2
         self.layerIndex = 2
         
@@ -169,19 +159,15 @@ final class VectorDocument: ObservableObject, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
         let decodedLayers = try container.decode([VectorLayer].self, forKey: .layers)
-        let decodedCurrentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
-        let decodedViewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
-        let decodedZoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
-        let decodedCanvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
-        let decodedUnifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
-        
+        let decodedSnapshot = try container.decode(DocumentSnapshot.self, forKey: .snapshot)
+
         _encodableSettings = decodedSettings
         _encodableLayers = decodedLayers
-        _encodableCurrentTool = decodedCurrentTool
-        _encodableViewMode = decodedViewMode
-        _encodableZoomLevel = decodedZoomLevel
-        _encodableCanvasOffset = decodedCanvasOffset
-        _encodableUnifiedObjects = decodedUnifiedObjects
+        _encodableCurrentTool = .selection
+        _encodableViewMode = .color
+        _encodableZoomLevel = 1.0
+        _encodableCanvasOffset = .zero
+        _encodableUnifiedObjects = []
         
         settings = decodedSettings
         layers = decodedLayers
@@ -192,11 +178,12 @@ final class VectorDocument: ObservableObject, Codable {
         gridSettings = .default
         strokeDefaults = .default
 
-        selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
-        viewState.selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
+        selectedLayerIndex = nil
+        viewState.selectedObjectIDs = []
         isHandleScalingActive = false
 
-        viewState.currentTool = decodedCurrentTool
+        // Initialize UI state with defaults (not saved)
+        viewState.currentTool = .selection
         viewState.scalingAnchor = .center
         viewState.rotationAnchor = .center
         viewState.shearAnchor = .center
@@ -206,18 +193,18 @@ final class VectorDocument: ObservableObject, Codable {
         cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
         viewState.scalePreviewDimensions = .zero
-        viewState.warpEnvelopeCorners = (try? container.decodeIfPresent([UUID: [CGPoint]].self, forKey: .warpEnvelopeCorners)) ?? [:]
-        viewState.warpBounds = (try? container.decodeIfPresent([UUID: CGRect].self, forKey: .warpBounds)) ?? [:]
+        viewState.warpEnvelopeCorners = [:]
+        viewState.warpBounds = [:]
 
-        viewState.viewMode = decodedViewMode
-        viewState.zoomLevel = decodedZoomLevel
-        viewState.canvasOffset = decodedCanvasOffset
+        viewState.viewMode = .color
+        viewState.zoomLevel = 1.0
+        viewState.canvasOffset = .zero
         viewState.zoomRequest = nil
-        
+
         isUndoRedoOperation = false
         fontManager = FontManager()
-        
-        unifiedObjects = decodedUnifiedObjects
+
+        snapshot = decodedSnapshot
 
         viewState.hasPressureInput = false
         viewState.activeColorTarget = .fill
@@ -259,9 +246,6 @@ final class VectorDocument: ObservableObject, Codable {
         loadStrokeStyleDefaults()
 
         setupViewStateForwarding()
-        migrateLegacyTextObjects()
-        migrateBackgroundShapesToCanvas()
-        migrateToNewStructure()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.refreshSystemLayers()
