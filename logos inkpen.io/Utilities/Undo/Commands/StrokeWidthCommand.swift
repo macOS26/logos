@@ -21,11 +21,11 @@ class StrokeWidthCommand: BaseCommand {
     }
 
     private func applyWidths(_ widths: [UUID: Double], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let width = widths[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .text(var shape):
@@ -34,14 +34,17 @@ class StrokeWidthCommand: BaseCommand {
                     shape.typography = typography
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
 
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.width = width
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
