@@ -21,20 +21,17 @@ class TextEditCommand: BaseCommand {
     }
 
     private func applyContent(_ content: String, to document: VectorDocument) {
+        guard var obj = document.snapshot.objects[textID] else { return }
 
-        if let index = document.unifiedObjects.firstIndex(where: { $0.id == textID }) {
-            var obj = document.unifiedObjects[index]
-
-            switch obj.objectType {
-            case .text(var shape):
-                shape.textContent = content
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
-            case .shape, .image, .warp, .group, .clipGroup, .clipMask:
-                break
-            }
+        switch obj.objectType {
+        case .text(var shape):
+            shape.textContent = content
+            obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+            document.snapshot.objects[textID] = obj
+            document.triggerLayerUpdate(for: obj.layerIndex)
+        case .shape, .image, .warp, .group, .clipGroup, .clipMask:
+            break
         }
-
     }
 
     func mergeWith(_ other: Command) -> Command? {
