@@ -26,7 +26,7 @@ struct TransformBoxHandles: View {
     private var scaledHandleSize: CGFloat {
         let baseSize: CGFloat = 10
         if zoomLevel < 1.0 {
-            return baseSize * zoomLevel
+            return baseSize * (zoomLevel * 0.5)
         }
         return baseSize
     }
@@ -34,7 +34,7 @@ struct TransformBoxHandles: View {
     private var scaledHitAreaSize: CGFloat {
         let baseSize: CGFloat = 10
         if zoomLevel < 1.0 {
-            return baseSize * zoomLevel
+            return baseSize * (zoomLevel * 0.5)
         }
         return baseSize
     }
