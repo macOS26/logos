@@ -31,9 +31,8 @@ class VisibilityCommand: BaseCommand {
         var affectedLayers = Set<Int>()
 
         for id in objectIDs {
-            guard let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
+            guard var obj = document.snapshot.objects[id],
                   let value = values[id] else { continue }
-            var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType {
                 switch property {
@@ -43,12 +42,7 @@ class VisibilityCommand: BaseCommand {
                     shape.isLocked = value
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
-
-                // Update snapshot
                 document.snapshot.objects[id] = obj
-
-                // Track affected layer
                 affectedLayers.insert(obj.layerIndex)
             }
         }
