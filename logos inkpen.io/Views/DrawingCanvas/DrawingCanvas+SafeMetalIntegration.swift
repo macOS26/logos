@@ -148,7 +148,7 @@ extension DrawingCanvas {
     }
 
     private func findShape(by id: UUID) -> VectorShape? {
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType,
                shape.id == id {
                 return shape
@@ -170,14 +170,14 @@ extension DrawingCanvas {
 //    private func countActiveDrawElements() -> Int {
 //        var count = 0
 //
-//        count += document.unifiedObjects.compactMap { unifiedObject -> VectorShape? in
+//        count += document.snapshot.objects.values.compactMap { unifiedObject -> VectorShape? in
 //            if case .shape(let shape) = unifiedObject.objectType {
 //                return shape.isVisible ? shape : nil
 //            }
 //            return nil
 //        }.count
 //
-//        count += document.unifiedObjects.filter { unifiedObject in
+//        count += document.snapshot.objects.values.filter { unifiedObject in
 //            if case .text(let shape) = unifiedObject.objectType {
 //                return shape.isVisible
 //            }
@@ -399,7 +399,7 @@ extension DrawingCanvas {
 //    var body: some View {
 //        TimelineView(.animation(minimumInterval: 0.5)) { _ in
 //            Canvas { context, size in
-//                let totalObjects = document.unifiedObjects.count
+//                let totalObjects = document.snapshot.objects.values.count
 //                let visibleLayers = document.layers.filter { $0.isVisible }.count
 //
 //                let padding: CGFloat = 16
