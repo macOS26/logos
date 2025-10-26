@@ -27,15 +27,6 @@ class LayerReorderCommand: BaseCommand {
         let fromIndex = forward ? sourceIndex : targetIndex
         let toIndex = forward ? targetIndex : sourceIndex
 
-        guard fromIndex >= 0 && fromIndex < document.layers.count,
-              toIndex >= 0 && toIndex < document.layers.count else {
-            return
-        }
-
-        // Update layers array
-        let layer = document.layers.remove(at: fromIndex)
-        document.layers.insert(layer, at: toIndex)
-
         // Update snapshot.layers
         guard fromIndex < document.snapshot.layers.count,
               toIndex <= document.snapshot.layers.count else {
