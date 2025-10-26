@@ -3,19 +3,19 @@ import Combine
 
 extension VectorDocument {
     func renameLayer(at index: Int, to newName: String) {
-        guard index >= 0 && index < layers.count else {
+        guard index >= 0 && index < snapshot.layers.count else {
             Log.error("❌ Invalid layer index for rename: \(index)", category: .error)
             return
         }
 
-        if index == 0 && layers[index].name == "Canvas" {
+        if index == 0 && snapshot.layers[index].name == "Canvas" {
             return
         }
 
-        layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        snapshot.layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if settings.selectedLayerId == layers[index].id {
-            settings.selectedLayerName = layers[index].name
+        if settings.selectedLayerId == snapshot.layers[index].id {
+            settings.selectedLayerName = snapshot.layers[index].name
             onSettingsChanged()
         }
 
@@ -23,23 +23,28 @@ extension VectorDocument {
     }
 
     func duplicateLayer(at index: Int) {
-        guard index >= 0 && index < layers.count else {
+        guard index >= 0 && index < snapshot.layers.count else {
             Log.error("❌ Invalid layer index for duplicate: \(index)", category: .error)
             return
         }
 
-        if index == 0 && layers[index].name == "Canvas" {
+        if index == 0 && snapshot.layers[index].name == "Canvas" {
             return
         }
 
-        let originalLayer = layers[index]
-        var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy", color: originalLayer.color)
+        let originalLayer = snapshot.layers[index]
+        let duplicatedLayer = Layer(
+            id: UUID(),
+            name: "\(originalLayer.name) Copy",
+            objectIDs: [],
+            isVisible: originalLayer.isVisible,
+            isLocked: originalLayer.isLocked,
+            opacity: originalLayer.opacity,
+            blendMode: originalLayer.blendMode,
+            color: originalLayer.color
+        )
 
-        duplicatedLayer.isVisible = originalLayer.isVisible
-        duplicatedLayer.isLocked = originalLayer.isLocked
-        duplicatedLayer.opacity = originalLayer.opacity
-
-        layers.insert(duplicatedLayer, at: index + 1)
+        snapshot.layers.insert(duplicatedLayer, at: index + 1)
 
         let originalShapes = getShapesForLayer(index)
         for shape in originalShapes {
@@ -60,14 +65,14 @@ extension VectorDocument {
     }
 
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
-        guard sourceIndex >= 0 && sourceIndex < layers.count,
-              targetIndex >= 0 && targetIndex <= layers.count,
+        guard sourceIndex >= 0 && sourceIndex < snapshot.layers.count,
+              targetIndex >= 0 && targetIndex <= snapshot.layers.count,
               sourceIndex != targetIndex else { return }
 
-        let movingLayer = layers.remove(at: sourceIndex)
+        let movingLayer = snapshot.layers.remove(at: sourceIndex)
         let adjustedTargetIndex = (sourceIndex < targetIndex) ? targetIndex - 1 : targetIndex
 
-        layers.insert(movingLayer, at: adjustedTargetIndex)
+        snapshot.layers.insert(movingLayer, at: adjustedTargetIndex)
 
         // Update layer indices in snapshot.objects
         for (objectID, object) in snapshot.objects {
@@ -113,13 +118,13 @@ extension VectorDocument {
     }
 
     func addLayer(name: String = "New Layer") {
-        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
-        let color = colors[layers.count % colors.count]
+        let colors: [LayerColor] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+        let color = colors[snapshot.layers.count % colors.count]
         var layerName = name
         if name == "New Layer" {
             var existingNumbers = Set<Int>()
 
-            for layer in layers {
+            for layer in snapshot.layers {
                 if layer.name.hasPrefix("Layer "),
                    let numberPart = layer.name.split(separator: " ").last,
                    let num = Int(numberPart) {
@@ -135,26 +140,20 @@ extension VectorDocument {
             layerName = "Layer \(layerNumber)"
         }
 
-        let newLayer = VectorLayer(name: layerName, color: color)
+        let newLayerID = UUID()
 
         if let currentIndex = selectedLayerIndex, currentIndex < snapshot.layers.count {
-            // Add to new structure
             let newLayerStruct = Layer(
-                id: newLayer.id,
-                name: newLayer.name,
+                id: newLayerID,
+                name: layerName,
                 objectIDs: [],
-                isVisible: newLayer.isVisible,
-                isLocked: newLayer.isLocked,
-                opacity: newLayer.opacity,
-                blendMode: newLayer.blendMode,
-                color: .blue
+                isVisible: true,
+                isLocked: false,
+                opacity: 1.0,
+                blendMode: .normal,
+                color: color
             )
             snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
-
-            // Legacy - TODO: remove
-            if currentIndex < layers.count {
-                layers.insert(newLayer, at: currentIndex + 1)
-            }
             selectedLayerIndex = currentIndex + 1
 
             // Update layerIndex in snapshot.objects
@@ -165,40 +164,36 @@ extension VectorDocument {
                 }
             }
         } else {
-            // Add to new structure
             let newLayerStruct = Layer(
-                id: newLayer.id,
-                name: newLayer.name,
+                id: newLayerID,
+                name: layerName,
                 objectIDs: [],
-                isVisible: newLayer.isVisible,
-                isLocked: newLayer.isLocked,
-                opacity: newLayer.opacity,
-                blendMode: newLayer.blendMode,
-                color: .blue
+                isVisible: true,
+                isLocked: false,
+                opacity: 1.0,
+                blendMode: .normal,
+                color: color
             )
             snapshot.layers.append(newLayerStruct)
-
-            // Legacy - TODO: remove
-            layers.append(newLayer)
             selectedLayerIndex = snapshot.layers.count - 1
         }
 
-        settings.selectedLayerId = newLayer.id
-        settings.selectedLayerName = newLayer.name
+        settings.selectedLayerId = newLayerID
+        settings.selectedLayerName = layerName
         onSettingsChanged()
         changeNotifier.notifyLayersChanged()
     }
 
     func removeLayer(at index: Int) {
-        guard index >= 0 && index < layers.count && layers.count > 1 else {
+        guard index >= 0 && index < snapshot.layers.count && snapshot.layers.count > 1 else {
             return
         }
 
-        let removingSelectedLayer = settings.selectedLayerId == layers[index].id
+        let removingSelectedLayer = settings.selectedLayerId == snapshot.layers[index].id
 
-        layers.remove(at: index)
+        snapshot.layers.remove(at: index)
         if selectedLayerIndex == index {
-            selectedLayerIndex = min(index, layers.count - 1)
+            selectedLayerIndex = min(index, snapshot.layers.count - 1)
         } else if let selected = selectedLayerIndex, selected > index {
             selectedLayerIndex = selected - 1
         }
@@ -212,16 +207,16 @@ extension VectorDocument {
 
     func validateSelectedLayer() {
         if let savedId = settings.selectedLayerId,
-           layers.first(where: { $0.id == savedId }) != nil {
-            if let index = layers.firstIndex(where: { $0.id == savedId }) {
+           snapshot.layers.first(where: { $0.id == savedId }) != nil {
+            if let index = snapshot.layers.firstIndex(where: { $0.id == savedId }) {
                 selectedLayerIndex = index
                 layerIndex = index
             }
             return
         }
 
-        if let layer1Index = layers.firstIndex(where: { $0.name == "Layer 1" }) {
-            let layer1 = layers[layer1Index]
+        if let layer1Index = snapshot.layers.firstIndex(where: { $0.name == "Layer 1" }) {
+            let layer1 = snapshot.layers[layer1Index]
             settings.selectedLayerId = layer1.id
             settings.selectedLayerName = layer1.name
             selectedLayerIndex = layer1Index
@@ -230,7 +225,7 @@ extension VectorDocument {
             return
         }
 
-        for (index, layer) in layers.enumerated() {
+        for (index, layer) in snapshot.layers.enumerated() {
             if layer.name != "Canvas" && layer.name != "Pasteboard" && !layer.isLocked {
                 settings.selectedLayerId = layer.id
                 settings.selectedLayerName = layer.name
@@ -241,7 +236,7 @@ extension VectorDocument {
             }
         }
 
-        if layers.count <= 2 {
+        if snapshot.layers.count <= 2 {
             addLayer(name: "Layer 1")
         }
     }
@@ -306,8 +301,8 @@ extension VectorDocument {
     func selectNextObjectUp() {
         let visibleObjects = snapshot.objects.values
             .filter { obj in
-                if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
-                    return layers[obj.layerIndex].isVisible
+                if obj.layerIndex >= 0 && obj.layerIndex < snapshot.layers.count {
+                    return snapshot.layers[obj.layerIndex].isVisible
                 }
                 return false
             }
@@ -341,8 +336,8 @@ extension VectorDocument {
     func selectNextObjectDown() {
         let visibleObjects = snapshot.objects.values
             .filter { obj in
-                if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
-                    return layers[obj.layerIndex].isVisible
+                if obj.layerIndex >= 0 && obj.layerIndex < snapshot.layers.count {
+                    return snapshot.layers[obj.layerIndex].isVisible
                 }
                 return false
             }
@@ -411,8 +406,8 @@ extension VectorDocument {
     }
 
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
-        guard let sourceIndex = layers.firstIndex(where: { $0.id == sourceLayerId }),
-              let targetIndex = layers.firstIndex(where: { $0.id == targetLayerId }) else {
+        guard let sourceIndex = snapshot.layers.firstIndex(where: { $0.id == sourceLayerId }),
+              let targetIndex = snapshot.layers.firstIndex(where: { $0.id == targetLayerId }) else {
             Log.error("❌ Layers not found for reordering", category: .error)
             return
         }
