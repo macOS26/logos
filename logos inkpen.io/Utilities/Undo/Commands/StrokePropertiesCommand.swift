@@ -140,97 +140,107 @@ class StrokePropertiesCommand: BaseCommand {
     }
 
     private func applyPlacements(_ placements: [UUID: StrokePlacement], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let placement = placements[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.placement = placement
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 continue
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func applyLineJoins(_ lineJoins: [UUID: CGLineJoin], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let lineJoin = lineJoins[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 continue
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func applyLineCaps(_ lineCaps: [UUID: CGLineCap], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let lineCap = lineCaps[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineCap = LineCap(lineCap)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 continue
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func applyMiterLimits(_ miterLimits: [UUID: Double], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let miterLimit = miterLimits[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.miterLimit = miterLimit
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 continue
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func applyImageOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let opacity = opacities[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.opacity = opacity
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 continue
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
