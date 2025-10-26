@@ -204,8 +204,15 @@ extension DrawingCanvas {
             let cornerRadius: Double = 20.0
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .pill:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -280,8 +287,15 @@ extension DrawingCanvas {
             }
             currentPath = createEllipsePath(rect: rect)
         case .oval:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -306,8 +320,15 @@ extension DrawingCanvas {
             )
             currentPath = createOvalPath(rect: normalizedRect)
         case .egg:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -380,8 +401,15 @@ extension DrawingCanvas {
             }
 
         case .rightTriangle:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -392,20 +420,27 @@ extension DrawingCanvas {
                 )
             } else {
                 rect = CGRect(
-                    x: min(startPoint.x, currentLocation.x),
-                    y: min(startPoint.y, currentLocation.y),
-                    width: abs(currentLocation.x - startPoint.x),
-                    height: abs(currentLocation.y - startPoint.y)
+                    x: min(startPoint.x, startPoint.x + dragDeltaX),
+                    y: min(startPoint.y, startPoint.y + dragDeltaY),
+                    width: abs(dragDeltaX),
+                    height: abs(dragDeltaY)
                 )
             }
-            let dragX = currentLocation.x >= startPoint.x ? "RIGHT" : "LEFT"
-            let dragY = currentLocation.y >= startPoint.y ? "DOWN" : "UP"
+            let dragX = dragDeltaX >= 0 ? "RIGHT" : "LEFT"
+            let dragY = dragDeltaY >= 0 ? "DOWN" : "UP"
             let dragDirection = "\(dragX)_\(dragY)"
 
             currentPath = createRightTrianglePath(rect: rect, dragDirection: dragDirection)
         case .acuteTriangle:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -424,8 +459,15 @@ extension DrawingCanvas {
             }
             currentPath = createAcuteTrianglePath(rect: rect)
         case .isoscelesTriangle:
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            var dragDeltaX = currentLocation.x - startPoint.x
+            var dragDeltaY = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                dragDeltaX = dragDeltaX >= 0 ? size : -size
+                dragDeltaY = dragDeltaY >= 0 ? size : -size
+            }
+
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -444,8 +486,15 @@ extension DrawingCanvas {
             }
             currentPath = createIsoscelesTrianglePath(rect: rect)
         case .cone:
-            let dx = currentLocation.x - startPoint.x
-            let dy = currentLocation.y - startPoint.y
+            var dx = currentLocation.x - startPoint.x
+            var dy = currentLocation.y - startPoint.y
+
+            if isShiftPressed {
+                let size = max(abs(dx), abs(dy))
+                dx = dx >= 0 ? size : -size
+                dy = dy >= 0 ? size : -size
+            }
+
             var raw: CGRect
             if isOptionPressed {
                 raw = CGRect(x: startPoint.x - dx, y: startPoint.y - dy, width: dx * 2, height: dy * 2)
