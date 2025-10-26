@@ -26,7 +26,7 @@ struct InkpenDocument: FileDocument {
                 var minX: CGFloat = .infinity
                 var minY: CGFloat = .infinity
 
-                for unifiedObj in self.document.unifiedObjects {
+                for unifiedObj in self.document.snapshot.objects.values {
                     switch unifiedObj.objectType {
                     case .text(let shape),
                          .shape(let shape),
@@ -48,7 +48,7 @@ struct InkpenDocument: FileDocument {
                     self.document.viewState.canvasOffset = CGPoint(x: -minX, y: -minY)
                 }
 
-                for unifiedObj in self.document.unifiedObjects {
+                for unifiedObj in self.document.snapshot.objects.values {
                     if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
@@ -62,7 +62,7 @@ struct InkpenDocument: FileDocument {
             do {
                 self.document = try FileOperations.importFromPDFData(data)
 
-                for unifiedObj in self.document.unifiedObjects {
+                for unifiedObj in self.document.snapshot.objects.values {
                     if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
@@ -75,7 +75,7 @@ struct InkpenDocument: FileDocument {
             do {
                 self.document = try FileOperations.importFromJSONData(data)
 
-                for unifiedObj in self.document.unifiedObjects {
+                for unifiedObj in self.document.snapshot.objects.values {
                     if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }

@@ -161,7 +161,7 @@ class DocumentState: ObservableObject {
 
         func isShape(_ newVectorObject: VectorObject) -> Bool {
             switch newVectorObject.objectType {
-            case .shape, .warp, .group, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                 return true
             case .text:
                 return false
@@ -218,6 +218,7 @@ class DocumentState: ObservableObject {
             for newVectorObject in selectedShapes {
                 switch newVectorObject.objectType {
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
