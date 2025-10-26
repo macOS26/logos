@@ -144,7 +144,7 @@ extension DrawingCanvas {
         }
 
         if document.viewState.currentTool == .gradient {
-            gradientCenterPointOverlay(geometry: geometry)
+            gradientEditTool(geometry: geometry)
         }
 
         if document.viewState.currentTool == .cornerRadius {
@@ -368,11 +368,6 @@ extension DrawingCanvas {
             .contextMenu {
                 directSelectionContextMenu
             }
-    }
-
-    @ViewBuilder
-    internal func gradientCenterPointOverlay(geometry: GeometryProxy) -> some View {
-        gradientEditTool(geometry: geometry)
     }
 
     @ViewBuilder
