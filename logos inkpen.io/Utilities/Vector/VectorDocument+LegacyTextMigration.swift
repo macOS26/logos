@@ -5,7 +5,7 @@ import Combine
 extension VectorDocument {
 
     func migrateLegacyTextObjects() {
-        for (index, object) in unifiedObjects.enumerated() {
+        for (objectID, object) in snapshot.objects {
             if case .text(var shape) = object.objectType,
                let typography = shape.typography {
                 let needsFontVariantMigration = typography.fontVariant == nil || typography.fontVariant?.isEmpty == true
@@ -37,10 +37,12 @@ extension VectorDocument {
 
                     shape.typography = updatedTypography
 
-                    unifiedObjects[index] = VectorObject(
-                        shape: shape,
+                    let updatedObject = VectorObject(
+                        id: shape.id,
                         layerIndex: object.layerIndex,
+                        objectType: .text(shape)
                     )
+                    snapshot.objects[objectID] = updatedObject
                 }
             }
         }
