@@ -252,7 +252,7 @@ class DocumentState: ObservableObject {
                 let result = await VectorImportManager.shared.importVectorFile(from: url)
                 await MainActor.run {
                     if result.success {
-                        if let layerIndex = document.selectedLayerIndex ?? (document.layers.indices.first) {
+                        if let layerIndex = document.selectedLayerIndex ?? (document.snapshot.layers.indices.first) {
                             var newObjectIDs: Set<UUID> = []
                             for shape in result.shapes {
                                 document.addShape(shape, to: layerIndex)
@@ -1069,7 +1069,7 @@ class DocumentState: ObservableObject {
 
     func embedSelectedLinkedImages() {
         guard let document = document else { return }
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
