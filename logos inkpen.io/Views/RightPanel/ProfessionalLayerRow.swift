@@ -247,55 +247,7 @@ struct ProfessionalLayerRow: View {
                     ForEach(layerObjects, id: \.id) { newVectorObject in
                         let index = layerObjects.firstIndex(where: { $0.id == newVectorObject.id }) ?? 0
                         let isLast = index == layerObjects.count - 1
-                        switch newVectorObject.objectType {
-                        case .text(let shape):
-                            ObjectRow(
-                                objectType: .text,
-                                objectId: shape.id,
-                                name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
-                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
-                                onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                },
-                                layerIndex: layerIndex,
-                                document: document,
-                                showBottomIndicator: isLast
-                            )
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                        case .group(let shape),
-                             .clipGroup(let shape):
-                            ObjectRow(
-                                objectType: .group,
-                                objectId: shape.id,
-                                name: shape.name,
-                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
-                                onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                },
-                                layerIndex: layerIndex,
-                                document: document,
-                                groupedShapes: shape.groupedShapes,
-                                showBottomIndicator: isLast
-                            )
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                        case .shape(let shape),
-                             .image(let shape),
-                             .warp(let shape),
-                             .clipMask(let shape):
-                            ObjectRow(
-                                objectType: .shape,
-                                objectId: shape.id,
-                                name: shape.name,
-                                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
-                                onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                },
-                                layerIndex: layerIndex,
-                                document: document,
-                                showBottomIndicator: isLast
-                            )
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                        }
+                        objectRowForType(newVectorObject: newVectorObject, isLast: isLast)
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: layerObjects.map { $0.id })
@@ -381,6 +333,59 @@ struct ProfessionalLayerRow: View {
             }
         }
         .background(Color.clear)
+    }
+
+    @ViewBuilder
+    private func objectRowForType(newVectorObject: VectorObject, isLast: Bool) -> some View {
+        switch newVectorObject.objectType {
+        case .text(let shape):
+            ObjectRow(
+                objectType: .text,
+                objectId: shape.id,
+                name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
+                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
+                onSelect: { isShiftPressed, isCommandPressed in
+                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                },
+                layerIndex: layerIndex,
+                document: document,
+                showBottomIndicator: isLast
+            )
+            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+        case .group(let shape),
+             .clipGroup(let shape):
+            ObjectRow(
+                objectType: .group,
+                objectId: shape.id,
+                name: shape.name,
+                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
+                onSelect: { isShiftPressed, isCommandPressed in
+                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                },
+                layerIndex: layerIndex,
+                document: document,
+                groupedShapes: shape.groupedShapes,
+                showBottomIndicator: isLast
+            )
+            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+        case .shape(let shape),
+             .image(let shape),
+             .warp(let shape),
+             .clipMask(let shape):
+            ObjectRow(
+                objectType: .shape,
+                objectId: shape.id,
+                name: shape.name,
+                isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
+                onSelect: { isShiftPressed, isCommandPressed in
+                    handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                },
+                layerIndex: layerIndex,
+                document: document,
+                showBottomIndicator: isLast
+            )
+            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+        }
     }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
