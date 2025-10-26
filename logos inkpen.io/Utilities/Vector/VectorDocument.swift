@@ -167,10 +167,10 @@ final class VectorDocument: ObservableObject, Codable {
         settings = decodedSettings
         snapshot = decodedSnapshot
         layerIndex = snapshot.layers.count
-        
+
         documentColorDefaults = ColorDefaults()
-        colorSwatches = .empty
-        gridSettings = .default
+        colorSwatches = decodedSnapshot.colorSwatches
+        gridSettings = decodedSnapshot.gridSettings
         strokeDefaults = .default
 
         selectedLayerIndex = nil
@@ -199,8 +199,6 @@ final class VectorDocument: ObservableObject, Codable {
         isUndoRedoOperation = false
         fontManager = FontManager()
 
-        snapshot = decodedSnapshot
-
         viewState.hasPressureInput = false
         viewState.activeColorTarget = .fill
         viewState.colorChangeNotification = UUID()
@@ -209,14 +207,6 @@ final class VectorDocument: ObservableObject, Codable {
         viewState.isDraggingLock = false
 
         originalHandlePositions = [:]
-
-        gridSettings = GridSettings(
-            showRulers: settings.showRulers,
-            showGrid: settings.showGrid,
-            snapToGrid: settings.snapToGrid,
-            snapToPoint: settings.snapToPoint,
-            gridSpacing: settings.gridSpacing
-        )
 
         validateSelectedLayer()
         

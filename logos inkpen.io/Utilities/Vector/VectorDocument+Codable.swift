@@ -17,8 +17,14 @@ extension VectorDocument {
         settingsToSave.customCmykSwatches = colorSwatches.cmyk.isEmpty ? nil : colorSwatches.cmyk
         settingsToSave.customHsbSwatches = colorSwatches.hsb.isEmpty ? nil : colorSwatches.hsb
 
+        // Update snapshot with current state
+        var snapshotToSave = snapshot
+        snapshotToSave.settings = settingsToSave
+        snapshotToSave.colorSwatches = colorSwatches
+        snapshotToSave.gridSettings = gridSettings
+
         // Save document content only (no UI state)
         try container.encode(settingsToSave, forKey: .settings)
-        try container.encode(snapshot, forKey: .snapshot)
+        try container.encode(snapshotToSave, forKey: .snapshot)
     }
 }
