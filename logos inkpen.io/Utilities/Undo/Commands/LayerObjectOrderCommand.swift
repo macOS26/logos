@@ -13,10 +13,12 @@ class LayerObjectOrderCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyOrder(newObjectIDs, to: document)
+        document.triggerLayerUpdate(for: layerIndex)
     }
 
     override func undo(on document: VectorDocument) {
         applyOrder(oldObjectIDs, to: document)
+        document.triggerLayerUpdate(for: layerIndex)
     }
 
     private func applyOrder(_ objectIDs: [UUID], to document: VectorDocument) {
