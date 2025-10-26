@@ -96,12 +96,21 @@ extension FileOperations {
             document.settings.height = docSize.height / 72.0
         }
 
-        let importedLayer = VectorLayer(name: "Imported SVG", isVisible: true, isLocked: false, opacity: 1.0, blendMode: .normal)
+        let importedLayer = Layer(
+            id: UUID(),
+            name: "Imported SVG",
+            objectIDs: [],
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            color: .green
+        )
 
-        if document.layers.count < 3 {
-            document.layers.append(importedLayer)
+        if document.snapshot.layers.count < 3 {
+            document.snapshot.layers.append(importedLayer)
         } else {
-            document.layers[2] = importedLayer
+            document.snapshot.layers[2] = importedLayer
         }
 
         var clippingMasks: [UUID: (mask: VectorShape, clippedShapes: [VectorShape])] = [:]
