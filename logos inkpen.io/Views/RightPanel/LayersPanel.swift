@@ -164,7 +164,9 @@ struct LayersPanel: View {
     var body: some View {
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
-        let _ = document.snapshot.layers.count // Subscribe to layer count changes
+        let layerCount = document.snapshot.layers.count
+        let _ = print("🔵 LayersPanel body - Layer count: \(layerCount)")
+        let _ = print("🔵 LayersPanel body - Layers: \(document.snapshot.layers.map { $0.name })")
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -317,10 +319,12 @@ struct LayersPanel: View {
     }
     
     private var layersScrollContent: some View {
-        ScrollView(.vertical, showsIndicators: true) {
+        let _ = print("🟢 layersScrollContent - Building with \(document.snapshot.layers.count) layers")
+        return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
+                        let _ = print("🟡 ForEach - Rendering layer \(layerIndex): \(layer.name)")
                         layerRowContent(for: layerIndex)
                     }
                 }

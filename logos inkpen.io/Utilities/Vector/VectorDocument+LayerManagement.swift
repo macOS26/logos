@@ -137,10 +137,7 @@ extension VectorDocument {
 
         let newLayer = VectorLayer(name: layerName, color: color)
 
-        if let currentIndex = selectedLayerIndex, currentIndex < layers.count {
-            layers.insert(newLayer, at: currentIndex + 1)
-            selectedLayerIndex = currentIndex + 1
-
+        if let currentIndex = selectedLayerIndex, currentIndex < snapshot.layers.count {
             // Add to new structure
             let newLayerStruct = Layer(
                 id: newLayer.id,
@@ -154,6 +151,12 @@ extension VectorDocument {
             )
             snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
 
+            // Legacy - TODO: remove
+            if currentIndex < layers.count {
+                layers.insert(newLayer, at: currentIndex + 1)
+            }
+            selectedLayerIndex = currentIndex + 1
+
             // Update layerIndex in snapshot.objects
             for (objectID, object) in snapshot.objects {
                 if object.layerIndex > currentIndex {
@@ -162,9 +165,6 @@ extension VectorDocument {
                 }
             }
         } else {
-            layers.append(newLayer)
-            selectedLayerIndex = layers.count - 1
-
             // Add to new structure
             let newLayerStruct = Layer(
                 id: newLayer.id,
@@ -177,6 +177,10 @@ extension VectorDocument {
                 color: .blue
             )
             snapshot.layers.append(newLayerStruct)
+
+            // Legacy - TODO: remove
+            layers.append(newLayer)
+            selectedLayerIndex = snapshot.layers.count - 1
         }
 
         settings.selectedLayerId = newLayer.id
