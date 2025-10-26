@@ -34,9 +34,8 @@ class ClippingMaskCommand: BaseCommand {
 
     private func applyShapes(_ shapes: [UUID: VectorShape], to document: VectorDocument) {
         for (id, shape) in shapes {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
-                let obj = document.unifiedObjects[index]
-                document.unifiedObjects[index] = VectorObject(
+            if let obj = document.snapshot.objects[id] {
+                document.snapshot.objects[id] = VectorObject(
                     shape: shape,
                     layerIndex: obj.layerIndex,
                 )
