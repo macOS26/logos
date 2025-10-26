@@ -3,78 +3,58 @@ import SwiftUI
 extension VectorDocument {
 
     func lockTextInUnified(id: UUID) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.isLocked = true
+        if let obj = snapshot.objects[id],
+           case .text(var shape) = obj.objectType {
+            shape.isLocked = true
 
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-            }
+            let updatedObject = VectorObject(
+                id: shape.id,
+                layerIndex: obj.layerIndex,
+                objectType: .text(shape)
+            )
+            snapshot.objects[id] = updatedObject
         }
     }
 
     func unlockTextInUnified(id: UUID) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.isLocked = false
+        if let obj = snapshot.objects[id],
+           case .text(var shape) = obj.objectType {
+            shape.isLocked = false
 
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-            }
+            let updatedObject = VectorObject(
+                id: shape.id,
+                layerIndex: obj.layerIndex,
+                objectType: .text(shape)
+            )
+            snapshot.objects[id] = updatedObject
         }
     }
 
     func hideTextInUnified(id: UUID) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.isVisible = false
+        if let obj = snapshot.objects[id],
+           case .text(var shape) = obj.objectType {
+            shape.isVisible = false
 
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-            }
+            let updatedObject = VectorObject(
+                id: shape.id,
+                layerIndex: obj.layerIndex,
+                objectType: .text(shape)
+            )
+            snapshot.objects[id] = updatedObject
         }
     }
 
     func showTextInUnified(id: UUID) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.isVisible = true
+        if let obj = snapshot.objects[id],
+           case .text(var shape) = obj.objectType {
+            shape.isVisible = true
 
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                )
-
-            }
+            let updatedObject = VectorObject(
+                id: shape.id,
+                layerIndex: obj.layerIndex,
+                objectType: .text(shape)
+            )
+            snapshot.objects[id] = updatedObject
         }
     }
 
@@ -103,7 +83,7 @@ extension VectorDocument {
     }
 
     func translateAllTextInUnified(delta: CGPoint) {
-        let textIDs = unifiedObjects.compactMap { obj -> UUID? in
+        let textIDs = snapshot.objects.values.compactMap { obj -> UUID? in
             if case .text(let shape) = obj.objectType {
                 return shape.id
             }
@@ -122,21 +102,15 @@ extension VectorDocument {
     }
 
     func updateTextLayerInUnified(id: UUID, layerIndex: Int) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }) {
-            let existingObject = unifiedObjects[objectIndex]
-            if case .text(let shape) = existingObject.objectType {
+        if let obj = snapshot.objects[id],
+           case .text(let shape) = obj.objectType {
 
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: layerIndex,
-                )
-
-            }
+            let updatedObject = VectorObject(
+                id: shape.id,
+                layerIndex: layerIndex,
+                objectType: .text(shape)
+            )
+            snapshot.objects[id] = updatedObject
         }
     }
 }
