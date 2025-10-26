@@ -57,7 +57,7 @@ extension VectorDocument {
     func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
         guard delta != .zero else { return }
 
-        for layerIndex in layers.indices {
+        for layerIndex in snapshot.layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             for (shapeIndex, _) in shapes.enumerated() {
                 var updatedShape = shapes[shapeIndex]
@@ -79,7 +79,7 @@ extension VectorDocument {
         var needsMigration = false
 
         // Check if Pasteboard layer (index 0) has a background shape
-        if layers.count > 0 && layers[0].name == "Pasteboard" {
+        if snapshot.layers.count > 0 && snapshot.layers[0].name == "Pasteboard" {
             let pasteboardShapes = getShapesForLayer(0)
             if let bgShape = pasteboardShapes.first(where: { $0.name == "Pasteboard Background" }) {
                 needsMigration = true
@@ -89,7 +89,7 @@ extension VectorDocument {
         }
 
         // Check if Canvas layer (index 1) has a background shape
-        if layers.count > 1 && layers[1].name == "Canvas" {
+        if snapshot.layers.count > 1 && snapshot.layers[1].name == "Canvas" {
             let canvasShapes = getShapesForLayer(1)
             if let bgShape = canvasShapes.first(where: { $0.name == "Canvas Background" }) {
                 needsMigration = true
