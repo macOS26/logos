@@ -44,9 +44,9 @@ class ObjectReorderCommand: BaseCommand {
             // Remove from source layer
             document.snapshot.layers[sourceLayer].objectIDs.removeAll { $0 == objectID }
 
-            // Update layerIndex
-            obj.layerIndex = targetLayer
-            document.snapshot.objects[objectID] = obj
+            // Update layerIndex by creating new object
+            let updatedObj = VectorObject(id: obj.id, layerIndex: targetLayer, objectType: obj.objectType)
+            document.snapshot.objects[objectID] = updatedObj
 
             // Add to target layer
             let insertIndex = min(targetIndex, document.snapshot.layers[targetLayer].objectIDs.count)
