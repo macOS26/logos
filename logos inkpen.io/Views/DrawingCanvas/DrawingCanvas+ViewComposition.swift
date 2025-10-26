@@ -258,23 +258,46 @@ extension DrawingCanvas {
             let bounds = path.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-            let labelPosition = CGPoint(
+
+            // Convert canvas coordinates to screen coordinates
+            let canvasLabelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
+            )
+            let screenPosition = CGPoint(
+                x: canvasLabelPosition.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                y: canvasLabelPosition.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
             )
 
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
 
-            Text("W: \(widthText)pt\nH: \(heightText)pt")
-                .font(.caption)
-                .foregroundColor(.white)
-                .padding(4)
-                .background(Color.black.opacity(0.8))
-                .cornerRadius(4)
-                .position(labelPosition)
-                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+            Canvas { context, size in
+                let textString = "\(widthText) pt × \(heightText) pt"
+                let text = Text(textString)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+
+                // Measure text size
+                let textSize = context.resolve(text).measure(in: size)
+
+                // Draw background
+                let padding: CGFloat = 6
+                let backgroundRect = CGRect(
+                    x: screenPosition.x,
+                    y: screenPosition.y,
+                    width: textSize.width + padding * 2,
+                    height: textSize.height + padding * 2
+                )
+                let backgroundPath = Path(roundedRect: backgroundRect, cornerRadius: 4)
+                context.fill(backgroundPath, with: .color(.black.opacity(0.75)))
+
+                // Draw text
+                context.draw(text, at: CGPoint(
+                    x: screenPosition.x + padding,
+                    y: screenPosition.y + padding + textSize.height / 2
+                ))
+            }
         }
     }
 
@@ -284,23 +307,46 @@ extension DrawingCanvas {
             let bounds = bezierPath.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-            let labelPosition = CGPoint(
+
+            // Convert canvas coordinates to screen coordinates
+            let canvasLabelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
+            )
+            let screenPosition = CGPoint(
+                x: canvasLabelPosition.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                y: canvasLabelPosition.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
             )
 
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
 
-            Text("W: \(widthText)pt\nH: \(heightText)pt")
-                .font(.caption)
-                .foregroundColor(.white)
-                .padding(4)
-                .background(Color.black.opacity(0.8))
-                .cornerRadius(4)
-                .position(labelPosition)
-                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+            Canvas { context, size in
+                let textString = "\(widthText) pt × \(heightText) pt"
+                let text = Text(textString)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+
+                // Measure text size
+                let textSize = context.resolve(text).measure(in: size)
+
+                // Draw background
+                let padding: CGFloat = 6
+                let backgroundRect = CGRect(
+                    x: screenPosition.x,
+                    y: screenPosition.y,
+                    width: textSize.width + padding * 2,
+                    height: textSize.height + padding * 2
+                )
+                let backgroundPath = Path(roundedRect: backgroundRect, cornerRadius: 4)
+                context.fill(backgroundPath, with: .color(.black.opacity(0.75)))
+
+                // Draw text
+                context.draw(text, at: CGPoint(
+                    x: screenPosition.x + padding,
+                    y: screenPosition.y + padding + textSize.height / 2
+                ))
+            }
         }
     }
 
