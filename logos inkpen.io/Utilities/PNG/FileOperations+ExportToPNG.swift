@@ -34,13 +34,13 @@ extension FileOperations {
 
         context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
 
-        for (index, layer) in document.layers.enumerated() {
+        for (index, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
             if index <= 1 { continue }
 
             context.saveGState()
 
-            if layer.blendMode != .normal {
+            if layer.blendMode != BlendMode.normal {
                 context.setBlendMode(layer.blendMode.cgBlendMode)
             }
 
@@ -106,13 +106,13 @@ extension FileOperations {
 
             context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
 
-            for (index, layer) in document.layers.enumerated() {
+            for (index, layer) in document.snapshot.layers.enumerated() {
                 if !layer.isVisible { continue }
                 if index <= 1 { continue }
 
                 context.saveGState()
 
-                if layer.blendMode != .normal {
+                if layer.blendMode != BlendMode.normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
                 }
 
@@ -146,7 +146,7 @@ extension FileOperations {
     private static func calculateArtworkBounds(from document: VectorDocument) -> CGRect {
         var bounds = CGRect.null
 
-        for (index, layer) in document.layers.enumerated() {
+        for (index, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible || index <= 1 { continue }
 
             let shapesInLayer = document.getShapesForLayer(index)
@@ -204,13 +204,13 @@ extension FileOperations {
             }
 
             // Render layers directly
-            ForEach(document.layers.indices, id: \.self) { layerIndex in
-                if document.layers[layerIndex].isVisible,
+            ForEach(document.snapshot.layers.indices, id: \.self) { layerIndex in
+                if document.snapshot.layers[layerIndex].isVisible,
                    layerIndex >= 2 { // Skip background layers
                     let objects = document.getObjectsInStackingOrder().filter { $0.layerIndex == layerIndex }
                     IsolatedLayerView(
                         objects: objects,
-                        layerID: document.layers[layerIndex].id,
+                        layerID: document.snapshot.layers[layerIndex].id,
                         document: document,
                         zoomLevel: scale,
                         canvasOffset: .zero,
@@ -220,8 +220,8 @@ extension FileOperations {
                         dragPreviewTrigger: false,
                         objectUpdateTrigger: 0,
                         liveScaleTransform: .identity,
-                        layerOpacity: document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode,
+                        layerOpacity: document.snapshot.layers[layerIndex].opacity,
+                        layerBlendMode: document.snapshot.layers[layerIndex].blendMode,
                         liveGradientOriginX: nil,
                         liveGradientOriginY: nil,
                         selectedObjectData: [:]
@@ -304,7 +304,7 @@ extension FileOperations {
         context.translateBy(x: 0, y: outputSize.height)
         context.scaleBy(x: scale, y: -scale)
 
-        for (index, layer) in document.layers.enumerated() {
+        for (index, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
 
             if index == 0 {
@@ -318,7 +318,7 @@ extension FileOperations {
 
             context.beginTransparencyLayer(auxiliaryInfo: nil)
 
-            if layer.blendMode != .normal {
+            if layer.blendMode != BlendMode.normal {
                 context.setBlendMode(layer.blendMode.cgBlendMode)
             }
 

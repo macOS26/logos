@@ -96,7 +96,7 @@ extension FileOperations {
         var clippingMasks: [UUID: VectorShape] = [:]
         var clippedShapes: [UUID: [VectorShape]] = [:]
 
-        for (index, layer) in document.layers.enumerated() {
+        for (index, layer) in document.snapshot.layers.enumerated() {
             autoreleasepool {
                 if index == 0 { return }
 
@@ -123,7 +123,7 @@ extension FileOperations {
 
         var renderedShapeIds = Set<UUID>()
 
-        for (index, layer) in document.layers.enumerated() {
+        for (index, layer) in document.snapshot.layers.enumerated() {
             if index == 0 { continue }
 
             if index == 1 && !includeBackground { continue }
@@ -134,7 +134,7 @@ extension FileOperations {
 
                 context.saveGState()
 
-                if layer.blendMode != .normal {
+                if layer.blendMode != BlendMode.normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
                 }
 

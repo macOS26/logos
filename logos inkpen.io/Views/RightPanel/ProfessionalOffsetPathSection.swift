@@ -268,7 +268,6 @@ struct ProfessionalOffsetPathSection: View {
 
                 if offsetDistance >= 0 {
                     if let layerIndex = document.selectedLayerIndex {
-                        document.layers[layerIndex].addShape(offsetShape)
                         document.addShapeBehindInUnifiedSystem(offsetShape, layerIndex: layerIndex, behindShapeIDs: [shape.id])
                     }
                 } else {
