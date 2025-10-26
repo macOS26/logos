@@ -52,7 +52,6 @@ extension DocumentState {
 
         await MainActor.run {
             document.snapshot = savedState.snapshot
-            document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
         }
 
@@ -91,7 +90,6 @@ extension DocumentState {
 
         await MainActor.run {
             document.snapshot = savedState.snapshot
-            document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
         }
 
