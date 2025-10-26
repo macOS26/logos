@@ -367,6 +367,11 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
+                // Canvas and Pasteboard layers (0 and 1) cannot contain objects
+                if layerIndex <= 1 {
+                    return false
+                }
+
                 print("🎯 Drop on layer '\(layer.name)' (index: \(layerIndex))")
                 if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
                     document.moveObjectsToLayer(objectIds: Array(document.viewState.selectedObjectIDs), targetLayerIndex: layerIndex)
