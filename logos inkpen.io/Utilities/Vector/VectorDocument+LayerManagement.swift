@@ -277,6 +277,12 @@ extension VectorDocument {
             return
         }
 
+        // Canvas and Pasteboard layers (0 and 1) cannot contain objects
+        if targetLayerIndex <= 1 {
+            Log.error("❌ Cannot move objects to Canvas or Pasteboard layers", category: .error)
+            return
+        }
+
         let sourceLayerIndex = object.layerIndex
 
         if sourceLayerIndex == targetLayerIndex {
@@ -294,6 +300,12 @@ extension VectorDocument {
     func moveObjectsToLayer(objectIds: [UUID], targetLayerIndex: Int) {
         guard targetLayerIndex >= 0 && targetLayerIndex < snapshot.layers.count else {
             Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
+            return
+        }
+
+        // Canvas and Pasteboard layers (0 and 1) cannot contain objects
+        if targetLayerIndex <= 1 {
+            Log.error("❌ Cannot move objects to Canvas or Pasteboard layers", category: .error)
             return
         }
 
