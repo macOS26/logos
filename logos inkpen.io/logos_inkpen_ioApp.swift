@@ -1011,13 +1011,13 @@ class ClipboardManager {
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 
-            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+            if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
+                Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
                 return
             }
 
-            if layerIndex < document.layers.count {
-                let layerName = document.layers[layerIndex].name
+            if layerIndex < document.snapshot.layers.count {
+                let layerName = document.snapshot.layers[layerIndex].name
                 if layerName == "Canvas" || layerName == "Pasteboard" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
@@ -1074,13 +1074,13 @@ class ClipboardManager {
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 
-            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+            if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
+                Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
                 return
             }
 
-            if layerIndex < document.layers.count {
-                let layerName = document.layers[layerIndex].name
+            if layerIndex < document.snapshot.layers.count {
+                let layerName = document.snapshot.layers[layerIndex].name
                 if layerName == "Canvas" || layerName == "Pasteboard" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
