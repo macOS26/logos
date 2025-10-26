@@ -71,7 +71,10 @@ struct GradientPreviewAndStopsView: View {
                 context.stroke(hLine, with: .color(.white.opacity(opacity)), lineWidth: width)
             }
 
-            // Draw grid intersection dots
+            // Draw grid intersection dots (inset from edges to prevent clipping)
+            let dotRadius: CGFloat = 6
+            let edgeInset: CGFloat = dotRadius + 1 // Inset by dot radius + 1px
+
             let gridPoints: [(x: CGFloat, y: CGFloat, isCenter: Bool)] = [
                 (0, 0, false), (0.5, 0, false), (1, 0, false),
                 (0, 0.5, false), (0.5, 0.5, true), (1, 0.5, false),
@@ -83,8 +86,14 @@ struct GradientPreviewAndStopsView: View {
             ]
 
             for point in gridPoints {
-                let pos = CGPoint(x: point.x * size.width, y: point.y * size.height)
-                let circle = Path(ellipseIn: CGRect(x: pos.x - 6, y: pos.y - 6, width: 12, height: 12))
+                var xPos = point.x * size.width
+                var yPos = point.y * size.height
+
+                // Clamp to ensure dots stay within bounds
+                xPos = max(edgeInset, min(size.width - edgeInset, xPos))
+                yPos = max(edgeInset, min(size.height - edgeInset, yPos))
+
+                let circle = Path(ellipseIn: CGRect(x: xPos - dotRadius, y: yPos - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
                 let color = point.isCenter ? Color.green.opacity(0.6) : Color.ui.mediumBlueBackground
                 context.fill(circle, with: .color(color))
             }
@@ -249,7 +258,7 @@ struct GradientPreviewAndStopsView: View {
                             ]
 
                             let tapLocation = value.location
-                            let snapRadius: CGFloat = 15.0
+                            let snapRadius: CGFloat = 13.0
 
                             for point in snapPoints {
                                 let pointPos = CGPoint(x: point.x * fullWidth, y: point.y * fullWidth)
