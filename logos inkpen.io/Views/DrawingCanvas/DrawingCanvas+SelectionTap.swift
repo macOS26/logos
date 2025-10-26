@@ -31,6 +31,7 @@ extension DrawingCanvas {
 
                     switch object.objectType {
                     case .shape(let shape),
+                         .image(let shape),
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
@@ -247,6 +248,7 @@ extension DrawingCanvas {
                     return true
                 }
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -269,6 +271,7 @@ extension DrawingCanvas {
 
         switch object.objectType {
         case .shape(let shape),
+             .image(let shape),
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
