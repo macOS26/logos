@@ -18,31 +18,41 @@ extension DrawingCanvas {
         if isControlPressed && document.viewState.currentTool == .selection {
             var clickedShape: VectorShape?
 
-            for unifiedObject in document.unifiedObjects.reversed() {
-                if unifiedObject.layerIndex < document.layers.count {
-                    let layer = document.layers[unifiedObject.layerIndex]
-                    if layer.isLocked { continue }
+            // Iterate through layers from top to bottom (reversed)
+            for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
+                let layer = document.snapshot.layers[layerIndex]
+                if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                    continue
                 }
 
-                switch unifiedObject.objectType {
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    if !shape.isVisible { continue }
+                // Iterate through objects in layer from top to bottom (reversed)
+                for objectID in layer.objectIDs.reversed() {
+                    guard let object = document.snapshot.objects[objectID] else { continue }
 
-                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                    if isBackgroundShape { continue }
+                    switch object.objectType {
+                    case .shape(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
+                        if !shape.isVisible { continue }
 
-                    let isHit = performShapeHitTest(shape: shape, at: validatedLocation)
+                        let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+                        if isBackgroundShape { continue }
 
-                    if isHit {
-                        clickedShape = shape
-                        break
+                        let isHit = performShapeHitTest(shape: shape, at: validatedLocation)
+
+                        if isHit {
+                            clickedShape = shape
+                            break
+                        }
+                    case .text:
+                        continue
                     }
-                case .text:
-                    continue
+                }
+
+                if clickedShape != nil {
+                    break
                 }
             }
 
@@ -221,32 +231,32 @@ extension DrawingCanvas {
 
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    let textContentArea = CGRect(
-                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
-                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
-                        width: shape.bounds.width,
-                        height: shape.bounds.height
-                    )
-                    let contains = textContentArea.contains(location)
+            guard let object = document.snapshot.objects[objectID] else { continue }
 
-                    if contains {
-                        return true
-                    }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
-                    let contains = selectionBoxBounds.contains(location)
+            switch object.objectType {
+            case .text(let shape):
+                let textContentArea = CGRect(
+                    x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
+                    y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
+                let contains = textContentArea.contains(location)
 
-                    if contains {
-                        return true
-                    }
+                if contains {
+                    return true
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                let transformedBounds = shape.bounds.applying(shape.transform)
+                let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
+                let contains = selectionBoxBounds.contains(location)
+
+                if contains {
+                    return true
                 }
             }
         }
@@ -255,20 +265,17 @@ extension DrawingCanvas {
     }
 
     private func findShapeByID(_ shapeID: UUID) -> VectorShape? {
-        for unifiedObject in document.unifiedObjects {
-            switch unifiedObject.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if shape.id == shapeID {
-                    return shape
-                }
-            case .text:
-                continue
-            }
+        guard let object = document.snapshot.objects[shapeID] else { return nil }
+
+        switch object.objectType {
+        case .shape(let shape),
+             .warp(let shape),
+             .group(let shape),
+             .clipGroup(let shape),
+             .clipMask(let shape):
+            return shape
+        case .text:
+            return nil
         }
-        return nil
     }
 }
