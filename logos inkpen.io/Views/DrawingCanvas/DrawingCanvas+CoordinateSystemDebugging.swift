@@ -4,7 +4,7 @@ extension DrawingCanvas {
 
     internal func runRealDrawingTest(geometry: GeometryProxy) {
 
-        if !document.layers.isEmpty {
+        if !document.snapshot.layers.isEmpty {
             document.removeShapesUnified(layerIndex: 0, where: { _ in true })
         }
 
