@@ -249,6 +249,8 @@ struct LayerCanvasView: View {
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                case .image(let shape):
+                    renderImage(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
                 case .text(let shape):
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
                     renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
@@ -606,6 +608,52 @@ struct LayerCanvasView: View {
                 CTLineDraw(line, cgContext)
                 cgContext.restoreGState()
             }
+
+            cgContext.restoreGState()
+        }
+    }
+
+    // MARK: - Optimized Image Rendering
+
+    private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity) {
+        // Fast validation (O(1))
+        guard let imageData = shape.embeddedImageData else { return }
+        guard let nsImage = NSImage(data: imageData) else { return }
+        guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+
+        // Drag delta is now applied at canvas level, not per-object
+
+        context.withCGContext { cgContext in
+            cgContext.saveGState()
+
+            // Apply opacity
+            cgContext.setAlpha(CGFloat(shape.opacity))
+
+            // Get image bounds from path
+            let pathBounds = shape.path.cgPath.boundingBoxOfPath
+
+            // Apply scale transform if active
+            var renderBounds = pathBounds
+            if scaleTransform != .identity {
+                renderBounds = pathBounds.applying(scaleTransform)
+            }
+
+            // Apply the shape's transform
+            if !shape.transform.isIdentity {
+                cgContext.concatenate(shape.transform)
+            }
+
+            // Flip coordinate system for image rendering
+            cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
+            cgContext.scaleBy(x: 1.0, y: -1.0)
+
+            // Set high-quality rendering
+            cgContext.setAllowsAntialiasing(true)
+            cgContext.setShouldAntialias(true)
+            cgContext.interpolationQuality = .high
+
+            // Draw the image
+            cgContext.draw(cgImage, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }

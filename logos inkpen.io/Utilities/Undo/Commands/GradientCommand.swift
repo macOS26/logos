@@ -44,7 +44,7 @@ class GradientCommand: BaseCommand {
             var obj = document.unifiedObjects[index]
 
             switch obj.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 switch target {
                 case .fill:
                     if let gradient = gradient {
