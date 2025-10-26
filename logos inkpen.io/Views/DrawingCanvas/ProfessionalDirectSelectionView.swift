@@ -43,11 +43,16 @@ struct ProfessionalDirectSelectionView: View {
                             // Transform position only
                             let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
 
-                            // Fixed screen size - divide by zoom to counteract canvas transform
-                            let pointSize: CGFloat = 7.0 / zoom
+                            // Scale down below 100% zoom using curve
+                            let basePointSize: CGFloat = 7.0
+                            let scaledPointSize = zoom < 1.0 ? basePointSize * pow(zoom, 0.25) : basePointSize
+                            let pointSize: CGFloat = scaledPointSize / zoom
                             let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
                             context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                            context.stroke(Path(rect), with: .color(.blue), lineWidth: 1.4 / zoom)
+
+                            let baseStrokeWidth: CGFloat = 1.4
+                            let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
+                            context.stroke(Path(rect), with: .color(.blue), lineWidth: scaledStrokeWidth / zoom)
                         }
                     }
 
@@ -101,7 +106,10 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw (canvas transform already applied)
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: 1.4 / zoom)
+
+        let baseStrokeWidth: CGFloat = 1.4
+        let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
+        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaledStrokeWidth / zoom)
     }
 
     private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
@@ -124,7 +132,10 @@ struct ProfessionalDirectSelectionView: View {
         // Apply shape transform and draw
         var ctx = context
         ctx.concatenate(shape.transform)
-        ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: 1.4 / zoom)
+
+        let baseStrokeWidth: CGFloat = 1.4
+        let scaledStrokeWidth = zoom < 1.0 ? baseStrokeWidth * pow(zoom, 0.25) : baseStrokeWidth
+        ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaledStrokeWidth / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
@@ -159,13 +170,21 @@ struct ProfessionalDirectSelectionView: View {
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)
-        context.stroke(linePath, with: .color(.blue), lineWidth: 1.4 / zoom)
 
-        // Fixed screen size - divide by zoom to counteract canvas transform
-        let handleSize: CGFloat = 5.6 / zoom
+        let baseLineWidth: CGFloat = 1.4
+        let scaledLineWidth = zoom < 1.0 ? baseLineWidth * pow(zoom, 0.25) : baseLineWidth
+        context.stroke(linePath, with: .color(.blue), lineWidth: scaledLineWidth / zoom)
+
+        // Scale down below 100% zoom using curve
+        let baseHandleSize: CGFloat = 5.6
+        let scaledHandleSize = zoom < 1.0 ? baseHandleSize * pow(zoom, 0.25) : baseHandleSize
+        let handleSize: CGFloat = scaledHandleSize / zoom
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
-        context.stroke(circle, with: .color(.white), lineWidth: 0.7 / zoom)
+
+        let baseCircleStroke: CGFloat = 0.7
+        let scaledCircleStroke = zoom < 1.0 ? baseCircleStroke * pow(zoom, 0.25) : baseCircleStroke
+        context.stroke(circle, with: .color(.white), lineWidth: scaledCircleStroke / zoom)
     }
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
