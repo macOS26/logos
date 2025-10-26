@@ -279,6 +279,7 @@ struct ProfessionalLayerRow: View {
                             )
                             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
                         case .shape(let shape),
+                             .image(let shape),
                              .warp(let shape),
                              .clipMask(let shape):
                             ObjectRow(
