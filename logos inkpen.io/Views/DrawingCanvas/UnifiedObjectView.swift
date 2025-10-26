@@ -198,7 +198,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View {
+struct LayerCanvasView: View, Equatable {
     let objects: [VectorObject]
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -208,6 +208,19 @@ struct LayerCanvasView: View {
     let liveScaleTransform: CGAffineTransform
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
+
+    // Only redraw this layer if these specific values changed
+    static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
+        return lhs.objectUpdateTrigger == rhs.objectUpdateTrigger &&
+               lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+               lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
+               lhs.liveScaleTransform == rhs.liveScaleTransform &&
+               lhs.zoomLevel == rhs.zoomLevel &&
+               lhs.canvasOffset == rhs.canvasOffset &&
+               lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
+               lhs.viewMode == rhs.viewMode &&
+               lhs.objects.count == rhs.objects.count
+    }
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
