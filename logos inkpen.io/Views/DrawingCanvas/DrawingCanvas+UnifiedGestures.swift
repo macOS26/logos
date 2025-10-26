@@ -317,28 +317,40 @@ extension DrawingCanvas {
         var tappedObject: VectorObject?
         var tappedShape: VectorShape?
 
-        for unifiedObject in document.unifiedObjects.reversed() {
-            if case .shape(let shape) = unifiedObject.objectType {
-                let layerIndex = unifiedObject.layerIndex
-                if layerIndex >= 0 && layerIndex < document.layers.count {
-                    let layer = document.layers[layerIndex]
-                    if !layer.isVisible || layer.isLocked {
-                        continue
-                    }
-                }
+        // O(1) iteration: layers from top to bottom
+        for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
+            let layer = document.snapshot.layers[layerIndex]
 
-                if !shape.isVisible { continue }
-
-                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+            // Check layer visibility/lock using legacy layers array
+            if layerIndex < document.layers.count {
+                let legacyLayer = document.layers[layerIndex]
+                if !legacyLayer.isVisible || legacyLayer.isLocked {
                     continue
                 }
+            }
 
-                let transformedBounds = shape.bounds.applying(shape.transform)
-                if transformedBounds.contains(location) {
-                    tappedObject = unifiedObject
-                    tappedShape = shape
-                    break
+            // Iterate objects from top to bottom
+            for objectID in layer.objectIDs.reversed() {
+                guard let object = document.snapshot.objects[objectID] else { continue }
+
+                if case .shape(let shape) = object.objectType {
+                    if !shape.isVisible { continue }
+
+                    if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                        continue
+                    }
+
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    if transformedBounds.contains(location) {
+                        tappedObject = object
+                        tappedShape = shape
+                        break
+                    }
                 }
+            }
+
+            if tappedObject != nil {
+                break
             }
         }
 
@@ -360,25 +372,33 @@ extension DrawingCanvas {
 
         var matchingObjectIDs = Set<UUID>()
 
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                let layerIndex = unifiedObject.layerIndex
-                if layerIndex >= 0 && layerIndex < document.layers.count {
-                    let layer = document.layers[layerIndex]
-                    if !layer.isVisible || layer.isLocked {
-                        continue
-                    }
-                }
+        // O(1) iteration: through all layers
+        for layerIndex in 0..<document.snapshot.layers.count {
+            let layer = document.snapshot.layers[layerIndex]
 
-                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+            // Check layer visibility/lock using legacy layers array
+            if layerIndex < document.layers.count {
+                let legacyLayer = document.layers[layerIndex]
+                if !legacyLayer.isVisible || legacyLayer.isLocked {
                     continue
                 }
+            }
 
-                let hasFillMatch = shape.fillStyle?.color == colorToMatch
-                let hasStrokeMatch = shape.strokeStyle?.color == colorToMatch
+            // Check all objects in layer
+            for objectID in layer.objectIDs {
+                guard let object = document.snapshot.objects[objectID] else { continue }
 
-                if hasFillMatch || hasStrokeMatch {
-                    matchingObjectIDs.insert(unifiedObject.id)
+                if case .shape(let shape) = object.objectType {
+                    if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                        continue
+                    }
+
+                    let hasFillMatch = shape.fillStyle?.color == colorToMatch
+                    let hasStrokeMatch = shape.strokeStyle?.color == colorToMatch
+
+                    if hasFillMatch || hasStrokeMatch {
+                        matchingObjectIDs.insert(object.id)
+                    }
                 }
             }
         }
