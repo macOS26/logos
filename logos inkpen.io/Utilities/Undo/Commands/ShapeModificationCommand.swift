@@ -26,16 +26,12 @@ class ShapeModificationCommand: BaseCommand {
         var affectedLayers = Set<Int>()
 
         for id in objectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
+            if let obj = document.snapshot.objects[id],
                let shape = shapes[id] {
-                let obj = document.unifiedObjects[index]
                 let updatedObj = VectorObject(
                     shape: shape,
                     layerIndex: obj.layerIndex,
                 )
-                document.unifiedObjects[index] = updatedObj
-
-                // Also update snapshot
                 document.snapshot.objects[id] = updatedObj
                 affectedLayers.insert(updatedObj.layerIndex)
             }
