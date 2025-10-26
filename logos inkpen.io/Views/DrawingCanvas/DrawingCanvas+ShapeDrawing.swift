@@ -109,7 +109,8 @@ extension DrawingCanvas {
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
@@ -177,7 +178,8 @@ extension DrawingCanvas {
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
@@ -207,7 +209,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -263,7 +266,8 @@ extension DrawingCanvas {
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
@@ -290,7 +294,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -323,7 +328,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -404,7 +410,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -435,7 +442,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -462,7 +470,8 @@ extension DrawingCanvas {
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
@@ -489,7 +498,8 @@ extension DrawingCanvas {
             var dx = currentLocation.x - startPoint.x
             var dy = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(dx), abs(dy))
                 dx = dx >= 0 ? size : -size
                 dy = dy >= 0 ? size : -size
