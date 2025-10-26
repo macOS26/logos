@@ -220,7 +220,7 @@ struct LayerCanvasView: View {
 
     var body: some View {
         Canvas { context, size in
-                        
+            _ = objectUpdateTrigger
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -239,7 +239,7 @@ struct LayerCanvasView: View {
                 if isSelected && dragPreviewDelta != .zero {
                     context.transform = baseTransform
                         .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                } else if objectUpdateTrigger > 0 {
+                } else {
                     context.transform = baseTransform
                 }
 
