@@ -23,8 +23,6 @@ struct InkpenDocument: FileDocument {
             do {
                 self.document = try FileOperations.importFromSVGData(data)
 
-                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
-
                 var minX: CGFloat = .infinity
                 var minY: CGFloat = .infinity
 
@@ -63,7 +61,6 @@ struct InkpenDocument: FileDocument {
         } else if fileExtension == "pdf" {
             do {
                 self.document = try FileOperations.importFromPDFData(data)
-                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
 
                 for unifiedObj in self.document.unifiedObjects {
                     if case .text(let shape) = unifiedObj.objectType {
@@ -84,9 +81,6 @@ struct InkpenDocument: FileDocument {
                     }
                 }
 
-                if self.document.unifiedObjects.isEmpty {
-                    self.document.populateUnifiedObjectsFromLayersPreservingOrder()
-                }
             } catch {
                 Log.error("❌ Failed to load JSON document: \(error)", category: .error)
                 throw error

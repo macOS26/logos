@@ -132,8 +132,6 @@ final class VectorDocument: ObservableObject, Codable {
 
         createCanvasAndWorkingLayers()
 
-        populateUnifiedObjectsFromLayersPreservingOrder()
-
         migrateToNewStructure()
 
         self.selectedLayerIndex = 2
@@ -238,10 +236,6 @@ final class VectorDocument: ObservableObject, Codable {
             gridSpacing: settings.gridSpacing
         )
 
-        if unifiedObjects.isEmpty {
-            populateUnifiedObjectsFromLayersPreservingOrder()
-        }
-        
         validateSelectedLayer()
         
         if let fillColor = settings.fillColor {

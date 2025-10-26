@@ -112,8 +112,6 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
-        document.populateUnifiedObjectsFromLayersPreservingOrder()
-
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             document.commandManager.execute(command)

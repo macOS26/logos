@@ -41,8 +41,6 @@ extension VectorDocument {
             }
         }
 
-        populateUnifiedObjectsFromLayersPreservingOrder()
-
         var newShapes: [UUID: VectorShape] = [:]
         for id in affectedIDs {
             if let shape = findShape(by: id) {
@@ -95,8 +93,6 @@ extension VectorDocument {
                }
             }
         }
-
-        populateUnifiedObjectsFromLayersPreservingOrder()
 
         var newShapes: [UUID: VectorShape] = [:]
         for id in affectedIDs {
