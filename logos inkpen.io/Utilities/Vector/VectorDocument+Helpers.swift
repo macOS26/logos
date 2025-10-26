@@ -22,8 +22,8 @@ extension VectorDocument {
     }
 
     var allShapes: [VectorShape] {
-        return unifiedObjects.compactMap { unifiedObject in
-            switch unifiedObject.objectType {
+        return snapshot.objects.values.compactMap { object in
+            switch object.objectType {
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
@@ -160,7 +160,7 @@ extension VectorDocument {
     func cleanupImageRegistry() {
         var allShapeIDs = Set<UUID>()
 
-        for object in unifiedObjects {
+        for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
                  .warp(let shape),
@@ -185,7 +185,7 @@ extension VectorDocument {
     func collectUsedColors() -> Set<VectorColor> {
         var colors = Set<VectorColor>()
 
-        for object in unifiedObjects {
+        for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
                  .warp(let shape),
@@ -327,9 +327,8 @@ extension VectorDocument {
     }
 
     func findText(by id: UUID) -> VectorText? {
-        // First check if it's a top-level text object in unifiedObjects
-        if let index = unifiedObjectIndexCache[id], index < unifiedObjects.count {
-            let object = unifiedObjects[index]
+        // O(1) lookup in snapshot.objects
+        if let object = snapshot.objects[id] {
             if case .text(let shape) = object.objectType,
                var vectorText = VectorText.from(shape) {
                 vectorText.layerIndex = object.layerIndex
@@ -337,8 +336,8 @@ extension VectorDocument {
             }
         }
 
-        // Not in cache or not a text object - search inside groups
-        for object in unifiedObjects {
+        // Not a top-level text object - search inside groups
+        for object in snapshot.objects.values {
             if case .group(let shape) = object.objectType {
                 if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.typography != nil }),
                    var vectorText = VectorText.from(textShape) {
@@ -352,29 +351,34 @@ extension VectorDocument {
     }
 
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
-        // Array position IS the order now - no sorting needed
-        for unifiedObject in unifiedObjects {
-            if case .text(let shape) = unifiedObject.objectType,
-               let text = VectorText.from(shape) {
-                try action(text)
+        // Iterate through layers to preserve order
+        for layer in snapshot.layers {
+            for objectID in layer.objectIDs {
+                guard let object = snapshot.objects[objectID] else { continue }
+                if case .text(let shape) = object.objectType,
+                   let text = VectorText.from(shape) {
+                    try action(text)
+                }
             }
         }
     }
 
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
-        return allShapes.filter { shape in
-            return unifiedObjects.first { obj in
-                switch obj.objectType {
-                case .shape(let objShape),
-                     .warp(let objShape),
-                     .group(let objShape),
-                     .clipGroup(let objShape),
-                     .clipMask(let objShape):
-                    return objShape.id == shape.id && obj.layerIndex == layerIndex
-                case .text:
-                    return false
-                }
-            } != nil
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return [] }
+
+        let layer = snapshot.layers[layerIndex]
+        return layer.objectIDs.compactMap { objectID in
+            guard let object = snapshot.objects[objectID] else { return nil }
+            switch object.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape
+            case .text:
+                return nil
+            }
         }
     }
 }
