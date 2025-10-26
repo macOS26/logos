@@ -43,6 +43,49 @@ struct SpatialIndex {
         }
     }
 
+    /// Rebuild spatial index for specific layers only (O(n) where n = objects in those layers)
+    mutating func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
+        guard !layerIDs.isEmpty else { return }
+
+        // Remove all objects from these layers from the grids
+        for layerID in layerIDs {
+            if let layerGrid = layerGrids[layerID] {
+                for (cell, objectIDs) in layerGrid {
+                    for objectID in objectIDs {
+                        grid[cell]?.remove(objectID)
+                        if grid[cell]?.isEmpty == true {
+                            grid.removeValue(forKey: cell)
+                        }
+                        objectBounds.removeValue(forKey: objectID)
+                    }
+                }
+            }
+            layerGrids.removeValue(forKey: layerID)
+        }
+
+        // Rebuild only the specified layers
+        for layer in snapshot.layers where layerIDs.contains(layer.id) {
+            guard layer.isVisible else { continue }
+
+            var layerGrid: [GridCell: [UUID]] = [:]
+
+            for objectID in layer.objectIDs {
+                guard let object = snapshot.objects[objectID], object.isVisible else { continue }
+
+                let bounds = object.shape.bounds.applying(object.shape.transform)
+                objectBounds[objectID] = bounds
+
+                let cells = cellsForBounds(bounds)
+                for cell in cells {
+                    grid[cell, default: []].insert(objectID)
+                    layerGrid[cell, default: []].append(objectID)
+                }
+            }
+
+            layerGrids[layer.id] = layerGrid
+        }
+    }
+
     /// Update index for a single object (more efficient than full rebuild)
     mutating func updateObject(_ objectID: UUID, in snapshot: DocumentSnapshot) {
         // Find which layer this object belongs to
