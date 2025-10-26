@@ -79,7 +79,16 @@ extension VectorDocument {
 
     func syncEncodableStorage() {
         _encodableSettings = settings
-        _encodableLayers = layers
+        // Convert snapshot.layers to legacy VectorLayer for backwards compatibility
+        _encodableLayers = snapshot.layers.map { layer in
+            var vectorLayer = VectorLayer(name: layer.name, color: layer.color.name)
+            vectorLayer.id = layer.id
+            vectorLayer.isVisible = layer.isVisible
+            vectorLayer.isLocked = layer.isLocked
+            vectorLayer.opacity = layer.opacity
+            vectorLayer.blendMode = layer.blendMode
+            return vectorLayer
+        }
         _encodableCurrentTool = viewState.currentTool
         _encodableViewMode = viewState.viewMode
         _encodableZoomLevel = viewState.zoomLevel
@@ -235,7 +244,7 @@ extension VectorDocument {
         initialTransform: CGAffineTransform,
         initialBounds: CGRect
     ) {
-        for layerIndex in layers.indices {
+        for layerIndex in snapshot.layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) {
                 let centerX = initialBounds.midX
