@@ -272,32 +272,14 @@ extension DrawingCanvas {
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
 
-            Canvas { context, size in
-                let textString = "\(widthText) pt × \(heightText) pt"
-                let text = Text(textString)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
-
-                // Measure text size
-                let textSize = context.resolve(text).measure(in: size)
-
-                // Draw background
-                let padding: CGFloat = 6
-                let backgroundRect = CGRect(
-                    x: screenPosition.x,
-                    y: screenPosition.y,
-                    width: textSize.width + padding * 2,
-                    height: textSize.height + padding * 2
-                )
-                let backgroundPath = Path(roundedRect: backgroundRect, cornerRadius: 4)
-                context.fill(backgroundPath, with: .color(.black.opacity(0.75)))
-
-                // Draw text
-                context.draw(text, at: CGPoint(
-                    x: screenPosition.x + padding,
-                    y: screenPosition.y + padding + textSize.height / 2
-                ))
-            }
+            Text("W: \(widthText) pt\nH: \(heightText) pt")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white)
+                .padding(6)
+                .background(Color.black.opacity(0.75))
+                .cornerRadius(4)
+                .fixedSize()
+                .position(screenPosition)
         }
     }
 
@@ -321,32 +303,14 @@ extension DrawingCanvas {
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
 
-            Canvas { context, size in
-                let textString = "\(widthText) pt × \(heightText) pt"
-                let text = Text(textString)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
-
-                // Measure text size
-                let textSize = context.resolve(text).measure(in: size)
-
-                // Draw background
-                let padding: CGFloat = 6
-                let backgroundRect = CGRect(
-                    x: screenPosition.x,
-                    y: screenPosition.y,
-                    width: textSize.width + padding * 2,
-                    height: textSize.height + padding * 2
-                )
-                let backgroundPath = Path(roundedRect: backgroundRect, cornerRadius: 4)
-                context.fill(backgroundPath, with: .color(.black.opacity(0.75)))
-
-                // Draw text
-                context.draw(text, at: CGPoint(
-                    x: screenPosition.x + padding,
-                    y: screenPosition.y + padding + textSize.height / 2
-                ))
-            }
+            Text("W: \(widthText) pt\nH: \(heightText) pt")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white)
+                .padding(6)
+                .background(Color.black.opacity(0.75))
+                .cornerRadius(4)
+                .fixedSize()
+                .position(screenPosition)
         }
     }
 
