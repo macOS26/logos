@@ -29,7 +29,7 @@ extension VectorDocument {
     }
 
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let objectType = VectorObject.determineType(for: shape)
         let obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
@@ -38,7 +38,7 @@ extension VectorDocument {
     }
 
     func addShapeWithoutUndo(_ shape: VectorShape, to layerIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
@@ -88,7 +88,7 @@ extension VectorDocument {
         // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
         let objectsToDelete = candidateObjects.filter { object in
             // Skip objects on locked layers
-            if object.layerIndex < layers.count && layers[object.layerIndex].isLocked {
+            if object.layerIndex < snapshot.layers.count && snapshot.layers[object.layerIndex].isLocked {
                 return false
             }
 
@@ -254,9 +254,9 @@ extension VectorDocument {
             guard object.isVisible && !object.isLocked else { return false }
 
             // Skip if layer doesn't exist
-            guard object.layerIndex < layers.count else { return false }
+            guard object.layerIndex < snapshot.layers.count else { return false }
 
-            let layer = layers[object.layerIndex]
+            let layer = snapshot.layers[object.layerIndex]
 
             // Skip objects on invisible or locked layers
             guard layer.isVisible && !layer.isLocked else { return false }
