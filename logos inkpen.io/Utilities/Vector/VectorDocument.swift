@@ -322,4 +322,49 @@ final class VectorDocument: ObservableObject, Codable {
         let layerID = snapshot.layers[layerIndex].id
         viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
     }
+
+    /// Updates layer objectIDs and automatically triggers layer update
+    func updateLayerObjectIDs(layerIndex: Int, newObjectIDs: [UUID]) {
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        var layer = snapshot.layers[layerIndex]
+        layer.objectIDs = newObjectIDs
+        snapshot.layers[layerIndex] = layer
+
+        triggerLayerUpdate(for: layerIndex)
+    }
+
+    /// Appends object ID to layer and automatically triggers layer update
+    func appendToLayer(layerIndex: Int, objectID: UUID) {
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        if !snapshot.layers[layerIndex].objectIDs.contains(objectID) {
+            var layer = snapshot.layers[layerIndex]
+            layer.objectIDs.append(objectID)
+            snapshot.layers[layerIndex] = layer
+            triggerLayerUpdate(for: layerIndex)
+        }
+    }
+
+    /// Removes object ID from layer and automatically triggers layer update
+    func removeFromLayer(layerIndex: Int, objectID: UUID) {
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        var layer = snapshot.layers[layerIndex]
+        layer.objectIDs.removeAll { $0 == objectID }
+        snapshot.layers[layerIndex] = layer
+
+        triggerLayerUpdate(for: layerIndex)
+    }
+
+    /// Inserts object ID at specific index in layer and automatically triggers layer update
+    func insertIntoLayer(layerIndex: Int, objectID: UUID, at index: Int) {
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        var layer = snapshot.layers[layerIndex]
+        layer.objectIDs.insert(objectID, at: index)
+        snapshot.layers[layerIndex] = layer
+
+        triggerLayerUpdate(for: layerIndex)
+    }
 }

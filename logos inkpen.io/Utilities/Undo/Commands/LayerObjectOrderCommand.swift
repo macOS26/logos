@@ -13,27 +13,14 @@ class LayerObjectOrderCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyOrder(newObjectIDs, to: document)
-        document.triggerLayerUpdate(for: layerIndex)
     }
 
     override func undo(on document: VectorDocument) {
         applyOrder(oldObjectIDs, to: document)
-        document.triggerLayerUpdate(for: layerIndex)
     }
 
     private func applyOrder(_ objectIDs: [UUID], to document: VectorDocument) {
-        guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
-
-        // Update snapshot layer
-        var layer = document.snapshot.layers[layerIndex]
-        layer.objectIDs = objectIDs
-        document.snapshot.layers[layerIndex] = layer
-
-        // Update VectorLayer in layers array if needed
-        if layerIndex < document.layers.count {
-            _ = document.layers[layerIndex]
-            // VectorLayer might have different structure, just update snapshot is enough
-            // The layers array should be synced from snapshot elsewhere
-        }
+        // Use helper method that automatically triggers layer update
+        document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: objectIDs)
     }
 }
