@@ -46,9 +46,9 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
+        let objectsToRemove = snapshot.objects.values.filter { viewState.selectedObjectIDs.contains($0.id) }
         if !objectsToRemove.isEmpty {
-            let command = DeleteObjectCommand(objects: objectsToRemove)
+            let command = DeleteObjectCommand(objects: Array(objectsToRemove))
             executeCommand(command)
         }
 
@@ -72,7 +72,7 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        let candidateObjects = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
+        let candidateObjects = snapshot.objects.values.filter { viewState.selectedObjectIDs.contains($0.id) }
 
         // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
         let objectsToDelete = candidateObjects.filter { object in
@@ -109,19 +109,19 @@ extension VectorDocument {
         }
 
         if !objectsToDelete.isEmpty {
-            let command = DeleteObjectCommand(objects: objectsToDelete)
+            let command = DeleteObjectCommand(objects: Array(objectsToDelete))
             executeCommand(command)
         }
 
         viewState.selectedObjectIDs.removeAll()
-        
+
     }
 
     func getSelectedShapes() -> [VectorShape] {
         var selectedShapes: [VectorShape] = []
 
-        for unifiedObject in unifiedObjects {
-            switch unifiedObject.objectType {
+        for object in snapshot.objects.values {
+            switch object.objectType {
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
@@ -141,8 +141,8 @@ extension VectorDocument {
     func getShapesByIds(_ shapeIDs: Set<UUID>) -> [VectorShape] {
         var shapes: [VectorShape] = []
 
-        for unifiedObject in unifiedObjects {
-            switch unifiedObject.objectType {
+        for object in snapshot.objects.values {
+            switch object.objectType {
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
