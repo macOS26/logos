@@ -74,9 +74,8 @@ final class VectorDocument: ObservableObject, Codable {
     internal let maxUndoStackSize = 50
 
     var originalHandlePositions: [String: VectorPoint] = [:]
-    
+
     internal var _encodableSettings: DocumentSettings
-    internal var _encodableLayers: [VectorLayer]
     internal var _encodableCurrentTool: DrawingTool
     internal var _encodableViewMode: ViewMode
     internal var _encodableZoomLevel: Double
@@ -85,7 +84,6 @@ final class VectorDocument: ObservableObject, Codable {
     
     init(settings: DocumentSettings = DocumentSettings()) {
         self._encodableSettings = settings
-        self._encodableLayers = []
         self._encodableCurrentTool = .selection
         self._encodableViewMode = .color
         self._encodableZoomLevel = 1.0
@@ -160,7 +158,6 @@ final class VectorDocument: ObservableObject, Codable {
         let decodedSnapshot = try container.decode(DocumentSnapshot.self, forKey: .snapshot)
 
         _encodableSettings = decodedSettings
-        _encodableLayers = []
         _encodableCurrentTool = .selection
         _encodableViewMode = .color
         _encodableZoomLevel = 1.0

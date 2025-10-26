@@ -79,17 +79,6 @@ extension VectorDocument {
 
     func syncEncodableStorage() {
         _encodableSettings = settings
-        // Convert snapshot.layers to legacy VectorLayer for backwards compatibility
-        _encodableLayers = snapshot.layers.map { layer in
-            let swiftUIColor = Color.layerColorPalette.first { $0.name == layer.color.name }?.color ?? .blue
-            var vectorLayer = VectorLayer(name: layer.name, color: swiftUIColor)
-            vectorLayer.id = layer.id
-            vectorLayer.isVisible = layer.isVisible
-            vectorLayer.isLocked = layer.isLocked
-            vectorLayer.opacity = layer.opacity
-            vectorLayer.blendMode = layer.blendMode
-            return vectorLayer
-        }
         _encodableCurrentTool = viewState.currentTool
         _encodableViewMode = viewState.viewMode
         _encodableZoomLevel = viewState.zoomLevel
