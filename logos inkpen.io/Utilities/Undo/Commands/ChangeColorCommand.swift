@@ -61,7 +61,7 @@ class ChangeColorCommand: BaseCommand {
                         obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                         document.unifiedObjects[index] = obj
 
-                    case .shape(var shape), .warp(var shape), .clipMask(var shape):
+                    case .shape(var shape), .image(var shape), .warp(var shape), .clipMask(var shape):
                         switch target {
                         case .fill:
                             shape.fillStyle?.color = color
