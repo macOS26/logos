@@ -540,8 +540,8 @@ struct PathOperationsPanel: View {
                 return false
             }
 
-            if let layerIndex = document.layers.firstIndex(where: { layer in
-                document.getShapesForLayer(document.layers.firstIndex(of: layer) ?? -1).contains { $0.id == shape.id }
+            if let layerIndex = document.snapshot.layers.firstIndex(where: { layer in
+                document.getShapesForLayer(document.snapshot.layers.firstIndex(of: layer) ?? -1).contains { $0.id == shape.id }
             }),
                document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
 
