@@ -116,8 +116,9 @@ extension DrawingCanvas {
                 height = height >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rectBounds: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rectBounds = CGRect(
                     x: startPoint.x - width,
                     y: startPoint.y - height,
@@ -148,8 +149,10 @@ extension DrawingCanvas {
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSizeX = dragDeltaX >= 0 ? size : -size
             let signedSizeY = dragDeltaY >= 0 ? size : -size
+
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var squareRect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 squareRect = CGRect(
                     x: startPoint.x - signedSizeX,
                     y: startPoint.y - signedSizeY,
@@ -185,8 +188,9 @@ extension DrawingCanvas {
                 height = height >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - width,
                     y: startPoint.y - height,
@@ -216,8 +220,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - dragDeltaX,
                     y: startPoint.y - dragDeltaY,
@@ -245,8 +250,10 @@ extension DrawingCanvas {
             let dragDeltaY = currentLocation.y - startPoint.y
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSize = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0) ? size : -size
+
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var circleRect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 circleRect = CGRect(
                     x: startPoint.x - signedSize,
                     y: startPoint.y - signedSize,
@@ -273,8 +280,9 @@ extension DrawingCanvas {
                 height = height >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - width,
                     y: startPoint.y - height,
@@ -301,8 +309,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - dragDeltaX,
                     y: startPoint.y - dragDeltaY,
@@ -335,8 +344,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - dragDeltaX,
                     y: startPoint.y - dragDeltaY,
@@ -373,8 +383,10 @@ extension DrawingCanvas {
                 sqrt3 = Float(sqrt(3.0))
             }
             let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3))
+
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var triangleRect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 triangleRect = CGRect(
                     x: startPoint.x - (width >= 0 ? triangleWidth : -triangleWidth) / 2,
                     y: startPoint.y - triangleHeight / 2,
@@ -417,8 +429,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - abs(dragDeltaX),
                     y: startPoint.y - abs(dragDeltaY),
@@ -449,8 +462,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - dragDeltaX,
                     y: startPoint.y - dragDeltaY,
@@ -477,8 +491,9 @@ extension DrawingCanvas {
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 rect = CGRect(
                     x: startPoint.x - dragDeltaX,
                     y: startPoint.y - dragDeltaY,
@@ -505,8 +520,9 @@ extension DrawingCanvas {
                 dy = dy >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var raw: CGRect
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 raw = CGRect(x: startPoint.x - dx, y: startPoint.y - dy, width: dx * 2, height: dy * 2)
             } else {
                 raw = CGRect(x: startPoint.x, y: startPoint.y, width: dx, height: dy)
@@ -542,15 +558,17 @@ extension DrawingCanvas {
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
 
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
             }
 
+            let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             let center: CGPoint
             let outerRadius: Float
-            if isOptionPressed {
+            if isOptionCurrentlyPressed {
                 center = startPoint
                 outerRadius = Float(max(abs(width), abs(height)))
             } else {
@@ -610,8 +628,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
@@ -665,8 +685,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
@@ -719,8 +741,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
@@ -773,8 +797,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
@@ -827,8 +853,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
@@ -881,8 +909,10 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+
+			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
-			if isOptionPressed {
+			if isOptionCurrentlyPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
 				rect = CGRect(
 					x: startPoint.x - signedSize,
