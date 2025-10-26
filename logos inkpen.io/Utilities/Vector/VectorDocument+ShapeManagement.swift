@@ -46,7 +46,13 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
+        var objectsToRemove: [VectorObject] = []
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                objectsToRemove.append(obj)
+            }
+        }
+
         if !objectsToRemove.isEmpty {
             let command = DeleteObjectCommand(objects: objectsToRemove)
             executeCommand(command)
@@ -72,7 +78,12 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        let candidateObjects = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
+        var candidateObjects: [VectorObject] = []
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                candidateObjects.append(obj)
+            }
+        }
 
         // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
         let objectsToDelete = candidateObjects.filter { object in
@@ -120,18 +131,18 @@ extension VectorDocument {
     func getSelectedShapes() -> [VectorShape] {
         var selectedShapes: [VectorShape] = []
 
-        for unifiedObject in unifiedObjects {
-            switch unifiedObject.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if viewState.selectedObjectIDs.contains(shape.id) {
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                switch obj.objectType {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     selectedShapes.append(shape)
+                case .text:
+                    break
                 }
-            case .text:
-                break
             }
         }
 
@@ -141,18 +152,18 @@ extension VectorDocument {
     func getShapesByIds(_ shapeIDs: Set<UUID>) -> [VectorShape] {
         var shapes: [VectorShape] = []
 
-        for unifiedObject in unifiedObjects {
-            switch unifiedObject.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if shapeIDs.contains(shape.id) {
+        for shapeID in shapeIDs {
+            if let obj = snapshot.objects[shapeID] {
+                switch obj.objectType {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     shapes.append(shape)
+                case .text:
+                    break
                 }
-            case .text:
-                break
             }
         }
 
@@ -274,22 +285,23 @@ extension VectorDocument {
     func duplicateSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let selectedShapes = unifiedObjects.filter { unifiedObject in
-            guard viewState.selectedObjectIDs.contains(unifiedObject.id) &&
-                  unifiedObject.layerIndex == layerIndex else { return false }
-
-            switch unifiedObject.objectType {
-            case .shape, .warp, .group, .clipGroup, .clipMask:
-                return true
-            case .text:
-                return false
+        var selectedShapes: [VectorObject] = []
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID],
+               obj.layerIndex == layerIndex {
+                switch obj.objectType {
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    selectedShapes.append(obj)
+                case .text:
+                    break
+                }
             }
         }
 
         var newShapeIDs: Set<UUID> = []
 
-        for unifiedObject in selectedShapes {
-            switch unifiedObject.objectType {
+        for obj in selectedShapes {
+            switch obj.objectType {
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
@@ -313,7 +325,7 @@ extension VectorDocument {
         }
 
         viewState.selectedObjectIDs = newShapeIDs
-        
+
     }
 
     internal func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
