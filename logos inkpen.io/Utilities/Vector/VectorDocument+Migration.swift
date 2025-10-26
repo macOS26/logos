@@ -35,9 +35,16 @@ extension VectorDocument {
     /// Convert legacy VectorLayer to new Layer format
     func convertLegacyLayers() -> [Layer] {
         return layers.enumerated().map { (index, vectorLayer) in
-            // Get all objects for this layer
-            let objectsForLayer = unifiedObjects.filter { $0.layerIndex == index }
-            let objectIDs = objectsForLayer.map { $0.id }
+            // Canvas and Pasteboard layers (indices 0 and 1) should never contain objects
+            // Their objectIDs arrays must always be empty
+            let objectIDs: [UUID]
+            if index <= 1 {
+                objectIDs = []
+            } else {
+                // Get all objects for this layer
+                let objectsForLayer = unifiedObjects.filter { $0.layerIndex == index }
+                objectIDs = objectsForLayer.map { $0.id }
+            }
 
             // Convert VectorLayer color to LayerColor
             let layerColor = convertColorToLayerColor(vectorLayer.color)
