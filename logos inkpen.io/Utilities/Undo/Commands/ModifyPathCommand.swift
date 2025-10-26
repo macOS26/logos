@@ -27,15 +27,7 @@ class ModifyPathCommand: BaseCommand {
             shape.path = path
             shape.updateBounds()
             obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-
-            // Update snapshot
             document.snapshot.objects[objectID] = obj
-
-            // Update unifiedObjects for legacy code
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                document.unifiedObjects[index] = obj
-            }
-
             document.triggerLayerUpdate(for: obj.layerIndex)
         }
     }
