@@ -31,9 +31,6 @@ class DeleteObjectCommand: BaseCommand {
             document.snapshot.layers[i].objectIDs.removeAll { idsToRemove.contains($0) }
         }
 
-        // Remove from unifiedObjects
-        document.unifiedObjects.removeAll { idsToRemove.contains($0.id) }
-
         // Also remove from viewState selection
         document.viewState.selectedObjectIDs = document.viewState.selectedObjectIDs.subtracting(idsToRemove)
 
@@ -53,11 +50,6 @@ class DeleteObjectCommand: BaseCommand {
                 if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(obj.id) {
                     document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
                 }
-            }
-
-            // Restore to unifiedObjects
-            if !document.unifiedObjects.contains(where: { $0.id == obj.id }) {
-                document.unifiedObjects.append(obj)
             }
         }
 
