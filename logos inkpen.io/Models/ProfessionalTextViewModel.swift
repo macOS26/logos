@@ -151,8 +151,8 @@ class ProfessionalTextViewModel: ObservableObject {
     var isAutoResizing = false
 
     func startEditing() {
-        for unifiedObj in document.unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType,
+        for obj in document.snapshot.objects.values {
+            if case .text(let shape) = obj.objectType,
                shape.id != textObject.id,
                shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
@@ -601,8 +601,8 @@ class ProfessionalTextViewModel: ObservableObject {
     private func startEditingText(textID: UUID, at location: CGPoint = .zero) {
 
         var editingCount = 0
-        for unifiedObj in document.unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+        for obj in document.snapshot.objects.values {
+            if case .text(let shape) = obj.objectType, shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 editingCount += 1
             }
