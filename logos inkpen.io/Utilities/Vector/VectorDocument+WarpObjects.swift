@@ -6,26 +6,27 @@ extension VectorDocument {
     func unwrapWarpObject() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
-            guard viewState.selectedObjectIDs.contains(unifiedObject.id) else { return false }
-            if case .warp(let shape) = unifiedObject.objectType {
-                return shape.isWarpObject
+        var selectedWarpObjects: [VectorObject] = []
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID],
+               case .warp(let shape) = obj.objectType,
+               shape.isWarpObject {
+                selectedWarpObjects.append(obj)
             }
-            return false
         }
 
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
-        for unifiedObject in selectedWarpObjects {
-            if case .warp(let shape) = unifiedObject.objectType {
+        for obj in selectedWarpObjects {
+            if case .warp(let shape) = obj.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
             }
         }
 
-        for unifiedObject in selectedWarpObjects {
-            if case .warp(let shape) = unifiedObject.objectType,
-               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+        for obj in selectedWarpObjects {
+            if case .warp(let shape) = obj.objectType,
+               let layerIndex = obj.layerIndex < layers.count ? obj.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
 
@@ -60,26 +61,27 @@ extension VectorDocument {
     func expandWarpObject() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
-            guard viewState.selectedObjectIDs.contains(unifiedObject.id) else { return false }
-            if case .warp(let shape) = unifiedObject.objectType {
-                return shape.isWarpObject
+        var selectedWarpObjects: [VectorObject] = []
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID],
+               case .warp(let shape) = obj.objectType,
+               shape.isWarpObject {
+                selectedWarpObjects.append(obj)
             }
-            return false
         }
 
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
-        for unifiedObject in selectedWarpObjects {
-            if case .warp(let shape) = unifiedObject.objectType {
+        for obj in selectedWarpObjects {
+            if case .warp(let shape) = obj.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
             }
         }
 
-        for unifiedObject in selectedWarpObjects {
-            if case .warp(let shape) = unifiedObject.objectType,
-               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+        for obj in selectedWarpObjects {
+            if case .warp(let shape) = obj.objectType,
+               let layerIndex = obj.layerIndex < layers.count ? obj.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
 
