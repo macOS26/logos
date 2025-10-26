@@ -802,7 +802,7 @@ extension ProfessionalPathOperations {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             for shapeIndex in shapes.indices {
                 guard let originalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
@@ -835,7 +835,7 @@ extension ProfessionalPathOperations {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for layerIndex in document.layers.indices {
+        for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
