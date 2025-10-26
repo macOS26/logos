@@ -49,11 +49,13 @@ extension VectorDocument {
 
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
-        let removedObjects = unifiedObjects.filter { obj in
-            if case .text(let shape) = obj.objectType {
-                return viewState.selectedObjectIDs.contains(shape.id)
+        var removedObjects: [VectorObject] = []
+
+        for objectID in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[objectID],
+               case .text = obj.objectType {
+                removedObjects.append(obj)
             }
-            return false
         }
 
         let command = TextManagementCommand(
@@ -76,7 +78,7 @@ extension VectorDocument {
 
         for textID in viewState.selectedObjectIDs {
             if let originalText = findText(by: textID),
-               let obj = unifiedObjects.first(where: { $0.id == textID }) {
+               let obj = snapshot.objects[textID] {
                 var duplicateText = originalText
                 duplicateText.id = UUID()
                 duplicateText.position = CGPoint(
@@ -104,15 +106,16 @@ extension VectorDocument {
     }
 
     func updateTextInUnified(_ updatedText: VectorText) {
-        if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == updatedText.id }),
-           case .text(_) = unifiedObjects[unifiedIndex].objectType {
+        if let obj = snapshot.objects[updatedText.id],
+           case .text = obj.objectType {
 
             let updatedShape = VectorShape.from(updatedText)
-            unifiedObjects[unifiedIndex] = VectorObject(
-                shape: updatedShape,
-                layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+            let updatedObject = VectorObject(
+                id: updatedShape.id,
+                layerIndex: obj.layerIndex,
+                objectType: .text(updatedShape)
             )
-
+            snapshot.objects[updatedText.id] = updatedObject
         }
     }
 
