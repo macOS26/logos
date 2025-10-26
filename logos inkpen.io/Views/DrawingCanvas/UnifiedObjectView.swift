@@ -209,16 +209,10 @@ struct LayerCanvasView: View, Equatable {
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
 
-    // Only redraw this layer if these specific values changed
+    // Only redraw this layer if layer-specific values changed
+    // Other properties (zoom, offset, etc.) update via computed properties
     static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
         return lhs.objectUpdateTrigger == rhs.objectUpdateTrigger &&
-               lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
-               lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
-               lhs.liveScaleTransform == rhs.liveScaleTransform &&
-               lhs.zoomLevel == rhs.zoomLevel &&
-               lhs.canvasOffset == rhs.canvasOffset &&
-               lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
-               lhs.viewMode == rhs.viewMode &&
                lhs.objects.count == rhs.objects.count
     }
 
