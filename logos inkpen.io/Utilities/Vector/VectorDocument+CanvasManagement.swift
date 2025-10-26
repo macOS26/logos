@@ -3,51 +3,41 @@ import Combine
 
 extension VectorDocument {
     internal func createCanvasAndWorkingLayers() {
-        // Clear both arrays
-        layers.removeAll()
         snapshot.layers.removeAll()
 
         // Create Pasteboard layer
-        var pasteboardLayer = VectorLayer(name: "Pasteboard", color: .gray)
-        pasteboardLayer.isLocked = true
-        layers.append(pasteboardLayer)
         snapshot.layers.append(Layer(
-            id: pasteboardLayer.id,
-            name: pasteboardLayer.name,
+            id: UUID(),
+            name: "Pasteboard",
             objectIDs: [],
-            isVisible: pasteboardLayer.isVisible,
-            isLocked: pasteboardLayer.isLocked,
-            opacity: pasteboardLayer.opacity,
-            blendMode: pasteboardLayer.blendMode,
+            isVisible: true,
+            isLocked: true,
+            opacity: 1.0,
+            blendMode: .normal,
             color: .gray
         ))
 
         // Create Canvas layer
-        var canvasLayer = VectorLayer(name: "Canvas", color: .blue)
-        canvasLayer.isLocked = true
-        layers.append(canvasLayer)
         snapshot.layers.append(Layer(
-            id: canvasLayer.id,
-            name: canvasLayer.name,
+            id: UUID(),
+            name: "Canvas",
             objectIDs: [],
-            isVisible: canvasLayer.isVisible,
-            isLocked: canvasLayer.isLocked,
-            opacity: canvasLayer.opacity,
-            blendMode: canvasLayer.blendMode,
+            isVisible: true,
+            isLocked: true,
+            opacity: 1.0,
+            blendMode: .normal,
             color: .blue
         ))
 
         // Create default working layer
-        let workingLayer = VectorLayer(name: "Layer 1", color: .green)
-        layers.append(workingLayer)
         snapshot.layers.append(Layer(
-            id: workingLayer.id,
-            name: workingLayer.name,
+            id: UUID(),
+            name: "Layer 1",
             objectIDs: [],
-            isVisible: workingLayer.isVisible,
-            isLocked: workingLayer.isLocked,
-            opacity: workingLayer.opacity,
-            blendMode: workingLayer.blendMode,
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
             color: .green
         ))
 

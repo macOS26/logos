@@ -125,10 +125,10 @@ final class VectorDocument: ObservableObject, Codable {
         createCanvasAndWorkingLayers()
 
         self.selectedLayerIndex = 2
-        self.layerIndex = 2
-        
-        if layers.count > 2 {
-            let workingLayer = layers[2]
+        self.layerIndex = snapshot.layers.count
+
+        if snapshot.layers.count > 2 {
+            let workingLayer = snapshot.layers[2]
             self.settings.selectedLayerId = workingLayer.id
             self.settings.selectedLayerName = workingLayer.name
         }
@@ -170,8 +170,9 @@ final class VectorDocument: ObservableObject, Codable {
         _encodableUnifiedObjects = []
         
         settings = decodedSettings
-        layers = decodedLayers
-        layerIndex = 0
+        layers = decodedLayers  // Legacy - TODO: remove
+        snapshot = decodedSnapshot
+        layerIndex = snapshot.layers.count
         
         documentColorDefaults = ColorDefaults()
         colorSwatches = .empty
