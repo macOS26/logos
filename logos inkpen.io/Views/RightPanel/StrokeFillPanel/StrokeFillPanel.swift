@@ -21,6 +21,7 @@ struct StrokeFillPanel: View {
             case .text(let shape):
                 return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -42,6 +43,7 @@ struct StrokeFillPanel: View {
             case .text(let shape):
                 return shape.typography?.fillColor ?? .black
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -61,6 +63,7 @@ struct StrokeFillPanel: View {
             case .text(let shape):
                 return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -78,6 +81,7 @@ struct StrokeFillPanel: View {
             case .text:
                 return document.strokeDefaults.placement
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -95,6 +99,7 @@ struct StrokeFillPanel: View {
             case .text(let shape):
                 return shape.typography?.fillOpacity ?? document.defaultFillOpacity
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -114,6 +119,7 @@ struct StrokeFillPanel: View {
             case .text(let shape):
                 return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -133,6 +139,7 @@ struct StrokeFillPanel: View {
             case .text:
                 return document.strokeDefaults.lineJoin
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -150,6 +157,7 @@ struct StrokeFillPanel: View {
             case .text:
                 return document.strokeDefaults.lineCap
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -167,6 +175,7 @@ struct StrokeFillPanel: View {
             case .text:
                 return document.strokeDefaults.miterLimit
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -184,6 +193,7 @@ struct StrokeFillPanel: View {
             case .text:
                 return false
             case .shape(let shape),
+                 .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
@@ -201,6 +211,7 @@ struct StrokeFillPanel: View {
                 case .text:
                     return false
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -219,6 +230,7 @@ struct StrokeFillPanel: View {
                 case .text:
                     continue
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -439,7 +451,7 @@ struct StrokeFillPanel: View {
             switch object.objectType {
             case .text(let shape):
                 document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
@@ -466,6 +478,7 @@ struct StrokeFillPanel: View {
                 case .text:
                     break
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),

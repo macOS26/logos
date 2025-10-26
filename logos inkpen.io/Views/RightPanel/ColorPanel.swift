@@ -319,7 +319,7 @@ struct ColorPanel: View {
                     newColors[textID] = color
                     oldOpacities[textID] = shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
                     newOpacities[textID] = document.defaultStrokeOpacity
-                case .shape, .warp, .group, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                     continue
                 }
             }

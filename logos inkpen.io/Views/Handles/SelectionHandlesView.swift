@@ -37,6 +37,7 @@ struct SelectionHandlesView: View {
 
                             switch newVectorObject.objectType {
                             case .shape(let shape),
+                                 .image(let shape),
                                  .warp(let shape),
                                  .group(let shape),
                                  .clipGroup(let shape),
@@ -187,7 +188,7 @@ struct SelectionHandlesView: View {
             guard let object = document.snapshot.objects[objectID] else { continue }
 
             switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .text(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .text(let shape):
                 let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                 let transformedBounds = bounds.applying(shape.transform)
 

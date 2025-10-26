@@ -168,9 +168,9 @@ class DocumentState: ObservableObject {
             }
         }
 
-        let selectedShapes = document.unifiedObjects.filter { newVectorObject in
-            document.viewState.selectedObjectIDs.contains(newVectorObject.id) && isShape(newVectorObject)
-        }
+        let selectedShapes = document.viewState.selectedObjectIDs.compactMap { id in
+            document.snapshot.objects[id]
+        }.filter { isShape($0) }
         let selectedShapeCount = selectedShapes.count
 
         let totalSelectedCount = document.viewState.selectedObjectIDs.count
@@ -723,7 +723,7 @@ class DocumentState: ObservableObject {
 
                     Task {
                         do {
-                            if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                            if convertTextToOutlines && document.snapshot.objects.values.contains(where: { obj in
                                 if case .text = obj.objectType { return true }
                                 return false
                             }) {
@@ -1126,7 +1126,7 @@ class DocumentState: ObservableObject {
     }
 
     static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
-        let textObjects = document.unifiedObjects.compactMap { obj -> VectorText? in
+        let textObjects = document.snapshot.objects.values.compactMap { obj -> VectorText? in
             guard case .text(let shape) = obj.objectType else { return nil }
             var vectorText = VectorText.from(shape)
             vectorText?.layerIndex = obj.layerIndex
@@ -1141,11 +1141,15 @@ class DocumentState: ObservableObject {
             viewModel.convertToPath()
         }
 
-        document.unifiedObjects.removeAll { obj in
+        let textIDs = document.snapshot.objects.filter { _, obj in
             if case .text = obj.objectType {
                 return true
             }
             return false
+        }.map { $0.key }
+
+        for id in textIDs {
+            document.snapshot.objects.removeValue(forKey: id)
         }
 
         document.viewState.selectedObjectIDs.removeAll()

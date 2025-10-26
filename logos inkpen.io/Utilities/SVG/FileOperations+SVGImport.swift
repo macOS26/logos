@@ -46,13 +46,14 @@ extension FileOperations {
     static func openSVGFile(url: URL) async throws -> VectorDocument {
 
         let document = VectorDocument(settings: DocumentSettings())
-        let canvasAndPasteboardObjects = document.unifiedObjects.filter { obj in
+        // Keep only Canvas and Pasteboard background objects
+        let objectsToKeep = document.snapshot.objects.filter { (_, obj) in
             if case .shape(let shape) = obj.objectType {
                 return shape.name == "Canvas Background" || shape.name == "Pasteboard Background"
             }
             return false
         }
-        document.unifiedObjects = canvasAndPasteboardObjects
+        document.snapshot.objects = objectsToKeep
 
         let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
 
@@ -127,7 +128,7 @@ extension FileOperations {
                         case .text:
                             let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                             return textContent.isEmpty
-                        case .shape, .warp, .group, .clipGroup, .clipMask:
+                        case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                             return shape.path.elements.isEmpty
                         }
                     }()

@@ -110,7 +110,11 @@
       "Bash(git commit -m \"Paint gradients directly to CGContext\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(find:*)",
+      "Bash(perl -i -pe:*)",
+      "Bash(awk:*)",
+      "Bash(xcodebuild:*)"
     ],
     "deny": [],
     "ask": []

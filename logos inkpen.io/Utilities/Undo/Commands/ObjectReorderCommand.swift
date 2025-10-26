@@ -38,8 +38,7 @@ class ObjectReorderCommand: BaseCommand {
 
             guard sourceLayer >= 0 && sourceLayer < document.snapshot.layers.count,
                   targetLayer >= 0 && targetLayer < document.snapshot.layers.count,
-                  var obj = document.snapshot.objects[objectID],
-                  case .shape(let shape) = obj.objectType else { return affectedLayers }
+                  let obj = document.snapshot.objects[objectID] else { return affectedLayers }
 
             // Remove from source layer
             document.snapshot.layers[sourceLayer].objectIDs.removeAll { $0 == objectID }

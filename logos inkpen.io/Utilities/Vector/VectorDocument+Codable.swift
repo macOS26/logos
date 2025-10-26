@@ -3,31 +3,23 @@ import SwiftUI
 extension VectorDocument {
 
     enum CodingKeys: CodingKey {
-        case settings, layers, selectedLayerIndex, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
+        case settings, layers, snapshot
     }
 
     func encode(to encoder: Encoder) throws {
-        syncEncodableStorage()
-
         var container = encoder.container(keyedBy: CodingKeys.self)
 
-        _encodableSettings.fillColor = documentColorDefaults.fillColor
-        _encodableSettings.strokeColor = documentColorDefaults.strokeColor
-        _encodableSettings.customRgbSwatches = colorSwatches.rgb.isEmpty ? nil : colorSwatches.rgb
-        _encodableSettings.customCmykSwatches = colorSwatches.cmyk.isEmpty ? nil : colorSwatches.cmyk
-        _encodableSettings.customHsbSwatches = colorSwatches.hsb.isEmpty ? nil : colorSwatches.hsb
+        // Update settings with current color defaults
+        var settingsToSave = settings
+        settingsToSave.fillColor = documentColorDefaults.fillColor
+        settingsToSave.strokeColor = documentColorDefaults.strokeColor
+        settingsToSave.customRgbSwatches = colorSwatches.rgb.isEmpty ? nil : colorSwatches.rgb
+        settingsToSave.customCmykSwatches = colorSwatches.cmyk.isEmpty ? nil : colorSwatches.cmyk
+        settingsToSave.customHsbSwatches = colorSwatches.hsb.isEmpty ? nil : colorSwatches.hsb
 
-        try container.encode(_encodableSettings, forKey: .settings)
-        try container.encode(_encodableLayers, forKey: .layers)
-        try container.encode(_encodableCurrentTool, forKey: .currentTool)
-        try container.encode(_encodableViewMode, forKey: .viewMode)
-        try container.encode(_encodableZoomLevel, forKey: .zoomLevel)
-        try container.encode(_encodableCanvasOffset, forKey: .canvasOffset)
-        try container.encode(_encodableUnifiedObjects, forKey: .unifiedObjects)
-
-        try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
-        try container.encode(viewState.selectedObjectIDs, forKey: .selectedObjectIDs)
-        try container.encode(viewState.warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
-        try container.encode(viewState.warpBounds, forKey: .warpBounds)
+        // Save document content only (no UI state, no legacy arrays)
+        try container.encode(settingsToSave, forKey: .settings)
+        try container.encode(layers, forKey: .layers)
+        try container.encode(snapshot, forKey: .snapshot)
     }
 }

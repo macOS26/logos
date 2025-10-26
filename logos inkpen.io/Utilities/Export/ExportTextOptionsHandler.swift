@@ -51,7 +51,7 @@ extension DocumentState {
         let exportData = try exportHandler()
 
         await MainActor.run {
-            document.unifiedObjects = savedState.unifiedObjects
+            document.snapshot = savedState.snapshot
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
         }
@@ -90,7 +90,7 @@ extension DocumentState {
         }
 
         await MainActor.run {
-            document.unifiedObjects = savedState.unifiedObjects
+            document.snapshot = savedState.snapshot
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
         }

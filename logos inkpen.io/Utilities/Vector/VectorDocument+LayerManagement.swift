@@ -142,7 +142,6 @@ extension VectorDocument {
             selectedLayerIndex = currentIndex + 1
 
             // Add to new structure
-            let layerColor = convertColorToLayerColor(newLayer.color)
             let newLayerStruct = Layer(
                 id: newLayer.id,
                 name: newLayer.name,
@@ -151,7 +150,7 @@ extension VectorDocument {
                 isLocked: newLayer.isLocked,
                 opacity: newLayer.opacity,
                 blendMode: newLayer.blendMode,
-                color: layerColor
+                color: .blue
             )
             snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
 
@@ -167,7 +166,6 @@ extension VectorDocument {
             selectedLayerIndex = layers.count - 1
 
             // Add to new structure
-            let layerColor = convertColorToLayerColor(newLayer.color)
             let newLayerStruct = Layer(
                 id: newLayer.id,
                 name: newLayer.name,
@@ -176,7 +174,7 @@ extension VectorDocument {
                 isLocked: newLayer.isLocked,
                 opacity: newLayer.opacity,
                 blendMode: newLayer.blendMode,
-                color: layerColor
+                color: .blue
             )
             snapshot.layers.append(newLayerStruct)
         }
