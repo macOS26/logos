@@ -450,15 +450,19 @@ extension VectorDocument {
 
         let draggingUp = sourceObjIndex > targetObjIndex
 
-        snapshot.layers[layerIndex].objectIDs.remove(at: sourceObjIndex)
+        // Create new objectIDs array with reordered objects
+        var newObjectIDs = snapshot.layers[layerIndex].objectIDs
+        newObjectIDs.remove(at: sourceObjIndex)
 
         // Recalculate target index after removal
-        if let newTargetIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: targetObjectId) {
+        if let newTargetIndex = newObjectIDs.firstIndex(of: targetObjectId) {
             // If dragging up, insert before target. If dragging down, insert after target
             let insertIndex = draggingUp ? newTargetIndex : newTargetIndex + 1
-            snapshot.layers[layerIndex].objectIDs.insert(objectId, at: insertIndex)
+            newObjectIDs.insert(objectId, at: insertIndex)
         }
 
+        // Use helper method to update objectIDs and trigger layer update
+        updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: newObjectIDs)
         changeNotifier.notifyLayersChanged()
     }
 
