@@ -324,6 +324,7 @@ struct TransformationControls: View {
                     )
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
