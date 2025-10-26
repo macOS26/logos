@@ -28,11 +28,11 @@ class OpacityCommand: BaseCommand {
     }
 
     private func applyOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
 
         for id in objectIDs {
             guard let opacity = opacities[id],
-                  let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-            var obj = document.unifiedObjects[index]
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .text(var shape):
@@ -46,7 +46,8 @@ class OpacityCommand: BaseCommand {
                     shape.typography = typography
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
 
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 switch target {
@@ -56,9 +57,11 @@ class OpacityCommand: BaseCommand {
                     shape.strokeStyle?.opacity = opacity
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.unifiedObjects[index] = obj
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
