@@ -21,7 +21,7 @@ extension DrawingCanvas {
             // Iterate through layers from top to bottom (reversed)
             for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
                 let layer = document.snapshot.layers[layerIndex]
-                if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
                     continue
                 }
 
