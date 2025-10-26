@@ -495,7 +495,7 @@ struct TransformationControls: View {
                     shape.updateBounds()
                 }
 
-                for layerIndex in document.layers.indices {
+                for layerIndex in document.snapshot.layers.indices {
                     let shapes = document.getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
