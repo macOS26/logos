@@ -3,18 +3,18 @@ import SwiftUI
 extension VectorDocument {
 
     func moveShapeToLayer(shapeId: UUID, fromLayerIndex: Int, toLayerIndex: Int) {
-        guard fromLayerIndex >= 0 && fromLayerIndex < layers.count,
-              toLayerIndex >= 0 && toLayerIndex < layers.count,
+        guard fromLayerIndex >= 0 && fromLayerIndex < snapshot.layers.count,
+              toLayerIndex >= 0 && toLayerIndex < snapshot.layers.count,
               fromLayerIndex != toLayerIndex else {
             Log.error("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)", category: .error)
             return
         }
 
-        if layers[toLayerIndex].isLocked {
+        if snapshot.layers[toLayerIndex].isLocked {
             return
         }
 
-        if layers[fromLayerIndex].isLocked {
+        if snapshot.layers[fromLayerIndex].isLocked {
             return
         }
 
@@ -25,12 +25,12 @@ extension VectorDocument {
     }
 
     func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
-        guard toLayerIndex >= 0 && toLayerIndex < layers.count else {
+        guard toLayerIndex >= 0 && toLayerIndex < snapshot.layers.count else {
             Log.error("❌ Invalid layer index for text move: \(toLayerIndex)", category: .error)
             return
         }
 
-        if layers[toLayerIndex].isLocked {
+        if snapshot.layers[toLayerIndex].isLocked {
             return
         }
 
