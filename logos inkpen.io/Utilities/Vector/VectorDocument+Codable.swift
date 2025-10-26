@@ -19,7 +19,7 @@ extension VectorDocument {
 
         // Save document content only (no UI state, no legacy arrays)
         try container.encode(settingsToSave, forKey: .settings)
-        try container.encode(layers, forKey: .layers)
+        try container.encode(snapshot.layers, forKey: .layers)
         try container.encode(snapshot, forKey: .snapshot)
     }
 }

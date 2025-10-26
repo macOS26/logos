@@ -24,7 +24,7 @@ extension VectorDocument {
 
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
         guard let layerIndex = layerIndex,
-              layerIndex >= 0 && layerIndex < layers.count else {
+              layerIndex >= 0 && layerIndex < snapshot.layers.count else {
             addText(text)
             return
         }
