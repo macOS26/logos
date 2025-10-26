@@ -69,37 +69,28 @@ extension VectorDocument {
 
         layers.insert(movingLayer, at: adjustedTargetIndex)
 
-        var updatedObjects: [VectorObject] = []
-
-        for object in unifiedObjects {
-            var updatedObject = object
+        // Update layer indices in snapshot.objects
+        for (objectID, object) in snapshot.objects {
             let currentLayerIndex = object.layerIndex
+            var newLayerIndex = currentLayerIndex
 
             if currentLayerIndex == sourceIndex {
-                updatedObject = VectorObject(
-                    shape: extractShape(from: object),
-                    layerIndex: adjustedTargetIndex,
-                )
+                newLayerIndex = adjustedTargetIndex
             } else if sourceIndex < adjustedTargetIndex {
                 if currentLayerIndex > sourceIndex && currentLayerIndex <= adjustedTargetIndex {
-                    updatedObject = VectorObject(
-                        shape: extractShape(from: object),
-                        layerIndex: currentLayerIndex - 1,
-                    )
+                    newLayerIndex = currentLayerIndex - 1
                 }
             } else if sourceIndex > adjustedTargetIndex {
                 if currentLayerIndex >= adjustedTargetIndex && currentLayerIndex < sourceIndex {
-                    updatedObject = VectorObject(
-                        shape: extractShape(from: object),
-                        layerIndex: currentLayerIndex + 1,
-                    )
+                    newLayerIndex = currentLayerIndex + 1
                 }
             }
 
-            updatedObjects.append(updatedObject)
+            if newLayerIndex != currentLayerIndex {
+                let updatedObject = VectorObject(id: object.id, layerIndex: newLayerIndex, objectType: object.objectType)
+                snapshot.objects[objectID] = updatedObject
+            }
         }
-
-        unifiedObjects = updatedObjects
 
         if selectedLayerIndex == sourceIndex {
             selectedLayerIndex = adjustedTargetIndex
@@ -150,19 +141,6 @@ extension VectorDocument {
             layers.insert(newLayer, at: currentIndex + 1)
             selectedLayerIndex = currentIndex + 1
 
-            var updatedObjects: [VectorObject] = []
-            for object in unifiedObjects {
-                if object.layerIndex > currentIndex {
-                    updatedObjects.append(VectorObject(
-                        shape: extractShape(from: object),
-                        layerIndex: object.layerIndex + 1,
-                    ))
-                } else {
-                    updatedObjects.append(object)
-                }
-            }
-            unifiedObjects = updatedObjects
-
             // Add to new structure
             let layerColor = convertColorToLayerColor(newLayer.color)
             let newLayerStruct = Layer(
@@ -180,7 +158,7 @@ extension VectorDocument {
             // Update layerIndex in snapshot.objects
             for (objectID, object) in snapshot.objects {
                 if object.layerIndex > currentIndex {
-                    let updatedObject = VectorObject(shape: object.shape, layerIndex: object.layerIndex + 1)
+                    let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex + 1, objectType: object.objectType)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
