@@ -40,24 +40,12 @@ final class VectorDocument: ObservableObject, Codable {
         didSet {
             // Only trigger full refresh when objects are added/removed
             if oldValue.count != unifiedObjects.count {
-                rebuildIndexCache()
                 changeNotifier.notifyGeneralChange()
-            } else {
-                // For single object updates, just update the index cache
-                // Individual object changes should use changeNotifier.notifyObjectChanged(id)
-                for (index, object) in unifiedObjects.enumerated() {
-                    if index < oldValue.count && oldValue[index].id == object.id {
-                        unifiedObjectIndexCache[object.id] = index
-                    }
-                }
             }
         }
     }
 
-    // Index cache: maps UUID -> array index (O(1) lookup, minimal memory)
-    var unifiedObjectIndexCache: [UUID: Int] = [:]
-
-    // Lightweight change notifier - avoids copying unifiedObjects array
+    // Lightweight change notifier
     let changeNotifier = DocumentChangeNotifier()
 
     // Combine subscriptions for nested ObservableObjects
@@ -301,7 +289,6 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     private func refreshSystemLayers() {
-        rebuildIndexCache()
         changeNotifier.notifyGeneralChange()
     }
 

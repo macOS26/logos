@@ -294,20 +294,8 @@ extension VectorDocument {
         }
     }
 
-    func rebuildIndexCache() {
-        var newCache: [UUID: Int] = [:]
-        for (index, object) in unifiedObjects.enumerated() {
-            newCache[object.id] = index
-        }
-        unifiedObjectIndexCache = newCache
-    }
-
     func findObject(by id: UUID) -> VectorObject? {
         return snapshot.objects[id]
-    }
-
-    func findObjectIndex(by id: UUID) -> Int? {
-        return unifiedObjectIndexCache[id]
     }
 
     func findShape(by id: UUID) -> VectorShape? {
