@@ -33,6 +33,7 @@ struct MainToolbarContent: ToolbarContent {
                 case .text:
                     continue
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -70,6 +71,7 @@ struct MainToolbarContent: ToolbarContent {
                 case .text:
                     continue
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -276,7 +278,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
@@ -289,7 +291,7 @@ struct MainToolbarContent: ToolbarContent {
         let delta = CGPoint(x: -bounds.minX, y: -bounds.minY)
         document.translateAllContent(by: delta)
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 newShapes[shape.id] = shape
             }
@@ -310,7 +312,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
@@ -323,7 +325,7 @@ struct MainToolbarContent: ToolbarContent {
         let delta = CGPoint(x: -selectionBounds.minX, y: -selectionBounds.minY)
         document.translateAllContent(by: delta)
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 newShapes[shape.id] = shape
             }
@@ -345,6 +347,7 @@ struct MainToolbarContent: ToolbarContent {
                 if unifiedObject.layerIndex >= 2 {
                     switch unifiedObject.objectType {
                     case .shape(let shape),
+                         .image(let shape),
                          .text(let shape),
                          .warp(let shape),
                          .group(let shape),
@@ -392,6 +395,7 @@ struct MainToolbarContent: ToolbarContent {
                         newShapes[shape.id] = updatedShape
                     }
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -426,7 +430,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
@@ -435,13 +439,13 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
-        for unifiedObj in document.unifiedObjects {
+        for unifiedObj in document.snapshot.objects.values {
             if case .text(let shape) = unifiedObj.objectType {
                 document.unlockTextInUnified(id: shape.id)
             }
         }
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 newShapes[shape.id] = shape
             }
@@ -469,6 +473,7 @@ struct MainToolbarContent: ToolbarContent {
                         newShapes[shape.id] = updatedObject.shape
                     }
                 case .shape(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
@@ -502,7 +507,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
@@ -511,13 +516,13 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
-        for unifiedObj in document.unifiedObjects {
+        for unifiedObj in document.snapshot.objects.values {
             if case .text(let shape) = unifiedObj.objectType {
                 document.showTextInUnified(id: shape.id)
             }
         }
 
-        for unifiedObject in document.unifiedObjects {
+        for unifiedObject in document.snapshot.objects.values {
             if case .shape(let shape) = unifiedObject.objectType {
                 newShapes[shape.id] = shape
             }
