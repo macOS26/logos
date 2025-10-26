@@ -324,7 +324,7 @@ extension VectorDocument {
     }
 
     func selectNextObjectUp() {
-        let visibleObjects = unifiedObjects
+        let visibleObjects = snapshot.objects.values
             .filter { obj in
                 if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
                     return layers[obj.layerIndex].isVisible
@@ -342,24 +342,24 @@ extension VectorDocument {
 
         if viewState.selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = [visibleObjects.first!.id]
-            
+
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             viewState.selectedObjectIDs = [visibleObjects.first!.id]
-            
+
             return
         }
 
         let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
-        
+
     }
 
     func selectNextObjectDown() {
-        let visibleObjects = unifiedObjects
+        let visibleObjects = snapshot.objects.values
             .filter { obj in
                 if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
                     return layers[obj.layerIndex].isVisible
@@ -377,20 +377,20 @@ extension VectorDocument {
 
         if viewState.selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = [visibleObjects.last!.id]
-            
+
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             viewState.selectedObjectIDs = [visibleObjects.last!.id]
-            
+
             return
         }
 
         let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
-        
+
     }
 
     func moveSelectedObjectsUp() {
