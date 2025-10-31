@@ -541,11 +541,15 @@ struct ObjectRow: View {
     }
 
     private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
-        if let object = document.snapshot.objects[objectId],
-           case .shape(let parentShape) = object.objectType,
-           parentShape.isClippingGroup,
-           index == 0 {
-            return "scissors"
+        if let object = document.snapshot.objects[objectId] {
+            switch object.objectType {
+            case .clipGroup:
+                if index == 0 {
+                    return "scissors"
+                }
+            default:
+                break
+            }
         }
 
         if childShape.typography != nil {
@@ -555,11 +559,15 @@ struct ObjectRow: View {
     }
 
     private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
-        if let object = document.snapshot.objects[objectId],
-           case .shape(let parentShape) = object.objectType,
-           parentShape.isClippingGroup,
-           index == 0 {
-            return .orange
+        if let object = document.snapshot.objects[objectId] {
+            switch object.objectType {
+            case .clipGroup:
+                if index == 0 {
+                    return .orange
+                }
+            default:
+                break
+            }
         }
 
         if childShape.typography != nil {
