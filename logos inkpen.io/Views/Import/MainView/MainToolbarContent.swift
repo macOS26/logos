@@ -150,7 +150,7 @@ struct MainToolbarContent: ToolbarContent {
 
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
-            CornerRadiusToolbar(document: document)
+            CornerRadiusToolbar(selectedObjectIDs: document.viewState.selectedObjectIDs, snapshot: document.snapshot, document: document)
 
             Button {
                 closeOpenPaths()

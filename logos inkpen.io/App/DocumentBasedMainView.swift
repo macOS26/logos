@@ -51,7 +51,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, colorDeltaColor: $colorDeltaColor, colorDeltaOpacity: $colorDeltaOpacity, colorDeltaBlendMode: $colorDeltaBlendMode, strokeDeltaWidth: $strokeDeltaWidth)
+                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
@@ -59,7 +59,6 @@ struct DocumentBasedMainView: View {
                             .allowsHitTesting(true)
 
                         RulersView(
-                            showRulers: document.gridSettings.showRulers,
                             document: document,
                             geometry: geometry
                         )
@@ -93,37 +92,32 @@ struct DocumentBasedMainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400)
-            .onAppear {
-                // Sync viewState colors from document defaults on appear
-                document.viewState.activeFillColor = document.defaultFillColor
-                document.viewState.activeStrokeColor = document.defaultStrokeColor
-                document.viewState.activeFillOpacity = document.defaultFillOpacity
-                document.viewState.activeStrokeOpacity = document.defaultStrokeOpacity
-                document.viewState.activeStrokeWidth = document.defaultStrokeWidth
-            }
-            .onChange(of: document.viewState.activeFillColor) { _, newColor in
-                document.defaultFillColor = newColor
-            }
-            .onChange(of: document.viewState.activeStrokeColor) { _, newColor in
-                document.defaultStrokeColor = newColor
-            }
-            .onChange(of: document.viewState.activeFillOpacity) { _, newOpacity in
-                document.defaultFillOpacity = newOpacity
-            }
-            .onChange(of: document.viewState.activeStrokeOpacity) { _, newOpacity in
-                document.defaultStrokeOpacity = newOpacity
-            }
-            .onChange(of: document.viewState.activeStrokeWidth) { _, newWidth in
-                document.defaultStrokeWidth = newWidth
-            }
+            // TODO: Re-enable when properties are available
+            // .onAppear {
+            //     // Sync viewState colors from document defaults on appear
+            //     document.viewState.activeFillColor = document.defaultFillColor
+            //     document.viewState.activeStrokeColor = document.defaultStrokeColor
+            //     document.viewState.activeFillOpacity = document.defaultFillOpacity
+            //     document.viewState.activeStrokeOpacity = document.defaultStrokeOpacity
+            //     document.viewState.activeStrokeWidth = document.defaultStrokeWidth
+            // }
+            // .onChange(of: document.viewState.activeFillColor) { _, newColor in
+            //     document.defaultFillColor = newColor
+            // }
+            // .onChange(of: document.viewState.activeStrokeColor) { _, newColor in
+            //     document.defaultStrokeColor = newColor
+            // }
+            // .onChange(of: document.viewState.activeFillOpacity) { _, newOpacity in
+            //     document.defaultFillOpacity = newOpacity
+            // }
+            // .onChange(of: document.viewState.activeStrokeOpacity) { _, newOpacity in
+            //     document.defaultStrokeOpacity = newOpacity
+            // }
+            // .onChange(of: document.viewState.activeStrokeWidth) { _, newWidth in
+            //     document.defaultStrokeWidth = newWidth
+            // }
 
-            StatusBar(
-                snapshot: document.snapshot,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                currentTool: document.viewState.currentTool,
-                settings: document.settings,
-                zoomLevel: document.viewState.zoomLevel
-            )
+            StatusBar(document: document)
         }
         .frame(minHeight: 524)
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)

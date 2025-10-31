@@ -49,22 +49,50 @@ struct StableGradientHUDContent: View, Equatable {
 
 struct StableColorPanelWrapper: View, Equatable {
     let hudManager: PersistentGradientHUDManager
+    @State private var colorDeltaColor: VectorColor?
+    @State private var colorDeltaOpacity: Double?
 
     static func == (lhs: StableColorPanelWrapper, rhs: StableColorPanelWrapper) -> Bool {
         return lhs.hudManager.editingStopId == rhs.hudManager.editingStopId
     }
 
     var body: some View {
-                                ColorPanel(
-            snapshot: hudManager.getStableDocument().snapshot,
-            selectedObjectIDs: hudManager.getStableDocument().viewState.selectedObjectIDs,
-            document: hudManager.getStableDocument(),
-            onColorSelected: { newColor in
+        let document = hudManager.getStableDocument()
+        ColorPanel(
+            snapshot: Binding(
+                get: { document.snapshot },
+                set: { document.snapshot = $0 }
+            ),
+            selectedObjectIDs: document.viewState.selectedObjectIDs,
+            activeColorTarget: Binding(
+                get: { document.viewState.activeColorTarget },
+                set: { document.viewState.activeColorTarget = $0 }
+            ),
+            colorMode: Binding(
+                get: { document.settings.colorMode },
+                set: { document.settings.colorMode = $0 }
+            ),
+            defaultFillColor: Binding(
+                get: { document.defaultFillColor },
+                set: { document.defaultFillColor = $0 }
+            ),
+            defaultStrokeColor: Binding(
+                get: { document.defaultStrokeColor },
+                set: { document.defaultStrokeColor = $0 }
+            ),
+            defaultFillOpacity: document.defaultFillOpacity,
+            defaultStrokeOpacity: document.defaultStrokeOpacity,
+            currentSwatches: document.currentSwatches,
+            onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+            onAddColorSwatch: { color in document.addColorSwatch(color) },
+            onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+            onSetActiveColor: { color in
                 if let stopId = hudManager.editingStopId {
-                    hudManager.updateStopColor(stopId, newColor)
+                    hudManager.updateStopColor(stopId, color)
                 }
             },
-            showGradientEditing: true
+            colorDeltaColor: $colorDeltaColor,
+            colorDeltaOpacity: $colorDeltaOpacity
         )
         .fixedSize()
     }
@@ -81,6 +109,8 @@ struct GradientColorPickerSheet: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @State private var localDocument: VectorDocument
+    @State private var colorDeltaColor: VectorColor?
+    @State private var colorDeltaOpacity: Double?
 
     var onClose: (() -> Void)?
 
@@ -107,14 +137,41 @@ struct GradientColorPickerSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             ColorPanel(
-                snapshot: localDocument.snapshot,
+                snapshot: Binding(
+                    get: { localDocument.snapshot },
+                    set: { localDocument.snapshot = $0 }
+                ),
                 selectedObjectIDs: localDocument.viewState.selectedObjectIDs,
-                document: localDocument,
-                onColorSelected: { newColor in
-                if let stopId = editingGradientStopId {
-                    updateStopColor(stopId, newColor)
-                }
-            }, showGradientEditing: true)
+                activeColorTarget: Binding(
+                    get: { localDocument.viewState.activeColorTarget },
+                    set: { localDocument.viewState.activeColorTarget = $0 }
+                ),
+                colorMode: Binding(
+                    get: { localDocument.settings.colorMode },
+                    set: { localDocument.settings.colorMode = $0 }
+                ),
+                defaultFillColor: Binding(
+                    get: { localDocument.defaultFillColor },
+                    set: { localDocument.defaultFillColor = $0 }
+                ),
+                defaultStrokeColor: Binding(
+                    get: { localDocument.defaultStrokeColor },
+                    set: { localDocument.defaultStrokeColor = $0 }
+                ),
+                defaultFillOpacity: localDocument.defaultFillOpacity,
+                defaultStrokeOpacity: localDocument.defaultStrokeOpacity,
+                currentSwatches: localDocument.currentSwatches,
+                onTriggerLayerUpdates: { indices in localDocument.triggerLayerUpdates(for: indices) },
+                onAddColorSwatch: { color in localDocument.addColorSwatch(color) },
+                onRemoveColorSwatch: { color in localDocument.removeColorSwatch(color) },
+                onSetActiveColor: { newColor in
+                    if let stopId = editingGradientStopId {
+                        updateStopColor(stopId, newColor)
+                    }
+                },
+                colorDeltaColor: $colorDeltaColor,
+                colorDeltaOpacity: $colorDeltaOpacity
+            )
             .frame(width: 300, height: 500)
 
             HStack {

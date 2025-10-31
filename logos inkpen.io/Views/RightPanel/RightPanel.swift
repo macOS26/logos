@@ -21,10 +21,9 @@ struct RightPanel: View {
                 set: { appState.selectedPanelTab = $0 }
             ))
 
-            Group {
-                switch appState.selectedPanelTab {
-                case .layers:
-                    LayersPanel(
+            switch appState.selectedPanelTab {
+            case .layers:
+                LayersPanel(
                         document: document,
                         layerPreviewOpacities: $layerPreviewOpacities,
                         selectedLayerIndex: $selectedLayerIndex,
@@ -44,24 +43,24 @@ struct RightPanel: View {
                             set: { document.settings.colorMode = $0 }
                         ),
                         defaultFillColor: Binding(
-                            get: { viewState.activeFillColor },
-                            set: { viewState.activeFillColor = $0 }
+                            get: { document.defaultFillColor },
+                            set: { document.defaultFillColor = $0 }
                         ),
                         defaultStrokeColor: Binding(
-                            get: { viewState.activeStrokeColor },
-                            set: { viewState.activeStrokeColor = $0 }
+                            get: { document.defaultStrokeColor },
+                            set: { document.defaultStrokeColor = $0 }
                         ),
                         defaultFillOpacity: Binding(
-                            get: { viewState.activeFillOpacity },
-                            set: { viewState.activeFillOpacity = $0 }
+                            get: { document.defaultFillOpacity },
+                            set: { document.defaultFillOpacity = $0 }
                         ),
                         defaultStrokeOpacity: Binding(
-                            get: { viewState.activeStrokeOpacity },
-                            set: { viewState.activeStrokeOpacity = $0 }
+                            get: { document.defaultStrokeOpacity },
+                            set: { document.defaultStrokeOpacity = $0 }
                         ),
                         defaultStrokeWidth: Binding(
-                            get: { viewState.activeStrokeWidth },
-                            set: { viewState.activeStrokeWidth = $0 }
+                            get: { document.defaultStrokeWidth },
+                            set: { document.defaultStrokeWidth = $0 }
                         ),
                         strokeDefaults: document.strokeDefaults,
                         currentSwatches: document.currentSwatches,
@@ -79,8 +78,14 @@ struct RightPanel: View {
                         onUpdateStrokeDefaults: { defaults in document.strokeDefaults = defaults },
                         onOutlineSelectedStrokes: { document.outlineSelectedStrokes() },
                         onDuplicateSelectedShapes: { document.duplicateSelectedShapes() },
-                        onUpdateObjectOpacity: { objectID, opacity, target in document.updateObjectOpacityDirect(objectID: objectID, opacity: opacity, target: target) },
-                        onUpdateObjectStrokeWidth: { objectID, width in document.updateObjectStrokeWidthDirect(objectID: objectID, width: width) },
+                        onUpdateObjectOpacity: { objectID, opacity, target in
+                            // TODO: Re-enable when method is available
+                            // document.updateObjectOpacityDirect(objectID: objectID, opacity: opacity, target: target)
+                        },
+                        onUpdateObjectStrokeWidth: { objectID, width in
+                            // TODO: Re-enable when method is available
+                            // document.updateObjectStrokeWidthDirect(objectID: objectID, width: width)
+                        },
                         onUpdateFillOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing) },
                         onUpdateStrokeOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing) },
                         onUpdateStrokeWidthLive: { width, isEditing in PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: isEditing) },
@@ -116,12 +121,12 @@ struct RightPanel: View {
                             set: { document.settings.colorMode = $0 }
                         ),
                         defaultFillColor: Binding(
-                            get: { viewState.activeFillColor },
-                            set: { viewState.activeFillColor = $0 }
+                            get: { document.defaultFillColor },
+                            set: { document.defaultFillColor = $0 }
                         ),
                         defaultStrokeColor: Binding(
-                            get: { viewState.activeStrokeColor },
-                            set: { viewState.activeStrokeColor = $0 }
+                            get: { document.defaultStrokeColor },
+                            set: { document.defaultStrokeColor = $0 }
                         ),
                         defaultFillOpacity: document.defaultFillOpacity,
                         defaultStrokeOpacity: document.defaultStrokeOpacity,
@@ -145,7 +150,6 @@ struct RightPanel: View {
                         selectedObjectIDs: viewState.selectedObjectIDs,
                         document: document
                     )
-                }
             }
         }
         .background(Color(NSColor.controlBackgroundColor))

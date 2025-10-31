@@ -23,13 +23,27 @@ struct MainView: View {
     @State private var liveDragOffset: CGPoint = .zero
     @State private var liveScaleDimensions: CGSize = .zero
     @State private var liveScaleTransform: CGAffineTransform = .identity
+    @State private var colorDeltaColor: VectorColor?
+    @State private var colorDeltaOpacity: Double?
+    @State private var colorDeltaBlendMode: BlendMode?
+    @State private var strokeDeltaWidth: Double?
+    @State private var selectedLayerIndex: Int?
+    @State private var processedLayersDuringDrag: Set<Int> = []
+    @State private var processedObjectsDuringDrag: Set<UUID> = []
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
                     VStack(spacing: 8) {
-                        VerticalToolbar(document: document)
+                        VerticalToolbar(
+                            currentTool: document.viewState.currentTool,
+                            viewState: document.viewState,
+                            document: document,
+                            colorDeltaColor: $colorDeltaColor,
+                            colorDeltaOpacity: $colorDeltaOpacity,
+                            colorDeltaBlendMode: $colorDeltaBlendMode
+                        )
                         Spacer()
                     }
                     .frame(width: 48)
@@ -63,7 +77,19 @@ struct MainView: View {
                 .contentShape(Rectangle())
                 .allowsHitTesting(true)
 
-                RightPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
+                RightPanel(
+                    snapshot: document.snapshot,
+                    viewState: document.viewState,
+                    document: document,
+                    layerPreviewOpacities: $layerPreviewOpacities,
+                    colorDeltaColor: $colorDeltaColor,
+                    colorDeltaOpacity: $colorDeltaOpacity,
+                    colorDeltaBlendMode: $colorDeltaBlendMode,
+                    strokeDeltaWidth: $strokeDeltaWidth,
+                    selectedLayerIndex: $selectedLayerIndex,
+                    processedLayersDuringDrag: $processedLayersDuringDrag,
+                    processedObjectsDuringDrag: $processedObjectsDuringDrag
+                )
                     .frame(width: 280)
                     .frame(minWidth: 280)
                     .zIndex(100)
@@ -134,7 +160,40 @@ struct MainView: View {
         }
         .sheet(isPresented: $showingColorPicker) {
             ColorPickerModal(
-                document: document,
+                snapshot: Binding(
+                    get: { document.snapshot },
+                    set: { document.snapshot = $0 }
+                ),
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                activeColorTarget: document.viewState.activeColorTarget,
+                colorMode: Binding(
+                    get: { document.settings.colorMode },
+                    set: { document.settings.colorMode = $0 }
+                ),
+                defaultFillColor: Binding(
+                    get: { document.defaultFillColor },
+                    set: { document.defaultFillColor = $0 }
+                ),
+                defaultStrokeColor: Binding(
+                    get: { document.defaultStrokeColor },
+                    set: { document.defaultStrokeColor = $0 }
+                ),
+                defaultFillOpacity: document.defaultFillOpacity,
+                defaultStrokeOpacity: document.defaultStrokeOpacity,
+                currentSwatches: document.currentSwatches,
+                onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+                onAddColorSwatch: { color in document.addColorSwatch(color) },
+                onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+                onSetActiveColor: { color in
+                    if document.viewState.activeColorTarget == .stroke {
+                        document.defaultStrokeColor = color
+                    } else {
+                        document.defaultFillColor = color
+                    }
+                    document.setActiveColor(color)
+                },
+                colorDeltaColor: $colorDeltaColor,
+                colorDeltaOpacity: $colorDeltaOpacity,
                 title: "Color Picker",
                 onColorSelected: { color in
                     if document.viewState.activeColorTarget == .stroke {
@@ -142,7 +201,6 @@ struct MainView: View {
                     } else {
                         document.defaultFillColor = color
                     }
-                    document.addColorSwatch(color)
                 }
             )
         }

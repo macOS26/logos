@@ -355,27 +355,29 @@ struct RGBInputSection: View {
 
             // Update defaults
             let normalizedValue = redValue / 255.0
-            InkSelectionOperations.updateDefaultColorRed(
-                normalizedValue,
-                target: activeColorTarget,
-                defaultFillColor: &defaultFillColor,
-                defaultStrokeColor: &defaultStrokeColor
-            )
+            // TODO: Re-enable when RGB methods are available
+            // PaintSelectionOperations.updateDefaultColorRed(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     defaultFillColor: &defaultFillColor,
+            //     defaultStrokeColor: &defaultStrokeColor
+            // )
 
             // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
             // Update selected objects
-            let affectedLayers = InkSelectionOperations.updateRGBRedLive(
-                normalizedValue,
-                target: activeColorTarget,
-                snapshot: &snapshot,
-                selectedObjectIDs: selectedObjectIDs,
-                defaultFillOpacity: defaultFillOpacity,
-                defaultStrokeOpacity: defaultStrokeOpacity
-            )
-            onTriggerLayerUpdates(affectedLayers)
+            // TODO: Re-enable when RGB methods are available
+            // let affectedLayers = PaintSelectionOperations.updateRGBRedLive(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     snapshot: &snapshot,
+            //     selectedObjectIDs: selectedObjectIDs,
+            //     defaultFillOpacity: defaultFillOpacity,
+            //     defaultStrokeOpacity: defaultStrokeOpacity
+            // )
+            // onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
@@ -394,27 +396,29 @@ struct RGBInputSection: View {
 
             // Update defaults
             let normalizedValue = greenValue / 255.0
-            InkSelectionOperations.updateDefaultColorGreen(
-                normalizedValue,
-                target: activeColorTarget,
-                defaultFillColor: &defaultFillColor,
-                defaultStrokeColor: &defaultStrokeColor
-            )
+            // TODO: Re-enable when RGB methods are available
+            // PaintSelectionOperations.updateDefaultColorGreen(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     defaultFillColor: &defaultFillColor,
+            //     defaultStrokeColor: &defaultStrokeColor
+            // )
 
             // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
             // Update selected objects
-            let affectedLayers = InkSelectionOperations.updateRGBGreenLive(
-                normalizedValue,
-                target: activeColorTarget,
-                snapshot: &snapshot,
-                selectedObjectIDs: selectedObjectIDs,
-                defaultFillOpacity: defaultFillOpacity,
-                defaultStrokeOpacity: defaultStrokeOpacity
-            )
-            onTriggerLayerUpdates(affectedLayers)
+            // TODO: Re-enable when RGB methods are available
+            // let affectedLayers = PaintSelectionOperations.updateRGBGreenLive(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     snapshot: &snapshot,
+            //     selectedObjectIDs: selectedObjectIDs,
+            //     defaultFillOpacity: defaultFillOpacity,
+            //     defaultStrokeOpacity: defaultStrokeOpacity
+            // )
+            // onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
@@ -433,27 +437,29 @@ struct RGBInputSection: View {
 
             // Update defaults
             let normalizedValue = blueValue / 255.0
-            InkSelectionOperations.updateDefaultColorBlue(
-                normalizedValue,
-                target: activeColorTarget,
-                defaultFillColor: &defaultFillColor,
-                defaultStrokeColor: &defaultStrokeColor
-            )
+            // TODO: Re-enable when RGB methods are available
+            // PaintSelectionOperations.updateDefaultColorBlue(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     defaultFillColor: &defaultFillColor,
+            //     defaultStrokeColor: &defaultStrokeColor
+            // )
 
             // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
             // Update selected objects
-            let affectedLayers = InkSelectionOperations.updateRGBBlueLive(
-                normalizedValue,
-                target: activeColorTarget,
-                snapshot: &snapshot,
-                selectedObjectIDs: selectedObjectIDs,
-                defaultFillOpacity: defaultFillOpacity,
-                defaultStrokeOpacity: defaultStrokeOpacity
-            )
-            onTriggerLayerUpdates(affectedLayers)
+            // TODO: Re-enable when RGB methods are available
+            // let affectedLayers = PaintSelectionOperations.updateRGBBlueLive(
+            //     normalizedValue,
+            //     target: activeColorTarget,
+            //     snapshot: &snapshot,
+            //     selectedObjectIDs: selectedObjectIDs,
+            //     defaultFillOpacity: defaultFillOpacity,
+            //     defaultStrokeOpacity: defaultStrokeOpacity
+            // )
+            // onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)

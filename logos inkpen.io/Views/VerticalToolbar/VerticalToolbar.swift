@@ -264,11 +264,7 @@ struct VerticalToolbar: View {
 
                     ToolSection {
                         ColorSwatchGrid(
-                            viewState: viewState,
-                            document: document,
-                            colorDeltaColor: $colorDeltaColor,
-                            colorDeltaOpacity: $colorDeltaOpacity,
-                            colorDeltaBlendMode: $colorDeltaBlendMode
+                            document: document
                         )
                     }
 
