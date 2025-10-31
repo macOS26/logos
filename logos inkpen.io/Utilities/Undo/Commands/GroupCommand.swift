@@ -45,6 +45,11 @@ class GroupCommand: BaseCommand {
     override func execute(on document: VectorDocument) {
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
 
+        print("🟣 GroupCommand.execute: operation=\(operation)")
+        print("🟣 GroupCommand.execute: removedObjectIDs=\(removedObjectIDs)")
+        print("🟣 GroupCommand.execute: addedObjectIDs=\(addedObjectIDs)")
+        print("🟣 GroupCommand.execute: BEFORE layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+
         // Find the index in layer.objectIDs for insertion
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
@@ -57,6 +62,8 @@ class GroupCommand: BaseCommand {
         // Remove from layer.objectIDs
         document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
+        print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+
         // Insert objects at the correct position in the order they appear in addedObjectIDs
         for (offset, objectID) in addedObjectIDs.enumerated() {
             guard let shape = addedShapes[objectID] else { continue }
@@ -67,6 +74,8 @@ class GroupCommand: BaseCommand {
             document.snapshot.objects[objectID] = newObject
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
         }
+
+        print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
