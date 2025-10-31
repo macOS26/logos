@@ -309,7 +309,7 @@ struct ColorSwatchGrid: View {
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Add Custom Color")
-            .popover(isPresented: $showingCustomColorPopover, arrowEdge: .leading) {
+            .popover(isPresented: $showingCustomColorPopover, arrowEdge: .trailing) {
                 customColorPanel
             }
         }
