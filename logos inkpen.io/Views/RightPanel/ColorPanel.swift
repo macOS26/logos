@@ -91,17 +91,25 @@ struct ColorPanel: View {
 
             // X button always visible
             if let dismiss = onDismiss {
-                Button(action: dismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary)
-                        .background(
-                            GlassCircleBackground(size: 22)
-                        )
+                if #available(macOS 26.0, *) {
+                    Button(action: dismiss) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.glass)
+                    .padding(.top, 12)
+                    .padding(.trailing, 12)
+                } else {
+                    Button(action: dismiss) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .padding(.top, 12)
+                    .padding(.trailing, 12)
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .padding(.top, 12)
-                .padding(.trailing, 12)
             }
         }
     }

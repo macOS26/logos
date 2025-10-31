@@ -125,38 +125,6 @@ struct PopoverAnchorView: NSViewRepresentable {
     }
 }
 
-/// A glass effect circle background for buttons
-struct GlassCircleBackground: NSViewRepresentable {
-    let size: CGFloat
-
-    func makeNSView(context: Context) -> NSView {
-        let containerView = NSView()
-
-        let effectView = NSVisualEffectView()
-        effectView.material = .hudWindow
-        effectView.blendingMode = .behindWindow
-        effectView.state = .active
-        effectView.wantsLayer = true
-        effectView.layer?.cornerRadius = size / 2
-        effectView.layer?.masksToBounds = true
-
-        effectView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(effectView)
-
-        NSLayoutConstraint.activate([
-            effectView.widthAnchor.constraint(equalToConstant: size),
-            effectView.heightAnchor.constraint(equalToConstant: size),
-            effectView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            effectView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor)
-        ])
-
-        return containerView
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-    }
-}
-
 /// A view that wraps content with a translucent vibrancy effect
 struct VibrancyEffectView<Content: View>: NSViewRepresentable {
     let content: Content

@@ -28,17 +28,25 @@ struct GradientStopColorPicker: View {
             loadedContent
 
             // X button always visible
-            Button(action: onDismiss) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.secondary)
-                    .background(
-                        GlassCircleBackground(size: 22)
-                    )
+            if #available(macOS 26.0, *) {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.glass)
+                .padding(.top, 12)
+                .padding(.trailing, 12)
+            } else {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .padding(.top, 12)
+                .padding(.trailing, 12)
             }
-            .buttonStyle(BorderlessButtonStyle())
-            .padding(.top, 12)
-            .padding(.trailing, 12)
         }
         .frame(width: 300, height: 480)
     }
