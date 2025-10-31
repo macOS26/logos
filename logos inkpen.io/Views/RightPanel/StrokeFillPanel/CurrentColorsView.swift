@@ -268,7 +268,7 @@ private struct ColorSwatchView: View {
             .environment(appState)
         }
 
-        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .maxX)
+        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .leading)
         activeAnchorKey = anchorKey
     }
 }

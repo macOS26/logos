@@ -11,7 +11,7 @@ class SlidingPopoverManager {
     ///   - content: SwiftUI view to display in the popover
     ///   - anchorView: The view to anchor the popover to
     ///   - edge: Preferred edge for the popover arrow
-    func show<Content: View>(content: Content, anchorView: NSView, edge: NSRectEdge = .minX) {
+    func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading) {
         if let existingPopover = popover, existingPopover.isShown {
             // Popover is already shown - update content and slide to new anchor
             slideToNewAnchor(anchorView: anchorView, edge: edge, updateContent: {
@@ -39,9 +39,10 @@ class SlidingPopoverManager {
                 popoverView.layer?.backgroundColor = NSColor.clear.cgColor
             }
 
-            // Calculate positioning rect
-            let positioningRect = calculatePositioningRect(for: anchorView, edge: edge)
-            newPopover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: edge)
+            // Calculate positioning rect and convert Edge to NSRectEdge
+            let nsRectEdge = edge.toNSRectEdge()
+            let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
+            newPopover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
 
             self.popover = newPopover
             self.currentAnchorView = anchorView
@@ -49,7 +50,7 @@ class SlidingPopoverManager {
     }
 
     /// Slides the popover to a new anchor view with animation and optionally updates content
-    private func slideToNewAnchor(anchorView: NSView, edge: NSRectEdge, updateContent: () -> Void) {
+    private func slideToNewAnchor(anchorView: NSView, edge: Edge, updateContent: () -> Void) {
         guard let popover = popover, popover.isShown else { return }
 
         // Update content first (without recreating the NSPopover)
@@ -61,8 +62,9 @@ class SlidingPopoverManager {
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
             // Reposition the popover to the new anchor
-            let positioningRect = calculatePositioningRect(for: anchorView, edge: edge)
-            popover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: edge)
+            let nsRectEdge = edge.toNSRectEdge()
+            let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
+            popover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
         }
 
         self.currentAnchorView = anchorView
@@ -84,6 +86,18 @@ class SlidingPopoverManager {
     /// Returns true if the popover is currently shown
     var isShown: Bool {
         return popover?.isShown ?? false
+    }
+}
+
+/// Extension to convert SwiftUI Edge to NSRectEdge
+extension Edge {
+    func toNSRectEdge() -> NSRectEdge {
+        switch self {
+        case .leading: return .minX
+        case .trailing: return .maxX
+        case .top: return .maxY
+        case .bottom: return .minY
+        }
     }
 }
 

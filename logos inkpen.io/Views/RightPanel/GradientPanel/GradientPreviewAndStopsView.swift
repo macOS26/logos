@@ -231,7 +231,7 @@ struct GradientPreviewAndStopsView: View {
             .environment(appState)
         }
 
-        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .minX)
+        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .trailing)
         popoverStopID = stop.id
     }
 
