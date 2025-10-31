@@ -131,12 +131,8 @@ class ProfessionalTextViewModel: ObservableObject {
             // Prevent cursor jump when double-clicking already-selected text
             // If new position is exactly -1 from current, it's likely a race condition - ignore it
             let positionDelta = textObject.cursorPosition - self.userInitiatedCursorPosition
-            print("🔍 Cursor position sync: document=\(textObject.cursorPosition), current=\(self.userInitiatedCursorPosition), delta=\(positionDelta)")
             if positionDelta != -1 {
                 self.userInitiatedCursorPosition = textObject.cursorPosition
-                print("✅ Updated cursor position to \(textObject.cursorPosition)")
-            } else {
-                print("🚫 BLOCKED cursor update - would move -1 position (race condition)")
             }
         }
 
@@ -628,7 +624,6 @@ class ProfessionalTextViewModel: ObservableObject {
                 // ONLY add +1 when double-clicking from Arrow tool
                 if isDoubleClickFromArrow {
                     cursorPosition = min(cursorPosition + 1, textObject.content.count)
-                    print("🎯 Applied +1 adjustment for Arrow tool double-click: \(cursorPosition - 1) -> \(cursorPosition)")
                 }
 
                 document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)

@@ -163,7 +163,6 @@ extension DrawingCanvas {
             // ONLY add +1 when double-clicking from Arrow tool
             if isDoubleClickFromArrow {
                 cursorPosition = min(cursorPosition + 1, textObject.content.count)
-                print("🎯 Applied +1 adjustment for Arrow tool double-click: \(cursorPosition - 1) -> \(cursorPosition)")
             }
 
             currentCursorPosition = cursorPosition
@@ -240,8 +239,6 @@ extension DrawingCanvas {
             y: tapLocation.y - textObj.position.y
         )
 
-        print("🎯 calculateCursorPosition: tapLocation=\(tapLocation), textPos=\(textObj.position), relativePoint=\(relativePoint)")
-
         let nsFont = textObj.typography.nsFont
         let attributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
@@ -264,18 +261,13 @@ extension DrawingCanvas {
 
         layoutManager.ensureLayout(for: textContainer)
 
-        var fraction: CGFloat = 0
         let characterIndex = layoutManager.characterIndex(
             for: relativePoint,
             in: textContainer,
-            fractionOfDistanceBetweenInsertionPoints: &fraction
+            fractionOfDistanceBetweenInsertionPoints: nil
         )
 
-        print("🎯 characterIndex=\(characterIndex), fraction=\(fraction), textLength=\(textObj.content.count)")
-
         let finalIndex = max(0, min(textObj.content.count, characterIndex))
-
-        print("🎯 finalIndex=\(finalIndex)")
 
         return finalIndex
     }

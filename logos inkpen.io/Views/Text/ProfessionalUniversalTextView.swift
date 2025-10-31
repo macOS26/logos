@@ -366,11 +366,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 guard let self = self else { return }
                 let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
                 let newPosition = selectedRange.location
-                print("📍 NSTextView selection changed: \(oldPosition) -> \(newPosition) (delta: \(newPosition - oldPosition))")
 
                 // Block updates that would move cursor -1 position (race condition)
                 if newPosition == oldPosition - 1 {
-                    print("🚫 BLOCKED -1 cursor jump - restoring cursor to \(oldPosition)")
                     // Force NSTextView back to correct position
                     self.isRestoringSelection = true
                     textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
@@ -379,7 +377,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 }
 
                 self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
-                print("✅ Updated cursor to \(selectedRange.location)")
             }
         }
 
