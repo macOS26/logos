@@ -72,8 +72,15 @@ class SlidingPopoverManager {
 
     /// Calculate tight positioning rect for the given edge
     private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
-        // Use the anchor view bounds directly - let NSPopover handle positioning automatically
-        return anchorView.bounds
+        let bounds = anchorView.bounds
+
+        // Shift positioning rect 17px to the right
+        return CGRect(
+            x: bounds.origin.x + 17,
+            y: bounds.origin.y,
+            width: bounds.width,
+            height: bounds.height
+        )
     }
 
     /// Dismisses the popover
