@@ -155,19 +155,36 @@ struct LayerCanvasView: View {
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    // Only render if mask is visible
-                    guard maskShape.isVisible else { break }
+                    // In keyline mode, always show the mask outline
+                    if viewMode == .keyline {
+                        // Render mask outline
+                        renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                        // Render content shapes without clipping in keyline
+                        for contentShape in contentShapes {
+                            guard contentShape.isVisible else { continue }
+                            if VectorText.from(contentShape) != nil {
+                                renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
+                            } else if contentShape.embeddedImageData != nil {
+                                renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                            } else {
+                                renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                            }
+                        }
+                    } else {
+                        // Color mode: only render if mask is visible
+                        guard maskShape.isVisible else { break }
 
-                    // Render each content shape with the mask (only if visible)
-                    for contentShape in contentShapes {
-                        guard contentShape.isVisible else { continue }
+                        // Render each content shape with the mask (only if visible)
+                        for contentShape in contentShapes {
+                            guard contentShape.isVisible else { continue }
 
-                        if VectorText.from(contentShape) != nil {
-                            renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                        } else if contentShape.embeddedImageData != nil {
-                            renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
-                        } else {
-                            renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            if VectorText.from(contentShape) != nil {
+                                renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                            } else if contentShape.embeddedImageData != nil {
+                                renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            } else {
+                                renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            }
                         }
                     }
 
