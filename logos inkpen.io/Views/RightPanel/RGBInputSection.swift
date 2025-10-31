@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 struct ColorChannelLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
@@ -56,19 +55,19 @@ extension View {
 struct ColorChannelSlider: View {
     let color: Color
     let label: String
-    @Binding var sliderValue: Double
-    @Binding var textValue: String
+    @Binding var value: Double
     let gradient: SwiftUI.LinearGradient
-    let onChange: () -> Void
+    let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         HStack(spacing: 8) {
             Circle()
                 .fill(color)
                 .colorIndicator()
-            
+
             Text(label)
                 .colorChannelLabel()
-            
+
             ZStack {
                 Capsule()
                     .fill(Color.white)
@@ -77,59 +76,89 @@ struct ColorChannelSlider: View {
                         Capsule()
                             .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                     )
-                
+
                 Capsule()
                     .fill(gradient)
                     .frame(height: 6)
                     .allowsHitTesting(false)
-                
-                Slider(value: $sliderValue, in: 0...255)
+
+                Slider(value: $value, in: 0...255, onEditingChanged: onEditingChanged)
                     .controlSize(.regular)
                     .tint(Color.clear)
-                    .onChange(of: sliderValue) {
-                        textValue = String(Int(sliderValue))
-                        onChange()
-                    }
             }
-            
-            TextField("", text: $textValue)
+
+            Text("\(Int(value))")
                 .colorValueTextField()
-                .onChange(of: textValue) {
-                    if let intValue = Double(textValue) {
-                        sliderValue = min(255, max(0, intValue))
-                        onChange()
-                    }
-                }
         }
     }
 }
 
 struct RGBInputSection: View {
-    @ObservedObject var document: VectorDocument
+    @Binding var snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    let activeColorTarget: ColorTarget
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    let defaultFillOpacity: Double
+    let defaultStrokeOpacity: Double
+    let onTriggerLayerUpdates: (Set<Int>) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
+    let onSetActiveColor: (VectorColor) -> Void
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
+
     @Binding var sharedColor: VectorColor
     @Environment(AppState.self) private var appState
 
-    let showGradientEditing: Bool
+    let disableSetActiveColor: Bool
+    let onColorSelected: ((VectorColor) -> Void)?
+    let onDismiss: (() -> Void)?
 
-    @State private var redValue: String = "133"
-    @State private var greenValue: String = "78"
-    @State private var blueValue: String = "68"
-    @State private var hexValue: String = "854e44"
-    @State private var redSlider: Double = 133
-    @State private var greenSlider: Double = 78
-    @State private var blueSlider: Double = 68
-    @State private var isProgrammaticallyUpdating: Bool = false
-    @State private var isDisplayingGradient: Bool = false
+    init(
+        snapshot: Binding<DocumentSnapshot>,
+        selectedObjectIDs: Set<UUID>,
+        activeColorTarget: ColorTarget,
+        defaultFillColor: Binding<VectorColor>,
+        defaultStrokeColor: Binding<VectorColor>,
+        defaultFillOpacity: Double,
+        defaultStrokeOpacity: Double,
+        onTriggerLayerUpdates: @escaping (Set<Int>) -> Void,
+        onAddColorSwatch: @escaping (VectorColor) -> Void,
+        onSetActiveColor: @escaping (VectorColor) -> Void,
+        colorDeltaColor: Binding<VectorColor?>,
+        colorDeltaOpacity: Binding<Double?>,
+        sharedColor: Binding<VectorColor>,
+        disableSetActiveColor: Bool = false,
+        onColorSelected: ((VectorColor) -> Void)? = nil,
+        onDismiss: (() -> Void)? = nil
+    ) {
+        self._snapshot = snapshot
+        self.selectedObjectIDs = selectedObjectIDs
+        self.activeColorTarget = activeColorTarget
+        self._defaultFillColor = defaultFillColor
+        self._defaultStrokeColor = defaultStrokeColor
+        self.defaultFillOpacity = defaultFillOpacity
+        self.defaultStrokeOpacity = defaultStrokeOpacity
+        self.onTriggerLayerUpdates = onTriggerLayerUpdates
+        self.onAddColorSwatch = onAddColorSwatch
+        self.onSetActiveColor = onSetActiveColor
+        self._colorDeltaColor = colorDeltaColor
+        self._colorDeltaOpacity = colorDeltaOpacity
+        self._sharedColor = sharedColor
+        self.disableSetActiveColor = disableSetActiveColor
+        self.onColorSelected = onColorSelected
+        self.onDismiss = onDismiss
+    }
+
+    @State private var redValue: Double = 133
+    @State private var greenValue: Double = 78
+    @State private var blueValue: Double = 68
 
     private var currentColor: RGBColor {
-        let r = Double(redValue) ?? 0
-        let g = Double(greenValue) ?? 0
-        let b = Double(blueValue) ?? 0
-
         return RGBColor(
-            red: min(255, max(0, r)) / 255.0,
-            green: min(255, max(0, g)) / 255.0,
-            blue: min(255, max(0, b)) / 255.0,
+            red: redValue / 255.0,
+            green: greenValue / 255.0,
+            blue: blueValue / 255.0,
             alpha: 1.0
         )
     }
@@ -139,12 +168,10 @@ struct RGBInputSection: View {
     }
 
     private var redGradient: SwiftUI.LinearGradient {
-        let g = Double(greenValue) ?? 0
-        let b = Double(blueValue) ?? 0
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
-                swiftUIColor(r: 0, g: g, b: b),
-                swiftUIColor(r: 255, g: g, b: b)
+                swiftUIColor(r: 0, g: greenValue, b: blueValue),
+                swiftUIColor(r: 255, g: greenValue, b: blueValue)
             ]),
             startPoint: .leading,
             endPoint: .trailing
@@ -152,12 +179,10 @@ struct RGBInputSection: View {
     }
 
     private var greenGradient: SwiftUI.LinearGradient {
-        let r = Double(redValue) ?? 0
-        let b = Double(blueValue) ?? 0
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
-                swiftUIColor(r: r, g: 0, b: b),
-                swiftUIColor(r: r, g: 255, b: b)
+                swiftUIColor(r: redValue, g: 0, b: blueValue),
+                swiftUIColor(r: redValue, g: 255, b: blueValue)
             ]),
             startPoint: .leading,
             endPoint: .trailing
@@ -165,12 +190,10 @@ struct RGBInputSection: View {
     }
 
     private var blueGradient: SwiftUI.LinearGradient {
-        let r = Double(redValue) ?? 0
-        let g = Double(greenValue) ?? 0
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
-                swiftUIColor(r: r, g: g, b: 0),
-                swiftUIColor(r: r, g: g, b: 255)
+                swiftUIColor(r: redValue, g: greenValue, b: 0),
+                swiftUIColor(r: redValue, g: greenValue, b: 255)
             ]),
             startPoint: .leading,
             endPoint: .trailing
@@ -183,247 +206,283 @@ struct RGBInputSection: View {
                 ColorChannelSlider(
                     color: .red,
                     label: "R",
-                    sliderValue: $redSlider,
-                    textValue: $redValue,
+                    value: Binding(
+                        get: { redValue },
+                        set: { onUpdateRed($0) }
+                    ),
                     gradient: redGradient,
-                    onChange: {
-                        guard !isProgrammaticallyUpdating else { return }
-                        updateHexFromRGB()
-                        updateSharedColor()
-                    }
+                    onEditingChanged: onRedEditingChanged
                 )
-                
+
                 ColorChannelSlider(
                     color: .green,
                     label: "G",
-                    sliderValue: $greenSlider,
-                    textValue: $greenValue,
+                    value: Binding(
+                        get: { greenValue },
+                        set: { onUpdateGreen($0) }
+                    ),
                     gradient: greenGradient,
-                    onChange: {
-                        guard !isProgrammaticallyUpdating else { return }
-                        updateHexFromRGB()
-                        updateSharedColor()
-                    }
+                    onEditingChanged: onGreenEditingChanged
                 )
-                
+
                 ColorChannelSlider(
                     color: .blue,
                     label: "B",
-                    sliderValue: $blueSlider,
-                    textValue: $blueValue,
+                    value: Binding(
+                        get: { blueValue },
+                        set: { onUpdateBlue($0) }
+                    ),
                     gradient: blueGradient,
-                    onChange: {
-                        guard !isProgrammaticallyUpdating else { return }
-                        updateHexFromRGB()
-                        updateSharedColor()
-                    }
+                    onEditingChanged: onBlueEditingChanged
                 )
             }
 
             HStack(spacing: 8) {
-                Button(action: {
-                    applyColorToActiveSelection()
-                }) {
-                    Rectangle()
-                        .fill(Color(.displayP3,
-                            red: currentColor.red,
-                            green: currentColor.green,
-                            blue: currentColor.blue))
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(BorderlessButtonStyle())
-                .help("Click to apply color to active fill or stroke")
+                Rectangle()
+                    .fill(Color(.displayP3,
+                        red: currentColor.red,
+                        green: currentColor.green,
+                        blue: currentColor.blue))
+                    .frame(width: 30, height: 30)
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Button("Add Swatch") {
-                        addColorToSwatches()
-                    }
-                    .font(.system(size: 10))
-                    .foregroundColor(.primary)
+                Button("Add Swatch") {
+                    onAddColorSwatch(.rgb(currentColor))
                 }
+                .font(.system(size: 10))
 
                 Spacer()
 
-                Text("#")
+                Text(String(format: "#%02x%02x%02x", Int(redValue), Int(greenValue), Int(blueValue)))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
-
-                TextField("854e44", text: $hexValue)
-                    .hexTextField()
-                    .onChange(of: hexValue) {
-                        updateRGBFromHex()
-                        updateSharedColor()
-                    }
             }
         }
         .padding(.vertical, 8)
         .onAppear {
-            loadFromSharedColor()
+            loadInitialColor()
         }
         .onChange(of: sharedColor) { _, newColor in
-            loadFromSharedColor()
+            loadInitialColor()
         }
     }
 
-    private func updateHexFromRGB() {
-        let r = Int(Double(redValue) ?? 0)
-        let g = Int(Double(greenValue) ?? 0)
-        let b = Int(Double(blueValue) ?? 0)
-        hexValue = String(format: "%02x%02x%02x", r, g, b)
-    }
-
-    private func updateRGBFromHex() {
-        let cleanHex = hexValue.replacingOccurrences(of: "#", with: "")
-        if cleanHex.count == 6 {
-            let scanner = Scanner(string: cleanHex)
-            var hexNumber: UInt64 = 0
-
-            if scanner.scanHexInt64(&hexNumber) {
-                let r = Int((hexNumber & 0xff0000) >> 16)
-                let g = Int((hexNumber & 0x00ff00) >> 8)
-                let b = Int(hexNumber & 0x0000ff)
-
-                redValue = String(r)
-                greenValue = String(g)
-                blueValue = String(b)
-                redSlider = Double(r)
-                greenSlider = Double(g)
-                blueSlider = Double(b)
-            }
-        }
-    }
-
-    private func updateSharedColor() {
-        if isDisplayingGradient {
-            return
-        }
-
-        sharedColor = .rgb(currentColor)
-
-        if isProgrammaticallyUpdating {
-            return
-        }
-
-        return
-
-    }
-
-    private func loadFromSharedColor() {
-
-        isDisplayingGradient = false
-
+    private func loadInitialColor() {
+        let rgb: RGBColor
         switch sharedColor {
-        case .rgb(let rgb):
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
-        case .cmyk(let cmyk):
-            let rgb = cmyk.rgbColor
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
-        case .hsb(let hsb):
-            let rgb = hsb.rgbColor
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
-        case .pantone(let pantone):
-            let rgb = pantone.rgbEquivalent
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
-        case .spot(let spot):
-            let rgb = spot.rgbEquivalent
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
-        case .appleSystem(let system):
-            let rgb = system.rgbEquivalent
-            setRGBValues(
-                red: Int(rgb.red * 255),
-                green: Int(rgb.green * 255),
-                blue: Int(rgb.blue * 255)
-            )
+        case .rgb(let color):
+            rgb = color
+        case .cmyk(let color):
+            rgb = color.rgbColor
+        case .hsb(let color):
+            rgb = color.rgbColor
+        case .pantone(let color):
+            rgb = color.rgbEquivalent
+        case .spot(let color):
+            rgb = color.rgbEquivalent
+        case .appleSystem(let color):
+            rgb = color.rgbEquivalent
         case .gradient(let gradient):
-            isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
-                case .rgb(let rgb):
-                    setRGBValues(
-                        red: Int(rgb.red * 255),
-                        green: Int(rgb.green * 255),
-                        blue: Int(rgb.blue * 255)
-                    )
+                case .rgb(let color):
+                    rgb = color
                 default:
-                    let swiftUIColor = firstStop.color.color
-                    let components = swiftUIColor.components
-                    setRGBValues(
-                        red: Int(components.red * 255),
-                        green: Int(components.green * 255),
-                        blue: Int(components.blue * 255)
-                    )
+                    let components = firstStop.color.color.components
+                    rgb = RGBColor(red: components.red, green: components.green, blue: components.blue)
                 }
             } else {
-                setRGBValues(red: 0, green: 0, blue: 0)
+                rgb = RGBColor(red: 0, green: 0, blue: 0)
             }
         case .clear:
-            return
+            rgb = RGBColor(red: 0, green: 0, blue: 0, alpha: 0)
         case .black:
-            setRGBValues(red: 0, green: 0, blue: 0)
+            rgb = RGBColor(red: 0, green: 0, blue: 0)
         case .white:
-            setRGBValues(red: 255, green: 255, blue: 255)
+            rgb = RGBColor(red: 1, green: 1, blue: 1)
+        }
+        redValue = rgb.red * 255
+        greenValue = rgb.green * 255
+        blueValue = rgb.blue * 255
+    }
+
+    private func onUpdateRed(_ value: Double) {
+        redValue = value
+
+        // ONLY update colorDelta for live preview - NO other updates during drag!
+        if !disableSetActiveColor {
+            let previewColor = VectorColor.rgb(currentColor)
+            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+        }
+        // All other updates happen on drag end
+    }
+
+    private func onUpdateGreen(_ value: Double) {
+        greenValue = value
+
+        // ONLY update colorDelta for live preview - NO other updates during drag!
+        if !disableSetActiveColor {
+            let previewColor = VectorColor.rgb(currentColor)
+            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+        }
+        // All other updates happen on drag end
+    }
+
+    private func onUpdateBlue(_ value: Double) {
+        blueValue = value
+
+        // ONLY update colorDelta for live preview - NO other updates during drag!
+        if !disableSetActiveColor {
+            let previewColor = VectorColor.rgb(currentColor)
+            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+        }
+        // All other updates happen on drag end
+    }
+
+    private func onRedEditingChanged(_ isEditing: Bool) {
+        if isEditing {
+            // Start of drag - set opacity for preview
+            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+            colorDeltaOpacity = currentOpacity
+        } else {
+            print("HELLO")
+            // Clear colorDelta and actually update objects
+            colorDeltaColor = nil
+            colorDeltaOpacity = nil
+
+            // Update defaults
+            let normalizedValue = redValue / 255.0
+            InkSelectionOperations.updateDefaultColorRed(
+                normalizedValue,
+                target: activeColorTarget,
+                defaultFillColor: &defaultFillColor,
+                defaultStrokeColor: &defaultStrokeColor
+            )
+
+            // Update active color (toolbar display)
+            let finalColor = VectorColor.rgb(currentColor)
+            onSetActiveColor(finalColor)
+
+            // Update selected objects
+            let affectedLayers = InkSelectionOperations.updateRGBRedLive(
+                normalizedValue,
+                target: activeColorTarget,
+                snapshot: &snapshot,
+                selectedObjectIDs: selectedObjectIDs,
+                defaultFillOpacity: defaultFillOpacity,
+                defaultStrokeOpacity: defaultStrokeOpacity
+            )
+            onTriggerLayerUpdates(affectedLayers)
+
+            // Update sharedColor to sync with other color sections (HSB, etc.)
+            sharedColor = VectorColor.rgb(currentColor)
         }
     }
 
-    private func setRGBValues(red: Int, green: Int, blue: Int) {
+    private func onGreenEditingChanged(_ isEditing: Bool) {
+        if isEditing {
+            // Start of drag - set opacity for preview
+            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+            colorDeltaOpacity = currentOpacity
+        } else {
+            // Clear colorDelta and actually update objects
+            colorDeltaColor = nil
+            colorDeltaOpacity = nil
 
-        isProgrammaticallyUpdating = true
-        redValue = String(red)
-        greenValue = String(green)
-        blueValue = String(blue)
-        redSlider = Double(red)
-        greenSlider = Double(green)
-        blueSlider = Double(blue)
-        updateHexFromRGB()
-        isProgrammaticallyUpdating = false
+            // Update defaults
+            let normalizedValue = greenValue / 255.0
+            InkSelectionOperations.updateDefaultColorGreen(
+                normalizedValue,
+                target: activeColorTarget,
+                defaultFillColor: &defaultFillColor,
+                defaultStrokeColor: &defaultStrokeColor
+            )
 
-    }
+            // Update active color (toolbar display)
+            let finalColor = VectorColor.rgb(currentColor)
+            onSetActiveColor(finalColor)
 
-    private func applyColorToActiveSelection() {
-        let vectorColor = VectorColor.rgb(currentColor)
+            // Update selected objects
+            let affectedLayers = InkSelectionOperations.updateRGBGreenLive(
+                normalizedValue,
+                target: activeColorTarget,
+                snapshot: &snapshot,
+                selectedObjectIDs: selectedObjectIDs,
+                defaultFillOpacity: defaultFillOpacity,
+                defaultStrokeOpacity: defaultStrokeOpacity
+            )
+            onTriggerLayerUpdates(affectedLayers)
 
-        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            document.addColorSwatch(vectorColor)
-            return
+            // Update sharedColor to sync with other color sections (HSB, etc.)
+            sharedColor = VectorColor.rgb(currentColor)
         }
-
-        document.setActiveColor(vectorColor)
-        document.addColorSwatch(vectorColor)
     }
 
-    private func addColorToSwatches() {
-        let vectorColor = VectorColor.rgb(currentColor)
-        document.addColorToSwatches(vectorColor)
+    private func onBlueEditingChanged(_ isEditing: Bool) {
+        if isEditing {
+            // Start of drag - set opacity for preview
+            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+            colorDeltaOpacity = currentOpacity
+        } else {
+            // Clear colorDelta and actually update objects
+            colorDeltaColor = nil
+            colorDeltaOpacity = nil
+
+            // Update defaults
+            let normalizedValue = blueValue / 255.0
+            InkSelectionOperations.updateDefaultColorBlue(
+                normalizedValue,
+                target: activeColorTarget,
+                defaultFillColor: &defaultFillColor,
+                defaultStrokeColor: &defaultStrokeColor
+            )
+
+            // Update active color (toolbar display)
+            let finalColor = VectorColor.rgb(currentColor)
+            onSetActiveColor(finalColor)
+
+            // Update selected objects
+            let affectedLayers = InkSelectionOperations.updateRGBBlueLive(
+                normalizedValue,
+                target: activeColorTarget,
+                snapshot: &snapshot,
+                selectedObjectIDs: selectedObjectIDs,
+                defaultFillOpacity: defaultFillOpacity,
+                defaultStrokeOpacity: defaultStrokeOpacity
+            )
+            onTriggerLayerUpdates(affectedLayers)
+
+            // Update sharedColor to sync with other color sections (HSB, etc.)
+            sharedColor = VectorColor.rgb(currentColor)
+        }
     }
 }
 
 #Preview {
-    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), showGradientEditing: false)
-        .padding()
-        .environment(AppState.shared)
+    @Previewable @State var snapshot = DocumentSnapshot()
+    @Previewable @State var fillColor = VectorColor.black
+    @Previewable @State var strokeColor = VectorColor.black
+    @Previewable @State var sharedColor = VectorColor.black
+
+    RGBInputSection(
+        snapshot: $snapshot,
+        selectedObjectIDs: [],
+        activeColorTarget: .fill,
+        defaultFillColor: $fillColor,
+        defaultStrokeColor: $strokeColor,
+        defaultFillOpacity: 1.0,
+        defaultStrokeOpacity: 1.0,
+        onTriggerLayerUpdates: { _ in },
+        onAddColorSwatch: { _ in },
+        onSetActiveColor: { _ in },
+        colorDeltaColor: .constant(nil),
+        colorDeltaOpacity: .constant(nil),
+        sharedColor: $sharedColor,
+        onDismiss: nil
+    )
+    .padding()
+    .environment(AppState.shared)
 }

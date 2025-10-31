@@ -1,8 +1,11 @@
 import SwiftUI
-import Combine
 
 struct FontSizeControls: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let selectedFontSize: CGFloat
+    let selectedLineSpacing: CGFloat
+    let selectedLineHeight: CGFloat
+    let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
 
@@ -22,7 +25,7 @@ struct FontSizeControls: View {
         } else if let editingText = editingText {
             return editingText.typography.fontSize
         } else {
-            return document.fontManager.selectedFontSize
+            return selectedFontSize
         }
     }
 
@@ -32,7 +35,7 @@ struct FontSizeControls: View {
         } else if let editingText = editingText {
             return editingText.typography.lineSpacing
         } else {
-            return document.fontManager.selectedLineSpacing
+            return selectedLineSpacing
         }
     }
 
@@ -42,7 +45,7 @@ struct FontSizeControls: View {
         } else if let editingText = editingText {
             return editingText.typography.lineHeight
         } else {
-            return document.fontManager.selectedLineHeight
+            return selectedLineHeight
         }
     }
 
@@ -106,7 +109,7 @@ struct FontSizeControls: View {
                             updateLineSpacing(preview, isPreview: false)
                         }
                         previewLineSpacing = nil
-                        if let textID = document.viewState.selectedObjectIDs.first {
+                        if let textID = selectedObjectIDs.first {
                             document.clearTextPreviewTypography(id: textID)
                         }
                     }
@@ -140,7 +143,7 @@ struct FontSizeControls: View {
                             updateLineHeight(preview, isPreview: false)
                         }
                         previewLineHeight = nil
-                        if let textID = document.viewState.selectedObjectIDs.first {
+                        if let textID = selectedObjectIDs.first {
                             document.clearTextPreviewTypography(id: textID)
                         }
                     }
@@ -177,7 +180,7 @@ struct FontSizeControls: View {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
 
-        for textID in document.viewState.selectedObjectIDs {
+        for textID in selectedObjectIDs {
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -198,7 +201,7 @@ struct FontSizeControls: View {
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
 
-        for textID in document.viewState.selectedObjectIDs {
+        for textID in selectedObjectIDs {
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -215,7 +218,7 @@ struct FontSizeControls: View {
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
 
-        for textID in document.viewState.selectedObjectIDs {
+        for textID in selectedObjectIDs {
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,

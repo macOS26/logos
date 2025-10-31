@@ -1,12 +1,30 @@
 import SwiftUI
 
 struct CMYKInputSection: View {
-    @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor
+    let activeColorTarget: ColorTarget
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    @Binding var colorDeltaColor: VectorColor?
     @Environment(AppState.self) private var appState
-
+    let onSetActiveColor: (VectorColor) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
     let onColorSelected: ((VectorColor) -> Void)?
-    let showGradientEditing: Bool
+    let disableSetActiveColor: Bool
+    let onDismiss: (() -> Void)?
+
+    init(sharedColor: Binding<VectorColor>, activeColorTarget: ColorTarget, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, colorDeltaColor: Binding<VectorColor?>, onSetActiveColor: @escaping (VectorColor) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, onColorSelected: ((VectorColor) -> Void)? = nil, disableSetActiveColor: Bool = false, onDismiss: (() -> Void)? = nil) {
+        self._sharedColor = sharedColor
+        self.activeColorTarget = activeColorTarget
+        self._defaultFillColor = defaultFillColor
+        self._defaultStrokeColor = defaultStrokeColor
+        self._colorDeltaColor = colorDeltaColor
+        self.onSetActiveColor = onSetActiveColor
+        self.onAddColorSwatch = onAddColorSwatch
+        self.onColorSelected = onColorSelected
+        self.disableSetActiveColor = disableSetActiveColor
+        self.onDismiss = onDismiss
+    }
 
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
@@ -96,15 +114,6 @@ struct CMYKInputSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("CMYK Process Colors")
-                    .font(.caption)
-                .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-
-            Text("Enter process color values (0-100%)")
-                .font(.caption2)
-                    .foregroundColor(.secondary)
-
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Circle()
@@ -294,6 +303,9 @@ struct CMYKInputSection: View {
             HStack(spacing: 8) {
                 Button(action: {
                     applyColorToActiveSelection()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        onDismiss?()
+                    }
                 }) {
                 Rectangle()
                         .fill(currentColor.color)
@@ -335,14 +347,22 @@ struct CMYKInputSection: View {
             return
         }
 
-        sharedColor = .cmyk(currentColor)
+        let cmykColor = VectorColor.cmyk(currentColor)
+        sharedColor = cmykColor
 
         if isProgrammaticallyUpdating {
             return
         }
 
-        return
+        // Update colorDelta for live preview
+        colorDeltaColor = cmykColor
 
+        // Update the active color binding (fill or stroke)
+        if activeColorTarget == .fill {
+            defaultFillColor = cmykColor
+        } else {
+            defaultStrokeColor = cmykColor
+        }
     }
 
     private func loadFromSharedColor() {
@@ -451,18 +471,15 @@ struct CMYKInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
 
-        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            document.addColorSwatch(vectorColor)
-            return
+        // Only set active color if not editing a gradient stop
+        if !disableSetActiveColor {
+            onSetActiveColor(vectorColor)
         }
-
-        document.setActiveColor(vectorColor)
-        document.addColorSwatch(vectorColor)
+        onAddColorSwatch(vectorColor)
     }
 
     private func addCMYKColorToSwatches() {
         let vectorColor = VectorColor.cmyk(currentColor)
-        document.addColorSwatch(vectorColor)
+        onAddColorSwatch(vectorColor)
     }
 }

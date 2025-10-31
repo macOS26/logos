@@ -107,7 +107,6 @@ struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
-    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if let gradient = currentGradient {
             let angle: Double = {
@@ -133,6 +132,7 @@ struct GradientAngleControlView: View {
                         get: { angle },
                         set: { newAngle in
                             // Update snapshot directly
+                            var layerIndices = Set<Int>()
                             for objectID in document.viewState.selectedObjectIDs {
                                 if let obj = document.snapshot.objects[objectID] {
                                     var shape = obj.shape
@@ -147,10 +147,11 @@ struct GradientAngleControlView: View {
                                         }
                                         shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
                                         document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                                        layerIndices.insert(obj.layerIndex)
                                     }
                                 }
                             }
-                            objectUpdateTrigger &+= 1
+                            document.triggerLayerUpdates(for: layerIndices)
                             onAngleChange(newAngle)
                         }
                     ), in: -180...180, onEditingChanged: { _ in
@@ -162,6 +163,7 @@ struct GradientAngleControlView: View {
                         getValue: { angle },
                         setValue: { newAngle in
                             // Update snapshot directly
+                            var layerIndices = Set<Int>()
                             for objectID in document.viewState.selectedObjectIDs {
                                 if let obj = document.snapshot.objects[objectID] {
                                     var shape = obj.shape
@@ -176,10 +178,11 @@ struct GradientAngleControlView: View {
                                         }
                                         shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
                                         document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                                        layerIndices.insert(obj.layerIndex)
                                     }
                                 }
                             }
-                            objectUpdateTrigger &+= 1
+                            document.triggerLayerUpdates(for: layerIndices)
                             onAngleChange(newAngle)
                         }
                     ))
@@ -197,7 +200,6 @@ struct GradientOriginControlView: View {
     @Binding var originY: Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
-    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if currentGradient != nil {
             // Use live state if available, otherwise use local state
@@ -205,17 +207,8 @@ struct GradientOriginControlView: View {
             let effectiveOriginY = document.viewState.liveGradientOriginY ?? originY
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Origin Point")
-                        .gradientLabel()
-                    Spacer()
-                    Text("0 to 1")
-                        .font(.caption2)
-                        .foregroundColor(Color.ui.primaryBlue)
-                        .padding(.horizontal, 4)
-                        .background(Color.ui.lightBlueBackground)
-                        .cornerRadius(3)
-                }
+                Text("Origin Point")
+                    .gradientLabel()
 
                 HStack(spacing: 8) {
                     GradientSliderControl(
@@ -254,7 +247,6 @@ struct GradientScaleControlView: View {
     let updateAspectRatio: (Double) -> Void
     let getRadius: (VectorGradient) -> Double
     let updateRadius: (Double) -> Void
-    @Binding var objectUpdateTrigger: UInt
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {

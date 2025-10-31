@@ -1,60 +1,122 @@
 import SwiftUI
 
 struct ColorPanel: View {
-    let snapshot: DocumentSnapshot
+    @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
-    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
+    @Binding var activeColorTarget: ColorTarget
+    @Binding var colorMode: ColorMode
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    let defaultFillOpacity: Double
+    let defaultStrokeOpacity: Double
+    let currentSwatches: [VectorColor]
+    let onTriggerLayerUpdates: (Set<Int>) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
+    let onRemoveColorSwatch: (VectorColor) -> Void
+    let onSetActiveColor: (VectorColor) -> Void
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
+
     @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
     @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3))
+    @State private var isLoaded = false
     let onColorSelected: ((VectorColor) -> Void)?
-    let showGradientEditing: Bool
+    let hasInitialColor: Bool
+    let initialColor: VectorColor?
+    let onDismiss: (() -> Void)?
 
-    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil, showGradientEditing: Bool = false) {
-        self.snapshot = snapshot
+    init(
+        snapshot: Binding<DocumentSnapshot>,
+        selectedObjectIDs: Set<UUID>,
+        activeColorTarget: Binding<ColorTarget>,
+        colorMode: Binding<ColorMode>,
+        defaultFillColor: Binding<VectorColor>,
+        defaultStrokeColor: Binding<VectorColor>,
+        defaultFillOpacity: Double,
+        defaultStrokeOpacity: Double,
+        currentSwatches: [VectorColor],
+        onTriggerLayerUpdates: @escaping (Set<Int>) -> Void,
+        onAddColorSwatch: @escaping (VectorColor) -> Void,
+        onRemoveColorSwatch: @escaping (VectorColor) -> Void,
+        onSetActiveColor: @escaping (VectorColor) -> Void,
+        colorDeltaColor: Binding<VectorColor?>,
+        colorDeltaOpacity: Binding<Double?>,
+        onColorSelected: ((VectorColor) -> Void)? = nil,
+        initialColor: VectorColor? = nil,
+        onDismiss: (() -> Void)? = nil
+    ) {
+        self._snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
-        self.document = document
+        self._activeColorTarget = activeColorTarget
+        self._colorMode = colorMode
+        self._defaultFillColor = defaultFillColor
+        self._defaultStrokeColor = defaultStrokeColor
+        self.defaultFillOpacity = defaultFillOpacity
+        self.defaultStrokeOpacity = defaultStrokeOpacity
+        self.currentSwatches = currentSwatches
+        self.onTriggerLayerUpdates = onTriggerLayerUpdates
+        self.onAddColorSwatch = onAddColorSwatch
+        self.onRemoveColorSwatch = onRemoveColorSwatch
+        self.onSetActiveColor = onSetActiveColor
+        self._colorDeltaColor = colorDeltaColor
+        self._colorDeltaOpacity = colorDeltaOpacity
         self.onColorSelected = onColorSelected
-        self.showGradientEditing = showGradientEditing
-        let initialColor = document.getSelectedObjectColor() ?? document.defaultFillColor
-        self._currentPreviewColor = State(initialValue: initialColor)
+        self.hasInitialColor = (initialColor != nil)
+        self.initialColor = initialColor
+        self.onDismiss = onDismiss
+
+        let color = initialColor ?? (activeColorTarget.wrappedValue == .stroke ? defaultStrokeColor.wrappedValue : defaultFillColor.wrappedValue)
+        self._currentPreviewColor = State(initialValue: color)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Spacer()
-                .frame(height: 8)
-            if showGradientEditing, let gradientState = appState.gradientEditingState {
-                HStack {
-                    Image(systemName: "circle.fill")
-                        .foregroundColor(.blue)
-                    Text("Editing Gradient Stop \(gradientState.stopIndex + 1)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                    Spacer()
-                    Text("ID: \(gradientState.gradientId.uuidString.prefix(8))")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .fontDesign(.monospaced)
+        ZStack(alignment: .topTrailing) {
+            if isLoaded {
+                loadedContent
+            } else {
+                // Show minimal loading view instantly
+                VStack {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.1))
-                .padding(.horizontal, 12)
+                .onAppear {
+                    // Defer heavy content to next frame
+                    DispatchQueue.main.async {
+                        isLoaded = true
+                    }
+                }
             }
+
+            // X button always visible
+            if let dismiss = onDismiss {
+                Button(action: dismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .background(Circle().fill(Color(NSColor.windowBackgroundColor)).frame(width: 22, height: 22))
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .padding(.top, 12)
+                .padding(.trailing, 12)
+            }
+        }
+    }
+
+    private var loadedContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+                Spacer()
+                    .frame(height: 8)
 
             VStack(alignment: .leading, spacing: 4) {
                 Picker("Color Mode", selection: Binding(
-                    get: { document.settings.colorMode },
+                    get: { colorMode },
                     set: { newMode in
-                        let oldMode = document.settings.colorMode
-                        document.settings.colorMode = newMode
+                        let oldMode = colorMode
+                        colorMode = newMode
 
                         currentPreviewColor = convertColorToMode(currentPreviewColor, from: oldMode, to: newMode)
-
-                        document.updateColorSwatchesForMode()
                     }
                 )) {
                     ForEach(ColorMode.allCases, id: \.self) { mode in
@@ -70,15 +132,52 @@ struct ColorPanel: View {
             }
             .padding(.horizontal, 12)
 
-            if document.settings.colorMode == .pms {
-                HSBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
-                    .padding(.horizontal, 12)
-            } else if document.settings.colorMode == .cmyk {
-                CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
-                        .padding(.horizontal, 12)
-            } else if document.settings.colorMode == .rgb {
-                RGBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
-                        .padding(.horizontal, 12)
+            if colorMode == .rgb {
+                RGBInputSection(
+                    snapshot: $snapshot,
+                    selectedObjectIDs: selectedObjectIDs,
+                    activeColorTarget: activeColorTarget,
+                    defaultFillColor: $defaultFillColor,
+                    defaultStrokeColor: $defaultStrokeColor,
+                    defaultFillOpacity: defaultFillOpacity,
+                    defaultStrokeOpacity: defaultStrokeOpacity,
+                    onTriggerLayerUpdates: onTriggerLayerUpdates,
+                    onAddColorSwatch: onAddColorSwatch,
+                    onSetActiveColor: onSetActiveColor,
+                    colorDeltaColor: $colorDeltaColor,
+                    colorDeltaOpacity: $colorDeltaOpacity,
+                    sharedColor: $currentPreviewColor,
+                    onColorSelected: onColorSelected,
+                    onDismiss: onDismiss
+                )
+                .padding(.horizontal, 12)
+            } else if colorMode == .cmyk {
+                CMYKInputSection(
+                    sharedColor: $currentPreviewColor,
+                    activeColorTarget: activeColorTarget,
+                    defaultFillColor: $defaultFillColor,
+                    defaultStrokeColor: $defaultStrokeColor,
+                    colorDeltaColor: $colorDeltaColor,
+                    onSetActiveColor: onSetActiveColor,
+                    onAddColorSwatch: onAddColorSwatch,
+                    onColorSelected: onColorSelected,
+                    disableSetActiveColor: hasInitialColor,
+                    onDismiss: onDismiss
+                )
+                .padding(.horizontal, 12)
+            } else if colorMode == .pms {
+                HSBInputSection(
+                    sharedColor: $currentPreviewColor,
+                    activeColorTarget: activeColorTarget,
+                    defaultFillColor: $defaultFillColor,
+                    defaultStrokeColor: $defaultStrokeColor,
+                    colorDeltaColor: $colorDeltaColor,
+                    onSetActiveColor: onSetActiveColor,
+                    onAddColorSwatch: onAddColorSwatch,
+                    disableSetActiveColor: hasInitialColor,
+                    onDismiss: onDismiss
+                )
+                .padding(.horizontal, 12)
             }
 
             HStack {
@@ -93,8 +192,17 @@ struct ColorPanel: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
-                        selectColor(color)
-                        currentPreviewColor = color
+                        if hasInitialColor {
+                            // When initial color provided, call callback
+                            onColorSelected?(color)
+                        } else {
+                            // For regular color selection
+                            selectColor(color)
+                            currentPreviewColor = color
+                        }
+                        DispatchQueue.main.async {
+                            onDismiss?()
+                        }
                     } label: {
                         ZStack {
                             renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
@@ -108,7 +216,7 @@ struct ColorPanel: View {
                     .help(colorDescription(for: color))
                     .contextMenu {
                         Button("Delete Swatch") {
-                            document.removeColorSwatch(color)
+                            onRemoveColorSwatch(color)
                         }
                     }
                     }
@@ -118,29 +226,32 @@ struct ColorPanel: View {
 
             Spacer()
         }
-        .sheet(isPresented: $showingPantoneSearch) {
-            PantoneColorPickerSheet(document: document)
-        }
         .onAppear {
-            currentPreviewColor = (document.viewState.activeColorTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
+            currentPreviewColor = (activeColorTarget == .stroke) ? defaultStrokeColor : defaultFillColor
         }
-        .onChange(of: document.viewState.activeColorTarget) { _, newTarget in
-            currentPreviewColor = (newTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
+        .onChange(of: activeColorTarget) { _, newTarget in
+            currentPreviewColor = (newTarget == .stroke) ? defaultStrokeColor : defaultFillColor
         }
-        .onChange(of: document.defaultFillColor) { _, newFill in
-            if document.viewState.activeColorTarget == .fill {
+        .onChange(of: defaultFillColor) { _, newFill in
+            if activeColorTarget == .fill {
                 currentPreviewColor = newFill
             }
         }
-        .onChange(of: document.defaultStrokeColor) { _, newStroke in
-            if document.viewState.activeColorTarget == .stroke {
+        .onChange(of: defaultStrokeColor) { _, newStroke in
+            if activeColorTarget == .stroke {
                 currentPreviewColor = newStroke
+            }
+        }
+        .onChange(of: initialColor) { _, newInitialColor in
+            // Update local state when hovering to a new swatch (just like gradient stops)
+            if let newColor = newInitialColor {
+                currentPreviewColor = newColor
             }
         }
     }
 
     private var colorModeDescription: String {
-        switch document.settings.colorMode {
+        switch colorMode {
         case .rgb:
             return "RGB colors for screen display"
         case .cmyk:
@@ -152,27 +263,20 @@ struct ColorPanel: View {
 
     private var filteredColors: [VectorColor] {
         if searchText.isEmpty {
-            return document.currentSwatches
+            return currentSwatches
         } else {
-            return document.currentSwatches.filter { color in
+            return currentSwatches.filter { color in
                 colorDescription(for: color).localizedCaseInsensitiveContains(searchText)
             }
         }
     }
 
     private func selectColor(_ color: VectorColor) {
-
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
-
             currentPreviewColor = color
-
-            if document.viewState.activeColorTarget == .stroke {
-                document.setActiveColor(color)
-            } else {
-                document.setActiveColor(color)
-            }
+            onSetActiveColor(color)
         }
     }
 
@@ -238,14 +342,14 @@ struct ColorPanel: View {
             case .appleSystem(let system):
                 let cmykColor = ColorManagement.rgbToCMYK(system.rgbEquivalent)
                 return .cmyk(cmykColor)
-            case .gradient:
-                return color
             case .clear:
                 return .clear
             case .black:
                 return .cmyk(CMYKColor(cyan: 0, magenta: 0, yellow: 0, black: 1))
             case .white:
                 return .cmyk(CMYKColor(cyan: 0, magenta: 0, yellow: 0, black: 0))
+            case .gradient:
+                return color
             }
         }
 
@@ -264,14 +368,14 @@ struct ColorPanel: View {
                 return .rgb(spot.rgbEquivalent)
             case .appleSystem:
                 return color
-            case .gradient:
-                return color
             case .clear:
                 return .clear
             case .black:
                 return .rgb(RGBColor(red: 0, green: 0, blue: 0))
             case .white:
                 return .rgb(RGBColor(red: 1, green: 1, blue: 1))
+            case .gradient:
+                return color
             }
         }
 
@@ -289,56 +393,18 @@ struct ColorPanel: View {
                 return .hsb(spot.hsbEquivalent)
             case .appleSystem(let system):
                 return .hsb(HSBColorModel.fromRGB(system.rgbEquivalent))
-            case .gradient:
-                return color
             case .clear:
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0))
             case .black:
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 0))
             case .white:
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1))
+            case .gradient:
+                return color
             }
         }
 
         return color
     }
 
-    private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
-        guard !document.viewState.selectedObjectIDs.isEmpty else { return }
-
-        var oldColors: [UUID: VectorColor] = [:]
-        var newColors: [UUID: VectorColor] = [:]
-        var oldOpacities: [UUID: Double] = [:]
-        var newOpacities: [UUID: Double] = [:]
-
-        for textID in document.viewState.selectedObjectIDs {
-            if let obj = document.findObject(by: textID) {
-                switch obj.objectType {
-                case .text(let shape):
-                    oldColors[textID] = shape.typography?.strokeColor ?? .clear
-                    newColors[textID] = color
-                    oldOpacities[textID] = shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
-                    newOpacities[textID] = document.defaultStrokeOpacity
-                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
-                    continue
-                }
-            }
-        }
-
-        if !oldColors.isEmpty {
-            let command = ChangeColorCommand(
-                objectIDs: Array(document.viewState.selectedObjectIDs),
-                target: .stroke,
-                oldColors: oldColors,
-                newColors: newColors,
-                oldOpacities: oldOpacities,
-                newOpacities: newOpacities
-            )
-            document.executeCommand(command)
-        }
-
-        for textID in document.viewState.selectedObjectIDs {
-            document.updateTextStrokeColorInUnified(id: textID, color: color)
-        }
-    }
 }

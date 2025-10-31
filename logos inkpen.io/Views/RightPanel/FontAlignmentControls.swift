@@ -1,8 +1,9 @@
 import SwiftUI
-import Combine
 
 struct FontAlignmentControls: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let selectedTextAlignment: TextAlignment
+    let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
 
@@ -12,7 +13,7 @@ struct FontAlignmentControls: View {
         } else if let editingText = editingText {
             return editingText.typography.alignment.nsTextAlignment
         } else {
-            return document.fontManager.selectedTextAlignment.nsTextAlignment
+            return selectedTextAlignment.nsTextAlignment
         }
     }
 
@@ -65,7 +66,7 @@ struct FontAlignmentControls: View {
     private func updateAlignment(_ alignment: TextAlignment) {
         document.fontManager.selectedTextAlignment = alignment
 
-        for textID in document.viewState.selectedObjectIDs {
+        for textID in selectedObjectIDs {
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,

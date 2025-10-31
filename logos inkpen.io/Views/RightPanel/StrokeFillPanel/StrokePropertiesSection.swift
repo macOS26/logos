@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct StrokePropertiesSection: View {
-    @ObservedObject var document: VectorDocument
     let strokeWidth: Double
     let strokePlacement: StrokePlacement
     let strokeOpacity: Double

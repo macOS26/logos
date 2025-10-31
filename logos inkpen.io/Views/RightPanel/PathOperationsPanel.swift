@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct PathOperationsPanel: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    let document: VectorDocument
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -65,7 +68,10 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 16)
             }
 
-            ProfessionalOffsetPathSection(document: document)
+            ProfessionalOffsetPathSection(
+                selectedObjectIDs: selectedObjectIDs,
+                document: document
+            )
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Path Cleanup")

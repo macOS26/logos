@@ -89,6 +89,10 @@ extension View {
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
+    @Binding var selectedLayerIndex: Int?
+    @Binding var processedLayersDuringDrag: Set<Int>
+    @Binding var processedObjectsDuringDrag: Set<UUID>
+
     @State private var expandedLayers: Set<Int> = []
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
@@ -162,17 +166,17 @@ struct LayersPanel: View {
     }
 
     var body: some View {
+        let _ = document.snapshot.layers // Subscribe to layers array
+        let _ = document.snapshot.objects // Subscribe to objects dictionary
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
         let layerCount = document.snapshot.layers.count
-        let _ = print("🔵 LayersPanel body - Layer count: \(layerCount)")
-        let _ = print("🔵 LayersPanel body - Layers: \(document.snapshot.layers.map { $0.name })")
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
 
-            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.snapshot.layers.count {
+            if let selectedIndex = selectedLayerIndex, selectedIndex < document.snapshot.layers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
                     .frame(width: 55)
@@ -182,7 +186,7 @@ struct LayersPanel: View {
             Spacer()
         }
         .background(
-            KeyEventHandlerView(document: document)
+            KeyEventHandlerView(document: document, selectedLayerIndex: $selectedLayerIndex)
         )
         .onAppear {
             validateOverlays()
@@ -319,12 +323,10 @@ struct LayersPanel: View {
     }
     
     private var layersScrollContent: some View {
-        let _ = print("🟢 layersScrollContent - Building with \(document.snapshot.layers.count) layers")
         return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
-                        let _ = print("🟡 ForEach - Rendering layer \(layerIndex): \(layer.name)")
                         layerRowContent(for: layerIndex)
                     }
                 }
@@ -353,8 +355,8 @@ struct LayersPanel: View {
                         .onChanged { value in
                             if !document.viewState.isDraggingVisibility {
                                 document.viewState.isDraggingVisibility = true
-                                document.processedLayersDuringDrag.removeAll()
-                                document.processedObjectsDuringDrag.removeAll()
+                                processedLayersDuringDrag.removeAll()
+                                processedObjectsDuringDrag.removeAll()
 
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)
@@ -373,8 +375,8 @@ struct LayersPanel: View {
                         }
                         .onEnded { _ in
                             document.viewState.isDraggingVisibility = false
-                            document.processedLayersDuringDrag.removeAll()
-                            document.processedObjectsDuringDrag.removeAll()
+                            processedLayersDuringDrag.removeAll()
+                            processedObjectsDuringDrag.removeAll()
                         }
                 )
                 .padding(.horizontal, 4)
@@ -394,8 +396,8 @@ struct LayersPanel: View {
                         .onChanged { value in
                             if !document.viewState.isDraggingLock {
                                 document.viewState.isDraggingLock = true
-                                document.processedLayersDuringDrag.removeAll()
-                                document.processedObjectsDuringDrag.removeAll()
+                                processedLayersDuringDrag.removeAll()
+                                processedObjectsDuringDrag.removeAll()
 
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)
@@ -414,8 +416,8 @@ struct LayersPanel: View {
                         }
                         .onEnded { _ in
                             document.viewState.isDraggingLock = false
-                            document.processedLayersDuringDrag.removeAll()
-                            document.processedObjectsDuringDrag.removeAll()
+                            processedLayersDuringDrag.removeAll()
+                            processedObjectsDuringDrag.removeAll()
                         }
                 )
                 .padding(.horizontal, 4)
@@ -428,7 +430,7 @@ struct LayersPanel: View {
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
-            layer: layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex] : document.snapshot.layers[0],
+            layer: layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex] : Layer(name: "Invalid", objectIDs: []),
             document: document
         )
     }
@@ -436,13 +438,13 @@ struct LayersPanel: View {
     private func toggleVisibility(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
-            if !document.processedLayersDuringDrag.contains(index) {
+            if !processedLayersDuringDrag.contains(index) {
                 document.snapshot.layers[index].isVisible.toggle()
-                document.processedLayersDuringDrag.insert(index)
+                processedLayersDuringDrag.insert(index)
                 document.triggerLayerUpdate(for: index)
             }
         case .object(let layerIndex, let objectId):
-            if !document.processedObjectsDuringDrag.contains(objectId) {
+            if !processedObjectsDuringDrag.contains(objectId) {
                 if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
 
@@ -458,13 +460,13 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.snapshot.objects[objectId] = updatedObject
-                        document.processedObjectsDuringDrag.insert(objectId)
+                        processedObjectsDuringDrag.insert(objectId)
                         document.triggerLayerUpdate(for: layerIndex)
                     }
                 }
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
-            if !document.processedObjectsDuringDrag.contains(childShapeId) {
+            if !processedObjectsDuringDrag.contains(childShapeId) {
                 if let parentObj = document.snapshot.objects[parentObjectId] {
                     if case .shape(var parentShape) = parentObj.objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
@@ -474,7 +476,7 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
-                            document.processedObjectsDuringDrag.insert(childShapeId)
+                            processedObjectsDuringDrag.insert(childShapeId)
                             document.triggerLayerUpdate(for: layerIndex)
                         }
                     }
@@ -486,13 +488,13 @@ struct LayersPanel: View {
     private func toggleLock(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
-            if !document.processedLayersDuringDrag.contains(index) {
+            if !processedLayersDuringDrag.contains(index) {
                 document.snapshot.layers[index].isLocked.toggle()
-                document.processedLayersDuringDrag.insert(index)
+                processedLayersDuringDrag.insert(index)
                 document.triggerLayerUpdate(for: index)
             }
         case .object(let layerIndex, let objectId):
-            if !document.processedObjectsDuringDrag.contains(objectId) {
+            if !processedObjectsDuringDrag.contains(objectId) {
                 if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
 
@@ -508,13 +510,13 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.snapshot.objects[objectId] = updatedObject
-                        document.processedObjectsDuringDrag.insert(objectId)
+                        processedObjectsDuringDrag.insert(objectId)
                         document.triggerLayerUpdate(for: layerIndex)
                     }
                 }
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
-            if !document.processedObjectsDuringDrag.contains(childShapeId) {
+            if !processedObjectsDuringDrag.contains(childShapeId) {
                 if let parentObj = document.snapshot.objects[parentObjectId] {
                     if case .shape(var parentShape) = parentObj.objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
@@ -524,7 +526,7 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.snapshot.objects[parentObjectId] = updatedObject
-                            document.processedObjectsDuringDrag.insert(childShapeId)
+                            processedObjectsDuringDrag.insert(childShapeId)
                             document.triggerLayerUpdate(for: layerIndex)
                         }
                     }
@@ -603,21 +605,28 @@ extension ColorSwatchButton where Content == AnyView {
 }
 
 struct KeyEventHandlerView: NSViewRepresentable {
-    let document: VectorDocument
+    @ObservedObject var document: VectorDocument
+    @Binding var selectedLayerIndex: Int?
 
     func makeNSView(context: Context) -> NSView {
         let view = KeyEventHandlingNSView()
         view.document = document
+        view.selectedLayerIndex = $selectedLayerIndex
         DispatchQueue.main.async {
             view.window?.makeFirstResponder(view)
         }
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let view = nsView as? KeyEventHandlingNSView {
+            view.selectedLayerIndex = $selectedLayerIndex
+        }
+    }
 
     class KeyEventHandlingNSView: NSView {
         var document: VectorDocument?
+        var selectedLayerIndex: Binding<Int?>?
 
         override var acceptsFirstResponder: Bool { true }
 
@@ -657,15 +666,15 @@ if event.keyCode == 126 {
                 if !document.viewState.selectedObjectIDs.isEmpty {
                     self.selectNextObject(document: document)
                 } else {
-                    guard let currentIndex = document.selectedLayerIndex else {
+                    guard let currentIndex = self.selectedLayerIndex?.wrappedValue else {
                         if document.snapshot.layers.count > 2 {
-                            document.selectedLayerIndex = 2
+                            self.selectedLayerIndex?.wrappedValue = 2
                         }
                         return
                     }
 
                     if currentIndex < document.snapshot.layers.count - 1 {
-                        document.selectedLayerIndex = currentIndex + 1
+                        self.selectedLayerIndex?.wrappedValue = currentIndex + 1
                     }
                 }
             }
@@ -676,22 +685,22 @@ if event.keyCode == 126 {
                 if !document.viewState.selectedObjectIDs.isEmpty {
                     self.selectPreviousObject(document: document)
                 } else {
-                    guard let currentIndex = document.selectedLayerIndex else {
+                    guard let currentIndex = self.selectedLayerIndex?.wrappedValue else {
                         if document.snapshot.layers.count > 2 {
-                            document.selectedLayerIndex = document.snapshot.layers.count - 1
+                            self.selectedLayerIndex?.wrappedValue = document.snapshot.layers.count - 1
                         }
                         return
                     }
 
                     if currentIndex > 2 {
-                        document.selectedLayerIndex = currentIndex - 1
+                        self.selectedLayerIndex?.wrappedValue = currentIndex - 1
                     }
                 }
             }
         }
 
         private func selectNextObject(document: VectorDocument) {
-            guard let currentLayerIndex = document.selectedLayerIndex,
+            guard let currentLayerIndex = self.selectedLayerIndex?.wrappedValue,
                   currentLayerIndex < document.snapshot.layers.count,
                   let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
             let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
@@ -706,7 +715,7 @@ if event.keyCode == 126 {
         }
 
         private func selectPreviousObject(document: VectorDocument) {
-            guard let currentLayerIndex = document.selectedLayerIndex,
+            guard let currentLayerIndex = self.selectedLayerIndex?.wrappedValue,
                   currentLayerIndex < document.snapshot.layers.count,
                   let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
             let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
@@ -722,7 +731,7 @@ if event.keyCode == 126 {
 
         private func moveSelectedLayerUp(document: VectorDocument) {
             DispatchQueue.main.async {
-                guard let currentIndex = document.selectedLayerIndex else { return }
+                guard let currentIndex = self.selectedLayerIndex?.wrappedValue else { return }
 
                 if currentIndex <= 1 { return }
 
@@ -730,14 +739,14 @@ if event.keyCode == 126 {
                     let targetIndex = currentIndex + 1
                     document.reorderLayer(sourceLayerId: document.snapshot.layers[currentIndex].id,
                                           targetLayerId: document.snapshot.layers[targetIndex].id)
-                    document.selectedLayerIndex = targetIndex
+                    self.selectedLayerIndex?.wrappedValue = targetIndex
                 }
             }
         }
 
         private func moveSelectedLayerDown(document: VectorDocument) {
             DispatchQueue.main.async {
-                guard let currentIndex = document.selectedLayerIndex else { return }
+                guard let currentIndex = self.selectedLayerIndex?.wrappedValue else { return }
 
                 if currentIndex <= 1 { return }
 
@@ -745,7 +754,7 @@ if event.keyCode == 126 {
                     let targetIndex = currentIndex - 1
                     document.reorderLayer(sourceLayerId: document.snapshot.layers[currentIndex].id,
                                           targetLayerId: document.snapshot.layers[targetIndex].id)
-                    document.selectedLayerIndex = targetIndex
+                    self.selectedLayerIndex?.wrappedValue = targetIndex
                 }
             }
         }

@@ -1,8 +1,17 @@
 import SwiftUI
 
 struct RightPanel: View {
+    let snapshot: DocumentSnapshot
+    @ObservedObject var viewState: DocumentViewState
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
+    @Binding var colorDeltaBlendMode: BlendMode?
+    @Binding var strokeDeltaWidth: Double?
+    @Binding var selectedLayerIndex: Int?
+    @Binding var processedLayersDuringDrag: Set<Int>
+    @Binding var processedObjectsDuringDrag: Set<UUID>
     @Environment(AppState.self) private var appState
 
     var body: some View {
@@ -15,29 +24,127 @@ struct RightPanel: View {
             Group {
                 switch appState.selectedPanelTab {
                 case .layers:
-                    LayersPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
+                    LayersPanel(
+                        document: document,
+                        layerPreviewOpacities: $layerPreviewOpacities,
+                        selectedLayerIndex: $selectedLayerIndex,
+                        processedLayersDuringDrag: $processedLayersDuringDrag,
+                        processedObjectsDuringDrag: $processedObjectsDuringDrag
+                    )
                 case .properties:
                     StrokeFillPanel(
-                        snapshot: document.snapshot,
-                        selectedObjectIDs: document.viewState.selectedObjectIDs,
-                        document: document
+                        snapshot: Binding(
+                            get: { document.snapshot },
+                            set: { document.snapshot = $0 }
+                        ),
+                        selectedObjectIDs: viewState.selectedObjectIDs,
+                        activeColorTarget: viewState.activeColorTarget,
+                        colorMode: Binding(
+                            get: { document.settings.colorMode },
+                            set: { document.settings.colorMode = $0 }
+                        ),
+                        defaultFillColor: Binding(
+                            get: { viewState.activeFillColor },
+                            set: { viewState.activeFillColor = $0 }
+                        ),
+                        defaultStrokeColor: Binding(
+                            get: { viewState.activeStrokeColor },
+                            set: { viewState.activeStrokeColor = $0 }
+                        ),
+                        defaultFillOpacity: Binding(
+                            get: { viewState.activeFillOpacity },
+                            set: { viewState.activeFillOpacity = $0 }
+                        ),
+                        defaultStrokeOpacity: Binding(
+                            get: { viewState.activeStrokeOpacity },
+                            set: { viewState.activeStrokeOpacity = $0 }
+                        ),
+                        defaultStrokeWidth: Binding(
+                            get: { viewState.activeStrokeWidth },
+                            set: { viewState.activeStrokeWidth = $0 }
+                        ),
+                        strokeDefaults: document.strokeDefaults,
+                        currentSwatches: document.currentSwatches,
+                        currentTool: viewState.currentTool,
+                        hasPressureInput: viewState.hasPressureInput,
+                        changeToken: document.changeNotifier.changeToken,
+                        onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+                        onAddColorSwatch: { color in document.addColorSwatch(color) },
+                        onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+                        onSetActiveColor: { color in document.setActiveColor(color) },
+                        colorDeltaColor: $colorDeltaColor,
+                        colorDeltaOpacity: $colorDeltaOpacity,
+                        strokeDeltaWidth: $strokeDeltaWidth,
+                        onSetActiveColorTarget: { target in document.viewState.activeColorTarget = target },
+                        onUpdateStrokeDefaults: { defaults in document.strokeDefaults = defaults },
+                        onOutlineSelectedStrokes: { document.outlineSelectedStrokes() },
+                        onDuplicateSelectedShapes: { document.duplicateSelectedShapes() },
+                        onUpdateObjectOpacity: { objectID, opacity, target in document.updateObjectOpacityDirect(objectID: objectID, opacity: opacity, target: target) },
+                        onUpdateObjectStrokeWidth: { objectID, width in document.updateObjectStrokeWidthDirect(objectID: objectID, width: width) },
+                        onUpdateFillOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing) },
+                        onUpdateStrokeOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing) },
+                        onUpdateStrokeWidthLive: { width, isEditing in PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: isEditing) },
+                        onUpdateStrokePlacement: { placement in PaintSelectionOperations.updateStrokePlacement(placement, document: document) },
+                        onUpdateStrokeLineJoin: { lineJoin in PaintSelectionOperations.updateStrokeLineJoin(lineJoin, document: document) },
+                        onUpdateStrokeLineCap: { lineCap in PaintSelectionOperations.updateStrokeLineCap(lineCap, document: document) },
+                        onUpdateStrokeMiterLimit: { miterLimit in PaintSelectionOperations.updateStrokeMiterLimit(miterLimit, document: document) },
+                        onUpdateStrokeMiterLimitDirectNoUndo: { miterLimit in PaintSelectionOperations.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document) },
+                        onUpdateStrokeScaleWithTransform: { scaleWithTransform in PaintSelectionOperations.updateStrokeScaleWithTransform(scaleWithTransform, document: document) },
+                        onUpdateImageOpacity: { opacity in PaintSelectionOperations.updateImageOpacity(opacity, document: document) },
+                        onApplyFillToSelectedShapes: { fillColor, fillOpacity in PaintSelectionOperations.applyFillToSelectedShapes(fillColor: fillColor, fillOpacity: fillOpacity, document: document) },
+                        onUpdateShapeStrokePlacementInUnified: { id, placement in document.updateShapeStrokePlacementInUnified(id: id, placement: placement) }
                     )
                 case .gradient:
                     GradientPanel(
-                        snapshot: document.snapshot,
-                        selectedObjectIDs: document.viewState.selectedObjectIDs,
+                        snapshot: snapshot,
+                        selectedObjectIDs: viewState.selectedObjectIDs,
                         document: document
                     )
                 case .color:
                     ColorPanel(
-                        snapshot: document.snapshot,
-                        selectedObjectIDs: document.viewState.selectedObjectIDs,
-                        document: document
+                        snapshot: Binding(
+                            get: { document.snapshot },
+                            set: { document.snapshot = $0 }
+                        ),
+                        selectedObjectIDs: viewState.selectedObjectIDs,
+                        activeColorTarget: Binding(
+                            get: { viewState.activeColorTarget },
+                            set: { viewState.activeColorTarget = $0 }
+                        ),
+                        colorMode: Binding(
+                            get: { document.settings.colorMode },
+                            set: { document.settings.colorMode = $0 }
+                        ),
+                        defaultFillColor: Binding(
+                            get: { viewState.activeFillColor },
+                            set: { viewState.activeFillColor = $0 }
+                        ),
+                        defaultStrokeColor: Binding(
+                            get: { viewState.activeStrokeColor },
+                            set: { viewState.activeStrokeColor = $0 }
+                        ),
+                        defaultFillOpacity: document.defaultFillOpacity,
+                        defaultStrokeOpacity: document.defaultStrokeOpacity,
+                        currentSwatches: document.currentSwatches,
+                        onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+                        onAddColorSwatch: { color in document.addColorSwatch(color) },
+                        onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+                        onSetActiveColor: { color in document.setActiveColor(color) },
+                        colorDeltaColor: $colorDeltaColor,
+                        colorDeltaOpacity: $colorDeltaOpacity
                     )
                 case .pathOps:
-                    PathOperationsPanel(document: document)
+                    PathOperationsPanel(
+                        snapshot: snapshot,
+                        selectedObjectIDs: viewState.selectedObjectIDs,
+                        document: document
+                    )
                 case .font:
-                    FontPanel(document: document)
+                    FontPanel(
+                        snapshot: snapshot,
+                        selectedObjectIDs: viewState.selectedObjectIDs,
+                        document: document
+                    )
                 }
             }
         }
@@ -52,6 +159,19 @@ struct RightPanel: View {
 }
 
 #Preview {
-    RightPanel(document: VectorDocument(), layerPreviewOpacities: .constant([:]))
-        .frame(height: 600)
+    let doc = VectorDocument()
+    RightPanel(
+        snapshot: doc.snapshot,
+        viewState: doc.viewState,
+        document: doc,
+        layerPreviewOpacities: .constant([:]),
+        colorDeltaColor: .constant(nil),
+        colorDeltaOpacity: .constant(nil),
+        colorDeltaBlendMode: .constant(nil),
+        strokeDeltaWidth: .constant(nil),
+        selectedLayerIndex: .constant(nil),
+        processedLayersDuringDrag: .constant([]),
+        processedObjectsDuringDrag: .constant([])
+    )
+    .frame(height: 600)
 }

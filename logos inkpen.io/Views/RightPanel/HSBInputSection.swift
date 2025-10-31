@@ -1,12 +1,29 @@
 import SwiftUI
 
 struct HSBInputSection: View {
-    @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor
+    let activeColorTarget: ColorTarget
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    @Binding var colorDeltaColor: VectorColor?
     @Environment(AppState.self) private var appState
-    
-    let showGradientEditing: Bool
-    
+    let onSetActiveColor: (VectorColor) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
+    let disableSetActiveColor: Bool
+    let onDismiss: (() -> Void)?
+
+    init(sharedColor: Binding<VectorColor>, activeColorTarget: ColorTarget, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, colorDeltaColor: Binding<VectorColor?>, onSetActiveColor: @escaping (VectorColor) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, disableSetActiveColor: Bool = false, onDismiss: (() -> Void)? = nil) {
+        self._sharedColor = sharedColor
+        self.activeColorTarget = activeColorTarget
+        self._defaultFillColor = defaultFillColor
+        self._defaultStrokeColor = defaultStrokeColor
+        self._colorDeltaColor = colorDeltaColor
+        self.onSetActiveColor = onSetActiveColor
+        self.onAddColorSwatch = onAddColorSwatch
+        self.disableSetActiveColor = disableSetActiveColor
+        self.onDismiss = onDismiss
+    }
+
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
@@ -288,6 +305,9 @@ struct HSBInputSection: View {
                 HStack(spacing: 6) {
                     Button(action: {
                         applyHSBColorToActiveSelection()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            onDismiss?()
+                        }
                     }) {
                         VStack(spacing: 2) {
                             Rectangle()
@@ -304,9 +324,12 @@ struct HSBInputSection: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help("Click to apply HSB color to selection")
-                    
+
                     Button(action: {
                         applyPMSColorToActiveSelection()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            onDismiss?()
+                        }
                     }) {
                         VStack(spacing: 2) {
                             ZStack {
@@ -409,15 +432,23 @@ struct HSBInputSection: View {
         if isDisplayingGradient {
             return
         }
-        
-        sharedColor = .hsb(currentColor)
-        
+
+        let hsbColor = VectorColor.hsb(currentColor)
+        sharedColor = hsbColor
+
         if isProgrammaticallyUpdating {
             return
         }
-        
-        return
-        
+
+        // Update colorDelta for live preview
+        colorDeltaColor = hsbColor
+
+        // Update the active color binding (fill or stroke)
+        if activeColorTarget == .fill {
+            defaultFillColor = hsbColor
+        } else {
+            defaultStrokeColor = hsbColor
+        }
     }
     
     private func loadFromSharedColor() {
@@ -484,14 +515,12 @@ struct HSBInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
-        
-        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            return
+
+        // Only set active color if not editing a gradient stop
+        if !disableSetActiveColor {
+            onSetActiveColor(vectorColor)
         }
-        
-        document.setActiveColor(vectorColor)
-        
+
         updateSharedColor()
     }
     
@@ -502,7 +531,7 @@ struct HSBInputSection: View {
             brightness: (Double(brightnessValue) ?? 0) / 100.0
         )
         let vectorColor = VectorColor.hsb(exactHSBColor)
-        document.addColorToSwatches(vectorColor)
+        onAddColorSwatch(vectorColor)
         
     }
     
@@ -563,7 +592,7 @@ struct HSBInputSection: View {
             livePMSPreview = nil
             
             let pmsColor = VectorColor.pantone(foundColor)
-            document.addColorSwatch(pmsColor)
+            onAddColorSwatch(pmsColor)
         }
     }
     
@@ -575,12 +604,8 @@ struct HSBInputSection: View {
     private func applyPMSColorToActiveSelection() {
         if let pantoneColor = livePreviewColor.pms {
             let pmsVectorColor = VectorColor.pantone(pantoneColor)
-            if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-                gradientCallback(pmsVectorColor)
-            } else {
-                document.setActiveColor(pmsVectorColor)
-            }
-            document.addColorSwatch(pmsVectorColor)
+            onSetActiveColor(pmsVectorColor)
+            onAddColorSwatch(pmsVectorColor)
         } else {
             applyColorToActiveSelection()
             addColorToSwatches()

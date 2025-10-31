@@ -1,16 +1,48 @@
 import SwiftUI
 
 struct ColorPickerModal: View {
-    @ObservedObject var document: VectorDocument
+    @Binding var snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    let activeColorTarget: ColorTarget
+    @Binding var colorMode: ColorMode
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    let defaultFillOpacity: Double
+    let defaultStrokeOpacity: Double
+    let currentSwatches: [VectorColor]
+    let onTriggerLayerUpdates: (Set<Int>) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
+    let onRemoveColorSwatch: (VectorColor) -> Void
+    let onSetActiveColor: (VectorColor) -> Void
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
     @Environment(\.presentationMode) var presentationMode
     let title: String
     let onColorSelected: (VectorColor) -> Void
+
+    @State private var localActiveColorTarget: ColorTarget?
+
     var body: some View {
         NavigationView {
             ColorPanel(
-                snapshot: document.snapshot,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                document: document,
+                snapshot: $snapshot,
+                selectedObjectIDs: selectedObjectIDs,
+                activeColorTarget: Binding(
+                    get: { localActiveColorTarget ?? activeColorTarget },
+                    set: { localActiveColorTarget = $0 }
+                ),
+                colorMode: $colorMode,
+                defaultFillColor: $defaultFillColor,
+                defaultStrokeColor: $defaultStrokeColor,
+                defaultFillOpacity: defaultFillOpacity,
+                defaultStrokeOpacity: defaultStrokeOpacity,
+                currentSwatches: currentSwatches,
+                onTriggerLayerUpdates: onTriggerLayerUpdates,
+                onAddColorSwatch: onAddColorSwatch,
+                onRemoveColorSwatch: onRemoveColorSwatch,
+                onSetActiveColor: onSetActiveColor,
+                colorDeltaColor: $colorDeltaColor,
+                colorDeltaOpacity: $colorDeltaOpacity,
                 onColorSelected: onColorSelected
             )
                 .navigationTitle(title)

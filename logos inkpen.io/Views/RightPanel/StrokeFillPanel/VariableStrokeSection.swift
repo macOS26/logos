@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct VariableStrokeSection: View {
-    @ObservedObject var document: VectorDocument
+    let hasPressureInput: Bool
     @Environment(AppState.self) private var appState
     @ObservedObject private var settings = ApplicationSettings.shared
 
@@ -191,9 +191,9 @@ struct VariableStrokeSection: View {
             }
 
             HStack {
-                Image(systemName: document.viewState.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
-                    .foregroundColor(document.viewState.hasPressureInput ? .green : .orange)
-                Text(document.viewState.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
+                Image(systemName: hasPressureInput ? "hand.point.up.braille" : "hand.tap")
+                    .foregroundColor(hasPressureInput ? .green : .orange)
+                Text(hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
                 Spacer()

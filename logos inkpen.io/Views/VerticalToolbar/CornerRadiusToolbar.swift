@@ -2,7 +2,9 @@ import SwiftUI
 import Combine
 
 struct CornerRadiusToolbar: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let snapshot: DocumentSnapshot
+    let document: VectorDocument
     @State private var cornerValues: [Double] = []
     @State private var cornerCount: Int = 0
 
@@ -15,14 +17,11 @@ struct CornerRadiusToolbar: View {
         .onAppear {
             updateCornerValues()
         }
-        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
+        .onChange(of: selectedObjectIDs) { _, _ in
             updateCornerValues()
         }
-        .onChange(of: document.snapshot.layers) { _, _ in
+        .onChange(of: snapshot.layers) { _, _ in
             updateCornerValues()
-        }
-        .onReceive(document.objectWillChange) { _ in
-           updateCornerValues()
         }
     }
 
@@ -164,9 +163,9 @@ struct CornerRadiusToolbar: View {
     }
 
     private func getSelectedShape() -> VectorShape? {
-        guard document.viewState.selectedObjectIDs.count == 1,
-              let selectedID = document.viewState.selectedObjectIDs.first else { return nil }
-        for (_, newVectorObject) in document.snapshot.objects {
+        guard selectedObjectIDs.count == 1,
+              let selectedID = selectedObjectIDs.first else { return nil }
+        for (_, newVectorObject) in snapshot.objects {
             if case .shape(let shape) = newVectorObject.objectType,
                shape.id == selectedID {
                 return shape
@@ -208,7 +207,7 @@ struct CornerRadiusToolbar: View {
 
         let oldShape = selectedShape
 
-        for layerIndex in document.snapshot.layers.indices {
+        for layerIndex in snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
                var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
@@ -266,6 +265,11 @@ struct CornerRadiusToolbar: View {
 }
 
 #Preview {
-    CornerRadiusToolbar(document: VectorDocument())
-        .padding()
+    let doc = VectorDocument()
+    CornerRadiusToolbar(
+        selectedObjectIDs: doc.viewState.selectedObjectIDs,
+        snapshot: doc.snapshot,
+        document: doc
+    )
+    .padding()
 }

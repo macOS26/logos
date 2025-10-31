@@ -2,9 +2,46 @@ import SwiftUI
 import Combine
 
 struct StrokeFillPanel: View {
-    let snapshot: DocumentSnapshot
+    @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
-    @ObservedObject var document: VectorDocument  // Keep temporarily for methods that need it
+    let activeColorTarget: ColorTarget
+    @Binding var colorMode: ColorMode
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
+    @Binding var defaultFillOpacity: Double
+    @Binding var defaultStrokeOpacity: Double
+    @Binding var defaultStrokeWidth: Double
+    let strokeDefaults: StrokeDefaults
+    let currentSwatches: [VectorColor]
+    let currentTool: DrawingTool
+    let hasPressureInput: Bool
+    let changeToken: UUID
+    let onTriggerLayerUpdates: (Set<Int>) -> Void
+    let onAddColorSwatch: (VectorColor) -> Void
+    let onRemoveColorSwatch: (VectorColor) -> Void
+    let onSetActiveColor: (VectorColor) -> Void
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
+    @Binding var strokeDeltaWidth: Double?
+    let onSetActiveColorTarget: (ColorTarget) -> Void
+    let onUpdateStrokeDefaults: (StrokeDefaults) -> Void
+    let onOutlineSelectedStrokes: () -> Void
+    let onDuplicateSelectedShapes: () -> Void
+    let onUpdateObjectOpacity: (UUID, Double, ColorTarget) -> Void
+    let onUpdateObjectStrokeWidth: (UUID, Double) -> Void
+    let onUpdateFillOpacityLive: (Double, Bool) -> Void
+    let onUpdateStrokeOpacityLive: (Double, Bool) -> Void
+    let onUpdateStrokeWidthLive: (Double, Bool) -> Void
+    let onUpdateStrokePlacement: (StrokePlacement) -> Void
+    let onUpdateStrokeLineJoin: (CGLineJoin) -> Void
+    let onUpdateStrokeLineCap: (CGLineCap) -> Void
+    let onUpdateStrokeMiterLimit: (Double) -> Void
+    let onUpdateStrokeMiterLimitDirectNoUndo: (Double) -> Void
+    let onUpdateStrokeScaleWithTransform: (Bool) -> Void
+    let onUpdateImageOpacity: (Double) -> Void
+    let onApplyFillToSelectedShapes: (VectorColor, Double) -> Void
+    let onUpdateShapeStrokePlacementInUnified: (UUID, StrokePlacement) -> Void
+
     @Environment(AppState.self) private var appState
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
@@ -33,7 +70,7 @@ struct StrokeFillPanel: View {
                 }
             }
         }
-        return document.defaultStrokeColor
+        return defaultStrokeColor
     }
 
     private var selectedFillColor: VectorColor {
@@ -53,7 +90,7 @@ struct StrokeFillPanel: View {
                 }
             }
         }
-        return document.defaultFillColor
+        return defaultFillColor
     }
 
     private var strokeWidth: Double {
@@ -61,17 +98,17 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
-                return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
+                return shape.typography?.strokeWidth ?? defaultStrokeWidth
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.width ?? document.defaultStrokeWidth
+                return shape.strokeStyle?.width ?? defaultStrokeWidth
             }
         }
-        return document.defaultStrokeWidth
+        return defaultStrokeWidth
     }
 
     private var strokePlacement: StrokePlacement {
@@ -79,17 +116,17 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
-                return document.strokeDefaults.placement
+                return strokeDefaults.placement
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.placement ?? document.strokeDefaults.placement
+                return shape.strokeStyle?.placement ?? strokeDefaults.placement
             }
         }
-        return document.strokeDefaults.placement
+        return strokeDefaults.placement
     }
 
     private var fillOpacity: Double {
@@ -97,7 +134,7 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
-                return shape.typography?.fillOpacity ?? document.defaultFillOpacity
+                return shape.typography?.fillOpacity ?? defaultFillOpacity
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
@@ -109,7 +146,7 @@ struct StrokeFillPanel: View {
                 }
             }
         }
-        return document.defaultFillOpacity
+        return defaultFillOpacity
     }
 
     private var strokeOpacity: Double {
@@ -117,7 +154,7 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
-                return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
+                return shape.typography?.strokeOpacity ?? defaultStrokeOpacity
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
@@ -129,7 +166,7 @@ struct StrokeFillPanel: View {
                 }
             }
         }
-        return document.defaultStrokeOpacity
+        return defaultStrokeOpacity
     }
 
     private var strokeLineJoin: CGLineJoin {
@@ -137,17 +174,17 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
-                return document.strokeDefaults.lineJoin
+                return strokeDefaults.lineJoin
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin
+                return shape.strokeStyle?.lineJoin.cgLineJoin ?? strokeDefaults.lineJoin
             }
         }
-        return document.strokeDefaults.lineJoin
+        return strokeDefaults.lineJoin
     }
 
     private var strokeLineCap: CGLineCap {
@@ -155,17 +192,17 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
-                return document.strokeDefaults.lineCap
+                return strokeDefaults.lineCap
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap
+                return shape.strokeStyle?.lineCap.cgLineCap ?? strokeDefaults.lineCap
             }
         }
-        return document.strokeDefaults.lineCap
+        return strokeDefaults.lineCap
     }
 
     private var strokeMiterLimit: Double {
@@ -173,17 +210,17 @@ struct StrokeFillPanel: View {
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
-                return document.strokeDefaults.miterLimit
+                return strokeDefaults.miterLimit
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.miterLimit ?? document.strokeDefaults.miterLimit
+                return shape.strokeStyle?.miterLimit ?? strokeDefaults.miterLimit
             }
         }
-        return document.strokeDefaults.miterLimit
+        return strokeDefaults.miterLimit
     }
 
     private var strokeScaleWithTransform: Bool {
@@ -205,8 +242,8 @@ struct StrokeFillPanel: View {
     }
 
     private var hasSelectedImages: Bool {
-        return document.viewState.selectedObjectIDs.contains { objectID in
-            if let newVectorObject = document.snapshot.objects[objectID] {
+        return selectedObjectIDs.contains { objectID in
+            if let newVectorObject = snapshot.objects[objectID] {
                 switch newVectorObject.objectType {
                 case .text:
                     return false
@@ -216,7 +253,7 @@ struct StrokeFillPanel: View {
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    return ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                    return shape.linkedImagePath != nil || shape.embeddedImageData != nil
                 }
             }
             return false
@@ -235,7 +272,7 @@ struct StrokeFillPanel: View {
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    if ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                    if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                         return shape.opacity
                     }
                 }
@@ -252,14 +289,23 @@ struct StrokeFillPanel: View {
                         fillColor: selectedFillColor,
                         strokeOpacity: strokeOpacityState,
                         fillOpacity: fillOpacityState,
-                        onStrokeColorTap: {
-                            document.viewState.activeColorTarget = .stroke
-                            appState.persistentInkHUD.show(document: document)
-                        },
-                        onFillColorTap: {
-                            document.viewState.activeColorTarget = .fill
-                            appState.persistentInkHUD.show(document: document)
-                        }
+                        snapshot: $snapshot,
+                        selectedObjectIDs: selectedObjectIDs,
+                        activeColorTarget: activeColorTarget,
+                        colorMode: $colorMode,
+                        defaultFillColor: $defaultFillColor,
+                        defaultStrokeColor: $defaultStrokeColor,
+                        defaultFillOpacity: defaultFillOpacity,
+                        defaultStrokeOpacity: defaultStrokeOpacity,
+                        currentSwatches: currentSwatches,
+                        onTriggerLayerUpdates: onTriggerLayerUpdates,
+                        onAddColorSwatch: onAddColorSwatch,
+                        onRemoveColorSwatch: onRemoveColorSwatch,
+                        onSetActiveColor: onSetActiveColor,
+                        colorDeltaColor: $colorDeltaColor,
+                        colorDeltaOpacity: $colorDeltaOpacity,
+                        onSetActiveColorTarget: onSetActiveColorTarget,
+                        onColorSelected: onSetActiveColor
                     )
 
                     FillPropertiesSection(
@@ -268,13 +314,18 @@ struct StrokeFillPanel: View {
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
+                            colorDeltaOpacity = value
                             updateFillOpacityLive(value, isEditing: true)
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                // No need for index map when using snapshot directly
+                                colorDeltaOpacity = fillOpacityState
                             } else {
-                                PaintSelectionOperations.handleFillOpacityEditingComplete(fillOpacityState, document: document)
+                                colorDeltaOpacity = nil
+                                defaultFillOpacity = fillOpacityState
+                                for objectID in selectedObjectIDs {
+                                    onUpdateObjectOpacity(objectID, fillOpacityState, .fill)
+                                }
                             }
                         }
                     )
@@ -290,7 +341,6 @@ struct StrokeFillPanel: View {
                     }
 
                     StrokePropertiesSection(
-                        document: document,
                         strokeWidth: strokeWidthState,
                         strokePlacement: strokePlacementState,
                         strokeOpacity: strokeOpacityState,
@@ -301,10 +351,12 @@ struct StrokeFillPanel: View {
                         strokeScaleWithTransform: strokeScaleWithTransform,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
+                            strokeDeltaWidth = value
                             updateStrokeWidthLive(value, isEditing: true)
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
+                            colorDeltaOpacity = value
                             updateStrokeOpacityLive(value, isEditing: true)
                         },
                         onUpdateStrokePlacement: { value in
@@ -312,11 +364,15 @@ struct StrokeFillPanel: View {
                             updateStrokePlacement(value)
                         },
                         onUpdateLineJoin: { value in
-                            document.strokeDefaults.lineJoin = value
+                            var updatedDefaults = strokeDefaults
+                            updatedDefaults.lineJoin = value
+                            onUpdateStrokeDefaults(updatedDefaults)
                             updateStrokeLineJoin(value)
                         },
                         onUpdateLineCap: { value in
-                            document.strokeDefaults.lineCap = value
+                            var updatedDefaults = strokeDefaults
+                            updatedDefaults.lineCap = value
+                            onUpdateStrokeDefaults(updatedDefaults)
                             updateStrokeLineCap(value)
                         },
                         onUpdateMiterLimit: { value in
@@ -328,30 +384,36 @@ struct StrokeFillPanel: View {
                         },
                         onStrokeWidthEditingChanged: { isEditing in
                             if isEditing {
-                                // No need for index map when using snapshot directly
+                                strokeDeltaWidth = strokeWidthState
                             } else {
-                                PaintSelectionOperations.handleStrokeWidthEditingComplete(strokeWidthState, document: document)
+                                strokeDeltaWidth = nil
+                                defaultStrokeWidth = strokeWidthState
+                                for objectID in selectedObjectIDs {
+                                    onUpdateObjectStrokeWidth(objectID, strokeWidthState)
+                                }
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                // No need for index map when using snapshot directly
+                                colorDeltaOpacity = strokeOpacityState
                             } else {
-                                PaintSelectionOperations.handleStrokeOpacityEditingComplete(strokeOpacityState, document: document)
+                                colorDeltaOpacity = nil
+                                defaultStrokeOpacity = strokeOpacityState
+                                for objectID in selectedObjectIDs {
+                                    onUpdateObjectOpacity(objectID, strokeOpacityState, .stroke)
+                                }
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in
-                            if isEditing {
-                                // No need for index map when using snapshot directly
-                            } else {
-                                PaintSelectionOperations.handleMiterLimitEditingComplete(strokeMiterLimitState, document: document)
+                            if !isEditing {
+                                updateStrokeMiterLimit(strokeMiterLimitState)
                             }
                         }
                     )
 
                     HStack(spacing: 8) {
                         Button {
-                            document.outlineSelectedStrokes()
+                            onOutlineSelectedStrokes()
                         } label: {
                             Text("Expand Stroke")
                                 .font(.system(size: 13, weight: .medium))
@@ -370,13 +432,13 @@ struct StrokeFillPanel: View {
                         }
                         .buttonStyle(BorderlessButtonStyle())
                         .onTapGesture {
-                            document.outlineSelectedStrokes()
+                            onOutlineSelectedStrokes()
                         }
                         .help("Convert stroke to filled path (Cmd+Shift+O)")
                         .keyboardShortcut("o", modifiers: [.command, .shift])
 
                         Button {
-                            document.duplicateSelectedShapes()
+                            onDuplicateSelectedShapes()
                         } label: {
                             Text("Duplicate")
                                 .font(.system(size: 13, weight: .medium))
@@ -395,20 +457,20 @@ struct StrokeFillPanel: View {
                         }
                         .buttonStyle(BorderlessButtonStyle())
                         .onTapGesture {
-                            document.duplicateSelectedShapes()
+                            onDuplicateSelectedShapes()
                         }
                         .help("Duplicate selected shapes (Cmd+D)")
                         .keyboardShortcut("d", modifiers: .command)
                     }
                     .padding(.horizontal, 12)
 
-                    switch document.viewState.currentTool {
+                    switch currentTool {
                     case .freehand:
                         FreehandSettingsSection()
                     case .brush:
-                        VariableStrokeSection(document: document)
+                        VariableStrokeSection(hasPressureInput: hasPressureInput)
                     case .marker:
-                        MarkerSettingsSection(document: document)
+                        MarkerSettingsSection()
                     default:
                         EmptyView()
                     }
@@ -422,10 +484,10 @@ struct StrokeFillPanel: View {
         .onAppear {
             syncOpacityStates()
         }
-        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
+        .onChange(of: selectedObjectIDs) { _, _ in
             syncOpacityStates()
         }
-        .onChange(of: document.changeNotifier.changeToken) { _, _ in
+        .onChange(of: changeToken) { _, _ in
             if !isDragging {
                 syncOpacityStates()
             }
@@ -441,36 +503,22 @@ struct StrokeFillPanel: View {
         selectedImageOpacityState = selectedImageOpacity
     }
 
-    private func updateFillOpacity(_ opacity: Double) {
-        PaintSelectionOperations.updateFillOpacity(opacity, document: document)
-    }
-
-    private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .text(let shape):
-                document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-            }
-        }
-    }
-
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
-        PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing)
+        onUpdateFillOpacityLive(opacity, isEditing)
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
-        PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing)
+        onUpdateStrokeOpacityLive(opacity, isEditing)
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
-        PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: isEditing)
+        onUpdateStrokeWidthLive(width, isEditing)
     }
 
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
-        document.strokeDefaults.placement = placement
+        var updatedDefaults = strokeDefaults
+        updatedDefaults.placement = placement
+        onUpdateStrokeDefaults(updatedDefaults)
 
         for objectID in selectedObjectIDs {
             if let newVectorObject = snapshot.objects[objectID] {
@@ -483,60 +531,42 @@ struct StrokeFillPanel: View {
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    document.updateShapeStrokePlacementInUnified(id: shape.id, placement: placement)
+                    onUpdateShapeStrokePlacementInUnified(shape.id, placement)
                 }
             }
         }
     }
 
-    private func updateStrokeWidth(_ width: Double) {
-        // This method is called when slider finishes editing - handled in onStrokeWidthEditingChanged
-        // The actual update is done via PaintSelectionOperations in that callback
-    }
-
-    private func updateStrokeWidthDirectNoUndo(_ width: Double) {
-        PaintSelectionOperations.updateStrokeWidthLive(width, document: document, isEditing: false)
-    }
-
     private func updateStrokePlacement(_ placement: StrokePlacement) {
-        PaintSelectionOperations.updateStrokePlacement(placement, document: document)
-    }
-
-    private func updateStrokeOpacity(_ opacity: Double) {
-        // This method is called when slider finishes editing - handled in onStrokeOpacityEditingChanged
-        // The actual update is done via PaintSelectionOperations in that callback
-    }
-
-    private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
-        PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: false)
+        onUpdateStrokePlacement(placement)
     }
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
-        PaintSelectionOperations.updateStrokeLineJoin(lineJoin, document: document)
+        onUpdateStrokeLineJoin(lineJoin)
     }
 
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
-        PaintSelectionOperations.updateStrokeLineCap(lineCap, document: document)
+        onUpdateStrokeLineCap(lineCap)
     }
 
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
-        PaintSelectionOperations.updateStrokeMiterLimit(miterLimit, document: document)
+        onUpdateStrokeMiterLimit(miterLimit)
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
-        PaintSelectionOperations.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
+        onUpdateStrokeMiterLimitDirectNoUndo(miterLimit)
     }
 
     private func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool) {
-        PaintSelectionOperations.updateStrokeScaleWithTransform(scaleWithTransform, document: document)
+        onUpdateStrokeScaleWithTransform(scaleWithTransform)
     }
 
     private func updateImageOpacity(_ opacity: Double) {
-        PaintSelectionOperations.updateImageOpacity(opacity, document: document)
+        onUpdateImageOpacity(opacity)
     }
 
     private func applyFillToSelectedShapes() {
-        PaintSelectionOperations.applyFillToSelectedShapes(fillColor: selectedFillColor, fillOpacity: fillOpacity, document: document)
+        onApplyFillToSelectedShapes(selectedFillColor, fillOpacity)
     }
 
 }

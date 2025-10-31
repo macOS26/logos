@@ -1,0 +1,162 @@
+import SwiftUI
+import AppKit
+
+/// A popover manager that reuses a single NSPopover instance and smoothly repositions it when the anchor changes
+class SlidingPopoverManager {
+    private var popover: NSPopover?
+    private var currentAnchorView: NSView?
+
+    /// Shows the popover or slides it to a new anchor if already visible
+    /// - Parameters:
+    ///   - content: SwiftUI view to display in the popover
+    ///   - anchorView: The view to anchor the popover to
+    ///   - edge: Preferred edge for the popover arrow
+    func show<Content: View>(content: Content, anchorView: NSView, edge: NSRectEdge = .minX) {
+        if let existingPopover = popover, existingPopover.isShown {
+            // Popover is already shown - update content and slide to new anchor
+            slideToNewAnchor(anchorView: anchorView, edge: edge, updateContent: {
+                if let hostingController = existingPopover.contentViewController as? NSHostingController<Content> {
+                    hostingController.rootView = content
+                } else {
+                    let hostingController = NSHostingController(rootView: content)
+                    hostingController.sizingOptions = [.intrinsicContentSize]
+                    existingPopover.contentViewController = hostingController
+                }
+            })
+        } else {
+            // Create and show new popover with vibrancy
+            let hostingController = NSHostingController(rootView: content)
+            hostingController.sizingOptions = [.intrinsicContentSize]
+
+            let newPopover = NSPopover()
+            newPopover.contentViewController = hostingController
+            newPopover.behavior = .transient
+            newPopover.animates = true
+
+            // Add vibrancy/translucent effect
+            if let popoverView = newPopover.contentViewController?.view {
+                popoverView.wantsLayer = true
+                popoverView.layer?.backgroundColor = NSColor.clear.cgColor
+            }
+
+            // Calculate positioning rect
+            let positioningRect = calculatePositioningRect(for: anchorView, edge: edge)
+            newPopover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: edge)
+
+            self.popover = newPopover
+            self.currentAnchorView = anchorView
+        }
+    }
+
+    /// Slides the popover to a new anchor view with animation and optionally updates content
+    private func slideToNewAnchor(anchorView: NSView, edge: NSRectEdge, updateContent: () -> Void) {
+        guard let popover = popover, popover.isShown else { return }
+
+        // Update content first (without recreating the NSPopover)
+        updateContent()
+
+        // Animate the position change
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+            // Reposition the popover to the new anchor
+            let positioningRect = calculatePositioningRect(for: anchorView, edge: edge)
+            popover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: edge)
+        }
+
+        self.currentAnchorView = anchorView
+    }
+
+    /// Calculate tight positioning rect for the given edge
+    private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
+        let bounds = anchorView.bounds
+
+        // Shift the positioning rect vertically to align arrow with visual swatch center
+        switch edge {
+        case .maxX, .minX:
+            return CGRect(
+                x: bounds.origin.x + 18,
+                y: bounds.origin.y,
+                width: bounds.width,
+                height: bounds.height
+            )
+        default:
+            return bounds
+        }
+    }
+
+    /// Dismisses the popover
+    func dismiss() {
+        popover?.performClose(nil)
+        popover = nil
+        currentAnchorView = nil
+    }
+
+    /// Returns true if the popover is currently shown
+    var isShown: Bool {
+        return popover?.isShown ?? false
+    }
+}
+
+/// A view representable that provides an NSView for popover anchoring
+struct PopoverAnchorView: NSViewRepresentable {
+    let onViewCreated: (NSView) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.onViewCreated(view)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // No updates needed
+    }
+}
+
+/// A view that wraps content with a translucent vibrancy effect
+struct VibrancyEffectView<Content: View>: NSViewRepresentable {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let effectView = NSVisualEffectView()
+        effectView.material = .hudWindow
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+
+        let hostingController = NSHostingController(rootView: content)
+        context.coordinator.hostingController = hostingController
+
+        let hostingView = hostingController.view
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        effectView.addSubview(hostingView)
+
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: effectView.topAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: effectView.bottomAnchor)
+        ])
+
+        return effectView
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        // Update the hosted SwiftUI content when it changes
+        context.coordinator.hostingController?.rootView = content
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator {
+        var hostingController: NSHostingController<Content>?
+    }
+}

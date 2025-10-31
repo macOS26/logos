@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat

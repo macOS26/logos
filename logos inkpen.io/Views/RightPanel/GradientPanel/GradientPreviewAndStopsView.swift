@@ -23,6 +23,12 @@ struct GradientPreviewAndStopsView: View {
     let applyGradientToSelectedShapesOptimized: (Bool) -> Void
     let activateGradientStop: (UUID, VectorColor) -> Void
 
+    @State private var popoverStopID: UUID? = nil
+    @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
+    @State private var popoverManager = SlidingPopoverManager()
+    @State private var anchorViews: [UUID: NSView] = [:]
+    @Environment(AppState.self) private var appState
+
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
         // Capture live values to force view update
         let liveX = document.viewState.liveGradientOriginX
@@ -202,10 +208,58 @@ struct GradientPreviewAndStopsView: View {
     @State private var isDragging = false
     @State private var dragTranslation: CGSize = .zero
 
+    /// Shows the popover for a specific gradient stop
+    private func showPopoverForStop(_ stop: GradientStop) {
+        guard let anchorView = anchorViews[stop.id], let gradient = currentGradient else { return }
+
+        let popoverContent = VibrancyEffectView {
+            GradientStopColorPicker(
+                snapshot: document.snapshot,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                document: document,
+                stopColor: stop.color,
+                currentGradient: gradient,
+                onColorChanged: { color in
+                    activateGradientStop(stop.id, color)
+                },
+                onDismiss: {
+                    popoverManager.dismiss()
+                    popoverStopID = nil
+                }
+            )
+            .frame(width: 300, height: 480)
+            .environment(appState)
+        }
+
+        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .minX)
+        popoverStopID = stop.id
+    }
+
+    private let snapPoints: [(x: CGFloat, y: CGFloat)] = [
+        (0, 0), (0.5, 0), (1, 0),
+        (0, 0.5), (0.5, 0.5), (1, 0.5),
+        (0, 1), (0.5, 1), (1, 1),
+        (0.25, 0.25), (0.75, 0.25),
+        (0.25, 0.75), (0.75, 0.75),
+        (0.25, 0.5), (0.75, 0.5),
+        (0.5, 0.25), (0.5, 0.75)
+    ]
+
+    private func findSnapPoint(for location: CGPoint, squareSize: CGFloat, padding: CGFloat, snapRadius: CGFloat) -> (x: CGFloat, y: CGFloat)? {
+        for point in snapPoints {
+            let pointPos = CGPoint(x: point.x * squareSize + padding, y: point.y * squareSize + padding)
+            let snapDistance = sqrt(pow(location.x - pointPos.x, 2) + pow(location.y - pointPos.y, 2))
+            if snapDistance <= snapRadius {
+                return point
+            }
+        }
+        return nil
+    }
+
     private func createPreviewContent(geometry: GeometryProxy) -> some View {
-        let fullWidth = geometry.size.width
-        let squareSize = fullWidth
         let padding: CGFloat = 8
+        let fullWidth = geometry.size.width
+        let squareSize = fullWidth - (padding * 2)
 
         return createGradientPreview(geometry: geometry, squareSize: squareSize)
             .contentShape(Rectangle())
@@ -226,50 +280,29 @@ struct GradientPreviewAndStopsView: View {
 
                         dragTranslation = value.translation
 
-                        // Set live state directly (account for padding offset)
-                        let normalizedX = max(0.0, min(1.0, (value.location.x - padding) / squareSize))
-                        let normalizedY = max(0.0, min(1.0, (value.location.y - padding) / squareSize))
+                        // Check for snap points first
+                        let snapRadius: CGFloat = 6.0
+                        var finalX: Double
+                        var finalY: Double
 
-                        document.viewState.liveGradientOriginX = normalizedX
-                        document.viewState.liveGradientOriginY = normalizedY
+                        if let snapPoint = findSnapPoint(for: value.location, squareSize: squareSize, padding: padding, snapRadius: snapRadius) {
+                            // Snap to grid point
+                            finalX = snapPoint.x
+                            finalY = snapPoint.y
+                        } else {
+                            // Use raw position
+                            finalX = max(0.0, min(1.0, (value.location.x - padding) / squareSize))
+                            finalY = max(0.0, min(1.0, (value.location.y - padding) / squareSize))
+                        }
 
-                        updateOriginXOptimized(normalizedX, true, true)
-                        updateOriginYOptimized(normalizedY, true, true)
+                        document.viewState.liveGradientOriginX = finalX
+                        document.viewState.liveGradientOriginY = finalY
+
+                        updateOriginXOptimized(finalX, true, true)
+                        updateOriginYOptimized(finalY, true, true)
                     }
                     .onEnded { value in
                         isDragging = false
-
-                        // Check if this was a tap (minimal drag)
-                        let distance = sqrt(pow(dragTranslation.width, 2) + pow(dragTranslation.height, 2))
-                        if distance < 3 {
-                            // This was a tap - check for snap points
-                            let snapPoints: [(x: CGFloat, y: CGFloat)] = [
-                                (0, 0), (0.5, 0), (1, 0),
-                                (0, 0.5), (0.5, 0.5), (1, 0.5),
-                                (0, 1), (0.5, 1), (1, 1),
-                                (0.25, 0.25), (0.75, 0.25),
-                                (0.25, 0.75), (0.75, 0.75),
-                                (0.25, 0.5), (0.75, 0.5),
-                                (0.5, 0.25), (0.5, 0.75)
-                            ]
-
-                            let tapLocation = value.location
-                            let snapRadius: CGFloat = 13.0
-
-                            for point in snapPoints {
-                                let pointPos = CGPoint(x: point.x * squareSize + padding, y: point.y * squareSize + padding)
-                                let snapDistance = sqrt(pow(tapLocation.x - pointPos.x, 2) + pow(tapLocation.y - pointPos.y, 2))
-
-                                if snapDistance <= snapRadius {
-                                    // Snap to this point
-                                    document.viewState.liveGradientOriginX = point.x
-                                    document.viewState.liveGradientOriginY = point.y
-                                    updateOriginXOptimized(point.x, true, true)
-                                    updateOriginYOptimized(point.y, true, true)
-                                    break
-                                }
-                            }
-                        }
 
                         // Clear live state
                         document.viewState.liveGradientOriginX = nil
@@ -317,32 +350,65 @@ struct GradientPreviewAndStopsView: View {
 
                 GeometryReader { geometry in
                     createPreviewContent(geometry: geometry)
+                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
                 }
                 .aspectRatio(1, contentMode: .fit)
+                .padding(.bottom, 12)
+
+                let stops = currentGradient.map { getGradientStops($0).sorted { $0.position < $1.position } } ?? []
 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Text("Color Stops")
                             .font(.caption)
                             .foregroundColor(Color.ui.secondaryText)
                         Spacer()
+                        Text("%")
+                            .font(.caption)
+                            .foregroundColor(Color.ui.secondaryText)
+                            .frame(width: 40, alignment: .center)
+                        Text("Opaq")
+                            .font(.caption)
+                            .foregroundColor(Color.ui.secondaryText)
+                            .frame(width: 40, alignment: .center)
                         Button(action: addColorStop) {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundColor(.green)
                                 .font(.system(size: 16))
                         }
                         .buttonStyle(BorderlessButtonStyle())
+                        .frame(width: 16)
                     }
-
-                    let stops = currentGradient.map { getGradientStops($0).sorted { $0.position < $1.position } } ?? []
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
-                            Button(action: {
-                                activateGradientStop(stop.id, stop.color)
-                            }) {
-                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
+                            ZStack {
+                                Button(action: {
+                                    if popoverStopID == stop.id {
+                                        // Close if clicking the same stop
+                                        popoverManager.dismiss()
+                                        popoverStopID = nil
+                                    } else {
+                                        // Open or slide to this stop
+                                        showPopoverForStop(stop)
+                                    }
+                                }) {
+                                    renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
+                                }
+                                .buttonStyle(BorderlessButtonStyle())
+                                .onHover { hovering in
+                                    // If popover is open, slide to this stop on hover
+                                    if hovering && popoverManager.isShown && popoverStopID != stop.id {
+                                        showPopoverForStop(stop)
+                                    }
+                                }
+                                .background(
+                                    // Capture the anchor view for this stop
+                                    PopoverAnchorView { view in
+                                        anchorViews[stop.id] = view
+                                    }
+                                )
                             }
-                            .buttonStyle(BorderlessButtonStyle())
+                        
 
                             VStack(alignment: .leading, spacing: 2) {
 
@@ -391,13 +457,16 @@ struct GradientPreviewAndStopsView: View {
                                 }
                             }
 
-                            if stops.count > 2 {
-                                Button(action: { removeColorStop(stop.id) }) {
-                                    Image(systemName: "minus.circle.fill")
-                                        .foregroundColor(Color.ui.errorColor)
+                            Button(action: {
+                                if stops.count > 2 {
+                                    removeColorStop(stop.id)
                                 }
-                                .buttonStyle(BorderlessButtonStyle())
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(Color.ui.errorColor)
+                                    .font(.system(size: 16))
                             }
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                         .padding(.vertical, 4)
                     }

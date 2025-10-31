@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import Combine
 
 struct FontPickerLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
@@ -30,7 +29,8 @@ extension View {
 }
 
 struct FontPickerView: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let document: VectorDocument
     let selectedTextTypography: TypographyProperties?
     let selectedText: VectorText?
     let editingText: VectorText?
@@ -43,7 +43,7 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let textID = document.viewState.selectedObjectIDs.first,
+                    if let textID = selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }
@@ -54,7 +54,7 @@ struct FontPickerView: View {
                     let defaultVariant = document.fontManager.getAvailableVariantNames(for: newFamily).first ?? "Regular"
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    for textID in document.viewState.selectedObjectIDs {
+                    for textID in selectedObjectIDs {
                         document.updateShapeByID(textID) { shape in
                             var typography = shape.typography ?? TypographyProperties(
                                 strokeColor: shape.strokeStyle?.color ?? .black,
@@ -80,7 +80,7 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let textID = document.viewState.selectedObjectIDs.first,
+                    if let textID = selectedObjectIDs.first,
                        let freshText = document.findText(by: textID),
                        let variant = freshText.typography.fontVariant,
                        !variant.isEmpty {
@@ -91,7 +91,7 @@ struct FontPickerView: View {
                 set: { (newVariant: String) in
                     document.fontManager.selectedFontVariant = newVariant
 
-                    for textID in document.viewState.selectedObjectIDs {
+                    for textID in selectedObjectIDs {
                         document.updateShapeByID(textID) { shape in
                             var typography = shape.typography ?? TypographyProperties(
                                 strokeColor: shape.strokeStyle?.color ?? .black,
@@ -104,7 +104,7 @@ struct FontPickerView: View {
                 }
             )) {
                 let currentFamily = {
-                    if let textID = document.viewState.selectedObjectIDs.first,
+                    if let textID = selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }

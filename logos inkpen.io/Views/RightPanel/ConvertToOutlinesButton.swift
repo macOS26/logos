@@ -23,8 +23,12 @@ struct FullWidthSecondaryButtonStyle: ButtonStyle {
 }
 
 struct ConvertToOutlinesButton: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let selectedLayerIndex: Int?
+    let snapshot: DocumentSnapshot
+    let document: VectorDocument
     let selectedText: VectorText?
+
     var body: some View {
         Button("Convert to Outlines") {
             convertSelectedTextToOutlines()
@@ -36,14 +40,14 @@ struct ConvertToOutlinesButton: View {
     }
 
     private func convertSelectedTextToOutlines() {
-        guard !document.viewState.selectedObjectIDs.isEmpty else {
+        guard !selectedObjectIDs.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
             return
         }
 
-        if let layerIndex = document.selectedLayerIndex,
-           layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
-            let layer = document.snapshot.layers[layerIndex]
+        if let layerIndex = selectedLayerIndex,
+           layerIndex >= 0 && layerIndex < snapshot.layers.count {
+            let layer = snapshot.layers[layerIndex]
             if layer.isLocked {
                 Log.error("❌ CONVERT TO OUTLINES: Layer '\(layer.name)' is locked", category: .error)
                 return

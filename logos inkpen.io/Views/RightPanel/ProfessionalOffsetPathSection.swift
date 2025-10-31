@@ -1,8 +1,8 @@
 import SwiftUI
-import Combine
 
 struct ProfessionalOffsetPathSection: View {
-    @ObservedObject var document: VectorDocument
+    let selectedObjectIDs: Set<UUID>
+    let document: VectorDocument
     @State private var offsetDistance: Int = 10
     @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
@@ -205,11 +205,11 @@ struct ProfessionalOffsetPathSection: View {
     }
 
     private func canPerformOffset() -> Bool {
-        return !document.viewState.selectedObjectIDs.isEmpty
+        return !selectedObjectIDs.isEmpty
     }
 
     private func performOffsetPath() {
-        guard !document.viewState.selectedObjectIDs.isEmpty else { return }
+        guard !selectedObjectIDs.isEmpty else { return }
 
         let selectedShapes = document.getSelectedShapes()
         var oldShapes: [UUID: VectorShape] = [:]
@@ -226,7 +226,7 @@ struct ProfessionalOffsetPathSection: View {
         if let layerIndex = document.selectedLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
             for (index, shape) in shapes.enumerated() {
-                if document.viewState.selectedObjectIDs.contains(shape.id) {
+                if selectedObjectIDs.contains(shape.id) {
                     originalShapeIndices[shape.id] = index
                 }
             }

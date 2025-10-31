@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 
 struct CornerRadiusPanel: View {
-    @ObservedObject var document: VectorDocument
+    let document: VectorDocument
     @State private var cornerValues: [Double] = [0, 0, 0, 0]
     @State private var isEditing = false
 

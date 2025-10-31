@@ -2,7 +2,12 @@ import SwiftUI
 import AppKit
 
 struct VerticalToolbar: View {
-    @ObservedObject var document: VectorDocument
+    let currentTool: DrawingTool
+    @ObservedObject var viewState: DocumentViewState
+    let document: VectorDocument
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
+    @Binding var colorDeltaBlendMode: BlendMode?
     @StateObject private var toolGroupManager = ToolGroupManager.shared
 
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -12,16 +17,16 @@ struct VerticalToolbar: View {
     @ViewBuilder
     private func toolIconView(for toolItem: ToolItem) -> some View {
         if toolItem.tool == .shear {
-            SkewedRectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            SkewedRectangleIcon(isSelected: currentTool == toolItem.tool)
         } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
             starVariant.iconView(
-                isSelected: document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant,
-                color: (document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
+                isSelected: currentTool == .star && toolGroupManager.selectedVariant == starVariant,
+                color: (currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
             )
         } else if toolItem.tool == .star {
             toolGroupManager.selectedVariant.iconView(
-                isSelected: document.viewState.currentTool == toolItem.tool,
-                color: document.viewState.currentTool == toolItem.tool ? .white : .primary
+                isSelected: currentTool == toolItem.tool,
+                color: currentTool == toolItem.tool ? .white : .primary
             )
         } else {
             customShapeIconView(for: toolItem)
@@ -32,39 +37,39 @@ struct VerticalToolbar: View {
     private func customShapeIconView(for toolItem: ToolItem) -> some View {
         switch toolItem.tool {
         case .rectangle:
-            RectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            RectangleIcon(isSelected: currentTool == toolItem.tool)
         case .square:
-            SquareIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            SquareIcon(isSelected: currentTool == toolItem.tool)
         case .roundedRectangle:
-            RoundedRectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            RoundedRectangleIcon(isSelected: currentTool == toolItem.tool)
         case .pill:
-            PillIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            PillIcon(isSelected: currentTool == toolItem.tool)
         case .ellipse:
-            EllipseIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            EllipseIcon(isSelected: currentTool == toolItem.tool)
         case .oval:
-            OvalIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            OvalIcon(isSelected: currentTool == toolItem.tool)
         case .circle:
-            CircleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            CircleIcon(isSelected: currentTool == toolItem.tool)
         case .egg:
-            EggIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            EggIcon(isSelected: currentTool == toolItem.tool)
         case .cone:
-            ConeIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            ConeIcon(isSelected: currentTool == toolItem.tool)
         case .equilateralTriangle:
-            EquilateralTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            EquilateralTriangleIcon(isSelected: currentTool == toolItem.tool)
         case .rightTriangle:
-            RightTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            RightTriangleIcon(isSelected: currentTool == toolItem.tool)
         case .acuteTriangle:
-            AcuteTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            AcuteTriangleIcon(isSelected: currentTool == toolItem.tool)
         case .pentagon:
-            PentagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            PentagonIcon(isSelected: currentTool == toolItem.tool)
         case .hexagon:
-            HexagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            HexagonIcon(isSelected: currentTool == toolItem.tool)
         case .heptagon:
-            HeptagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            HeptagonIcon(isSelected: currentTool == toolItem.tool)
         case .octagon:
-            OctagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            OctagonIcon(isSelected: currentTool == toolItem.tool)
         case .nonagon:
-            NonagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
+            NonagonIcon(isSelected: currentTool == toolItem.tool)
         default:
             Image(systemName: toolItem.tool.iconName)
                 .font(.system(size: 16))
@@ -166,9 +171,9 @@ struct VerticalToolbar: View {
 
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
         if let starVariant = toolItem.starVariant {
-            return document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant
+            return currentTool == .star && toolGroupManager.selectedVariant == starVariant
         } else {
-            return document.viewState.currentTool == toolItem.tool
+            return currentTool == toolItem.tool
         }
     }
 
@@ -258,7 +263,13 @@ struct VerticalToolbar: View {
                     Divider()
 
                     ToolSection {
-                        ColorSwatchGrid(document: document)
+                        ColorSwatchGrid(
+                            viewState: viewState,
+                            document: document,
+                            colorDeltaColor: $colorDeltaColor,
+                            colorDeltaOpacity: $colorDeltaOpacity,
+                            colorDeltaBlendMode: $colorDeltaBlendMode
+                        )
                     }
 
                     Spacer()
@@ -460,6 +471,14 @@ struct VerticalToolbarButton: View {
 }
 
 #Preview {
-    VerticalToolbar(document: VectorDocument())
-        .frame(height: 600)
+    let doc = VectorDocument()
+    VerticalToolbar(
+        currentTool: doc.viewState.currentTool,
+        viewState: doc.viewState,
+        document: doc,
+        colorDeltaColor: .constant(nil),
+        colorDeltaOpacity: .constant(nil),
+        colorDeltaBlendMode: .constant(nil)
+    )
+    .frame(height: 600)
 }

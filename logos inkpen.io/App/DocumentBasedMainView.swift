@@ -19,15 +19,30 @@ struct DocumentBasedMainView: View {
     @State private var liveDragOffset: CGPoint = .zero
     @State private var liveScaleDimensions: CGSize = .zero
     @State private var liveScaleTransform: CGAffineTransform = .identity
+    @State private var colorDeltaColor: VectorColor? = nil
+    @State private var colorDeltaOpacity: Double? = nil
+    @State private var colorDeltaBlendMode: BlendMode? = nil
+    @State private var strokeDeltaWidth: Double? = nil
+    @State private var selectedLayerIndex: Int? = nil
+    @State private var processedLayersDuringDrag: Set<Int> = []
+    @State private var processedObjectsDuringDrag: Set<UUID> = []
+
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                VerticalToolbar(document: document)
-                    .frame(width: 48)
-                    .contentShape(Rectangle())
-                    .background(Color.black.opacity(0.8))
-                    .zIndex(100)
+                VerticalToolbar(
+                    currentTool: document.viewState.currentTool,
+                    viewState: document.viewState,
+                    document: document,
+                    colorDeltaColor: $colorDeltaColor,
+                    colorDeltaOpacity: $colorDeltaOpacity,
+                    colorDeltaBlendMode: $colorDeltaBlendMode
+                )
+                .frame(width: 48)
+                .contentShape(Rectangle())
+                .background(Color.black.opacity(0.8))
+                .zIndex(100)
 
                 GeometryReader { geometry in
                     ZStack {
@@ -36,16 +51,20 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform)
+                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, colorDeltaColor: $colorDeltaColor, colorDeltaOpacity: $colorDeltaOpacity, colorDeltaBlendMode: $colorDeltaBlendMode, strokeDeltaWidth: $strokeDeltaWidth)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
                             .zIndex(1)
                             .allowsHitTesting(true)
 
-                        RulersView(document: document, geometry: geometry)
-                            .zIndex(50)
-                            .allowsHitTesting(true)
+                        RulersView(
+                            showRulers: document.gridSettings.showRulers,
+                            document: document,
+                            geometry: geometry
+                        )
+                        .zIndex(50)
+                        .allowsHitTesting(true)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300)
@@ -55,15 +74,56 @@ struct DocumentBasedMainView: View {
                 .contentShape(Rectangle())
                 .allowsHitTesting(true)
 
-                RightPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
-                    .frame(width: 280)
-                    .frame(minWidth: 280)
-                    .zIndex(100)
+                RightPanel(
+                    snapshot: document.snapshot,
+                    viewState: document.viewState,
+                    document: document,
+                    layerPreviewOpacities: $layerPreviewOpacities,
+                    colorDeltaColor: $colorDeltaColor,
+                    colorDeltaOpacity: $colorDeltaOpacity,
+                    colorDeltaBlendMode: $colorDeltaBlendMode,
+                    strokeDeltaWidth: $strokeDeltaWidth,
+                    selectedLayerIndex: $selectedLayerIndex,
+                    processedLayersDuringDrag: $processedLayersDuringDrag,
+                    processedObjectsDuringDrag: $processedObjectsDuringDrag
+                )
+                .frame(width: 280)
+                .frame(minWidth: 280)
+                .zIndex(100)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400)
+            .onAppear {
+                // Sync viewState colors from document defaults on appear
+                document.viewState.activeFillColor = document.defaultFillColor
+                document.viewState.activeStrokeColor = document.defaultStrokeColor
+                document.viewState.activeFillOpacity = document.defaultFillOpacity
+                document.viewState.activeStrokeOpacity = document.defaultStrokeOpacity
+                document.viewState.activeStrokeWidth = document.defaultStrokeWidth
+            }
+            .onChange(of: document.viewState.activeFillColor) { _, newColor in
+                document.defaultFillColor = newColor
+            }
+            .onChange(of: document.viewState.activeStrokeColor) { _, newColor in
+                document.defaultStrokeColor = newColor
+            }
+            .onChange(of: document.viewState.activeFillOpacity) { _, newOpacity in
+                document.defaultFillOpacity = newOpacity
+            }
+            .onChange(of: document.viewState.activeStrokeOpacity) { _, newOpacity in
+                document.defaultStrokeOpacity = newOpacity
+            }
+            .onChange(of: document.viewState.activeStrokeWidth) { _, newWidth in
+                document.defaultStrokeWidth = newWidth
+            }
 
-            StatusBar(document: document)
+            StatusBar(
+                snapshot: document.snapshot,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                currentTool: document.viewState.currentTool,
+                settings: document.settings,
+                zoomLevel: document.viewState.zoomLevel
+            )
         }
         .frame(minHeight: 524)
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
@@ -91,7 +151,33 @@ struct DocumentBasedMainView: View {
         }
         .sheet(isPresented: $showingColorPicker) {
             ColorPickerModal(
-                document: document,
+                snapshot: Binding(
+                    get: { document.snapshot },
+                    set: { document.snapshot = $0 }
+                ),
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                activeColorTarget: document.viewState.activeColorTarget,
+                colorMode: Binding(
+                    get: { document.settings.colorMode },
+                    set: { document.settings.colorMode = $0 }
+                ),
+                defaultFillColor: Binding(
+                    get: { document.defaultFillColor },
+                    set: { document.defaultFillColor = $0 }
+                ),
+                defaultStrokeColor: Binding(
+                    get: { document.defaultStrokeColor },
+                    set: { document.defaultStrokeColor = $0 }
+                ),
+                defaultFillOpacity: document.defaultFillOpacity,
+                defaultStrokeOpacity: document.defaultStrokeOpacity,
+                currentSwatches: document.currentSwatches,
+                onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+                onAddColorSwatch: { color in document.addColorSwatch(color) },
+                onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+                onSetActiveColor: { color in document.setActiveColor(color) },
+                colorDeltaColor: $colorDeltaColor,
+                colorDeltaOpacity: $colorDeltaOpacity,
                 title: "Color Picker",
                 onColorSelected: { color in
                     if document.viewState.activeColorTarget == .stroke {

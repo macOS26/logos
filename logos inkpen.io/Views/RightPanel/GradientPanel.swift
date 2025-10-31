@@ -5,7 +5,7 @@ import Combine
 struct GradientPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
-    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
+    let document: VectorDocument
 
     var body: some View {
         ScrollView {
@@ -24,7 +24,7 @@ struct GradientPanel: View {
 struct GradientFillSection: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
-    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
+    let document: VectorDocument
     @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
@@ -86,8 +86,7 @@ struct GradientFillSection: View {
             GradientAngleControlView(
                 currentGradient: currentGradient,
                 document: document,
-                onAngleChange: updateGradientAngle,
-                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
+                onAngleChange: updateGradientAngle
             )
 
             GradientOriginControlView(
@@ -102,8 +101,7 @@ struct GradientFillSection: View {
                 updateOriginY: { newY in
                     localOriginY = newY
                     updateGradientOriginYOptimized(newY, applyToShapes: true, isLiveDrag: true)
-                },
-                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
+                }
             )
 
             GradientScaleControlView(
@@ -114,8 +112,7 @@ struct GradientFillSection: View {
                 getAspectRatio: getGradientAspectRatio,
                 updateAspectRatio: updateGradientAspectRatio,
                 getRadius: getGradientRadius,
-                updateRadius: updateGradientRadius,
-                objectUpdateTrigger: $document.viewState.objectUpdateTrigger
+                updateRadius: updateGradientRadius
             )
 
             GradientPreviewAndStopsView(
@@ -139,7 +136,7 @@ struct GradientFillSection: View {
                 removeColorStop: removeColorStop,
                 applyGradientToSelectedShapes: applyGradientToSelectedShapes,
                 applyGradientToSelectedShapesOptimized: applyGradientToSelectedShapesOptimized,
-                activateGradientStop: activateGradientStop
+                activateGradientStop: updateStopColor
             )
 
             GradientApplyButtonView(
@@ -185,43 +182,8 @@ struct GradientFillSection: View {
     }
 
     private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
-
-        editingGradientStopId = stopId
-        editingGradientStopColor = color
-
-        let actualColor = findGradientStopColor(stopId: stopId)
-
-        if let gradient = currentGradient {
-            let stops: [GradientStop]
-            switch gradient {
-            case .linear(let linear):
-                stops = linear.stops
-            case .radial(let radial):
-                stops = radial.stops
-            }
-            let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-
-            appState.gradientEditingState = GradientEditingState(
-                gradientId: stopId,
-                stopIndex: stopIndex,
-                onColorSelected: { [self] color in
-                    self.updateStopColor(stopId: stopId, color: color)
-                }
-            )
-        }
-
-        appState.persistentGradientHUD.show(
-            stopId: stopId,
-            color: actualColor,
-            document: document,
-            gradient: currentGradient,
-            onColorSelected: { [self] targetStopId, color in
-                self.updateStopColor(stopId: targetStopId, color: color)
-            },
-            onClose: { [self] in
-                self.turnOffEditingState()
-            }
-        )
+        // Simply update the stop color - popover handles the UI
+        updateStopColor(stopId: stopId, color: color)
     }
 
     private func updateSelectedGradient() {
@@ -506,12 +468,26 @@ struct GradientFillSection: View {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
                 applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+
+                // Update toolbar active color to show the GRADIENT, not the solid color
+                if document.viewState.activeColorTarget == .fill {
+                    document.defaultFillColor = .gradient(.linear(linear))
+                } else {
+                    document.defaultStrokeColor = .gradient(.linear(linear))
+                }
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
                 applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+
+                // Update toolbar active color to show the GRADIENT, not the solid color
+                if document.viewState.activeColorTarget == .fill {
+                    document.defaultFillColor = .gradient(.radial(radial))
+                } else {
+                    document.defaultStrokeColor = .gradient(.radial(radial))
+                }
             }
         }
     }

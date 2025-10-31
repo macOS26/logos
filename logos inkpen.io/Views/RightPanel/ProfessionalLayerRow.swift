@@ -16,8 +16,9 @@ struct ProfessionalLayerRow: View {
 
     // Computed property to get objects directly from snapshot
     private var layerObjects: [VectorObject] {
-        let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
-        return objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
+        let objectIDs = layer.objectIDs
+        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
+        return objects
     }
 
     private var isVisibleBinding: Binding<Bool> {
@@ -79,7 +80,7 @@ struct ProfessionalLayerRow: View {
     }
 
     var body: some View {
-        let _ = document.viewState.layerUpdateTriggers[layer.id] // Subscribe to layer updates
+        let triggerValue = document.viewState.layerUpdateTriggers[layer.id] ?? 0
 
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
@@ -259,16 +260,13 @@ struct ProfessionalLayerRow: View {
             Group {
                 if document.selectedLayerIndex == layerIndex {
                     Color.clear.onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
-                        print("📥 RECEIVE: Layer \(layer.name)")
                         guard let userInfo = notification.userInfo,
                               let layerID = userInfo["layerID"] as? UUID,
                               layerID == layer.id else {
-                            print("   ❌ Layer ID mismatch")
                             return
                         }
 
                         if let opacity = userInfo["opacity"] as? Double {
-                            print("   ✅ Setting layer opacity to \(opacity)")
                             document.snapshot.layers[layerIndex].opacity = opacity
                         }
                     }
@@ -325,7 +323,6 @@ struct ProfessionalLayerRow: View {
                 // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
                 let targetIndex = layerIndex <= 1 ? 2 : layerIndex
 
-                print("🎯 Drop on layer '\(layer.name)' (index: \(layerIndex) -> \(targetIndex))")
                 if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
                     document.moveObjectsToLayer(objectIds: Array(document.viewState.selectedObjectIDs), targetLayerIndex: targetIndex)
                 } else {
@@ -391,7 +388,9 @@ struct ProfessionalLayerRow: View {
     }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
-        guard document.snapshot.objects[objectID] != nil else { return }
+        guard document.snapshot.objects[objectID] != nil else {
+            return
+        }
 
         document.selectedLayerIndex = layerIndex
 

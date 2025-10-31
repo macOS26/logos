@@ -1,16 +1,18 @@
 import SwiftUI
 
 struct FontPanel: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    let document: VectorDocument
     @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
 
     private var selectedTextTypography: TypographyProperties? {
-        guard !document.viewState.selectedObjectIDs.isEmpty,
-              let textID = document.viewState.selectedObjectIDs.first else { return nil }
+        guard !selectedObjectIDs.isEmpty,
+              let textID = selectedObjectIDs.first else { return nil }
 
-        if let newVectorObj = document.snapshot.objects[textID],
+        if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             if let typography = shape.typography {
                 return typography
@@ -25,13 +27,13 @@ struct FontPanel: View {
     }
 
     private var selectedTextID: UUID? {
-        return document.viewState.selectedObjectIDs.first
+        return selectedObjectIDs.first
     }
 
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
 
-        if let newVectorObj = document.snapshot.objects[textID],
+        if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
@@ -42,7 +44,7 @@ struct FontPanel: View {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
 
-        if let newVectorObj = document.snapshot.objects[textID],
+        if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return VectorText.from(shape)
         }
@@ -81,6 +83,7 @@ struct FontPanel: View {
 
                     VStack(spacing: 16) {
                         FontPickerView(
+                            selectedObjectIDs: selectedObjectIDs,
                             document: document,
                             selectedTextTypography: selectedTextTypography,
                             selectedText: selectedText,
@@ -89,18 +92,27 @@ struct FontPanel: View {
                         )
 
                         FontSizeControls(
+                            selectedObjectIDs: selectedObjectIDs,
+                            selectedFontSize: document.fontManager.selectedFontSize,
+                            selectedLineSpacing: document.fontManager.selectedLineSpacing,
+                            selectedLineHeight: document.fontManager.selectedLineHeight,
                             document: document,
                             selectedText: selectedText,
                             editingText: editingText
                         )
 
                         FontAlignmentControls(
+                            selectedObjectIDs: selectedObjectIDs,
+                            selectedTextAlignment: document.fontManager.selectedTextAlignment,
                             document: document,
                             selectedText: selectedText,
                             editingText: editingText
                         )
 
                         ConvertToOutlinesButton(
+                            selectedObjectIDs: selectedObjectIDs,
+                            selectedLayerIndex: document.selectedLayerIndex,
+                            snapshot: snapshot,
                             document: document,
                             selectedText: selectedText
                         )

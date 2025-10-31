@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 enum TransformOrigin: String, CaseIterable {
     case topLeft = "Top Left"
@@ -69,7 +68,7 @@ struct NinePointOriginSelector: View {
 }
 
 struct TransformationControls: View {
-    @ObservedObject var document: VectorDocument
+    let document: VectorDocument
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     @State private var keepProportions: Bool = false
@@ -80,13 +79,20 @@ struct TransformationControls: View {
     @State private var aspectRatio: CGFloat = 1.0
     @State private var updateTrigger: Bool = false
 
+    private var transformOriginBinding: Binding<TransformOrigin> {
+        Binding(
+            get: { document.viewState.transformOrigin },
+            set: { document.viewState.transformOrigin = $0 }
+        )
+    }
+
     var hasSelection: Bool {
         !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
 
     var body: some View {
         HStack(spacing: 10) {
-            NinePointOriginSelector(selectedOrigin: $document.viewState.transformOrigin)
+            NinePointOriginSelector(selectedOrigin: transformOriginBinding)
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
 
