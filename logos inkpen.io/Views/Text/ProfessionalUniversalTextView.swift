@@ -364,7 +364,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
+                let newPosition = selectedRange.location
+                print("📍 NSTextView selection changed: \(oldPosition) -> \(newPosition) (delta: \(newPosition - oldPosition))")
+
+                // Block updates that would move cursor -1 position (race condition)
+                if newPosition == oldPosition - 1 {
+                    print("🚫 BLOCKED -1 cursor jump in NSTextView handler")
+                    return
+                }
+
                 self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
+                print("✅ Updated cursor to \(selectedRange.location)")
             }
         }
 
