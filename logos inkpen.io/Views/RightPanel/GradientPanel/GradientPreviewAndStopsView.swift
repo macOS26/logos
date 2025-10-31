@@ -212,24 +212,22 @@ struct GradientPreviewAndStopsView: View {
     private func showPopoverForStop(_ stop: GradientStop) {
         guard let anchorView = anchorViews[stop.id], let gradient = currentGradient else { return }
 
-        let popoverContent = VibrancyEffectView {
-            GradientStopColorPicker(
-                snapshot: document.snapshot,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                document: document,
-                stopColor: stop.color,
-                currentGradient: gradient,
-                onColorChanged: { color in
-                    activateGradientStop(stop.id, color)
-                },
-                onDismiss: {
-                    popoverManager.dismiss()
-                    popoverStopID = nil
-                }
-            )
-            .frame(width: 300, height: 480)
-            .environment(appState)
-        }
+        let popoverContent = GradientStopColorPicker(
+            snapshot: document.snapshot,
+            selectedObjectIDs: document.viewState.selectedObjectIDs,
+            document: document,
+            stopColor: stop.color,
+            currentGradient: gradient,
+            onColorChanged: { color in
+                activateGradientStop(stop.id, color)
+            },
+            onDismiss: {
+                popoverManager.dismiss()
+                popoverStopID = nil
+            }
+        )
+        .frame(width: 300, height: 480)
+        .environment(appState)
 
         popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .trailing)
         popoverStopID = stop.id

@@ -234,39 +234,37 @@ private struct ColorSwatchView: View {
         localActiveColorTarget = (anchorKey == "fill") ? .fill : .stroke
         onSetActiveColorTarget(localActiveColorTarget)
 
-        let popoverContent = VibrancyEffectView {
-            ColorPanel(
-                snapshot: $snapshot,
-                selectedObjectIDs: selectedObjectIDs,
-                activeColorTarget: Binding(
-                    get: { localActiveColorTarget },
-                    set: { newTarget in
-                        localActiveColorTarget = newTarget
-                        onSetActiveColorTarget(newTarget)
-                    }
-                ),
-                colorMode: $colorMode,
-                defaultFillColor: $defaultFillColor,
-                defaultStrokeColor: $defaultStrokeColor,
-                defaultFillOpacity: defaultFillOpacity,
-                defaultStrokeOpacity: defaultStrokeOpacity,
-                currentSwatches: currentSwatches,
-                onTriggerLayerUpdates: onTriggerLayerUpdates,
-                onAddColorSwatch: onAddColorSwatch,
-                onRemoveColorSwatch: onRemoveColorSwatch,
-                onSetActiveColor: onSetActiveColor,
-                colorDeltaColor: $colorDeltaColor,
-                colorDeltaOpacity: $colorDeltaOpacity,
-                onColorSelected: onColorSelected,
-                initialColor: self.color,  // Pass the actual swatch color directly
-                onDismiss: {
-                    popoverManager.dismiss()
-                    activeAnchorKey = nil
+        let popoverContent = ColorPanel(
+            snapshot: $snapshot,
+            selectedObjectIDs: selectedObjectIDs,
+            activeColorTarget: Binding(
+                get: { localActiveColorTarget },
+                set: { newTarget in
+                    localActiveColorTarget = newTarget
+                    onSetActiveColorTarget(newTarget)
                 }
-            )
-            .frame(width: 300, height: 480)
-            .environment(appState)
-        }
+            ),
+            colorMode: $colorMode,
+            defaultFillColor: $defaultFillColor,
+            defaultStrokeColor: $defaultStrokeColor,
+            defaultFillOpacity: defaultFillOpacity,
+            defaultStrokeOpacity: defaultStrokeOpacity,
+            currentSwatches: currentSwatches,
+            onTriggerLayerUpdates: onTriggerLayerUpdates,
+            onAddColorSwatch: onAddColorSwatch,
+            onRemoveColorSwatch: onRemoveColorSwatch,
+            onSetActiveColor: onSetActiveColor,
+            colorDeltaColor: $colorDeltaColor,
+            colorDeltaOpacity: $colorDeltaOpacity,
+            onColorSelected: onColorSelected,
+            initialColor: self.color,
+            onDismiss: {
+                popoverManager.dismiss()
+                activeAnchorKey = nil
+            }
+        )
+        .frame(width: 300, height: 480)
+        .environment(appState)
 
         popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .leading)
         activeAnchorKey = anchorKey
