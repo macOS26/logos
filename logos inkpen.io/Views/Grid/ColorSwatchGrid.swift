@@ -316,10 +316,11 @@ struct ColorSwatchGrid: View {
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Add Custom Color")
-            .background(
+            .overlay(
                 PopoverAnchorView { view in
                     addColorAnchorView = view
                 }
+                .allowsHitTesting(false)
             )
         }
     }
