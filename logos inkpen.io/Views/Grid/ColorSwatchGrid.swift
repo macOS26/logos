@@ -6,10 +6,7 @@ struct ColorSwatchGrid: View {
     @State private var selectedFillColor: VectorColor = .white
     @State private var selectedStrokeColor: VectorColor = .black
     @State private var showingColorPicker = false
-    @State private var popoverManager = SlidingPopoverManager()
-    @State private var addColorAnchorView: NSView?
-    @State private var colorDeltaColor: VectorColor?
-    @State private var colorDeltaOpacity: Double?
+    @State private var showingCustomColorPopover = false
 
     let columns = [
         GridItem(.fixed(10), spacing: 1),
@@ -304,11 +301,7 @@ struct ColorSwatchGrid: View {
             .padding(.horizontal, 2)
 
             Button {
-                if popoverManager.isShown {
-                    popoverManager.dismiss()
-                } else {
-                    showAddColorPopover()
-                }
+                showingCustomColorPopover.toggle()
             } label: {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 14))
@@ -316,62 +309,54 @@ struct ColorSwatchGrid: View {
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Add Custom Color")
-            .overlay(
-                PopoverAnchorView { view in
-                    addColorAnchorView = view
-                }
-                .allowsHitTesting(false)
-            )
+            .popover(isPresented: $showingCustomColorPopover, arrowEdge: .leading) {
+                customColorPanel
+            }
         }
     }
 
-    private func showAddColorPopover() {
-        guard let anchorView = addColorAnchorView else { return }
-
-        let popoverContent = VibrancyEffectView {
-            ColorPanel(
-                snapshot: Binding(
-                    get: { document.snapshot },
-                    set: { document.snapshot = $0 }
-                ),
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                activeColorTarget: Binding(
-                    get: { document.viewState.activeColorTarget },
-                    set: { document.viewState.activeColorTarget = $0 }
-                ),
-                colorMode: Binding(
-                    get: { document.settings.colorMode },
-                    set: { document.settings.colorMode = $0 }
-                ),
-                defaultFillColor: Binding(
-                    get: { document.defaultFillColor },
-                    set: { document.defaultFillColor = $0 }
-                ),
-                defaultStrokeColor: Binding(
-                    get: { document.defaultStrokeColor },
-                    set: { document.defaultStrokeColor = $0 }
-                ),
-                defaultFillOpacity: document.defaultFillOpacity,
-                defaultStrokeOpacity: document.defaultStrokeOpacity,
-                currentSwatches: document.currentSwatches,
-                onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
-                onAddColorSwatch: { color in document.addColorSwatch(color) },
-                onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
-                onSetActiveColor: { color in document.setActiveColor(color) },
-                colorDeltaColor: $colorDeltaColor,
-                colorDeltaOpacity: $colorDeltaOpacity,
-                onColorSelected: { color in
-                    document.setActiveColor(color)
-                },
-                onDismiss: {
-                    popoverManager.dismiss()
-                }
-            )
-            .frame(width: 300, height: 480)
-            .environment(appState)
-        }
-
-        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .maxX)
+    @ViewBuilder
+    private var customColorPanel: some View {
+        ColorPanel(
+            snapshot: Binding(
+                get: { document.snapshot },
+                set: { document.snapshot = $0 }
+            ),
+            selectedObjectIDs: document.viewState.selectedObjectIDs,
+            activeColorTarget: Binding(
+                get: { document.viewState.activeColorTarget },
+                set: { document.viewState.activeColorTarget = $0 }
+            ),
+            colorMode: Binding(
+                get: { document.settings.colorMode },
+                set: { document.settings.colorMode = $0 }
+            ),
+            defaultFillColor: Binding(
+                get: { document.defaultFillColor },
+                set: { document.defaultFillColor = $0 }
+            ),
+            defaultStrokeColor: Binding(
+                get: { document.defaultStrokeColor },
+                set: { document.defaultStrokeColor = $0 }
+            ),
+            defaultFillOpacity: document.defaultFillOpacity,
+            defaultStrokeOpacity: document.defaultStrokeOpacity,
+            currentSwatches: document.currentSwatches,
+            onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
+            onAddColorSwatch: { color in document.addColorSwatch(color) },
+            onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
+            onSetActiveColor: { color in document.setActiveColor(color) },
+            colorDeltaColor: .constant(nil),
+            colorDeltaOpacity: .constant(nil),
+            onColorSelected: { color in
+                document.setActiveColor(color)
+            },
+            initialColor: (document.viewState.activeColorTarget == .stroke) ? selectedStrokeColor : selectedFillColor,
+            onDismiss: {
+                showingCustomColorPopover = false
+            }
+        )
+        .frame(width: 300, height: 480)
     }
 
     private func colorDescription(for color: VectorColor) -> String {
