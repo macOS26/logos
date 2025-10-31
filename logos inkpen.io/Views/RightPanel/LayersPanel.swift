@@ -128,11 +128,16 @@ struct LayersPanel: View {
                     if let object = document.snapshot.objects[objectID] {
                         rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
-                        if case .shape(let shape) = object.objectType,
-                           shape.isGroupContainer,
-                           document.settings.groupExpansionState[object.id] ?? false {
-                            for childShape in shape.groupedShapes {
-                                rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+                        // Check if this is an expanded group or clipGroup
+                        let isExpanded = document.settings.groupExpansionState[object.id] ?? false
+                        if isExpanded {
+                            switch object.objectType {
+                            case .group(let shape), .clipGroup(let shape):
+                                for childShape in shape.groupedShapes {
+                                    rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+                                }
+                            default:
+                                break
                             }
                         }
                     }
@@ -345,7 +350,7 @@ struct LayersPanel: View {
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
-                        Color.red.opacity(0.0000000)
+                        Color.red.opacity(0.3000000)
                             .dragTarget()
                             .position(x: eyeIconX, y: iconCenterY)
                     }
@@ -386,7 +391,7 @@ struct LayersPanel: View {
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
-                        Color.red.opacity(0.0000000)
+                        Color.red.opacity(0.3000000)
                             .dragTarget()
                             .position(x: lockIconX, y: iconCenterY)
                     }
