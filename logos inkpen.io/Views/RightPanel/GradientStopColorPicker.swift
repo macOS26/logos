@@ -32,7 +32,9 @@ struct GradientStopColorPicker: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 20))
                     .foregroundColor(.secondary)
-                    .background(Circle().fill(Color(NSColor.windowBackgroundColor)).frame(width: 22, height: 22))
+                    .background(
+                        GlassCircleBackground(size: 22)
+                    )
             }
             .buttonStyle(BorderlessButtonStyle())
             .padding(.top, 12)
