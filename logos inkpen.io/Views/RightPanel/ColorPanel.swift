@@ -93,18 +93,23 @@ struct ColorPanel: View {
             if let dismiss = onDismiss {
                 if #available(macOS 26.0, *) {
                     Button(action: dismiss) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.secondary)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.glass)
+                    .clipShape(Capsule())
                     .padding(.top, 12)
                     .padding(.trailing, 12)
                 } else {
                     Button(action: dismiss) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
+                            .frame(width: 28, height: 28)
+                            .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+                            .clipShape(Capsule())
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .padding(.top, 12)
