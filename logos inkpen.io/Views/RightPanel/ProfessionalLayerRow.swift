@@ -341,7 +341,14 @@ struct ProfessionalLayerRow: View {
             ObjectRow(
                 objectType: .text,
                 objectId: shape.id,
-                name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
+                name: {
+                    guard let content = shape.textContent, !content.isEmpty else {
+                        return "Text"
+                    }
+                    // Get first word or "Text" if no word found
+                    let firstWord = content.split(separator: " ").first.map(String.init) ?? content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return firstWord.isEmpty ? "Text" : firstWord
+                }(),
                 isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
                 onSelect: { isShiftPressed, isCommandPressed in
                     handleObjectSelection(newVectorObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
