@@ -133,7 +133,8 @@ struct LayersPanel: View {
                         if isExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
-                                for childShape in shape.groupedShapes {
+                                // IMPORTANT: Reverse children to match ObjectRow display order
+                                for childShape in shape.groupedShapes.reversed() {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
                                 }
                             default:
