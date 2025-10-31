@@ -183,26 +183,36 @@ struct ObjectRow: View {
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.snapshot.objects[objectId],
-                   case .shape(let parentShape) = object.objectType,
-                   let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
-                    return child.isVisible
+                if let object = document.snapshot.objects[objectId] {
+                    switch object.objectType {
+                    case .group(let parentShape), .clipGroup(let parentShape):
+                        if let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
+                            return child.isVisible
+                        }
+                    default:
+                        break
+                    }
                 }
                 return true
             },
             set: { newValue in
                 guard let parentObject = document.snapshot.objects[objectId] else { return }
-                if case .shape(var parentShape) = parentObject.objectType {
+                switch parentObject.objectType {
+                case .group(var parentShape), .clipGroup(var parentShape):
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isVisible = newValue
 
                         let updatedObject = VectorObject(
-                            shape: parentShape,
+                            id: objectId,
                             layerIndex: layerIndex,
+                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
                         )
                         document.snapshot.objects[objectId] = updatedObject
                         document.changeNotifier.notifyObjectChanged(objectId)
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
+                default:
+                    break
                 }
             }
         )
@@ -211,25 +221,36 @@ struct ObjectRow: View {
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.snapshot.objects[objectId],
-                   case .shape(let parentShape) = object.objectType,
-                   let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
-                    return child.isLocked
+                if let object = document.snapshot.objects[objectId] {
+                    switch object.objectType {
+                    case .group(let parentShape), .clipGroup(let parentShape):
+                        if let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
+                            return child.isLocked
+                        }
+                    default:
+                        break
+                    }
                 }
                 return false
             },
             set: { newValue in
                 guard let parentObject = document.snapshot.objects[objectId] else { return }
-                if case .shape(var parentShape) = parentObject.objectType {
+                switch parentObject.objectType {
+                case .group(var parentShape), .clipGroup(var parentShape):
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isLocked = newValue
+
                         let updatedObject = VectorObject(
-                            shape: parentShape,
+                            id: objectId,
                             layerIndex: layerIndex,
+                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
                         )
                         document.snapshot.objects[objectId] = updatedObject
                         document.changeNotifier.notifyObjectChanged(objectId)
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
+                default:
+                    break
                 }
             }
         )
@@ -405,6 +426,8 @@ struct ObjectRow: View {
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
+                    // After reversing, the last index is the original first shape (the mask)
+                    let originalIndex = shapes.count - 1 - index
 
                     ZStack(alignment: .bottom) {
                         HStack(spacing: 2) {
@@ -443,9 +466,9 @@ struct ObjectRow: View {
                             HStack(spacing: 4) {
                                 Color.clear.frame(width: 12, height: 12)
 
-                                Image(systemName: childIconFor(childShape, index: index))
+                                Image(systemName: childIconFor(childShape, index: originalIndex))
                                     .font(.system(size: 10))
-                                    .foregroundColor(childIconColorFor(childShape, index: index))
+                                    .foregroundColor(childIconColorFor(childShape, index: originalIndex))
                                     .frame(width: 12)
                                 
                                 Circle()
