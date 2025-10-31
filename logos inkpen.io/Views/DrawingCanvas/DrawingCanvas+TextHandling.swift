@@ -157,18 +157,21 @@ extension DrawingCanvas {
 
         if let textObject = document.findText(by: textID) {
 
+            // Calculate cursor position FIRST, before triggering any view updates
+            let cursorPosition = calculateCursorPosition(in: textObject, at: location)
+            currentCursorPosition = cursorPosition
+            currentSelectionRange = NSRange(location: cursorPosition, length: 0)
+
+            // Set cursor position BEFORE setting isEditing to avoid view sync race condition
+            document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
+
+            // NOW set isEditing, which triggers view sync with correct cursor position
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
             document.viewState.selectedObjectIDs = [textID]
 
             isEditingText = true
             editingTextID = textID
-
-            let cursorPosition = calculateCursorPosition(in: textObject, at: location)
-            currentCursorPosition = cursorPosition
-            currentSelectionRange = NSRange(location: cursorPosition, length: 0)
-
-            document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
         } else {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
