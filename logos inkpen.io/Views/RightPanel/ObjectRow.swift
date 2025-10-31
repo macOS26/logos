@@ -422,12 +422,12 @@ struct ObjectRow: View {
             }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
-                ForEach(Array(shapes.reversed().enumerated()), id: \.element.id) { index, childShape in
+                // Don't reverse - display in original order (mask first)
+                ForEach(Array(shapes.enumerated()), id: \.element.id) { index, childShape in
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
-                    // After reversing, the last index is the original first shape (the mask)
-                    let originalIndex = shapes.count - 1 - index
+                    let originalIndex = index
 
                     ZStack(alignment: .bottom) {
                         HStack(spacing: 2) {
