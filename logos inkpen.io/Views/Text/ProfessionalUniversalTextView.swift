@@ -370,7 +370,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
                 // Block updates that would move cursor -1 position (race condition)
                 if newPosition == oldPosition - 1 {
-                    print("🚫 BLOCKED -1 cursor jump in NSTextView handler")
+                    print("🚫 BLOCKED -1 cursor jump - restoring cursor to \(oldPosition)")
+                    // Force NSTextView back to correct position
+                    self.isRestoringSelection = true
+                    textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
+                    self.isRestoringSelection = false
                     return
                 }
 
