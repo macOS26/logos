@@ -34,14 +34,29 @@ class VisibilityCommand: BaseCommand {
             guard var obj = document.snapshot.objects[id],
                   let value = values[id] else { continue }
 
-            if case .shape(var shape) = obj.objectType {
+            var updatedShape: VectorShape?
+            var updatedObjectType: VectorObject.ObjectType?
+
+            switch obj.objectType {
+            case .shape(var shape),
+                 .text(var shape),
+                 .image(var shape),
+                 .warp(var shape),
+                 .group(var shape),
+                 .clipGroup(var shape),
+                 .clipMask(var shape):
                 switch property {
                 case .visibility:
                     shape.isVisible = value
                 case .locked:
                     shape.isLocked = value
                 }
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                updatedShape = shape
+                updatedObjectType = VectorObject.determineType(for: shape)
+            }
+
+            if let _ = updatedShape, let objectType = updatedObjectType {
+                obj = VectorObject(id: id, layerIndex: obj.layerIndex, objectType: objectType)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
             }
