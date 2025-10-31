@@ -466,6 +466,17 @@ struct logos_inken_ioApp: App {
                     }
                     .keyboardShortcut("y", modifiers: [.command])
 
+                    Button {
+                        ApplicationSettings.shared.showClippingInKeyline.toggle()
+                    } label: {
+                        HStack {
+                            if ApplicationSettings.shared.showClippingInKeyline {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Show Clipping in Keyline Mode")
+                        }
+                    }
+
                     Divider()
 
                     Button {

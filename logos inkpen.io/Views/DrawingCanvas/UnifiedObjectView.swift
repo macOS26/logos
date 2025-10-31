@@ -155,21 +155,37 @@ struct LayerCanvasView: View {
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    // In keyline mode, show mask outline if visible
+                    // In keyline mode, check preference for clipping
                     if viewMode == .keyline {
-                        // Render mask outline (only if visible)
-                        if maskShape.isVisible {
-                            renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
-                        }
-                        // Render content shapes without clipping in keyline
-                        for contentShape in contentShapes {
-                            guard contentShape.isVisible else { continue }
-                            if VectorText.from(contentShape) != nil {
-                                renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
-                            } else if contentShape.embeddedImageData != nil {
-                                renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
-                            } else {
-                                renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                        let showClipped = ApplicationSettings.shared.showClippingInKeyline
+
+                        if showClipped {
+                            // Show clipped result in keyline
+                            guard maskShape.isVisible else { break }
+                            for contentShape in contentShapes {
+                                guard contentShape.isVisible else { continue }
+                                if VectorText.from(contentShape) != nil {
+                                    renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                                } else if contentShape.embeddedImageData != nil {
+                                    renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                                } else {
+                                    renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                                }
+                            }
+                        } else {
+                            // Show full outlines (no clipping) in keyline
+                            if maskShape.isVisible {
+                                renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                            }
+                            for contentShape in contentShapes {
+                                guard contentShape.isVisible else { continue }
+                                if VectorText.from(contentShape) != nil {
+                                    renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
+                                } else if contentShape.embeddedImageData != nil {
+                                    renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                                } else {
+                                    renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                                }
                             }
                         }
                     } else {
