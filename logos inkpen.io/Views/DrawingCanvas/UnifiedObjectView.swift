@@ -201,6 +201,7 @@ struct CanvasBackgroundView: View {
 
 struct LayerCanvasView: View {
     let objects: [VectorObject]
+    let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -209,7 +210,7 @@ struct LayerCanvasView: View {
     let liveScaleTransform: CGAffineTransform
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
-    
+
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -247,14 +248,24 @@ struct LayerCanvasView: View {
                 // This keeps stroke width constant during scaling
                 let shapeTransform = (isSelected && !isTextObject) ? liveScaleTransform : .identity
 
+                // Get mask shape if this object is clipped
+                let maskShape: VectorShape? = {
+                    guard let shape = object.shape as VectorShape?,
+                          let maskID = shape.clippedByShapeID,
+                          let maskObject = objectsDict[maskID] else {
+                        return nil
+                    }
+                    return maskObject.shape
+                }()
+
                 switch object.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                    renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
                 case .image(let shape):
-                    renderImage(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                    renderImage(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
                 case .text(let shape):
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
+                    renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
                 }
             }
         }
@@ -297,7 +308,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Shape Rendering
 
-    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity) {
+    private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         // Fast path: skip invisible shapes (O(1))
         let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
         let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
@@ -317,37 +328,79 @@ struct LayerCanvasView: View {
 
         // Drag delta is now applied at canvas level, not per-object
 
-        // Render fill (O(1) for solid, O(n) for gradient where n = stops)
-        if viewMode == .color, let fillStyle = shape.fillStyle {
-            if let gradient = fillStyle.gradient {
-                renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &context)
-            } else if fillStyle.color != .clear {
-                context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
-            }
-        }
+        // If we have a mask, use drawLayer to isolate clipping
+        if let maskShape = maskShape {
+            context.drawLayer { layerContext in
+                let maskPath = maskShape.cachedCGPath
+                layerContext.clip(to: Path(maskPath))
 
-        // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
-        // Stroke width stays constant regardless of scale transform
-        if viewMode == .keyline {
-            context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
-        } else if let strokeStyle = shape.strokeStyle {
-            if strokeStyle.placement == .center {
-                if let gradient = strokeStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
-                } else if strokeStyle.color != .clear {
-                    context.stroke(
-                        Path(cgPath),
-                        with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
-                        style: SwiftUI.StrokeStyle(
-                            lineWidth: strokeStyle.width,
-                            lineCap: strokeStyle.lineCap.cgLineCap,
-                            lineJoin: strokeStyle.lineJoin.cgLineJoin,
-                            miterLimit: strokeStyle.miterLimit
-                        )
-                    )
+                // Render fill (O(1) for solid, O(n) for gradient where n = stops)
+                if viewMode == .color, let fillStyle = shape.fillStyle {
+                    if let gradient = fillStyle.gradient {
+                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &layerContext)
+                    } else if fillStyle.color != .clear {
+                        layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                    }
                 }
-            } else {
-                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
+
+                // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
+                if viewMode == .keyline {
+                    layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+                } else if let strokeStyle = shape.strokeStyle {
+                    if strokeStyle.placement == .center {
+                        if let gradient = strokeStyle.gradient {
+                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &layerContext)
+                        } else if strokeStyle.color != .clear {
+                            layerContext.stroke(
+                                Path(cgPath),
+                                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                                style: SwiftUI.StrokeStyle(
+                                    lineWidth: strokeStyle.width,
+                                    lineCap: strokeStyle.lineCap.cgLineCap,
+                                    lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                                    miterLimit: strokeStyle.miterLimit
+                                )
+                            )
+                        }
+                    } else {
+                        renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &layerContext)
+                    }
+                }
+            }
+        } else {
+            // No mask, render directly
+            // Render fill (O(1) for solid, O(n) for gradient where n = stops)
+            if viewMode == .color, let fillStyle = shape.fillStyle {
+                if let gradient = fillStyle.gradient {
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &context)
+                } else if fillStyle.color != .clear {
+                    context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                }
+            }
+
+            // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
+            // Stroke width stays constant regardless of scale transform
+            if viewMode == .keyline {
+                context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+            } else if let strokeStyle = shape.strokeStyle {
+                if strokeStyle.placement == .center {
+                    if let gradient = strokeStyle.gradient {
+                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
+                    } else if strokeStyle.color != .clear {
+                        context.stroke(
+                            Path(cgPath),
+                            with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                            style: SwiftUI.StrokeStyle(
+                                lineWidth: strokeStyle.width,
+                                lineCap: strokeStyle.lineCap.cgLineCap,
+                                lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                                miterLimit: strokeStyle.miterLimit
+                            )
+                        )
+                    }
+                } else {
+                    renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
+                }
             }
         }
     }
@@ -508,7 +561,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -517,6 +570,13 @@ struct LayerCanvasView: View {
 
         context.withCGContext { cgContext in
             cgContext.saveGState()
+
+            // Apply clipping mask if provided
+            if let maskShape = maskShape {
+                let maskPath = maskShape.cachedCGPath
+                cgContext.addPath(maskPath)
+                cgContext.clip()
+            }
 
             cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
@@ -616,7 +676,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Image Rendering
 
-    private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity) {
+    private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let imageData = shape.embeddedImageData else { return }
         guard let nsImage = NSImage(data: imageData) else { return }
@@ -626,6 +686,13 @@ struct LayerCanvasView: View {
 
         context.withCGContext { cgContext in
             cgContext.saveGState()
+
+            // Apply clipping mask if provided
+            if let maskShape = maskShape {
+                let maskPath = maskShape.cachedCGPath
+                cgContext.addPath(maskPath)
+                cgContext.clip()
+            }
 
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
@@ -692,6 +759,7 @@ struct IsolatedLayerView: View {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
                 objects: objects,
+                objectsDict: document.snapshot.objects,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedObjectIDs,
