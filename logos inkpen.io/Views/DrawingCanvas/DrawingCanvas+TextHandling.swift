@@ -175,7 +175,7 @@ extension DrawingCanvas {
         }
     }
 
-    func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
+    func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false, at location: CGPoint = .zero) {
 
         guard let textObject = document.findText(by: textID) else {
             Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
@@ -193,16 +193,16 @@ extension DrawingCanvas {
                 document.viewState.selectedObjectIDs = [textID]
 
                 if document.viewState.currentTool == .font && isCornerClick {
-                    startEditingText(textID: textID, at: .zero)
+                    startEditingText(textID: textID, at: location)
                 }
 
             case .selected:
                 if isDoubleClick {
                     document.viewState.currentTool = .font
 
-                    startEditingText(textID: textID, at: .zero)
+                    startEditingText(textID: textID, at: location)
                 } else if document.viewState.currentTool == .font {
-                    startEditingText(textID: textID, at: .zero)
+                    startEditingText(textID: textID, at: location)
                 }
 
             case .editing:

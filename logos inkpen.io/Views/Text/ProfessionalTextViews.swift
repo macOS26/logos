@@ -69,7 +69,7 @@ struct ProfessionalTextBoxView: View {
                     onTextBoxSelect(location)
                 }
                 .onTapGesture(count: 2) { location in
-                    viewModel.handleTextBoxInteraction(textID: viewModel.textObject.id, isDoubleClick: true)
+                    viewModel.handleTextBoxInteraction(textID: viewModel.textObject.id, isDoubleClick: true, at: location)
                 }
                 .allowsHitTesting(true)
 
