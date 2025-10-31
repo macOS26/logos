@@ -578,16 +578,18 @@ class ProfessionalTextViewModel: ObservableObject {
                 document.viewState.selectedObjectIDs = [textID]
 
                 if document.viewState.currentTool == .font && isCornerClick {
-                    startEditingText(textID: textID, at: location)
+                    startEditingText(textID: textID, at: location, isDoubleClickFromArrow: false)
                 }
 
             case .selected:
                 if isDoubleClick {
+                    // Double-clicking from Arrow tool -> need +1 adjustment
+                    let needsAdjustment = document.viewState.currentTool != .font
                     document.viewState.currentTool = .font
 
-                    startEditingText(textID: textID, at: location)
+                    startEditingText(textID: textID, at: location, isDoubleClickFromArrow: needsAdjustment)
                 } else if document.viewState.currentTool == .font {
-                    startEditingText(textID: textID, at: location)
+                    startEditingText(textID: textID, at: location, isDoubleClickFromArrow: false)
                 }
 
             case .editing:
@@ -607,7 +609,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
     }
 
-    private func startEditingText(textID: UUID, at location: CGPoint = .zero) {
+    private func startEditingText(textID: UUID, at location: CGPoint = .zero, isDoubleClickFromArrow: Bool = false) {
 
         var editingCount = 0
         for obj in document.snapshot.objects.values {
@@ -621,7 +623,14 @@ class ProfessionalTextViewModel: ObservableObject {
 
             // Calculate and set cursor position FIRST, before triggering view updates
             if location != .zero {
-                let cursorPosition = calculateCursorPosition(in: textObject, at: location)
+                var cursorPosition = calculateCursorPosition(in: textObject, at: location)
+
+                // ONLY add +1 when double-clicking from Arrow tool
+                if isDoubleClickFromArrow {
+                    cursorPosition = min(cursorPosition + 1, textObject.content.count)
+                    print("🎯 Applied +1 adjustment for Arrow tool double-click: \(cursorPosition - 1) -> \(cursorPosition)")
+                }
+
                 document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
             }
 
