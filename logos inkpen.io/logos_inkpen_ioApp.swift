@@ -468,6 +468,9 @@ struct logos_inken_ioApp: App {
 
                     Button {
                         ApplicationSettings.shared.showClippingInKeyline.toggle()
+                        if let document = documentState?.document {
+                            document.objectUpdateTrigger &+= 1
+                        }
                     } label: {
                         HStack {
                             if ApplicationSettings.shared.showClippingInKeyline {
