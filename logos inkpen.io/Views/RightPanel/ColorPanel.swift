@@ -99,7 +99,7 @@ struct ColorPanel: View {
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.glass)
-                    .clipShape(Capsule())
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
                     .padding(.top, 12)
                     .padding(.trailing, 12)
                 } else {
@@ -109,7 +109,7 @@ struct ColorPanel: View {
                             .foregroundColor(.secondary)
                             .frame(width: 28, height: 28)
                             .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
-                            .clipShape(Capsule())
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .padding(.top, 12)
