@@ -468,10 +468,6 @@ struct logos_inken_ioApp: App {
 
                     Button {
                         ApplicationSettings.shared.showClippingInKeyline.toggle()
-                        // Force canvas redraw when toggled
-                        if let document = documentState?.document {
-                            document.objectUpdateTrigger &+= 1
-                        }
                     } label: {
                         HStack {
                             if ApplicationSettings.shared.showClippingInKeyline {
