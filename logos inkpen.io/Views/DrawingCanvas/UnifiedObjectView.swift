@@ -155,8 +155,13 @@ struct LayerCanvasView: View {
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    // Render each content shape with the mask
+                    // Only render if mask is visible
+                    guard maskShape.isVisible else { break }
+
+                    // Render each content shape with the mask (only if visible)
                     for contentShape in contentShapes {
+                        guard contentShape.isVisible else { continue }
+
                         if VectorText.from(contentShape) != nil {
                             renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
                         } else if contentShape.embeddedImageData != nil {
