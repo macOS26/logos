@@ -39,116 +39,16 @@ struct VectorObjectView: View {
                     EmptyView()
                 }
             case .clipMask:
+                // Clipping masks are now rendered in Canvas (LayerCanvasView)
                 EmptyView()
-            case .shape(let shape),
-                 .image(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape):
-                if let clipID = shape.clippedByShapeID {
-                    if let maskUnifiedObject = document.snapshot.objects[clipID] {
-                        let maskShape = maskUnifiedObject.shape
-                        let clippedPath = createPreTransformedPath(for: shape)
-                        let maskPath = createPreTransformedPath(for: maskShape)
-                        let isClippedShapeSelected = selectedObjectIDs.contains(object.id)
-                        let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
-                        let isSelected = isClippedShapeSelected || isMaskShapeSelected
-
-                        ClippingMaskShapeView(
-                            clippedShape: shape,
-                            maskShape: maskShape,
-                            clippedPath: clippedPath,
-                            maskPath: maskPath,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            isSelected: isSelected,
-                            dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            viewMode: viewMode
-                        )
-                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")
-                    } else {
-                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(object.id))
-                    }
-                } else {
-                    ZStack {
-                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(object.id))
-
-                        if shape.isGroupContainer {
-                            let _ = print("🟢 RENDER GROUP: isGroupContainer=true, groupedShapes.count=\(shape.groupedShapes.count)")
-                            let textShapes = shape.groupedShapes.filter { $0.typography != nil && $0.isVisible }
-                            let _ = print("🟢 RENDER GROUP: filtered text shapes count=\(textShapes.count)")
-                            ForEach(textShapes, id: \.id) { textShape in
-                                let _ = print("🟢 RENDER GROUP: textShape id=\(textShape.id), textContent=\(textShape.textContent != nil), typography=\(textShape.typography != nil)")
-                                if textShape.textContent != nil, textShape.typography != nil {
-                                    let _ = print("🟢 RENDER GROUP: Creating StableProfessionalTextCanvas for \(textShape.id)")
-                                    StableProfessionalTextCanvas(
-                                        document: document,
-                                        textObjectID: textShape.id,
-                                        dragPreviewDelta: dragPreviewDelta,
-                                        dragPreviewTrigger: dragPreviewTrigger,
-                                        viewMode: viewMode
-                                    )
-                                    .allowsHitTesting(document.viewState.currentTool == .font)
-                                } else {
-                                    let _ = print("🔴 RENDER GROUP: SKIPPING textShape \(textShape.id) - textContent or typography is nil")
-                                }
-                            }
-                        }
-                    }
-                }
+            case .shape, .image, .warp, .group, .clipGroup:
+                // All shapes (including clipped ones) are now rendered in Canvas (LayerCanvasView)
+                // This view is only for overlays like text editors
+                EmptyView()
             }
         }
     }
 
-    @ViewBuilder
-    private func renderRegularShape(shape: VectorShape, isSelected: Bool) -> some View {
-        // Refetch latest shape from document (like text does)
-        let latestShape = document.findShape(by: shape.id) ?? shape
-
-        ShapeView(
-            shape: latestShape,
-            zoomLevel: zoomLevel,
-            canvasOffset: canvasOffset,
-            isSelected: isSelected,
-            viewMode: viewMode,
-            isCanvasLayer: object.layerIndex == 1,
-            isPasteboardLayer: object.layerIndex == 0,
-            dragPreviewDelta: dragPreviewDelta,
-            dragPreviewTrigger: dragPreviewTrigger,
-            liveScaleTransform: liveScaleTransform,
-            liveGradientOriginX: liveGradientOriginX,
-            liveGradientOriginY: liveGradientOriginY
-        )
-        .id("\(shape.id)-\(shape.path.isClosed)-\(latestShape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
-    }
-
-    private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
-        let path = CGMutablePath()
-
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to):
-                path.move(to: to.cgPoint)
-            case .line(let to):
-                path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
-                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
-                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-            case .close:
-                path.closeSubpath()
-            }
-        }
-
-        if !shape.transform.isIdentity {
-            let transformedPath = CGMutablePath()
-            transformedPath.addPath(path, transform: shape.transform)
-            return transformedPath
-        }
-
-        return path
-    }
 }
 
 struct PasteboardBackgroundView: View {
