@@ -155,10 +155,12 @@ struct LayerCanvasView: View {
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    // In keyline mode, always show the mask outline
+                    // In keyline mode, show mask outline if visible
                     if viewMode == .keyline {
-                        // Render mask outline
-                        renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                        // Render mask outline (only if visible)
+                        if maskShape.isVisible {
+                            renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                        }
                         // Render content shapes without clipping in keyline
                         for contentShape in contentShapes {
                             guard contentShape.isVisible else { continue }
