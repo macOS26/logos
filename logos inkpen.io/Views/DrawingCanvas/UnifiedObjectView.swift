@@ -160,8 +160,13 @@ struct LayerCanvasView: View {
                         let showClipped = ApplicationSettings.shared.showClippingInKeyline
 
                         if showClipped {
-                            // Show clipped result in keyline
+                            // Show mask outline + clipped content in keyline
                             guard maskShape.isVisible else { break }
+
+                            // First render the mask outline
+                            renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+
+                            // Then render content shapes clipped by the mask
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
                                 if VectorText.from(contentShape) != nil {
