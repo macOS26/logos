@@ -128,7 +128,16 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
-            self.userInitiatedCursorPosition = textObject.cursorPosition
+            // Prevent cursor jump when double-clicking already-selected text
+            // If new position is exactly -1 from current, it's likely a race condition - ignore it
+            let positionDelta = textObject.cursorPosition - self.userInitiatedCursorPosition
+            print("🔍 Cursor position sync: document=\(textObject.cursorPosition), current=\(self.userInitiatedCursorPosition), delta=\(positionDelta)")
+            if positionDelta != -1 {
+                self.userInitiatedCursorPosition = textObject.cursorPosition
+                print("✅ Updated cursor position to \(textObject.cursorPosition)")
+            } else {
+                print("🚫 BLOCKED cursor update - would move -1 position (race condition)")
+            }
         }
 
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
