@@ -466,6 +466,8 @@ struct logos_inken_ioApp: App {
                     }
                     .keyboardShortcut("y", modifiers: [.command])
 
+                    Divider()
+
                     Button {
                         appState.showClippingInKeyline.toggle()
                     } label: {
@@ -476,8 +478,6 @@ struct logos_inken_ioApp: App {
                             Text("Show Clipping in Keyline Mode")
                         }
                     }
-
-                    Divider()
 
                     Button {
                         documentState?.toggleRulers()
