@@ -108,6 +108,40 @@ extension Edge {
     }
 }
 
+/// A reusable glass close button for popovers
+struct GlassCloseButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            Button(action: action) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(width: 28, height: 28)
+            }
+            .clipShape(.circle)
+            .buttonStyle(.glass)
+            .glassEffect(.regular, in: .circle)
+            .padding(.top, 12)
+            .padding(.trailing, 8)
+        } else {
+            Button(action: action) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
+            }
+            .buttonStyle(BorderlessButtonStyle())
+            .clipShape(Circle())
+            .padding(.top, 12)
+            .padding(.trailing, 8)
+        }
+    }
+}
+
 /// A view representable that provides an NSView for popover anchoring
 struct PopoverAnchorView: NSViewRepresentable {
     let onViewCreated: (NSView) -> Void
