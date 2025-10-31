@@ -28,6 +28,12 @@ class AppState {
         }
     }
 
+    var showClippingInKeyline: Bool = UserDefaults.standard.object(forKey: "showClippingInKeyline") as? Bool ?? false {
+        didSet {
+            UserDefaults.standard.set(showClippingInKeyline, forKey: "showClippingInKeyline")
+        }
+    }
+
     internal var _pressureCurve: [CGPoint] = [
         CGPoint(x: 0.0, y: 0.0),
         CGPoint(x: 0.25, y: 0.25),

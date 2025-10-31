@@ -98,10 +98,5 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
     }
 
-    // MARK: - View Settings
-    @Published var showClippingInKeyline: Bool = UserDefaults.standard.object(forKey: "showClippingInKeyline") as? Bool ?? false {
-        didSet { UserDefaults.standard.set(showClippingInKeyline, forKey: "showClippingInKeyline") }
-    }
-
     private init() {}
 }

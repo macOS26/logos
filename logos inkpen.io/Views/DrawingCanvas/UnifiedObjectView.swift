@@ -111,7 +111,7 @@ struct LayerCanvasView: View {
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
 
-    @ObservedObject private var settings = ApplicationSettings.shared
+    var appState = AppState.shared
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -159,7 +159,7 @@ struct LayerCanvasView: View {
 
                     // In keyline mode, check preference for clipping
                     if viewMode == .keyline {
-                        let showClipped = settings.showClippingInKeyline
+                        let showClipped = appState.showClippingInKeyline
 
                         if showClipped {
                             // Show mask outline + clipped content in keyline

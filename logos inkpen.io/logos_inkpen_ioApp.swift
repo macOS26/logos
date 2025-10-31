@@ -467,13 +467,10 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("y", modifiers: [.command])
 
                     Button {
-                        ApplicationSettings.shared.showClippingInKeyline.toggle()
-                        if let document = documentState?.document {
-                            document.objectUpdateTrigger &+= 1
-                        }
+                        appState.showClippingInKeyline.toggle()
                     } label: {
                         HStack {
-                            if ApplicationSettings.shared.showClippingInKeyline {
+                            if appState.showClippingInKeyline {
                                 Image(systemName: "checkmark")
                             }
                             Text("Show Clipping in Keyline Mode")
