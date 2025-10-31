@@ -148,22 +148,53 @@ struct LayerCanvasView: View {
                 // This keeps stroke width constant during scaling
                 let shapeTransform = (isSelected && !isTextObject) ? liveScaleTransform : .identity
 
-                // Get mask shape if this object is clipped
-                let maskShape: VectorShape? = {
-                    guard let shape = object.shape as VectorShape?,
-                          let maskID = shape.clippedByShapeID,
-                          let maskObject = objectsDict[maskID] else {
-                        return nil
-                    }
-                    return maskObject.shape
-                }()
-
                 switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .clipGroup(let clipGroupShape):
+                    // ClipGroup: first grouped shape is the mask, rest are clipped content
+                    guard !clipGroupShape.groupedShapes.isEmpty else { break }
+                    let maskShape = clipGroupShape.groupedShapes[0]
+                    let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
+
+                    // Render each content shape with the mask
+                    for contentShape in contentShapes {
+                        if VectorText.from(contentShape) != nil {
+                            renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                        } else if contentShape.embeddedImageData != nil {
+                            renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                        } else {
+                            renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                        }
+                    }
+
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipMask(let shape):
+                    // Get mask shape if this object is clipped by another object
+                    let maskShape: VectorShape? = {
+                        guard let maskID = shape.clippedByShapeID,
+                              let maskObject = objectsDict[maskID] else {
+                            return nil
+                        }
+                        return maskObject.shape
+                    }()
                     renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+
                 case .image(let shape):
+                    let maskShape: VectorShape? = {
+                        guard let maskID = shape.clippedByShapeID,
+                              let maskObject = objectsDict[maskID] else {
+                            return nil
+                        }
+                        return maskObject.shape
+                    }()
                     renderImage(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+
                 case .text(let shape):
+                    let maskShape: VectorShape? = {
+                        guard let maskID = shape.clippedByShapeID,
+                              let maskObject = objectsDict[maskID] else {
+                            return nil
+                        }
+                        return maskObject.shape
+                    }()
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
                     renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
                 }
