@@ -468,17 +468,27 @@ struct LayersPanel: View {
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
                 if let parentObj = document.snapshot.objects[parentObjectId] {
-                    if case .shape(var parentShape) = parentObj.objectType {
+                    var updatedParentShape: VectorShape?
+
+                    switch parentObj.objectType {
+                    case .group(var parentShape), .clipGroup(var parentShape):
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isVisible.toggle()
-                            let updatedObject = VectorObject(
-                                shape: parentShape,
-                                layerIndex: layerIndex,
-                            )
-                            document.snapshot.objects[parentObjectId] = updatedObject
-                            processedObjectsDuringDrag.insert(childShapeId)
-                            document.triggerLayerUpdate(for: layerIndex)
+                            updatedParentShape = parentShape
                         }
+                    default:
+                        break
+                    }
+
+                    if let parentShape = updatedParentShape {
+                        let updatedObject = VectorObject(
+                            id: parentObjectId,
+                            layerIndex: layerIndex,
+                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
+                        )
+                        document.snapshot.objects[parentObjectId] = updatedObject
+                        processedObjectsDuringDrag.insert(childShapeId)
+                        document.triggerLayerUpdate(for: layerIndex)
                     }
                 }
             }
