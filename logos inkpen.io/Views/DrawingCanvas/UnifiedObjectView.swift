@@ -128,6 +128,9 @@ struct LayerCanvasView: View {
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
+                    // Save parent's transform (includes drag delta if parent clipGroup is selected)
+                    let parentTransform = context.transform
+
                     // In keyline mode, check preference for clipping
                     if viewMode == .keyline {
                         let showClipped = appState.showClippingInKeyline
@@ -141,7 +144,7 @@ struct LayerCanvasView: View {
                             if isMaskSelected && dragPreviewDelta != .zero {
                                 context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                             } else {
-                                context.transform = baseTransform
+                                context.transform = parentTransform  // Preserve parent's drag delta
                             }
                             let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
                             renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
@@ -155,7 +158,7 @@ struct LayerCanvasView: View {
                                 if isChildSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
-                                    context.transform = baseTransform
+                                    context.transform = parentTransform  // Preserve parent's drag delta
                                 }
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
@@ -174,7 +177,7 @@ struct LayerCanvasView: View {
                                 if isMaskSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
-                                    context.transform = baseTransform
+                                    context.transform = parentTransform  // Preserve parent's drag delta
                                 }
                                 let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
                                 renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
@@ -187,7 +190,7 @@ struct LayerCanvasView: View {
                                 if isChildSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
-                                    context.transform = baseTransform
+                                    context.transform = parentTransform  // Preserve parent's drag delta
                                 }
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
@@ -214,7 +217,7 @@ struct LayerCanvasView: View {
                             if isChildSelected && dragPreviewDelta != .zero {
                                 context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                             } else {
-                                context.transform = baseTransform
+                                context.transform = parentTransform  // Preserve parent's drag delta
                             }
                             let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
@@ -232,6 +235,9 @@ struct LayerCanvasView: View {
                     // Regular Group: render all child shapes (no clipping)
                     guard !groupShape.groupedShapes.isEmpty else { break }
 
+                    // Save parent's transform (includes drag delta if parent group is selected)
+                    let parentTransform = context.transform
+
                     // Render each child shape in the group
                     for childShape in groupShape.groupedShapes {
                         guard childShape.isVisible else { continue }
@@ -245,7 +251,7 @@ struct LayerCanvasView: View {
                             context.transform = baseTransform
                                 .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                         } else {
-                            context.transform = baseTransform
+                            context.transform = parentTransform  // Preserve parent's drag delta
                         }
 
                         // Use child-specific selection state for scale transform
