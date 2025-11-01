@@ -9,11 +9,7 @@ struct ProfessionalTextCanvas: View {
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
 
-    @State private var dragOffset: CGSize = .zero
-    @State private var resizeOffset: CGSize = .zero
     @State private var textBoxState: TextBoxState = .gray
-    @State private var isResizeHandleActive = false
-    @State private var clickLocation: CGPoint? = nil
 
     init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
         self.document = document
@@ -49,8 +45,8 @@ struct ProfessionalTextCanvas: View {
             alignment: .topLeading
         )
         .position(
-            x: position.x + dragOffset.width + bounds.width / 2,
-            y: position.y + dragOffset.height + bounds.height / 2
+            x: position.x + bounds.width / 2,
+            y: position.y + bounds.height / 2
         )
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
         .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
@@ -255,54 +251,6 @@ struct ProfessionalTextCanvas: View {
                 }
             }
         }
-    }
-
-    private func handleTextBoxSelect(location: CGPoint) {
-        // Store click location for cursor positioning
-        clickLocation = location
-
-        // Stop editing other text objects using snapshot
-        for (_, obj) in document.snapshot.objects {
-            guard case .text(let shape) = obj.objectType,
-                  shape.id != viewModel.textObject.id,
-                  shape.isEditing == true else { continue }
-
-            document.setTextEditingInUnified(id: shape.id, isEditing: false)
-        }
-
-        switch textBoxState {
-        case .gray:
-            textBoxState = .green
-            document.viewState.selectedObjectIDs = [viewModel.textObject.id]
-
-        case .green:
-            break
-
-        case .blue:
-            break
-        }
-    }
-
-    private func handleResizeStarted() {
-        isResizeHandleActive = true
-    }
-
-    private func handleResizeChanged(value: DragGesture.Value) {
-        resizeOffset = value.translation
-    }
-
-    private func handleResizeEnded() {
-        let newFrame = CGRect(
-            x: viewModel.textBoxFrame.minX,
-            y: viewModel.textBoxFrame.minY,
-            width: max(100, viewModel.textBoxFrame.width + resizeOffset.width),
-            height: max(50, viewModel.textBoxFrame.height + resizeOffset.height)
-        )
-
-        viewModel.updateTextBoxFrame(newFrame)
-        resizeOffset = .zero
-        dragOffset = .zero
-        isResizeHandleActive = false
     }
 
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
