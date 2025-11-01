@@ -177,6 +177,27 @@ struct TypographyProperties: Codable, Hashable {
         return Font.custom(fontFamily, size: fontSize)
     }
 
+    var nsParagraphStyle: NSParagraphStyle {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, lineSpacing)
+        paragraphStyle.minimumLineHeight = lineHeight
+        paragraphStyle.maximumLineHeight = lineHeight
+        return paragraphStyle
+    }
+
+    func textAttributes(includeColor: Bool = false) -> [NSAttributedString.Key: Any] {
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .kern: letterSpacing,
+            .paragraphStyle: nsParagraphStyle
+        ]
+        if includeColor {
+            attributes[.foregroundColor] = NSColor(cgColor: fillColor.cgColor) ?? .black
+        }
+        return attributes
+    }
+
     enum CodingKeys: String, CodingKey {
         case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
         case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth

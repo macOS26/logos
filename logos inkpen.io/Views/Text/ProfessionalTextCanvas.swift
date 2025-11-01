@@ -125,7 +125,6 @@ struct ProfessionalTextCanvas: View {
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
-            applyStyle(to: textView)
             context.coordinator.textView = textView
 
             // Set initial cursor position from textObject
