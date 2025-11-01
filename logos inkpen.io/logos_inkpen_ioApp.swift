@@ -461,12 +461,17 @@ struct logos_inken_ioApp: App {
 
                     Divider()
 
-                    Button("Toggle Color/Keyline View") {
+                    Button {
                         documentState?.toggleColorKeylineView()
+                    } label: {
+                        HStack {
+                            if documentState?.document?.viewState.viewMode == .keyline {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Toggle Color/Keyline View")
+                        }
                     }
                     .keyboardShortcut("y", modifiers: [.command])
-
-                    Divider()
 
                     Button {
                         appState.showClippingInKeyline.toggle()
@@ -475,7 +480,7 @@ struct logos_inken_ioApp: App {
                             if appState.showClippingInKeyline {
                                 Image(systemName: "checkmark")
                             }
-                            Text("Show Clipping in Keyline Mode")
+                            Text("Toggle Show Clipping in Keyline Mode")
                         }
                     }
 
