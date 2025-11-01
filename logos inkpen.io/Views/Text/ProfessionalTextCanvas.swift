@@ -33,14 +33,25 @@ struct ProfessionalTextCanvas: View {
     }
 
     var body: some View {
-      
-            ProfessionalTextDisplayView(
-                viewModel: viewModel,
-                dragOffset: dragOffset,
-                textBoxState: textBoxState,
-                viewMode: viewMode
-            )
+        let bounds = viewModel.textObject.bounds
+        let position = viewModel.textObject.position
+        let shouldAllowHitTesting = textBoxState == .blue
 
+        ProfessionalUniversalTextView(
+            viewModel: viewModel,
+            textBoxState: textBoxState,
+            viewMode: viewMode
+        )
+        .allowsHitTesting(shouldAllowHitTesting)
+        .frame(
+            width: bounds.width,
+            height: bounds.height,
+            alignment: .topLeading
+        )
+        .position(
+            x: position.x + dragOffset.width + bounds.width / 2,
+            y: position.y + dragOffset.height + bounds.height / 2
+        )
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
         .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.viewState.zoomLevel : 0,
