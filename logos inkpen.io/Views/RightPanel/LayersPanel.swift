@@ -122,7 +122,7 @@ struct LayersPanel: View {
             
             if isExpanded {
                 // Use the layer's objectIDs array from snapshot
-                let objectIDs = document.snapshot.layers[layerIndex].objectIDs.reversed()
+                let objectIDs = document.snapshot.layers[layerIndex].objectIDs
 
                 for objectID in objectIDs {
                     if let object = document.snapshot.objects[objectID] {
@@ -133,8 +133,8 @@ struct LayersPanel: View {
                         if isExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
-                                // Display in reversed order (top to bottom stacking)
-                                for childShape in shape.groupedShapes.reversed() {
+                                // Display in same order as stored
+                                for childShape in shape.groupedShapes {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
                                 }
                             default:
