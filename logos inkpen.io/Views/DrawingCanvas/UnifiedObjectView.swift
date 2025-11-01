@@ -103,6 +103,17 @@ struct LayerCanvasView: View {
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
             for object in visibleObjects {
+                // Skip if this object is a child of a group/clipGroup (it will be rendered by its parent)
+                let hasParent = objectsDict.values.contains { parentObject in
+                    switch parentObject.objectType {
+                    case .group(let groupShape), .clipGroup(let groupShape):
+                        return groupShape.groupedShapes.contains(where: { $0.id == object.id })
+                    default:
+                        return false
+                    }
+                }
+                if hasParent { continue }
+
                 let isSelected = selectedObjectIDs.contains(object.id)
 
                 // Apply selection transform (with drag delta) for selected objects

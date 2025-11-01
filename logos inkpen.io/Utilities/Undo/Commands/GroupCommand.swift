@@ -54,15 +54,13 @@ class GroupCommand: BaseCommand {
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
 
-        // DON'T remove child objects from snapshot.objects - they need to stay for direct selection
-        // Only remove them from layer.objectIDs so they don't appear at top level
-
-        // Remove from layer.objectIDs only
-        document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
+        // KEEP child objects in both snapshot.objects AND layer.objectIDs for selection/hit-testing
+        // Children stay in layer.objectIDs so spatialIndex can find them
+        // They're also in parent's groupedShapes array for rendering
 
         print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
-        // Insert objects at the correct position in the order they appear in addedObjectIDs
+        // Insert group object at the correct position
         for (offset, objectID) in addedObjectIDs.enumerated() {
             guard let shape = addedShapes[objectID] else { continue }
             let newObject = VectorObject(
@@ -88,24 +86,18 @@ class GroupCommand: BaseCommand {
 
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
 
-        // Find the index in layer.objectIDs where the grouped object was to restore original order
-        let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { addedObjectIDs.contains($0) }
-            ?? document.snapshot.layers[layerIndex].objectIDs.count
-        print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
+        print("🔵 UNDO GROUP: BEFORE layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
         // Remove group object from snapshot.objects
         for id in addedObjectIDs {
             document.snapshot.objects.removeValue(forKey: id)
         }
 
-        // Remove group from layer.objectIDs
+        // Remove group from layer.objectIDs (children already there, just remove parent)
         document.snapshot.layers[layerIndex].objectIDs.removeAll { addedObjectIDs.contains($0) }
 
-        // Restore child objects to layer.objectIDs (they never left snapshot.objects)
-        for (offset, objectID) in removedObjectIDs.enumerated() {
-            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
-            print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
-        }
+        print("🔵 UNDO GROUP: AFTER layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+        // Children never left layer.objectIDs or snapshot.objects, nothing more to do
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
