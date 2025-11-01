@@ -241,14 +241,23 @@ extension DrawingCanvas {
         )
 
         let nsFont = textObj.typography.nsFont
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = textObj.typography.alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, textObj.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = textObj.typography.lineHeight
+        paragraphStyle.maximumLineHeight = textObj.typography.lineHeight
+
         let attributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
-            .kern: textObj.typography.letterSpacing
+            .kern: textObj.typography.letterSpacing,
+            .paragraphStyle: paragraphStyle
         ]
 
         let attributedString = NSAttributedString(string: textObj.content, attributes: attributes)
+        let containerWidth = textObj.areaSize?.width ?? textObj.bounds.width
         let textContainer = NSTextContainer(containerSize: CGSize(
-            width: textObj.bounds.width,
+            width: containerWidth,
             height: CGFloat.greatestFiniteMagnitude
         ))
         textContainer.lineFragmentPadding = 0
