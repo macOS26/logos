@@ -422,8 +422,15 @@ struct ObjectRow: View {
             }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
-                // Don't reverse - display in original order (mask first)
-                ForEach(Array(shapes.enumerated()), id: \.element.id) { index, childShape in
+                // Reverse for regular groups to match layer display order, but not for clip groups (mask must be first)
+                let displayShapes = document.snapshot.objects[objectId].map { obj -> [VectorShape] in
+                    if case .clipGroup = obj.objectType {
+                        return shapes
+                    } else {
+                        return Array(shapes.reversed())
+                    }
+                } ?? shapes
+                ForEach(Array(displayShapes.enumerated()), id: \.element.id) { index, childShape in
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
