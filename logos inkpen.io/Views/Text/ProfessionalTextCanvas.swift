@@ -128,6 +128,11 @@ struct ProfessionalTextCanvas: View {
             applyStyle(to: textView)
             context.coordinator.textView = textView
 
+            // Set initial cursor position from textObject
+            let initialCursorPosition = viewModel.textObject.cursorPosition
+            let validPosition = min(max(0, initialCursorPosition), textView.string.count)
+            textView.setSelectedRange(NSRange(location: validPosition, length: 0))
+
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
             }
