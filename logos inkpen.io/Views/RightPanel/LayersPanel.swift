@@ -209,6 +209,11 @@ struct LayersPanel: View {
         .onChange(of: document.settings.groupExpansionState) { _, _ in
             validateOverlays()
         }
+        .onChange(of: selectedLayerIndex) { _, newIndex in
+            if let index = newIndex, index < document.snapshot.layers.count {
+                layerOpacityState = document.snapshot.layers[index].opacity
+            }
+        }
     }
 
     private var layersHeader: some View {
