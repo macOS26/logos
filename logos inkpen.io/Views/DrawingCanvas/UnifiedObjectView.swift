@@ -38,12 +38,8 @@ struct VectorObjectView: View {
                 } else {
                     EmptyView()
                 }
-            case .clipMask:
-                // Clipping masks are now rendered in Canvas (LayerCanvasView)
-                EmptyView()
-            case .shape, .image, .warp, .group, .clipGroup:
+            default:
                 // All shapes (including clipped ones) are now rendered in Canvas (LayerCanvasView)
-                // This view is only for overlays like text editors
                 EmptyView()
             }
         }
