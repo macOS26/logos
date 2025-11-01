@@ -54,12 +54,10 @@ class GroupCommand: BaseCommand {
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
 
-        // Remove from snapshot.objects
-        for id in removedObjectIDs {
-            document.snapshot.objects.removeValue(forKey: id)
-        }
+        // DON'T remove child objects from snapshot.objects - they need to stay for direct selection
+        // Only remove them from layer.objectIDs so they don't appear at top level
 
-        // Remove from layer.objectIDs
+        // Remove from layer.objectIDs only
         document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
         print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
@@ -95,22 +93,16 @@ class GroupCommand: BaseCommand {
             ?? document.snapshot.layers[layerIndex].objectIDs.count
         print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
 
-        // Remove from snapshot.objects
+        // Remove group object from snapshot.objects
         for id in addedObjectIDs {
             document.snapshot.objects.removeValue(forKey: id)
         }
 
-        // Remove from layer.objectIDs
+        // Remove group from layer.objectIDs
         document.snapshot.layers[layerIndex].objectIDs.removeAll { addedObjectIDs.contains($0) }
 
-        // Insert objects at the correct position in the order they appear in removedObjectIDs
+        // Restore child objects to layer.objectIDs (they never left snapshot.objects)
         for (offset, objectID) in removedObjectIDs.enumerated() {
-            guard let shape = removedShapes[objectID] else { continue }
-            let restoredObject = VectorObject(
-                shape: shape,
-                layerIndex: layerIndex
-            )
-            document.snapshot.objects[objectID] = restoredObject
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
             print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
