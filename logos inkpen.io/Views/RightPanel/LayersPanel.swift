@@ -350,8 +350,9 @@ struct LayersPanel: View {
                     ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
-                        
+
                         Color.red.opacity(0.3000000)
+                            .frame(width: iconSize, height: iconSize)
                             .dragTarget()
                             .position(x: eyeIconX, y: iconCenterY)
                     }
@@ -391,8 +392,9 @@ struct LayersPanel: View {
                     ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
-                        
+
                         Color.red.opacity(0.3000000)
+                            .frame(width: iconSize, height: iconSize)
                             .dragTarget()
                             .position(x: lockIconX, y: iconCenterY)
                     }
