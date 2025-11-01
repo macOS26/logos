@@ -193,9 +193,8 @@ struct ProfessionalTextCanvas: View {
             let cursorColor: NSColor = if viewMode == .keyline {
                 NSColor.black
             } else {
-                NSColor(viewModel.textObject.typography.fillColor.color).withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+                NSColor(viewModel.textObject.typography.fillColor.color)
             }
-
             textView.insertionPointColor = cursorColor
 
             let paragraphStyle = NSMutableParagraphStyle()
