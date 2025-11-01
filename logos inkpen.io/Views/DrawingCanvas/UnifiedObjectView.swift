@@ -21,27 +21,15 @@ struct VectorObjectView: View {
     }
 
     var body: some View {
-        Group {
-            switch object.objectType {
-            case .text(let shape):
-                // Only show NSTextView when editing (blue mode)
-                // When selected (green) or unselected (gray), render on Canvas
-                if shape.textContent != nil, shape.typography != nil, shape.isEditing == true {
-                    StableProfessionalTextCanvas(
-                        document: document,
-                        textObjectID: shape.id,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        viewMode: viewMode
-                    )
-                    .allowsHitTesting(document.viewState.currentTool == .font)
-                } else {
-                    EmptyView()
-                }
-            default:
-                // All shapes (including clipped ones) are now rendered in Canvas (LayerCanvasView)
-                EmptyView()
-            }
+        if case .text(let shape) = object.objectType {
+            StableProfessionalTextCanvas(
+                document: document,
+                textObjectID: shape.id,
+                dragPreviewDelta: dragPreviewDelta,
+                dragPreviewTrigger: dragPreviewTrigger,
+                viewMode: viewMode
+            )
+            .allowsHitTesting(document.viewState.currentTool == .font)
         }
     }
 
