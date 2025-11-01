@@ -6,6 +6,7 @@ struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: Layer
     @ObservedObject var document: VectorDocument
+    @Binding var selectedLayerIndex: Int?
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var isExpanded: Bool
@@ -45,10 +46,11 @@ struct ProfessionalLayerRow: View {
         )
     }
 
-    init(layerIndex: Int, layer: Layer, document: VectorDocument) {
+    init(layerIndex: Int, layer: Layer, document: VectorDocument, selectedLayerIndex: Binding<Int?>) {
         self.layerIndex = layerIndex
         self.layer = layer
         self.document = document
+        self._selectedLayerIndex = selectedLayerIndex
 
         if layerIndex <= 1 {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? false)
@@ -226,19 +228,19 @@ struct ProfessionalLayerRow: View {
                     .padding(.vertical, 3)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(document.selectedLayerIndex == layerIndex ?
+                            .fill(selectedLayerIndex == layerIndex ?
                                   Color.accentColor.opacity(0.08) :
                                     Color.clear)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(document.selectedLayerIndex == layerIndex ?
+                                    .stroke(selectedLayerIndex == layerIndex ?
                                             Color.accentColor.opacity(0.2) :
                                                 Color.clear, lineWidth: 1)
                             )
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        document.selectedLayerIndex = layerIndex
+                        selectedLayerIndex = layerIndex
                         document.viewState.selectedObjectIDs.removeAll()
                     }
                 }
@@ -258,7 +260,7 @@ struct ProfessionalLayerRow: View {
         }
         .background(
             Group {
-                if document.selectedLayerIndex == layerIndex {
+                if selectedLayerIndex == layerIndex {
                     Color.clear.onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
                         guard let userInfo = notification.userInfo,
                               let layerID = userInfo["layerID"] as? UUID,
@@ -399,7 +401,7 @@ struct ProfessionalLayerRow: View {
             return
         }
 
-        document.selectedLayerIndex = layerIndex
+        selectedLayerIndex = layerIndex
 
         if isCommandPressed {
             if document.viewState.selectedObjectIDs.contains(objectID) {

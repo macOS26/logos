@@ -185,6 +185,7 @@ struct LayersPanel: View {
             if let selectedIndex = selectedLayerIndex, selectedIndex < document.snapshot.layers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
+                    .frame(width: 55)
             }
 
             layersScrollContent
@@ -441,7 +442,8 @@ struct LayersPanel: View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
             layer: layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex] : Layer(name: "Invalid", objectIDs: []),
-            document: document
+            document: document,
+            selectedLayerIndex: $selectedLayerIndex
         )
     }
     
