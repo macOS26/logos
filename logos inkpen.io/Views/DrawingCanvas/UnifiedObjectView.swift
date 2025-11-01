@@ -18,7 +18,6 @@ struct VectorObjectView: View {
                 viewMode: viewMode
             )
             .allowsHitTesting(document.viewState.currentTool == .font)
-            .drawingGroup()
         }
     }
 }
