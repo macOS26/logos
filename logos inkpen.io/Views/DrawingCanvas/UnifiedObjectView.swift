@@ -831,7 +831,7 @@ struct IsolatedLayerView: View {
                 return false
             }, id: \.id) { object in
                 if case .text(let shape) = object.objectType {
-                    StableProfessionalTextCanvas(
+                    ProfessionalTextCanvas(
                         document: document,
                         textObjectID: shape.id,
                         dragPreviewDelta: dragPreviewDelta,

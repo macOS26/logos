@@ -1,8 +1,9 @@
 import SwiftUI
+import Combine
 
 struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
-    @ObservedObject var viewModel: ProfessionalTextViewModel
+    @StateObject private var viewModel: ProfessionalTextViewModel
     let textObjectID: UUID
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
@@ -13,6 +14,17 @@ struct ProfessionalTextCanvas: View {
     @State private var textBoxState: TextBoxState = .gray
     @State private var isResizeHandleActive = false
     @State private var clickLocation: CGPoint? = nil
+
+    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
+        self.document = document
+        self.textObjectID = textObjectID
+        self.dragPreviewDelta = dragPreviewDelta
+        self.dragPreviewTrigger = dragPreviewTrigger
+        self.viewMode = viewMode
+
+        let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+        self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
+    }
 
     enum TextBoxState {
         case gray
@@ -46,13 +58,47 @@ struct ProfessionalTextCanvas: View {
             updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
         }
         .onAppear {
+            updateViewModelFromDocument()
             updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
-
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+        }
+        .onReceive(document.objectWillChange) { _ in
+            if let currentTextObject = document.findText(by: textObjectID) {
+                viewModel.syncFromDocument(currentTextObject)
+            }
+        }
+        .onChange(of: dragPreviewTrigger) { _, _ in
+            if let currentTextObject = document.findText(by: textObjectID) {
+                viewModel.syncFromDocument(currentTextObject)
+            }
         }
         .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             print("🟢 ProfessionalTextCanvas.onChange currentTool: \(oldTool.rawValue) -> \(newTool.rawValue) for text \(textObjectID)")
             handleToolChange(oldTool: oldTool, newTool: newTool)
+        }
+    }
+
+    private func updateViewModelFromDocument() {
+        if let currentTextObject = document.findText(by: textObjectID) {
+            if viewModel.textObject.id != textObjectID {
+                viewModel.textObject = currentTextObject
+                viewModel.text = currentTextObject.content
+                viewModel.fontSize = CGFloat(currentTextObject.typography.fontSize)
+                viewModel.selectedFont = currentTextObject.typography.nsFont
+                viewModel.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
+
+                let width = currentTextObject.areaSize?.width ?? (currentTextObject.bounds.width > 1 ? currentTextObject.bounds.width : 200.0)
+                let height = currentTextObject.areaSize?.height ?? (currentTextObject.bounds.height > 1 ? currentTextObject.bounds.height : 50.0)
+
+                viewModel.textBoxFrame = CGRect(
+                    x: currentTextObject.position.x,
+                    y: currentTextObject.position.y,
+                    width: width,
+                    height: height
+                )
+            } else {
+                viewModel.syncFromDocument(currentTextObject)
+            }
         }
     }
 

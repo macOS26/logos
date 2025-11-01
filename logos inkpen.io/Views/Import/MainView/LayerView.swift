@@ -67,7 +67,7 @@ struct LayerView: View {
                         // Only show NSTextView when editing (blue mode)
                         // When selected (green) or unselected (gray), render on Canvas
                         if currentShape.textContent != nil, currentShape.typography != nil, currentShape.isEditing == true {
-                            StableProfessionalTextCanvas(
+                            ProfessionalTextCanvas(
                                 document: document,
                                 textObjectID: currentShape.id,
                                 dragPreviewDelta: dragPreviewDelta,
