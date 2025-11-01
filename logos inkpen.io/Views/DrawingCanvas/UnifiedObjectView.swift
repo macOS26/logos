@@ -136,33 +136,67 @@ struct LayerCanvasView: View {
                             // Show mask outline + clipped content in keyline
                             guard maskShape.isVisible else { break }
 
-                            // First render the mask outline
-                            renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                            // Check if mask is individually selected
+                            let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
+                            if isMaskSelected && dragPreviewDelta != .zero {
+                                context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                            } else {
+                                context.transform = baseTransform
+                            }
+                            let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
+                            renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
 
                             // Then render content shapes clipped by the mask
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
-                                if VectorText.from(contentShape) != nil {
-                                    renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                                } else if contentShape.embeddedImageData != nil {
-                                    renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                                let isChildSelected = selectedObjectIDs.contains(contentShape.id)
+                                let isChildText = contentShape.typography != nil
+
+                                if isChildSelected && dragPreviewDelta != .zero {
+                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
-                                    renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                                    context.transform = baseTransform
+                                }
+                                let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
+
+                                if VectorText.from(contentShape) != nil {
+                                    renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                                } else if contentShape.embeddedImageData != nil {
+                                    renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                                } else {
+                                    renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                                 }
                             }
                         } else {
                             // Show full outlines (no clipping) in keyline
                             if maskShape.isVisible {
-                                renderShape(maskShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                                let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
+                                if isMaskSelected && dragPreviewDelta != .zero {
+                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                } else {
+                                    context.transform = baseTransform
+                                }
+                                let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
+                                renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
-                                if VectorText.from(contentShape) != nil {
-                                    renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity)
-                                } else if contentShape.embeddedImageData != nil {
-                                    renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                                let isChildSelected = selectedObjectIDs.contains(contentShape.id)
+                                let isChildText = contentShape.typography != nil
+
+                                if isChildSelected && dragPreviewDelta != .zero {
+                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
-                                    renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform)
+                                    context.transform = baseTransform
+                                }
+                                let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
+
+                                if VectorText.from(contentShape) != nil {
+                                    renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity)
+                                } else if contentShape.embeddedImageData != nil {
+                                    renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
+                                } else {
+                                    renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 }
                             }
                         }
@@ -174,12 +208,22 @@ struct LayerCanvasView: View {
                         for contentShape in contentShapes {
                             guard contentShape.isVisible else { continue }
 
-                            if VectorText.from(contentShape) != nil {
-                                renderText(contentShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                            } else if contentShape.embeddedImageData != nil {
-                                renderImage(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            let isChildSelected = selectedObjectIDs.contains(contentShape.id)
+                            let isChildText = contentShape.typography != nil
+
+                            if isChildSelected && dragPreviewDelta != .zero {
+                                context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                             } else {
-                                renderShape(contentShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                                context.transform = baseTransform
+                            }
+                            let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
+
+                            if VectorText.from(contentShape) != nil {
+                                renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                            } else if contentShape.embeddedImageData != nil {
+                                renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            } else {
+                                renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                             }
                         }
                     }
@@ -192,6 +236,21 @@ struct LayerCanvasView: View {
                     for childShape in groupShape.groupedShapes {
                         guard childShape.isVisible else { continue }
 
+                        // Check if THIS CHILD is individually selected (not just the group)
+                        let isChildSelected = selectedObjectIDs.contains(childShape.id)
+                        let isChildText = childShape.typography != nil
+
+                        // Apply drag preview to individual child if it's selected
+                        if isChildSelected && dragPreviewDelta != .zero {
+                            context.transform = baseTransform
+                                .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                        } else {
+                            context.transform = baseTransform
+                        }
+
+                        // Use child-specific selection state for scale transform
+                        let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
+
                         // Check if child itself is clipped by another object
                         let maskShape: VectorShape? = {
                             guard let maskID = childShape.clippedByShapeID,
@@ -202,11 +261,11 @@ struct LayerCanvasView: View {
                         }()
 
                         if VectorText.from(childShape) != nil {
-                            renderText(childShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                            renderText(childShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
                         } else if childShape.embeddedImageData != nil {
-                            renderImage(childShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            renderImage(childShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         } else {
-                            renderShape(childShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                            renderShape(childShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         }
                     }
 
