@@ -10,8 +10,6 @@ struct ProfessionalTextCanvas: View {
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
 
-    @State private var textBoxState: TextBoxState = .gray
-
     init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
         self.document = document
         self.textObjectID = textObjectID
@@ -23,22 +21,14 @@ struct ProfessionalTextCanvas: View {
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
     }
 
-    enum TextBoxState {
-        case gray
-        case green
-        case blue
-    }
-
     var body: some View {
         let bounds = viewModel.textObject.bounds
         let position = viewModel.textObject.position
 
         TextViewRepresentable(
             viewModel: viewModel,
-            textBoxState: textBoxState,
             viewMode: viewMode
         )
-        .allowsHitTesting(textBoxState == .blue)
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
@@ -47,25 +37,18 @@ struct ProfessionalTextCanvas: View {
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.viewState.zoomLevel : 0)
         .id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
-        .onChange(of: document.viewState.selectedObjectIDs) { _, selectedIDs in
-            updateTextBoxState(selectedIDs: selectedIDs)
-        }
-        .onChange(of: viewModel.textObject.isEditing) { _, newValue in
-            viewModel.isEditing = newValue
-        }
         .onAppear {
             if let currentTextObject = document.findText(by: textObjectID) {
                 viewModel.syncFromDocument(currentTextObject)
             }
-            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
         }
         .onReceive(document.objectWillChange) { _ in
             if let currentTextObject = document.findText(by: textObjectID) {
                 viewModel.syncFromDocument(currentTextObject)
             }
         }
-        .onChange(of: document.viewState.currentTool) { oldTool, newTool in
-            handleToolChange(oldTool: oldTool, newTool: newTool)
+        .onChange(of: viewModel.textObject.isEditing) { _, newValue in
+            viewModel.isEditing = newValue
         }
     }
 
@@ -90,66 +73,6 @@ struct ProfessionalTextCanvas: View {
         return false
     }
 
-    private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        if oldTool != .font && newTool == .font {
-            // Find first text object in selection
-            let firstTextID = document.viewState.selectedObjectIDs.first { selectedID in
-                guard let obj = document.findObject(by: selectedID), case .text = obj.objectType else { return false }
-                return true
-            }
-
-            if firstTextID == textObjectID {
-                // Stop editing other text objects
-                for (_, obj) in document.snapshot.objects {
-                    guard case .text(let shape) = obj.objectType,
-                          shape.id != viewModel.textObject.id,
-                          shape.isEditing == true else { continue }
-                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
-                }
-
-                viewModel.startEditing()
-                document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: true)
-                textBoxState = .blue
-            }
-        }
-
-        if oldTool == .font && newTool != .font {
-            if viewModel.isEditing {
-                viewModel.stopEditing()
-                document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
-                NSApp.keyWindow?.makeFirstResponder(nil)
-            }
-            viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            textBoxState = .gray
-        }
-    }
-
-    private func updateTextBoxState(selectedIDs: Set<UUID>) {
-        let oldState = textBoxState
-
-        guard let currentTextObject = document.findText(by: textObjectID) else {
-            textBoxState = .gray
-            return
-        }
-
-        let isTextToolActive = document.viewState.currentTool == .font
-        let isThisTextSelected = selectedIDs.contains(currentTextObject.id)
-
-        textBoxState = if isTextToolActive && isThisTextSelected {
-            .blue
-        } else if isThisTextSelected {
-            .green
-        } else {
-            .gray
-        }
-
-        if oldState == .blue && textBoxState != .blue {
-            viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
-            viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            NSApp.keyWindow?.makeFirstResponder(nil)
-        }
-    }
-
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
         guard viewModel.isEditing && keyPress.key == .escape else { return .ignored }
 
@@ -158,7 +81,6 @@ struct ProfessionalTextCanvas: View {
         viewModel.stopEditing()
         document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
         NSApp.keyWindow?.makeFirstResponder(nil)
-        textBoxState = .green
 
         return .handled
     }
@@ -168,7 +90,6 @@ struct ProfessionalTextCanvas: View {
     struct TextViewRepresentable: NSViewRepresentable {
         @ObservedObject var viewModel: ProfessionalTextViewModel
         @State var isUpdatingFromTyping: Bool = false
-        let textBoxState: TextBoxState
         let viewMode: ViewMode
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
@@ -201,9 +122,16 @@ struct ProfessionalTextCanvas: View {
             textView.string = viewModel.text
             textView.font = viewModel.selectedFont
             textView.textColor = NSColor.clear
+            textView.allowsInteraction = true
+            textView.shouldShowCursor = true
 
             applyStyle(to: textView)
             context.coordinator.textView = textView
+
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+
             return textView
         }
 
@@ -250,19 +178,12 @@ struct ProfessionalTextCanvas: View {
                 nsView.textContainer.flatMap { nsView.layoutManager?.ensureLayout(for: $0) }
             }
 
-            let isEditingMode = (textBoxState == .blue)
-            nsView.allowsInteraction = isEditingMode
-            nsView.shouldShowCursor = isEditingMode
+            applyStyle(to: nsView)
 
-            if isEditingMode {
-                applyStyle(to: nsView)
-                DispatchQueue.main.async {
-                    if nsView.window?.firstResponder != nsView {
-                        nsView.window?.makeFirstResponder(nsView)
-                    }
+            DispatchQueue.main.async {
+                if nsView.window?.firstResponder != nsView {
+                    nsView.window?.makeFirstResponder(nsView)
                 }
-            } else {
-                nsView.insertionPointColor = NSColor.clear
             }
 
             coordinator.textView = nsView
