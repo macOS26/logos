@@ -103,17 +103,6 @@ struct LayerCanvasView: View {
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
             for object in visibleObjects {
-                // Skip if this object is a child of a group/clipGroup (it will be rendered by its parent)
-                let hasParent = objectsDict.values.contains { parentObject in
-                    switch parentObject.objectType {
-                    case .group(let groupShape), .clipGroup(let groupShape):
-                        return groupShape.groupedShapes.contains(where: { $0.id == object.id })
-                    default:
-                        return false
-                    }
-                }
-                if hasParent { continue }
-
                 let isSelected = selectedObjectIDs.contains(object.id)
 
                 // Apply selection transform (with drag delta) for selected objects
@@ -135,9 +124,18 @@ struct LayerCanvasView: View {
                 switch object.objectType {
                 case .clipGroup(let clipGroupShape):
                     // ClipGroup: first grouped shape is the mask, rest are clipped content
+                    print("🔵 RENDERING CLIPGROUP: parent selected=\(isSelected), groupedShapes.count=\(clipGroupShape.groupedShapes.count)")
+                    print("🔵 RENDERING CLIPGROUP: selectedObjectIDs=\(selectedObjectIDs)")
+                    print("🔵 RENDERING CLIPGROUP: dragPreviewDelta=\(dragPreviewDelta)")
+
                     guard !clipGroupShape.groupedShapes.isEmpty else { break }
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
+
+                    print("🔵 CLIPGROUP: maskShape.id=\(maskShape.id)")
+                    for (idx, child) in contentShapes.enumerated() {
+                        print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
+                    }
 
                     // Save parent's transform (includes drag delta if parent clipGroup is selected)
                     let parentTransform = context.transform
