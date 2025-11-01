@@ -317,4 +317,38 @@ final class VectorDocument: ObservableObject, Codable {
 
         triggerLayerUpdate(for: layerIndex)
     }
+
+    // MARK: - Group Helpers
+
+    /// Finds the parent group object that contains the given child object ID
+    func findParentGroup(for childID: UUID) -> VectorObject? {
+        for object in snapshot.objects.values {
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                if groupShape.groupedShapes.contains(where: { $0.id == childID }) {
+                    return object
+                }
+            default:
+                continue
+            }
+        }
+        return nil
+    }
+
+    /// Updates a child shape in its parent group's groupedShapes array
+    func updateChildInParentGroup(childID: UUID, updatedShape: VectorShape) {
+        guard let parentGroup = findParentGroup(for: childID) else { return }
+
+        var parentShape = parentGroup.shape
+        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childID }) {
+            parentShape.groupedShapes[childIndex] = updatedShape
+
+            // Update the parent group in snapshot.objects
+            let updatedParent = VectorObject(shape: parentShape, layerIndex: parentGroup.layerIndex)
+            snapshot.objects[parentGroup.id] = updatedParent
+
+            // Trigger layer update
+            triggerLayerUpdate(for: parentGroup.layerIndex)
+        }
+    }
 }
