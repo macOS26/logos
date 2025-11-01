@@ -162,7 +162,7 @@ extension VectorDocument {
                     if shape.isGroupContainer {
                         removedShapes[objectID] = shape
 
-                        let shapesToUngroup = shape.isClippingGroup ? shape.groupedShapes.reversed() : shape.groupedShapes
+                        let shapesToUngroup = shape.groupedShapes
 
                         for groupedShape in shapesToUngroup {
                             print("🟡 UNGROUP: Adding grouped shape id=\(groupedShape.id)")
