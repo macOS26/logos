@@ -468,6 +468,11 @@ extension DrawingCanvas {
 
         movedShape.updateBounds()
         document.updateShapeByID(movedShape.id) { $0 = movedShape }
+
+        // Update child in parent group's groupedShapes array
+        if let updatedObject = document.snapshot.objects[movedShape.id] {
+            document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)
+        }
     }
 
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {

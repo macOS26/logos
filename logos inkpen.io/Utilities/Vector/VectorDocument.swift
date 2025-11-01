@@ -343,6 +343,9 @@ final class VectorDocument: ObservableObject, Codable {
         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childID }) {
             parentShape.groupedShapes[childIndex] = updatedShape
 
+            // Recalculate parent group's bounding box
+            parentShape.updateBounds()
+
             // Update the parent group in snapshot.objects
             let updatedParent = VectorObject(shape: parentShape, layerIndex: parentGroup.layerIndex)
             snapshot.objects[parentGroup.id] = updatedParent
