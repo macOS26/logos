@@ -1,27 +1,6 @@
 import SwiftUI
 import CoreGraphics
 
-struct VectorObjectView: View {
-    let object: VectorObject
-    var document: VectorDocument
-    let viewMode: ViewMode
-    let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: Bool
-
-    var body: some View {
-        if case .text(let shape) = object.objectType {
-            StableProfessionalTextCanvas(
-                document: document,
-                textObjectID: shape.id,
-                dragPreviewDelta: dragPreviewDelta,
-                dragPreviewTrigger: dragPreviewTrigger,
-                viewMode: viewMode
-            )
-            .allowsHitTesting(document.viewState.currentTool == .font)
-        }
-    }
-}
-
 struct PasteboardBackgroundView: View {
     let pasteboardSize: CGSize
     let pasteboardOrigin: CGPoint
@@ -851,13 +830,16 @@ struct IsolatedLayerView: View {
                 if case .text = object.objectType { return true }
                 return false
             }, id: \.id) { object in
-                VectorObjectView(
-                    object: object,
-                    document: document,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
+                if case .text(let shape) = object.objectType {
+                    StableProfessionalTextCanvas(
+                        document: document,
+                        textObjectID: shape.id,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        viewMode: viewMode
+                    )
+                    .allowsHitTesting(document.viewState.currentTool == .font)
+                }
             }
         }
         .opacity(layerOpacity)
