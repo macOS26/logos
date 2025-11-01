@@ -210,7 +210,6 @@ extension FileOperations {
                     let objects = document.getObjectsInStackingOrder().filter { $0.layerIndex == layerIndex }
                     IsolatedLayerView(
                         objects: objects,
-                        layerID: document.snapshot.layers[layerIndex].id,
                         document: document,
                         zoomLevel: scale,
                         canvasOffset: .zero,
@@ -221,10 +220,7 @@ extension FileOperations {
                         objectUpdateTrigger: 0,
                         liveScaleTransform: .identity,
                         layerOpacity: document.snapshot.layers[layerIndex].opacity,
-                        layerBlendMode: document.snapshot.layers[layerIndex].blendMode,
-                        liveGradientOriginX: nil,
-                        liveGradientOriginY: nil,
-                        selectedObjectData: [:]
+                        layerBlendMode: document.snapshot.layers[layerIndex].blendMode
                     )
                 }
             }

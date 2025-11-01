@@ -208,16 +208,8 @@ extension DrawingCanvas {
         if !objects.isEmpty {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
-            // Get full data of selected objects in this layer for Equatable comparison
-            let selectedData = Dictionary(
-                objects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
-                       .map { ($0.id, $0) },
-                uniquingKeysWith: { first, _ in first }
-            )
-
             IsolatedLayerView(
                 objects: objects,
-                layerID: layer.id,
                 document: document,
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,
@@ -228,10 +220,7 @@ extension DrawingCanvas {
                 objectUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id, default: 0],
                 liveScaleTransform: liveScaleTransform,
                 layerOpacity: layerOpacity,
-                layerBlendMode: layerBlendMode,
-                liveGradientOriginX: document.viewState.liveGradientOriginX,
-                liveGradientOriginY: document.viewState.liveGradientOriginY,
-                selectedObjectData: selectedData
+                layerBlendMode: layerBlendMode
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
             .allowsHitTesting(isActiveLayer)

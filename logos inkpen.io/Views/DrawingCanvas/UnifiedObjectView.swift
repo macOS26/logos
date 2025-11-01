@@ -707,8 +707,7 @@ struct LayerCanvasView: View {
 
 struct IsolatedLayerView: View {
     let objects: [VectorObject]
-    let layerID: UUID
-    let document: VectorDocument  // NOT @ObservedObject!
+    let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -719,16 +718,6 @@ struct IsolatedLayerView: View {
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
-    let liveGradientOriginX: Double?
-    let liveGradientOriginY: Double?
-    let selectedObjectData: [UUID: VectorObject]  // Full data of selected objects
-
-    @State private var cachedImage: NSImage?
-
-    // Track if this layer has selection
-    private var hasSelection: Bool {
-        objects.contains(where: { selectedObjectIDs.contains($0.id) })
-    }
 
     var body: some View {
         ZStack {
@@ -763,48 +752,6 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        //.id(objectUpdateTrigger)  // Force re-render when layer trigger updates
-    }
-
-    private func renderLayerToCache() {
-        guard !objects.isEmpty else { return }
-
-        let pageSize = document.settings.sizeInPoints
-        let retinaScale: CGFloat = 2.0 // Retina resolution
-        let renderScale = retinaScale
-
-        // Use Display P3 color space for better color accuracy
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.displayP3) else { return }
-
-        guard let context = CGContext(
-            data: nil,
-            width: Int(pageSize.width * renderScale),
-            height: Int(pageSize.height * renderScale),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
-        ) else { return }
-
-        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * renderScale, height: pageSize.height * renderScale))
-        context.translateBy(x: 0, y: pageSize.height * renderScale)
-        context.scaleBy(x: renderScale, y: -renderScale)
-
-        // Render all shapes in this layer using Core Graphics
-        for object in objects where object.isVisible {
-            switch object.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                FileOperations.drawShapeInPDF(shape, context: context)
-            case .text(let shape):
-                if let text = VectorText.from(shape) {
-                    FileOperations.drawTextInPDF(text, context: context)
-                }
-            }
-        }
-
-        if let cgImage = context.makeImage() {
-            cachedImage = NSImage(cgImage: cgImage, size: NSSize(width: pageSize.width, height: pageSize.height))
-        }
     }
 }
 
