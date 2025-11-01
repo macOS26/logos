@@ -4,6 +4,23 @@ class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
 
+    // Force cursor redraw when insertionPointColor changes
+    override var insertionPointColor: NSColor? {
+        didSet {
+            if let layoutManager = layoutManager,
+               let textContainer = textContainer {
+                let glyphRange = layoutManager.glyphRange(for: textContainer)
+                if glyphRange.length > 0 {
+                    let charIndex = selectedRange().location
+                    if charIndex < layoutManager.numberOfGlyphs {
+                        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: charIndex, length: 0), in: textContainer)
+                        setNeedsDisplay(rect, avoidAdditionalLayout: true)
+                    }
+                }
+            }
+        }
+    }
+
     override var wantsDefaultClipping: Bool {
         return false
     }
