@@ -185,7 +185,6 @@ struct LayersPanel: View {
             if let selectedIndex = selectedLayerIndex, selectedIndex < document.snapshot.layers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
-                    .frame(width: 55)
             }
 
             layersScrollContent
