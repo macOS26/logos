@@ -401,6 +401,13 @@ extension DrawingCanvas {
                 groupedShape.updateBounds()
 
                 updatedGroupedShapes.append(groupedShape)
+
+                // Update child in snapshot.objects so hit-testing/selection matches rendering
+                if let childObj = document.snapshot.objects[groupedShape.id] {
+                    let updatedChild = VectorObject(shape: groupedShape, layerIndex: childObj.layerIndex)
+                    document.snapshot.objects[groupedShape.id] = updatedChild
+                    print("🟢 GROUP MOVE: Updated child \(groupedShape.id) in snapshot.objects")
+                }
             }
 
             var groupShape = shape
