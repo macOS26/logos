@@ -155,6 +155,10 @@ struct LayerCanvasView: View {
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                                 let isChildText = contentShape.typography != nil
 
+                                if isChildSelected {
+                                    print("🔵 ClipGroup child selected: \(contentShape.id), dragDelta: \(dragPreviewDelta)")
+                                }
+
                                 if isChildSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                                 } else {
