@@ -824,10 +824,14 @@ struct IsolatedLayerView: View {
                 dragPreviewTrigger: dragPreviewTrigger
             )
 
-            // For text editor only - filter .text objects first
+            // For text editor only - show NSTextView only in .editing state (blue mode)
             ForEach(objects.filter { object in
                 guard object.isVisible else { return false }
-                if case .text = object.objectType { return true }
+                if case .text(let shape) = object.objectType,
+                   let vectorText = VectorText.from(shape),
+                   vectorText.getState(in: document) == .editing {
+                    return true
+                }
                 return false
             }, id: \.id) { object in
                 if case .text(let shape) = object.objectType {
