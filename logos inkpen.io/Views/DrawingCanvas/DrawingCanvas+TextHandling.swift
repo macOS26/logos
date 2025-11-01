@@ -51,7 +51,7 @@ extension DrawingCanvas {
 
                 return expandedBounds.contains(location)
 
-            case .group(let shape):
+            case .group(let shape), .clipGroup(let shape):
                 for childShape in shape.groupedShapes {
                     if childShape.typography != nil {
                         if !childShape.isVisible || childShape.isLocked { continue }
@@ -72,7 +72,7 @@ extension DrawingCanvas {
                     }
                 }
                 return false
-            case .shape, .image, .warp, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .clipMask:
                 return false
             }
         }
@@ -119,25 +119,26 @@ extension DrawingCanvas {
                 if textBounds.contains(location) {
                     return shape.id
                 }
-            case .group(let shape):
+            case .group(let shape), .clipGroup(let shape):
                 for childShape in shape.groupedShapes {
-                    if childShape.typography != nil, var textObj = VectorText.from(childShape) {
-                        textObj.layerIndex = obj.layerIndex
-                        if !textObj.isVisible || textObj.isLocked { continue }
+                    if childShape.typography != nil {
+                        if !childShape.isVisible || childShape.isLocked { continue }
 
+                        // Use transform.tx/ty for text position (same as top-level text)
+                        let textPos = CGPoint(x: childShape.transform.tx, y: childShape.transform.ty)
                         let textBounds = CGRect(
-                            x: textObj.position.x + textObj.bounds.minX,
-                            y: textObj.position.y + textObj.bounds.minY,
-                            width: textObj.bounds.width,
-                            height: textObj.bounds.height
+                            x: textPos.x,
+                            y: textPos.y,
+                            width: childShape.bounds.width,
+                            height: childShape.bounds.height
                         )
 
                         if textBounds.contains(location) {
-                            return textObj.id
+                            return childShape.id
                         }
                     }
                 }
-            case .shape, .image, .warp, .clipGroup, .clipMask:
+            case .shape, .image, .warp, .clipMask:
                 break
             }
         }
