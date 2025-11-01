@@ -195,7 +195,11 @@ struct ProfessionalTextCanvas: View {
             } else {
                 NSColor(viewModel.textObject.typography.fillColor.color).withAlphaComponent(viewModel.textObject.typography.fillOpacity)
             }
-            textView.insertionPointColor = cursorColor
+
+            if textView.insertionPointColor != cursorColor {
+                textView.insertionPointColor = cursorColor
+                textView.updateInsertionPointStateAndRestartTimer(true)
+            }
 
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = viewModel.textAlignment
