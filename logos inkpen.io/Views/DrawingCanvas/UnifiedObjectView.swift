@@ -1,24 +1,12 @@
 import SwiftUI
 import CoreGraphics
+
 struct VectorObjectView: View {
     let object: VectorObject
     var document: VectorDocument
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    let liveScaleTransform: CGAffineTransform
-    let liveGradientOriginX: Double?
-    let liveGradientOriginY: Double?
-
-    private var layerIsVisible: Bool {
-        guard object.layerIndex >= 0 && object.layerIndex < document.snapshot.layers.count else {
-            return true
-        }
-        return document.snapshot.layers[object.layerIndex].isVisible
-    }
 
     var body: some View {
         if case .text(let shape) = object.objectType {
@@ -30,9 +18,9 @@ struct VectorObjectView: View {
                 viewMode: viewMode
             )
             .allowsHitTesting(document.viewState.currentTool == .font)
+            .drawingGroup()
         }
     }
-
 }
 
 struct PasteboardBackgroundView: View {
@@ -767,15 +755,9 @@ struct IsolatedLayerView: View {
                 VectorObjectView(
                     object: object,
                     document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger,
-                    liveScaleTransform: liveScaleTransform,
-                    liveGradientOriginX: liveGradientOriginX,
-                    liveGradientOriginY: liveGradientOriginY
+                    dragPreviewTrigger: dragPreviewTrigger
                 )
             }
         }
