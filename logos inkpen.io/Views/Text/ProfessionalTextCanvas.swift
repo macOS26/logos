@@ -21,18 +21,7 @@ struct ProfessionalTextCanvas: View {
     }
 
     var body: some View {
-        ZStack {
-            ProfessionalTextBoxView(
-                viewModel: viewModel,
-                dragOffset: dragOffset,
-                resizeOffset: resizeOffset,
-                textBoxState: textBoxState,
-                isResizeHandleActive: isResizeHandleActive,
-                onTextBoxSelect: handleTextBoxSelect,
-                zoomLevel: CGFloat(document.viewState.zoomLevel),
-                viewMode: viewMode
-            )
-
+      
             ProfessionalTextDisplayView(
                 viewModel: viewModel,
                 dragOffset: dragOffset,
@@ -40,8 +29,6 @@ struct ProfessionalTextCanvas: View {
                 viewMode: viewMode
             )
 
-            // ResizeHandles removed - now using TransformBoxHandles from SelectionHandlesView
-        }
         .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
         .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.viewState.zoomLevel : 0,
