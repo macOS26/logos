@@ -150,11 +150,14 @@ struct LayerCanvasView: View {
 
                             // Check if mask is individually selected
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
-                            if isMaskSelected && dragPreviewDelta != .zero {
-                                context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                            let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
+                                baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                             } else {
-                                context.transform = parentTransform  // Preserve parent's drag delta
+                                parentTransform
                             }
+
+                            // Render mask outline
+                            context.transform = maskTransform
                             let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
                             renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
 
@@ -164,23 +167,32 @@ struct LayerCanvasView: View {
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                                 let isChildText = contentShape.typography != nil
 
-                                if isChildSelected {
-                                    print("🔵 ClipGroup child selected: \(contentShape.id), dragDelta: \(dragPreviewDelta)")
+                                // Determine content transform (independent of mask)
+                                let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
+                                    baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                } else {
+                                    parentTransform
                                 }
 
-                                if isChildSelected && dragPreviewDelta != .zero {
-                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                                } else {
-                                    context.transform = parentTransform  // Preserve parent's drag delta
-                                }
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                                if VectorText.from(contentShape) != nil {
-                                    renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                                } else if contentShape.embeddedImageData != nil {
-                                    renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
-                                } else {
-                                    renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                                // Render with separate mask and content transforms
+                                context.drawLayer { layerContext in
+                                    // Apply mask transform and create clipping region
+                                    layerContext.transform = maskTransform
+                                    let maskPath = maskShape.cachedCGPath
+                                    layerContext.clip(to: Path(maskPath))
+
+                                    // Apply content transform and render content
+                                    layerContext.transform = contentTransform
+
+                                    if VectorText.from(contentShape) != nil {
+                                        renderText(contentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                    } else if contentShape.embeddedImageData != nil {
+                                        renderImage(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    } else {
+                                        renderShape(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    }
                                 }
                             }
                         } else {
@@ -220,6 +232,14 @@ struct LayerCanvasView: View {
                         // Color mode: only render if mask is visible
                         guard maskShape.isVisible else { break }
 
+                        // Determine mask transform (only moves if mask itself is selected)
+                        let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
+                        let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
+                            baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                        } else {
+                            parentTransform
+                        }
+
                         // Render each content shape with the mask (only if visible)
                         for contentShape in contentShapes {
                             guard contentShape.isVisible else { continue }
@@ -227,19 +247,32 @@ struct LayerCanvasView: View {
                             let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                             let isChildText = contentShape.typography != nil
 
-                            if isChildSelected && dragPreviewDelta != .zero {
-                                context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                            // Determine content transform (independent of mask)
+                            let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
+                                baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                             } else {
-                                context.transform = parentTransform  // Preserve parent's drag delta
+                                parentTransform
                             }
+
                             let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                            if VectorText.from(contentShape) != nil {
-                                renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                            } else if contentShape.embeddedImageData != nil {
-                                renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
-                            } else {
-                                renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            // Render with separate mask and content transforms
+                            context.drawLayer { layerContext in
+                                // Apply mask transform and create clipping region
+                                layerContext.transform = maskTransform
+                                let maskPath = maskShape.cachedCGPath
+                                layerContext.clip(to: Path(maskPath))
+
+                                // Apply content transform and render content
+                                layerContext.transform = contentTransform
+
+                                if VectorText.from(contentShape) != nil {
+                                    renderText(contentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                } else if contentShape.embeddedImageData != nil {
+                                    renderImage(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                } else {
+                                    renderShape(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                }
                             }
                         }
                     }
