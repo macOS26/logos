@@ -97,6 +97,20 @@ extension DrawingCanvas {
 
         let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
+        // Log selected objects during drag
+        for obj in selectedObjects {
+            let typeName = switch obj.objectType {
+                case .shape: "SHAPE"
+                case .text: "TEXT"
+                case .image: "IMAGE"
+                case .group: "GROUP"
+                case .clipGroup: "CLIPGROUP"
+                case .clipMask: "CLIPMASK"
+                case .warp: "WARP"
+            }
+            print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
+        }
+
         for object in selectedObjects {
             if object.layerIndex < document.snapshot.layers.count {
                 let layer = document.snapshot.layers[object.layerIndex]
@@ -297,8 +311,11 @@ extension DrawingCanvas {
             return
         }
 
+        print("🟠 DRAG END: Applying delta to objectID=\(objectID)")
+
         switch object.objectType {
         case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            print("🟠 DRAG END: Shape name=\(shape.name), isGroup=\(shape.isGroup), isClippingGroup=\(shape.isClippingGroup)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
             return
@@ -470,8 +487,15 @@ extension DrawingCanvas {
         document.updateShapeByID(movedShape.id) { $0 = movedShape }
 
         // Update child in parent group's groupedShapes array
-        if let updatedObject = document.snapshot.objects[movedShape.id] {
-            document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)
+        print("🟠 DRAG END: Checking parent for childID=\(movedShape.id)")
+        if let parentGroup = document.findParentGroup(for: movedShape.id) {
+            print("🟠 DRAG END: Found parent group id=\(parentGroup.id), updating groupedShapes")
+            if let updatedObject = document.snapshot.objects[movedShape.id] {
+                document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)
+                print("🟠 DRAG END: Updated child in parent group")
+            }
+        } else {
+            print("🟠 DRAG END: No parent group found for childID=\(movedShape.id)")
         }
     }
 
