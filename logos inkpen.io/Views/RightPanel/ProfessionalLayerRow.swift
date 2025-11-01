@@ -6,7 +6,7 @@ struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: Layer
     @ObservedObject var document: VectorDocument
-    @Binding var selectedLayerIndex: Int?
+    @Binding var selectedLayerIndex: Int?  // DEPRECATED - kept for compatibility
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var isExpanded: Bool
@@ -14,6 +14,11 @@ struct ProfessionalLayerRow: View {
     @State private var selectionAnchorID: UUID? = nil
     @State private var selectionRangeMin: Int? = nil
     @State private var selectionRangeMax: Int? = nil
+
+    // Check if this layer is selected using settings.selectedLayerId
+    private var isSelected: Bool {
+        document.settings.selectedLayerId == layer.id
+    }
 
     // Computed property to get objects directly from snapshot
     private var layerObjects: [VectorObject] {
@@ -228,19 +233,20 @@ struct ProfessionalLayerRow: View {
                     .padding(.vertical, 3)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(selectedLayerIndex == layerIndex ?
+                            .fill(isSelected ?
                                   Color.accentColor.opacity(0.08) :
                                     Color.clear)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(selectedLayerIndex == layerIndex ?
+                                    .stroke(isSelected ?
                                             Color.accentColor.opacity(0.2) :
                                                 Color.clear, lineWidth: 1)
                             )
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectedLayerIndex = layerIndex
+                        document.settings.selectedLayerId = layer.id
+                        document.settings.selectedLayerName = layer.name
                         document.viewState.selectedObjectIDs.removeAll()
                     }
                 }
@@ -260,7 +266,7 @@ struct ProfessionalLayerRow: View {
         }
         .background(
             Group {
-                if selectedLayerIndex == layerIndex {
+                if isSelected {
                     Color.clear.onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
                         guard let userInfo = notification.userInfo,
                               let layerID = userInfo["layerID"] as? UUID,
@@ -401,7 +407,8 @@ struct ProfessionalLayerRow: View {
             return
         }
 
-        selectedLayerIndex = layerIndex
+        document.settings.selectedLayerId = layer.id
+        document.settings.selectedLayerName = layer.name
 
         if isCommandPressed {
             if document.viewState.selectedObjectIDs.contains(objectID) {

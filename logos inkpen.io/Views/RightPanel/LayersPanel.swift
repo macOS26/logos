@@ -89,7 +89,7 @@ extension View {
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
-    @Binding var selectedLayerIndex: Int?
+    @Binding var selectedLayerIndex: Int?  // DEPRECATED - kept for compatibility
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
 
@@ -101,6 +101,12 @@ struct LayersPanel: View {
     @State private var rowHeights: [CGFloat] = []
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
+
+    // Get selected layer index from settings.selectedLayerId
+    private var selectedIndex: Int? {
+        guard let selectedLayerId = document.settings.selectedLayerId else { return nil }
+        return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
+    }
 
     private enum RowType: Hashable {
         case layer(index: Int)
@@ -176,16 +182,16 @@ struct LayersPanel: View {
         let _ = document.snapshot.objects // Subscribe to objects dictionary
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
-        let layerCount = document.snapshot.layers.count
+        let _ = document.settings // Subscribe to settings changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
 
-            if let selectedIndex = selectedLayerIndex, selectedIndex < document.snapshot.layers.count {
-                layerControlsSection(for: selectedIndex)
+            if let index = selectedIndex {
+                layerControlsSection(for: index)
+                    .frame(maxWidth: .infinity)
                 Divider().padding(.horizontal, 6.5)
-                    .frame(width: 55)
             }
 
             layersScrollContent
@@ -209,8 +215,8 @@ struct LayersPanel: View {
         .onChange(of: document.settings.groupExpansionState) { _, _ in
             validateOverlays()
         }
-        .onChange(of: selectedLayerIndex) { _, newIndex in
-            if let index = newIndex, index < document.snapshot.layers.count {
+        .onChange(of: document.settings.selectedLayerId) { _, _ in
+            if let index = selectedIndex, index < document.snapshot.layers.count {
                 layerOpacityState = document.snapshot.layers[index].opacity
             }
         }
