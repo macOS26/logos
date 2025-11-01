@@ -190,17 +190,13 @@ struct ProfessionalTextCanvas: View {
         }
 
         private func applyStyle(to textView: NSTextView) {
-            // NSTextView.insertionPointColor doesn't support alpha - use full opacity base color
-            let baseColor: NSColor = if viewMode == .keyline {
+            let cursorColor: NSColor = if viewMode == .keyline {
                 NSColor.black
             } else {
-                NSColor(viewModel.textObject.typography.fillColor.color)
+                NSColor(viewModel.textObject.typography.fillColor.color).withAlphaComponent(viewModel.textObject.typography.fillOpacity)
             }
 
-            textView.insertionPointColor = baseColor
-
-            // Apply opacity to the entire textView layer for cursor alpha
-            textView.layer?.opacity = Float(viewModel.textObject.typography.fillOpacity)
+            textView.insertionPointColor = cursorColor
 
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = viewModel.textAlignment

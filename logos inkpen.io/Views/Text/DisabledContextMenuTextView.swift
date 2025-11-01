@@ -34,10 +34,14 @@ class DisabledContextMenuTextView: NSTextView {
     }
 
     override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
-        let cursorColor = shouldShowCursor ? color : NSColor.clear
+        guard shouldShowCursor && flag else { return }
+
         var thickerRect = rect
         thickerRect.size.width = 1.0
-        super.drawInsertionPoint(in: thickerRect, color: cursorColor, turnedOn: flag)
+
+        // Draw cursor manually to preserve alpha component
+        color.setFill()
+        thickerRect.fill()
     }
 
     override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {
