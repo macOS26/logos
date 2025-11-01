@@ -209,7 +209,33 @@ struct LayerCanvasView: View {
                         }
                     }
 
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipMask(let shape):
+                case .group(let groupShape):
+                    // Regular Group: render all child shapes (no clipping)
+                    guard !groupShape.groupedShapes.isEmpty else { break }
+
+                    // Render each child shape in the group
+                    for childShape in groupShape.groupedShapes {
+                        guard childShape.isVisible else { continue }
+
+                        // Check if child itself is clipped by another object
+                        let maskShape: VectorShape? = {
+                            guard let maskID = childShape.clippedByShapeID,
+                                  let maskObject = objectsDict[maskID] else {
+                                return nil
+                            }
+                            return maskObject.shape
+                        }()
+
+                        if VectorText.from(childShape) != nil {
+                            renderText(childShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                        } else if childShape.embeddedImageData != nil {
+                            renderImage(childShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                        } else {
+                            renderShape(childShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                        }
+                    }
+
+                case .shape(let shape), .warp(let shape), .clipMask(let shape):
                     // Get mask shape if this object is clipped by another object
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
