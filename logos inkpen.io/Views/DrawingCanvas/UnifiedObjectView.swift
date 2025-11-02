@@ -74,7 +74,6 @@ struct LayerCanvasView: View {
     var body: some View {
         Canvas { context, size in
             _ = objectUpdateTrigger
-            print("🎨 LayerCanvasView.body rendering, objectUpdateTrigger=\(objectUpdateTrigger), objects.count=\(objects.count)")
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -261,14 +260,11 @@ struct LayerCanvasView: View {
                     // Regular Group: render all child shapes (no clipping)
                     guard !groupShape.groupedShapes.isEmpty else { break }
 
-                    print("🎨 Rendering group \(groupShape.id), children count=\(groupShape.groupedShapes.count)")
-
                     // Save parent's transform (includes drag delta if parent group is selected)
                     let parentTransform = context.transform
 
                     // Render each child shape in the group
                     for childShape in groupShape.groupedShapes {
-                        print("🎨   Child \(childShape.id), bounds=\(childShape.bounds)")
                         guard childShape.isVisible else { continue }
 
                         // Check if THIS CHILD is individually selected (not just the group)
