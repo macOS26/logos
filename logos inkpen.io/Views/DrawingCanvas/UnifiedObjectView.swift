@@ -808,6 +808,45 @@ struct IsolatedLayerView: View {
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
+    // Helper to collect all text shapes (both top-level and grouped)
+    private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {
+        var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] = []
+
+        for object in objects {
+            guard object.isVisible else { continue }
+
+            switch object.objectType {
+            case .text(let shape):
+                // Top-level text object
+                if let vectorText = VectorText.from(shape),
+                   vectorText.getState(in: document) == .editing {
+                    let isSelected = selectedObjectIDs.contains(shape.id)
+                    let delta = isSelected ? dragPreviewDelta : .zero
+                    editingTextShapes.append((id: shape.id, dragDelta: delta))
+                }
+
+            case .group(let groupShape), .clipGroup(let groupShape):
+                // Text objects inside groups
+                for childShape in groupShape.groupedShapes {
+                    guard childShape.isVisible else { continue }
+                    if let vectorText = VectorText.from(childShape),
+                       vectorText.getState(in: document) == .editing {
+                        // Check if child is individually selected or parent group is selected
+                        let isChildSelected = selectedObjectIDs.contains(childShape.id)
+                        let isParentSelected = selectedObjectIDs.contains(object.id)
+                        let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
+                        editingTextShapes.append((id: childShape.id, dragDelta: delta))
+                    }
+                }
+
+            default:
+                break
+            }
+        }
+
+        return editingTextShapes
+    }
+
     var body: some View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
@@ -824,26 +863,16 @@ struct IsolatedLayerView: View {
                 dragPreviewTrigger: dragPreviewTrigger
             )
 
-            // For text editor only - show NSTextView only in .editing state (blue mode)
-            ForEach(objects.filter { object in
-                guard object.isVisible else { return false }
-                if case .text(let shape) = object.objectType,
-                   let vectorText = VectorText.from(shape),
-                   vectorText.getState(in: document) == .editing {
-                    return true
-                }
-                return false
-            }, id: \.id) { object in
-                if case .text(let shape) = object.objectType {
-                    ProfessionalTextCanvas(
-                        document: document,
-                        textObjectID: shape.id,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        viewMode: viewMode
-                    )
-                    .allowsHitTesting(document.viewState.currentTool == .font)
-                }
+            // For text editor - show NSTextView for all editing text (top-level and grouped)
+            ForEach(collectEditingTextShapes(), id: \.id) { textInfo in
+                ProfessionalTextCanvas(
+                    document: document,
+                    textObjectID: textInfo.id,
+                    dragPreviewDelta: textInfo.dragDelta,
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    viewMode: viewMode
+                )
+                .allowsHitTesting(document.viewState.currentTool == .font)
             }
         }
         .opacity(layerOpacity)
