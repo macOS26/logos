@@ -110,24 +110,11 @@ extension DrawingCanvas {
                     }
                 }
 
-                var updatedShape = shape
-                updatedShape.path.elements = elements
-                updatedShape.updateBounds()
-
-                // Update the object in snapshot
-                var updatedObject = object
-                switch object.objectType {
-                case .shape:
-                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .shape(updatedShape))
-                case .warp:
-                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .warp(updatedShape))
-                default:
-                    let objectType = VectorObject.determineType(for: updatedShape)
-                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: objectType)
+                // Use updateShapeByID to sync to BOTH snapshot.objects AND group's groupedShapes
+                document.updateShapeByID(pointID.shapeID, silent: true) { shape in
+                    shape.path.elements = elements
+                    shape.updateBounds()
                 }
-
-                // Update in snapshot dictionary (O(1))
-                document.snapshot.objects[pointID.shapeID] = updatedObject
     }
 
     private func isSmoothCurvePoint(elements: [PathElement], elementIndex: Int) -> Bool {
@@ -221,23 +208,10 @@ extension DrawingCanvas {
             )
         }
 
-        var updatedShape = shape
-        updatedShape.path.elements = elements
-        updatedShape.updateBounds()
-
-        // Update the object in snapshot
-        var updatedObject = object
-        switch object.objectType {
-        case .shape:
-            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .shape(updatedShape))
-        case .warp:
-            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .warp(updatedShape))
-        default:
-            let objectType = VectorObject.determineType(for: updatedShape)
-            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: objectType)
+        // Use updateShapeByID to sync to BOTH snapshot.objects AND group's groupedShapes
+        document.updateShapeByID(handleID.shapeID, silent: true) { shape in
+            shape.path.elements = elements
+            shape.updateBounds()
         }
-
-        // Update in snapshot dictionary (O(1))
-        document.snapshot.objects[handleID.shapeID] = updatedObject
     }
 }

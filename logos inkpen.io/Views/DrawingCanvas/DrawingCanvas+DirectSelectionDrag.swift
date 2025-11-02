@@ -121,20 +121,15 @@ extension DrawingCanvas {
             }
         }
 
-        // Update bounds using O(1) snapshot lookup - don't iterate layers
+        // Trigger layer updates for affected shapes
+        // (bounds already updated by movePoint/HandleToAbsolutePositionBatched)
+        // (spatial index rebuild is skipped due to isLivePointDrag flag)
         var affectedLayers = Set<Int>()
         for shapeID in affectedShapeIDs {
             if let object = document.snapshot.objects[shapeID] {
                 affectedLayers.insert(object.layerIndex)
             }
-            // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-            // Use silent: true to avoid double-triggering
-            document.updateShapeByID(shapeID, silent: true) { shape in
-                shape.updateBounds()
-            }
         }
-
-        // Trigger layer updates (spatial index rebuild is skipped due to isLivePointDrag flag)
         document.triggerLayerUpdates(for: affectedLayers)
     }
 
@@ -176,19 +171,13 @@ extension DrawingCanvas {
             affectedShapeIDs.insert(handleID.shapeID)
         }
 
-        // Collect affected layers for spatial index rebuild
+        // Rebuild spatial index once at drag end
         var affectedLayers = Set<Int>()
         for shapeID in affectedShapeIDs {
             if let object = document.snapshot.objects[shapeID] {
                 affectedLayers.insert(object.layerIndex)
             }
-            // Update bounds in BOTH snapshot.objects AND group's groupedShapes
-            document.updateShapeByID(shapeID, silent: true) { shape in
-                shape.updateBounds()
-            }
         }
-
-        // Rebuild spatial index once at drag end
         document.triggerLayerUpdates(for: affectedLayers)
 
         if !originalDragShapes.isEmpty {
