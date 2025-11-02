@@ -812,10 +812,14 @@ struct IsolatedLayerView: View {
     private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {
         var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] = []
 
+        // Use document.snapshot.objects to get fresh data (not stale objects parameter)
         for object in objects {
             guard object.isVisible else { continue }
 
-            switch object.objectType {
+            // Re-fetch from snapshot to get latest isEditing state
+            guard let freshObject = document.snapshot.objects[object.id] else { continue }
+
+            switch freshObject.objectType {
             case .text(let shape):
                 // Top-level text object
                 if let vectorText = VectorText.from(shape),
@@ -825,7 +829,7 @@ struct IsolatedLayerView: View {
                     editingTextShapes.append((id: shape.id, dragDelta: delta))
                 }
 
-            case .group(let groupShape), .clipGroup(let groupShape):
+            case .group(let groupShape):
                 // Text objects inside groups
                 for childShape in groupShape.groupedShapes {
                     guard childShape.isVisible else { continue }
