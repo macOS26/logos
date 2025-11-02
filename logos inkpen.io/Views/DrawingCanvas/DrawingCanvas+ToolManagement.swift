@@ -35,10 +35,28 @@ extension DrawingCanvas {
     private func stopAllTextEditing() {
         var stoppedCount = 0
 
+        // Stop top-level text objects
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType, shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 stoppedCount += 1
+            }
+        }
+
+        // ALSO stop text inside groups
+        for obj in document.snapshot.objects.values {
+            switch obj.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                if groupShape.isGroupContainer {
+                    for childShape in groupShape.groupedShapes {
+                        if childShape.typography != nil && childShape.isEditing == true {
+                            document.setTextEditingInUnified(id: childShape.id, isEditing: false)
+                            stoppedCount += 1
+                        }
+                    }
+                }
+            default:
+                break
             }
         }
 
