@@ -213,7 +213,8 @@ struct LayerCanvasView: View {
                             // Render mask outline
                             context.transform = maskTransform
                             let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                            renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
+                            let liveMaskShape = applyLivePositions(to: maskShape)
+                            renderShape(liveMaskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
 
                             // Then render content shapes clipped by the mask
                             for contentShape in contentShapes {
@@ -230,22 +231,25 @@ struct LayerCanvasView: View {
 
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
+                                let liveContentShape = applyLivePositions(to: contentShape)
+                                let liveMaskForClip = applyLivePositions(to: maskShape)
+
                                 // Render with separate mask and content transforms
                                 context.drawLayer { layerContext in
                                     // Apply mask transform and create clipping region
                                     layerContext.transform = maskTransform
-                                    let maskPath = maskShape.cachedCGPath
+                                    let maskPath = liveMaskForClip.cachedCGPath
                                     layerContext.clip(to: Path(maskPath))
 
                                     // Apply content transform and render content
                                     layerContext.transform = contentTransform
 
-                                    if VectorText.from(contentShape) != nil {
-                                        renderText(contentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
-                                    } else if contentShape.embeddedImageData != nil {
-                                        renderImage(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    if VectorText.from(liveContentShape) != nil {
+                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                    } else if liveContentShape.embeddedImageData != nil {
+                                        renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     } else {
-                                        renderShape(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                        renderShape(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     }
                                 }
                             }
@@ -259,7 +263,8 @@ struct LayerCanvasView: View {
                                     context.transform = parentTransform  // Preserve parent's drag delta
                                 }
                                 let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                                renderShape(maskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
+                                let liveMaskShapeNoClip = applyLivePositions(to: maskShape)
+                                renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
@@ -273,12 +278,14 @@ struct LayerCanvasView: View {
                                 }
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                                if VectorText.from(contentShape) != nil {
-                                    renderText(contentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity)
-                                } else if contentShape.embeddedImageData != nil {
-                                    renderImage(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
+                                let liveContentNoClip = applyLivePositions(to: contentShape)
+
+                                if VectorText.from(liveContentNoClip) != nil {
+                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity)
+                                } else if liveContentNoClip.embeddedImageData != nil {
+                                    renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 } else {
-                                    renderShape(contentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
+                                    renderShape(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 }
                             }
                         }
@@ -310,22 +317,25 @@ struct LayerCanvasView: View {
 
                             let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
+                            let liveContentColorMode = applyLivePositions(to: contentShape)
+                            let liveMaskColorMode = applyLivePositions(to: maskShape)
+
                             // Render with separate mask and content transforms
                             context.drawLayer { layerContext in
                                 // Apply mask transform and create clipping region
                                 layerContext.transform = maskTransform
-                                let maskPath = maskShape.cachedCGPath
+                                let maskPath = liveMaskColorMode.cachedCGPath
                                 layerContext.clip(to: Path(maskPath))
 
                                 // Apply content transform and render content
                                 layerContext.transform = contentTransform
 
-                                if VectorText.from(contentShape) != nil {
-                                    renderText(contentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
-                                } else if contentShape.embeddedImageData != nil {
-                                    renderImage(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                if VectorText.from(liveContentColorMode) != nil {
+                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                } else if liveContentColorMode.embeddedImageData != nil {
+                                    renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 } else {
-                                    renderShape(contentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    renderShape(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 }
                             }
                         }
@@ -366,12 +376,14 @@ struct LayerCanvasView: View {
                             return maskObject.shape
                         }()
 
-                        if VectorText.from(childShape) != nil {
-                            renderText(childShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
-                        } else if childShape.embeddedImageData != nil {
-                            renderImage(childShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                        let liveChildShape = applyLivePositions(to: childShape)
+
+                        if VectorText.from(liveChildShape) != nil {
+                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                        } else if liveChildShape.embeddedImageData != nil {
+                            renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         } else {
-                            renderShape(childShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            renderShape(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         }
                     }
 
@@ -384,7 +396,8 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
-                    renderShape(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                    let liveShape = applyLivePositions(to: shape)
+                    renderShape(liveShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
 
                 case .image(let shape):
                     let maskShape: VectorShape? = {
@@ -394,7 +407,8 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
-                    renderImage(shape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                    let liveImageShape = applyLivePositions(to: shape)
+                    renderImage(liveImageShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
 
                 case .text(let shape):
                     let maskShape: VectorShape? = {
@@ -404,8 +418,9 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
+                    let liveTextShape = applyLivePositions(to: shape)
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(shape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
                 }
             }
         }
