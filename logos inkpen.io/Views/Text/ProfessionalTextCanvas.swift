@@ -230,6 +230,7 @@ struct ProfessionalTextCanvas: View {
             var parent: TextViewRepresentable
             var lastUpdateTime: Date = Date()
             var isRestoringSelection: Bool = false
+            var isInitialSelectionAfterCreation: Bool = true
             weak var textView: DisabledContextMenuTextView?
 
             init(_ parent: TextViewRepresentable) {
@@ -264,13 +265,16 @@ struct ProfessionalTextCanvas: View {
                     let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
                     let newPosition = selectedRange.location
 
-                    if newPosition == oldPosition - 1 {
+                    // Only apply -1 workaround on initial selection after entering edit mode
+                    if self.isInitialSelectionAfterCreation && newPosition == oldPosition - 1 {
                         self.isRestoringSelection = true
                         textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
                         self.isRestoringSelection = false
+                        self.isInitialSelectionAfterCreation = false
                         return
                     }
 
+                    self.isInitialSelectionAfterCreation = false
                     self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
                 }
             }
