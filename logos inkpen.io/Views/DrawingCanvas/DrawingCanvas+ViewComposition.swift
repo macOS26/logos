@@ -215,16 +215,12 @@ extension DrawingCanvas {
             .blendMode(layerBlendMode.swiftUIBlendMode)
         }
 
-        // Get objects for this layer from snapshot
-        let objects = layer.objectIDs.compactMap { objectID in
-            document.snapshot.objects[objectID]
-        }.filter { $0.isVisible }
-
-        if !objects.isEmpty {
+        // Pass objectIDs so IsolatedLayerView can fetch fresh objects on every render
+        if !layer.objectIDs.isEmpty {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
             IsolatedLayerView(
-                objects: objects,
+                objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,

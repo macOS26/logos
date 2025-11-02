@@ -795,7 +795,7 @@ struct LayerCanvasView: View {
 }
 
 struct IsolatedLayerView: View {
-    let objects: [VectorObject]
+    let objectIDs: [UUID]  // Changed from objects array
     let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -807,6 +807,11 @@ struct IsolatedLayerView: View {
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
+
+    // Compute objects fresh from snapshot on every render
+    private var objects: [VectorObject] {
+        objectIDs.compactMap { document.snapshot.objects[$0] }
+    }
 
     // Helper to collect all text shapes (both top-level and grouped)
     private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {

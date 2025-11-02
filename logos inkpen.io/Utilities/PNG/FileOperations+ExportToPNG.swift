@@ -207,9 +207,9 @@ extension FileOperations {
             ForEach(document.snapshot.layers.indices, id: \.self) { layerIndex in
                 if document.snapshot.layers[layerIndex].isVisible,
                    layerIndex >= 2 { // Skip background layers
-                    let objects = document.getObjectsInStackingOrder().filter { $0.layerIndex == layerIndex }
+                    let layer = document.snapshot.layers[layerIndex]
                     IsolatedLayerView(
-                        objects: objects,
+                        objectIDs: layer.objectIDs,
                         document: document,
                         zoomLevel: scale,
                         canvasOffset: .zero,
@@ -219,8 +219,8 @@ extension FileOperations {
                         dragPreviewTrigger: false,
                         objectUpdateTrigger: 0,
                         liveScaleTransform: .identity,
-                        layerOpacity: document.snapshot.layers[layerIndex].opacity,
-                        layerBlendMode: document.snapshot.layers[layerIndex].blendMode
+                        layerOpacity: layer.opacity,
+                        layerBlendMode: layer.blendMode
                     )
                 }
             }
