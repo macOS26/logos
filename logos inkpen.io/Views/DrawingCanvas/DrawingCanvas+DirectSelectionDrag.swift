@@ -119,14 +119,20 @@ extension DrawingCanvas {
         }
 
         // Update bounds using O(1) snapshot lookup - don't iterate layers
+        var affectedLayers = Set<Int>()
         for shapeID in affectedShapeIDs {
+            if let object = document.snapshot.objects[shapeID] {
+                affectedLayers.insert(object.layerIndex)
+            }
             // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-            document.updateShapeByID(shapeID) { shape in
+            // Use silent: true to avoid individual layer triggers during drag
+            document.updateShapeByID(shapeID, silent: true) { shape in
                 shape.updateBounds()
             }
         }
 
-        document.viewState.objectPositionUpdateTrigger.toggle()
+        // Batch trigger for all affected layers - enables live updates
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -164,12 +170,20 @@ extension DrawingCanvas {
             affectedShapeIDs.insert(handleID.shapeID)
         }
 
+        // Collect affected layers for final trigger
+        var affectedLayers = Set<Int>()
         for shapeID in affectedShapeIDs {
+            if let object = document.snapshot.objects[shapeID] {
+                affectedLayers.insert(object.layerIndex)
+            }
             // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-            document.updateShapeByID(shapeID) { shape in
+            document.updateShapeByID(shapeID, silent: true) { shape in
                 shape.updateBounds()
             }
         }
+
+        // Trigger updates for all affected layers once at the end
+        document.triggerLayerUpdates(for: affectedLayers)
 
         if !originalDragShapes.isEmpty {
             var newShapes: [UUID: VectorShape] = [:]
