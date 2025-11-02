@@ -812,6 +812,8 @@ struct IsolatedLayerView: View {
     private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {
         var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] = []
 
+        print("🔍 collectEditingTextShapes: objects.count=\(objects.count)")
+
         // Use document.snapshot.objects to get fresh data (not stale objects parameter)
         for object in objects {
             guard object.isVisible else { continue }
@@ -822,16 +824,22 @@ struct IsolatedLayerView: View {
             switch freshObject.objectType {
             case .text(let shape):
                 // Top-level text object
+                print("🔍 Found top-level text: id=\(shape.id), isEditing=\(shape.isEditing ?? false)")
                 if let vectorText = VectorText.from(shape),
                    vectorText.getState(in: document) == .editing {
                     let isSelected = selectedObjectIDs.contains(shape.id)
                     let delta = isSelected ? dragPreviewDelta : .zero
+                    print("✅ Adding top-level editing text: \(shape.id)")
                     editingTextShapes.append((id: shape.id, dragDelta: delta))
                 }
 
             case .group(let groupShape):
+                print("🔍 Found group: id=\(groupShape.id), groupedShapes.count=\(groupShape.groupedShapes.count)")
                 // Text objects inside groups
                 for childShape in groupShape.groupedShapes {
+                    if childShape.typography != nil {
+                        print("🔍 Found text in group: id=\(childShape.id), isEditing=\(childShape.isEditing ?? false)")
+                    }
                     guard childShape.isVisible else { continue }
                     if let vectorText = VectorText.from(childShape),
                        vectorText.getState(in: document) == .editing {
@@ -839,6 +847,7 @@ struct IsolatedLayerView: View {
                         let isChildSelected = selectedObjectIDs.contains(childShape.id)
                         let isParentSelected = selectedObjectIDs.contains(object.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
+                        print("✅ Adding grouped editing text: \(childShape.id)")
                         editingTextShapes.append((id: childShape.id, dragDelta: delta))
                     }
                 }
@@ -848,6 +857,7 @@ struct IsolatedLayerView: View {
             }
         }
 
+        print("🔍 Total editing texts found: \(editingTextShapes.count)")
         return editingTextShapes
     }
 
