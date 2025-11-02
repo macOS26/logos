@@ -327,17 +327,14 @@ extension VectorDocument {
             }
         }
 
-        // Not a top-level text object - search inside groups AND clipGroups
+        // Not a top-level text object - search inside groups
         for object in snapshot.objects.values {
-            switch object.objectType {
-            case .group(let shape), .clipGroup(let shape):
+            if case .group(let shape) = object.objectType {
                 if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.typography != nil }),
                    var vectorText = VectorText.from(textShape) {
                     vectorText.layerIndex = object.layerIndex
                     return vectorText
                 }
-            default:
-                break
             }
         }
 

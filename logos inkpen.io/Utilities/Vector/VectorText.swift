@@ -7,9 +7,9 @@ enum TextRenderMode: String, Codable, Hashable {
 }
 
 enum TextBoxState: String, CaseIterable {
-    case editing = "editing"
-    case selected = "selected"
-    case unselected = "unselected"
+    case editing
+    case selected
+    case unselected
 
     var description: String {
         switch self {
