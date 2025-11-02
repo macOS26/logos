@@ -120,10 +120,9 @@ extension DrawingCanvas {
 
         // Update bounds using O(1) snapshot lookup - don't iterate layers
         for shapeID in affectedShapeIDs {
-            if let object = document.snapshot.objects[shapeID], case .shape(var shape) = object.objectType {
+            // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
+            document.updateShapeByID(shapeID) { shape in
                 shape.updateBounds()
-                let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
-                document.snapshot.objects[shapeID] = updatedObject
             }
         }
 
@@ -166,10 +165,9 @@ extension DrawingCanvas {
         }
 
         for shapeID in affectedShapeIDs {
-            if let object = document.snapshot.objects[shapeID], case .shape(var shape) = object.objectType {
+            // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
+            document.updateShapeByID(shapeID) { shape in
                 shape.updateBounds()
-                let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
-                document.snapshot.objects[shapeID] = updatedObject
             }
         }
 
