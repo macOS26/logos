@@ -261,16 +261,6 @@ struct ProfessionalTextCanvas: View {
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
-                    let newPosition = selectedRange.location
-
-                    if newPosition == oldPosition - 1 {
-                        self.isRestoringSelection = true
-                        textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
-                        self.isRestoringSelection = false
-                        return
-                    }
-
                     self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
                 }
             }
