@@ -147,6 +147,7 @@ extension DrawingCanvas {
     }
 
     func startEditingText(textID: UUID, at location: CGPoint, isDoubleClickFromArrow: Bool = false) {
+        print("🔵 startEditingText: textID=\(textID), location=\(location)")
 
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType,
@@ -157,6 +158,7 @@ extension DrawingCanvas {
         }
 
         if let textObject = document.findText(by: textID) {
+            print("🔵 startEditingText: found text object, content='\(textObject.content)'")
 
             // Calculate cursor position FIRST, before triggering any view updates
             var cursorPosition = calculateCursorPosition(in: textObject, at: location)
@@ -177,14 +179,17 @@ extension DrawingCanvas {
             document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
             // NOW set isEditing, which triggers view sync with correct cursor position
+            print("🔵 startEditingText: calling setTextEditingInUnified with isEditing=true")
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
             document.viewState.selectedObjectIDs = [textID]
 
             isEditingText = true
             editingTextID = textID
+            print("🔵 startEditingText: DONE")
 
         } else {
+            print("🔵 startEditingText: TEXT NOT FOUND!")
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }

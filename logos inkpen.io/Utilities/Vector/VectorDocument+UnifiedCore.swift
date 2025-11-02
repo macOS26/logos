@@ -27,8 +27,10 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
+        print("🟣 updateShapeByID: shapeID=\(shapeID)")
         // Update in snapshot (primary)
         if let object = snapshot.objects[shapeID] {
+            print("🟣 updateShapeByID: found in snapshot.objects as top-level")
             let layerIndex = object.layerIndex
             var updatedObject = object
 
@@ -69,15 +71,19 @@ extension VectorDocument {
             if !silent {
                 triggerLayerUpdate(for: layerIndex)
             }
+            print("🟣 updateShapeByID: updated top-level object")
             return
         }
 
+        print("🟣 updateShapeByID: not found in top-level, searching groups...")
         // Check in groups for child shapes
         for (groupID, groupObject) in snapshot.objects {
             switch groupObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
+                print("🟣 updateShapeByID: checking group \(groupID), isGroupContainer=\(groupShape.isGroupContainer), groupedShapes.count=\(groupShape.groupedShapes.count)")
                 if groupShape.isGroupContainer {
                     if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
+                        print("🟣 updateShapeByID: FOUND in group at index \(childIndex)!")
                         var childShape = groupShape.groupedShapes[childIndex]
                         update(&childShape)
                         groupShape.groupedShapes[childIndex] = childShape
@@ -100,6 +106,7 @@ extension VectorDocument {
                         if !silent {
                             triggerLayerUpdate(for: layerIndex)
                         }
+                        print("🟣 updateShapeByID: updated grouped object")
                         return
                     }
                 }
@@ -107,6 +114,7 @@ extension VectorDocument {
                 continue
             }
         }
+        print("🟣 updateShapeByID: NOT FOUND anywhere!")
     }
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
