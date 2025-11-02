@@ -246,6 +246,11 @@ struct SpatialIndex {
         return cells
     }
 
+    /// Get all cached bounds for debug visualization
+    func getAllCachedBounds() -> [UUID: CGRect] {
+        return objectBounds
+    }
+
     /// Debug information
     var debugInfo: String {
         let totalCells = grid.count

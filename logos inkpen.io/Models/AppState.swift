@@ -12,6 +12,10 @@ class AppState {
         didSet { UserDefaults.standard.set(enablePressureLogging, forKey: "enablePressureLogging") }
     }
 
+    var showSpatialIndexBounds: Bool = false {
+        didSet { UserDefaults.standard.set(showSpatialIndexBounds, forKey: "showSpatialIndexBounds") }
+    }
+
 //    var showPerformanceOverlay: Bool = true {
 //        didSet { UserDefaults.standard.set(showPerformanceOverlay, forKey: "showPerformanceOverlay") }
 //    }

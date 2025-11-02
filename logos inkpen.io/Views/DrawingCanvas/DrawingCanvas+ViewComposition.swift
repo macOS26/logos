@@ -154,6 +154,21 @@ extension DrawingCanvas {
         if document.viewState.currentTool == .selection && isCornerRadiusEditMode {
             cornerRadiusEditTool(geometry: geometry)
         }
+
+        // DEBUG: Show spatial index bounds
+        if appState.showSpatialIndexBounds {
+            let cachedBounds = spatialIndex.getAllCachedBounds()
+            ForEach(Array(cachedBounds.keys), id: \.self) { objectID in
+                if let bounds = cachedBounds[objectID] {
+                    Path { path in
+                        path.addRect(bounds)
+                    }
+                    .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / document.viewState.zoomLevel, dash: [10 / document.viewState.zoomLevel, 5 / document.viewState.zoomLevel]))
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+                }
+            }
+        }
     }
 
     @ViewBuilder
