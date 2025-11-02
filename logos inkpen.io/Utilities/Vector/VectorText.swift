@@ -11,14 +11,6 @@ enum TextBoxState: String, CaseIterable {
     case selected = "selected"
     case unselected = "unselected"
 
-    var color: Color {
-        switch self {
-        case .editing: return .blue
-        case .selected: return .green
-        case .unselected: return .gray
-        }
-    }
-
     var description: String {
         switch self {
         case .editing: return "BLUE - Edit Mode"
