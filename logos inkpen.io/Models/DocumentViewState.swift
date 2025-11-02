@@ -33,6 +33,7 @@ class DocumentViewState: ObservableObject {
     @Published var objectPositionUpdateTrigger: Bool = false
     @Published var objectUpdateTrigger: UInt = 0
     @Published var layerUpdateTriggers: [UUID: UInt] = [:]  // Per-layer update triggers keyed by Layer.id
+    var isLivePointDrag: Bool = false  // Skip spatial index rebuild during live point drags
     @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]

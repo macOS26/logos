@@ -53,6 +53,9 @@ extension DrawingCanvas {
             isDraggingPoint = !selectedPoints.isEmpty
             isDraggingHandle = !selectedHandles.isEmpty
 
+            // Enable live point drag mode to skip spatial index rebuilds
+            document.viewState.isLivePointDrag = true
+
             var affectedShapeIDs = Set<UUID>()
             for pointID in selectedPoints {
                 affectedShapeIDs.insert(pointID.shapeID)
@@ -125,13 +128,13 @@ extension DrawingCanvas {
                 affectedLayers.insert(object.layerIndex)
             }
             // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-            // Use silent: true to avoid individual layer triggers during drag
+            // Use silent: true to avoid double-triggering
             document.updateShapeByID(shapeID, silent: true) { shape in
                 shape.updateBounds()
             }
         }
 
-        // Batch trigger for all affected layers - enables live updates
+        // Trigger layer updates (spatial index rebuild is skipped due to isLivePointDrag flag)
         document.triggerLayerUpdates(for: affectedLayers)
     }
 
@@ -156,6 +159,9 @@ extension DrawingCanvas {
             return
         }
 
+        // Disable live drag mode to allow spatial index rebuild
+        document.viewState.isLivePointDrag = false
+
         isDraggingPoint = false
         isDraggingHandle = false
         originalPointPositions.removeAll()
@@ -170,19 +176,19 @@ extension DrawingCanvas {
             affectedShapeIDs.insert(handleID.shapeID)
         }
 
-        // Collect affected layers for final trigger
+        // Collect affected layers for spatial index rebuild
         var affectedLayers = Set<Int>()
         for shapeID in affectedShapeIDs {
             if let object = document.snapshot.objects[shapeID] {
                 affectedLayers.insert(object.layerIndex)
             }
-            // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
+            // Update bounds in BOTH snapshot.objects AND group's groupedShapes
             document.updateShapeByID(shapeID, silent: true) { shape in
                 shape.updateBounds()
             }
         }
 
-        // Trigger updates for all affected layers once at the end
+        // Rebuild spatial index once at drag end
         document.triggerLayerUpdates(for: affectedLayers)
 
         if !originalDragShapes.isEmpty {
