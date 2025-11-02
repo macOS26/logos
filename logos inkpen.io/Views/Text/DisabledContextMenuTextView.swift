@@ -56,8 +56,4 @@ class DisabledContextMenuTextView: NSTextView {
         thickerRect.size.width = 1.0
         super.drawInsertionPoint(in: thickerRect, color: cursorColor, turnedOn: flag)
     }
-
-    override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {
-        super.setNeedsDisplay(rect, avoidAdditionalLayout: flag)
-    }
 }

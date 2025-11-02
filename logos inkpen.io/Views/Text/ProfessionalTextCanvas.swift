@@ -189,8 +189,6 @@ struct ProfessionalTextCanvas: View {
                     nsView.window?.makeFirstResponder(nsView)
                 }
             }
-
-            coordinator.textView = nsView
         }
 
         private func applyStyle(to textView: NSTextView) {
