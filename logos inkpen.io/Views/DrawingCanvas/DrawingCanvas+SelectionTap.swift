@@ -170,6 +170,13 @@ extension DrawingCanvas {
             return isHit
         }
 
+        // CRITICAL: Groups must use groupBounds, not shape.bounds
+        if shape.isGroupContainer {
+            let groupTestBounds = shape.groupBounds
+            print("🔶 HIT TEST GROUP: location=\(location), groupBounds=\(groupTestBounds), contains=\(groupTestBounds.contains(location))")
+            return groupTestBounds.contains(location)
+        }
+
         if isOptionPressed {
             let baseTolerance: CGFloat = 8.0
             let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
