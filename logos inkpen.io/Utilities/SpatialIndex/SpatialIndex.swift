@@ -46,20 +46,45 @@ struct SpatialIndex {
 
                 guard let object = snapshot.objects[objectID], object.isVisible else { continue }
 
-                // Use correct bounds: groupBounds for groups, regular bounds for others
-                let bounds: CGRect
+                // For groups, index BOTH the group AND its children (from groupedShapes, not snapshot.objects)
                 if object.shape.isGroupContainer {
-                    bounds = object.shape.groupBounds
+                    // Index the GROUP at its groupBounds
+                    let groupBounds = object.shape.groupBounds
+                    objectBounds[objectID] = groupBounds
+
+                    let groupCells = cellsForBounds(groupBounds)
+                    for cell in groupCells {
+                        grid[cell, default: []].insert(objectID)
+                        layerGrid[cell, default: []].append(objectID)
+                    }
+
+                    // ALSO index each child from groupedShapes (correct positions)
+                    switch object.objectType {
+                    case .group(let groupShape), .clipGroup(let groupShape):
+                        for childShape in groupShape.groupedShapes {
+                            guard childShape.isVisible else { continue }
+                            let childBounds = childShape.bounds.applying(childShape.transform)
+                            objectBounds[childShape.id] = childBounds
+
+                            let childCells = cellsForBounds(childBounds)
+                            for cell in childCells {
+                                grid[cell, default: []].insert(childShape.id)
+                                layerGrid[cell, default: []].append(childShape.id)
+                            }
+                        }
+                    default:
+                        break
+                    }
                 } else {
-                    bounds = object.shape.bounds.applying(object.shape.transform)
-                }
+                    // Regular objects - index normally
+                    let bounds = object.shape.bounds.applying(object.shape.transform)
+                    objectBounds[objectID] = bounds
 
-                objectBounds[objectID] = bounds
-
-                let cells = cellsForBounds(bounds)
-                for cell in cells {
-                    grid[cell, default: []].insert(objectID)
-                    layerGrid[cell, default: []].append(objectID)
+                    let cells = cellsForBounds(bounds)
+                    for cell in cells {
+                        grid[cell, default: []].insert(objectID)
+                        layerGrid[cell, default: []].append(objectID)
+                    }
                 }
             }
 
@@ -112,20 +137,45 @@ struct SpatialIndex {
 
                 guard let object = snapshot.objects[objectID], object.isVisible else { continue }
 
-                // Use correct bounds: groupBounds for groups, regular bounds for others
-                let bounds: CGRect
+                // For groups, index BOTH the group AND its children
                 if object.shape.isGroupContainer {
-                    bounds = object.shape.groupBounds
+                    // Index the GROUP at its groupBounds
+                    let groupBounds = object.shape.groupBounds
+                    objectBounds[objectID] = groupBounds
+
+                    let groupCells = cellsForBounds(groupBounds)
+                    for cell in groupCells {
+                        grid[cell, default: []].insert(objectID)
+                        layerGrid[cell, default: []].append(objectID)
+                    }
+
+                    // ALSO index each child from groupedShapes
+                    switch object.objectType {
+                    case .group(let groupShape), .clipGroup(let groupShape):
+                        for childShape in groupShape.groupedShapes {
+                            guard childShape.isVisible else { continue }
+                            let childBounds = childShape.bounds.applying(childShape.transform)
+                            objectBounds[childShape.id] = childBounds
+
+                            let childCells = cellsForBounds(childBounds)
+                            for cell in childCells {
+                                grid[cell, default: []].insert(childShape.id)
+                                layerGrid[cell, default: []].append(childShape.id)
+                            }
+                        }
+                    default:
+                        break
+                    }
                 } else {
-                    bounds = object.shape.bounds.applying(object.shape.transform)
-                }
+                    // Regular objects
+                    let bounds = object.shape.bounds.applying(object.shape.transform)
+                    objectBounds[objectID] = bounds
 
-                objectBounds[objectID] = bounds
-
-                let cells = cellsForBounds(bounds)
-                for cell in cells {
-                    grid[cell, default: []].insert(objectID)
-                    layerGrid[cell, default: []].append(objectID)
+                    let cells = cellsForBounds(bounds)
+                    for cell in cells {
+                        grid[cell, default: []].insert(objectID)
+                        layerGrid[cell, default: []].append(objectID)
+                    }
                 }
             }
 
