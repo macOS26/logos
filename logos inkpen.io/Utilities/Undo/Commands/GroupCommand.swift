@@ -67,28 +67,16 @@ class GroupCommand: BaseCommand {
             guard let shape = addedShapes[objectID] else { continue }
             let newObject = VectorObject(
                 shape: shape,
-                layerIndex: layerIndex,
-                parentGroupID: nil  // Groups don't have parents (unless nested)
+                layerIndex: layerIndex
             )
             document.snapshot.objects[objectID] = newObject
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
 
-            // Set parentGroupID on all child objects in the group
+            // Log group contents
             if shape.isGroup || shape.isClippingGroup {
                 print("🟣 GroupCommand: Created \(shape.isClippingGroup ? "CLIPGROUP" : "GROUP") with \(shape.groupedShapes.count) children")
                 for (idx, child) in shape.groupedShapes.enumerated() {
-                    print("🟣   Child[\(idx)]: id=\(child.id), setting parentGroupID=\(objectID)")
-
-                    // Update child's parentGroupID in snapshot.objects
-                    if let childObject = document.snapshot.objects[child.id] {
-                        let updatedChildObject = VectorObject(
-                            id: childObject.id,
-                            layerIndex: childObject.layerIndex,
-                            objectType: childObject.objectType,
-                            parentGroupID: objectID  // Set parent group ID!
-                        )
-                        document.snapshot.objects[child.id] = updatedChildObject
-                    }
+                    print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
                 }
             }
         }
@@ -125,18 +113,6 @@ class GroupCommand: BaseCommand {
         for (offset, objectID) in removedObjectIDs.enumerated() {
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
             print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
-
-            // Clear parentGroupID when ungrouping
-            if let childObject = document.snapshot.objects[objectID] {
-                let updatedChildObject = VectorObject(
-                    id: childObject.id,
-                    layerIndex: childObject.layerIndex,
-                    objectType: childObject.objectType,
-                    parentGroupID: nil  // Clear parent group ID!
-                )
-                document.snapshot.objects[objectID] = updatedChildObject
-                print("🔵 UNDO GROUP: Cleared parentGroupID for \(objectID)")
-            }
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs

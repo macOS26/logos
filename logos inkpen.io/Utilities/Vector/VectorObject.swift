@@ -3,7 +3,6 @@ import SwiftUI
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
     let layerIndex: Int  // DEPRECATED: Layer membership now tracked via Layer.objectIDs
-    let parentGroupID: UUID?  // O(1) lookup for group membership
     let objectType: ObjectType
 
     enum ObjectType: Hashable {
@@ -17,10 +16,9 @@ struct VectorObject: Identifiable, Hashable {
     }
 
     // New explicit initializer - preferred
-    init(id: UUID, layerIndex: Int, objectType: ObjectType, parentGroupID: UUID? = nil) {
+    init(id: UUID, layerIndex: Int, objectType: ObjectType) {
         self.id = id
         self.layerIndex = layerIndex
-        self.parentGroupID = parentGroupID
         self.objectType = objectType
     }
 
@@ -44,10 +42,9 @@ struct VectorObject: Identifiable, Hashable {
     }
 
     // Legacy initializer - kept for compatibility, will be removed later
-    init(shape: VectorShape, layerIndex: Int, parentGroupID: UUID? = nil) {
+    init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
         self.layerIndex = layerIndex
-        self.parentGroupID = parentGroupID
         self.objectType = VectorObject.determineType(for: shape)
     }
 
@@ -93,14 +90,13 @@ struct VectorObject: Identifiable, Hashable {
 
 extension VectorObject: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, layerIndex, parentGroupID, objectType
+        case id, layerIndex, objectType
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(layerIndex, forKey: .layerIndex)
-        try container.encodeIfPresent(parentGroupID, forKey: .parentGroupID)
 
         var objectContainer = container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
 
@@ -135,7 +131,6 @@ extension VectorObject: Codable {
 
         id = try container.decode(UUID.self, forKey: .id)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
-        parentGroupID = try container.decodeIfPresent(UUID.self, forKey: .parentGroupID)
 
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
