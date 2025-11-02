@@ -49,8 +49,26 @@ extension DrawingCanvas {
     internal func findObjectAtLocationOptimized(_ location: CGPoint) -> VectorObject? {
         let validatedLocation = validateAndCorrectLocation(location)
 
+        // Build set of child IDs that are inside groups - arrow tool should skip these
+        var groupedChildIDs = Set<UUID>()
+        for obj in document.snapshot.objects.values {
+            switch obj.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                for childShape in groupShape.groupedShapes {
+                    groupedChildIDs.insert(childShape.id)
+                }
+            default:
+                break
+            }
+        }
+
         // Use spatial index for O(1) candidate lookup
         return spatialIndex.hitTest(at: validatedLocation, in: document.snapshot) { object, point in
+            // ARROW TOOL: Skip children that are inside groups - only select the group
+            if groupedChildIDs.contains(object.id) {
+                return false
+            }
+
             // Skip background shapes
             let shape = object.shape
             if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
