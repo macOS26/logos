@@ -25,10 +25,10 @@ class DisabledContextMenuTextView: NSTextView {
         return false
     }
 
-    override func draw(_ dirtyRect: NSRect) {
-        let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
-        super.draw(extendedRect)
-    }
+    // override func draw(_ dirtyRect: NSRect) {
+    //     let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
+    //     super.draw(extendedRect)
+    // }
 
     override func menu(for event: NSEvent) -> NSMenu? {
         return nil
