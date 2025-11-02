@@ -29,98 +29,100 @@ extension VectorDocument {
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
         print("🟣 updateShapeByID: shapeID=\(shapeID)")
 
-        var foundInTopLevel = false
-
         // Update in snapshot (primary) if exists as top-level
-        if let object = snapshot.objects[shapeID] {
-            print("🟣 updateShapeByID: found in snapshot.objects as top-level")
-            let layerIndex = object.layerIndex
-            var updatedObject = object
-
-            switch object.objectType {
-            case .text(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape))
-
-            case .shape(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape))
-
-            case .image(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .image(shape))
-
-            case .warp(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .warp(shape))
-
-            case .group(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .group(shape))
-
-            case .clipGroup(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipGroup(shape))
-
-            case .clipMask(var shape):
-                update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipMask(shape))
-            }
-
-            // Update snapshot ONLY
-            snapshot.objects[shapeID] = updatedObject
-
-            // Trigger layer update (unless silent)
-            if !silent {
-                triggerLayerUpdate(for: layerIndex)
-            }
-            print("🟣 updateShapeByID: updated top-level object")
-            foundInTopLevel = true
-            // DON'T RETURN - also need to update in groups!
+        guard let object = snapshot.objects[shapeID] else {
+            print("🟣 updateShapeByID: NOT FOUND in snapshot.objects!")
+            return
         }
 
-        print("🟣 updateShapeByID: searching groups for shape copies...")
-        // ALSO check in groups for child shapes (even if found in top-level)
-        for (groupID, groupObject) in snapshot.objects {
-            switch groupObject.objectType {
+        print("🟣 updateShapeByID: found in snapshot.objects, parentGroupID=\(object.parentGroupID?.uuidString ?? "nil")")
+        let layerIndex = object.layerIndex
+        let parentGroupID = object.parentGroupID
+        var updatedObject = object
+
+        switch object.objectType {
+        case .text(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape), parentGroupID: parentGroupID)
+
+        case .shape(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape), parentGroupID: parentGroupID)
+
+        case .image(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .image(shape), parentGroupID: parentGroupID)
+
+        case .warp(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .warp(shape), parentGroupID: parentGroupID)
+
+        case .group(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .group(shape), parentGroupID: parentGroupID)
+
+        case .clipGroup(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipGroup(shape), parentGroupID: parentGroupID)
+
+        case .clipMask(var shape):
+            update(&shape)
+            updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipMask(shape), parentGroupID: parentGroupID)
+        }
+
+        // Update snapshot ONLY
+        snapshot.objects[shapeID] = updatedObject
+
+        // Trigger layer update (unless silent)
+        if !silent {
+            triggerLayerUpdate(for: layerIndex)
+        }
+        print("🟣 updateShapeByID: updated top-level object")
+
+        // O(1) lookup: If object is in a group, update the group's copy too
+        if let parentID = parentGroupID {
+            print("🟣 updateShapeByID: object has parent group \(parentID), updating group's copy...")
+            guard let parentObject = snapshot.objects[parentID] else {
+                print("🟣 updateShapeByID: ERROR - parent group not found in snapshot!")
+                return
+            }
+
+            switch parentObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
-                print("🟣 updateShapeByID: checking group \(groupID), isGroupContainer=\(groupShape.isGroupContainer), groupedShapes.count=\(groupShape.groupedShapes.count)")
-                if groupShape.isGroupContainer {
-                    if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
-                        print("🟣 updateShapeByID: FOUND in group \(groupID) at index \(childIndex)!")
-                        var childShape = groupShape.groupedShapes[childIndex]
-                        update(&childShape)
-                        groupShape.groupedShapes[childIndex] = childShape
+                if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
+                    print("🟣 updateShapeByID: FOUND in group at index \(childIndex), updating copy")
+                    var childShape = groupShape.groupedShapes[childIndex]
+                    update(&childShape)
+                    groupShape.groupedShapes[childIndex] = childShape
 
-                        let layerIndex = groupObject.layerIndex
-                        // Preserve the existing group type (group or clipGroup)
-                        let updatedType: VectorObject.ObjectType
-                        switch groupObject.objectType {
-                        case .clipGroup:
-                            updatedType = .clipGroup(groupShape)
-                        default:
-                            updatedType = .group(groupShape)
-                        }
-                        let updatedObject = VectorObject(id: groupShape.id, layerIndex: layerIndex, objectType: updatedType)
-
-                        // Update snapshot ONLY
-                        snapshot.objects[groupID] = updatedObject
-
-                        // Trigger layer update (unless silent)
-                        if !silent {
-                            triggerLayerUpdate(for: layerIndex)
-                        }
-                        print("🟣 updateShapeByID: updated grouped object copy")
-                        // Continue searching - might be in multiple groups
+                    // Preserve group type
+                    let updatedType: VectorObject.ObjectType
+                    switch parentObject.objectType {
+                    case .clipGroup:
+                        updatedType = .clipGroup(groupShape)
+                    default:
+                        updatedType = .group(groupShape)
                     }
+
+                    let updatedParent = VectorObject(
+                        id: groupShape.id,
+                        layerIndex: parentObject.layerIndex,
+                        objectType: updatedType,
+                        parentGroupID: parentObject.parentGroupID
+                    )
+
+                    snapshot.objects[parentID] = updatedParent
+
+                    if !silent {
+                        triggerLayerUpdate(for: parentObject.layerIndex)
+                    }
+                    print("🟣 updateShapeByID: updated group's copy (O(1) lookup!)")
+                } else {
+                    print("🟣 updateShapeByID: ERROR - child not found in parent's groupedShapes!")
                 }
             default:
-                continue
+                print("🟣 updateShapeByID: ERROR - parent is not a group!")
             }
-        }
-
-        if !foundInTopLevel {
-            print("🟣 updateShapeByID: WARNING - shape not found in top-level snapshot.objects")
         }
     }
 
