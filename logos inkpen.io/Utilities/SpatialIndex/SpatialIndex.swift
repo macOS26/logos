@@ -20,6 +20,20 @@ struct SpatialIndex {
         objectBounds.removeAll(keepingCapacity: true)
         layerGrids.removeAll(keepingCapacity: true)
 
+        // Build set of child IDs that are inside groups - DON'T index these from layer.objectIDs
+        // (they have stale bounds in snapshot.objects)
+        var groupedChildIDs = Set<UUID>()
+        for object in snapshot.objects.values {
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                for childShape in groupShape.groupedShapes {
+                    groupedChildIDs.insert(childShape.id)
+                }
+            default:
+                break
+            }
+        }
+
         // Build per-layer spatial indexes
         for layer in snapshot.layers {
             guard layer.isVisible else { continue }
@@ -27,9 +41,19 @@ struct SpatialIndex {
             var layerGrid: [GridCell: [UUID]] = [:]
 
             for objectID in layer.objectIDs {
+                // SKIP child IDs - they're stale in snapshot.objects, causing phantom hits
+                if groupedChildIDs.contains(objectID) { continue }
+
                 guard let object = snapshot.objects[objectID], object.isVisible else { continue }
 
-                let bounds = object.shape.bounds.applying(object.shape.transform)
+                // Use correct bounds: groupBounds for groups, regular bounds for others
+                let bounds: CGRect
+                if object.shape.isGroupContainer {
+                    bounds = object.shape.groupBounds
+                } else {
+                    bounds = object.shape.bounds.applying(object.shape.transform)
+                }
+
                 objectBounds[objectID] = bounds
 
                 let cells = cellsForBounds(bounds)
@@ -63,6 +87,19 @@ struct SpatialIndex {
             layerGrids.removeValue(forKey: layerID)
         }
 
+        // Build set of child IDs that are inside groups
+        var groupedChildIDs = Set<UUID>()
+        for object in snapshot.objects.values {
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                for childShape in groupShape.groupedShapes {
+                    groupedChildIDs.insert(childShape.id)
+                }
+            default:
+                break
+            }
+        }
+
         // Rebuild only the specified layers
         for layer in snapshot.layers where layerIDs.contains(layer.id) {
             guard layer.isVisible else { continue }
@@ -70,9 +107,19 @@ struct SpatialIndex {
             var layerGrid: [GridCell: [UUID]] = [:]
 
             for objectID in layer.objectIDs {
+                // SKIP child IDs - they're stale
+                if groupedChildIDs.contains(objectID) { continue }
+
                 guard let object = snapshot.objects[objectID], object.isVisible else { continue }
 
-                let bounds = object.shape.bounds.applying(object.shape.transform)
+                // Use correct bounds: groupBounds for groups, regular bounds for others
+                let bounds: CGRect
+                if object.shape.isGroupContainer {
+                    bounds = object.shape.groupBounds
+                } else {
+                    bounds = object.shape.bounds.applying(object.shape.transform)
+                }
+
                 objectBounds[objectID] = bounds
 
                 let cells = cellsForBounds(bounds)
