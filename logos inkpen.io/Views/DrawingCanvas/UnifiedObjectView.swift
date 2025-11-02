@@ -60,6 +60,8 @@ struct LayerCanvasView: View {
     let liveScaleTransform: CGAffineTransform
     let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
+    let livePointPositions: [PointID: CGPoint]
+    let liveHandlePositions: [HandleID: CGPoint]
 
     var appState = AppState.shared
 
@@ -69,6 +71,79 @@ struct LayerCanvasView: View {
             guard object.isVisible else { return false }
             return true
         }
+    }
+
+    // Apply live point/handle positions to a shape for rendering preview
+    private func applyLivePositions(to shape: VectorShape) -> VectorShape {
+        // Check if this shape has any live positions
+        let shapeID = shape.id
+        var hasLivePositions = false
+
+        for pointID in livePointPositions.keys {
+            if pointID.shapeID == shapeID {
+                hasLivePositions = true
+                break
+            }
+        }
+        if !hasLivePositions {
+            for handleID in liveHandlePositions.keys {
+                if handleID.shapeID == shapeID {
+                    hasLivePositions = true
+                    break
+                }
+            }
+        }
+
+        guard hasLivePositions else { return shape }
+
+        // Create modified shape with live positions
+        var modifiedShape = shape
+        var modifiedElements = shape.path.elements
+
+        for (pointID, livePosition) in livePointPositions where pointID.shapeID == shapeID {
+            guard pointID.elementIndex < modifiedElements.count else { continue }
+
+            let newPoint = VectorPoint(livePosition.x, livePosition.y)
+
+            switch modifiedElements[pointID.elementIndex] {
+            case .move(_):
+                modifiedElements[pointID.elementIndex] = .move(to: newPoint)
+            case .line(_):
+                modifiedElements[pointID.elementIndex] = .line(to: newPoint)
+            case .curve(_, let control1, let control2):
+                modifiedElements[pointID.elementIndex] = .curve(to: newPoint, control1: control1, control2: control2)
+            case .quadCurve(_, let control):
+                modifiedElements[pointID.elementIndex] = .quadCurve(to: newPoint, control: control)
+            case .close:
+                break
+            }
+        }
+
+        for (handleID, livePosition) in liveHandlePositions where handleID.shapeID == shapeID {
+            guard handleID.elementIndex < modifiedElements.count else { continue }
+
+            let newHandle = VectorPoint(livePosition.x, livePosition.y)
+
+            switch modifiedElements[handleID.elementIndex] {
+            case .curve(let to, let control1, let control2):
+                if handleID.handleType == .control1 {
+                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
+                } else {
+                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
+                }
+            case .quadCurve(let to, _):
+                if handleID.handleType == .control1 {
+                    modifiedElements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
+                }
+            default:
+                break
+            }
+        }
+
+        modifiedShape.path = VectorPath(elements: modifiedElements)
+        modifiedShape.updateBounds()
+
+        return modifiedShape
     }
 
     var body: some View {
@@ -807,6 +882,8 @@ struct IsolatedLayerView: View {
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
+    let livePointPositions: [PointID: CGPoint]
+    let liveHandlePositions: [HandleID: CGPoint]
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -877,7 +954,9 @@ struct IsolatedLayerView: View {
                 dragPreviewDelta: dragPreviewDelta,
                 liveScaleTransform: liveScaleTransform,
                 objectUpdateTrigger: objectUpdateTrigger,
-                dragPreviewTrigger: dragPreviewTrigger
+                dragPreviewTrigger: dragPreviewTrigger,
+                livePointPositions: livePointPositions,
+                liveHandlePositions: liveHandlePositions
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

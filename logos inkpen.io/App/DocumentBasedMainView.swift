@@ -19,6 +19,8 @@ struct DocumentBasedMainView: View {
     @State private var liveDragOffset: CGPoint = .zero
     @State private var liveScaleDimensions: CGSize = .zero
     @State private var liveScaleTransform: CGAffineTransform = .identity
+    @State private var livePointPositions: [PointID: CGPoint] = [:]
+    @State private var liveHandlePositions: [HandleID: CGPoint] = [:]
     @State private var colorDeltaColor: VectorColor? = nil
     @State private var colorDeltaOpacity: Double? = nil
     @State private var colorDeltaBlendMode: BlendMode? = nil
@@ -51,7 +53,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform)
+                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)

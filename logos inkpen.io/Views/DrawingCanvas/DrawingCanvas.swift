@@ -14,6 +14,8 @@ struct DrawingCanvas: View {
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     @Binding var liveScaleTransform: CGAffineTransform
+    @Binding var livePointPositions: [PointID: CGPoint]
+    @Binding var liveHandlePositions: [HandleID: CGPoint]
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
@@ -141,6 +143,7 @@ struct DrawingCanvas: View {
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     @State internal var originalDragShapes: [UUID: VectorShape] = [:]
+
     @State internal var cornerDragStart: CGPoint = .zero
     @State internal var initialCornerRadius: Double = 0.0
     @State internal var isDraggingCorner = false

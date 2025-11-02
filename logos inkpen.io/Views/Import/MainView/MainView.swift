@@ -23,6 +23,8 @@ struct MainView: View {
     @State private var liveDragOffset: CGPoint = .zero
     @State private var liveScaleDimensions: CGSize = .zero
     @State private var liveScaleTransform: CGAffineTransform = .identity
+    @State private var livePointPositions: [PointID: CGPoint] = [:]
+    @State private var liveHandlePositions: [HandleID: CGPoint] = [:]
     @State private var colorDeltaColor: VectorColor?
     @State private var colorDeltaOpacity: Double?
     @State private var colorDeltaBlendMode: BlendMode?
@@ -58,7 +60,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform)
+                        DrawingCanvas(layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)

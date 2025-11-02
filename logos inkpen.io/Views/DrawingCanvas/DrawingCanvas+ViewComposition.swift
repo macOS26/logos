@@ -231,7 +231,9 @@ extension DrawingCanvas {
                 objectUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id, default: 0],
                 liveScaleTransform: liveScaleTransform,
                 layerOpacity: layerOpacity,
-                layerBlendMode: layerBlendMode
+                layerBlendMode: layerBlendMode,
+                livePointPositions: livePointPositions,
+                liveHandlePositions: liveHandlePositions
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
             .allowsHitTesting(isActiveLayer)

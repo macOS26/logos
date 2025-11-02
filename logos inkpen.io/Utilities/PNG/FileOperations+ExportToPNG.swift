@@ -220,7 +220,9 @@ extension FileOperations {
                         objectUpdateTrigger: 0,
                         liveScaleTransform: .identity,
                         layerOpacity: layer.opacity,
-                        layerBlendMode: layer.blendMode
+                        layerBlendMode: layer.blendMode,
+                        livePointPositions: [:],
+                        liveHandlePositions: [:]
                     )
                 }
             }

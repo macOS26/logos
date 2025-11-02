@@ -100,37 +100,24 @@ extension DrawingCanvas {
             }
         }
 
-        var affectedShapeIDs = Set<UUID>()
+        // Update live preview positions (don't modify actual data during drag)
         for pointID in selectedPoints {
             if let originalPosition = originalPointPositions[pointID] {
-                movePointToAbsolutePositionBatched(pointID, to: CGPoint(
+                livePointPositions[pointID] = CGPoint(
                     x: originalPosition.x + snappedDelta.x,
                     y: originalPosition.y + snappedDelta.y
-                ))
-                affectedShapeIDs.insert(pointID.shapeID)
+                )
             }
         }
 
         for handleID in selectedHandles {
             if let originalPosition = originalHandlePositions[handleID] {
-                moveHandleToAbsolutePositionBatched(handleID, to: CGPoint(
+                liveHandlePositions[handleID] = CGPoint(
                     x: originalPosition.x + delta.x,
                     y: originalPosition.y + delta.y
-                ))
-                affectedShapeIDs.insert(handleID.shapeID)
+                )
             }
         }
-
-        // Trigger layer updates for affected shapes
-        // (bounds already updated by movePoint/HandleToAbsolutePositionBatched)
-        // (spatial index rebuild is skipped due to isLivePointDrag flag)
-        var affectedLayers = Set<Int>()
-        for shapeID in affectedShapeIDs {
-            if let object = document.snapshot.objects[shapeID] {
-                affectedLayers.insert(object.layerIndex)
-            }
-        }
-        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -153,6 +140,19 @@ extension DrawingCanvas {
 
             return
         }
+
+        // Apply all live positions to actual data in one batch
+        for (pointID, livePosition) in livePointPositions {
+            movePointToAbsolutePosition(pointID, to: livePosition)
+        }
+
+        for (handleID, livePosition) in liveHandlePositions {
+            moveHandleToAbsolutePosition(handleID, to: livePosition)
+        }
+
+        // Clear live preview state
+        livePointPositions.removeAll()
+        liveHandlePositions.removeAll()
 
         // Disable live drag mode to allow spatial index rebuild
         document.viewState.isLivePointDrag = false
