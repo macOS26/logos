@@ -230,7 +230,6 @@ struct ProfessionalTextCanvas: View {
             var parent: TextViewRepresentable
             var lastUpdateTime: Date = Date()
             var isRestoringSelection: Bool = false
-            var isInitialSelectionAfterCreation: Bool = true
             weak var textView: DisabledContextMenuTextView?
 
             init(_ parent: TextViewRepresentable) {
@@ -249,6 +248,8 @@ struct ProfessionalTextCanvas: View {
                     self.parent.viewModel.text = newText
                     self.parent.viewModel.updateLastTypingTime()
                     self.parent.viewModel.document.updateTextContent(self.parent.viewModel.textObject.id, content: newText)
+                    // Disable -1 workaround after first typing
+                    self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround = false
                 }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -265,16 +266,15 @@ struct ProfessionalTextCanvas: View {
                     let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
                     let newPosition = selectedRange.location
 
-                    // Only apply -1 workaround on initial selection after entering edit mode
-                    if self.isInitialSelectionAfterCreation && newPosition == oldPosition - 1 {
+                    // Only apply -1 workaround when transitioning from Arrow to Font tool via double-click
+                    if self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround && newPosition == oldPosition - 1 {
                         self.isRestoringSelection = true
                         textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
                         self.isRestoringSelection = false
-                        self.isInitialSelectionAfterCreation = false
+                        self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround = false
                         return
                     }
 
-                    self.isInitialSelectionAfterCreation = false
                     self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
                 }
             }

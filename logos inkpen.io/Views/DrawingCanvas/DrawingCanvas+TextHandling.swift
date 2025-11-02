@@ -164,6 +164,10 @@ extension DrawingCanvas {
             // ONLY add +1 when double-clicking from Arrow tool
             if isDoubleClickFromArrow {
                 cursorPosition = min(cursorPosition + 1, textObject.content.count)
+                // Enable cursor -1 workaround for Arrow->Font double-click transition
+                document.viewState.shouldApplyCursorWorkaround = true
+            } else {
+                document.viewState.shouldApplyCursorWorkaround = false
             }
 
             currentCursorPosition = cursorPosition
@@ -240,20 +244,7 @@ extension DrawingCanvas {
             y: tapLocation.y - textObj.position.y
         )
 
-        let nsFont = textObj.typography.nsFont
-
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = textObj.typography.alignment.nsTextAlignment
-        paragraphStyle.lineSpacing = max(0, textObj.typography.lineSpacing)
-        paragraphStyle.minimumLineHeight = textObj.typography.lineHeight
-        paragraphStyle.maximumLineHeight = textObj.typography.lineHeight
-
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: nsFont,
-            .kern: textObj.typography.letterSpacing,
-            .paragraphStyle: paragraphStyle
-        ]
-
+        let attributes = textObj.typography.textAttributes()
         let attributedString = NSAttributedString(string: textObj.content, attributes: attributes)
         let containerWidth = textObj.areaSize?.width ?? textObj.bounds.width
         let textContainer = NSTextContainer(containerSize: CGSize(
