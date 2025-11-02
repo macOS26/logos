@@ -812,14 +812,12 @@ struct IsolatedLayerView: View {
     private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {
         var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] = []
 
-        print("🔍 collectEditingTextShapes: objects.count=\(objects.count)")
+        print("🔍 collectEditingTextShapes: checking snapshot directly")
 
-        // Use document.snapshot.objects to get fresh data (not stale objects parameter)
-        for object in objects {
-            guard object.isVisible else { continue }
-
-            // Re-fetch from snapshot to get latest isEditing state
-            guard let freshObject = document.snapshot.objects[object.id] else { continue }
+        // Fetch FRESH data from document.snapshot.objects, not stale objects parameter
+        for objectID in objects.map({ $0.id }) {
+            guard let freshObject = document.snapshot.objects[objectID],
+                  freshObject.isVisible else { continue }
 
             switch freshObject.objectType {
             case .text(let shape):
@@ -845,7 +843,7 @@ struct IsolatedLayerView: View {
                        vectorText.getState(in: document) == .editing {
                         // Check if child is individually selected or parent group is selected
                         let isChildSelected = selectedObjectIDs.contains(childShape.id)
-                        let isParentSelected = selectedObjectIDs.contains(object.id)
+                        let isParentSelected = selectedObjectIDs.contains(freshObject.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
                         print("✅ Adding grouped editing text: \(childShape.id)")
                         editingTextShapes.append((id: childShape.id, dragDelta: delta))
