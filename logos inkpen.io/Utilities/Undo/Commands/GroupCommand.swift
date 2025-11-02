@@ -54,10 +54,7 @@ class GroupCommand: BaseCommand {
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
 
-        // DON'T remove child objects from snapshot.objects - they need to stay for direct selection
-        // Only remove them from layer.objectIDs so they don't appear at top level
-
-        // Remove from layer.objectIDs only
+        // Remove from layer.objectIDs only (children stay in snapshot.objects for direct selection)
         document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
         print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
@@ -65,11 +62,28 @@ class GroupCommand: BaseCommand {
         // Insert objects at the correct position in the order they appear in addedObjectIDs
         for (offset, objectID) in addedObjectIDs.enumerated() {
             guard let shape = addedShapes[objectID] else { continue }
-            let newObject = VectorObject(
-                shape: shape,
-                layerIndex: layerIndex
-            )
-            document.snapshot.objects[objectID] = newObject
+
+            // For ungroup: child objects already exist in snapshot.objects (potentially updated)
+            // Only update if this is a NEW object (group creation) or needs layer index update
+            if operation == .group || document.snapshot.objects[objectID] == nil {
+                // Creating new group or object doesn't exist - add it
+                let newObject = VectorObject(
+                    shape: shape,
+                    layerIndex: layerIndex
+                )
+                document.snapshot.objects[objectID] = newObject
+            } else {
+                // Ungrouping - object already exists, just ensure correct layerIndex
+                if let existingObject = document.snapshot.objects[objectID] {
+                    let updatedObject = VectorObject(
+                        id: existingObject.id,
+                        layerIndex: layerIndex,
+                        objectType: existingObject.objectType
+                    )
+                    document.snapshot.objects[objectID] = updatedObject
+                }
+            }
+
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
 
             // Log group contents
