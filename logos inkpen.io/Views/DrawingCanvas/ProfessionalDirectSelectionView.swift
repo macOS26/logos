@@ -9,6 +9,8 @@ struct ProfessionalDirectSelectionView: View {
     let geometry: GeometryProxy
     let coincidentPointTolerance: Double
     let dragPreviewDelta: CGPoint
+    let livePointPositions: [PointID: CGPoint]
+    let liveHandlePositions: [HandleID: CGPoint]
 
     // Helper method for curved scaling below 100% zoom
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
@@ -22,9 +24,6 @@ struct ProfessionalDirectSelectionView: View {
         Canvas { context, size in
             let zoom = document.viewState.zoomLevel
             let offset = document.viewState.canvasOffset
-
-            // Hide overlay during drag
-            guard dragPreviewDelta == .zero else { return }
 
             // Apply canvas transform GLOBALLY (EXACT same as LayerCanvasView)
             let baseTransform = CGAffineTransform.identity
@@ -48,8 +47,15 @@ struct ProfessionalDirectSelectionView: View {
                             let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                             let isSelected = selectedPoints.contains(pointID)
 
+                            // Use live position if available, otherwise use original position
+                            let pointPosition = if let livePos = livePointPositions[pointID] {
+                                livePos
+                            } else {
+                                CGPoint(x: point.x, y: point.y)
+                            }
+
                             // Transform position only
-                            let transformed = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+                            let transformed = pointPosition.applying(shape.transform)
 
                             // Scale down below 100% zoom using curve
                             let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
@@ -140,25 +146,37 @@ struct ProfessionalDirectSelectionView: View {
 
         var anchorPoint: CGPoint?
         var handlePoint: CGPoint?
+        var anchorPointID: PointID?
 
         switch element {
         case .curve(let to, let c1, let c2):
             if handleID.handleType == .control2 {
                 anchorPoint = CGPoint(x: to.x, y: to.y)
+                anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
                 handlePoint = CGPoint(x: c2.x, y: c2.y)
             } else if handleID.handleType == .control1, handleID.elementIndex > 0 {
                 let prevElement = shape.path.elements[handleID.elementIndex - 1]
                 anchorPoint = extractPoint(prevElement).map { CGPoint(x: $0.x, y: $0.y) }
+                anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex - 1)
                 handlePoint = CGPoint(x: c1.x, y: c1.y)
             }
         case .quadCurve(let to, let control):
             anchorPoint = CGPoint(x: to.x, y: to.y)
+            anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
             handlePoint = CGPoint(x: control.x, y: control.y)
         default:
             break
         }
 
-        guard let anchor = anchorPoint, let handle = handlePoint else { return }
+        guard var anchor = anchorPoint, var handle = handlePoint else { return }
+
+        // Use live positions if available
+        if let liveAnchor = anchorPointID, let livePos = livePointPositions[liveAnchor] {
+            anchor = livePos
+        }
+        if let livePos = liveHandlePositions[handleID] {
+            handle = livePos
+        }
 
         // Transform positions only, not the handle size
         let transformedAnchor = anchor.applying(shape.transform)

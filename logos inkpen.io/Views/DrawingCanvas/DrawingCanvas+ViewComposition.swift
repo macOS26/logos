@@ -139,7 +139,9 @@ extension DrawingCanvas {
                 selectedObjectIDs: selectedObjectIDs,
                 geometry: geometry,
                 coincidentPointTolerance: coincidentPointTolerance,
-                dragPreviewDelta: currentDragDelta
+                dragPreviewDelta: currentDragDelta,
+                livePointPositions: livePointPositions,
+                liveHandlePositions: liveHandlePositions
             )
         }
 
