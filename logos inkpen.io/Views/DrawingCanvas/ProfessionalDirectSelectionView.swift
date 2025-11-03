@@ -96,17 +96,35 @@ struct ProfessionalDirectSelectionView: View {
     private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
         var outlinePath = Path()
 
-        // Build path in local coordinates
-        for element in shape.path.elements {
+        // Build path in local coordinates, applying live positions
+        for (elementIndex, element) in shape.path.elements.enumerated() {
             switch element {
             case .move(let to):
-                outlinePath.move(to: CGPoint(x: to.x, y: to.y))
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                outlinePath.move(to: point)
             case .line(let to):
-                outlinePath.addLine(to: CGPoint(x: to.x, y: to.y))
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                outlinePath.addLine(to: point)
             case .curve(let to, let c1, let c2):
-                outlinePath.addCurve(to: CGPoint(x: to.x, y: to.y), control1: CGPoint(x: c1.x, y: c1.y), control2: CGPoint(x: c2.x, y: c2.y))
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let handleID1 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
+                let handleID2 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
+
+                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                let control1 = liveHandlePositions[handleID1] ?? CGPoint(x: c1.x, y: c1.y)
+                let control2 = liveHandlePositions[handleID2] ?? CGPoint(x: c2.x, y: c2.y)
+
+                outlinePath.addCurve(to: point, control1: control1, control2: control2)
             case .quadCurve(let to, let control):
-                outlinePath.addQuadCurve(to: CGPoint(x: to.x, y: to.y), control: CGPoint(x: control.x, y: control.y))
+                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
+
+                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                let controlPoint = liveHandlePositions[handleID] ?? CGPoint(x: control.x, y: control.y)
+
+                outlinePath.addQuadCurve(to: point, control: controlPoint)
             case .close:
                 outlinePath.closeSubpath()
             }
