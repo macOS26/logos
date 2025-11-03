@@ -98,22 +98,28 @@ extension DrawingCanvas {
                 selectedObjectIDs.removeAll()
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
-                syncDirectSelectionWithDocument()
+                // Don't call syncDirectSelectionWithDocument() here - it would clear the selection
             }
         }
 
         else if newTool == .directSelection {
+            // Clear any leftover point/handle selections
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            visibleHandles.removeAll()
+
             if !document.viewState.selectedObjectIDs.isEmpty {
                 selectedObjectIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
-            else if oldTool == .convertAnchorPoint || oldTool == .penPlusMinus {
-                selectedPoints.removeAll()
-                selectedHandles.removeAll()
-            }
         }
 
         else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
+            // Clear any leftover point/handle selections
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            visibleHandles.removeAll()
+
             if !document.viewState.selectedObjectIDs.isEmpty {
                 selectedObjectIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
