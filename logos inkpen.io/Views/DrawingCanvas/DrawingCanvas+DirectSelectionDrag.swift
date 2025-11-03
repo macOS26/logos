@@ -592,12 +592,30 @@ extension DrawingCanvas {
         originalHandlePositions[control1HandleID] = control1
         originalHandlePositions[control2HandleID] = control2
 
+        // Check if this is a closed path
+        let isClosed = shape.path.elements.last.map { element in
+            if case .close = element { return true }
+            return false
+        } ?? false
+
+        // Find last curve element index (skip .close if present)
+        var lastCurveIndex = shape.path.elements.count - 1
+        if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
+            lastCurveIndex -= 1
+        }
+
         // Now find and capture the OPPOSITE handles for tangency maintenance
         // A's incoming handle (control2 of element at elementIndex-1)
         let prevIndex = elementIndex - 1
         if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
             let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
             originalHandlePositions[prevControl2HandleID] = prevControl2
+        } else if isClosed && elementIndex == 1 {
+            // First curve segment in closed path - opposite handle is last curve's incoming handle
+            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
+                let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+                originalHandlePositions[lastControl2HandleID] = lastControl2
+            }
         }
 
         // B's outgoing handle (control1 of element at elementIndex+1)
@@ -605,6 +623,12 @@ extension DrawingCanvas {
         if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
             let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
             originalHandlePositions[nextControl1HandleID] = nextControl1
+        } else if isClosed && elementIndex == lastCurveIndex {
+            // Last curve segment in closed path - opposite handle is first curve's outgoing handle
+            if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
+                let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                originalHandlePositions[firstControl1HandleID] = firstControl1
+            }
         }
     }
 
@@ -632,6 +656,18 @@ extension DrawingCanvas {
         let control1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: curveSegment.elementIndex, handleType: .control1)
         let control2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: curveSegment.elementIndex, handleType: .control2)
 
+        // Check if this is a closed path
+        let isClosed = shape.path.elements.last.map { element in
+            if case .close = element { return true }
+            return false
+        } ?? false
+
+        // Find last curve element index
+        var lastCurveIndex = shape.path.elements.count - 1
+        if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
+            lastCurveIndex -= 1
+        }
+
         // Apply weighted offsets to the curve's control handles
         if let originalControl1 = originalHandlePositions[control1HandleID] {
             let newControl1Pos = CGPoint(
@@ -647,7 +683,7 @@ extension DrawingCanvas {
                 if let originalPrevControl2 = originalHandlePositions[prevControl2HandleID] {
                     // Get anchor point A
                     var anchorA: CGPoint?
-                    if prevIndex >= 0, case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
+                    if case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
                         anchorA = CGPoint(x: toA.x, y: toA.y)
                     }
 
@@ -658,6 +694,26 @@ extension DrawingCanvas {
                             originalOppositeHandle: CGPoint(x: originalPrevControl2.x, y: originalPrevControl2.y)
                         )
                         liveHandlePositions[prevControl2HandleID] = linkedPos
+                    }
+                }
+            } else if isClosed && curveSegment.elementIndex == 1 {
+                // First curve in closed path - update last curve's incoming handle
+                let lastControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+                if let originalLastControl2 = originalHandlePositions[lastControl2HandleID] {
+                    // Get anchor point (first/last coincident point)
+                    var anchorA: CGPoint?
+                    if case .curve(let toA, _, _) = shape.path.elements[lastCurveIndex] {
+                        anchorA = CGPoint(x: toA.x, y: toA.y)
+                    }
+
+                    if let anchor = anchorA {
+                        let linkedPos = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newControl1Pos,
+                            originalOppositeHandle: CGPoint(x: originalLastControl2.x, y: originalLastControl2.y)
+                        )
+                        liveHandlePositions[lastControl2HandleID] = linkedPos
+                        visibleHandles.insert(lastControl2HandleID)
                     }
                 }
             }
@@ -672,7 +728,7 @@ extension DrawingCanvas {
 
             // Calculate tangent for B's outgoing handle (maintain smooth curve at point B)
             let nextIndex = curveSegment.elementIndex + 1
-            if nextIndex < shape.path.elements.count {
+            if nextIndex < shape.path.elements.count, case .curve = shape.path.elements[nextIndex] {
                 let nextControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
                 if let originalNextControl1 = originalHandlePositions[nextControl1HandleID] {
                     // Get anchor point B
@@ -690,6 +746,26 @@ extension DrawingCanvas {
                         liveHandlePositions[nextControl1HandleID] = linkedPos
                     }
                 }
+            } else if isClosed && curveSegment.elementIndex == lastCurveIndex {
+                // Last curve in closed path - update first curve's outgoing handle
+                let firstControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                if let originalFirstControl1 = originalHandlePositions[firstControl1HandleID] {
+                    // Get anchor point B (first/last coincident point)
+                    var anchorB: CGPoint?
+                    if case .curve(let toB, _, _) = shape.path.elements[curveSegment.elementIndex] {
+                        anchorB = CGPoint(x: toB.x, y: toB.y)
+                    }
+
+                    if let anchor = anchorB {
+                        let linkedPos = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newControl2Pos,
+                            originalOppositeHandle: CGPoint(x: originalFirstControl1.x, y: originalFirstControl1.y)
+                        )
+                        liveHandlePositions[firstControl1HandleID] = linkedPos
+                        visibleHandles.insert(firstControl1HandleID)
+                    }
+                }
             }
         }
 
@@ -702,12 +778,20 @@ extension DrawingCanvas {
         if prevIndex >= 0 {
             let prevControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
             visibleHandles.insert(prevControl2HandleID)
+        } else if isClosed && curveSegment.elementIndex == 1 {
+            // First curve - show last curve's incoming handle
+            let lastControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+            visibleHandles.insert(lastControl2HandleID)
         }
 
         let nextIndex = curveSegment.elementIndex + 1
-        if nextIndex < shape.path.elements.count {
+        if nextIndex < shape.path.elements.count, case .curve = shape.path.elements[nextIndex] {
             let nextControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
             visibleHandles.insert(nextControl1HandleID)
+        } else if isClosed && curveSegment.elementIndex == lastCurveIndex {
+            // Last curve - show first curve's outgoing handle
+            let firstControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+            visibleHandles.insert(firstControl1HandleID)
         }
     }
 
