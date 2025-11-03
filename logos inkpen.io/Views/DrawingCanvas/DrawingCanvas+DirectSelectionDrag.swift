@@ -189,31 +189,35 @@ extension DrawingCanvas {
               case .shape(let shape) = object.objectType,
               handleID.elementIndex < shape.path.elements.count else { return }
 
-        let element = shape.path.elements[handleID.elementIndex]
+        let elements = shape.path.elements
 
-        // Get anchor point
+        // Check for first/last coincident points (closed paths)
+        if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
+            return
+        }
+
+        // Regular linked handle logic
+        let element = elements[handleID.elementIndex]
         var anchorPoint: CGPoint?
         var anchorPointID: PointID?
         var oppositeHandleID: HandleID?
         var oppositeOriginalPosition: CGPoint?
 
         if handleID.handleType == .control2 {
-            // Dragging control2 (incoming handle) -> update control1 of next element (outgoing)
             guard case .curve(let to, _, _) = element else { return }
             anchorPoint = CGPoint(x: to.x, y: to.y)
             anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
 
             let nextIndex = handleID.elementIndex + 1
-            if nextIndex < shape.path.elements.count,
-               case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
+            if nextIndex < elements.count,
+               case .curve(_, let nextControl1, _) = elements[nextIndex] {
                 oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
                 oppositeOriginalPosition = CGPoint(x: nextControl1.x, y: nextControl1.y)
             }
         } else if handleID.handleType == .control1 {
-            // Dragging control1 (outgoing handle) -> update control2 of previous element (incoming)
             let prevIndex = handleID.elementIndex - 1
             if prevIndex >= 0,
-               case .curve(let prevTo, _, let prevControl2) = shape.path.elements[prevIndex] {
+               case .curve(let prevTo, _, let prevControl2) = elements[prevIndex] {
                 anchorPoint = CGPoint(x: prevTo.x, y: prevTo.y)
                 anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex)
                 oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
@@ -225,12 +229,10 @@ extension DrawingCanvas {
               let oppositeID = oppositeHandleID,
               let oppositeOriginal = oppositeOriginalPosition else { return }
 
-        // Use live anchor position if available
         if let liveAnchor = anchorPointID, let livePos = livePointPositions[liveAnchor] {
             anchor = livePos
         }
 
-        // Calculate linked handle position
         let linkedPosition = calculateLinkedHandle(
             anchorPoint: anchor,
             draggedHandle: newPosition,
@@ -238,6 +240,74 @@ extension DrawingCanvas {
         )
 
         liveHandlePositions[oppositeID] = linkedPosition
+    }
+
+    private func checkFirstLastCoincidentForLive(elements: [PathElement], handleID: HandleID, newPosition: CGPoint) -> Bool {
+        guard elements.count >= 2 else { return false }
+
+        // Get first and last points
+        let firstPoint: CGPoint?
+        if case .move(let firstTo) = elements[0] {
+            firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
+        } else {
+            firstPoint = nil
+        }
+
+        var lastElementIndex = elements.count - 1
+        if case .close = elements[lastElementIndex] {
+            lastElementIndex -= 1
+        }
+
+        let lastPoint: CGPoint?
+        if lastElementIndex >= 0 {
+            switch elements[lastElementIndex] {
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
+                lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
+            default:
+                lastPoint = nil
+            }
+        } else {
+            lastPoint = nil
+        }
+
+        guard let first = firstPoint, let last = lastPoint,
+              abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001 else {
+            return false
+        }
+
+        let anchorPoint = first
+
+        // Dragging first point's outgoing handle -> update last point's incoming handle
+        if handleID.handleType == .control1 && handleID.elementIndex == 1 {
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex] {
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: lastControl2.x, y: lastControl2.y)
+                )
+
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)
+                liveHandlePositions[oppositeHandleID] = oppositeHandle
+                return true
+            }
+        }
+
+        // Dragging last point's incoming handle -> update first point's outgoing handle
+        if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1] {
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: secondControl1.x, y: secondControl1.y)
+                )
+
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                liveHandlePositions[oppositeHandleID] = oppositeHandle
+                return true
+            }
+        }
+
+        return false
     }
 
     private func moveHandleToAbsolutePositionWithoutLinked(_ handleID: HandleID, to newPosition: CGPoint) {
