@@ -694,6 +694,14 @@ extension DrawingCanvas {
                             originalOppositeHandle: CGPoint(x: originalPrevControl2.x, y: originalPrevControl2.y)
                         )
                         liveHandlePositions[prevControl2HandleID] = linkedPos
+
+                        // Check if this handle touches coincident point
+                        if prevIndex == 1 && isClosed {
+                            _ = checkFirstLastCoincidentForLive(elements: shape.path.elements, handleID: prevControl2HandleID, newPosition: linkedPos)
+                            // Make the opposite coincident handle visible
+                            let lastControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+                            visibleHandles.insert(lastControl2HandleID)
+                        }
                     }
                 }
             } else if isClosed && curveSegment.elementIndex == 1 {
@@ -744,6 +752,14 @@ extension DrawingCanvas {
                             originalOppositeHandle: CGPoint(x: originalNextControl1.x, y: originalNextControl1.y)
                         )
                         liveHandlePositions[nextControl1HandleID] = linkedPos
+
+                        // Check if this handle touches coincident point
+                        if nextIndex == lastCurveIndex && isClosed {
+                            _ = checkFirstLastCoincidentForLive(elements: shape.path.elements, handleID: nextControl1HandleID, newPosition: linkedPos)
+                            // Make the opposite coincident handle visible
+                            let firstControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                            visibleHandles.insert(firstControl1HandleID)
+                        }
                     }
                 }
             } else if isClosed && curveSegment.elementIndex == lastCurveIndex {
