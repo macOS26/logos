@@ -273,6 +273,103 @@ extension DrawingCanvas {
         liveHandlePositions[oppositeID] = linkedPosition
     }
 
+    private func handleCoincidentForLiveHandle(handleID: HandleID, newPosition: CGPoint, shape: VectorShape) {
+        let elements = shape.path.elements
+        guard elements.count >= 2 else { return }
+
+        // Get first and last points
+        let firstPoint: CGPoint?
+        if case .move(let firstTo) = elements[0] {
+            firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
+        } else {
+            firstPoint = nil
+        }
+
+        var lastElementIndex = elements.count - 1
+        if case .close = elements[lastElementIndex] {
+            lastElementIndex -= 1
+        }
+
+        let lastPoint: CGPoint?
+        if lastElementIndex >= 0 {
+            switch elements[lastElementIndex] {
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
+                lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
+            default:
+                lastPoint = nil
+            }
+        } else {
+            lastPoint = nil
+        }
+
+        guard let first = firstPoint, let last = lastPoint,
+              abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001 else {
+            return
+        }
+
+        let anchorPoint = first
+
+        // If dragging first curve's outgoing handle (control1) -> update last curve's incoming handle (control2)
+        if handleID.handleType == .control2 && handleID.elementIndex == 0 {
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
+               let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
+                let linkedPos = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: originalLastControl2.x, y: originalLastControl2.y)
+                )
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)
+                liveHandlePositions[oppositeHandleID] = linkedPos
+                visibleHandles.insert(oppositeHandleID)
+            }
+        }
+
+        // If dragging last curve's incoming handle (control2) -> update first curve's outgoing handle (control1)
+        if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
+               let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
+                let linkedPos = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: originalFirstControl1.x, y: originalFirstControl1.y)
+                )
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                liveHandlePositions[oppositeHandleID] = linkedPos
+                visibleHandles.insert(oppositeHandleID)
+            }
+        }
+
+        // If dragging first curve's outgoing handle (control1 at element 1) -> update last curve's incoming handle
+        if handleID.handleType == .control1 && handleID.elementIndex == 1 {
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
+               let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
+                let linkedPos = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: originalLastControl2.x, y: originalLastControl2.y)
+                )
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)
+                liveHandlePositions[oppositeHandleID] = linkedPos
+                visibleHandles.insert(oppositeHandleID)
+            }
+        }
+
+        // If dragging next curve's outgoing handle (control1) -> update first curve's outgoing handle
+        if handleID.handleType == .control1 && handleID.elementIndex == lastElementIndex {
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
+               let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
+                let linkedPos = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newPosition,
+                    originalOppositeHandle: CGPoint(x: originalFirstControl1.x, y: originalFirstControl1.y)
+                )
+                let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                liveHandlePositions[oppositeHandleID] = linkedPos
+                visibleHandles.insert(oppositeHandleID)
+            }
+        }
+    }
+
     private func checkFirstLastCoincidentForLive(elements: [PathElement], handleID: HandleID, newPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
 
@@ -694,14 +791,10 @@ extension DrawingCanvas {
                             originalOppositeHandle: CGPoint(x: originalPrevControl2.x, y: originalPrevControl2.y)
                         )
                         liveHandlePositions[prevControl2HandleID] = linkedPos
+                        visibleHandles.insert(prevControl2HandleID)
 
-                        // Check if this handle touches coincident point
-                        if prevIndex == 1 && isClosed {
-                            _ = checkFirstLastCoincidentForLive(elements: shape.path.elements, handleID: prevControl2HandleID, newPosition: linkedPos)
-                            // Make the opposite coincident handle visible
-                            let lastControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
-                            visibleHandles.insert(lastControl2HandleID)
-                        }
+                        // Check if THIS linked handle also needs coincident point propagation
+                        handleCoincidentForLiveHandle(handleID: prevControl2HandleID, newPosition: linkedPos, shape: shape)
                     }
                 }
             } else if isClosed && curveSegment.elementIndex == 1 {
@@ -752,14 +845,10 @@ extension DrawingCanvas {
                             originalOppositeHandle: CGPoint(x: originalNextControl1.x, y: originalNextControl1.y)
                         )
                         liveHandlePositions[nextControl1HandleID] = linkedPos
+                        visibleHandles.insert(nextControl1HandleID)
 
-                        // Check if this handle touches coincident point
-                        if nextIndex == lastCurveIndex && isClosed {
-                            _ = checkFirstLastCoincidentForLive(elements: shape.path.elements, handleID: nextControl1HandleID, newPosition: linkedPos)
-                            // Make the opposite coincident handle visible
-                            let firstControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
-                            visibleHandles.insert(firstControl1HandleID)
-                        }
+                        // Check if THIS linked handle also needs coincident point propagation
+                        handleCoincidentForLiveHandle(handleID: nextControl1HandleID, newPosition: linkedPos, shape: shape)
                     }
                 }
             } else if isClosed && curveSegment.elementIndex == lastCurveIndex {
