@@ -2,12 +2,37 @@ import SwiftUI
 import Combine
 extension DrawingCanvas {
     internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        if selectedPoints.isEmpty && selectedHandles.isEmpty && !selectedObjectIDs.isEmpty {
+        // Check for curve segment dragging first (before shape, points, or handles)
+        if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle && !isDraggingCurveSegment {
+            let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
+            let screenTolerance: Double = 10.0
+            let tolerance: Double = screenTolerance / document.viewState.zoomLevel
+
+            // Try to find a curve segment at the click location (only if shapes are selected)
+            if !selectedObjectIDs.isEmpty {
+                if let curveSegment = findCurveSegmentInSelectedShapes(at: canvasLocation, tolerance: tolerance) {
+                    isDraggingCurveSegment = true
+                    draggedCurveSegment = curveSegment
+                    dragStartLocation = canvasLocation
+
+                    // Calculate parametric position t on the curve
+                    if let shape = document.snapshot.objects[curveSegment.shapeID]?.shape {
+                        curveSegmentDragT = calculateTOnCurveSegment(shape: shape, elementIndex: curveSegment.elementIndex, point: canvasLocation)
+                    }
+
+                    // Capture original handle positions
+                    captureOriginalHandlesForCurveSegment(shapeID: curveSegment.shapeID, elementIndex: curveSegment.elementIndex)
+                    return
+                }
+            }
+        }
+
+        if selectedPoints.isEmpty && selectedHandles.isEmpty && !selectedObjectIDs.isEmpty && !isDraggingCurveSegment {
             handleDirectSelectionShapeDrag(value: value, geometry: geometry)
             return
         }
 
-        if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle {
+        if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle && !isDraggingCurveSegment {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let screenTolerance: Double = 15.0
             let tolerance: Double = screenTolerance / document.viewState.zoomLevel
@@ -32,6 +57,12 @@ extension DrawingCanvas {
                 return
             }
 
+        }
+
+        // Handle curve segment dragging
+        if isDraggingCurveSegment {
+            handleCurveSegmentDrag(value: value, geometry: geometry)
+            return
         }
 
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
@@ -383,6 +414,13 @@ extension DrawingCanvas {
     }
 
     internal func finishDirectSelectionDrag() {
+        if isDraggingCurveSegment {
+            finishCurveSegmentDrag()
+            isDraggingCurveSegment = false
+            draggedCurveSegment = nil
+            return
+        }
+
         if isDraggingDirectSelectedShapes {
             finishSelectionDrag()
             isDraggingDirectSelectedShapes = false
@@ -452,4 +490,212 @@ extension DrawingCanvas {
             originalDragShapes.removeAll()
         }
     }
+
+    // MARK: - Curve Segment Dragging
+
+    private func findCurveSegmentInSelectedShapes(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
+        for objectID in selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID],
+                  case .shape(let shape) = object.objectType,
+                  shape.isVisible && !shape.isLocked else { continue }
+
+            var previousPoint: VectorPoint?
+
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                switch element {
+                case .move(let to):
+                    previousPoint = to
+                case .line(let to):
+                    previousPoint = to
+                case .curve(let to, let control1, let control2):
+                    if let prev = previousPoint {
+                        let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
+                        let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
+                        let c2 = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
+                        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+
+                        if isPointNearBezierCurve(point: location, p0: start, p1: c1, p2: c2, p3: end, tolerance: tolerance) {
+                            return (shape.id, elementIndex)
+                        }
+                    }
+                    previousPoint = to
+                case .quadCurve(let to, _):
+                    previousPoint = to
+                default:
+                    break
+                }
+            }
+        }
+        return nil
+    }
+
+    private func calculateTOnCurveSegment(shape: VectorShape, elementIndex: Int, point: CGPoint) -> Double {
+        guard elementIndex < shape.path.elements.count,
+              case .curve(let to, let control1, let control2) = shape.path.elements[elementIndex] else {
+            return 0.5
+        }
+
+        var previousPoint: VectorPoint?
+        for (idx, element) in shape.path.elements.enumerated() {
+            if idx == elementIndex {
+                break
+            }
+            switch element {
+            case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                previousPoint = to
+            default:
+                break
+            }
+        }
+
+        guard let prev = previousPoint else { return 0.5 }
+
+        let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
+        let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
+        let c2 = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
+        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+
+        var bestT: Double = 0.5
+        var bestDistance: Double = Double.infinity
+
+        for i in 0...100 {
+            let t = Double(i) / 100.0
+            let curvePoint = evaluateCubicBezier(p0: start, p1: c1, p2: c2, p3: end, t: t)
+            let dist = distance(point, curvePoint)
+
+            if dist < bestDistance {
+                bestDistance = dist
+                bestT = t
+            }
+        }
+
+        return bestT
+    }
+
+    private func captureOriginalHandlesForCurveSegment(shapeID: UUID, elementIndex: Int) {
+        originalHandlePositions.removeAll()
+
+        guard let object = document.snapshot.objects[shapeID],
+              case .shape(let shape) = object.objectType,
+              elementIndex < shape.path.elements.count else { return }
+
+        // Capture control2 of this element (incoming handle)
+        if case .curve(_, _, let control2) = shape.path.elements[elementIndex] {
+            let handleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
+            originalHandlePositions[handleID] = control2
+        }
+
+        // Capture control1 of next element (outgoing handle)
+        let nextIndex = elementIndex + 1
+        if nextIndex < shape.path.elements.count,
+           case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
+            let handleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+            originalHandlePositions[handleID] = control1
+        }
+    }
+
+    private func handleCurveSegmentDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+        guard let curveSegment = draggedCurveSegment else { return }
+
+        let currentLocation = screenToCanvas(value.location, geometry: geometry)
+        let offset = CGPoint(
+            x: currentLocation.x - dragStartLocation.x,
+            y: currentLocation.y - dragStartLocation.y
+        )
+
+        guard let object = document.snapshot.objects[curveSegment.shapeID],
+              case .shape(let shape) = object.objectType,
+              curveSegment.elementIndex < shape.path.elements.count else { return }
+
+        // Adjust handles based on parametric position t and drag offset
+        let t = curveSegmentDragT
+
+        // For points near the start (t close to 0), affect control1 more
+        // For points near the end (t close to 1), affect control2 more
+        // For points in the middle, affect both equally
+
+        let control1Weight = 1.0 - t  // More influence at t=0
+        let control2Weight = t        // More influence at t=1
+
+        // Get handle IDs
+        let control2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: curveSegment.elementIndex, handleType: .control2)
+        let nextIndex = curveSegment.elementIndex + 1
+        var control1HandleID: HandleID? = nil
+        if nextIndex < shape.path.elements.count {
+            control1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+        }
+
+        // Apply weighted offsets to handles
+        if let originalControl2 = originalHandlePositions[control2HandleID] {
+            liveHandlePositions[control2HandleID] = CGPoint(
+                x: originalControl2.x + offset.x * control2Weight,
+                y: originalControl2.y + offset.y * control2Weight
+            )
+        }
+
+        if let control1ID = control1HandleID,
+           let originalControl1 = originalHandlePositions[control1ID] {
+            liveHandlePositions[control1ID] = CGPoint(
+                x: originalControl1.x + offset.x * control1Weight,
+                y: originalControl1.y + offset.y * control1Weight
+            )
+        }
+    }
+
+    private func finishCurveSegmentDrag() {
+        guard let curveSegment = draggedCurveSegment else { return }
+
+        // Save original shape
+        guard let object = document.snapshot.objects[curveSegment.shapeID],
+              case .shape(let originalShape) = object.objectType else {
+            liveHandlePositions.removeAll()
+            originalHandlePositions.removeAll()
+            return
+        }
+
+        // Apply all live handle positions
+        for (handleID, livePosition) in liveHandlePositions {
+            moveHandleToAbsolutePositionWithoutLinked(handleID, to: livePosition)
+        }
+
+        // Clear live state
+        liveHandlePositions.removeAll()
+        originalHandlePositions.removeAll()
+
+        // Create undo command
+        if let updatedShape = document.findShape(by: curveSegment.shapeID) {
+            let command = ShapeModificationCommand(
+                objectIDs: [curveSegment.shapeID],
+                oldShapes: [curveSegment.shapeID: originalShape],
+                newShapes: [curveSegment.shapeID: updatedShape]
+            )
+            document.commandManager.execute(command)
+        }
+    }
+
+    // Utility functions
+    private func isPointNearBezierCurve(point: CGPoint, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tolerance: Double) -> Bool {
+        for i in 0...20 {
+            let t = Double(i) / 20.0
+            let curvePoint = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
+            if distance(point, curvePoint) <= tolerance {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, t: Double) -> CGPoint {
+        let mt = 1.0 - t
+        let mt2 = mt * mt
+        let mt3 = mt2 * mt
+        let t2 = t * t
+        let t3 = t2 * t
+
+        return CGPoint(
+            x: mt3 * p0.x + 3.0 * mt2 * t * p1.x + 3.0 * mt * t2 * p2.x + t3 * p3.x,
+            y: mt3 * p0.y + 3.0 * mt2 * t * p1.y + 3.0 * mt * t2 * p2.y + t3 * p3.y
+        )
+    }
+
 }

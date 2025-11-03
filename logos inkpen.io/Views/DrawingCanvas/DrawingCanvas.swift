@@ -109,6 +109,9 @@ struct DrawingCanvas: View {
     @State internal var isCornerRadiusEditMode = false
     @State internal var isDraggingPoint = false
     @State internal var isDraggingHandle = false
+    @State internal var isDraggingCurveSegment = false
+    @State internal var draggedCurveSegment: (shapeID: UUID, elementIndex: Int)? = nil
+    @State internal var curveSegmentDragT: Double = 0.5  // Parametric position on curve
     @State internal var dragStartLocation: CGPoint = .zero
     @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
     @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
