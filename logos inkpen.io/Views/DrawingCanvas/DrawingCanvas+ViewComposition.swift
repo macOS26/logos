@@ -141,7 +141,8 @@ extension DrawingCanvas {
                 coincidentPointTolerance: coincidentPointTolerance,
                 dragPreviewDelta: currentDragDelta,
                 livePointPositions: livePointPositions,
-                liveHandlePositions: liveHandlePositions
+                liveHandlePositions: liveHandlePositions,
+                draggedCurveSegment: draggedCurveSegment
             )
         }
 

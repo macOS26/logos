@@ -11,6 +11,7 @@ struct ProfessionalDirectSelectionView: View {
     let dragPreviewDelta: CGPoint
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
+    let draggedCurveSegment: (shapeID: UUID, elementIndex: Int)?
 
     // Helper method for curved scaling below 100% zoom
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
@@ -32,46 +33,50 @@ struct ProfessionalDirectSelectionView: View {
 
             context.transform = baseTransform
 
-            // Draw outlines and ALL anchor points for selected shapes
+            // Draw outlines for selected shapes
             for objectID in selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
 
                 switch object.objectType {
                 case .shape(let shape):
                     drawOutline(shape, context: &context, zoom: zoom)
-
-                    // Draw ALL anchor points for this shape
-                    // Transform position but NOT the point size
-                    for (elementIndex, element) in shape.path.elements.enumerated() {
-                        if let point = extractPoint(element) {
-                            let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-                            let isSelected = selectedPoints.contains(pointID)
-
-                            // Use live position if available, otherwise use original position
-                            let pointPosition = if let livePos = livePointPositions[pointID] {
-                                livePos
-                            } else {
-                                CGPoint(x: point.x, y: point.y)
-                            }
-
-                            // Transform position and apply drag preview offset
-                            var shapeTransform = shape.transform
-                            shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-                            let transformed = pointPosition.applying(shapeTransform)
-
-                            // Scale down below 100% zoom using curve
-                            let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
-                            let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
-                            context.fill(Path(rect), with: .color(isSelected ? .blue : .white))
-                            context.stroke(Path(rect), with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
-                        }
-                    }
-
                 case .text(let shape):
                     drawTextOutline(shape, context: &context, zoom: zoom)
-
                 default:
                     break
+                }
+            }
+
+            // Draw ALL anchor points AFTER outlines (so blue line shows through)
+            for objectID in selectedObjectIDs {
+                guard let object = document.snapshot.objects[objectID],
+                      case .shape(let shape) = object.objectType else { continue }
+
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    if let point = extractPoint(element) {
+                        let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+                        let isSelected = selectedPoints.contains(pointID)
+
+                        // Use live position if available, otherwise use original position
+                        let pointPosition = if let livePos = livePointPositions[pointID] {
+                            livePos
+                        } else {
+                            CGPoint(x: point.x, y: point.y)
+                        }
+
+                        // Transform position and apply drag preview offset
+                        var shapeTransform = shape.transform
+                        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                        let transformed = pointPosition.applying(shapeTransform)
+
+                        // Scale down below 100% zoom using curve
+                        let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
+                        let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
+
+                        // Selected points get orange fill, unselected get white fill
+                        context.fill(Path(rect), with: .color(isSelected ? .orange : .white))
+                        context.stroke(Path(rect), with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
+                    }
                 }
             }
 
@@ -96,19 +101,41 @@ struct ProfessionalDirectSelectionView: View {
     }
 
     private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
-        var outlinePath = Path()
+        // Check if we're dragging a curve segment on this shape
+        let isDraggingSegmentOnThisShape = draggedCurveSegment?.shapeID == shape.id
 
         // Build path in local coordinates, applying live positions
+        // If dragging a segment, draw it separately in orange
+        var regularPath = Path()
+        var draggedSegmentPath: Path?
+        var lastPoint: CGPoint?
+
         for (elementIndex, element) in shape.path.elements.enumerated() {
+            let isThisDraggedSegment = isDraggingSegmentOnThisShape && draggedCurveSegment?.elementIndex == elementIndex
+
             switch element {
             case .move(let to):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
-                outlinePath.move(to: point)
+                regularPath.move(to: point)
+                lastPoint = point
+
             case .line(let to):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
-                outlinePath.addLine(to: point)
+
+                if isThisDraggedSegment {
+                    var segPath = Path()
+                    if let start = lastPoint {
+                        segPath.move(to: start)
+                    }
+                    segPath.addLine(to: point)
+                    draggedSegmentPath = segPath
+                } else {
+                    regularPath.addLine(to: point)
+                }
+                lastPoint = point
+
             case .curve(let to, let c1, let c2):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let handleID1 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
@@ -118,7 +145,18 @@ struct ProfessionalDirectSelectionView: View {
                 let control1 = liveHandlePositions[handleID1] ?? CGPoint(x: c1.x, y: c1.y)
                 let control2 = liveHandlePositions[handleID2] ?? CGPoint(x: c2.x, y: c2.y)
 
-                outlinePath.addCurve(to: point, control1: control1, control2: control2)
+                if isThisDraggedSegment {
+                    var segPath = Path()
+                    if let start = lastPoint {
+                        segPath.move(to: start)
+                    }
+                    segPath.addCurve(to: point, control1: control1, control2: control2)
+                    draggedSegmentPath = segPath
+                } else {
+                    regularPath.addCurve(to: point, control1: control1, control2: control2)
+                }
+                lastPoint = point
+
             case .quadCurve(let to, let control):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
@@ -126,9 +164,20 @@ struct ProfessionalDirectSelectionView: View {
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
                 let controlPoint = liveHandlePositions[handleID] ?? CGPoint(x: control.x, y: control.y)
 
-                outlinePath.addQuadCurve(to: point, control: controlPoint)
+                if isThisDraggedSegment {
+                    var segPath = Path()
+                    if let start = lastPoint {
+                        segPath.move(to: start)
+                    }
+                    segPath.addQuadCurve(to: point, control: controlPoint)
+                    draggedSegmentPath = segPath
+                } else {
+                    regularPath.addQuadCurve(to: point, control: controlPoint)
+                }
+                lastPoint = point
+
             case .close:
-                outlinePath.closeSubpath()
+                regularPath.closeSubpath()
             }
         }
 
@@ -137,7 +186,14 @@ struct ProfessionalDirectSelectionView: View {
         var shapeTransform = shape.transform
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
         ctx.concatenate(shapeTransform)
-        ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
+
+        // Draw regular path in blue
+        ctx.stroke(regularPath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
+
+        // Draw dragged segment in orange
+        if let draggedPath = draggedSegmentPath {
+            ctx.stroke(draggedPath, with: .color(.orange), lineWidth: scaleForZoom(2.0, zoom: zoom) / zoom)
+        }
     }
 
     private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
