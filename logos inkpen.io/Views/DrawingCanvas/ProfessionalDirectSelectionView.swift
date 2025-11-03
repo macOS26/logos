@@ -131,6 +131,8 @@ struct ProfessionalDirectSelectionView: View {
                     }
                     segPath.addLine(to: point)
                     draggedSegmentPath = segPath
+                    // Move regularPath to the end point to maintain continuity
+                    regularPath.move(to: point)
                 } else {
                     regularPath.addLine(to: point)
                 }
@@ -152,6 +154,8 @@ struct ProfessionalDirectSelectionView: View {
                     }
                     segPath.addCurve(to: point, control1: control1, control2: control2)
                     draggedSegmentPath = segPath
+                    // Move regularPath to the end point to maintain continuity
+                    regularPath.move(to: point)
                 } else {
                     regularPath.addCurve(to: point, control1: control1, control2: control2)
                 }
@@ -171,6 +175,8 @@ struct ProfessionalDirectSelectionView: View {
                     }
                     segPath.addQuadCurve(to: point, control: controlPoint)
                     draggedSegmentPath = segPath
+                    // Move regularPath to the end point to maintain continuity
+                    regularPath.move(to: point)
                 } else {
                     regularPath.addQuadCurve(to: point, control: controlPoint)
                 }
