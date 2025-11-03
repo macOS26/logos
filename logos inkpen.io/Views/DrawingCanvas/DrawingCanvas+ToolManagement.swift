@@ -95,10 +95,10 @@ extension DrawingCanvas {
         if newTool == .selection {
             if !selectedObjectIDs.isEmpty {
                 document.viewState.selectedObjectIDs = selectedObjectIDs
-                selectedObjectIDs.removeAll()
+                // Don't clear selectedObjectIDs - preserve for when switching back to direct selection
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
-                syncDirectSelectionWithDocument()
+                // Don't call syncDirectSelectionWithDocument - it would overwrite viewState.selectedObjectIDs with empty
             }
         }
 
