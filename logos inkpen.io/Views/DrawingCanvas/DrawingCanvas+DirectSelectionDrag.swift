@@ -240,6 +240,38 @@ extension DrawingCanvas {
         liveHandlePositions[oppositeID] = linkedPosition
     }
 
+    private func moveHandleToAbsolutePositionWithoutLinked(_ handleID: HandleID, to newPosition: CGPoint) {
+        guard let object = document.snapshot.objects[handleID.shapeID],
+              case .shape(let shape) = object.objectType else { return }
+
+        guard handleID.elementIndex < shape.path.elements.count else { return }
+
+        let newHandle = VectorPoint(newPosition.x, newPosition.y)
+        var elements = shape.path.elements
+
+        switch elements[handleID.elementIndex] {
+        case .curve(let to, let control1, let control2):
+            if handleID.handleType == .control1 {
+                elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
+            } else {
+                elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
+            }
+        case .quadCurve(let to, _):
+            if handleID.handleType == .control1 {
+                elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
+            }
+        default:
+            break
+        }
+
+        // DON'T call updateLinkedHandle - we already calculated linked positions during drag
+
+        document.updateShapeByID(handleID.shapeID, silent: true) { shape in
+            shape.path.elements = elements
+            shape.updateBounds()
+        }
+    }
+
     private func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
         let draggedVector = CGPoint(
             x: draggedHandle.x - anchorPoint.x,
@@ -289,13 +321,19 @@ extension DrawingCanvas {
         }
 
         // Apply all live positions to actual data in one batch
+        // We already calculated linked handles during drag, so skip recalculating them
+        let originalSelectedHandles = selectedHandles  // Save current selection
+
         for (pointID, livePosition) in livePointPositions {
             movePointToAbsolutePosition(pointID, to: livePosition)
         }
 
         for (handleID, livePosition) in liveHandlePositions {
-            moveHandleToAbsolutePosition(handleID, to: livePosition)
+            moveHandleToAbsolutePositionWithoutLinked(handleID, to: livePosition)
         }
+
+        // Restore original selection (don't select auto-calculated linked handles)
+        selectedHandles = originalSelectedHandles
 
         // Clear live preview state
         livePointPositions.removeAll()
