@@ -775,16 +775,22 @@ extension DrawingCanvas {
 
             // Calculate tangent for A's incoming handle (maintain smooth curve at point A)
             let prevIndex = curveSegment.elementIndex - 1
-            if prevIndex >= 0 {
-                let prevControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
-                if let originalPrevControl2 = originalHandlePositions[prevControl2HandleID] {
-                    // Get anchor point A
-                    var anchorA: CGPoint?
-                    if case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
-                        anchorA = CGPoint(x: toA.x, y: toA.y)
-                    }
 
-                    if let anchor = anchorA {
+            // Get anchor point A
+            var anchorA: CGPoint?
+            if prevIndex >= 0 {
+                if case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
+                    anchorA = CGPoint(x: toA.x, y: toA.y)
+                } else if case .move(let toA) = shape.path.elements[prevIndex] {
+                    anchorA = CGPoint(x: toA.x, y: toA.y)
+                }
+            }
+
+            if prevIndex >= 0, let anchor = anchorA {
+                // Try to update previous element's control2 if it's a curve
+                if case .curve = shape.path.elements[prevIndex] {
+                    let prevControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+                    if let originalPrevControl2 = originalHandlePositions[prevControl2HandleID] {
                         let linkedPos = calculateLinkedHandle(
                             anchorPoint: anchor,
                             draggedHandle: newControl1Pos,
@@ -792,9 +798,20 @@ extension DrawingCanvas {
                         )
                         liveHandlePositions[prevControl2HandleID] = linkedPos
                         visibleHandles.insert(prevControl2HandleID)
-
-                        // Check if THIS linked handle also needs coincident point propagation
-                        handleCoincidentForLiveHandle(handleID: prevControl2HandleID, newPosition: linkedPos, shape: shape)
+                    }
+                }
+                // If previous is MOVE (element 0), check for coincident point at end of path
+                else if case .move = shape.path.elements[prevIndex], isClosed {
+                    // Update last curve's control2 (incoming to coincident point)
+                    let lastControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+                    if let originalLastControl2 = originalHandlePositions[lastControl2HandleID] {
+                        let linkedPos = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newControl1Pos,
+                            originalOppositeHandle: CGPoint(x: originalLastControl2.x, y: originalLastControl2.y)
+                        )
+                        liveHandlePositions[lastControl2HandleID] = linkedPos
+                        visibleHandles.insert(lastControl2HandleID)
                     }
                 }
             } else if isClosed && curveSegment.elementIndex == 1 {
