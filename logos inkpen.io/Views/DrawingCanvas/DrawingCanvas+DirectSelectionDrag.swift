@@ -112,12 +112,101 @@ extension DrawingCanvas {
 
         for handleID in selectedHandles {
             if let originalPosition = originalHandlePositions[handleID] {
-                liveHandlePositions[handleID] = CGPoint(
+                let newPosition = CGPoint(
                     x: originalPosition.x + delta.x,
                     y: originalPosition.y + delta.y
                 )
+                liveHandlePositions[handleID] = newPosition
+
+                // Calculate and update linked handle for smooth curves (if not holding Option)
+                if !isOptionPressed {
+                    updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
+                }
             }
         }
+    }
+
+    private func updateLiveLinkedHandle(handleID: HandleID, newPosition: CGPoint) {
+        guard let object = document.snapshot.objects[handleID.shapeID],
+              case .shape(let shape) = object.objectType,
+              handleID.elementIndex < shape.path.elements.count else { return }
+
+        let element = shape.path.elements[handleID.elementIndex]
+
+        // Get anchor point
+        var anchorPoint: CGPoint?
+        var anchorPointID: PointID?
+        var oppositeHandleID: HandleID?
+        var oppositeOriginalPosition: CGPoint?
+
+        if handleID.handleType == .control2 {
+            // Dragging control2 (incoming handle) -> update control1 of next element (outgoing)
+            guard case .curve(let to, _, _) = element else { return }
+            anchorPoint = CGPoint(x: to.x, y: to.y)
+            anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
+
+            let nextIndex = handleID.elementIndex + 1
+            if nextIndex < shape.path.elements.count,
+               case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
+                oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+                oppositeOriginalPosition = CGPoint(x: nextControl1.x, y: nextControl1.y)
+            }
+        } else if handleID.handleType == .control1 {
+            // Dragging control1 (outgoing handle) -> update control2 of previous element (incoming)
+            let prevIndex = handleID.elementIndex - 1
+            if prevIndex >= 0,
+               case .curve(let prevTo, _, let prevControl2) = shape.path.elements[prevIndex] {
+                anchorPoint = CGPoint(x: prevTo.x, y: prevTo.y)
+                anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex)
+                oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+                oppositeOriginalPosition = CGPoint(x: prevControl2.x, y: prevControl2.y)
+            }
+        }
+
+        guard var anchor = anchorPoint,
+              let oppositeID = oppositeHandleID,
+              let oppositeOriginal = oppositeOriginalPosition else { return }
+
+        // Use live anchor position if available
+        if let liveAnchor = anchorPointID, let livePos = livePointPositions[liveAnchor] {
+            anchor = livePos
+        }
+
+        // Calculate linked handle position
+        let linkedPosition = calculateLinkedHandle(
+            anchorPoint: anchor,
+            draggedHandle: newPosition,
+            originalOppositeHandle: oppositeOriginal
+        )
+
+        liveHandlePositions[oppositeID] = linkedPosition
+    }
+
+    private func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
+        let draggedVector = CGPoint(
+            x: draggedHandle.x - anchorPoint.x,
+            y: draggedHandle.y - anchorPoint.y
+        )
+
+        let originalVector = CGPoint(
+            x: originalOppositeHandle.x - anchorPoint.x,
+            y: originalOppositeHandle.y - anchorPoint.y
+        )
+
+        let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
+        let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
+
+        guard draggedLength > 0.1 else { return originalOppositeHandle }
+
+        let normalizedDragged = CGPoint(
+            x: draggedVector.x / draggedLength,
+            y: draggedVector.y / draggedLength
+        )
+
+        return CGPoint(
+            x: anchorPoint.x - normalizedDragged.x * originalLength,
+            y: anchorPoint.y - normalizedDragged.y * originalLength
+        )
     }
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
