@@ -508,39 +508,6 @@ extension DrawingCanvas {
         }
 
         handleSelectionDrag(value: value, geometry: geometry)
-
-        // Update live point positions for direct selection view (blue outline and anchor points)
-        updateLivePointsForShapeDrag()
-    }
-
-    private func updateLivePointsForShapeDrag() {
-        let delta = currentDragDelta
-
-        for objectID in selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID],
-                  case .shape(let shape) = object.objectType else { continue }
-
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-
-                switch element {
-                case .move(let to), .line(let to):
-                    let transformed = CGPoint(x: to.x, y: to.y).applying(shape.transform)
-                    livePointPositions[pointID] = CGPoint(
-                        x: transformed.x + delta.x,
-                        y: transformed.y + delta.y
-                    )
-                case .curve(let to, _, _), .quadCurve(let to, _):
-                    let transformed = CGPoint(x: to.x, y: to.y).applying(shape.transform)
-                    livePointPositions[pointID] = CGPoint(
-                        x: transformed.x + delta.x,
-                        y: transformed.y + delta.y
-                    )
-                case .close:
-                    break
-                }
-            }
-        }
     }
 
     internal func finishDirectSelectionDrag() {
@@ -554,11 +521,6 @@ extension DrawingCanvas {
         if isDraggingDirectSelectedShapes {
             finishSelectionDrag()
             isDraggingDirectSelectedShapes = false
-
-            // Clear live point positions
-            livePointPositions.removeAll()
-            liveHandlePositions.removeAll()
-
             return
         }
 

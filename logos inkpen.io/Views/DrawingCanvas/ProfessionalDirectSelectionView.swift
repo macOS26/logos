@@ -54,8 +54,10 @@ struct ProfessionalDirectSelectionView: View {
                                 CGPoint(x: point.x, y: point.y)
                             }
 
-                            // Transform position only
-                            let transformed = pointPosition.applying(shape.transform)
+                            // Transform position and apply drag preview offset
+                            var shapeTransform = shape.transform
+                            shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                            let transformed = pointPosition.applying(shapeTransform)
 
                             // Scale down below 100% zoom using curve
                             let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
@@ -130,9 +132,11 @@ struct ProfessionalDirectSelectionView: View {
             }
         }
 
-        // Apply shape transform and draw (canvas transform already applied)
+        // Apply shape transform and drag preview offset
         var ctx = context
-        ctx.concatenate(shape.transform)
+        var shapeTransform = shape.transform
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        ctx.concatenate(shapeTransform)
         ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
 
@@ -153,9 +157,11 @@ struct ProfessionalDirectSelectionView: View {
         var outlinePath = Path()
         outlinePath.addRect(textBounds)
 
-        // Apply shape transform and draw
+        // Apply shape transform and drag preview offset
         var ctx = context
-        ctx.concatenate(shape.transform)
+        var shapeTransform = shape.transform
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        ctx.concatenate(shapeTransform)
         ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
 
@@ -196,9 +202,11 @@ struct ProfessionalDirectSelectionView: View {
             handle = livePos
         }
 
-        // Transform positions only, not the handle size
-        let transformedAnchor = anchor.applying(shape.transform)
-        let transformedHandle = handle.applying(shape.transform)
+        // Transform positions and apply drag preview offset
+        var shapeTransform = shape.transform
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        let transformedAnchor = anchor.applying(shapeTransform)
+        let transformedHandle = handle.applying(shapeTransform)
 
         var linePath = Path()
         linePath.move(to: transformedAnchor)
