@@ -116,45 +116,7 @@ struct DrawingCanvas: View {
     @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
     @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
 
-    // Preserve direct selection state when temporarily switching tools
-    @State private var preservedSelectedPoints: Set<PointID>? = nil
-    @State private var preservedSelectedHandles: Set<HandleID>? = nil
-    @State private var preservedVisibleHandles: Set<HandleID>? = nil
-    @State private var lastTool: DrawingTool? = nil
-
     internal func syncDirectSelectionWithDocument() {
-        // Detect tool change
-        if lastTool != viewState.currentTool {
-            // Switching FROM direct selection TO another tool - preserve state
-            if (lastTool == .directSelection || lastTool == .convertAnchorPoint || lastTool == .penPlusMinus) &&
-               (viewState.currentTool != .directSelection && viewState.currentTool != .convertAnchorPoint && viewState.currentTool != .penPlusMinus) {
-                if !selectedPoints.isEmpty || !selectedHandles.isEmpty || !visibleHandles.isEmpty {
-                    preservedSelectedPoints = selectedPoints
-                    preservedSelectedHandles = selectedHandles
-                    preservedVisibleHandles = visibleHandles
-                }
-            }
-
-            // Switching TO direct selection FROM another tool - restore state
-            if (viewState.currentTool == .directSelection || viewState.currentTool == .convertAnchorPoint || viewState.currentTool == .penPlusMinus) &&
-               (lastTool != .directSelection && lastTool != .convertAnchorPoint && lastTool != .penPlusMinus && lastTool != nil) {
-                if let preserved = preservedSelectedPoints {
-                    selectedPoints = preserved
-                    preservedSelectedPoints = nil
-                }
-                if let preserved = preservedSelectedHandles {
-                    selectedHandles = preserved
-                    preservedSelectedHandles = nil
-                }
-                if let preserved = preservedVisibleHandles {
-                    visibleHandles = preserved
-                    preservedVisibleHandles = nil
-                }
-            }
-
-            lastTool = viewState.currentTool
-        }
-
         viewState.selectedObjectIDs = selectedObjectIDs
 
         if !selectedObjectIDs.isEmpty {
