@@ -100,21 +100,28 @@ extension DrawingCanvas {
             }
         }
 
-        // Update live preview positions (don't modify actual data during drag)
-        for pointID in selectedPoints {
-            if let originalPosition = originalPointPositions[pointID] {
-                let newPointPosition = CGPoint(
-                    x: originalPosition.x + snappedDelta.x,
-                    y: originalPosition.y + snappedDelta.y
-                )
-                livePointPositions[pointID] = newPointPosition
+        // If handles are selected, prioritize handle dragging over point dragging
+        let shouldDragPoints = selectedHandles.isEmpty && !selectedPoints.isEmpty
+        let shouldDragHandles = !selectedHandles.isEmpty
 
-                // Move attached handles with the point
-                updateLiveHandlesForMovedPoint(pointID: pointID, delta: snappedDelta)
+        // Update live preview positions (don't modify actual data during drag)
+        if shouldDragPoints {
+            for pointID in selectedPoints {
+                if let originalPosition = originalPointPositions[pointID] {
+                    let newPointPosition = CGPoint(
+                        x: originalPosition.x + snappedDelta.x,
+                        y: originalPosition.y + snappedDelta.y
+                    )
+                    livePointPositions[pointID] = newPointPosition
+
+                    // Move attached handles with the point
+                    updateLiveHandlesForMovedPoint(pointID: pointID, delta: snappedDelta)
+                }
             }
         }
 
-        for handleID in selectedHandles {
+        if shouldDragHandles {
+            for handleID in selectedHandles {
             if let originalPosition = originalHandlePositions[handleID] {
                 let newPosition = CGPoint(
                     x: originalPosition.x + delta.x,
@@ -126,6 +133,7 @@ extension DrawingCanvas {
                 if !isOptionPressed {
                     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
                 }
+            }
             }
         }
     }
