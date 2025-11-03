@@ -573,24 +573,38 @@ extension DrawingCanvas {
     }
 
     private func captureOriginalHandlesForCurveSegment(shapeID: UUID, elementIndex: Int) {
+        // Clear previous state
         originalHandlePositions.removeAll()
+        liveHandlePositions.removeAll()
 
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType,
-              elementIndex < shape.path.elements.count else { return }
+              elementIndex < shape.path.elements.count,
+              case .curve(_, let control1, let control2) = shape.path.elements[elementIndex] else { return }
 
-        // Capture control2 of this element (incoming handle)
-        if case .curve(_, _, let control2) = shape.path.elements[elementIndex] {
-            let handleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
-            originalHandlePositions[handleID] = control2
+        // For curve from A to B at elementIndex:
+        // - control1 is A's outgoing handle (what we drag)
+        // - control2 is B's incoming handle (what we drag)
+
+        let control1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
+        let control2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
+
+        originalHandlePositions[control1HandleID] = control1
+        originalHandlePositions[control2HandleID] = control2
+
+        // Now find and capture the OPPOSITE handles for tangency maintenance
+        // A's incoming handle (control2 of element at elementIndex-1)
+        let prevIndex = elementIndex - 1
+        if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
+            let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+            originalHandlePositions[prevControl2HandleID] = prevControl2
         }
 
-        // Capture control1 of next element (outgoing handle)
+        // B's outgoing handle (control1 of element at elementIndex+1)
         let nextIndex = elementIndex + 1
-        if nextIndex < shape.path.elements.count,
-           case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
-            let handleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
-            originalHandlePositions[handleID] = control1
+        if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
+            let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+            originalHandlePositions[nextControl1HandleID] = nextControl1
         }
     }
 
@@ -610,35 +624,90 @@ extension DrawingCanvas {
         // Adjust handles based on parametric position t and drag offset
         let t = curveSegmentDragT
 
-        // For points near the start (t close to 0), affect control1 more
-        // For points near the end (t close to 1), affect control2 more
-        // For points in the middle, affect both equally
+        // Weighted influence based on where on curve was clicked
+        let control1Weight = 1.0 - t  // More influence at t=0 (near point A)
+        let control2Weight = t        // More influence at t=1 (near point B)
 
-        let control1Weight = 1.0 - t  // More influence at t=0
-        let control2Weight = t        // More influence at t=1
-
-        // Get handle IDs
+        // The two handles that define this curve segment
+        let control1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: curveSegment.elementIndex, handleType: .control1)
         let control2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: curveSegment.elementIndex, handleType: .control2)
-        let nextIndex = curveSegment.elementIndex + 1
-        var control1HandleID: HandleID? = nil
-        if nextIndex < shape.path.elements.count {
-            control1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
-        }
 
-        // Apply weighted offsets to handles
-        if let originalControl2 = originalHandlePositions[control2HandleID] {
-            liveHandlePositions[control2HandleID] = CGPoint(
-                x: originalControl2.x + offset.x * control2Weight,
-                y: originalControl2.y + offset.y * control2Weight
-            )
-        }
-
-        if let control1ID = control1HandleID,
-           let originalControl1 = originalHandlePositions[control1ID] {
-            liveHandlePositions[control1ID] = CGPoint(
+        // Apply weighted offsets to the curve's control handles
+        if let originalControl1 = originalHandlePositions[control1HandleID] {
+            let newControl1Pos = CGPoint(
                 x: originalControl1.x + offset.x * control1Weight,
                 y: originalControl1.y + offset.y * control1Weight
             )
+            liveHandlePositions[control1HandleID] = newControl1Pos
+
+            // Calculate tangent for A's incoming handle (maintain smooth curve at point A)
+            let prevIndex = curveSegment.elementIndex - 1
+            if prevIndex >= 0 {
+                let prevControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+                if let originalPrevControl2 = originalHandlePositions[prevControl2HandleID] {
+                    // Get anchor point A
+                    var anchorA: CGPoint?
+                    if prevIndex >= 0, case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
+                        anchorA = CGPoint(x: toA.x, y: toA.y)
+                    }
+
+                    if let anchor = anchorA {
+                        let linkedPos = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newControl1Pos,
+                            originalOppositeHandle: CGPoint(x: originalPrevControl2.x, y: originalPrevControl2.y)
+                        )
+                        liveHandlePositions[prevControl2HandleID] = linkedPos
+                    }
+                }
+            }
+        }
+
+        if let originalControl2 = originalHandlePositions[control2HandleID] {
+            let newControl2Pos = CGPoint(
+                x: originalControl2.x + offset.x * control2Weight,
+                y: originalControl2.y + offset.y * control2Weight
+            )
+            liveHandlePositions[control2HandleID] = newControl2Pos
+
+            // Calculate tangent for B's outgoing handle (maintain smooth curve at point B)
+            let nextIndex = curveSegment.elementIndex + 1
+            if nextIndex < shape.path.elements.count {
+                let nextControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+                if let originalNextControl1 = originalHandlePositions[nextControl1HandleID] {
+                    // Get anchor point B
+                    var anchorB: CGPoint?
+                    if case .curve(let toB, _, _) = shape.path.elements[curveSegment.elementIndex] {
+                        anchorB = CGPoint(x: toB.x, y: toB.y)
+                    }
+
+                    if let anchor = anchorB {
+                        let linkedPos = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newControl2Pos,
+                            originalOppositeHandle: CGPoint(x: originalNextControl1.x, y: originalNextControl1.y)
+                        )
+                        liveHandlePositions[nextControl1HandleID] = linkedPos
+                    }
+                }
+            }
+        }
+
+        // Make handles visible during drag
+        visibleHandles.insert(control1HandleID)
+        visibleHandles.insert(control2HandleID)
+
+        // Also show the opposite handles for tangency
+        let prevIndex = curveSegment.elementIndex - 1
+        if prevIndex >= 0 {
+            let prevControl2HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+            visibleHandles.insert(prevControl2HandleID)
+        }
+
+        let nextIndex = curveSegment.elementIndex + 1
+        if nextIndex < shape.path.elements.count {
+            let nextControl1HandleID = HandleID(shapeID: curveSegment.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+            visibleHandles.insert(nextControl1HandleID)
         }
     }
 
