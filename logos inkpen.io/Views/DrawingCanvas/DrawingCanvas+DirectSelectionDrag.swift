@@ -103,10 +103,14 @@ extension DrawingCanvas {
         // Update live preview positions (don't modify actual data during drag)
         for pointID in selectedPoints {
             if let originalPosition = originalPointPositions[pointID] {
-                livePointPositions[pointID] = CGPoint(
+                let newPointPosition = CGPoint(
                     x: originalPosition.x + snappedDelta.x,
                     y: originalPosition.y + snappedDelta.y
                 )
+                livePointPositions[pointID] = newPointPosition
+
+                // Move attached handles with the point
+                updateLiveHandlesForMovedPoint(pointID: pointID, delta: snappedDelta)
             }
         }
 
@@ -121,6 +125,52 @@ extension DrawingCanvas {
                 // Calculate and update linked handle for smooth curves (if not holding Option)
                 if !isOptionPressed {
                     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
+                }
+            }
+        }
+    }
+
+    private func updateLiveHandlesForMovedPoint(pointID: PointID, delta: CGPoint) {
+        guard let object = document.snapshot.objects[pointID.shapeID],
+              case .shape(let shape) = object.objectType,
+              pointID.elementIndex < shape.path.elements.count else { return }
+
+        let element = shape.path.elements[pointID.elementIndex]
+
+        // Move incoming handle (control2 of current element)
+        if case .curve(_, _, let control2) = element {
+            let handleID = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex, handleType: .control2)
+            if let originalHandlePos = originalHandlePositions[handleID] {
+                liveHandlePositions[handleID] = CGPoint(
+                    x: originalHandlePos.x + delta.x,
+                    y: originalHandlePos.y + delta.y
+                )
+            } else {
+                // Handle wasn't being dragged, move it by the point's delta
+                liveHandlePositions[handleID] = CGPoint(
+                    x: control2.x + delta.x,
+                    y: control2.y + delta.y
+                )
+            }
+        }
+
+        // Move outgoing handle (control1 of next element)
+        let nextIndex = pointID.elementIndex + 1
+        if nextIndex < shape.path.elements.count {
+            let nextElement = shape.path.elements[nextIndex]
+            if case .curve(_, let control1, _) = nextElement {
+                let handleID = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+                if let originalHandlePos = originalHandlePositions[handleID] {
+                    liveHandlePositions[handleID] = CGPoint(
+                        x: originalHandlePos.x + delta.x,
+                        y: originalHandlePos.y + delta.y
+                    )
+                } else {
+                    // Handle wasn't being dragged, move it by the point's delta
+                    liveHandlePositions[handleID] = CGPoint(
+                        x: control1.x + delta.x,
+                        y: control1.y + delta.y
+                    )
                 }
             }
         }
