@@ -759,6 +759,50 @@ extension DrawingCanvas {
         }
     }
 
+    private func convertLineToCurveAndDrag(shape: VectorShape, elementIndex: Int, to: VectorPoint, offset: CGPoint, curveSegment: (shapeID: UUID, elementIndex: Int)) {
+        // Find previous point
+        var prevPoint: VectorPoint?
+        if elementIndex > 0 {
+            switch shape.path.elements[elementIndex - 1] {
+            case .move(let prev), .line(let prev):
+                prevPoint = prev
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
+                prevPoint = prev
+            default:
+                break
+            }
+        }
+
+        guard let start = prevPoint else { return }
+
+        // Create control points 1/3 along the line from each endpoint
+        let control1 = VectorPoint(
+            start.x + (to.x - start.x) / 3.0,
+            start.y + (to.y - start.y) / 3.0
+        )
+        let control2 = VectorPoint(
+            start.x + 2.0 * (to.x - start.x) / 3.0,
+            start.y + 2.0 * (to.y - start.y) / 3.0
+        )
+
+        // Convert line to curve
+        document.updateShapeByID(curveSegment.shapeID) { updatedShape in
+            updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2)
+            updatedShape.updateBounds()
+        }
+
+        // Re-capture handles now that it's a curve
+        captureOriginalHandlesForCurveSegment(shapeID: curveSegment.shapeID, elementIndex: elementIndex)
+
+        // Now get the updated shape and proceed with curve dragging
+        guard let updatedObject = document.snapshot.objects[curveSegment.shapeID],
+              case .shape(let updatedShape) = updatedObject.objectType,
+              case .curve = updatedShape.path.elements[elementIndex] else { return }
+
+        // Continue with standard curve segment dragging
+        dragCurveSegmentWithHandles(shape: updatedShape, curveSegment: curveSegment, offset: offset)
+    }
+
     private func handleCloseSegmentDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint) {
         // Find first point (should be at element 0)
         var firstPoint: VectorPoint?
@@ -871,18 +915,34 @@ extension DrawingCanvas {
 
         let element = shape.path.elements[curveSegment.elementIndex]
 
-        // Handle line segments - just move both endpoints
+        // Handle line segments
         if case .line(let to) = element {
-            handleLineSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset)
-            return
+            // Option key: convert to curve and drag with handles
+            // No Option key: just move perpendicular
+            if isOptionPressed {
+                convertLineToCurveAndDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset, curveSegment: curveSegment)
+                return
+            } else {
+                handleLineSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset)
+                return
+            }
         }
 
         // Handle close segments (closing line from last point to first)
         if case .close = element {
-            handleCloseSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, offset: offset)
-            return
+            // Option key: convert to curve (TODO if needed)
+            // No Option key: just move perpendicular
+            if !isOptionPressed {
+                handleCloseSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, offset: offset)
+                return
+            }
         }
 
+        // Curve segment dragging
+        dragCurveSegmentWithHandles(shape: shape, curveSegment: curveSegment, offset: offset)
+    }
+
+    private func dragCurveSegmentWithHandles(shape: VectorShape, curveSegment: (shapeID: UUID, elementIndex: Int), offset: CGPoint) {
         // Adjust handles based on parametric position t and drag offset
         let t = curveSegmentDragT
 
