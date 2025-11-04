@@ -160,13 +160,79 @@ extension DrawingCanvas {
                 )
                 liveHandlePositions[handleID] = newPosition
 
-                // Calculate and update linked handle for smooth curves (if not holding Option)
-                if !isOptionPressed {
+                // Calculate and update linked handle for smooth curves
+                // Only maintain tangency if: not holding Option AND point was already smooth
+                if !isOptionPressed && isPointSmooth(handleID: handleID) {
                     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
                 }
             }
             }
         }
+    }
+
+    private func isPointSmooth(handleID: HandleID) -> Bool {
+        guard let object = document.snapshot.objects[handleID.shapeID],
+              case .shape(let shape) = object.objectType,
+              handleID.elementIndex < shape.path.elements.count else { return false }
+
+        let elements = shape.path.elements
+        let element = elements[handleID.elementIndex]
+
+        var anchorPoint: CGPoint?
+        var handle1: CGPoint?
+        var handle2: CGPoint?
+
+        // Get anchor point and both handles
+        if handleID.handleType == .control2 {
+            // This is incoming handle to anchor
+            guard case .curve(let to, _, let control2) = element else { return false }
+            anchorPoint = CGPoint(x: to.x, y: to.y)
+            handle1 = CGPoint(x: control2.x, y: control2.y)
+
+            // Get opposite handle (outgoing from this anchor)
+            let nextIndex = handleID.elementIndex + 1
+            if nextIndex < elements.count,
+               case .curve(_, let nextControl1, _) = elements[nextIndex] {
+                handle2 = CGPoint(x: nextControl1.x, y: nextControl1.y)
+            }
+        } else if handleID.handleType == .control1 {
+            // This is outgoing handle from anchor
+            guard case .curve(_, let control1, _) = element else { return false }
+            handle2 = CGPoint(x: control1.x, y: control1.y)
+
+            // Get anchor and opposite handle (incoming to this anchor)
+            let prevIndex = handleID.elementIndex - 1
+            if prevIndex >= 0,
+               case .curve(let prevTo, _, let prevControl2) = elements[prevIndex] {
+                anchorPoint = CGPoint(x: prevTo.x, y: prevTo.y)
+                handle1 = CGPoint(x: prevControl2.x, y: prevControl2.y)
+            }
+        }
+
+        guard let anchor = anchorPoint,
+              let h1 = handle1,
+              let h2 = handle2 else { return false }
+
+        // Calculate vectors from anchor to each handle
+        let vec1 = CGPoint(x: h1.x - anchor.x, y: h1.y - anchor.y)
+        let vec2 = CGPoint(x: h2.x - anchor.x, y: h2.y - anchor.y)
+
+        let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
+        let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
+
+        // If either handle is at the anchor, not smooth
+        if len1 < 0.1 || len2 < 0.1 { return false }
+
+        // Normalize vectors
+        let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
+        let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+
+        // Calculate dot product (should be -1 for 180 degrees)
+        let dot = norm1.x * norm2.x + norm1.y * norm2.y
+
+        // Consider smooth if angle is close to 180 degrees (dot product close to -1)
+        // Allow some tolerance (e.g., within 10 degrees of 180)
+        return dot < -0.98  // cos(170°) ≈ -0.98
     }
 
     private func updateLiveHandlesForMovedPoint(pointID: PointID, delta: CGPoint) {
