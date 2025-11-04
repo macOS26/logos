@@ -142,13 +142,18 @@ extension DrawingCanvas {
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
-                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font {
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font && newTool != .hand {
             print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             syncDirectSelectionWithDocument()
+        }
+
+        // Preserve selection when switching to/from Hand tool (temporary tool via spacebar)
+        else if newTool == .hand || oldTool == .hand {
+            // Hand tool is temporary - don't modify selection state
         }
 
         print("🟡 selectedObjectIDs AFTER: \(document.viewState.selectedObjectIDs)")
