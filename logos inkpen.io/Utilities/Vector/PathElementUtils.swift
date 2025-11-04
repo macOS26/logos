@@ -94,12 +94,45 @@ func detectPointType(element: PathElement, prevElement: PathElement?, nextElemen
 
 /// Auto-detects and sets point types for all elements in a path
 func autoDetectPointTypes(elements: inout [PathElement]) {
+    guard !elements.isEmpty else { return }
+
+    // Check if path is closed
+    let isClosed = elements.last == .close
+
     for i in 0..<elements.count {
+        // Skip .close element
+        if case .close = elements[i] {
+            continue
+        }
+
         let prevIndex = i - 1
         let nextIndex = i + 1
 
-        let prevElement = prevIndex >= 0 ? elements[prevIndex] : nil
-        let nextElement = nextIndex < elements.count ? elements[nextIndex] : nil
+        var prevElement: PathElement?
+        var nextElement: PathElement?
+
+        // Handle wraparound for closed paths
+        if isClosed {
+            // For first point (index 0), look at last real point (before .close)
+            if i == 0 {
+                let lastRealIndex = elements.count - 2 // -2 because last is .close
+                if lastRealIndex >= 0 && lastRealIndex < elements.count {
+                    prevElement = elements[lastRealIndex]
+                }
+            } else {
+                prevElement = prevIndex >= 0 ? elements[prevIndex] : nil
+            }
+
+            // For last real point, look at first point
+            if i == elements.count - 2 { // Last point before .close
+                nextElement = elements[0]
+            } else {
+                nextElement = nextIndex < elements.count ? elements[nextIndex] : nil
+            }
+        } else {
+            prevElement = prevIndex >= 0 ? elements[prevIndex] : nil
+            nextElement = nextIndex < elements.count ? elements[nextIndex] : nil
+        }
 
         let detectedType = detectPointType(
             element: elements[i],
