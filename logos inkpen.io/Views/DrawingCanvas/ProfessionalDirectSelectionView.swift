@@ -114,14 +114,14 @@ struct ProfessionalDirectSelectionView: View {
             let isThisDraggedSegment = isDraggingSegmentOnThisShape && draggedCurveSegment?.elementIndex == elementIndex
 
             switch element {
-            case .move(let to):
+            case .move(let to, _):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
                 outlinePath.move(to: point)
                 lastPoint = point
                 firstPoint = point
 
-            case .line(let to):
+            case .line(let to, _):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
                 outlinePath.addLine(to: point)
@@ -137,7 +137,7 @@ struct ProfessionalDirectSelectionView: View {
                 }
                 lastPoint = point
 
-            case .curve(let to, let c1, let c2):
+            case .curve(let to, let c1, let c2, _):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let handleID1 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
                 let handleID2 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
@@ -159,7 +159,7 @@ struct ProfessionalDirectSelectionView: View {
                 }
                 lastPoint = point
 
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, _):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
 
@@ -240,7 +240,7 @@ struct ProfessionalDirectSelectionView: View {
         var anchorPointID: PointID?
 
         switch element {
-        case .curve(let to, let c1, let c2):
+        case .curve(let to, let c1, let c2, _):
             if handleID.handleType == .control2 {
                 anchorPoint = CGPoint(x: to.x, y: to.y)
                 anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
@@ -251,7 +251,7 @@ struct ProfessionalDirectSelectionView: View {
                 anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex - 1)
                 handlePoint = CGPoint(x: c1.x, y: c1.y)
             }
-        case .quadCurve(let to, let control):
+        case .quadCurve(let to, let control, _):
             anchorPoint = CGPoint(x: to.x, y: to.y)
             anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
             handlePoint = CGPoint(x: control.x, y: control.y)
@@ -289,9 +289,9 @@ struct ProfessionalDirectSelectionView: View {
 
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
         switch element {
-        case .move(let to), .line(let to):
+        case .move(let to, _), .line(let to, _):
             return to
-        case .curve(let to, _, _), .quadCurve(let to, _):
+        case .curve(let to, _, _, _), .quadCurve(let to, _, _):
             return to
         case .close:
             return nil

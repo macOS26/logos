@@ -9,6 +9,8 @@ struct StrokePropertiesSection: View {
     let strokeLineCap: CGLineCap
     let strokeMiterLimit: Double
     let strokeScaleWithTransform: Bool
+    let selectedPointType: AnchorPointType?
+    let showAnchorPointControls: Bool
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
@@ -16,6 +18,7 @@ struct StrokePropertiesSection: View {
     let onUpdateLineCap: (CGLineCap) -> Void
     let onUpdateMiterLimit: (Double) -> Void
     let onUpdateScaleWithTransform: (Bool) -> Void
+    let onUpdatePointType: ((AnchorPointType) -> Void)?
     let onStrokeWidthEditingChanged: (Bool) -> Void
     let onStrokeOpacityEditingChanged: (Bool) -> Void
     let onMiterLimitEditingChanged: (Bool) -> Void
@@ -180,6 +183,14 @@ struct StrokePropertiesSection: View {
                         .help(capType.description)
                     }
                 }
+            }
+
+            // Anchor Point Type Controls
+            if showAnchorPointControls, let onUpdatePointType = onUpdatePointType {
+                AnchorPointTypeSection(
+                    selectedPointType: selectedPointType,
+                    onUpdatePointType: onUpdatePointType
+                )
             }
 
             VStack(spacing: 8) {

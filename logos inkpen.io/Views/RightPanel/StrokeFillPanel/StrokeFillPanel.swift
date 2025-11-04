@@ -349,6 +349,8 @@ struct StrokeFillPanel: View {
                         strokeLineCap: strokeLineCap,
                         strokeMiterLimit: strokeMiterLimitState,
                         strokeScaleWithTransform: strokeScaleWithTransform,
+                        selectedPointType: nil,  // TODO: Get from selected point
+                        showAnchorPointControls: false,  // TODO: Show when point is selected
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             strokeDeltaWidth = value
@@ -382,6 +384,7 @@ struct StrokeFillPanel: View {
                         onUpdateScaleWithTransform: { value in
                             updateStrokeScaleWithTransform(value)
                         },
+                        onUpdatePointType: nil,  // TODO: Implement point type updates
                         onStrokeWidthEditingChanged: { isEditing in
                             if isEditing {
                                 strokeDeltaWidth = strokeWidthState
