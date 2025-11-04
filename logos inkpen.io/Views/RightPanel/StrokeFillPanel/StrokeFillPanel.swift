@@ -114,66 +114,9 @@ struct StrokeFillPanel: View {
     }
 
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
-        guard let firstSelectedID = selectedObjectIDs.first,
-              let object = snapshot.objects[firstSelectedID],
-              case .shape(var shape) = object.objectType else {
-            print("PROTOTYPE: No shape selected")
-            return
-        }
-
-        print("PROTOTYPE: Applying \(type) to shape \(firstSelectedID)")
-
-        var elements = shape.path.elements
-
-        for (index, element) in elements.enumerated() {
-            guard case .curve(let to, let control1, let control2) = element else { continue }
-
-            switch type {
-            case .auto:
-                // Do nothing
-                break
-
-            case .corner:
-                // Collapse both handles to anchor
-                let collapsedHandle = VectorPoint(to.x, to.y)
-                elements[index] = .curve(to: to, control1: control1, control2: collapsedHandle)
-
-                // Also collapse outgoing handle (next element's control1)
-                if index + 1 < elements.count, case .curve(let nextTo, _, let nextControl2) = elements[index + 1] {
-                    elements[index + 1] = .curve(to: nextTo, control1: VectorPoint(to.x, to.y), control2: nextControl2)
-                }
-
-            case .cusp:
-                // Expand handles at 90° if collapsed
-                let isIncomingCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-
-                if index + 1 < elements.count, case .curve(let nextTo, let nextControl1, let nextControl2) = elements[index + 1] {
-                    let isOutgoingCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-
-                    if isIncomingCollapsed && isOutgoingCollapsed {
-                        // Both collapsed, expand at 90°
-                        let handleLength = 50.0
-                        let newIncoming = VectorPoint(to.x + handleLength, to.y)
-                        let newOutgoing = VectorPoint(to.x, to.y + handleLength)
-
-                        elements[index] = .curve(to: to, control1: control1, control2: newIncoming)
-                        elements[index + 1] = .curve(to: nextTo, control1: newOutgoing, control2: nextControl2)
-                    }
-                }
-
-            case .smooth:
-                // Already smooth, do nothing
-                break
-            }
-        }
-
-        shape.path.elements = elements
-        shape.updateBounds()
-
-        let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
-        snapshot.objects[firstSelectedID] = updatedObject
-
-        print("PROTOTYPE: Applied \(type)")
+        // For now, just print - need selectedPoints wired up
+        print("PROTOTYPE: Button clicked for \(type), but selectedPoints not wired up yet")
+        print("PROTOTYPE: Need to only modify selected point + coincident, not all points")
     }
 
     private var selectedStrokeColor: VectorColor {
