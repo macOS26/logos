@@ -366,30 +366,32 @@ extension DrawingCanvas {
 
                 for element in groupedShape.path.elements {
                     switch element {
-                    case .move(let to):
+                    case .move(let to, let pointType):
                         let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        updatedElements.append(.move(to: VectorPoint(newPoint)))
+                        updatedElements.append(.move(to: VectorPoint(newPoint), pointType: pointType))
 
-                    case .line(let to):
+                    case .line(let to, let pointType):
                         let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        updatedElements.append(.line(to: VectorPoint(newPoint)))
+                        updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
 
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, let control1, let control2, let pointType):
                         let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
                         let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
                         updatedElements.append(.curve(
                             to: VectorPoint(newTo),
                             control1: VectorPoint(newControl1),
-                            control2: VectorPoint(newControl2)
+                            control2: VectorPoint(newControl2),
+                            pointType: pointType
                         ))
 
-                    case .quadCurve(let to, let control):
+                    case .quadCurve(let to, let control, let pointType):
                         let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
                         updatedElements.append(.quadCurve(
                             to: VectorPoint(newTo),
-                            control: VectorPoint(newControl)
+                            control: VectorPoint(newControl),
+                            pointType: pointType
                         ))
 
                     case .close:
@@ -432,30 +434,32 @@ extension DrawingCanvas {
 
         for element in shape.path.elements {
             switch element {
-            case .move(let to):
+            case .move(let to, let pointType):
                 let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                updatedElements.append(.move(to: VectorPoint(newPoint)))
+                updatedElements.append(.move(to: VectorPoint(newPoint), pointType: pointType))
 
-            case .line(let to):
+            case .line(let to, let pointType):
                 let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                updatedElements.append(.line(to: VectorPoint(newPoint)))
+                updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
 
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, let pointType):
                 let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
                 let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
                 updatedElements.append(.curve(
                     to: VectorPoint(newTo),
                     control1: VectorPoint(newControl1),
-                    control2: VectorPoint(newControl2)
+                    control2: VectorPoint(newControl2),
+                    pointType: pointType
                 ))
 
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, let pointType):
                 let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
                 updatedElements.append(.quadCurve(
                     to: VectorPoint(newTo),
-                    control: VectorPoint(newControl)
+                    control: VectorPoint(newControl),
+                    pointType: pointType
                 ))
 
             case .close:
@@ -522,30 +526,32 @@ extension DrawingCanvas {
 
                 for element in groupedShape.path.elements {
                     switch element {
-                    case .move(let to):
+                    case .move(let to, let pointType):
                         let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                        transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                        transformedElements.append(.move(to: VectorPoint(transformedPoint), pointType: pointType))
 
-                    case .line(let to):
+                    case .line(let to, let pointType):
                         let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                        transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                        transformedElements.append(.line(to: VectorPoint(transformedPoint), pointType: pointType))
 
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, let control1, let control2, let pointType):
                         let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                         let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
                         let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
                         transformedElements.append(.curve(
                             to: VectorPoint(transformedTo),
                             control1: VectorPoint(transformedControl1),
-                            control2: VectorPoint(transformedControl2)
+                            control2: VectorPoint(transformedControl2),
+                            pointType: pointType
                         ))
 
-                    case .quadCurve(let to, let control):
+                    case .quadCurve(let to, let control, let pointType):
                         let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                         let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
                         transformedElements.append(.quadCurve(
                             to: VectorPoint(transformedTo),
-                            control: VectorPoint(transformedControl)
+                            control: VectorPoint(transformedControl),
+                            pointType: pointType
                         ))
 
                     case .close:
@@ -572,30 +578,32 @@ extension DrawingCanvas {
 
         for element in shape.path.elements {
             switch element {
-            case .move(let to):
+            case .move(let to, let pointType):
                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                transformedElements.append(.move(to: VectorPoint(transformedPoint), pointType: pointType))
 
-            case .line(let to):
+            case .line(let to, let pointType):
                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                transformedElements.append(.line(to: VectorPoint(transformedPoint), pointType: pointType))
 
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, let pointType):
                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                 let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
                 let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
                 transformedElements.append(.curve(
                     to: VectorPoint(transformedTo),
                     control1: VectorPoint(transformedControl1),
-                    control2: VectorPoint(transformedControl2)
+                    control2: VectorPoint(transformedControl2),
+                    pointType: pointType
                 ))
 
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, let pointType):
                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                 let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
                 transformedElements.append(.quadCurve(
                     to: VectorPoint(transformedTo),
-                    control: VectorPoint(transformedControl)
+                    control: VectorPoint(transformedControl),
+                    pointType: pointType
                 ))
 
             case .close:
