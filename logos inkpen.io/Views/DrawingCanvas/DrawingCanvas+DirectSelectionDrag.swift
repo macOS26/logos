@@ -602,6 +602,15 @@ extension DrawingCanvas {
                 case .move(let to):
                     previousPoint = to
                 case .line(let to):
+                    // Check if clicking on line segment
+                    if let prev = previousPoint {
+                        let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
+                        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+
+                        if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
+                            return (shape.id, elementIndex)
+                        }
+                    }
                     previousPoint = to
                 case .curve(let to, let control1, let control2):
                     if let prev = previousPoint {
@@ -675,8 +684,50 @@ extension DrawingCanvas {
 
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType,
-              elementIndex < shape.path.elements.count,
-              case .curve(_, let control1, let control2) = shape.path.elements[elementIndex] else { return }
+              elementIndex < shape.path.elements.count else { return }
+
+        let element = shape.path.elements[elementIndex]
+
+        // Convert line to curve if needed
+        if case .line(let to) = element {
+            // Find previous point
+            var prevPoint: VectorPoint?
+            if elementIndex > 0 {
+                switch shape.path.elements[elementIndex - 1] {
+                case .move(let prev), .line(let prev):
+                    prevPoint = prev
+                case .curve(let prev, _, _), .quadCurve(let prev, _):
+                    prevPoint = prev
+                default:
+                    break
+                }
+            }
+
+            guard let start = prevPoint else { return }
+
+            // Create control points 1/3 along the line from each endpoint
+            let control1 = VectorPoint(
+                start.x + (to.x - start.x) / 3.0,
+                start.y + (to.y - start.y) / 3.0
+            )
+            let control2 = VectorPoint(
+                start.x + 2.0 * (to.x - start.x) / 3.0,
+                start.y + 2.0 * (to.y - start.y) / 3.0
+            )
+
+            // Convert line to curve
+            document.updateShapeByID(shapeID) { updatedShape in
+                updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2)
+                updatedShape.updateBounds()
+            }
+        }
+
+        // Re-read the shape in case we just converted it
+        guard let updatedObject = document.snapshot.objects[shapeID],
+              case .shape(let updatedShape) = updatedObject.objectType else { return }
+
+        // Now extract the control handles (either from existing curve or newly converted)
+        guard case .curve(_, let control1, let control2) = updatedShape.path.elements[elementIndex] else { return }
 
         // For curve from A to B at elementIndex:
         // - control1 is A's outgoing handle (what we drag)
@@ -689,26 +740,26 @@ extension DrawingCanvas {
         originalHandlePositions[control2HandleID] = control2
 
         // Check if this is a closed path
-        let isClosed = shape.path.elements.last.map { element in
+        let isClosed = updatedShape.path.elements.last.map { element in
             if case .close = element { return true }
             return false
         } ?? false
 
         // Find last curve element index (skip .close if present)
-        var lastCurveIndex = shape.path.elements.count - 1
-        if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
+        var lastCurveIndex = updatedShape.path.elements.count - 1
+        if isClosed && lastCurveIndex >= 0, case .close = updatedShape.path.elements[lastCurveIndex] {
             lastCurveIndex -= 1
         }
 
         // Now find and capture the OPPOSITE handles for tangency maintenance
         // A's incoming handle (control2 of element at elementIndex-1)
         let prevIndex = elementIndex - 1
-        if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
+        if prevIndex >= 0, case .curve(_, _, let prevControl2) = updatedShape.path.elements[prevIndex] {
             let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
             originalHandlePositions[prevControl2HandleID] = prevControl2
         } else if isClosed && elementIndex == 1 {
             // First curve segment in closed path - opposite handle is last curve's incoming handle
-            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
+            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = updatedShape.path.elements[lastCurveIndex] {
                 let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
                 originalHandlePositions[lastControl2HandleID] = lastControl2
             }
@@ -716,12 +767,12 @@ extension DrawingCanvas {
 
         // B's outgoing handle (control1 of element at elementIndex+1)
         let nextIndex = elementIndex + 1
-        if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
+        if nextIndex < updatedShape.path.elements.count, case .curve(_, let nextControl1, _) = updatedShape.path.elements[nextIndex] {
             let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
             originalHandlePositions[nextControl1HandleID] = nextControl1
         } else if isClosed && elementIndex == lastCurveIndex {
             // Last curve segment in closed path - opposite handle is first curve's outgoing handle
-            if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
+            if updatedShape.path.elements.count > 1, case .curve(_, let firstControl1, _) = updatedShape.path.elements[1] {
                 let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
                 originalHandlePositions[firstControl1HandleID] = firstControl1
             }
@@ -948,6 +999,31 @@ extension DrawingCanvas {
     }
 
     // Utility functions
+    private func isPointNearLineSegment(point: CGPoint, start: CGPoint, end: CGPoint, tolerance: Double) -> Bool {
+        // Calculate distance from point to line segment
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let lengthSquared = dx * dx + dy * dy
+
+        if lengthSquared == 0 {
+            // Start and end are the same point
+            let dist = sqrt(pow(point.x - start.x, 2) + pow(point.y - start.y, 2))
+            return dist <= tolerance
+        }
+
+        // Calculate projection of point onto line
+        let t = max(0, min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared))
+
+        // Find closest point on segment
+        let closestX = start.x + t * dx
+        let closestY = start.y + t * dy
+
+        // Calculate distance
+        let distance = sqrt(pow(point.x - closestX, 2) + pow(point.y - closestY, 2))
+
+        return distance <= tolerance
+    }
+
     private func isPointNearBezierCurve(point: CGPoint, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tolerance: Double) -> Bool {
         for i in 0...20 {
             let t = Double(i) / 20.0
