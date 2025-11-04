@@ -8,15 +8,15 @@ class FileOperations {
             switch element {
             case .move(let point):
                 cgPath.move(to: CGPoint(x: point.x, y: point.y))
-            case .line(let point):
+            case .line(let point, _):
                 cgPath.addLine(to: CGPoint(x: point.x, y: point.y))
-            case .curve(let point, let control1, let control2):
+            case .curve(let point, let control1, let control2, _):
                 cgPath.addCurve(
                     to: CGPoint(x: point.x, y: point.y),
                     control1: CGPoint(x: control1.x, y: control1.y),
                     control2: CGPoint(x: control2.x, y: control2.y)
                 )
-            case .quadCurve(let point, let control):
+            case .quadCurve(let point, let control, _):
                 cgPath.addQuadCurve(
                     to: CGPoint(x: point.x, y: point.y),
                     control: CGPoint(x: control.x, y: control.y)

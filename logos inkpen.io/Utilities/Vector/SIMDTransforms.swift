@@ -36,18 +36,20 @@ extension PathElement {
         switch self {
         case .move(let to):
             return .move(to: to.applying(transform))
-        case .line(let to):
-            return .line(to: to.applying(transform))
-        case .curve(let to, let control1, let control2):
+        case .line(let to, let pointType):
+            return .line(to: to.applying(transform), pointType: pointType)
+        case .curve(let to, let control1, let control2, let pointType):
             return .curve(
                 to: to.applying(transform),
                 control1: control1.applying(transform),
-                control2: control2.applying(transform)
+                control2: control2.applying(transform),
+                pointType: pointType
             )
-        case .quadCurve(let to, let control):
+        case .quadCurve(let to, let control, let pointType):
             return .quadCurve(
                 to: to.applying(transform),
-                control: control.applying(transform)
+                control: control.applying(transform),
+                pointType: pointType
             )
         case .close:
             return .close
@@ -104,11 +106,13 @@ extension VectorPath {
 
         for element in elements {
             switch element {
-            case .move(let to), .line(let to):
+            case .move(let to):
                 points.append(to)
-            case .curve(let to, let control1, let control2):
+            case .line(let to, _):
+                points.append(to)
+            case .curve(let to, let control1, let control2, _):
                 points.append(contentsOf: [to, control1, control2])
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, _):
                 points.append(contentsOf: [to, control])
             case .close:
                 break

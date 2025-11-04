@@ -105,24 +105,26 @@ extension VectorDocument {
                 case .move(let to):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     updatedElements.append(.move(to: VectorPoint(newPoint)))
-                case .line(let to):
+                case .line(let to, let pointType):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.line(to: VectorPoint(newPoint)))
-                case .curve(let to, let control1, let control2):
+                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
+                case .curve(let to, let control1, let control2, let pointType):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
                     let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
                     updatedElements.append(.curve(
                         to: VectorPoint(newTo),
                         control1: VectorPoint(newControl1),
-                        control2: VectorPoint(newControl2)
+                        control2: VectorPoint(newControl2),
+                        pointType: pointType
                     ))
-                case .quadCurve(let to, let control):
+                case .quadCurve(let to, let control, let pointType):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
                     updatedElements.append(.quadCurve(
                         to: VectorPoint(newTo),
-                        control: VectorPoint(newControl)
+                        control: VectorPoint(newControl),
+                        pointType: pointType
                     ))
                 case .close:
                     updatedElements.append(.close)
@@ -136,24 +138,26 @@ extension VectorDocument {
                 case .move(let to):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     updatedElements.append(.move(to: VectorPoint(newPoint)))
-                case .line(let to):
+                case .line(let to, let pointType):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.line(to: VectorPoint(newPoint)))
-                case .curve(let to, let control1, let control2):
+                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
+                case .curve(let to, let control1, let control2, let pointType):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
                     let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
                     updatedElements.append(.curve(
                         to: VectorPoint(newTo),
                         control1: VectorPoint(newControl1),
-                        control2: VectorPoint(newControl2)
+                        control2: VectorPoint(newControl2),
+                        pointType: pointType
                     ))
-                case .quadCurve(let to, let control):
+                case .quadCurve(let to, let control, let pointType):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
                     updatedElements.append(.quadCurve(
                         to: VectorPoint(newTo),
-                        control: VectorPoint(newControl)
+                        control: VectorPoint(newControl),
+                        pointType: pointType
                     ))
                 case .close:
                     updatedElements.append(.close)

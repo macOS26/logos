@@ -41,17 +41,17 @@ func validatePathElements(_ elements: [PathElement]) -> [PathElement] {
         case .move(_):
             validElements.append(element)
 
-        case .line(_):
+        case .line(_, _):
             if !validElements.isEmpty {
                 validElements.append(element)
             }
 
-        case .curve(_, _, _):
+        case .curve(_, _, _, _):
             if !validElements.isEmpty {
                 validElements.append(element)
             }
 
-        case .quadCurve(_, _):
+        case .quadCurve(_, _, _):
             if !validElements.isEmpty {
                 validElements.append(element)
             }

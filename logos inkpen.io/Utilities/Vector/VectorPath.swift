@@ -115,11 +115,17 @@ struct BezierControlPoint: Codable, Hashable {
     }
 }
 
+enum AnchorPointType: String, Codable, Hashable, CaseIterable {
+    case corner  // Sharp point, no curves (straight lines meet)
+    case cusp    // Independent curves, no tangency (curved but not smooth)
+    case smooth  // 180° tangent curves (smooth point)
+}
+
 enum PathElement: Codable, Hashable {
     case move(to: VectorPoint)
-    case line(to: VectorPoint)
-    case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint)
-    case quadCurve(to: VectorPoint, control: VectorPoint)
+    case line(to: VectorPoint, pointType: AnchorPointType = .corner)
+    case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint, pointType: AnchorPointType = .smooth)
+    case quadCurve(to: VectorPoint, control: VectorPoint, pointType: AnchorPointType = .smooth)
     case close
 }
 
@@ -216,11 +222,11 @@ struct VectorPath: Codable, Hashable, Identifiable {
             switch element {
             case .move(let to):
                 path.move(to: to.cgPoint)
-            case .line(let to):
+            case .line(let to, _):
                 path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, _):
                 path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, _):
                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
                 if !path.isEmpty {

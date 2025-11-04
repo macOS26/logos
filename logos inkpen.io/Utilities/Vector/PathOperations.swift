@@ -659,9 +659,13 @@ extension ProfessionalPathOperations {
         for (index, element) in path.elements.enumerated() {
             let position: VectorPoint?
             switch element {
-            case .move(let to), .line(let to):
+            case .move(let to):
                 position = to
-            case .curve(let to, _, _), .quadCurve(let to, _):
+            case .line(let to, _):
+                position = to
+            case .curve(let to, _, _, _):
+                position = to
+            case .quadCurve(let to, _, _):
                 position = to
             case .close:
                 position = nil
@@ -741,11 +745,11 @@ extension ProfessionalPathOperations {
 
                 var endpoint: VectorPoint?
                 switch element {
-                case .line(let to):
+                case .line(let to, _):
                     endpoint = to
-                case .curve(let to, _, _):
+                case .curve(let to, _, _, _):
                     endpoint = to
-                case .quadCurve(let to, _):
+                case .quadCurve(let to, _, _):
                     endpoint = to
                 case .move(_), .close:
                     continue

@@ -8,9 +8,13 @@ func getPointPositionExternal(_ pointID: PointID, in document: VectorDocument) -
             let element = shape.path.elements[pointID.elementIndex]
 
             switch element {
-            case .move(let to), .line(let to):
+            case .move(let to):
                 return to
-            case .curve(let to, _, _), .quadCurve(let to, _):
+            case .line(let to, _):
+                return to
+            case .curve(let to, _, _, _):
+                return to
+            case .quadCurve(let to, _, _):
                 return to
             case .close:
                 return nil
