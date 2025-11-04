@@ -32,13 +32,13 @@ struct EnvelopeHandles: View {
                     let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
-                            case .move(let to):
+                            case .move(let to, _):
                                 path.move(to: to.cgPoint)
-                            case .line(let to):
+                            case .line(let to, _):
                                 path.addLine(to: to.cgPoint)
-                            case .curve(let to, let control1, let control2):
+                            case .curve(let to, let control1, let control2, _):
                                 path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                            case .quadCurve(let to, let control):
+                            case .quadCurve(let to, let control, _):
                                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                             case .close:
                                 path.closeSubpath()
@@ -55,13 +55,13 @@ struct EnvelopeHandles: View {
                 let cachedPath = Path { path in
                     for element in shape.path.elements {
                         switch element {
-                        case .move(let to):
+                        case .move(let to, _):
                             path.move(to: to.cgPoint)
-                        case .line(let to):
+                        case .line(let to, _):
                             path.addLine(to: to.cgPoint)
-                        case .curve(let to, let control1, let control2):
+                        case .curve(let to, let control1, let control2, _):
                             path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                        case .quadCurve(let to, let control):
+                        case .quadCurve(let to, let control, _):
                             path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                         case .close:
                             path.closeSubpath()
@@ -256,13 +256,13 @@ struct EnvelopeHandles: View {
             Path { path in
                 for element in warpedPath.elements {
                     switch element {
-                    case .move(let to):
+                    case .move(let to, _):
                         path.move(to: to.cgPoint)
-                    case .line(let to):
+                    case .line(let to, _):
                         path.addLine(to: to.cgPoint)
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, let control1, let control2, _):
                         path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                    case .quadCurve(let to, let control):
+                    case .quadCurve(let to, let control, _):
                         path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                     case .close:
                         path.closeSubpath()
@@ -434,30 +434,32 @@ struct EnvelopeHandles: View {
 
         for element in elements {
             switch element {
-            case .move(let to):
+            case .move(let to, let pointType):
                 let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
-                warpedElements.append(.move(to: VectorPoint(warpedPoint)))
+                warpedElements.append(.move(to: VectorPoint(warpedPoint), pointType: pointType))
 
-            case .line(let to):
+            case .line(let to, let pointType):
                 let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
-                warpedElements.append(.line(to: VectorPoint(warpedPoint)))
+                warpedElements.append(.line(to: VectorPoint(warpedPoint), pointType: pointType))
 
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, let pointType):
                 let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
                 let warpedControl1 = warpPoint(CGPoint(x: control1.x, y: control1.y))
                 let warpedControl2 = warpPoint(CGPoint(x: control2.x, y: control2.y))
                 warpedElements.append(.curve(
                     to: VectorPoint(warpedTo),
                     control1: VectorPoint(warpedControl1),
-                    control2: VectorPoint(warpedControl2)
+                    control2: VectorPoint(warpedControl2),
+                    pointType: pointType
                 ))
 
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, let pointType):
                 let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
                 let warpedControl = warpPoint(CGPoint(x: control.x, y: control.y))
                 warpedElements.append(.quadCurve(
                     to: VectorPoint(warpedTo),
-                    control: VectorPoint(warpedControl)
+                    control: VectorPoint(warpedControl),
+                    pointType: pointType
                 ))
 
             case .close:
