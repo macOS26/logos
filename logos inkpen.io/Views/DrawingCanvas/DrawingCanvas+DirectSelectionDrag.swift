@@ -170,6 +170,86 @@ extension DrawingCanvas {
         }
     }
 
+    private func isCoincidentPointSmooth(elements: [PathElement], handleID: HandleID) -> Bool {
+        guard elements.count >= 2 else { return false }
+
+        // Get first and last points
+        let firstPoint: CGPoint?
+        if case .move(let firstTo) = elements[0] {
+            firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
+        } else {
+            return false
+        }
+
+        var lastElementIndex = elements.count - 1
+        if case .close = elements[lastElementIndex] {
+            lastElementIndex -= 1
+        }
+
+        let lastPoint: CGPoint?
+        if lastElementIndex >= 0 {
+            switch elements[lastElementIndex] {
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
+                lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
+            default:
+                return false
+            }
+        } else {
+            return false
+        }
+
+        // Check if first and last are coincident
+        guard let first = firstPoint, let last = lastPoint,
+              abs(first.x - last.x) < 0.1 && abs(first.y - last.y) < 0.1 else {
+            return false
+        }
+
+        // Check if this is one of the coincident handles
+        let isFirstOutgoing = (handleID.handleType == .control1 && handleID.elementIndex == 1)
+        let isLastIncoming = (handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex)
+
+        if !isFirstOutgoing && !isLastIncoming {
+            return false
+        }
+
+        // Get both handles
+        var handle1: CGPoint?
+        var handle2: CGPoint?
+
+        if case .curve(_, let firstControl1, _) = elements[1] {
+            handle1 = CGPoint(x: firstControl1.x, y: firstControl1.y)
+        }
+
+        if case .curve(_, _, let lastControl2) = elements[lastElementIndex] {
+            handle2 = CGPoint(x: lastControl2.x, y: lastControl2.y)
+        }
+
+        guard let h1 = handle1, let h2 = handle2 else { return false }
+
+        // Check if both handles are at the anchor (corner point)
+        if (abs(h1.x - first.x) < 0.1 && abs(h1.y - first.y) < 0.1) ||
+           (abs(h2.x - first.x) < 0.1 && abs(h2.y - first.y) < 0.1) {
+            return false
+        }
+
+        // Calculate vectors
+        let vec1 = CGPoint(x: h1.x - first.x, y: h1.y - first.y)
+        let vec2 = CGPoint(x: h2.x - first.x, y: h2.y - first.y)
+
+        let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
+        let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
+
+        if len1 < 0.1 || len2 < 0.1 { return false }
+
+        // Normalize and check angle
+        let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
+        let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+
+        let dot = norm1.x * norm2.x + norm1.y * norm2.y
+
+        return dot < -0.98  // cos(170°) ≈ -0.98
+    }
+
     private func isPointSmooth(handleID: HandleID) -> Bool {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType,
@@ -177,6 +257,11 @@ extension DrawingCanvas {
 
         let elements = shape.path.elements
         let element = elements[handleID.elementIndex]
+
+        // Check for coincident points first
+        if isCoincidentPointSmooth(elements: elements, handleID: handleID) {
+            return true
+        }
 
         var anchorPoint: CGPoint?
         var handle1: CGPoint?
