@@ -41,6 +41,9 @@ struct DrawingCanvas: View {
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
 
+    // PROTOTYPE: Test anchor point types
+    @State internal var testAnchorTypes: [PointID: AnchorPointType] = [:]
+
     // Spatial index for O(1) hit testing
     @State internal var spatialIndex = SpatialIndex()
     @State internal var isDraggingDirectSelectedShapes = false
@@ -98,9 +101,6 @@ struct DrawingCanvas: View {
     @State internal var dragStartGradient: VectorGradient? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
-
-    // Anchor point type testing (local state, not persisted)
-    @State internal var pointTypes: [PointID: AnchorPointType] = [:]
     //internal let metalPerformanceMonitor = PerformanceMonitor()
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero

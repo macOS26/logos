@@ -171,8 +171,13 @@ struct RotateHandles: View {
         pathPoints.removeAll()
 
         for element in shape.path.elements {
-            if let point = element.destinationPoint {
-                pathPoints.append(VectorPoint(point))
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                break
             }
         }
 
@@ -256,8 +261,13 @@ struct RotateHandles: View {
         pathPoints.removeAll()
 
         for element in shape.path.elements {
-            if let point = element.destinationPoint {
-                pathPoints.append(VectorPoint(point))
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                break
             }
         }
 

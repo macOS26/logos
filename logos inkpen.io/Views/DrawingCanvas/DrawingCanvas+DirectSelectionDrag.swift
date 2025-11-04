@@ -171,35 +171,6 @@ extension DrawingCanvas {
     }
 
     private func isPointSmooth(handleID: HandleID) -> Bool {
-        // First, determine the anchor point ID for this handle
-        var anchorPointID: PointID?
-
-        if handleID.handleType == .control2 {
-            // control2 belongs to the anchor at this elementIndex
-            anchorPointID = PointID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex)
-        } else if handleID.handleType == .control1 {
-            // control1 belongs to the anchor at elementIndex - 1
-            let prevIndex = handleID.elementIndex - 1
-            if prevIndex >= 0 {
-                anchorPointID = PointID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: prevIndex)
-            }
-        }
-
-        // Check if user has explicitly set a type for this point
-        if let pointID = anchorPointID, let type = pointTypes[pointID] {
-            switch type {
-            case .auto:
-                break  // Fall through to geometric detection
-            case .corner:
-                return false  // Sharp point, never smooth
-            case .cusp:
-                return false  // Independent handles, never smooth
-            case .smooth:
-                return true   // Always maintain tangency
-            }
-        }
-
-        // Fall back to geometric detection
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType,
               handleID.elementIndex < shape.path.elements.count else { return false }
@@ -556,6 +527,9 @@ extension DrawingCanvas {
         default:
             break
         }
+
+        // Handle coincident points for smooth tangency
+        let _ = handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
 
         // DON'T call updateLinkedHandle - we already calculated linked positions during drag
 

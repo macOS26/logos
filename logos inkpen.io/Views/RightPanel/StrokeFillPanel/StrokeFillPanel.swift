@@ -51,6 +51,67 @@ struct StrokeFillPanel: View {
     @State private var selectedImageOpacityState: Double = 1.0
     @State private var isDragging: Bool = false
 
+    // PROTOTYPE: Test anchor point type selection
+    @State private var testAnchorType: AnchorPointType = .auto
+
+    private var prototypeAnchorTypeSelector: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Anchor Point Type")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 4) {
+                Button("Auto") {
+                    testAnchorType = .auto
+                    print("PROTOTYPE: Set anchor type to Auto")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(testAnchorType == .auto ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(testAnchorType == .auto ? .white : .primary)
+                .cornerRadius(4)
+                .buttonStyle(PlainButtonStyle())
+
+                Button("Corner") {
+                    testAnchorType = .corner
+                    print("PROTOTYPE: Set anchor type to Corner")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(testAnchorType == .corner ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(testAnchorType == .corner ? .white : .primary)
+                .cornerRadius(4)
+                .buttonStyle(PlainButtonStyle())
+
+                Button("Cusp") {
+                    testAnchorType = .cusp
+                    print("PROTOTYPE: Set anchor type to Cusp")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(testAnchorType == .cusp ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(testAnchorType == .cusp ? .white : .primary)
+                .cornerRadius(4)
+                .buttonStyle(PlainButtonStyle())
+
+                Button("Smooth") {
+                    testAnchorType = .smooth
+                    print("PROTOTYPE: Set anchor type to Smooth")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(testAnchorType == .smooth ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(testAnchorType == .smooth ? .white : .primary)
+                .cornerRadius(4)
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(6)
+    }
+
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = selectedObjectIDs.first,
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
@@ -307,6 +368,9 @@ struct StrokeFillPanel: View {
                         onSetActiveColorTarget: onSetActiveColorTarget,
                         onColorSelected: onSetActiveColor
                     )
+
+                    // PROTOTYPE: Anchor Point Type Selector
+                    prototypeAnchorTypeSelector
 
                     FillPropertiesSection(
                         fillOpacity: fillOpacityState,
