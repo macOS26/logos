@@ -116,8 +116,14 @@ struct StrokeFillPanel: View {
             let incomingAngle = atan2(incomingVector.y, incomingVector.x)
             let outgoingAngle = atan2(outgoingVector.y, outgoingVector.x)
 
-            let angleDiff = abs(incomingAngle - outgoingAngle)
-            let isAligned = abs(angleDiff - .pi) < 0.1 || abs(angleDiff + .pi) < 0.1
+            var angleDiff = abs(incomingAngle - outgoingAngle)
+            // Normalize to [0, π] range
+            if angleDiff > .pi {
+                angleDiff = 2 * .pi - angleDiff
+            }
+
+            // Smooth if within ~17 degrees of 180°
+            let isAligned = abs(angleDiff - .pi) < 0.3
 
             return isAligned ? .smooth : .cusp
         }
