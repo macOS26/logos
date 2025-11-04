@@ -688,46 +688,15 @@ extension DrawingCanvas {
 
         let element = shape.path.elements[elementIndex]
 
-        // Convert line to curve if needed
-        if case .line(let to) = element {
-            // Find previous point
-            var prevPoint: VectorPoint?
-            if elementIndex > 0 {
-                switch shape.path.elements[elementIndex - 1] {
-                case .move(let prev), .line(let prev):
-                    prevPoint = prev
-                case .curve(let prev, _, _), .quadCurve(let prev, _):
-                    prevPoint = prev
-                default:
-                    break
-                }
-            }
-
-            guard let start = prevPoint else { return }
-
-            // Create control points 1/3 along the line from each endpoint
-            let control1 = VectorPoint(
-                start.x + (to.x - start.x) / 3.0,
-                start.y + (to.y - start.y) / 3.0
-            )
-            let control2 = VectorPoint(
-                start.x + 2.0 * (to.x - start.x) / 3.0,
-                start.y + 2.0 * (to.y - start.y) / 3.0
-            )
-
-            // Convert line to curve
-            document.updateShapeByID(shapeID) { updatedShape in
-                updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2)
-                updatedShape.updateBounds()
-            }
+        // Handle line segments differently
+        if case .line = element {
+            // For lines, we'll move both endpoints
+            // No handles to capture
+            return
         }
 
-        // Re-read the shape in case we just converted it
-        guard let updatedObject = document.snapshot.objects[shapeID],
-              case .shape(let updatedShape) = updatedObject.objectType else { return }
-
-        // Now extract the control handles (either from existing curve or newly converted)
-        guard case .curve(_, let control1, let control2) = updatedShape.path.elements[elementIndex] else { return }
+        // Now extract the control handles for curves
+        guard case .curve(_, let control1, let control2) = element else { return }
 
         // For curve from A to B at elementIndex:
         // - control1 is A's outgoing handle (what we drag)
@@ -740,26 +709,26 @@ extension DrawingCanvas {
         originalHandlePositions[control2HandleID] = control2
 
         // Check if this is a closed path
-        let isClosed = updatedShape.path.elements.last.map { element in
+        let isClosed = shape.path.elements.last.map { element in
             if case .close = element { return true }
             return false
         } ?? false
 
         // Find last curve element index (skip .close if present)
-        var lastCurveIndex = updatedShape.path.elements.count - 1
-        if isClosed && lastCurveIndex >= 0, case .close = updatedShape.path.elements[lastCurveIndex] {
+        var lastCurveIndex = shape.path.elements.count - 1
+        if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
             lastCurveIndex -= 1
         }
 
         // Now find and capture the OPPOSITE handles for tangency maintenance
         // A's incoming handle (control2 of element at elementIndex-1)
         let prevIndex = elementIndex - 1
-        if prevIndex >= 0, case .curve(_, _, let prevControl2) = updatedShape.path.elements[prevIndex] {
+        if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
             let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
             originalHandlePositions[prevControl2HandleID] = prevControl2
         } else if isClosed && elementIndex == 1 {
             // First curve segment in closed path - opposite handle is last curve's incoming handle
-            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = updatedShape.path.elements[lastCurveIndex] {
+            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
                 let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
                 originalHandlePositions[lastControl2HandleID] = lastControl2
             }
@@ -767,16 +736,60 @@ extension DrawingCanvas {
 
         // B's outgoing handle (control1 of element at elementIndex+1)
         let nextIndex = elementIndex + 1
-        if nextIndex < updatedShape.path.elements.count, case .curve(_, let nextControl1, _) = updatedShape.path.elements[nextIndex] {
+        if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
             let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
             originalHandlePositions[nextControl1HandleID] = nextControl1
         } else if isClosed && elementIndex == lastCurveIndex {
             // Last curve segment in closed path - opposite handle is first curve's outgoing handle
-            if updatedShape.path.elements.count > 1, case .curve(_, let firstControl1, _) = updatedShape.path.elements[1] {
+            if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
                 let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
                 originalHandlePositions[firstControl1HandleID] = firstControl1
             }
         }
+    }
+
+    private func handleLineSegmentDrag(shape: VectorShape, elementIndex: Int, to: VectorPoint, offset: CGPoint) {
+        // Find previous point
+        var prevPoint: VectorPoint?
+        if elementIndex > 0 {
+            switch shape.path.elements[elementIndex - 1] {
+            case .move(let prev), .line(let prev):
+                prevPoint = prev
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
+                prevPoint = prev
+            default:
+                break
+            }
+        }
+
+        guard let start = prevPoint else { return }
+
+        // Calculate line direction vector
+        let dx = to.x - start.x
+        let dy = to.y - start.y
+        let length = sqrt(dx * dx + dy * dy)
+
+        guard length > 0.001 else { return }
+
+        // Normalized direction
+        let dirX = dx / length
+        let dirY = dy / length
+
+        // Perpendicular direction (rotate 90 degrees)
+        let perpX = -dirY
+        let perpY = dirX
+
+        // Project drag offset onto perpendicular direction
+        let perpDist = offset.x * perpX + offset.y * perpY
+
+        // Move both points perpendicular to the line
+        let moveOffset = CGPoint(x: perpDist * perpX, y: perpDist * perpY)
+
+        let startPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex - 1)
+        let endPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
+
+        livePointPositions[startPointID] = CGPoint(x: start.x + moveOffset.x, y: start.y + moveOffset.y)
+        livePointPositions[endPointID] = CGPoint(x: to.x + moveOffset.x, y: to.y + moveOffset.y)
     }
 
     private func handleCurveSegmentDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -791,6 +804,14 @@ extension DrawingCanvas {
         guard let object = document.snapshot.objects[curveSegment.shapeID],
               case .shape(let shape) = object.objectType,
               curveSegment.elementIndex < shape.path.elements.count else { return }
+
+        let element = shape.path.elements[curveSegment.elementIndex]
+
+        // Handle line segments - just move both endpoints
+        if case .line(let to) = element {
+            handleLineSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset)
+            return
+        }
 
         // Adjust handles based on parametric position t and drag offset
         let t = curveSegmentDragT
@@ -983,8 +1004,14 @@ extension DrawingCanvas {
             moveHandleToAbsolutePositionWithoutLinked(handleID, to: livePosition)
         }
 
+        // Apply all live point positions (for line segment dragging)
+        for (pointID, livePosition) in livePointPositions {
+            movePointToAbsolutePosition(pointID, to: livePosition)
+        }
+
         // Clear live state
         liveHandlePositions.removeAll()
+        livePointPositions.removeAll()
         originalHandlePositions.removeAll()
 
         // Create undo command
