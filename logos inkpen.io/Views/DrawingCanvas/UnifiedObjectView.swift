@@ -906,8 +906,8 @@ struct IsolatedLayerView: View {
     }
 
     // Helper to collect all text shapes (both top-level and grouped)
-    private func collectEditingTextShapes() -> [(id: UUID, dragDelta: CGPoint)] {
-        var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] = []
+    private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
+        var shapes: [(id: UUID, dragDelta: CGPoint)] = []
 
         print("🔍 collectEditingTextShapes: checking snapshot directly")
 
@@ -925,7 +925,7 @@ struct IsolatedLayerView: View {
                     let isSelected = selectedObjectIDs.contains(shape.id)
                     let delta = isSelected ? dragPreviewDelta : .zero
                     print("✅ Adding top-level editing text: \(shape.id)")
-                    editingTextShapes.append((id: shape.id, dragDelta: delta))
+                    shapes.append((id: shape.id, dragDelta: delta))
                 }
 
             case .group(let groupShape):
@@ -943,7 +943,7 @@ struct IsolatedLayerView: View {
                         let isParentSelected = selectedObjectIDs.contains(freshObject.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
                         print("✅ Adding grouped editing text: \(childShape.id)")
-                        editingTextShapes.append((id: childShape.id, dragDelta: delta))
+                        shapes.append((id: childShape.id, dragDelta: delta))
                     }
                 }
 
@@ -952,8 +952,8 @@ struct IsolatedLayerView: View {
             }
         }
 
-        print("🔍 Total editing texts found: \(editingTextShapes.count)")
-        return editingTextShapes
+        print("🔍 Total editing texts found: \(shapes.count)")
+        return shapes
     }
 
     var body: some View {
@@ -975,7 +975,7 @@ struct IsolatedLayerView: View {
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
-            ForEach(collectEditingTextShapes(), id: \.id) { textInfo in
+            ForEach(editingTextShapes, id: \.id) { textInfo in
                 ProfessionalTextCanvas(
                     document: document,
                     textObjectID: textInfo.id,
