@@ -52,8 +52,70 @@ struct StrokeFillPanel: View {
     @State private var selectedImageOpacityState: Double = 1.0
     @State private var isDragging: Bool = false
 
-    // PROTOTYPE: Test anchor point type selection
-    @State private var testAnchorType: AnchorPointType = .auto
+    // Detect current anchor type from selected points
+    private var currentAnchorType: AnchorPointType {
+        guard let firstPoint = selectedPoints.first,
+              let object = snapshot.objects[firstPoint.shapeID],
+              case .shape(let shape) = object.objectType,
+              firstPoint.elementIndex < shape.path.elements.count else {
+            return .auto
+        }
+
+        let element = shape.path.elements[firstPoint.elementIndex]
+        let elements = shape.path.elements
+
+        // Check incoming handle (control2 from this element)
+        var hasIncomingCurve = false
+        var incomingControl: CGPoint?
+        var anchorPoint: CGPoint?
+
+        switch element {
+        case .curve(let to, _, let control2):
+            hasIncomingCurve = true
+            incomingControl = CGPoint(x: control2.x, y: control2.y)
+            anchorPoint = CGPoint(x: to.x, y: to.y)
+        case .move(let to), .line(let to):
+            anchorPoint = CGPoint(x: to.x, y: to.y)
+        default:
+            break
+        }
+
+        // Check outgoing handle (control1 from next element)
+        var hasOutgoingCurve = false
+        var outgoingControl: CGPoint?
+
+        if firstPoint.elementIndex + 1 < elements.count {
+            if case .curve(_, let control1, _) = elements[firstPoint.elementIndex + 1] {
+                hasOutgoingCurve = true
+                outgoingControl = CGPoint(x: control1.x, y: control1.y)
+            }
+        }
+
+        // Determine type based on handles
+        guard let anchor = anchorPoint else { return .auto }
+
+        if !hasIncomingCurve && !hasOutgoingCurve {
+            return .corner
+        }
+
+        if hasIncomingCurve && hasOutgoingCurve,
+           let incoming = incomingControl,
+           let outgoing = outgoingControl {
+            // Check if handles are collinear (180° aligned)
+            let incomingVector = CGPoint(x: anchor.x - incoming.x, y: anchor.y - incoming.y)
+            let outgoingVector = CGPoint(x: outgoing.x - anchor.x, y: outgoing.y - anchor.y)
+
+            let incomingAngle = atan2(incomingVector.y, incomingVector.x)
+            let outgoingAngle = atan2(outgoingVector.y, outgoingVector.x)
+
+            let angleDiff = abs(incomingAngle - outgoingAngle)
+            let isAligned = abs(angleDiff - .pi) < 0.1 || abs(angleDiff + .pi) < 0.1
+
+            return isAligned ? .smooth : .cusp
+        }
+
+        return .cusp  // One handle only = cusp
+    }
 
     private var prototypeAnchorTypeSelector: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -63,46 +125,42 @@ struct StrokeFillPanel: View {
 
             HStack(spacing: 4) {
                 Button("Auto") {
-                    testAnchorType = .auto
-                    print("PROTOTYPE: Set anchor type to Auto")
+                    applyAnchorTypeToSelection(.auto)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
-                .background(testAnchorType == .auto ? Color.accentColor : Color.gray.opacity(0.2))
-                .foregroundColor(testAnchorType == .auto ? .white : .primary)
+                .background(currentAnchorType == .auto ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(currentAnchorType == .auto ? .white : .primary)
                 .cornerRadius(4)
                 .buttonStyle(PlainButtonStyle())
 
                 Button("Corner") {
-                    testAnchorType = .corner
                     applyAnchorTypeToSelection(.corner)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
-                .background(testAnchorType == .corner ? Color.accentColor : Color.gray.opacity(0.2))
-                .foregroundColor(testAnchorType == .corner ? .white : .primary)
+                .background(currentAnchorType == .corner ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(currentAnchorType == .corner ? .white : .primary)
                 .cornerRadius(4)
                 .buttonStyle(PlainButtonStyle())
 
                 Button("Cusp") {
-                    testAnchorType = .cusp
                     applyAnchorTypeToSelection(.cusp)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
-                .background(testAnchorType == .cusp ? Color.accentColor : Color.gray.opacity(0.2))
-                .foregroundColor(testAnchorType == .cusp ? .white : .primary)
+                .background(currentAnchorType == .cusp ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(currentAnchorType == .cusp ? .white : .primary)
                 .cornerRadius(4)
                 .buttonStyle(PlainButtonStyle())
 
                 Button("Smooth") {
-                    testAnchorType = .smooth
                     applyAnchorTypeToSelection(.smooth)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
-                .background(testAnchorType == .smooth ? Color.accentColor : Color.gray.opacity(0.2))
-                .foregroundColor(testAnchorType == .smooth ? .white : .primary)
+                .background(currentAnchorType == .smooth ? Color.accentColor : Color.gray.opacity(0.2))
+                .foregroundColor(currentAnchorType == .smooth ? .white : .primary)
                 .cornerRadius(4)
                 .buttonStyle(PlainButtonStyle())
             }
@@ -114,9 +172,103 @@ struct StrokeFillPanel: View {
     }
 
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
-        // For now, just print - need selectedPoints wired up
-        print("PROTOTYPE: Button clicked for \(type), but selectedPoints not wired up yet")
-        print("PROTOTYPE: Need to only modify selected point + coincident, not all points")
+        guard !selectedPoints.isEmpty else {
+            print("No points selected")
+            return
+        }
+
+        var layersToUpdate = Set<Int>()
+
+        for pointID in selectedPoints {
+            guard var object = snapshot.objects[pointID.shapeID],
+                  case .shape(var shape) = object.objectType,
+                  pointID.elementIndex < shape.path.elements.count else {
+                continue
+            }
+
+            let elementIndex = pointID.elementIndex
+            var elements = shape.path.elements
+
+            // Get anchor position
+            guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
+            let anchorPos = VectorPoint(anchorPosCG.x, anchorPosCG.y)
+
+            // Modify the element and next element based on type
+            switch type {
+            case .corner:
+                // Convert to line (no curves)
+                elements[elementIndex] = .line(to: anchorPos)
+                // Also convert next element's incoming handle if it exists
+                if elementIndex + 1 < elements.count {
+                    if case .curve(let to, _, _) = elements[elementIndex + 1] {
+                        elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: to)
+                    }
+                }
+
+            case .cusp:
+                // Keep curves but make them independent (already is cusp if it has curves)
+                // Just ensure we have curve handles
+                if case .line(_) = elements[elementIndex] {
+                    // Convert line to curve with minimal handles
+                    elements[elementIndex] = .curve(to: anchorPos, control1: anchorPos, control2: anchorPos)
+                }
+
+            case .smooth:
+                // Make curves collinear (180° aligned)
+                if elementIndex + 1 < elements.count {
+                    if case .curve(let to, let control1, _) = elements[elementIndex + 1],
+                       case .curve(_, _, let control2) = elements[elementIndex] {
+                        // Calculate aligned control points
+                        let handleLength = distance(from: anchorPosCG, to: control1)
+                        let incomingVector = normalize(from: control2, to: anchorPosCG)
+                        let newControl1 = VectorPoint(
+                            anchorPosCG.x + incomingVector.x * handleLength,
+                            anchorPosCG.y + incomingVector.y * handleLength
+                        )
+                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
+                    }
+                }
+
+            case .auto:
+                // Auto mode - keep as is
+                break
+            }
+
+            // Update the shape
+            shape.path = VectorPath(elements: elements)
+            shape.updateBounds()
+            object = VectorObject(shape: shape, layerIndex: object.layerIndex)
+            snapshot.objects[pointID.shapeID] = object
+            layersToUpdate.insert(object.layerIndex)
+        }
+
+        // Trigger updates for affected layers
+        if !layersToUpdate.isEmpty {
+            onTriggerLayerUpdates(layersToUpdate)
+        }
+    }
+
+    private func getAnchorPosition(from element: PathElement) -> CGPoint? {
+        switch element {
+        case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+            return CGPoint(x: to.x, y: to.y)
+        case .close:
+            return nil
+        }
+    }
+
+    private func distance(from p1: CGPoint, to p2: VectorPoint) -> Double {
+        let dx = p2.x - p1.x
+        let dy = p2.y - p1.y
+        return sqrt(dx * dx + dy * dy)
+    }
+
+    private func normalize(from p1: VectorPoint, to p2: CGPoint) -> CGPoint {
+        let dx = p2.x - p1.x
+        let dy = p2.y - p1.y
+        let len = sqrt(dx * dx + dy * dy)
+        guard len > 0.001 else { return CGPoint(x: 1, y: 0) }
+        return CGPoint(x: dx / len, y: dy / len)
     }
 
     private var selectedStrokeColor: VectorColor {
