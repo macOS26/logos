@@ -342,7 +342,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         for element in legacyPath.elements {
             switch element {
-            case .move(let to):
+            case .move(let to, _):
                 currentPoint = to
                 professionalPoints.append(ProfessionalBezierMathematics.BezierPoint.cornerPoint(at: to))
 

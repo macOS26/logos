@@ -102,13 +102,13 @@ extension VectorDocument {
             var updatedElements: [PathElement] = []
             for element in shape.path.elements {
                 switch element {
-                case .move(let to):
+                case .move(let to, let type):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.move(to: VectorPoint(newPoint)))
-                case .line(let to, let pointType):
+                    updatedElements.append(.move(to: VectorPoint(newPoint), pointType: type))
+                case .line(let to, let type):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
-                case .curve(let to, let control1, let control2, let pointType):
+                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: type))
+                case .curve(let to, let control1, let control2, let type):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
                     let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
@@ -116,15 +116,15 @@ extension VectorDocument {
                         to: VectorPoint(newTo),
                         control1: VectorPoint(newControl1),
                         control2: VectorPoint(newControl2),
-                        pointType: pointType
+                        pointType: type
                     ))
-                case .quadCurve(let to, let control, let pointType):
+                case .quadCurve(let to, let control, let type):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
                     updatedElements.append(.quadCurve(
                         to: VectorPoint(newTo),
                         control: VectorPoint(newControl),
-                        pointType: pointType
+                        pointType: type
                     ))
                 case .close:
                     updatedElements.append(.close)
@@ -135,13 +135,13 @@ extension VectorDocument {
             var updatedElements: [PathElement] = []
             for element in shape.path.elements {
                 switch element {
-                case .move(let to):
+                case .move(let to, let type):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.move(to: VectorPoint(newPoint)))
-                case .line(let to, let pointType):
+                    updatedElements.append(.move(to: VectorPoint(newPoint), pointType: type))
+                case .line(let to, let type):
                     let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
-                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: pointType))
-                case .curve(let to, let control1, let control2, let pointType):
+                    updatedElements.append(.line(to: VectorPoint(newPoint), pointType: type))
+                case .curve(let to, let control1, let control2, let type):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
                     let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
@@ -149,15 +149,15 @@ extension VectorDocument {
                         to: VectorPoint(newTo),
                         control1: VectorPoint(newControl1),
                         control2: VectorPoint(newControl2),
-                        pointType: pointType
+                        pointType: type
                     ))
-                case .quadCurve(let to, let control, let pointType):
+                case .quadCurve(let to, let control, let type):
                     let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
                     let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
                     updatedElements.append(.quadCurve(
                         to: VectorPoint(newTo),
                         control: VectorPoint(newControl),
-                        pointType: pointType
+                        pointType: type
                     ))
                 case .close:
                     updatedElements.append(.close)

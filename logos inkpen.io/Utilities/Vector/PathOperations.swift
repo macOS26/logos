@@ -657,22 +657,9 @@ extension ProfessionalPathOperations {
 
         var pointData: [(index: Int, position: VectorPoint, element: PathElement)] = []
         for (index, element) in path.elements.enumerated() {
-            let position: VectorPoint?
-            switch element {
-            case .move(let to):
-                position = to
-            case .line(let to, _):
-                position = to
-            case .curve(let to, _, _, _):
-                position = to
-            case .quadCurve(let to, _, _):
-                position = to
-            case .close:
-                position = nil
-            }
-
-            if let pos = position {
-                pointData.append((index, pos, element))
+            // Use helper to extract destination point
+            if let position = element.destinationPoint {
+                pointData.append((index, position, element))
             }
         }
 
@@ -731,10 +718,8 @@ extension ProfessionalPathOperations {
             return path
         }
 
-        var firstPoint: VectorPoint?
-        if case .move(let to) = path.elements.first {
-            firstPoint = to
-        }
+        // Use helper to extract first point
+        let firstPoint = path.elements.first?.destinationPoint
 
         var elementsToSkip: Set<Int> = []
         var duplicatesRemoved = 0
@@ -743,20 +728,9 @@ extension ProfessionalPathOperations {
             for (index, element) in path.elements.enumerated() {
                 if index == 0 { continue }
 
-                var endpoint: VectorPoint?
-                switch element {
-                case .line(let to, _):
-                    endpoint = to
-                case .curve(let to, _, _, _):
-                    endpoint = to
-                case .quadCurve(let to, _, _):
-                    endpoint = to
-                case .move(_), .close:
-                    continue
-                }
-
-                if let end = endpoint {
-                    let distance = first.distance(to: end)
+                // Use helper to extract destination point
+                if let endpoint = element.destinationPoint {
+                    let distance = first.distance(to: endpoint)
                     if distance <= tolerance {
                         elementsToSkip.insert(index)
                         duplicatesRemoved += 1

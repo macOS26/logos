@@ -7,12 +7,12 @@ struct PathOutline: View {
     var body: some View {
         ZStack {
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                ForEach(Array(shape.groupedShapes.indices), id: \.self) { index in
                     let groupedShape = shape.groupedShapes[index]
                     let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
-                            case .move(let to):
+                            case .move(let to, _):
                                 path.move(to: to.cgPoint)
                             case .line(let to, _):
                                 path.addLine(to: to.cgPoint)

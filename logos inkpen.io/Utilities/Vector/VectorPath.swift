@@ -115,18 +115,56 @@ struct BezierControlPoint: Codable, Hashable {
     }
 }
 
-enum AnchorPointType: String, Codable, Hashable, CaseIterable {
-    case corner  // Sharp point, no curves (straight lines meet)
-    case cusp    // Independent curves, no tangency (curved but not smooth)
-    case smooth  // 180° tangent curves (smooth point)
+enum AnchorPointType: String, Codable, Hashable {
+    case corner      // Sharp point, no curves or independent angles
+    case cusp        // Independent curves, no tangency
+    case smooth      // 180° tangent curves
 }
 
 enum PathElement: Codable, Hashable {
-    case move(to: VectorPoint)
+    case move(to: VectorPoint, pointType: AnchorPointType = .corner)
     case line(to: VectorPoint, pointType: AnchorPointType = .corner)
     case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint, pointType: AnchorPointType = .smooth)
     case quadCurve(to: VectorPoint, control: VectorPoint, pointType: AnchorPointType = .smooth)
     case close
+
+    // Helper methods to extract destination point
+    var destinationPoint: VectorPoint? {
+        switch self {
+        case .move(let to, _), .line(let to, _):
+            return to
+        case .curve(let to, _, _, _), .quadCurve(let to, _, _):
+            return to
+        case .close:
+            return nil
+        }
+    }
+
+    var pointType: AnchorPointType? {
+        switch self {
+        case .move(_, let type), .line(_, let type):
+            return type
+        case .curve(_, _, _, let type), .quadCurve(_, _, let type):
+            return type
+        case .close:
+            return nil
+        }
+    }
+
+    mutating func setPointType(_ type: AnchorPointType) {
+        switch self {
+        case .move(let to, _):
+            self = .move(to: to, pointType: type)
+        case .line(let to, _):
+            self = .line(to: to, pointType: type)
+        case .curve(let to, let c1, let c2, _):
+            self = .curve(to: to, control1: c1, control2: c2, pointType: type)
+        case .quadCurve(let to, let c, _):
+            self = .quadCurve(to: to, control: c, pointType: type)
+        case .close:
+            break
+        }
+    }
 }
 
 struct VectorPath: Codable, Hashable, Identifiable {
@@ -220,7 +258,7 @@ struct VectorPath: Codable, Hashable, Identifiable {
 
         for element in elements {
             switch element {
-            case .move(let to):
+            case .move(let to, _):
                 path.move(to: to.cgPoint)
             case .line(let to, _):
                 path.addLine(to: to.cgPoint)

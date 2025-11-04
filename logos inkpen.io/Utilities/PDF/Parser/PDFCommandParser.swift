@@ -244,15 +244,15 @@ class PDFCommandParser {
     func elementsAreEqual(_ e1: PathElement, _ e2: PathElement) -> Bool {
         let tolerance = 0.01
         switch (e1, e2) {
-        case (.move(let p1), .move(let p2)):
+        case (.move(let p1, _), .move(let p2, _)):
             return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
-        case (.line(let p1), .line(let p2)):
+        case (.line(let p1, _), .line(let p2, _)):
             return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
-        case (.curve(let to1, let c1_1, let c2_1), .curve(let to2, let c1_2, let c2_2)):
+        case (.curve(let to1, let c1_1, let c2_1, _), .curve(let to2, let c1_2, let c2_2, _)):
             return abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance &&
                    abs(c1_1.x - c1_2.x) < tolerance && abs(c1_1.y - c1_2.y) < tolerance &&
                    abs(c2_1.x - c2_2.x) < tolerance && abs(c2_1.y - c2_2.y) < tolerance
-        case (.quadCurve(let to1, let c1), .quadCurve(let to2, let c2)):
+        case (.quadCurve(let to1, let c1, _), .quadCurve(let to2, let c2, _)):
             return abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance &&
                    abs(c1.x - c2.x) < tolerance && abs(c1.y - c2.y) < tolerance
         case (.close, .close):

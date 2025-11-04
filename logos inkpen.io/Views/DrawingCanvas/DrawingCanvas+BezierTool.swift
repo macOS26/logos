@@ -37,13 +37,13 @@ extension DrawingCanvas {
 
                 for element in shape.path.elements {
                     switch element {
-                    case .move(to: let p), .line(to: let p):
+                    case .move(to: let p, pointType: _), .line(to: let p, pointType: _):
                         let dist = distance(point, CGPoint(x: p.x, y: p.y))
                         if dist < nearestDistance {
                             nearestDistance = dist
                             nearestPoint = CGPoint(x: p.x, y: p.y)
                         }
-                    case .curve(to: let p, control1: _, control2: _):
+                    case .curve(to: let p, control1: _, control2: _, pointType: _):
                         let dist = distance(point, CGPoint(x: p.x, y: p.y))
                         if dist < nearestDistance {
                             nearestDistance = dist
@@ -51,7 +51,7 @@ extension DrawingCanvas {
                         }
                     case .close:
                         break
-                    case .quadCurve(to: let p, control: _):
+                    case .quadCurve(to: let p, control: _, pointType: _):
                         let dist = distance(point, CGPoint(x: p.x, y: p.y))
                         if dist < nearestDistance {
                             nearestDistance = dist

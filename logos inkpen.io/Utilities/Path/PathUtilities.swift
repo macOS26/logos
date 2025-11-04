@@ -38,7 +38,7 @@ func validatePathElements(_ elements: [PathElement]) -> [PathElement] {
 
     for element in elements {
         switch element {
-        case .move(_):
+        case .move(_, _):
             validElements.append(element)
 
         case .line(_, _):

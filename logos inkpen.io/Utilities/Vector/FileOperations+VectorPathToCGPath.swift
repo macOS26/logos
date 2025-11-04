@@ -6,7 +6,7 @@ class FileOperations {
 
         for element in vectorPath.elements {
             switch element {
-            case .move(let point):
+            case .move(let point, _):
                 cgPath.move(to: CGPoint(x: point.x, y: point.y))
             case .line(let point, _):
                 cgPath.addLine(to: CGPoint(x: point.x, y: point.y))

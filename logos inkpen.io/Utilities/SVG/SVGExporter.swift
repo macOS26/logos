@@ -825,21 +825,21 @@ class SVGExporter {
 
         for element in path.elements {
             switch element {
-            case .move(let to):
+            case .move(let to, _):
                 let point = to.cgPoint.applying(transform)
                 pathData += "M\(point.x),\(point.y) "
 
-            case .line(let to):
+            case .line(let to, _):
                 let point = to.cgPoint.applying(transform)
                 pathData += "L\(point.x),\(point.y) "
 
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, _):
                 let toPoint = to.cgPoint.applying(transform)
                 let c1 = control1.cgPoint.applying(transform)
                 let c2 = control2.cgPoint.applying(transform)
                 pathData += "C\(c1.x),\(c1.y) \(c2.x),\(c2.y) \(toPoint.x),\(toPoint.y) "
 
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, _):
                 let toPoint = to.cgPoint.applying(transform)
                 let c = control.cgPoint.applying(transform)
                 pathData += "Q\(c.x),\(c.y) \(toPoint.x),\(toPoint.y) "

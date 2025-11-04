@@ -3,20 +3,22 @@ import SwiftUI
 private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
     let offsetElements = path.elements.map { element -> PathElement in
         switch element {
-        case .move(let to):
-            return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y))
-        case .line(let to):
-            return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y))
-        case .quadCurve(let to, let control):
+        case .move(let to, let type):
+            return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y), pointType: type)
+        case .line(let to, let type):
+            return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y), pointType: type)
+        case .quadCurve(let to, let control, let type):
             return .quadCurve(
                 to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                control: VectorPoint(control.x + offset.x, control.y + offset.y)
+                control: VectorPoint(control.x + offset.x, control.y + offset.y),
+                pointType: type
             )
-        case .curve(let to, let control1, let control2):
+        case .curve(let to, let control1, let control2, let type):
             return .curve(
                 to: VectorPoint(to.x + offset.x, to.y + offset.y),
                 control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
-                control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
+                control2: VectorPoint(control2.x + offset.x, control2.y + offset.y),
+                pointType: type
             )
         case .close:
             return .close
