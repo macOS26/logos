@@ -31,7 +31,7 @@ extension DrawingCanvas {
 
         let element = shape.path.elements[elementIndex]
 
-        guard case .curve(let to, let control1, let control2) = element else {
+        guard case .curve(let to, let control1, let control2, _) = element else {
             return
         }
 
@@ -40,7 +40,7 @@ extension DrawingCanvas {
         if elementIndex > 0 {
             let prevElement = shape.path.elements[elementIndex - 1]
             switch prevElement {
-            case .move(let point), .line(let point), .curve(let point, _, _), .quadCurve(let point, _):
+            case .move(let point, _), .line(let point, _), .curve(let point, _, _, _), .quadCurve(let point, _, _):
                 startPoint = point
             default:
                 return
@@ -68,13 +68,15 @@ extension DrawingCanvas {
         let firstCurve = PathElement.curve(
             to: VectorPoint(splitResult.splitPoint),
             control1: VectorPoint(splitResult.leftControl1),
-            control2: VectorPoint(splitResult.leftControl2)
+            control2: VectorPoint(splitResult.leftControl2),
+            pointType: .corner
         )
 
         let secondCurve = PathElement.curve(
             to: to,
             control1: VectorPoint(splitResult.rightControl1),
-            control2: VectorPoint(splitResult.rightControl2)
+            control2: VectorPoint(splitResult.rightControl2),
+            pointType: .corner
         )
 
         var modifiedShape = shape
@@ -151,7 +153,7 @@ extension DrawingCanvas {
 
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
-                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                case .move(let to, _), .line(let to, _), .curve(let to, _, _, _), .quadCurve(let to, _, _):
                     let rawPointLocation = CGPoint(x: to.x, y: to.y)
                     let pointLocation = rawPointLocation.applying(shape.transform)
 
@@ -180,9 +182,9 @@ extension DrawingCanvas {
 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
-                    case .move(let to):
+                    case .move(let to, _):
                         previousPoint = to
-                    case .line(let to):
+                    case .line(let to, _):
                         if let prev = previousPoint {
                             let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
                             let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
@@ -192,7 +194,7 @@ extension DrawingCanvas {
                             }
                         }
                         previousPoint = to
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, let control1, let control2, _):
                         if let prev = previousPoint {
                             let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
                             let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
@@ -204,7 +206,7 @@ extension DrawingCanvas {
                             }
                         }
                         previousPoint = to
-                    case .quadCurve(let to, _):
+                    case .quadCurve(let to, _, _):
                         previousPoint = to
                     default:
                         break
