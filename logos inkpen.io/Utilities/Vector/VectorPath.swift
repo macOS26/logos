@@ -304,9 +304,13 @@ struct VectorPath: Codable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
-        elements = try container.decodeIfPresent([PathElement].self, forKey: .elements) ?? []
+        var loadedElements = try container.decodeIfPresent([PathElement].self, forKey: .elements) ?? []
         isClosed = try container.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false
         fillRule = try container.decode(FillRule.self, forKey: .fillRule)
+
+        // Auto-detect point types for old documents that don't have them set
+        autoDetectPointTypes(elements: &loadedElements)
+        elements = loadedElements
     }
 
     init(cgPath: CGPath, fillRule: CGPathFillRule = .winding) {
