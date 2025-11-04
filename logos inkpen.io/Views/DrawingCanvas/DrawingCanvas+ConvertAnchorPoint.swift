@@ -40,7 +40,7 @@ extension DrawingCanvas {
 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
-                    case .curve(let to, _, _), .move(let to), .line(let to), .quadCurve(let to, _):
+                    case .curve(let to, _, _, _), .move(let to, _), .line(let to, _), .quadCurve(let to, _, _):
                         let anchorPointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, anchorPointLocation) <= tolerance {
                             clickedAnchorPoint = to
@@ -57,7 +57,7 @@ extension DrawingCanvas {
 
                     for (_, checkElement) in shape.path.elements.enumerated() {
                         switch checkElement {
-                        case .curve(_, let control1, let control2):
+                        case .curve(_, let control1, let control2, _):
                             let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
 
@@ -77,7 +77,7 @@ extension DrawingCanvas {
 
                     if !hasCollapsedHandles {
                         let clickedElement = shape.path.elements[elementIndex]
-                        if case .curve(_, let control1, let control2) = clickedElement {
+                        if case .curve(_, let control1, let control2, _) = clickedElement {
                             let control1Extended = !(abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Extended = !(abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
 
@@ -109,14 +109,14 @@ extension DrawingCanvas {
 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, let control1, let control2, _):
                         let control1HandleLocation = CGPoint(x: control1.x, y: control1.y)
                         if distance(location, control1HandleLocation) <= tolerance {
                             let currentAnchorPoint: VectorPoint
                             if elementIndex > 0 {
                                 let previousElement = shape.path.elements[elementIndex - 1]
                                 switch previousElement {
-                                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                                case .move(let to, _), .line(let to, _), .curve(let to, _, _, _), .quadCurve(let to, _, _):
                                     currentAnchorPoint = to
                                 case .close:
                                     currentAnchorPoint = VectorPoint(0, 0)
@@ -140,17 +140,17 @@ extension DrawingCanvas {
                             }
                         }
 
-                    case .move(_), .line(_):
+                    case .move(_, _), .line(_, _):
                             if elementIndex + 1 < shape.path.elements.count {
                                 let nextElement = shape.path.elements[elementIndex + 1]
-                            if case .curve(let nextTo, let nextControl1, _) = nextElement {
+                            if case .curve(let nextTo, let nextControl1, _, _) = nextElement {
                                 let control1HandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
                                 if distance(location, control1HandleLocation) <= tolerance {
                                     let sourceAnchorPoint: VectorPoint
                                     switch element {
-                                    case .move(let to), .line(let to):
+                                    case .move(let to, _), .line(let to, _):
                                         sourceAnchorPoint = to
-                                    case .curve(let to, _, _), .quadCurve(let to, _):
+                                    case .curve(let to, _, _, _), .quadCurve(let to, _, _):
                                         sourceAnchorPoint = to
                                     default:
                                         sourceAnchorPoint = nextTo
@@ -184,7 +184,7 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch element {
-        case .curve(let to, let originalControl1, let control2):
+        case .curve(let to, let originalControl1, let control2, let pointType):
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
             document.originalHandlePositions[handleKey] = originalControl1
 
@@ -192,7 +192,7 @@ extension DrawingCanvas {
             if elementIndex > 0 {
                 let previousElement = elements[elementIndex - 1]
                 switch previousElement {
-                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                case .move(let to, _), .line(let to, _), .curve(let to, _, _, _), .quadCurve(let to, _, _):
                     currentAnchorPoint = to
                 case .close:
                     currentAnchorPoint = VectorPoint(0, 0)
@@ -201,7 +201,7 @@ extension DrawingCanvas {
                 currentAnchorPoint = VectorPoint(0, 0)
             }
             let collapsedControl1 = VectorPoint(currentAnchorPoint.x, currentAnchorPoint.y)
-            elements[elementIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
+            elements[elementIndex] = .curve(to: to, control1: collapsedControl1, control2: control2, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -213,8 +213,8 @@ extension DrawingCanvas {
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
 
-        case .quadCurve(let to, _):
-            elements[elementIndex] = .line(to: to)
+        case .quadCurve(let to, _, let pointType):
+            elements[elementIndex] = .line(to: to, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -241,12 +241,12 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch element {
-        case .curve(let to, let control1, let originalControl2):
+        case .curve(let to, let control1, let originalControl2, let pointType):
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
             document.originalHandlePositions[handleKey] = originalControl2
 
             let collapsedControl2 = VectorPoint(to.x, to.y)
-            elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
+            elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -258,8 +258,8 @@ extension DrawingCanvas {
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
 
-        case .quadCurve(let to, _):
-            elements[elementIndex] = .line(to: to)
+        case .quadCurve(let to, _, let pointType):
+            elements[elementIndex] = .line(to: to, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -286,7 +286,7 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch nextElement {
-        case .curve(let to, let originalControl1, let control2):
+        case .curve(let to, let originalControl1, let control2, let pointType):
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
             document.originalHandlePositions[handleKey] = originalControl1
 
@@ -294,15 +294,15 @@ extension DrawingCanvas {
             let sourceAnchorPoint: VectorPoint
 
             switch currentElement {
-            case .move(let to), .line(let to):
+            case .move(let to, _), .line(let to, _):
                 sourceAnchorPoint = to
-            case .curve(let to, _, _), .quadCurve(let to, _):
+            case .curve(let to, _, _, _), .quadCurve(let to, _, _):
                 sourceAnchorPoint = to
             default:
                 sourceAnchorPoint = to
             }
 
-            elements[elementIndex + 1] = .curve(to: to, control1: sourceAnchorPoint, control2: control2)
+            elements[elementIndex + 1] = .curve(to: to, control1: sourceAnchorPoint, control2: control2, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -329,7 +329,7 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch element {
-        case .curve(let to, let control1, let control2):
+        case .curve(let to, let control1, let control2, let pointType):
             let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
             let control2Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
             let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
@@ -351,7 +351,7 @@ extension DrawingCanvas {
                 restoredControl2 = VectorPoint(control2X, control2Y)
             }
 
-            elements[elementIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
+            elements[elementIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -378,7 +378,7 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch nextElement {
-        case .curve(let to, _, let control2):
+        case .curve(let to, _, let control2, let pointType):
             let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
             let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
             let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
@@ -393,9 +393,9 @@ extension DrawingCanvas {
                 let sourceAnchorPoint: VectorPoint
 
                 switch currentElement {
-                case .move(let to), .line(let to):
+                case .move(let to, _), .line(let to, _):
                     sourceAnchorPoint = to
-                case .curve(let to, _, _), .quadCurve(let to, _):
+                case .curve(let to, _, _, _), .quadCurve(let to, _, _):
                     sourceAnchorPoint = to
                 default:
                     sourceAnchorPoint = to
@@ -407,7 +407,7 @@ extension DrawingCanvas {
                 )
             }
 
-            elements[elementIndex + 1] = .curve(to: to, control1: restoredControl1, control2: control2)
+            elements[elementIndex + 1] = .curve(to: to, control1: restoredControl1, control2: control2, pointType: pointType)
 
             var updatedShape = shape
             updatedShape.path.elements = elements
@@ -434,7 +434,7 @@ extension DrawingCanvas {
         var needsUpdate = false
 
         for (checkIndex, checkElement) in elements.enumerated() {
-            if case .curve(let to, let control1, let control2) = checkElement {
+            if case .curve(let to, let control1, let control2, let pointType) = checkElement {
                 let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                 let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
                 var restoredControl1 = control1
@@ -458,7 +458,7 @@ extension DrawingCanvas {
                 }
 
                 if elementNeedsUpdate {
-                    elements[checkIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
+                    elements[checkIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2, pointType: pointType)
                     needsUpdate = true
                 }
             }
@@ -487,13 +487,13 @@ extension DrawingCanvas {
         var needsUpdate = false
 
         for (checkIndex, checkElement) in elements.enumerated() {
-            if case .curve(let to, let control1, let control2) = checkElement {
+            if case .curve(let to, let control1, let control2, let pointType) = checkElement {
                 if abs(to.x - anchorPoint.x) < 0.1 && abs(to.y - anchorPoint.y) < 0.1 {
                     let control2Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control2"
                     document.originalHandlePositions[control2Key] = control2
 
                     let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
-                    elements[checkIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
+                    elements[checkIndex] = .curve(to: to, control1: control1, control2: collapsedControl2, pointType: pointType)
                     needsUpdate = true
                 }
 
@@ -502,7 +502,7 @@ extension DrawingCanvas {
                     let previousAnchorPoint: VectorPoint
 
                     switch previousElement {
-                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                    case .move(let to, _), .line(let to, _), .curve(let to, _, _, _), .quadCurve(let to, _, _):
                         previousAnchorPoint = to
                     default:
                         previousAnchorPoint = VectorPoint(0, 0)
@@ -513,7 +513,7 @@ extension DrawingCanvas {
                         document.originalHandlePositions[control1Key] = control1
 
                         let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
-                        elements[checkIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
+                        elements[checkIndex] = .curve(to: to, control1: collapsedControl1, control2: control2, pointType: pointType)
                         needsUpdate = true
                     }
                 }
