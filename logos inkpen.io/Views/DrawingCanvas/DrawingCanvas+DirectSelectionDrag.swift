@@ -863,7 +863,7 @@ extension DrawingCanvas {
 
         // Convert .close to .curve
         document.updateShapeByID(curveSegment.shapeID) { updatedShape in
-            updatedShape.path.elements[elementIndex] = .curve(to: end, control1: control1, control2: control2, pointType: .smoothSymmetric)
+            updatedShape.path.elements[elementIndex] = .curve(to: end, control1: control1, control2: control2, pointType: .smooth)
             updatedShape.updateBounds()
         }
 
@@ -907,7 +907,7 @@ extension DrawingCanvas {
 
         // Convert line to curve
         document.updateShapeByID(curveSegment.shapeID) { updatedShape in
-            updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2, pointType: .smoothSymmetric)
+            updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2, pointType: .smooth)
             updatedShape.updateBounds()
         }
 
