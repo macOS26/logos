@@ -37,7 +37,7 @@ struct RightPanel: View {
                             set: { document.snapshot = $0 }
                         ),
                         selectedObjectIDs: viewState.selectedObjectIDs,
-                        selectedPoints: [],  // PROTOTYPE: TODO wire up
+                        selectedPoints: viewState.selectedPoints,
                         activeColorTarget: viewState.activeColorTarget,
                         colorMode: Binding(
                             get: { document.settings.colorMode },

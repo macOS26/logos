@@ -56,5 +56,15 @@ class DocumentViewState: ObservableObject {
     }
 
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
+
+    // Point selection for direct selection tool
+    var selectedPoints: Set<PointID> = [] {
+        didSet {
+            PublishedSelectedPoints = selectedPoints
+        }
+    }
+
+    @Published var PublishedSelectedPoints: Set<PointID> = []
+
     init() {}
 }

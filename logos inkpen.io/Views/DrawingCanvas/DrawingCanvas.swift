@@ -121,6 +121,7 @@ struct DrawingCanvas: View {
 
     internal func syncDirectSelectionWithDocument() {
         viewState.selectedObjectIDs = selectedObjectIDs
+        viewState.selectedPoints = selectedPoints
 
         if !selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = Set(selectedObjectIDs)
