@@ -93,18 +93,18 @@ extension DrawingCanvas {
         let cgPath = CGMutablePath()
         for element in path.elements {
             switch element {
-            case .move(let to):
+            case .move(let to, _):
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.move(to: transformedPoint)
-            case .line(let to):
+            case .line(let to, _):
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addLine(to: transformedPoint)
-            case .curve(let to, let control1, let control2):
+            case .curve(let to, let control1, let control2, _):
                 let transformedCP1 = transformPointToView(control1.cgPoint, geometry: geometry)
                 let transformedCP2 = transformPointToView(control2.cgPoint, geometry: geometry)
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addCurve(to: transformedPoint, control1: transformedCP1, control2: transformedCP2)
-            case .quadCurve(let to, let control):
+            case .quadCurve(let to, let control, _):
                 let transformedControl = transformPointToView(control.cgPoint, geometry: geometry)
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addQuadCurve(to: transformedPoint, control: transformedControl)

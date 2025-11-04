@@ -56,18 +56,18 @@ extension DrawingCanvas {
 
         for element in shape.path.elements {
                 switch element {
-                case .move(to: let point):
+                case .move(to: let point, pointType: _):
                     snapPoints.append(SnapPoint(point: point.cgPoint, objectID: shape.id, isAnchor: true, description: "Move to"))
 
-                case .line(to: let point):
+                case .line(to: let point, pointType: _):
                     snapPoints.append(SnapPoint(point: point.cgPoint, objectID: shape.id, isAnchor: true, description: "Line to"))
 
-                case .curve(to: let endPoint, control1: let control1, control2: let control2):
+                case .curve(to: let endPoint, control1: let control1, control2: let control2, pointType: _):
                     snapPoints.append(SnapPoint(point: endPoint.cgPoint, objectID: shape.id, isAnchor: true, description: "Curve end"))
                     snapPoints.append(SnapPoint(point: control1.cgPoint, objectID: shape.id, isAnchor: false, description: "Control 1"))
                     snapPoints.append(SnapPoint(point: control2.cgPoint, objectID: shape.id, isAnchor: false, description: "Control 2"))
 
-                case .quadCurve(to: let endPoint, control: let control):
+                case .quadCurve(to: let endPoint, control: let control, pointType: _):
                     snapPoints.append(SnapPoint(point: endPoint.cgPoint, objectID: shape.id, isAnchor: true, description: "Quad curve end"))
                     snapPoints.append(SnapPoint(point: control.cgPoint, objectID: shape.id, isAnchor: false, description: "Quad control"))
 
