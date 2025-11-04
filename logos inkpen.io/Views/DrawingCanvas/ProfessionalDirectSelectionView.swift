@@ -108,6 +108,7 @@ struct ProfessionalDirectSelectionView: View {
         var outlinePath = Path()
         var draggedSegmentPath: Path?
         var lastPoint: CGPoint?
+        var firstPoint: CGPoint?
 
         for (elementIndex, element) in shape.path.elements.enumerated() {
             let isThisDraggedSegment = isDraggingSegmentOnThisShape && draggedCurveSegment?.elementIndex == elementIndex
@@ -118,6 +119,7 @@ struct ProfessionalDirectSelectionView: View {
                 let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
                 outlinePath.move(to: point)
                 lastPoint = point
+                firstPoint = point
 
             case .line(let to):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
@@ -179,6 +181,14 @@ struct ProfessionalDirectSelectionView: View {
 
             case .close:
                 outlinePath.closeSubpath()
+
+                // If this is the dragged segment, build it separately for orange overlay
+                if isThisDraggedSegment, let last = lastPoint, let first = firstPoint {
+                    var segPath = Path()
+                    segPath.move(to: last)
+                    segPath.addLine(to: first)
+                    draggedSegmentPath = segPath
+                }
             }
         }
 

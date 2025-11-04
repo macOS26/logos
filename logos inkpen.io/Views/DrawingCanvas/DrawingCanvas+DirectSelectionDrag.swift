@@ -597,10 +597,13 @@ extension DrawingCanvas {
 
             var previousPoint: VectorPoint?
 
+            var firstPoint: VectorPoint?
+
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
                 case .move(let to):
                     previousPoint = to
+                    firstPoint = to
                 case .line(let to):
                     // Check if clicking on line segment
                     if let prev = previousPoint {
@@ -626,8 +629,16 @@ extension DrawingCanvas {
                     previousPoint = to
                 case .quadCurve(let to, _):
                     previousPoint = to
-                default:
-                    break
+                case .close:
+                    // Check if clicking on the closing line segment (from last point back to first)
+                    if let prev = previousPoint, let first = firstPoint {
+                        let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
+                        let end = CGPoint(x: first.x, y: first.y).applying(shape.transform)
+
+                        if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
+                            return (shape.id, elementIndex)
+                        }
+                    }
                 }
             }
         }
@@ -748,6 +759,59 @@ extension DrawingCanvas {
         }
     }
 
+    private func handleCloseSegmentDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint) {
+        // Find first point (should be at element 0)
+        var firstPoint: VectorPoint?
+        if case .move(let to) = shape.path.elements[0] {
+            firstPoint = to
+        }
+
+        // Find last point (element before close)
+        var lastPoint: VectorPoint?
+        let prevIndex = elementIndex - 1
+        if prevIndex >= 0 {
+            switch shape.path.elements[prevIndex] {
+            case .move(let prev), .line(let prev):
+                lastPoint = prev
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
+                lastPoint = prev
+            default:
+                break
+            }
+        }
+
+        guard let first = firstPoint, let last = lastPoint else { return }
+
+        // Calculate line direction vector (from last to first)
+        let dx = first.x - last.x
+        let dy = first.y - last.y
+        let length = sqrt(dx * dx + dy * dy)
+
+        guard length > 0.001 else { return }
+
+        // Normalized direction
+        let dirX = dx / length
+        let dirY = dy / length
+
+        // Perpendicular direction (rotate 90 degrees)
+        let perpX = -dirY
+        let perpY = dirX
+
+        // Project drag offset onto perpendicular direction
+        let perpDist = offset.x * perpX + offset.y * perpY
+
+        // Move both points perpendicular to the line
+        let moveOffset = CGPoint(x: perpDist * perpX, y: perpDist * perpY)
+
+        // First point is at element 0
+        let firstPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: 0)
+        // Last point is at prevIndex
+        let lastPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex)
+
+        livePointPositions[firstPointID] = CGPoint(x: first.x + moveOffset.x, y: first.y + moveOffset.y)
+        livePointPositions[lastPointID] = CGPoint(x: last.x + moveOffset.x, y: last.y + moveOffset.y)
+    }
+
     private func handleLineSegmentDrag(shape: VectorShape, elementIndex: Int, to: VectorPoint, offset: CGPoint) {
         // Find previous point
         var prevPoint: VectorPoint?
@@ -810,6 +874,12 @@ extension DrawingCanvas {
         // Handle line segments - just move both endpoints
         if case .line(let to) = element {
             handleLineSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset)
+            return
+        }
+
+        // Handle close segments (closing line from last point to first)
+        if case .close = element {
+            handleCloseSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, offset: offset)
             return
         }
 
