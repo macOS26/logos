@@ -688,7 +688,7 @@ extension DrawingCanvas {
         return bestT
     }
 
-    private func captureOriginalHandlesForCurveSegment(shapeID: UUID, elementIndex: Int) {
+    private func captureOriginalHandlesForCurveSegment(shapeID: UUID, elementIndex: Int, maintainTangency: Bool = true) {
         // Clear previous state
         originalHandlePositions.removeAll()
         liveHandlePositions.removeAll()
@@ -719,42 +719,45 @@ extension DrawingCanvas {
         originalHandlePositions[control1HandleID] = control1
         originalHandlePositions[control2HandleID] = control2
 
-        // Check if this is a closed path
-        let isClosed = shape.path.elements.last.map { element in
-            if case .close = element { return true }
-            return false
-        } ?? false
+        // Only capture opposite handles for tangency if requested
+        if maintainTangency {
+            // Check if this is a closed path
+            let isClosed = shape.path.elements.last.map { element in
+                if case .close = element { return true }
+                return false
+            } ?? false
 
-        // Find last curve element index (skip .close if present)
-        var lastCurveIndex = shape.path.elements.count - 1
-        if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
-            lastCurveIndex -= 1
-        }
-
-        // Now find and capture the OPPOSITE handles for tangency maintenance
-        // A's incoming handle (control2 of element at elementIndex-1)
-        let prevIndex = elementIndex - 1
-        if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
-            let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
-            originalHandlePositions[prevControl2HandleID] = prevControl2
-        } else if isClosed && elementIndex == 1 {
-            // First curve segment in closed path - opposite handle is last curve's incoming handle
-            if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
-                let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
-                originalHandlePositions[lastControl2HandleID] = lastControl2
+            // Find last curve element index (skip .close if present)
+            var lastCurveIndex = shape.path.elements.count - 1
+            if isClosed && lastCurveIndex >= 0, case .close = shape.path.elements[lastCurveIndex] {
+                lastCurveIndex -= 1
             }
-        }
 
-        // B's outgoing handle (control1 of element at elementIndex+1)
-        let nextIndex = elementIndex + 1
-        if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
-            let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
-            originalHandlePositions[nextControl1HandleID] = nextControl1
-        } else if isClosed && elementIndex == lastCurveIndex {
-            // Last curve segment in closed path - opposite handle is first curve's outgoing handle
-            if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
-                let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
-                originalHandlePositions[firstControl1HandleID] = firstControl1
+            // Now find and capture the OPPOSITE handles for tangency maintenance
+            // A's incoming handle (control2 of element at elementIndex-1)
+            let prevIndex = elementIndex - 1
+            if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
+                let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
+                originalHandlePositions[prevControl2HandleID] = prevControl2
+            } else if isClosed && elementIndex == 1 {
+                // First curve segment in closed path - opposite handle is last curve's incoming handle
+                if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
+                    let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
+                    originalHandlePositions[lastControl2HandleID] = lastControl2
+                }
+            }
+
+            // B's outgoing handle (control1 of element at elementIndex+1)
+            let nextIndex = elementIndex + 1
+            if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
+                let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
+                originalHandlePositions[nextControl1HandleID] = nextControl1
+            } else if isClosed && elementIndex == lastCurveIndex {
+                // Last curve segment in closed path - opposite handle is first curve's outgoing handle
+                if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
+                    let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
+                    originalHandlePositions[firstControl1HandleID] = firstControl1
+                }
             }
         }
     }
@@ -791,8 +794,8 @@ extension DrawingCanvas {
             updatedShape.updateBounds()
         }
 
-        // Re-capture handles now that it's a curve
-        captureOriginalHandlesForCurveSegment(shapeID: curveSegment.shapeID, elementIndex: elementIndex)
+        // Re-capture handles now that it's a curve (DON'T maintain tangency with neighbors)
+        captureOriginalHandlesForCurveSegment(shapeID: curveSegment.shapeID, elementIndex: elementIndex, maintainTangency: false)
 
         // Now get the updated shape and proceed with curve dragging
         guard let updatedObject = document.snapshot.objects[curveSegment.shapeID],
@@ -917,9 +920,12 @@ extension DrawingCanvas {
 
         // Handle line segments
         if case .line(let to) = element {
+            // Check Option key state from NSEvent
+            let optionKeyPressed = NSEvent.modifierFlags.contains(.option)
+
             // Option key: convert to curve and drag with handles
             // No Option key: just move perpendicular
-            if isOptionPressed {
+            if optionKeyPressed {
                 convertLineToCurveAndDrag(shape: shape, elementIndex: curveSegment.elementIndex, to: to, offset: offset, curveSegment: curveSegment)
                 return
             } else {
@@ -930,9 +936,12 @@ extension DrawingCanvas {
 
         // Handle close segments (closing line from last point to first)
         if case .close = element {
+            // Check Option key state from NSEvent
+            let optionKeyPressed = NSEvent.modifierFlags.contains(.option)
+
             // Option key: convert to curve (TODO if needed)
             // No Option key: just move perpendicular
-            if !isOptionPressed {
+            if !optionKeyPressed {
                 handleCloseSegmentDrag(shape: shape, elementIndex: curveSegment.elementIndex, offset: offset)
                 return
             }
