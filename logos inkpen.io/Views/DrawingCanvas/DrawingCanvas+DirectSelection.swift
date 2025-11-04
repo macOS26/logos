@@ -81,8 +81,10 @@ extension DrawingCanvas {
                 for endpointID in closedPathEndpoints {
                     selectedPoints.remove(endpointID)
                 }
+                syncDirectSelectionWithDocument()
             } else {
                 selectPointWithCoincidents(pointID, addToSelection: isShiftCurrentlyPressed)
+                syncDirectSelectionWithDocument()
             }
             return true
         }
@@ -149,6 +151,7 @@ extension DrawingCanvas {
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed && selectedHandles.contains(handleID) {
                 selectedHandles.remove(handleID)
+                syncDirectSelectionWithDocument()
             } else {
                 if !isShiftCurrentlyPressed {
                     selectedHandles.removeAll()
@@ -178,6 +181,7 @@ extension DrawingCanvas {
                 }
 
                 selectCoincidentHandles(for: handleID, shape: shape)
+                syncDirectSelectionWithDocument()
             }
             return true
         }
