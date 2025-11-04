@@ -424,13 +424,13 @@ struct VectorShape: Hashable, Identifiable {
         let mutablePath = CGMutablePath()
         for element in path.elements {
             switch element {
-            case .move(let to, _):
+            case .move(let to):
                 mutablePath.move(to: to.cgPoint)
-            case .line(let to, _):
+            case .line(let to):
                 mutablePath.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2, _):
+            case .curve(let to, let control1, let control2):
                 mutablePath.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control, _):
+            case .quadCurve(let to, let control):
                 mutablePath.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
                 if !mutablePath.isEmpty {

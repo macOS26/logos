@@ -582,22 +582,20 @@ private struct BrushPreviewStyleModifier: ViewModifier {
         var offsetShape = shape
         offsetShape.path = VectorPath(elements: shape.path.elements.map { element in
             switch element {
-            case .move(let to, let type):
-                return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y), pointType: type)
-            case .line(let to, let type):
-                return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y), pointType: type)
-            case .curve(let to, let cp1, let cp2, let type):
+            case .move(let to):
+                return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y))
+            case .line(let to):
+                return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y))
+            case .curve(let to, let cp1, let cp2):
                 return .curve(
                     to: VectorPoint(to.x + offset.x, to.y + offset.y),
                     control1: VectorPoint(cp1.x + offset.x, cp1.y + offset.y),
-                    control2: VectorPoint(cp2.x + offset.x, cp2.y + offset.y),
-                    pointType: type
+                    control2: VectorPoint(cp2.x + offset.x, cp2.y + offset.y)
                 )
-            case .quadCurve(let to, let cp, let type):
+            case .quadCurve(let to, let cp):
                 return .quadCurve(
                     to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                    control: VectorPoint(cp.x + offset.x, cp.y + offset.y),
-                    pointType: type
+                    control: VectorPoint(cp.x + offset.x, cp.y + offset.y)
                 )
             case .close:
                 return .close

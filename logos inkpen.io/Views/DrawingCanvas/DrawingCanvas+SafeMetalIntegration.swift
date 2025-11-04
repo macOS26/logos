@@ -93,18 +93,18 @@ extension DrawingCanvas {
         let cgPath = CGMutablePath()
         for element in path.elements {
             switch element {
-            case .move(let to, _):
+            case .move(let to):
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.move(to: transformedPoint)
-            case .line(let to, _):
+            case .line(let to):
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addLine(to: transformedPoint)
-            case .curve(let to, let control1, let control2, _):
+            case .curve(let to, let control1, let control2):
                 let transformedCP1 = transformPointToView(control1.cgPoint, geometry: geometry)
                 let transformedCP2 = transformPointToView(control2.cgPoint, geometry: geometry)
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addCurve(to: transformedPoint, control1: transformedCP1, control2: transformedCP2)
-            case .quadCurve(let to, let control, _):
+            case .quadCurve(let to, let control):
                 let transformedControl = transformPointToView(control.cgPoint, geometry: geometry)
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addQuadCurve(to: transformedPoint, control: transformedControl)
@@ -214,6 +214,18 @@ extension DrawingCanvas {
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset
             )
+
+            // TEST: Anchor Point Type UI (only when points are selected in direct selection mode)
+            if document.viewState.currentTool == .directSelection && !selectedPoints.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        anchorPointTypePanel()
+                            .padding()
+                    }
+                }
+            }
 
 //            if appState.showPerformanceOverlay {
 //                performanceOverlay()
@@ -436,4 +448,73 @@ extension DrawingCanvas {
 //            .allowsHitTesting(false)
 //        }
 //    }
+
+    // TEST: Anchor Point Type Panel
+    @ViewBuilder
+    private func anchorPointTypePanel() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Anchor Point Type")
+                .font(.caption)
+                .fontWeight(.semibold)
+
+            HStack(spacing: 4) {
+                Button(action: { setPointType(.auto) }) {
+                    Text("Auto")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(getCurrentPointType() == .auto ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                }
+
+                Button(action: { setPointType(.corner) }) {
+                    Text("Corner")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(getCurrentPointType() == .corner ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                }
+
+                Button(action: { setPointType(.cusp) }) {
+                    Text("Cusp")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(getCurrentPointType() == .cusp ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                }
+
+                Button(action: { setPointType(.smooth) }) {
+                    Text("Smooth")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(getCurrentPointType() == .smooth ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(NSColor.windowBackgroundColor).opacity(0.95))
+        .cornerRadius(8)
+        .shadow(radius: 4)
+    }
+
+    private func getCurrentPointType() -> AnchorPointType {
+        // Get type of first selected point, or .auto if none selected
+        guard let firstPoint = selectedPoints.first else { return .auto }
+        return pointTypes[firstPoint] ?? .auto
+    }
+
+    private func setPointType(_ type: AnchorPointType) {
+        // Set type for all selected points
+        for pointID in selectedPoints {
+            pointTypes[pointID] = type
+        }
+    }
 //}

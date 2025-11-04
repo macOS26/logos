@@ -6,9 +6,17 @@ extension VectorShape {
         var vertices: [CGPoint] = []
 
         for element in path.elements {
-            // Use helper to extract destination point
-            if let to = element.destinationPoint {
+            switch element {
+            case .move(let to):
                 vertices.append(CGPoint(x: to.x, y: to.y))
+            case .line(let to):
+                vertices.append(CGPoint(x: to.x, y: to.y))
+            case .curve(let to, _, _):
+                vertices.append(CGPoint(x: to.x, y: to.y))
+            case .quadCurve(let to, _):
+                vertices.append(CGPoint(x: to.x, y: to.y))
+            case .close:
+                break
             }
         }
 

@@ -349,8 +349,6 @@ struct StrokeFillPanel: View {
                         strokeLineCap: strokeLineCap,
                         strokeMiterLimit: strokeMiterLimitState,
                         strokeScaleWithTransform: strokeScaleWithTransform,
-                        selectedPointType: getSelectedPointType(),
-                        showAnchorPointControls: !selectedObjectIDs.isEmpty,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             strokeDeltaWidth = value
@@ -383,9 +381,6 @@ struct StrokeFillPanel: View {
                         },
                         onUpdateScaleWithTransform: { value in
                             updateStrokeScaleWithTransform(value)
-                        },
-                        onUpdatePointType: { newType in
-                            updateAllPointTypes(newType)
                         },
                         onStrokeWidthEditingChanged: { isEditing in
                             if isEditing {
@@ -572,108 +567,6 @@ struct StrokeFillPanel: View {
 
     private func applyFillToSelectedShapes() {
         onApplyFillToSelectedShapes(selectedFillColor, fillOpacity)
-    }
-
-    // MARK: - Anchor Point Type Helpers
-
-    private func getSelectedPointType() -> AnchorPointType? {
-        guard let firstID = selectedObjectIDs.first,
-              let object = snapshot.objects[firstID] else {
-            return nil
-        }
-
-        switch object.objectType {
-        case .shape(let shape):
-            // Get the first curve point type
-            for element in shape.path.elements {
-                if let pointType = element.pointType {
-                    return pointType
-                }
-            }
-            return .corner
-        default:
-            return nil
-        }
-    }
-
-    private func updateAllPointTypes(_ newType: AnchorPointType) {
-        for objectID in selectedObjectIDs {
-            guard let object = snapshot.objects[objectID] else { continue }
-
-            switch object.objectType {
-            case .shape(let shape):
-                // Update all points in the shape
-                for elementIndex in shape.path.elements.indices {
-                    let pointID = PointID(
-                        shapeID: objectID,
-                        pathIndex: 0,
-                        elementIndex: elementIndex
-                    )
-
-                    // Update this point and all coincident points
-                    let coincidentPoints = findCoincidentPoints(to: pointID, in: snapshot, tolerance: 1.0)
-                    var allPoints = coincidentPoints
-                    allPoints.insert(pointID)
-
-                    for pid in allPoints {
-                        updatePointType(pointID: pid, newType: newType)
-                    }
-                }
-            default:
-                break
-            }
-        }
-    }
-
-    private func findCoincidentPoints(to targetPointID: PointID, in snapshot: DocumentSnapshot, tolerance: Double) -> Set<PointID> {
-        guard let targetObject = snapshot.objects[targetPointID.shapeID],
-              case .shape(let targetShape) = targetObject.objectType,
-              targetPointID.elementIndex < targetShape.path.elements.count else {
-            return []
-        }
-
-        let targetElement = targetShape.path.elements[targetPointID.elementIndex]
-        guard let targetPoint = targetElement.destinationPoint else { return [] }
-
-        var coincidentPoints: Set<PointID> = []
-
-        for (shapeID, object) in snapshot.objects {
-            guard case .shape(let shape) = object.objectType else { continue }
-
-            for (elementIndex, element) in shape.path.elements.enumerated() {
-                let pointID = PointID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex)
-                if pointID == targetPointID { continue }
-
-                if let elementPoint = element.destinationPoint {
-                    let dx = elementPoint.x - targetPoint.x
-                    let dy = elementPoint.y - targetPoint.y
-                    let distance = sqrt(dx * dx + dy * dy)
-
-                    if distance <= tolerance {
-                        coincidentPoints.insert(pointID)
-                    }
-                }
-            }
-        }
-
-        return coincidentPoints
-    }
-
-    private func updatePointType(pointID: PointID, newType: AnchorPointType) {
-        guard var object = snapshot.objects[pointID.shapeID],
-              case .shape(var shape) = object.objectType,
-              pointID.elementIndex < shape.path.elements.count else {
-            return
-        }
-
-        shape.path.elements[pointID.elementIndex].setPointType(newType)
-        shape.updateBounds()
-
-        let layerIndex = object.layerIndex
-        let updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape))
-        snapshot.objects[pointID.shapeID] = updatedObject
-
-        onTriggerLayerUpdates([layerIndex])
     }
 
 }

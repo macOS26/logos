@@ -678,10 +678,10 @@ extension DrawingCanvas {
 
         if let lastLeftPoint = leftEdgePath.elements.last {
             switch lastLeftPoint {
-            case .move(_, _), .line(_, _), .curve(_, _, _, _), .quadCurve(_, _, _):
+            case .move(_), .line(_), .curve(_, _, _), .quadCurve(_, _):
                 if let firstRightElement = rightEdgePath.elements.first {
                     switch firstRightElement {
-                    case .move(let rightPoint, _), .line(let rightPoint, _), .curve(let rightPoint, _, _, _), .quadCurve(let rightPoint, _, _):
+                    case .move(let rightPoint), .line(let rightPoint), .curve(let rightPoint, _, _), .quadCurve(let rightPoint, _):
                         elements.append(.line(to: rightPoint))
                     case .close:
                         break

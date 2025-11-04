@@ -34,22 +34,20 @@ extension VectorPoint {
 extension PathElement {
     func applying(_ transform: CGAffineTransform) -> PathElement {
         switch self {
-        case .move(let to, let type):
-            return .move(to: to.applying(transform), pointType: type)
-        case .line(let to, let type):
-            return .line(to: to.applying(transform), pointType: type)
-        case .curve(let to, let control1, let control2, let type):
+        case .move(let to):
+            return .move(to: to.applying(transform))
+        case .line(let to):
+            return .line(to: to.applying(transform))
+        case .curve(let to, let control1, let control2):
             return .curve(
                 to: to.applying(transform),
                 control1: control1.applying(transform),
-                control2: control2.applying(transform),
-                pointType: type
+                control2: control2.applying(transform)
             )
-        case .quadCurve(let to, let control, let type):
+        case .quadCurve(let to, let control):
             return .quadCurve(
                 to: to.applying(transform),
-                control: control.applying(transform),
-                pointType: type
+                control: control.applying(transform)
             )
         case .close:
             return .close
@@ -106,11 +104,11 @@ extension VectorPath {
 
         for element in elements {
             switch element {
-            case .move(let to, _), .line(let to, _):
+            case .move(let to), .line(let to):
                 points.append(to)
-            case .curve(let to, let control1, let control2, _):
+            case .curve(let to, let control1, let control2):
                 points.append(contentsOf: [to, control1, control2])
-            case .quadCurve(let to, let control, _):
+            case .quadCurve(let to, let control):
                 points.append(contentsOf: [to, control])
             case .close:
                 break

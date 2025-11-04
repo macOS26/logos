@@ -171,6 +171,35 @@ extension DrawingCanvas {
     }
 
     private func isPointSmooth(handleID: HandleID) -> Bool {
+        // First, determine the anchor point ID for this handle
+        var anchorPointID: PointID?
+
+        if handleID.handleType == .control2 {
+            // control2 belongs to the anchor at this elementIndex
+            anchorPointID = PointID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex)
+        } else if handleID.handleType == .control1 {
+            // control1 belongs to the anchor at elementIndex - 1
+            let prevIndex = handleID.elementIndex - 1
+            if prevIndex >= 0 {
+                anchorPointID = PointID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: prevIndex)
+            }
+        }
+
+        // Check if user has explicitly set a type for this point
+        if let pointID = anchorPointID, let type = pointTypes[pointID] {
+            switch type {
+            case .auto:
+                break  // Fall through to geometric detection
+            case .corner:
+                return false  // Sharp point, never smooth
+            case .cusp:
+                return false  // Independent handles, never smooth
+            case .smooth:
+                return true   // Always maintain tangency
+            }
+        }
+
+        // Fall back to geometric detection
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType,
               handleID.elementIndex < shape.path.elements.count else { return false }
@@ -185,25 +214,25 @@ extension DrawingCanvas {
         // Get anchor point and both handles
         if handleID.handleType == .control2 {
             // This is incoming handle to anchor
-            guard case .curve(let to, _, let control2, _) = element else { return false }
+            guard case .curve(let to, _, let control2) = element else { return false }
             anchorPoint = CGPoint(x: to.x, y: to.y)
             handle1 = CGPoint(x: control2.x, y: control2.y)
 
             // Get opposite handle (outgoing from this anchor)
             let nextIndex = handleID.elementIndex + 1
             if nextIndex < elements.count,
-               case .curve(_, let nextControl1, _, _) = elements[nextIndex] {
+               case .curve(_, let nextControl1, _) = elements[nextIndex] {
                 handle2 = CGPoint(x: nextControl1.x, y: nextControl1.y)
             }
         } else if handleID.handleType == .control1 {
             // This is outgoing handle from anchor
-            guard case .curve(_, let control1, _, _) = element else { return false }
+            guard case .curve(_, let control1, _) = element else { return false }
             handle2 = CGPoint(x: control1.x, y: control1.y)
 
             // Get anchor and opposite handle (incoming to this anchor)
             let prevIndex = handleID.elementIndex - 1
             if prevIndex >= 0,
-               case .curve(let prevTo, _, let prevControl2, _) = elements[prevIndex] {
+               case .curve(let prevTo, _, let prevControl2) = elements[prevIndex] {
                 anchorPoint = CGPoint(x: prevTo.x, y: prevTo.y)
                 handle1 = CGPoint(x: prevControl2.x, y: prevControl2.y)
             }
@@ -243,7 +272,7 @@ extension DrawingCanvas {
         let element = shape.path.elements[pointID.elementIndex]
 
         // Move incoming handle (control2 of current element)
-        if case .curve(_, _, let control2, _) = element {
+        if case .curve(_, _, let control2) = element {
             let handleID = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex, handleType: .control2)
             if let originalHandlePos = originalHandlePositions[handleID] {
                 liveHandlePositions[handleID] = CGPoint(
@@ -263,7 +292,7 @@ extension DrawingCanvas {
         let nextIndex = pointID.elementIndex + 1
         if nextIndex < shape.path.elements.count {
             let nextElement = shape.path.elements[nextIndex]
-            if case .curve(_, let control1, _, _) = nextElement {
+            if case .curve(_, let control1, _) = nextElement {
                 let handleID = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
                 if let originalHandlePos = originalHandlePositions[handleID] {
                     liveHandlePositions[handleID] = CGPoint(
@@ -301,20 +330,20 @@ extension DrawingCanvas {
         var oppositeOriginalPosition: CGPoint?
 
         if handleID.handleType == .control2 {
-            guard case .curve(let to, _, _, _) = element else { return }
+            guard case .curve(let to, _, _) = element else { return }
             anchorPoint = CGPoint(x: to.x, y: to.y)
             anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
 
             let nextIndex = handleID.elementIndex + 1
             if nextIndex < elements.count,
-               case .curve(_, let nextControl1, _, _) = elements[nextIndex] {
+               case .curve(_, let nextControl1, _) = elements[nextIndex] {
                 oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
                 oppositeOriginalPosition = CGPoint(x: nextControl1.x, y: nextControl1.y)
             }
         } else if handleID.handleType == .control1 {
             let prevIndex = handleID.elementIndex - 1
             if prevIndex >= 0,
-               case .curve(let prevTo, _, let prevControl2, _) = elements[prevIndex] {
+               case .curve(let prevTo, _, let prevControl2) = elements[prevIndex] {
                 anchorPoint = CGPoint(x: prevTo.x, y: prevTo.y)
                 anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex)
                 oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
@@ -345,7 +374,7 @@ extension DrawingCanvas {
 
         // Get first and last points
         let firstPoint: CGPoint?
-        if case .move(let firstTo, _) = elements[0] {
+        if case .move(let firstTo) = elements[0] {
             firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
         } else {
             firstPoint = nil
@@ -359,7 +388,7 @@ extension DrawingCanvas {
         let lastPoint: CGPoint?
         if lastElementIndex >= 0 {
             switch elements[lastElementIndex] {
-            case .curve(let lastTo, _, _, _), .line(let lastTo, _), .quadCurve(let lastTo, _, _):
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
                 lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
             default:
                 lastPoint = nil
@@ -377,7 +406,7 @@ extension DrawingCanvas {
 
         // If dragging first curve's outgoing handle (control1) -> update last curve's incoming handle (control2)
         if handleID.handleType == .control2 && handleID.elementIndex == 0 {
-            if case .curve(_, _, let lastControl2, _) = elements[lastElementIndex],
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -392,7 +421,7 @@ extension DrawingCanvas {
 
         // If dragging last curve's incoming handle (control2) -> update first curve's outgoing handle (control1)
         if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
-            if elements.count > 1, case .curve(_, let secondControl1, _, _) = elements[1],
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -407,7 +436,7 @@ extension DrawingCanvas {
 
         // If dragging first curve's outgoing handle (control1 at element 1) -> update last curve's incoming handle
         if handleID.handleType == .control1 && handleID.elementIndex == 1 {
-            if case .curve(_, _, let lastControl2, _) = elements[lastElementIndex],
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -422,7 +451,7 @@ extension DrawingCanvas {
 
         // If dragging next curve's outgoing handle (control1) -> update first curve's outgoing handle
         if handleID.handleType == .control1 && handleID.elementIndex == lastElementIndex {
-            if elements.count > 1, case .curve(_, let secondControl1, _, _) = elements[1],
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -441,7 +470,7 @@ extension DrawingCanvas {
 
         // Get first and last points
         let firstPoint: CGPoint?
-        if case .move(let firstTo, _) = elements[0] {
+        if case .move(let firstTo) = elements[0] {
             firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
         } else {
             firstPoint = nil
@@ -455,7 +484,7 @@ extension DrawingCanvas {
         let lastPoint: CGPoint?
         if lastElementIndex >= 0 {
             switch elements[lastElementIndex] {
-            case .curve(let lastTo, _, _, _), .line(let lastTo, _), .quadCurve(let lastTo, _, _):
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
                 lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
             default:
                 lastPoint = nil
@@ -473,7 +502,7 @@ extension DrawingCanvas {
 
         // Dragging first point's outgoing handle -> update last point's incoming handle
         if handleID.handleType == .control1 && handleID.elementIndex == 1 {
-            if case .curve(_, _, let lastControl2, _) = elements[lastElementIndex] {
+            if case .curve(_, _, let lastControl2) = elements[lastElementIndex] {
                 let oppositeHandle = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
                     draggedHandle: newPosition,
@@ -488,7 +517,7 @@ extension DrawingCanvas {
 
         // Dragging last point's incoming handle -> update first point's outgoing handle
         if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
-            if elements.count > 1, case .curve(_, let secondControl1, _, _) = elements[1] {
+            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1] {
                 let oppositeHandle = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
                     draggedHandle: newPosition,
@@ -514,15 +543,15 @@ extension DrawingCanvas {
         var elements = shape.path.elements
 
         switch elements[handleID.elementIndex] {
-        case .curve(let to, let control1, let control2, let pointType):
+        case .curve(let to, let control1, let control2):
             if handleID.handleType == .control1 {
-                elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2, pointType: pointType)
+                elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
             } else {
-                elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle, pointType: pointType)
+                elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
             }
-        case .quadCurve(let to, _, let pointType):
+        case .quadCurve(let to, _):
             if handleID.handleType == .control1 {
-                elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle, pointType: pointType)
+                elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
             }
         default:
             break
@@ -667,10 +696,10 @@ extension DrawingCanvas {
 
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
-                case .move(let to, _):
+                case .move(let to):
                     previousPoint = to
                     firstPoint = to
-                case .line(let to, _):
+                case .line(let to):
                     // Check if clicking on line segment
                     if let prev = previousPoint {
                         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
@@ -681,7 +710,7 @@ extension DrawingCanvas {
                         }
                     }
                     previousPoint = to
-                case .curve(let to, let control1, let control2, _):
+                case .curve(let to, let control1, let control2):
                     if let prev = previousPoint {
                         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
                         let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
@@ -693,7 +722,7 @@ extension DrawingCanvas {
                         }
                     }
                     previousPoint = to
-                case .quadCurve(let to, _, _):
+                case .quadCurve(let to, _):
                     previousPoint = to
                 case .close:
                     // Check if clicking on the closing line segment (from last point back to first)
@@ -713,7 +742,7 @@ extension DrawingCanvas {
 
     private func calculateTOnCurveSegment(shape: VectorShape, elementIndex: Int, point: CGPoint) -> Double {
         guard elementIndex < shape.path.elements.count,
-              case .curve(let to, let control1, let control2, _) = shape.path.elements[elementIndex] else {
+              case .curve(let to, let control1, let control2) = shape.path.elements[elementIndex] else {
             return 0.5
         }
 
@@ -723,7 +752,7 @@ extension DrawingCanvas {
                 break
             }
             switch element {
-            case .move(let to, _), .line(let to, _), .curve(let to, _, _, _), .quadCurve(let to, _, _):
+            case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
                 previousPoint = to
             default:
                 break
@@ -773,7 +802,7 @@ extension DrawingCanvas {
         }
 
         // Now extract the control handles for curves
-        guard case .curve(_, let control1, let control2, _) = element else { return }
+        guard case .curve(_, let control1, let control2) = element else { return }
 
         // For curve from A to B at elementIndex:
         // - control1 is A's outgoing handle (what we drag)
@@ -802,12 +831,12 @@ extension DrawingCanvas {
             // Now find and capture the OPPOSITE handles for tangency maintenance
             // A's incoming handle (control2 of element at elementIndex-1)
             let prevIndex = elementIndex - 1
-            if prevIndex >= 0, case .curve(_, _, let prevControl2, _) = shape.path.elements[prevIndex] {
+            if prevIndex >= 0, case .curve(_, _, let prevControl2) = shape.path.elements[prevIndex] {
                 let prevControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: prevIndex, handleType: .control2)
                 originalHandlePositions[prevControl2HandleID] = prevControl2
             } else if isClosed && elementIndex == 1 {
                 // First curve segment in closed path - opposite handle is last curve's incoming handle
-                if lastCurveIndex >= 0, case .curve(_, _, let lastControl2, _) = shape.path.elements[lastCurveIndex] {
+                if lastCurveIndex >= 0, case .curve(_, _, let lastControl2) = shape.path.elements[lastCurveIndex] {
                     let lastControl2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: lastCurveIndex, handleType: .control2)
                     originalHandlePositions[lastControl2HandleID] = lastControl2
                 }
@@ -815,12 +844,12 @@ extension DrawingCanvas {
 
             // B's outgoing handle (control1 of element at elementIndex+1)
             let nextIndex = elementIndex + 1
-            if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _, _) = shape.path.elements[nextIndex] {
+            if nextIndex < shape.path.elements.count, case .curve(_, let nextControl1, _) = shape.path.elements[nextIndex] {
                 let nextControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
                 originalHandlePositions[nextControl1HandleID] = nextControl1
             } else if isClosed && elementIndex == lastCurveIndex {
                 // Last curve segment in closed path - opposite handle is first curve's outgoing handle
-                if shape.path.elements.count > 1, case .curve(_, let firstControl1, _, _) = shape.path.elements[1] {
+                if shape.path.elements.count > 1, case .curve(_, let firstControl1, _) = shape.path.elements[1] {
                     let firstControl1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)
                     originalHandlePositions[firstControl1HandleID] = firstControl1
                 }
@@ -831,7 +860,7 @@ extension DrawingCanvas {
     private func convertCloseSegmentToCurveAndDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint, curveSegment: (shapeID: UUID, elementIndex: Int)) {
         // Find first point (should be at element 0)
         var firstPoint: VectorPoint?
-        if case .move(let to, _) = shape.path.elements[0] {
+        if case .move(let to) = shape.path.elements[0] {
             firstPoint = to
         }
 
@@ -840,9 +869,9 @@ extension DrawingCanvas {
         let prevIndex = elementIndex - 1
         if prevIndex >= 0 {
             switch shape.path.elements[prevIndex] {
-            case .move(let prev, _), .line(let prev, _):
+            case .move(let prev), .line(let prev):
                 lastPoint = prev
-            case .curve(let prev, _, _, _), .quadCurve(let prev, _, _):
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
                 lastPoint = prev
             default:
                 break
@@ -863,7 +892,7 @@ extension DrawingCanvas {
 
         // Convert .close to .curve
         document.updateShapeByID(curveSegment.shapeID) { updatedShape in
-            updatedShape.path.elements[elementIndex] = .curve(to: end, control1: control1, control2: control2, pointType: .smooth)
+            updatedShape.path.elements[elementIndex] = .curve(to: end, control1: control1, control2: control2)
             updatedShape.updateBounds()
         }
 
@@ -884,9 +913,9 @@ extension DrawingCanvas {
         var prevPoint: VectorPoint?
         if elementIndex > 0 {
             switch shape.path.elements[elementIndex - 1] {
-            case .move(let prev, _), .line(let prev, _):
+            case .move(let prev), .line(let prev):
                 prevPoint = prev
-            case .curve(let prev, _, _, _), .quadCurve(let prev, _, _):
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
                 prevPoint = prev
             default:
                 break
@@ -907,7 +936,7 @@ extension DrawingCanvas {
 
         // Convert line to curve
         document.updateShapeByID(curveSegment.shapeID) { updatedShape in
-            updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2, pointType: .smooth)
+            updatedShape.path.elements[elementIndex] = .curve(to: to, control1: control1, control2: control2)
             updatedShape.updateBounds()
         }
 
@@ -926,7 +955,7 @@ extension DrawingCanvas {
     private func handleCloseSegmentDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint) {
         // Find first point (should be at element 0)
         var firstPoint: VectorPoint?
-        if case .move(let to, _) = shape.path.elements[0] {
+        if case .move(let to) = shape.path.elements[0] {
             firstPoint = to
         }
 
@@ -935,9 +964,9 @@ extension DrawingCanvas {
         let prevIndex = elementIndex - 1
         if prevIndex >= 0 {
             switch shape.path.elements[prevIndex] {
-            case .move(let prev, _), .line(let prev, _):
+            case .move(let prev), .line(let prev):
                 lastPoint = prev
-            case .curve(let prev, _, _, _), .quadCurve(let prev, _, _):
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
                 lastPoint = prev
             default:
                 break
@@ -981,9 +1010,9 @@ extension DrawingCanvas {
         var prevPoint: VectorPoint?
         if elementIndex > 0 {
             switch shape.path.elements[elementIndex - 1] {
-            case .move(let prev, _), .line(let prev, _):
+            case .move(let prev), .line(let prev):
                 prevPoint = prev
-            case .curve(let prev, _, _, _), .quadCurve(let prev, _, _):
+            case .curve(let prev, _, _), .quadCurve(let prev, _):
                 prevPoint = prev
             default:
                 break
@@ -1036,7 +1065,7 @@ extension DrawingCanvas {
         let element = shape.path.elements[curveSegment.elementIndex]
 
         // Handle line segments
-        if case .line(let to, _) = element {
+        if case .line(let to) = element {
             // Check Option key state from NSEvent
             let optionKeyPressed = NSEvent.modifierFlags.contains(.option)
 
@@ -1109,9 +1138,9 @@ extension DrawingCanvas {
             // Get anchor point A
             var anchorA: CGPoint?
             if prevIndex >= 0 {
-                if case .curve(let toA, _, _, _) = shape.path.elements[prevIndex] {
+                if case .curve(let toA, _, _) = shape.path.elements[prevIndex] {
                     anchorA = CGPoint(x: toA.x, y: toA.y)
-                } else if case .move(let toA, _) = shape.path.elements[prevIndex] {
+                } else if case .move(let toA) = shape.path.elements[prevIndex] {
                     anchorA = CGPoint(x: toA.x, y: toA.y)
                 }
             }
@@ -1150,7 +1179,7 @@ extension DrawingCanvas {
                 if let originalLastControl2 = originalHandlePositions[lastControl2HandleID] {
                     // Get anchor point (first/last coincident point)
                     var anchorA: CGPoint?
-                    if case .curve(let toA, _, _, _) = shape.path.elements[lastCurveIndex] {
+                    if case .curve(let toA, _, _) = shape.path.elements[lastCurveIndex] {
                         anchorA = CGPoint(x: toA.x, y: toA.y)
                     }
 
@@ -1181,7 +1210,7 @@ extension DrawingCanvas {
                 if let originalNextControl1 = originalHandlePositions[nextControl1HandleID] {
                     // Get anchor point B
                     var anchorB: CGPoint?
-                    if case .curve(let toB, _, _, _) = shape.path.elements[curveSegment.elementIndex] {
+                    if case .curve(let toB, _, _) = shape.path.elements[curveSegment.elementIndex] {
                         anchorB = CGPoint(x: toB.x, y: toB.y)
                     }
 
@@ -1204,7 +1233,7 @@ extension DrawingCanvas {
                 if let originalFirstControl1 = originalHandlePositions[firstControl1HandleID] {
                     // Get anchor point B (first/last coincident point)
                     var anchorB: CGPoint?
-                    if case .curve(let toB, _, _, _) = shape.path.elements[curveSegment.elementIndex] {
+                    if case .curve(let toB, _, _) = shape.path.elements[curveSegment.elementIndex] {
                         anchorB = CGPoint(x: toB.x, y: toB.y)
                     }
 

@@ -342,15 +342,15 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         for element in legacyPath.elements {
             switch element {
-            case .move(let to, _):
+            case .move(let to):
                 currentPoint = to
                 professionalPoints.append(ProfessionalBezierMathematics.BezierPoint.cornerPoint(at: to))
 
-            case .line(let to, _):
+            case .line(let to):
                 professionalPoints.append(ProfessionalBezierMathematics.BezierPoint.cornerPoint(at: to))
                 currentPoint = to
 
-            case .curve(let to, let control1, let control2, _):
+            case .curve(let to, let control1, let control2):
                 if !professionalPoints.isEmpty {
                     professionalPoints[professionalPoints.count - 1].outgoingHandle = control1
                     professionalPoints[professionalPoints.count - 1].pointType = .smoothCurve
@@ -367,7 +367,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
                 professionalPoints.append(newPoint)
                 currentPoint = to
 
-            case .quadCurve(let to, let control, _):
+            case .quadCurve(let to, let control):
                 if let current = currentPoint {
                     let control1 = VectorPoint(
                         current.x + (2.0/3.0) * (control.x - current.x),

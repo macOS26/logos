@@ -106,14 +106,14 @@ struct LayerCanvasView: View {
             let newPoint = VectorPoint(livePosition.x, livePosition.y)
 
             switch modifiedElements[pointID.elementIndex] {
-            case .move(_, let type):
-                modifiedElements[pointID.elementIndex] = .move(to: newPoint, pointType: type)
-            case .line(_, let type):
-                modifiedElements[pointID.elementIndex] = .line(to: newPoint, pointType: type)
-            case .curve(_, let control1, let control2, let type):
-                modifiedElements[pointID.elementIndex] = .curve(to: newPoint, control1: control1, control2: control2, pointType: type)
-            case .quadCurve(_, let control, let type):
-                modifiedElements[pointID.elementIndex] = .quadCurve(to: newPoint, control: control, pointType: type)
+            case .move(_):
+                modifiedElements[pointID.elementIndex] = .move(to: newPoint)
+            case .line(_):
+                modifiedElements[pointID.elementIndex] = .line(to: newPoint)
+            case .curve(_, let control1, let control2):
+                modifiedElements[pointID.elementIndex] = .curve(to: newPoint, control1: control1, control2: control2)
+            case .quadCurve(_, let control):
+                modifiedElements[pointID.elementIndex] = .quadCurve(to: newPoint, control: control)
             case .close:
                 break
             }
@@ -125,15 +125,15 @@ struct LayerCanvasView: View {
             let newHandle = VectorPoint(livePosition.x, livePosition.y)
 
             switch modifiedElements[handleID.elementIndex] {
-            case .curve(let to, let control1, let control2, let type):
+            case .curve(let to, let control1, let control2):
                 if handleID.handleType == .control1 {
-                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2, pointType: type)
+                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
                 } else {
-                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle, pointType: type)
+                    modifiedElements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
                 }
-            case .quadCurve(let to, _, let type):
+            case .quadCurve(let to, _):
                 if handleID.handleType == .control1 {
-                    modifiedElements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle, pointType: type)
+                    modifiedElements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
                 }
             default:
                 break

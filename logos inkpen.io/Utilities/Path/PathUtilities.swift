@@ -38,20 +38,20 @@ func validatePathElements(_ elements: [PathElement]) -> [PathElement] {
 
     for element in elements {
         switch element {
-        case .move(_, _):
+        case .move(_):
             validElements.append(element)
 
-        case .line(_, _):
+        case .line(_):
             if !validElements.isEmpty {
                 validElements.append(element)
             }
 
-        case .curve(_, _, _, _):
+        case .curve(_, _, _):
             if !validElements.isEmpty {
                 validElements.append(element)
             }
 
-        case .quadCurve(_, _, _):
+        case .quadCurve(_, _):
             if !validElements.isEmpty {
                 validElements.append(element)
             }

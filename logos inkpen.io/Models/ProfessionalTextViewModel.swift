@@ -504,7 +504,7 @@ class ProfessionalTextViewModel: ObservableObject {
             let currentElement = elements[i]
 
             // Only process curve elements
-            guard case .curve(let anchor, let incomingHandle, let outgoingHandle, _) = currentElement else {
+            guard case .curve(let anchor, let incomingHandle, let outgoingHandle) = currentElement else {
                 smoothedElements.append(currentElement)
                 continue
             }

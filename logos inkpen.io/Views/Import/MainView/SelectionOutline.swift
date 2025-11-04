@@ -19,13 +19,13 @@ struct SelectionOutline: View {
                         let cachedPath = Path { path in
                             for element in groupedShape.path.elements {
                                 switch element {
-                                case .move(let to, _):
+                                case .move(let to):
                                     path.move(to: to.cgPoint)
-                                case .line(let to, _):
+                                case .line(let to):
                                     path.addLine(to: to.cgPoint)
-                                case .curve(let to, let control1, let control2, _):
+                                case .curve(let to, let control1, let control2):
                                     path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                                case .quadCurve(let to, let control, _):
+                                case .quadCurve(let to, let control):
                                     path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                                 case .close:
                                     path.closeSubpath()
@@ -42,13 +42,13 @@ struct SelectionOutline: View {
                     let cachedPath = Path { path in
                         for element in shape.path.elements {
                             switch element {
-                            case .move(let to, _):
+                            case .move(let to):
                                 path.move(to: to.cgPoint)
-                            case .line(let to, _):
+                            case .line(let to):
                                 path.addLine(to: to.cgPoint)
-                            case .curve(let to, let control1, let control2, _):
+                            case .curve(let to, let control1, let control2):
                                 path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                            case .quadCurve(let to, let control, _):
+                            case .quadCurve(let to, let control):
                                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                             case .close:
                                 path.closeSubpath()

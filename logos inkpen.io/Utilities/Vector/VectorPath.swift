@@ -115,156 +115,19 @@ struct BezierControlPoint: Codable, Hashable {
     }
 }
 
-enum AnchorPointType: String, Codable, Hashable {
-    case corner      // Sharp point, no curves or independent angles
-    case cusp        // Independent curves, no tangency
-    case smooth      // 180° tangent curves
-}
-
-enum PathElement: Hashable {
-    case move(to: VectorPoint, pointType: AnchorPointType = .corner)
-    case line(to: VectorPoint, pointType: AnchorPointType = .corner)
-    case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint, pointType: AnchorPointType = .smooth)
-    case quadCurve(to: VectorPoint, control: VectorPoint, pointType: AnchorPointType = .smooth)
+enum PathElement: Codable, Hashable {
+    case move(to: VectorPoint)
+    case line(to: VectorPoint)
+    case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint)
+    case quadCurve(to: VectorPoint, control: VectorPoint)
     case close
 
-    // Helper methods to extract destination point
-    var destinationPoint: VectorPoint? {
+    var destinationPoint: CGPoint? {
         switch self {
-        case .move(let to, _), .line(let to, _):
-            return to
-        case .curve(let to, _, _, _), .quadCurve(let to, _, _):
-            return to
+        case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+            return CGPoint(x: to.x, y: to.y)
         case .close:
             return nil
-        }
-    }
-
-    var pointType: AnchorPointType? {
-        switch self {
-        case .move(_, let type), .line(_, let type):
-            return type
-        case .curve(_, _, _, let type), .quadCurve(_, _, let type):
-            return type
-        case .close:
-            return nil
-        }
-    }
-
-    mutating func setPointType(_ type: AnchorPointType) {
-        switch self {
-        case .move(let to, _):
-            self = .move(to: to, pointType: type)
-        case .line(let to, _):
-            self = .line(to: to, pointType: type)
-        case .curve(let to, let c1, let c2, _):
-            self = .curve(to: to, control1: c1, control2: c2, pointType: type)
-        case .quadCurve(let to, let c, _):
-            self = .quadCurve(to: to, control: c, pointType: type)
-        case .close:
-            break
-        }
-    }
-}
-
-// MARK: - Codable Implementation (Backward Compatible)
-extension PathElement: Codable {
-    enum CodingKeys: String, CodingKey {
-        case move, line, curve, quadCurve, close
-    }
-
-    enum MoveCodingKeys: String, CodingKey {
-        case to, pointType
-    }
-
-    enum LineCodingKeys: String, CodingKey {
-        case to, pointType
-    }
-
-    enum CurveCodingKeys: String, CodingKey {
-        case to, control1, control2, pointType
-    }
-
-    enum QuadCurveCodingKeys: String, CodingKey {
-        case to, control, pointType
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        switch self {
-        case .move(let to, let pointType):
-            var nested = container.nestedContainer(keyedBy: MoveCodingKeys.self, forKey: .move)
-            try nested.encode(to, forKey: .to)
-            try nested.encode(pointType, forKey: .pointType)
-
-        case .line(let to, let pointType):
-            var nested = container.nestedContainer(keyedBy: LineCodingKeys.self, forKey: .line)
-            try nested.encode(to, forKey: .to)
-            try nested.encode(pointType, forKey: .pointType)
-
-        case .curve(let to, let control1, let control2, let pointType):
-            var nested = container.nestedContainer(keyedBy: CurveCodingKeys.self, forKey: .curve)
-            try nested.encode(to, forKey: .to)
-            try nested.encode(control1, forKey: .control1)
-            try nested.encode(control2, forKey: .control2)
-            try nested.encode(pointType, forKey: .pointType)
-
-        case .quadCurve(let to, let control, let pointType):
-            var nested = container.nestedContainer(keyedBy: QuadCurveCodingKeys.self, forKey: .quadCurve)
-            try nested.encode(to, forKey: .to)
-            try nested.encode(control, forKey: .control)
-            try nested.encode(pointType, forKey: .pointType)
-
-        case .close:
-            _ = container.nestedContainer(keyedBy: MoveCodingKeys.self, forKey: .close)
-        }
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        if container.contains(.move) {
-            let nested = try container.nestedContainer(keyedBy: MoveCodingKeys.self, forKey: .move)
-            let to = try nested.decode(VectorPoint.self, forKey: .to)
-            // Backward compatible: use default if pointType is missing
-            let pointType = try nested.decodeIfPresent(AnchorPointType.self, forKey: .pointType) ?? .corner
-            self = .move(to: to, pointType: pointType)
-
-        } else if container.contains(.line) {
-            let nested = try container.nestedContainer(keyedBy: LineCodingKeys.self, forKey: .line)
-            let to = try nested.decode(VectorPoint.self, forKey: .to)
-            // Backward compatible: use default if pointType is missing
-            let pointType = try nested.decodeIfPresent(AnchorPointType.self, forKey: .pointType) ?? .corner
-            self = .line(to: to, pointType: pointType)
-
-        } else if container.contains(.curve) {
-            let nested = try container.nestedContainer(keyedBy: CurveCodingKeys.self, forKey: .curve)
-            let to = try nested.decode(VectorPoint.self, forKey: .to)
-            let control1 = try nested.decode(VectorPoint.self, forKey: .control1)
-            let control2 = try nested.decode(VectorPoint.self, forKey: .control2)
-            // Backward compatible: use default if pointType is missing
-            let pointType = try nested.decodeIfPresent(AnchorPointType.self, forKey: .pointType) ?? .smooth
-            self = .curve(to: to, control1: control1, control2: control2, pointType: pointType)
-
-        } else if container.contains(.quadCurve) {
-            let nested = try container.nestedContainer(keyedBy: QuadCurveCodingKeys.self, forKey: .quadCurve)
-            let to = try nested.decode(VectorPoint.self, forKey: .to)
-            let control = try nested.decode(VectorPoint.self, forKey: .control)
-            // Backward compatible: use default if pointType is missing
-            let pointType = try nested.decodeIfPresent(AnchorPointType.self, forKey: .pointType) ?? .smooth
-            self = .quadCurve(to: to, control: control, pointType: pointType)
-
-        } else if container.contains(.close) {
-            self = .close
-
-        } else {
-            throw DecodingError.dataCorrupted(
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Unknown PathElement type"
-                )
-            )
         }
     }
 }
@@ -304,13 +167,9 @@ struct VectorPath: Codable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
-        var loadedElements = try container.decodeIfPresent([PathElement].self, forKey: .elements) ?? []
+        elements = try container.decodeIfPresent([PathElement].self, forKey: .elements) ?? []
         isClosed = try container.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false
         fillRule = try container.decode(FillRule.self, forKey: .fillRule)
-
-        // Auto-detect point types for old documents that don't have them set
-        autoDetectPointTypes(elements: &loadedElements)
-        elements = loadedElements
     }
 
     init(cgPath: CGPath, fillRule: CGPathFillRule = .winding) {
@@ -364,13 +223,13 @@ struct VectorPath: Codable, Hashable, Identifiable {
 
         for element in elements {
             switch element {
-            case .move(let to, _):
+            case .move(let to):
                 path.move(to: to.cgPoint)
-            case .line(let to, _):
+            case .line(let to):
                 path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2, _):
+            case .curve(let to, let control1, let control2):
                 path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control, _):
+            case .quadCurve(let to, let control):
                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
                 if !path.isEmpty {

@@ -30,22 +30,20 @@ extension VectorDocument {
                             var nudgedElements: [PathElement] = []
                             for element in groupedShape.path.elements {
                                 switch element {
-                                case .move(let to, let type):
-                                    nudgedElements.append(.move(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy), pointType: type))
-                                case .line(let to, let type):
-                                    nudgedElements.append(.line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy), pointType: type))
-                                case .curve(let to, let c1, let c2, let type):
+                                case .move(let to):
+                                    nudgedElements.append(.move(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy)))
+                                case .line(let to):
+                                    nudgedElements.append(.line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy)))
+                                case .curve(let to, let c1, let c2):
                                     nudgedElements.append(.curve(
                                         to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
                                         control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),
-                                        control2: VectorPoint(c2.x + nudgeAmount.dx, c2.y + nudgeAmount.dy),
-                                        pointType: type
+                                        control2: VectorPoint(c2.x + nudgeAmount.dx, c2.y + nudgeAmount.dy)
                                     ))
-                                case .quadCurve(let to, let c, let type):
+                                case .quadCurve(let to, let c):
                                     nudgedElements.append(.quadCurve(
                                         to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
-                                        control: VectorPoint(c.x + nudgeAmount.dx, c.y + nudgeAmount.dy),
-                                        pointType: type
+                                        control: VectorPoint(c.x + nudgeAmount.dx, c.y + nudgeAmount.dy)
                                     ))
                                 case .close:
                                     nudgedElements.append(.close)
@@ -61,22 +59,20 @@ extension VectorDocument {
                         var nudgedElements: [PathElement] = []
                         for element in shape.path.elements {
                             switch element {
-                            case .move(let to, let type):
-                                nudgedElements.append(.move(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy), pointType: type))
-                            case .line(let to, let type):
-                                nudgedElements.append(.line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy), pointType: type))
-                            case .curve(let to, let c1, let c2, let type):
+                            case .move(let to):
+                                nudgedElements.append(.move(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy)))
+                            case .line(let to):
+                                nudgedElements.append(.line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy)))
+                            case .curve(let to, let c1, let c2):
                                 nudgedElements.append(.curve(
                                     to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
                                     control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),
-                                    control2: VectorPoint(c2.x + nudgeAmount.dx, c2.y + nudgeAmount.dy),
-                                    pointType: type
+                                    control2: VectorPoint(c2.x + nudgeAmount.dx, c2.y + nudgeAmount.dy)
                                 ))
-                            case .quadCurve(let to, let c, let type):
+                            case .quadCurve(let to, let c):
                                 nudgedElements.append(.quadCurve(
                                     to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
-                                    control: VectorPoint(c.x + nudgeAmount.dx, c.y + nudgeAmount.dy),
-                                    pointType: type
+                                    control: VectorPoint(c.x + nudgeAmount.dx, c.y + nudgeAmount.dy)
                                 ))
                             case .close:
                                 nudgedElements.append(.close)

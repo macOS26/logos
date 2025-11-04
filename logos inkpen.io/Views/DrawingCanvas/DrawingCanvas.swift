@@ -98,6 +98,9 @@ struct DrawingCanvas: View {
     @State internal var dragStartGradient: VectorGradient? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
+
+    // Anchor point type testing (local state, not persisted)
+    @State internal var pointTypes: [PointID: AnchorPointType] = [:]
     //internal let metalPerformanceMonitor = PerformanceMonitor()
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero

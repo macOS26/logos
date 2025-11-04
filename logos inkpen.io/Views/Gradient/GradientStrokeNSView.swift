@@ -99,13 +99,13 @@ class GradientStrokeNSView: NSView {
 
         for element in pathElements {
             switch element {
-            case .move(let to, _):
+            case .move(let to):
                 actualCorners.append(to.cgPoint)
-            case .line(let to, _):
+            case .line(let to):
                 actualCorners.append(to.cgPoint)
-            case .curve(let to, _, _, _):
+            case .curve(let to, _, _):
                 actualCorners.append(to.cgPoint)
-            case .quadCurve(let to, _, _):
+            case .quadCurve(let to, _):
                 actualCorners.append(to.cgPoint)
             case .close:
                 break

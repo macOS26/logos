@@ -97,10 +97,7 @@ struct RightPanel: View {
                         onUpdateStrokeScaleWithTransform: { scaleWithTransform in PaintSelectionOperations.updateStrokeScaleWithTransform(scaleWithTransform, document: document) },
                         onUpdateImageOpacity: { opacity in PaintSelectionOperations.updateImageOpacity(opacity, document: document) },
                         onApplyFillToSelectedShapes: { fillColor, fillOpacity in PaintSelectionOperations.applyFillToSelectedShapes(fillColor: fillColor, fillOpacity: fillOpacity, document: document) },
-                        onUpdateShapeStrokePlacementInUnified: { id, placement in document.updateShapeStrokePlacementInUnified(id: id, placement: placement) },
-                        onUpdatePointAnchorType: { pointID, newType in
-                            document.updatePointAnchorType(pointID: pointID, newType: newType)
-                        }
+                        onUpdateShapeStrokePlacementInUnified: { id, placement in document.updateShapeStrokePlacementInUnified(id: id, placement: placement) }
                     )
                 case .gradient:
                     GradientPanel(

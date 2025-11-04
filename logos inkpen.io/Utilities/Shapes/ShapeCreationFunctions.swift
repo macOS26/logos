@@ -7,7 +7,7 @@ func createCirclePath(rect: CGRect) -> VectorPath {
         let controlPointOffsetX = radiusX * 0.552
         let controlPointOffsetY = radiusY * 0.552
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(center.x + radiusX, center.y)),
 
             .curve(to: VectorPoint(center.x, center.y + radiusY),
@@ -27,18 +27,13 @@ func createCirclePath(rect: CGRect) -> VectorPath {
                    control2: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY)),
 
             .close
-        ]
-
-        // Auto-detect point types (all curves should be smooth)
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
         let controlPointOffset = radius * 0.552
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(center.x + radius, center.y)),
 
             .curve(to: VectorPoint(center.x, center.y + radius),
@@ -58,12 +53,7 @@ func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
                    control2: VectorPoint(center.x + radius, center.y - controlPointOffset)),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createEllipsePath(rect: CGRect) -> VectorPath {
@@ -73,7 +63,7 @@ func createEllipsePath(rect: CGRect) -> VectorPath {
         let controlPointOffsetX = radiusX * 0.552
         let controlPointOffsetY = radiusY * 0.552
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(center.x + radiusX, center.y)),
 
             .curve(to: VectorPoint(center.x, center.y + radiusY),
@@ -93,12 +83,7 @@ func createEllipsePath(rect: CGRect) -> VectorPath {
                    control2: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY)),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createOvalPath(rect: CGRect) -> VectorPath {
@@ -108,7 +93,7 @@ func createOvalPath(rect: CGRect) -> VectorPath {
         let controlPointOffsetX = radiusX * 0.58
         let controlPointOffsetY = radiusY * 0.58
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(center.x + radiusX, center.y)),
 
             .curve(to: VectorPoint(center.x, center.y + radiusY),
@@ -128,12 +113,7 @@ func createOvalPath(rect: CGRect) -> VectorPath {
                    control2: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY)),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createEggPath(rect: CGRect) -> VectorPath {
@@ -148,7 +128,7 @@ func createEggPath(rect: CGRect) -> VectorPath {
         let minY = rect.minY
         let maxY = rect.maxY
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(centerX, minY)),
 
             .curve(
@@ -176,12 +156,7 @@ func createEggPath(rect: CGRect) -> VectorPath {
             ),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
@@ -237,7 +212,7 @@ func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Doub
         let bottomRightOffset = bottomRightRadius * 0.552
         let bottomLeftOffset = bottomLeftRadius * 0.552
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(rect.minX + topLeftRadius, rect.minY)),
 
             .line(to: VectorPoint(rect.maxX - topRightRadius, rect.minY)),
@@ -265,19 +240,14 @@ func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Doub
                    control2: VectorPoint(rect.minX + topLeftRadius - topLeftOffset, rect.minY)),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 
 func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
         let radius = min(cornerRadius, min(rect.width, rect.height) / 2)
         let controlPointOffset = radius * 0.552
 
-        var elements: [PathElement] = [
+        return VectorPath(elements: [
             .move(to: VectorPoint(rect.minX + radius, rect.minY)),
 
             .line(to: VectorPoint(rect.maxX - radius, rect.minY)),
@@ -305,12 +275,7 @@ func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
                    control2: VectorPoint(rect.minX + radius - controlPointOffset, rect.minY)),
 
             .close
-        ]
-
-        // Auto-detect point types
-        autoDetectPointTypes(elements: &elements)
-
-        return VectorPath(elements: elements, isClosed: true)
+        ], isClosed: true)
     }
 func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Double, unit: MeasurementUnit) -> VectorPath {
         let normalizedRect = CGRect(

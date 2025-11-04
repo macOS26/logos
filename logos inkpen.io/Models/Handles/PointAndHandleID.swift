@@ -17,6 +17,13 @@ enum HandleType {
     case control1, control2
 }
 
+enum AnchorPointType {
+    case auto      // Geometric detection (default)
+    case corner    // No curves, sharp point
+    case cusp      // Independent curves, no tangency
+    case smooth    // 180° tangent curves
+}
+
 func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
     guard let targetPosition = getPointPositionExternal(targetPointID, in: document) else { return [] }
 
@@ -42,9 +49,9 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
 
                 let elementPoint: CGPoint?
                 switch element {
-                case .move(let to, _), .line(let to, _):
+                case .move(let to), .line(let to):
                     elementPoint = CGPoint(x: to.x, y: to.y)
-                case .curve(let to, _, _, _), .quadCurve(let to, _, _):
+                case .curve(let to, _, _), .quadCurve(let to, _):
                     elementPoint = CGPoint(x: to.x, y: to.y)
                 case .close:
                     elementPoint = nil
