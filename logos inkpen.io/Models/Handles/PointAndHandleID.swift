@@ -42,9 +42,9 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
 
                 let elementPoint: CGPoint?
                 switch element {
-                case .move(let to), .line(let to):
+                case .move(let to, _), .line(let to, _):
                     elementPoint = CGPoint(x: to.x, y: to.y)
-                case .curve(let to, _, _), .quadCurve(let to, _):
+                case .curve(let to, _, _, _), .quadCurve(let to, _, _):
                     elementPoint = CGPoint(x: to.x, y: to.y)
                 case .close:
                     elementPoint = nil

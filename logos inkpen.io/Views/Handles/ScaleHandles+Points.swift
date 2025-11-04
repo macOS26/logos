@@ -7,25 +7,17 @@ extension ScaleHandles {
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             for groupedShape in shape.groupedShapes {
                 for element in groupedShape.path.elements {
-                    switch element {
-                    case .move(let to), .line(let to):
-                        pathPoints.append(to)
-                    case .curve(let to, _, _), .quadCurve(let to, _):
-                        pathPoints.append(to)
-                    case .close:
-                        continue
+                    // Use helper to extract destination point
+                    if let point = element.destinationPoint {
+                        pathPoints.append(point)
                     }
                 }
             }
         } else {
             for element in shape.path.elements {
-                switch element {
-                case .move(let to), .line(let to):
-                    pathPoints.append(to)
-                case .curve(let to, _, _), .quadCurve(let to, _):
-                    pathPoints.append(to)
-                case .close:
-                    continue
+                // Use helper to extract destination point
+                if let point = element.destinationPoint {
+                    pathPoints.append(point)
                 }
             }
         }
@@ -95,25 +87,17 @@ extension ScaleHandles {
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             for groupedShape in shape.groupedShapes {
                 for element in groupedShape.path.elements {
-                    switch element {
-                    case .move(let to), .line(let to):
-                        pathPoints.append(to)
-                    case .curve(let to, _, _), .quadCurve(let to, _):
-                        pathPoints.append(to)
-                    case .close:
-                        continue
+                    // Use helper to extract destination point
+                    if let point = element.destinationPoint {
+                        pathPoints.append(point)
                     }
                 }
             }
         } else {
             for element in shape.path.elements {
-                switch element {
-                case .move(let to), .line(let to):
-                    pathPoints.append(to)
-                case .curve(let to, _, _), .quadCurve(let to, _):
-                    pathPoints.append(to)
-                case .close:
-                    continue
+                // Use helper to extract destination point
+                if let point = element.destinationPoint {
+                    pathPoints.append(point)
                 }
             }
         }

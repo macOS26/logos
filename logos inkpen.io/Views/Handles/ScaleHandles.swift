@@ -42,18 +42,18 @@ struct ScaleHandles: View {
 
         ZStack {
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                ForEach(Array(shape.groupedShapes.indices), id: \.self) { index in
                     let groupedShape = shape.groupedShapes[index]
                     let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
-                            case .move(let to):
+                            case .move(let to, _):
                                 path.move(to: to.cgPoint)
-                            case .line(let to):
+                            case .line(let to, _):
                                 path.addLine(to: to.cgPoint)
-                            case .curve(let to, let control1, let control2):
+                            case .curve(let to, let control1, let control2, _):
                                 path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                            case .quadCurve(let to, let control):
+                            case .quadCurve(let to, let control, _):
                                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                             case .close:
                                 path.closeSubpath()
@@ -77,13 +77,13 @@ struct ScaleHandles: View {
                 let cachedPath = Path { path in
                     for element in shape.path.elements {
                         switch element {
-                        case .move(let to):
+                        case .move(let to, _):
                             path.move(to: to.cgPoint)
-                        case .line(let to):
+                        case .line(let to, _):
                             path.addLine(to: to.cgPoint)
-                        case .curve(let to, let control1, let control2):
+                        case .curve(let to, let control1, let control2, _):
                             path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                        case .quadCurve(let to, let control):
+                        case .quadCurve(let to, let control, _):
                             path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                         case .close:
                             path.closeSubpath()
@@ -205,18 +205,18 @@ struct ScaleHandles: View {
                         Path { path in
                             for element in groupedShape.path.elements {
                                 switch element {
-                                case .move(let to):
+                                case .move(let to, _):
                                     let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                     path.move(to: transformedPoint)
-                                case .line(let to):
+                                case .line(let to, _):
                                     let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                     path.addLine(to: transformedPoint)
-                                case .curve(let to, let control1, let control2):
+                                case .curve(let to, let control1, let control2, _):
                                     let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                     let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
                                     let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
                                     path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
-                                case .quadCurve(let to, let control):
+                                case .quadCurve(let to, let control, _):
                                     let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                     let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
                                     path.addQuadCurve(to: transformedTo, control: transformedControl)
@@ -234,18 +234,18 @@ struct ScaleHandles: View {
                     Path { path in
                         for element in shape.path.elements {
                             switch element {
-                            case .move(let to):
+                            case .move(let to, _):
                                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                 path.move(to: transformedPoint)
-                            case .line(let to):
+                            case .line(let to, _):
                                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                 path.addLine(to: transformedPoint)
-                            case .curve(let to, let control1, let control2):
+                            case .curve(let to, let control1, let control2, _):
                                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                 let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
                                 let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
                                 path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
-                            case .quadCurve(let to, let control):
+                            case .quadCurve(let to, let control, _):
                                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
                                 let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
                                 path.addQuadCurve(to: transformedTo, control: transformedControl)
