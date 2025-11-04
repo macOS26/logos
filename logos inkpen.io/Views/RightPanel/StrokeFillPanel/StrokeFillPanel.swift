@@ -65,15 +65,19 @@ struct StrokeFillPanel: View {
         let elements = shape.path.elements
 
         // Check incoming handle (control2 from this element)
-        var hasIncomingCurve = false
         var incomingControl: CGPoint?
         var anchorPoint: CGPoint?
 
         switch element {
         case .curve(let to, _, let control2):
-            hasIncomingCurve = true
-            incomingControl = CGPoint(x: control2.x, y: control2.y)
-            anchorPoint = CGPoint(x: to.x, y: to.y)
+            let anchor = CGPoint(x: to.x, y: to.y)
+            let control = CGPoint(x: control2.x, y: control2.y)
+            // Check if handle is collapsed (within 0.5 pixels)
+            let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
+            if dist > 0.5 {
+                incomingControl = control
+            }
+            anchorPoint = anchor
         case .move(let to), .line(let to):
             anchorPoint = CGPoint(x: to.x, y: to.y)
         default:
@@ -81,26 +85,30 @@ struct StrokeFillPanel: View {
         }
 
         // Check outgoing handle (control1 from next element)
-        var hasOutgoingCurve = false
         var outgoingControl: CGPoint?
 
         if firstPoint.elementIndex + 1 < elements.count {
             if case .curve(_, let control1, _) = elements[firstPoint.elementIndex + 1] {
-                hasOutgoingCurve = true
-                outgoingControl = CGPoint(x: control1.x, y: control1.y)
+                if let anchor = anchorPoint {
+                    let control = CGPoint(x: control1.x, y: control1.y)
+                    let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
+                    if dist > 0.5 {
+                        outgoingControl = control
+                    }
+                }
             }
         }
 
         // Determine type based on handles
         guard let anchor = anchorPoint else { return .auto }
 
-        if !hasIncomingCurve && !hasOutgoingCurve {
+        // Corner: no visible handles
+        if incomingControl == nil && outgoingControl == nil {
             return .corner
         }
 
-        if hasIncomingCurve && hasOutgoingCurve,
-           let incoming = incomingControl,
-           let outgoing = outgoingControl {
+        // Smooth or Cusp: both handles visible
+        if let incoming = incomingControl, let outgoing = outgoingControl {
             // Check if handles are collinear (180° aligned)
             let incomingVector = CGPoint(x: anchor.x - incoming.x, y: anchor.y - incoming.y)
             let outgoingVector = CGPoint(x: outgoing.x - anchor.x, y: outgoing.y - anchor.y)
@@ -114,7 +122,8 @@ struct StrokeFillPanel: View {
             return isAligned ? .smooth : .cusp
         }
 
-        return .cusp  // One handle only = cusp
+        // One handle only = cusp
+        return .cusp
     }
 
     private var prototypeAnchorTypeSelector: some View {
@@ -196,21 +205,38 @@ struct StrokeFillPanel: View {
             // Modify the element and next element based on type
             switch type {
             case .corner:
-                // Convert to line (no curves)
-                elements[elementIndex] = .line(to: anchorPos)
-                // Also convert next element's incoming handle if it exists
+                // Collapse handles to anchor (corner = no visible handles)
+                // Collapse incoming handle (control2 of current element)
+                if case .curve(_, let control1, _) = elements[elementIndex] {
+                    elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: anchorPos)
+                }
+                // Collapse outgoing handle (control1 of next element)
                 if elementIndex + 1 < elements.count {
-                    if case .curve(let to, _, _) = elements[elementIndex + 1] {
-                        elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: to)
+                    if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
+                        elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: control2)
                     }
                 }
 
             case .cusp:
-                // Keep curves but make them independent (already is cusp if it has curves)
-                // Just ensure we have curve handles
-                if case .line(_) = elements[elementIndex] {
-                    // Convert line to curve with minimal handles
-                    elements[elementIndex] = .curve(to: anchorPos, control1: anchorPos, control2: anchorPos)
+                // Keep curves but make them independent
+                // Extend handles if they're collapsed
+                if case .curve(_, let control1, let control2) = elements[elementIndex] {
+                    // Check if incoming handle (control2) is collapsed
+                    let dist = sqrt(pow(anchorPos.x - control2.x, 2) + pow(anchorPos.y - control2.y, 2))
+                    if dist < 0.5 {
+                        let offset = VectorPoint(20, 20)
+                        elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: VectorPoint(anchorPos.x - offset.x, anchorPos.y - offset.y))
+                    }
+                }
+                // Check outgoing handle (control1 of next element)
+                if elementIndex + 1 < elements.count {
+                    if case .curve(let to, let control1, let control2) = elements[elementIndex + 1] {
+                        let dist = sqrt(pow(anchorPos.x - control1.x, 2) + pow(anchorPos.y - control1.y, 2))
+                        if dist < 0.5 {
+                            let offset = VectorPoint(20, 20)
+                            elements[elementIndex + 1] = .curve(to: to, control1: VectorPoint(anchorPos.x + offset.x, anchorPos.y + offset.y), control2: control2)
+                        }
+                    }
                 }
 
             case .smooth:
