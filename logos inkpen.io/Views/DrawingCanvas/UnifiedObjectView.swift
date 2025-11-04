@@ -907,6 +907,13 @@ struct IsolatedLayerView: View {
 
     // Helper to collect all text shapes (both top-level and grouped)
     private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
+        // EARLY RETURN: Skip expensive iteration if we're not in text mode
+        // This prevents 60fps calls during shape manipulation
+        // TODO: Replace with document.hasEditingText property
+        guard document.viewState.currentTool == .font else {
+            return []
+        }
+
         var shapes: [(id: UUID, dragDelta: CGPoint)] = []
 
         print("🔍 collectEditingTextShapes: checking snapshot directly")
