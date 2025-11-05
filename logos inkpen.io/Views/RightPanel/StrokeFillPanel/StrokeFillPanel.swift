@@ -318,8 +318,12 @@ struct StrokeFillPanel: View {
     }
 
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
+        print("🟢 applyAnchorTypeToSelection: Called with type \(type)")
+        print("🟢 selectedPoints count: \(selectedPoints.count)")
+        print("🟢 selectedPoints: \(selectedPoints)")
+
         guard !selectedPoints.isEmpty else {
-            print("No points selected")
+            print("❌ No points selected - returning early")
             return
         }
 
