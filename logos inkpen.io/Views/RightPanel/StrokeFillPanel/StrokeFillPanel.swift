@@ -450,8 +450,13 @@ struct StrokeFillPanel: View {
                 }
 
             case .auto:
-                // Auto mode - keep as is
-                break
+                // Auto mode - remove stored type to use geometry detection
+                shape.anchorTypes.removeValue(forKey: elementIndex)
+            }
+
+            // Store the explicit anchor type (except for .auto which uses geometry)
+            if type != .auto {
+                shape.anchorTypes[elementIndex] = type
             }
 
             // Update the shape
