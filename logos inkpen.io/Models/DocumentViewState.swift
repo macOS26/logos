@@ -66,5 +66,14 @@ class DocumentViewState: ObservableObject {
 
     @Published var PublishedSelectedPoints: Set<PointID> = []
 
+    // Handle selection for direct selection tool
+    var selectedHandles: Set<HandleID> = [] {
+        didSet {
+            PublishedSelectedHandles = selectedHandles
+        }
+    }
+
+    @Published var PublishedSelectedHandles: Set<HandleID> = []
+
     init() {}
 }

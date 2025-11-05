@@ -4,7 +4,8 @@ import Combine
 struct StrokeFillPanel: View {
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
-    let selectedPoints: Set<PointID>  // PROTOTYPE
+    let selectedPoints: Set<PointID>
+    let selectedHandles: Set<HandleID>
     let activeColorTarget: ColorTarget
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
@@ -52,13 +53,11 @@ struct StrokeFillPanel: View {
     @State private var selectedImageOpacityState: Double = 1.0
     @State private var isDragging: Bool = false
 
-    // Detect current anchor type from selected points
+    // Detect current anchor type from selected points or handles
     private var currentAnchorType: AnchorPointType {
-        // Check all selected points (including coincident ones)
-        print("🟣 currentAnchorType: selectedPoints.count = \(selectedPoints.count)")
-
         var detectedTypes = Set<AnchorPointType>()
 
+        // First check selected points
         for pointID in selectedPoints {
             guard let object = snapshot.objects[pointID.shapeID],
                   case .shape(let shape) = object.objectType,
@@ -67,20 +66,44 @@ struct StrokeFillPanel: View {
             }
 
             let type = detectAnchorType(for: pointID, in: shape)
-            print("🟣   Point \(pointID.elementIndex): \(type)")
             detectedTypes.insert(type)
         }
 
-        print("🟣 Detected types: \(detectedTypes)")
+        // If no points selected, check handles and get their parent anchor types
+        if selectedPoints.isEmpty {
+            for handleID in selectedHandles {
+                guard let object = snapshot.objects[handleID.shapeID],
+                      case .shape(let shape) = object.objectType else {
+                    continue
+                }
 
-        // If all points have the same type, return it
+                // Find the anchor point this handle belongs to
+                let anchorElementIndex: Int
+                if handleID.handleType == .control2 {
+                    // control2 belongs to this element's anchor
+                    anchorElementIndex = handleID.elementIndex
+                } else {
+                    // control1 belongs to previous element's anchor
+                    // For element 1's control1, it belongs to element 0 (start point)
+                    anchorElementIndex = handleID.elementIndex - 1
+                }
+
+                guard anchorElementIndex >= 0 && anchorElementIndex < shape.path.elements.count else {
+                    continue
+                }
+
+                let pointID = PointID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: anchorElementIndex)
+                let type = detectAnchorType(for: pointID, in: shape)
+                detectedTypes.insert(type)
+            }
+        }
+
+        // If all have the same type, return it
         if detectedTypes.count == 1, let type = detectedTypes.first {
-            print("🟣 Returning: \(type)")
             return type
         }
 
         // Mixed types - return auto
-        print("🟣 Mixed types, returning: .auto")
         return .auto
     }
 

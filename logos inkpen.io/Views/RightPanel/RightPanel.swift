@@ -38,6 +38,7 @@ struct RightPanel: View {
                         ),
                         selectedObjectIDs: viewState.selectedObjectIDs,
                         selectedPoints: viewState.selectedPoints,
+                        selectedHandles: viewState.selectedHandles,
                         activeColorTarget: viewState.activeColorTarget,
                         colorMode: Binding(
                             get: { document.settings.colorMode },
