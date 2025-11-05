@@ -143,18 +143,9 @@ struct StrokeFillPanel: View {
                 angleDiff = 2 * .pi - angleDiff
             }
 
-            print("🔴 Anchor type detection:")
-            print("  incoming angle: \(incomingAngle * 180 / .pi)°")
-            print("  outgoing angle: \(outgoingAngle * 180 / .pi)°")
-            print("  angle diff: \(angleDiff * 180 / .pi)°")
-
-            // Smooth if handles point in SAME direction (collinear)
-            // Both vectors from control->anchor and anchor->control should be parallel
-            let isAligned = angleDiff < 0.3  // Within ~17 degrees of 0°
-
-            print("  isAligned: \(isAligned)")
-
-            return isAligned ? .smooth : .cusp
+            // Smooth if handles are collinear (point in same direction through anchor)
+            // When both handle vectors have the same angle, angleDiff ≈ 0
+            return angleDiff < 0.3 ? .smooth : .cusp  // Within ~17 degrees
         }
 
         // One handle only = cusp
