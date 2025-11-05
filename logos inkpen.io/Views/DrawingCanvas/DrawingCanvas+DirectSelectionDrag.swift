@@ -160,11 +160,10 @@ extension DrawingCanvas {
                 )
                 liveHandlePositions[handleID] = newPosition
 
-                // Auto-link handles only for very smooth points (within 1° of 180°)
-                // Strict threshold (-0.9998) prevents cusp points from auto-linking
-                if !isOptionPressed && isPointSmooth(handleID: handleID) {
-                    updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
-                }
+                // DISABLED: Do not auto-link handles based on geometry
+                // User's explicit anchor type choice (Corner/Cusp/Smooth) must be respected
+                // Geometry detection would override user's cusp choice when handles align
+                // TODO: Store explicit anchor type per point, only auto-link if type == .smooth
             }
             }
         }
@@ -372,11 +371,11 @@ extension DrawingCanvas {
 
         let elements = shape.path.elements
 
-        // Check for first/last coincident points (closed paths)
-        // Only links if point is very smooth (within 1° threshold)
-        if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
-            return
-        }
+        // DISABLED: Do not auto-link coincident point handles
+        // User's explicit anchor type must be respected, not geometry
+        // if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
+        //     return
+        // }
 
         // Regular linked handle logic
         let element = elements[handleID.elementIndex]
