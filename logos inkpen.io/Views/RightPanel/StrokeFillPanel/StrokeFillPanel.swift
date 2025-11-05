@@ -55,6 +55,8 @@ struct StrokeFillPanel: View {
     // Detect current anchor type from selected points
     private var currentAnchorType: AnchorPointType {
         // Check all selected points (including coincident ones)
+        print("🟣 currentAnchorType: selectedPoints.count = \(selectedPoints.count)")
+
         var detectedTypes = Set<AnchorPointType>()
 
         for pointID in selectedPoints {
@@ -65,15 +67,20 @@ struct StrokeFillPanel: View {
             }
 
             let type = detectAnchorType(for: pointID, in: shape)
+            print("🟣   Point \(pointID.elementIndex): \(type)")
             detectedTypes.insert(type)
         }
 
+        print("🟣 Detected types: \(detectedTypes)")
+
         // If all points have the same type, return it
         if detectedTypes.count == 1, let type = detectedTypes.first {
+            print("🟣 Returning: \(type)")
             return type
         }
 
         // Mixed types - return auto
+        print("🟣 Mixed types, returning: .auto")
         return .auto
     }
 
@@ -82,8 +89,14 @@ struct StrokeFillPanel: View {
             return .auto
         }
 
-        let element = shape.path.elements[pointID.elementIndex]
         let elements = shape.path.elements
+
+        // Check if this is a closed path endpoint (element 0 or last element)
+        if let closedType = detectClosedPathEndpointType(pointID: pointID, elements: elements) {
+            return closedType
+        }
+
+        let element = elements[pointID.elementIndex]
 
         // Check incoming handle (control2 from this element)
         var incomingControl: CGPoint?
@@ -93,7 +106,6 @@ struct StrokeFillPanel: View {
         case .curve(let to, _, let control2):
             let anchor = CGPoint(x: to.x, y: to.y)
             let control = CGPoint(x: control2.x, y: control2.y)
-            // Check if handle is collapsed (within 0.5 pixels)
             let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
             if dist > 0.5 {
                 incomingControl = control
@@ -130,26 +142,102 @@ struct StrokeFillPanel: View {
 
         // Smooth or Cusp: both handles visible
         if let incoming = incomingControl, let outgoing = outgoingControl {
-            // Check if handles are collinear (180° aligned)
-            let incomingVector = CGPoint(x: anchor.x - incoming.x, y: anchor.y - incoming.y)
-            let outgoingVector = CGPoint(x: outgoing.x - anchor.x, y: outgoing.y - anchor.y)
+            // Use dot product method (same as existing app logic)
+            let vec1 = CGPoint(x: incoming.x - anchor.x, y: incoming.y - anchor.y)
+            let vec2 = CGPoint(x: outgoing.x - anchor.x, y: outgoing.y - anchor.y)
 
-            let incomingAngle = atan2(incomingVector.y, incomingVector.x)
-            let outgoingAngle = atan2(outgoingVector.y, outgoingVector.x)
+            let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
+            let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
 
-            var angleDiff = abs(incomingAngle - outgoingAngle)
-            // Normalize to [0, π] range
-            if angleDiff > .pi {
-                angleDiff = 2 * .pi - angleDiff
-            }
+            if len1 < 0.1 || len2 < 0.1 { return .corner }
 
-            // Smooth if handles are collinear (point in same direction through anchor)
-            // When both handle vectors have the same angle, angleDiff ≈ 0
-            return angleDiff < 0.3 ? .smooth : .cusp  // Within ~17 degrees
+            let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
+            let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+
+            let dot = norm1.x * norm2.x + norm1.y * norm2.y
+
+            // Smooth if dot < -0.98 (cos 170°) - handles point in opposite directions
+            return dot < -0.98 ? .smooth : .cusp
         }
 
         // One handle only = cusp
         return .cusp
+    }
+
+    private func detectClosedPathEndpointType(pointID: PointID, elements: [PathElement]) -> AnchorPointType? {
+        guard elements.count >= 2 else { return nil }
+
+        // Get first and last element indices
+        var lastElementIndex = elements.count - 1
+        if case .close = elements[lastElementIndex] {
+            lastElementIndex -= 1
+        }
+
+        // Only check if this is element 0 or the last element
+        guard pointID.elementIndex == 0 || pointID.elementIndex == lastElementIndex else {
+            return nil
+        }
+
+        // Get first and last points
+        guard case .move(let firstTo) = elements[0] else { return nil }
+        let firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
+
+        let lastPoint: CGPoint
+        switch elements[lastElementIndex] {
+        case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
+            lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
+        default:
+            return nil
+        }
+
+        // Check if first and last are coincident
+        guard abs(firstPoint.x - lastPoint.x) < 0.1 && abs(firstPoint.y - lastPoint.y) < 0.1 else {
+            return nil
+        }
+
+        // Get both handles
+        var handle1: CGPoint?
+        var handle2: CGPoint?
+
+        if case .curve(_, let firstControl1, _) = elements[1] {
+            handle1 = CGPoint(x: firstControl1.x, y: firstControl1.y)
+        }
+
+        if case .curve(_, _, let lastControl2) = elements[lastElementIndex] {
+            handle2 = CGPoint(x: lastControl2.x, y: lastControl2.y)
+        }
+
+        // Both handles missing = corner
+        guard let h1 = handle1, let h2 = handle2 else {
+            return .corner
+        }
+
+        // Check if handles are collapsed
+        let dist1 = sqrt(pow(h1.x - firstPoint.x, 2) + pow(h1.y - firstPoint.y, 2))
+        let dist2 = sqrt(pow(h2.x - firstPoint.x, 2) + pow(h2.y - firstPoint.y, 2))
+
+        if dist1 < 0.5 && dist2 < 0.5 {
+            return .corner
+        }
+
+        if dist1 < 0.1 || dist2 < 0.1 {
+            return .cusp
+        }
+
+        // Calculate vectors from anchor to handles
+        let vec1 = CGPoint(x: h1.x - firstPoint.x, y: h1.y - firstPoint.y)
+        let vec2 = CGPoint(x: h2.x - firstPoint.x, y: h2.y - firstPoint.y)
+
+        let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
+        let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
+
+        let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
+        let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+
+        let dot = norm1.x * norm2.x + norm1.y * norm2.y
+
+        // Smooth if dot < -0.98 (handles point in opposite directions)
+        return dot < -0.98 ? .smooth : .cusp
     }
 
     private var prototypeAnchorTypeSelector: some View {
