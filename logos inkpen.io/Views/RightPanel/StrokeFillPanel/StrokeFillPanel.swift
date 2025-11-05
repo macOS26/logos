@@ -320,16 +320,33 @@ struct StrokeFillPanel: View {
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
         print("🟢 applyAnchorTypeToSelection: Called with type \(type)")
         print("🟢 selectedPoints count: \(selectedPoints.count)")
-        print("🟢 selectedPoints: \(selectedPoints)")
+        print("🟢 selectedObjectIDs count: \(selectedObjectIDs.count)")
 
-        guard !selectedPoints.isEmpty else {
-            print("❌ No points selected - returning early")
+        // Use selectedPoints, or if empty, use all points from selectedObjectIDs
+        var pointsToUpdate: Set<PointID> = selectedPoints
+
+        if pointsToUpdate.isEmpty && !selectedObjectIDs.isEmpty {
+            print("⚠️ selectedPoints empty, using selectedObjectIDs to find all points")
+            // Get all points from selected objects
+            for objectID in selectedObjectIDs {
+                if let object = snapshot.objects[objectID],
+                   case .shape(let shape) = object.objectType {
+                    for (index, _) in shape.path.elements.enumerated() {
+                        pointsToUpdate.insert(PointID(shapeID: objectID, pathIndex: 0, elementIndex: index))
+                    }
+                }
+            }
+            print("🟢 Found \(pointsToUpdate.count) points from selected objects")
+        }
+
+        guard !pointsToUpdate.isEmpty else {
+            print("❌ No points or objects selected - returning early")
             return
         }
 
         var layersToUpdate = Set<Int>()
 
-        for pointID in selectedPoints {
+        for pointID in pointsToUpdate {
             guard var object = snapshot.objects[pointID.shapeID],
                   case .shape(var shape) = object.objectType,
                   pointID.elementIndex < shape.path.elements.count else {
