@@ -179,8 +179,8 @@ struct StrokeFillPanel: View {
 
             let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-            // Smooth if dot < -0.98 (cos 170°) - handles point in opposite directions
-            return dot < -0.98 ? .smooth : .cusp
+            // Smooth only if very close to 180° (within 1 degree)
+            return dot < -0.9998 ? .smooth : .cusp
         }
 
         // One handle only = cusp
@@ -259,8 +259,8 @@ struct StrokeFillPanel: View {
 
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-        // Smooth if dot < -0.98 (handles point in opposite directions)
-        return dot < -0.98 ? .smooth : .cusp
+        // Smooth only if very close to 180° (within 1 degree)
+        return dot < -0.9998 ? .smooth : .cusp
     }
 
     private var prototypeAnchorTypeSelector: some View {
@@ -355,24 +355,46 @@ struct StrokeFillPanel: View {
                 }
 
             case .cusp:
-                // Keep curves but make them independent
-                // Extend handles if they're collapsed
-                if case .curve(_, let control1, let control2) = elements[elementIndex] {
-                    // Check if incoming handle (control2) is collapsed
-                    let dist = sqrt(pow(anchorPos.x - control2.x, 2) + pow(anchorPos.y - control2.y, 2))
-                    if dist < 0.5 {
-                        let offset = VectorPoint(20, 20)
-                        elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: VectorPoint(anchorPos.x - offset.x, anchorPos.y - offset.y))
+                // Create handles at 90° angle from each other
+                let handleLength: Double = 40.0
+
+                // Get existing handle direction or use defaults
+                var incomingAngle: Double = .pi * 1.25  // 225° default
+                var outgoingAngle: Double = .pi * 0.25  // 45° default (90° from incoming)
+
+                // If incoming handle exists, use its angle
+                if case .curve(_, _, let control2) = elements[elementIndex] {
+                    let dx = anchorPos.x - control2.x
+                    let dy = anchorPos.y - control2.y
+                    let dist = sqrt(dx * dx + dy * dy)
+                    if dist > 0.5 {
+                        incomingAngle = atan2(dy, dx)
                     }
                 }
-                // Check outgoing handle (control1 of next element)
+
+                // Calculate outgoing at 90° from incoming
+                outgoingAngle = incomingAngle + .pi / 2
+
+                // Create new control points
+                let newControl2 = VectorPoint(
+                    anchorPos.x - cos(incomingAngle) * handleLength,
+                    anchorPos.y - sin(incomingAngle) * handleLength
+                )
+
+                let newControl1 = VectorPoint(
+                    anchorPos.x + cos(outgoingAngle) * handleLength,
+                    anchorPos.y + sin(outgoingAngle) * handleLength
+                )
+
+                // Update incoming handle
+                if case .curve(_, let oldControl1, _) = elements[elementIndex] {
+                    elements[elementIndex] = .curve(to: anchorPos, control1: oldControl1, control2: newControl2)
+                }
+
+                // Update outgoing handle
                 if elementIndex + 1 < elements.count {
-                    if case .curve(let to, let control1, let control2) = elements[elementIndex + 1] {
-                        let dist = sqrt(pow(anchorPos.x - control1.x, 2) + pow(anchorPos.y - control1.y, 2))
-                        if dist < 0.5 {
-                            let offset = VectorPoint(20, 20)
-                            elements[elementIndex + 1] = .curve(to: to, control1: VectorPoint(anchorPos.x + offset.x, anchorPos.y + offset.y), control2: control2)
-                        }
+                    if case .curve(let to, _, let oldControl2) = elements[elementIndex + 1] {
+                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: oldControl2)
                     }
                 }
 

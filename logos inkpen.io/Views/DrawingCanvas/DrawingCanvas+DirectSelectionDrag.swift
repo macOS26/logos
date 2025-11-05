@@ -247,7 +247,7 @@ extension DrawingCanvas {
 
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-        return dot < -0.98  // cos(170°) ≈ -0.98
+        return dot < -0.9998  // cos(179°) ≈ -0.9998
     }
 
     private func isPointSmooth(handleID: HandleID) -> Bool {
@@ -315,9 +315,8 @@ extension DrawingCanvas {
         // Calculate dot product (should be -1 for 180 degrees)
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-        // Consider smooth if angle is close to 180 degrees (dot product close to -1)
-        // Allow some tolerance (e.g., within 10 degrees of 180)
-        return dot < -0.98  // cos(170°) ≈ -0.98
+        // Consider smooth only if very close to 180 degrees (within 1 degree)
+        return dot < -0.9998  // cos(179°) ≈ -0.9998
     }
 
     private func updateLiveHandlesForMovedPoint(pointID: PointID, delta: CGPoint) {
