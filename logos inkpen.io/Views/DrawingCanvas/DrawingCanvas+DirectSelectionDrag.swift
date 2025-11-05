@@ -160,11 +160,11 @@ extension DrawingCanvas {
                 )
                 liveHandlePositions[handleID] = newPosition
 
-                // Calculate and update linked handle for smooth curves
-                // Only maintain tangency if: not holding Option AND point was already smooth
-                if !isOptionPressed && isPointSmooth(handleID: handleID) {
-                    updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
-                }
+                // DISABLED: Auto-smooth handle linking
+                // User must explicitly set smooth type - don't auto-link based on geometry
+                // if !isOptionPressed && isPointSmooth(handleID: handleID) {
+                //     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
+                // }
             }
             }
         }
