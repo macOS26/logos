@@ -54,14 +54,35 @@ struct StrokeFillPanel: View {
 
     // Detect current anchor type from selected points
     private var currentAnchorType: AnchorPointType {
-        guard let firstPoint = selectedPoints.first,
-              let object = snapshot.objects[firstPoint.shapeID],
-              case .shape(let shape) = object.objectType,
-              firstPoint.elementIndex < shape.path.elements.count else {
+        // Check all selected points (including coincident ones)
+        var detectedTypes = Set<AnchorPointType>()
+
+        for pointID in selectedPoints {
+            guard let object = snapshot.objects[pointID.shapeID],
+                  case .shape(let shape) = object.objectType,
+                  pointID.elementIndex < shape.path.elements.count else {
+                continue
+            }
+
+            let type = detectAnchorType(for: pointID, in: shape)
+            detectedTypes.insert(type)
+        }
+
+        // If all points have the same type, return it
+        if detectedTypes.count == 1, let type = detectedTypes.first {
+            return type
+        }
+
+        // Mixed types - return auto
+        return .auto
+    }
+
+    private func detectAnchorType(for pointID: PointID, in shape: VectorShape) -> AnchorPointType {
+        guard pointID.elementIndex < shape.path.elements.count else {
             return .auto
         }
 
-        let element = shape.path.elements[firstPoint.elementIndex]
+        let element = shape.path.elements[pointID.elementIndex]
         let elements = shape.path.elements
 
         // Check incoming handle (control2 from this element)
@@ -87,8 +108,8 @@ struct StrokeFillPanel: View {
         // Check outgoing handle (control1 from next element)
         var outgoingControl: CGPoint?
 
-        if firstPoint.elementIndex + 1 < elements.count {
-            if case .curve(_, let control1, _) = elements[firstPoint.elementIndex + 1] {
+        if pointID.elementIndex + 1 < elements.count {
+            if case .curve(_, let control1, _) = elements[pointID.elementIndex + 1] {
                 if let anchor = anchorPoint {
                     let control = CGPoint(x: control1.x, y: control1.y)
                     let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
