@@ -86,6 +86,20 @@ struct ProfessionalDirectSelectionView: View {
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
+                // Skip handles for corner anchor points
+                let anchorElementIndex = handleID.handleType == .control2 ? handleID.elementIndex : handleID.elementIndex - 1
+                if let anchorType = shape.anchorTypes[anchorElementIndex], anchorType == .corner {
+                    continue  // Don't draw handles for corner points
+                }
+                // Check coincident point (element 0)
+                if let anchorType = shape.anchorTypes[0], anchorType == .corner {
+                    let isCoincidentHandle = (handleID.handleType == .control1 && handleID.elementIndex == 1) ||
+                                            (handleID.handleType == .control2 && handleID.elementIndex == shape.path.elements.count - 1)
+                    if isCoincidentHandle {
+                        continue  // Don't draw handles for coincident corner point
+                    }
+                }
+
                 drawHandle(handleID, shape: shape, context: &context, zoom: zoom, isSelected: true)
             }
 
@@ -94,6 +108,20 @@ struct ProfessionalDirectSelectionView: View {
                 guard let object = document.snapshot.objects[handleID.shapeID],
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
+
+                // Skip handles for corner anchor points
+                let anchorElementIndex = handleID.handleType == .control2 ? handleID.elementIndex : handleID.elementIndex - 1
+                if let anchorType = shape.anchorTypes[anchorElementIndex], anchorType == .corner {
+                    continue  // Don't draw handles for corner points
+                }
+                // Check coincident point (element 0)
+                if let anchorType = shape.anchorTypes[0], anchorType == .corner {
+                    let isCoincidentHandle = (handleID.handleType == .control1 && handleID.elementIndex == 1) ||
+                                            (handleID.handleType == .control2 && handleID.elementIndex == shape.path.elements.count - 1)
+                    if isCoincidentHandle {
+                        continue  // Don't draw handles for coincident corner point
+                    }
+                }
 
                 drawHandle(handleID, shape: shape, context: &context, zoom: zoom, isSelected: false)
             }
