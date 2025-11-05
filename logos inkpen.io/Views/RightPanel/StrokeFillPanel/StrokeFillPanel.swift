@@ -399,18 +399,53 @@ struct StrokeFillPanel: View {
                 }
 
             case .smooth:
-                // Make curves collinear (180° aligned)
-                if elementIndex + 1 < elements.count {
-                    if case .curve(let to, let control1, _) = elements[elementIndex + 1],
-                       case .curve(_, _, let control2) = elements[elementIndex] {
-                        // Calculate aligned control points
-                        let handleLength = distance(from: anchorPosCG, to: control1)
-                        let incomingVector = normalize(from: control2, to: anchorPosCG)
+                // Make handles collinear (180° aligned through anchor)
+                var incomingHandle: CGPoint?
+                var outgoingHandle: CGPoint?
+
+                // Get incoming handle (control2 from this element)
+                if case .curve(_, _, let control2) = elements[elementIndex] {
+                    incomingHandle = CGPoint(x: control2.x, y: control2.y)
+                }
+
+                // Get outgoing handle (control1 from next element)
+                if elementIndex + 1 < elements.count,
+                   case .curve(_, let control1, _) = elements[elementIndex + 1] {
+                    outgoingHandle = CGPoint(x: control1.x, y: control1.y)
+                }
+
+                // If both handles exist, align them
+                if let incoming = incomingHandle, let outgoing = outgoingHandle {
+                    // Calculate vectors from anchor to each handle
+                    let inVec = CGPoint(x: incoming.x - anchorPosCG.x, y: incoming.y - anchorPosCG.y)
+                    let outVec = CGPoint(x: outgoing.x - anchorPosCG.x, y: outgoing.y - anchorPosCG.y)
+
+                    let inLen = sqrt(inVec.x * inVec.x + inVec.y * inVec.y)
+                    let outLen = sqrt(outVec.x * outVec.x + outVec.y * outVec.y)
+
+                    // Use the longer handle to determine the direction
+                    let useIncoming = inLen > outLen
+
+                    if useIncoming && inLen > 0.1 {
+                        // Align outgoing to be opposite of incoming
+                        let norm = CGPoint(x: inVec.x / inLen, y: inVec.y / inLen)
                         let newControl1 = VectorPoint(
-                            anchorPosCG.x + incomingVector.x * handleLength,
-                            anchorPosCG.y + incomingVector.y * handleLength
+                            anchorPosCG.x - norm.x * outLen,
+                            anchorPosCG.y - norm.y * outLen
                         )
-                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
+                        if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
+                            elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
+                        }
+                    } else if outLen > 0.1 {
+                        // Align incoming to be opposite of outgoing
+                        let norm = CGPoint(x: outVec.x / outLen, y: outVec.y / outLen)
+                        let newControl2 = VectorPoint(
+                            anchorPosCG.x - norm.x * inLen,
+                            anchorPosCG.y - norm.y * inLen
+                        )
+                        if case .curve(_, let control1, _) = elements[elementIndex] {
+                            elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: newControl2)
+                        }
                     }
                 }
 

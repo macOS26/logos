@@ -372,10 +372,11 @@ extension DrawingCanvas {
 
         let elements = shape.path.elements
 
-        // Check for first/last coincident points (closed paths)
-        if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
-            return
-        }
+        // DISABLED: Auto-linking for closed path endpoints
+        // User must explicitly set smooth - don't auto-link coincident points
+        // if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
+        //     return
+        // }
 
         // Regular linked handle logic
         let element = elements[handleID.elementIndex]
