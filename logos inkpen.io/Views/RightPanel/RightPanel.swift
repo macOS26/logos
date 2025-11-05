@@ -37,8 +37,8 @@ struct RightPanel: View {
                             set: { document.snapshot = $0 }
                         ),
                         selectedObjectIDs: viewState.selectedObjectIDs,
-                        selectedPoints: viewState.selectedPoints,
-                        selectedHandles: viewState.selectedHandles,
+                        selectedPoints: viewState.PublishedSelectedPoints,
+                        selectedHandles: viewState.PublishedSelectedHandles,
                         activeColorTarget: viewState.activeColorTarget,
                         colorMode: Binding(
                             get: { document.settings.colorMode },
