@@ -160,11 +160,11 @@ extension DrawingCanvas {
                 )
                 liveHandlePositions[handleID] = newPosition
 
-                // DISABLED: Auto-smooth handle linking
-                // User must explicitly set smooth type - don't auto-link based on geometry
-                // if !isOptionPressed && isPointSmooth(handleID: handleID) {
-                //     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
-                // }
+                // Auto-link handles only for very smooth points (within 1° of 180°)
+                // Strict threshold (-0.9998) prevents cusp points from auto-linking
+                if !isOptionPressed && isPointSmooth(handleID: handleID) {
+                    updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
+                }
             }
             }
         }
@@ -372,11 +372,11 @@ extension DrawingCanvas {
 
         let elements = shape.path.elements
 
-        // DISABLED: Auto-linking for closed path endpoints
-        // User must explicitly set smooth - don't auto-link coincident points
-        // if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
-        //     return
-        // }
+        // Check for first/last coincident points (closed paths)
+        // Only links if point is very smooth (within 1° threshold)
+        if checkFirstLastCoincidentForLive(elements: elements, handleID: handleID, newPosition: newPosition) {
+            return
+        }
 
         // Regular linked handle logic
         let element = elements[handleID.elementIndex]
@@ -551,6 +551,11 @@ extension DrawingCanvas {
 
         guard let first = firstPoint, let last = lastPoint,
               abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001 else {
+            return false
+        }
+
+        // Only link if this coincident point is smooth (within 1° threshold)
+        if !isCoincidentPointSmooth(elements: elements, handleID: handleID) {
             return false
         }
 
