@@ -350,6 +350,31 @@ struct StrokeFillPanel: View {
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
             let anchorPos = VectorPoint(anchorPosCG.x, anchorPosCG.y)
 
+            // Convert line elements to curves if needed (for rectangles/polygons)
+            // Convert current element if it's a line
+            if case .line = elements[elementIndex] {
+                print("🔶 Converting LINE element to CURVE element")
+                elements[elementIndex] = .curve(to: anchorPos, control1: anchorPos, control2: anchorPos)
+            }
+
+            // Convert next element if it's a line
+            if elementIndex + 1 < elements.count {
+                if case .line(let to) = elements[elementIndex + 1] {
+                    print("🔶 Converting NEXT LINE element to CURVE element")
+                    let toPoint = VectorPoint(to.x, to.y)
+                    elements[elementIndex + 1] = .curve(to: toPoint, control1: toPoint, control2: toPoint)
+                }
+            }
+
+            // Convert previous element if it's a line (for incoming handle)
+            if elementIndex > 0 {
+                if case .line(let to) = elements[elementIndex - 1] {
+                    print("🔶 Converting PREVIOUS LINE element to CURVE element")
+                    let toPoint = VectorPoint(to.x, to.y)
+                    elements[elementIndex - 1] = .curve(to: toPoint, control1: toPoint, control2: toPoint)
+                }
+            }
+
             // Modify the element and next element based on type
             switch type {
             case .corner:
