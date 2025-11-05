@@ -393,6 +393,10 @@ struct VectorShape: Hashable, Identifiable {
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
 
+    /// Explicit anchor point types set by user (elementIndex -> type)
+    /// If nil or .auto, geometry-based detection is used
+    var anchorTypes: [Int: AnchorPointType] = [:]
+
     // Cached CGPath - invalidated when path or transform changes
     private var _cachedCGPath: CGPath?
     private var _cacheUpdateTrigger: UInt = 0
@@ -447,7 +451,7 @@ struct VectorShape: Hashable, Identifiable {
         return mutablePath
     }
 
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:], anchorTypes: [Int: AnchorPointType] = [:]) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -482,6 +486,7 @@ struct VectorShape: Hashable, Identifiable {
         self.isEditing = isEditing
         self.textPosition = textPosition
         self.metadata = metadata
+        self.anchorTypes = anchorTypes
     }
 
     var transformedPath: CGPath {
