@@ -173,6 +173,19 @@ extension DrawingCanvas {
     private func isCoincidentPointSmooth(elements: [PathElement], handleID: HandleID) -> Bool {
         guard elements.count >= 2 else { return false }
 
+        // Check for explicit anchor type first (for element 0, which is the coincident point)
+        guard let object = document.snapshot.objects[handleID.shapeID],
+              case .shape(let shape) = object.objectType else { return false }
+
+        if let explicitType = shape.anchorTypes[0] {
+            // User explicitly set the type for the coincident point
+            switch explicitType {
+            case .smooth: return true
+            case .corner, .cusp: return false
+            case .auto: break  // Use geometry detection
+            }
+        }
+
         // Get first and last points
         let firstPoint: CGPoint?
         if case .move(let firstTo) = elements[0] {
@@ -257,6 +270,17 @@ extension DrawingCanvas {
 
         let elements = shape.path.elements
         let element = elements[handleID.elementIndex]
+
+        // Check for explicit anchor type first
+        let anchorElementIndex = handleID.handleType == .control2 ? handleID.elementIndex : handleID.elementIndex - 1
+        if let explicitType = shape.anchorTypes[anchorElementIndex] {
+            // User explicitly set the type
+            switch explicitType {
+            case .smooth: return true
+            case .corner, .cusp: return false
+            case .auto: break  // Use geometry detection
+            }
+        }
 
         // Check for coincident points first
         if isCoincidentPointSmooth(elements: elements, handleID: handleID) {
