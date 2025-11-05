@@ -299,6 +299,34 @@ extension DrawingCanvas {
 
         print("🔷 handleCoincidentSmoothPoints: Not first/last coincident, checking other coincident points")
 
+        // ✅ CHECK STORED ANCHOR TYPE for the anchor point being dragged
+        if let object = document.snapshot.objects[draggedHandleID.shapeID],
+           case .shape(let shape) = object.objectType {
+
+            // Determine anchor element index
+            let anchorElementIndex: Int
+            if draggedHandleID.handleType == .control2 {
+                anchorElementIndex = draggedHandleID.elementIndex
+            } else {
+                anchorElementIndex = draggedHandleID.elementIndex - 1
+            }
+
+            print("🔶 handleCoincidentSmoothPoints: Checking anchor element \(anchorElementIndex)")
+
+            if let explicitType = shape.anchorTypes[anchorElementIndex] {
+                print("🔶 handleCoincidentSmoothPoints: Found stored anchor type: \(explicitType)")
+                switch explicitType {
+                case .cusp, .corner:
+                    print("❌ handleCoincidentSmoothPoints: CUSP/CORNER - NOT linking other coincident points")
+                    return false
+                case .smooth, .auto:
+                    print("✅ handleCoincidentSmoothPoints: SMOOTH/AUTO - will check for coincident points")
+                }
+            } else {
+                print("⚠️ handleCoincidentSmoothPoints: No stored anchor type for element \(anchorElementIndex)")
+            }
+        }
+
         let anchorPoint: CGPoint?
         let draggedPointID: PointID
 
