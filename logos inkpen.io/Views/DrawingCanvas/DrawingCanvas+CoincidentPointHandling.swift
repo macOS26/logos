@@ -290,9 +290,14 @@ extension DrawingCanvas {
 
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
 
+        print("🟡 handleCoincidentSmoothPoints: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
+
         if handleFirstLastCoincidentPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
+            print("✅ handleCoincidentSmoothPoints: Handled by handleFirstLastCoincidentPoints")
             return true
         }
+
+        print("🔷 handleCoincidentSmoothPoints: Not first/last coincident, checking other coincident points")
 
         let anchorPoint: CGPoint?
         let draggedPointID: PointID
@@ -436,6 +441,26 @@ extension DrawingCanvas {
 
     private func handleFirstLastCoincidentPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
+
+        // ✅ CHECK STORED ANCHOR TYPE FIRST - Don't link if cusp/corner
+        if let object = document.snapshot.objects[draggedHandleID.shapeID],
+           case .shape(let shape) = object.objectType,
+           let explicitType = shape.anchorTypes[0] {  // Element 0 is the coincident point
+
+            print("🔶 handleFirstLastCoincidentPoints: Checking stored anchor type for element 0: \(explicitType)")
+
+            switch explicitType {
+            case .cusp, .corner:
+                print("❌ handleFirstLastCoincidentPoints: User set CUSP/CORNER - NOT linking handles")
+                return false  // Don't link handles for cusp/corner
+            case .smooth:
+                print("✅ handleFirstLastCoincidentPoints: User set SMOOTH - will link handles")
+            case .auto:
+                print("🔷 handleFirstLastCoincidentPoints: AUTO mode - using geometry detection")
+            }
+        } else {
+            print("⚠️ handleFirstLastCoincidentPoints: No stored anchor type - using geometry detection")
+        }
 
         let firstPoint: CGPoint?
         let lastPoint: CGPoint?

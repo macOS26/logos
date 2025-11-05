@@ -457,7 +457,13 @@ struct StrokeFillPanel: View {
             // Store the explicit anchor type (except for .auto which uses geometry)
             if type != .auto {
                 shape.anchorTypes[elementIndex] = type
+                print("✅ StrokeFillPanel: Stored anchor type \(type) for element \(elementIndex) in shape \(pointID.shapeID)")
+            } else {
+                print("🔷 StrokeFillPanel: Removed stored anchor type for element \(elementIndex) (set to AUTO)")
             }
+
+            // Log all stored anchor types for this shape
+            print("📋 StrokeFillPanel: All anchor types for shape: \(shape.anchorTypes)")
 
             // Update the shape
             shape.path = VectorPath(elements: elements)
