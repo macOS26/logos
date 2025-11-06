@@ -241,7 +241,7 @@ extension DrawingCanvas {
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth
             )
-            .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
+            .id("\(layer.id)-\(currentDragDelta)-\(fillDeltaOpacity ?? 0)-\(strokeDeltaOpacity ?? 0)-\(strokeDeltaWidth ?? 0)")  // Force update when drag or opacity/width changes
             .allowsHitTesting(isActiveLayer)
         }
     }
