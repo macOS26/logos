@@ -990,7 +990,7 @@ struct StrokeFillPanel: View {
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
-                            // During drag, fillDeltaOpacity will be set, so don't update document
+                            fillDeltaOpacity = value  // SET the delta for live preview!
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
@@ -1028,11 +1028,11 @@ struct StrokeFillPanel: View {
                         strokeScaleWithTransform: strokeScaleWithTransform,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
-                            // During drag, strokeDeltaWidth will be set, so don't update document
+                            strokeDeltaWidth = value  // SET the delta for live preview!
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
-                            // During drag, strokeDeltaOpacity will be set, so don't update document
+                            strokeDeltaOpacity = value  // SET the delta for live preview!
                         },
                         onUpdateStrokePlacement: { value in
                             strokePlacementState = value
