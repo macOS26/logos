@@ -998,7 +998,8 @@ struct StrokeFillPanel: View {
                             } else {
                                 fillDeltaOpacity = nil
                                 defaultFillOpacity = fillOpacityState
-                                // Update the document with final value only if we were dragging
+                                // Update the document with final value
+                                updateFillOpacityLive(fillOpacityState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, fillOpacityState, .fill)
                                 }
@@ -1062,7 +1063,8 @@ struct StrokeFillPanel: View {
                             } else {
                                 strokeDeltaWidth = nil
                                 defaultStrokeWidth = strokeWidthState
-                                // Update the document with final value only if we were dragging
+                                // Update the document with final value
+                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectStrokeWidth(objectID, strokeWidthState)
                                 }
@@ -1074,7 +1076,8 @@ struct StrokeFillPanel: View {
                             } else {
                                 strokeDeltaOpacity = nil
                                 defaultStrokeOpacity = strokeOpacityState
-                                // Update the document with final value only if we were dragging
+                                // Update the document with final value
+                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, strokeOpacityState, .stroke)
                                 }
