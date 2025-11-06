@@ -484,10 +484,10 @@ struct StrokeFillPanel: View {
                         let isTopLeft = abs(anchorPosCG.x - firstPoint.x) < 0.1 && abs(anchorPosCG.y - firstPoint.y) < 0.1
 
                         if isTopLeft {
-                            // Top-left corner: handles UP and LEFT
-                            incomingAngle = 270 * .pi / 180  // UP
-                            outgoingAngle = .pi  // LEFT
-                            print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - UP and LEFT")
+                            // Top-left corner: handles LEFT and UP (swapped to fix twist)
+                            incomingAngle = .pi  // LEFT
+                            outgoingAngle = 270 * .pi / 180  // UP
+                            print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - LEFT and UP (fixed twist)")
                         }
                     }
                 }
