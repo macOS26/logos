@@ -478,15 +478,17 @@ struct StrokeFillPanel: View {
 
                 // Special case for top-left corner of rectangle when element 0 or last
                 if shape.geometricType == .rectangle && (elementIndex == 0 || elementIndex == elements.count - 1) {
-                    // Check if this is the top-left corner by checking position relative to bounds
-                    let bounds = shape.bounds
-                    let isTopLeft = abs(anchorPosCG.x - bounds.minX) < 1.0 && abs(anchorPosCG.y - bounds.minY) < 1.0
+                    // For rectangles, element 0 and last element (if curve back to start) are the top-left corner
+                    // Since they're coincident points, just check if this is one of them
+                    if case .move(let firstPoint) = elements[0] {
+                        let isTopLeft = abs(anchorPosCG.x - firstPoint.x) < 0.1 && abs(anchorPosCG.y - firstPoint.y) < 0.1
 
-                    if isTopLeft {
-                        // Top-left corner: handles UP and LEFT
-                        incomingAngle = 270 * .pi / 180  // UP
-                        outgoingAngle = .pi  // LEFT
-                        print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - UP and LEFT")
+                        if isTopLeft {
+                            // Top-left corner: handles UP and LEFT
+                            incomingAngle = 270 * .pi / 180  // UP
+                            outgoingAngle = .pi  // LEFT
+                            print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - UP and LEFT")
+                        }
                     }
                 }
                 // Calculate bisector angle from prev and next positions
