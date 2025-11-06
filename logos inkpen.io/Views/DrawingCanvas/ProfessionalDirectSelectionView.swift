@@ -297,6 +297,14 @@ struct ProfessionalDirectSelectionView: View {
             handle = livePos
         }
 
+        // Skip drawing if handle is collapsed (at same position as anchor)
+        let dx = handle.x - anchor.x
+        let dy = handle.y - anchor.y
+        let distance = sqrt(dx * dx + dy * dy)
+        if distance < 0.5 {
+            return  // Handle is collapsed, don't draw it
+        }
+
         // Transform positions and apply drag preview offset
         var shapeTransform = shape.transform
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)

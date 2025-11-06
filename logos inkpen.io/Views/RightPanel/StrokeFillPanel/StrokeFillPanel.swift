@@ -183,8 +183,8 @@ struct StrokeFillPanel: View {
             return dot < -0.9998 ? .smooth : .cusp
         }
 
-        // One handle only = cusp
-        return .cusp
+        // One handle only (or both collapsed) = corner
+        return .corner
     }
 
     private func detectClosedPathEndpointType(pointID: PointID, elements: [PathElement]) -> AnchorPointType? {
@@ -345,18 +345,22 @@ struct StrokeFillPanel: View {
             var elements = shape.path.elements
 
             print("🔹 Element \(elementIndex): \(elements[elementIndex])")
+            print("📋 BEFORE conversion - All elements:")
+            for (idx, el) in elements.enumerated() {
+                print("   [\(idx)]: \(el)")
+            }
 
             // Get anchor position
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
             let anchorPos = VectorPoint(anchorPosCG.x, anchorPosCG.y)
 
             // Convert line element to curve if needed (for rectangles/polygons)
-            // Only convert THIS element, not neighbors
-            // Start with handles collapsed at anchor
+            // control1 = outgoing from PREVIOUS anchor, so collapse it AT the previous anchor
+            // control2 = incoming to THIS anchor, so collapse it AT this anchor
             if case .line = elements[elementIndex] {
                 print("🔶 Converting LINE element to CURVE element at index \(elementIndex)")
 
-                // Get previous point for incoming handle
+                // Get previous point position (where control1 should be collapsed)
                 var prevPoint = anchorPos
                 if elementIndex > 0 {
                     switch elements[elementIndex - 1] {
@@ -367,76 +371,180 @@ struct StrokeFillPanel: View {
                     }
                 }
 
-                // Get next point for outgoing handle
-                var nextPoint = anchorPos
-                if elementIndex + 1 < elements.count {
-                    switch elements[elementIndex + 1] {
-                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        nextPoint = to
-                    case .close:
-                        break
-                    }
-                }
+                // Convert to curve with:
+                // - control1 collapsed at PREVIOUS anchor (not this anchor!)
+                // - control2 collapsed at THIS anchor
+                elements[elementIndex] = .curve(to: anchorPos, control1: prevPoint, control2: anchorPos)
+                print("   control1 set to previous point: \(prevPoint)")
+                print("   control2 set to anchor: \(anchorPos)")
+            }
 
-                // Convert to curve with handles collapsed at anchor
-                elements[elementIndex] = .curve(to: anchorPos, control1: anchorPos, control2: anchorPos)
+            print("📋 AFTER line-to-curve conversion - All elements:")
+            for (idx, el) in elements.enumerated() {
+                print("   [\(idx)]: \(el)")
             }
 
             // Modify the element and next element based on type
             switch type {
             case .corner:
+                print("🟦 CORNER conversion starting")
                 // Collapse handles to anchor (corner = no visible handles)
                 // Collapse incoming handle (control2 of current element)
                 if case .curve(_, let control1, _) = elements[elementIndex] {
                     elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: anchorPos)
+                    print("   Updated element[\(elementIndex)] - collapsed control2")
                 }
                 // Collapse outgoing handle (control1 of next element)
                 if elementIndex + 1 < elements.count {
                     if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                         elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: control2)
+                        print("   Updated element[\(elementIndex + 1)] - collapsed control1")
                     }
                 }
 
             case .cusp:
-                // Create handles at 90° angle from each other
+                print("🟧 CUSP conversion starting")
+                // Create handles at 90° angle from each other, pointing OUTWARD from corner
                 let handleLength: Double = 40.0
 
-                // Get existing handle direction or use defaults
-                var incomingAngle: Double = .pi * 1.25  // 225° default
-                var outgoingAngle: Double = .pi * 0.25  // 45° default (90° from incoming)
+                // Calculate the bisector angle between incoming and outgoing paths
+                var bisectorAngle: Double = .pi * 0.75  // 135° default
 
-                // If incoming handle exists, use its angle
-                if case .curve(_, _, let control2) = elements[elementIndex] {
-                    let dx = anchorPos.x - control2.x
-                    let dy = anchorPos.y - control2.y
-                    let dist = sqrt(dx * dx + dy * dy)
-                    if dist > 0.5 {
-                        incomingAngle = atan2(dy, dx)
+                // Get previous and next points
+                var prevPos: CGPoint?
+                var nextPos: CGPoint?
+
+                if elementIndex > 0 {
+                    switch elements[elementIndex - 1] {
+                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                        prevPos = CGPoint(x: to.x, y: to.y)
+                    case .close:
+                        break
                     }
                 }
 
-                // Calculate outgoing at 90° from incoming
-                outgoingAngle = incomingAngle + .pi / 2
-
-                // Create new control points
-                let newControl2 = VectorPoint(
-                    anchorPos.x - cos(incomingAngle) * handleLength,
-                    anchorPos.y - sin(incomingAngle) * handleLength
-                )
-
-                let newControl1 = VectorPoint(
-                    anchorPos.x + cos(outgoingAngle) * handleLength,
-                    anchorPos.y + sin(outgoingAngle) * handleLength
-                )
-
-                // Update THIS element with cusp handles (must be curve by now)
-                if case .curve = elements[elementIndex] {
-                    elements[elementIndex] = .curve(to: anchorPos, control1: newControl1, control2: newControl2)
+                if elementIndex + 1 < elements.count {
+                    switch elements[elementIndex + 1] {
+                    case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                        nextPos = CGPoint(x: to.x, y: to.y)
+                    case .close:
+                        if case .move(let firstTo) = elements[0] {
+                            nextPos = CGPoint(x: firstTo.x, y: firstTo.y)
+                        }
+                    default:
+                        break
+                    }
                 }
 
-                // DO NOT modify neighboring elements - they keep their structure
+                // Declare angle variables
+                var incomingAngle: Double = 0
+                var outgoingAngle: Double = 0
+
+                // Calculate bisector angle from prev and next positions
+                if let prev = prevPos, let next = nextPos {
+                    let angleToPrev = atan2(prev.y - anchorPosCG.y, prev.x - anchorPosCG.x)
+                    let angleToNext = atan2(next.y - anchorPosCG.y, next.x - anchorPosCG.x)
+
+                    print("   angleToPrev: \(angleToPrev * 180 / .pi)° (toward prev point)")
+                    print("   angleToNext: \(angleToNext * 180 / .pi)° (toward next point)")
+
+                    // For rectangles, simply determine corner and set handles outward
+                    // Top-right: prev=180° (from left), next=90° (to down)
+                    if abs(angleToPrev - .pi) < 0.1 && abs(angleToNext - .pi/2) < 0.1 {
+                        // Handles: UP and RIGHT
+                        incomingAngle = 270 * .pi / 180  // UP (-90° or 270°)
+                        outgoingAngle = 0  // RIGHT
+                        print("   RECTANGLE CORNER: Top-right - UP and RIGHT")
+                    }
+                    // Bottom-right: prev=-90° (from up), next=180° (to left)
+                    else if abs(angleToPrev + .pi/2) < 0.1 && abs(angleToNext - .pi) < 0.1 {
+                        // Handles: RIGHT and DOWN (swapped to fix twist)
+                        incomingAngle = 0  // RIGHT
+                        outgoingAngle = 90 * .pi / 180  // DOWN
+                        print("   RECTANGLE CORNER: Bottom-right - RIGHT and DOWN (fixed twist)")
+                    }
+                    // Bottom-left: prev=0° (from right), next=-90° (to up)
+                    else if abs(angleToPrev) < 0.1 && abs(angleToNext + .pi/2) < 0.1 {
+                        // Handles: DOWN and LEFT
+                        incomingAngle = 90 * .pi / 180  // DOWN
+                        outgoingAngle = .pi  // LEFT
+                        print("   RECTANGLE CORNER: Bottom-left - DOWN and LEFT")
+                    }
+                    // Top-left: prev=90° (from down), next=-180° or 180° (to right)
+                    else if abs(angleToPrev - .pi/2) < 0.1 && (abs(angleToNext - .pi) < 0.1 || abs(angleToNext + .pi) < 0.1) {
+                        // Handles: UP and LEFT
+                        incomingAngle = 270 * .pi / 180  // UP
+                        outgoingAngle = .pi  // LEFT
+                        print("   RECTANGLE CORNER: Top-left - UP and LEFT")
+                    }
+                    else {
+                        // Non-rectangle shape - use bisector method
+                        print("   Using bisector method for non-rectangle")
+                        var avgAngle = (angleToPrev + angleToNext) / 2.0
+                        var diff = angleToNext - angleToPrev
+                        if diff > .pi { diff -= 2.0 * .pi }
+                        if diff < -.pi { diff += 2.0 * .pi }
+
+                        if diff < 0 {
+                            avgAngle += .pi
+                        }
+                        bisectorAngle = avgAngle
+                        incomingAngle = bisectorAngle - .pi / 4
+                        outgoingAngle = bisectorAngle + .pi / 4
+                    }
+                }
+
+                print("   bisectorAngle: \(bisectorAngle * 180 / .pi)°")
+                print("   incomingAngle: \(incomingAngle * 180 / .pi)°")
+                print("   outgoingAngle: \(outgoingAngle * 180 / .pi)°")
+
+                // Create new control points
+                // control2 = incoming handle TO this anchor (extends in direction of angle)
+                let newControl2 = VectorPoint(
+                    anchorPos.x + cos(incomingAngle) * handleLength,
+                    anchorPos.y + sin(incomingAngle) * handleLength
+                )
+
+                // Update THIS element's control2 (incoming to this anchor)
+                if case .curve(_, let control1, _) = elements[elementIndex] {
+                    // Keep control1 as-is (it belongs to PREVIOUS anchor)
+                    elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: newControl2)
+                    print("   Updated element[\(elementIndex)] control2 (incoming to THIS anchor)")
+                    print("     control2 (incoming): \(newControl2)")
+                }
+
+                // Update NEXT element's control1 (outgoing from this anchor)
+                if elementIndex + 1 < elements.count {
+                    let newControl1 = VectorPoint(
+                        anchorPos.x + cos(outgoingAngle) * handleLength,
+                        anchorPos.y + sin(outgoingAngle) * handleLength
+                    )
+
+                    if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
+                        // Update next element's control1 (outgoing from THIS anchor)
+                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
+                        print("   Updated element[\(elementIndex + 1)] control1 (outgoing from THIS anchor)")
+                        print("     control1 (outgoing): \(newControl1)")
+                    } else if case .line(let to) = elements[elementIndex + 1] {
+                        // Convert next line to curve with outgoing handle
+                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: to)
+                        print("   Converted element[\(elementIndex + 1)] from line to curve with control1")
+                        print("     control1 (outgoing): \(newControl1)")
+                    } else if case .close = elements[elementIndex + 1] {
+                        // Replace .close with .curve that goes back to first point
+                        // Get first point from element 0
+                        if case .move(let firstPoint) = elements[0] {
+                            // Remove the .close and add a .curve back to start
+                            elements.remove(at: elementIndex + 1)
+                            elements.append(.curve(to: firstPoint, control1: newControl1, control2: firstPoint))
+                            print("   Replaced .close with .curve back to first point")
+                            print("     control1 (outgoing): \(newControl1)")
+                        }
+                    }
+                }
 
             case .smooth:
+                print("🟩 SMOOTH conversion starting")
                 // Make handles collinear (180° aligned through anchor)
                 var incomingHandle: CGPoint?
                 var outgoingHandle: CGPoint?
@@ -506,6 +614,11 @@ struct StrokeFillPanel: View {
             // Log all stored anchor types for this shape
             print("📋 StrokeFillPanel: All anchor types for shape: \(shape.anchorTypes)")
 
+            print("📋 FINAL - All elements after conversion:")
+            for (idx, el) in elements.enumerated() {
+                print("   [\(idx)]: \(el)")
+            }
+
             // Update the shape
             shape.path = VectorPath(elements: elements)
             shape.updateBounds()
@@ -517,6 +630,9 @@ struct StrokeFillPanel: View {
         // Trigger updates for affected layers
         if !layersToUpdate.isEmpty {
             onTriggerLayerUpdates(layersToUpdate)
+
+            // Post notification to refresh visible handles in DrawingCanvas
+            NotificationCenter.default.post(name: Notification.Name("RefreshVisibleHandles"), object: nil)
         }
     }
 
