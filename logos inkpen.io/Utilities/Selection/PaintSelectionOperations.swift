@@ -130,6 +130,11 @@ enum PaintSelectionOperations {
 
     /// Update fill opacity for selected objects (live update during dragging)
     static func updateFillOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
+        // Skip expensive updates during drag - the UI will use delta state for preview
+        if isEditing {
+            return
+        }
+
         var affectedLayers = Set<Int>()
 
         for objectID in document.viewState.selectedObjectIDs {
@@ -212,6 +217,11 @@ enum PaintSelectionOperations {
 
     /// Update stroke width for selected objects (live update during dragging)
     static func updateStrokeWidthLive(_ width: Double, document: VectorDocument, isEditing: Bool) {
+        // Skip expensive updates during drag - the UI will use delta state for preview
+        if isEditing {
+            return
+        }
+
         var affectedLayers = Set<Int>()
 
         for objectID in document.viewState.selectedObjectIDs {
@@ -232,6 +242,11 @@ enum PaintSelectionOperations {
 
     /// Update stroke opacity for selected objects (live update during dragging)
     static func updateStrokeOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
+        // Skip expensive updates during drag - the UI will use delta state for preview
+        if isEditing {
+            return
+        }
+
         var affectedLayers = Set<Int>()
 
         for objectID in document.viewState.selectedObjectIDs {

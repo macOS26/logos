@@ -8,6 +8,8 @@ struct RightPanel: View {
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @Binding var colorDeltaBlendMode: BlendMode?
+    @Binding var fillDeltaOpacity: Double?
+    @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
@@ -75,6 +77,8 @@ struct RightPanel: View {
                         onSetActiveColor: { color in document.setActiveColor(color) },
                         colorDeltaColor: $colorDeltaColor,
                         colorDeltaOpacity: $colorDeltaOpacity,
+                        fillDeltaOpacity: $fillDeltaOpacity,
+                        strokeDeltaOpacity: $strokeDeltaOpacity,
                         strokeDeltaWidth: $strokeDeltaWidth,
                         onSetActiveColorTarget: { target in document.viewState.activeColorTarget = target },
                         onUpdateStrokeDefaults: { defaults in document.strokeDefaults = defaults },
@@ -174,6 +178,8 @@ struct RightPanel: View {
         colorDeltaColor: .constant(nil),
         colorDeltaOpacity: .constant(nil),
         colorDeltaBlendMode: .constant(nil),
+        fillDeltaOpacity: .constant(nil),
+        strokeDeltaOpacity: .constant(nil),
         strokeDeltaWidth: .constant(nil),
         selectedLayerIndex: .constant(nil),
         processedLayersDuringDrag: .constant([]),

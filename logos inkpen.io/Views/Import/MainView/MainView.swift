@@ -28,6 +28,8 @@ struct MainView: View {
     @State private var colorDeltaColor: VectorColor?
     @State private var colorDeltaOpacity: Double?
     @State private var colorDeltaBlendMode: BlendMode?
+    @State private var fillDeltaOpacity: Double?
+    @State private var strokeDeltaOpacity: Double?
     @State private var strokeDeltaWidth: Double?
     @State private var selectedLayerIndex: Int?
     @State private var processedLayersDuringDrag: Set<Int> = []
@@ -87,6 +89,8 @@ struct MainView: View {
                     colorDeltaColor: $colorDeltaColor,
                     colorDeltaOpacity: $colorDeltaOpacity,
                     colorDeltaBlendMode: $colorDeltaBlendMode,
+                    fillDeltaOpacity: $fillDeltaOpacity,
+                    strokeDeltaOpacity: $strokeDeltaOpacity,
                     strokeDeltaWidth: $strokeDeltaWidth,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,

@@ -24,6 +24,8 @@ struct DocumentBasedMainView: View {
     @State private var colorDeltaColor: VectorColor? = nil
     @State private var colorDeltaOpacity: Double? = nil
     @State private var colorDeltaBlendMode: BlendMode? = nil
+    @State private var fillDeltaOpacity: Double? = nil
+    @State private var strokeDeltaOpacity: Double? = nil
     @State private var strokeDeltaWidth: Double? = nil
     @State private var selectedLayerIndex: Int? = nil
     @State private var processedLayersDuringDrag: Set<Int> = []
@@ -83,6 +85,8 @@ struct DocumentBasedMainView: View {
                     colorDeltaColor: $colorDeltaColor,
                     colorDeltaOpacity: $colorDeltaOpacity,
                     colorDeltaBlendMode: $colorDeltaBlendMode,
+                    fillDeltaOpacity: $fillDeltaOpacity,
+                    strokeDeltaOpacity: $strokeDeltaOpacity,
                     strokeDeltaWidth: $strokeDeltaWidth,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,

@@ -24,6 +24,8 @@ struct StrokeFillPanel: View {
     let onSetActiveColor: (VectorColor) -> Void
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
+    @Binding var fillDeltaOpacity: Double?
+    @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
     let onSetActiveColorTarget: (ColorTarget) -> Void
     let onUpdateStrokeDefaults: (StrokeDefaults) -> Void
@@ -988,15 +990,16 @@ struct StrokeFillPanel: View {
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
-                            colorDeltaOpacity = value
-                            updateFillOpacityLive(value, isEditing: true)
+                            // During drag, fillDeltaOpacity will be set, so don't update document
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                colorDeltaOpacity = fillOpacityState
+                                fillDeltaOpacity = fillOpacityState
                             } else {
-                                colorDeltaOpacity = nil
+                                fillDeltaOpacity = nil
                                 defaultFillOpacity = fillOpacityState
+                                // Now update the document with final value
+                                updateFillOpacityLive(fillOpacityState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, fillOpacityState, .fill)
                                 }
@@ -1025,13 +1028,11 @@ struct StrokeFillPanel: View {
                         strokeScaleWithTransform: strokeScaleWithTransform,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
-                            strokeDeltaWidth = value
-                            updateStrokeWidthLive(value, isEditing: true)
+                            // During drag, strokeDeltaWidth will be set, so don't update document
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
-                            colorDeltaOpacity = value
-                            updateStrokeOpacityLive(value, isEditing: true)
+                            // During drag, strokeDeltaOpacity will be set, so don't update document
                         },
                         onUpdateStrokePlacement: { value in
                             strokePlacementState = value
@@ -1062,6 +1063,8 @@ struct StrokeFillPanel: View {
                             } else {
                                 strokeDeltaWidth = nil
                                 defaultStrokeWidth = strokeWidthState
+                                // Now update the document with final value
+                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectStrokeWidth(objectID, strokeWidthState)
                                 }
@@ -1069,10 +1072,12 @@ struct StrokeFillPanel: View {
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                colorDeltaOpacity = strokeOpacityState
+                                strokeDeltaOpacity = strokeOpacityState
                             } else {
-                                colorDeltaOpacity = nil
+                                strokeDeltaOpacity = nil
                                 defaultStrokeOpacity = strokeOpacityState
+                                // Now update the document with final value
+                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, strokeOpacityState, .stroke)
                                 }
