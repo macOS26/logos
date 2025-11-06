@@ -998,8 +998,7 @@ struct StrokeFillPanel: View {
                             } else {
                                 fillDeltaOpacity = nil
                                 defaultFillOpacity = fillOpacityState
-                                // Now update the document with final value
-                                updateFillOpacityLive(fillOpacityState, isEditing: false)
+                                // Update the document with final value only if we were dragging
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, fillOpacityState, .fill)
                                 }
@@ -1063,8 +1062,7 @@ struct StrokeFillPanel: View {
                             } else {
                                 strokeDeltaWidth = nil
                                 defaultStrokeWidth = strokeWidthState
-                                // Now update the document with final value
-                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
+                                // Update the document with final value only if we were dragging
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectStrokeWidth(objectID, strokeWidthState)
                                 }
@@ -1076,8 +1074,7 @@ struct StrokeFillPanel: View {
                             } else {
                                 strokeDeltaOpacity = nil
                                 defaultStrokeOpacity = strokeOpacityState
-                                // Now update the document with final value
-                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
+                                // Update the document with final value only if we were dragging
                                 for objectID in selectedObjectIDs {
                                     onUpdateObjectOpacity(objectID, strokeOpacityState, .stroke)
                                 }
