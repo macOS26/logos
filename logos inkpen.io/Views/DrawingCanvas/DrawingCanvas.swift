@@ -16,9 +16,9 @@ struct DrawingCanvas: View {
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var livePointPositions: [PointID: CGPoint]
     @Binding var liveHandlePositions: [HandleID: CGPoint]
-    var fillDeltaOpacity: Double?
-    var strokeDeltaOpacity: Double?
-    var strokeDeltaWidth: Double?
+    @Binding var fillDeltaOpacity: Double?
+    @Binding var strokeDeltaOpacity: Double?
+    @Binding var strokeDeltaWidth: Double?
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?

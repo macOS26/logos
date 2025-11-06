@@ -500,7 +500,10 @@ struct LayerCanvasView: View {
                         : fillStyle.opacity
 
                     if let gradient = fillStyle.gradient {
-                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &layerContext)
+                        // Create a fillStyle with effective opacity for gradients
+                        var effectiveFillStyle = fillStyle
+                        effectiveFillStyle.opacity = effectiveFillOpacity
+                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
                         layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                     }
@@ -549,7 +552,10 @@ struct LayerCanvasView: View {
                     : fillStyle.opacity
 
                 if let gradient = fillStyle.gradient {
-                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &context)
+                    // Create a fillStyle with effective opacity for gradients
+                    var effectiveFillStyle = fillStyle
+                    effectiveFillStyle.opacity = effectiveFillOpacity
+                    renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if fillStyle.color != .clear {
                     context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                 }
