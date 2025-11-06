@@ -524,7 +524,11 @@ struct LayerCanvasView: View {
 
                     if strokeStyle.placement == .center {
                         if let gradient = strokeStyle.gradient {
-                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &layerContext)
+                            // Create a strokeStyle with effective values for gradients
+                            var effectiveStrokeStyle = strokeStyle
+                            effectiveStrokeStyle.opacity = effectiveStrokeOpacity
+                            effectiveStrokeStyle.width = effectiveStrokeWidth
+                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
                             layerContext.stroke(
                                 Path(cgPath),
@@ -538,7 +542,11 @@ struct LayerCanvasView: View {
                             )
                         }
                     } else {
-                        renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &layerContext)
+                        // Create a strokeStyle with effective values for placement strokes
+                        var effectiveStrokeStyle = strokeStyle
+                        effectiveStrokeStyle.opacity = effectiveStrokeOpacity
+                        effectiveStrokeStyle.width = effectiveStrokeWidth
+                        renderStrokeWithPlacement(strokeStyle: effectiveStrokeStyle, path: cgPath, in: &layerContext)
                     }
                 }
             }
@@ -577,7 +585,11 @@ struct LayerCanvasView: View {
 
                 if strokeStyle.placement == .center {
                     if let gradient = strokeStyle.gradient {
-                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
+                        // Create a strokeStyle with effective values for gradients
+                        var effectiveStrokeStyle = strokeStyle
+                        effectiveStrokeStyle.opacity = effectiveStrokeOpacity
+                        effectiveStrokeStyle.width = effectiveStrokeWidth
+                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if strokeStyle.color != .clear {
                         context.stroke(
                             Path(cgPath),
@@ -591,7 +603,11 @@ struct LayerCanvasView: View {
                         )
                     }
                 } else {
-                    renderStrokeWithPlacement(strokeStyle: strokeStyle, path: cgPath, in: &context)
+                    // Create a strokeStyle with effective values for placement strokes
+                    var effectiveStrokeStyle = strokeStyle
+                    effectiveStrokeStyle.opacity = effectiveStrokeOpacity
+                    effectiveStrokeStyle.width = effectiveStrokeWidth
+                    renderStrokeWithPlacement(strokeStyle: effectiveStrokeStyle, path: cgPath, in: &context)
                 }
             }
         }
