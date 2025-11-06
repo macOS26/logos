@@ -560,6 +560,18 @@ struct StrokeFillPanel: View {
                     elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: newControl2)
                     print("   Updated element[\(elementIndex)] control2 (incoming to THIS anchor)")
                     print("     control2 (incoming): \(newControl2)")
+                } else if elementIndex == 0, case .move(_) = elements[elementIndex] {
+                    // Special case: For element 0 (.move), we need to update the LAST element's control2
+                    // if it's a curve that goes back to the first point
+                    let lastIndex = elements.count - 1
+                    if lastIndex > 0 {
+                        if case .curve(let to, let control1, _) = elements[lastIndex] {
+                            // Update the last element's control2 (incoming to element 0)
+                            elements[lastIndex] = .curve(to: to, control1: control1, control2: newControl2)
+                            print("   Updated element[\(lastIndex)] control2 (incoming to element 0)")
+                            print("     control2 (incoming): \(newControl2)")
+                        }
+                    }
                 }
 
                 // Update NEXT element's control1 (outgoing from this anchor)
