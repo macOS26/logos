@@ -421,6 +421,32 @@ struct StrokeFillPanel: View {
                     case .close:
                         break
                     }
+                } else if elementIndex == 0 {
+                    // For element 0, look at the last element for the previous position
+                    if elements.count > 1 {
+                        let lastIndex = elements.count - 1
+                        switch elements[lastIndex] {
+                        case .curve(_, let from, _):
+                            // For closing curve, the previous position is where it comes from
+                            if lastIndex > 0, case .line(let to) = elements[lastIndex - 1] {
+                                prevPos = CGPoint(x: to.x, y: to.y)
+                            } else if lastIndex > 0, case .curve(let to, _, _) = elements[lastIndex - 1] {
+                                prevPos = CGPoint(x: to.x, y: to.y)
+                            }
+                        case .close:
+                            // For .close, look at the element before it
+                            if lastIndex > 0 {
+                                switch elements[lastIndex - 1] {
+                                case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                                    prevPos = CGPoint(x: to.x, y: to.y)
+                                default:
+                                    break
+                                }
+                            }
+                        default:
+                            break
+                        }
+                    }
                 }
 
                 if elementIndex + 1 < elements.count {
@@ -434,14 +460,37 @@ struct StrokeFillPanel: View {
                     default:
                         break
                     }
+                } else if elementIndex == elements.count - 1 {
+                    // For the last element, if it curves back to first, look at element 1 for next
+                    if elements.count > 1 {
+                        switch elements[1] {
+                        case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                            nextPos = CGPoint(x: to.x, y: to.y)
+                        default:
+                            break
+                        }
+                    }
                 }
 
                 // Declare angle variables
                 var incomingAngle: Double = 0
                 var outgoingAngle: Double = 0
 
+                // Special case for top-left corner of rectangle when element 0 or last
+                if shape.geometricType == .rectangle && (elementIndex == 0 || elementIndex == elements.count - 1) {
+                    // Check if this is the top-left corner by checking position relative to bounds
+                    let bounds = shape.bounds
+                    let isTopLeft = abs(anchorPosCG.x - bounds.minX) < 1.0 && abs(anchorPosCG.y - bounds.minY) < 1.0
+
+                    if isTopLeft {
+                        // Top-left corner: handles UP and LEFT
+                        incomingAngle = 270 * .pi / 180  // UP
+                        outgoingAngle = .pi  // LEFT
+                        print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - UP and LEFT")
+                    }
+                }
                 // Calculate bisector angle from prev and next positions
-                if let prev = prevPos, let next = nextPos {
+                else if let prev = prevPos, let next = nextPos {
                     let angleToPrev = atan2(prev.y - anchorPosCG.y, prev.x - anchorPosCG.x)
                     let angleToNext = atan2(next.y - anchorPosCG.y, next.x - anchorPosCG.x)
 
