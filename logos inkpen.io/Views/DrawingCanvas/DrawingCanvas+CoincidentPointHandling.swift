@@ -77,7 +77,7 @@ extension DrawingCanvas {
         showHandlesForSelectedPoints()
     }
 
-    private func showHandlesForSelectedPoints() {
+    internal func showHandlesForSelectedPoints() {
         for pointID in selectedPoints {
             guard let object = document.snapshot.objects[pointID.shapeID],
                   case .shape(let shape) = object.objectType,

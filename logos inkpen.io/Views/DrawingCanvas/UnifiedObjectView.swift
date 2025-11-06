@@ -62,6 +62,9 @@ struct LayerCanvasView: View {
     let dragPreviewTrigger: Bool
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
+    let fillDeltaOpacity: Double?
+    let strokeDeltaOpacity: Double?
+    let strokeDeltaWidth: Double?
 
     var appState = AppState.shared
 
@@ -491,10 +494,15 @@ struct LayerCanvasView: View {
 
                 // Render fill (O(1) for solid, O(n) for gradient where n = stops)
                 if viewMode == .color, let fillStyle = shape.fillStyle {
+                    // Use delta opacity if available and shape is selected
+                    let effectiveFillOpacity = (fillDeltaOpacity != nil && selectedObjectIDs.contains(shape.id))
+                        ? fillDeltaOpacity!
+                        : fillStyle.opacity
+
                     if let gradient = fillStyle.gradient {
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
-                        layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                        layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                     }
                 }
 
@@ -502,15 +510,24 @@ struct LayerCanvasView: View {
                 if viewMode == .keyline {
                     layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
                 } else if let strokeStyle = shape.strokeStyle {
+                    // Use delta values if available and shape is selected
+                    let isSelected = selectedObjectIDs.contains(shape.id)
+                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                        ? strokeDeltaOpacity!
+                        : strokeStyle.opacity
+                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                        ? strokeDeltaWidth!
+                        : strokeStyle.width
+
                     if strokeStyle.placement == .center {
                         if let gradient = strokeStyle.gradient {
                             renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
                             layerContext.stroke(
                                 Path(cgPath),
-                                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                                with: .color(strokeStyle.color.color.opacity(effectiveStrokeOpacity)),
                                 style: SwiftUI.StrokeStyle(
-                                    lineWidth: strokeStyle.width,
+                                    lineWidth: effectiveStrokeWidth,
                                     lineCap: strokeStyle.lineCap.cgLineCap,
                                     lineJoin: strokeStyle.lineJoin.cgLineJoin,
                                     miterLimit: strokeStyle.miterLimit
@@ -526,10 +543,15 @@ struct LayerCanvasView: View {
             // No mask, render directly
             // Render fill (O(1) for solid, O(n) for gradient where n = stops)
             if viewMode == .color, let fillStyle = shape.fillStyle {
+                // Use delta opacity if available and shape is selected
+                let effectiveFillOpacity = (fillDeltaOpacity != nil && selectedObjectIDs.contains(shape.id))
+                    ? fillDeltaOpacity!
+                    : fillStyle.opacity
+
                 if let gradient = fillStyle.gradient {
                     renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &context)
                 } else if fillStyle.color != .clear {
-                    context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+                    context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                 }
             }
 
@@ -538,15 +560,24 @@ struct LayerCanvasView: View {
             if viewMode == .keyline {
                 context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
             } else if let strokeStyle = shape.strokeStyle {
+                // Use delta values if available and shape is selected
+                let isSelected = selectedObjectIDs.contains(shape.id)
+                let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                    ? strokeDeltaOpacity!
+                    : strokeStyle.opacity
+                let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                    ? strokeDeltaWidth!
+                    : strokeStyle.width
+
                 if strokeStyle.placement == .center {
                     if let gradient = strokeStyle.gradient {
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: strokeStyle, in: &context)
                     } else if strokeStyle.color != .clear {
                         context.stroke(
                             Path(cgPath),
-                            with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                            with: .color(strokeStyle.color.color.opacity(effectiveStrokeOpacity)),
                             style: SwiftUI.StrokeStyle(
-                                lineWidth: strokeStyle.width,
+                                lineWidth: effectiveStrokeWidth,
                                 lineCap: strokeStyle.lineCap.cgLineCap,
                                 lineJoin: strokeStyle.lineJoin.cgLineJoin,
                                 miterLimit: strokeStyle.miterLimit
@@ -899,6 +930,9 @@ struct IsolatedLayerView: View {
     let layerBlendMode: BlendMode
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
+    let fillDeltaOpacity: Double?
+    let strokeDeltaOpacity: Double?
+    let strokeDeltaWidth: Double?
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -978,7 +1012,10 @@ struct IsolatedLayerView: View {
                 objectUpdateTrigger: objectUpdateTrigger,
                 dragPreviewTrigger: dragPreviewTrigger,
                 livePointPositions: livePointPositions,
-                liveHandlePositions: liveHandlePositions
+                liveHandlePositions: liveHandlePositions,
+                fillDeltaOpacity: fillDeltaOpacity,
+                strokeDeltaOpacity: strokeDeltaOpacity,
+                strokeDeltaWidth: strokeDeltaWidth
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

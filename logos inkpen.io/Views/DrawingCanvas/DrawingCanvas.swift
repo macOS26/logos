@@ -16,6 +16,9 @@ struct DrawingCanvas: View {
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var livePointPositions: [PointID: CGPoint]
     @Binding var liveHandlePositions: [HandleID: CGPoint]
+    var fillDeltaOpacity: Double?
+    var strokeDeltaOpacity: Double?
+    var strokeDeltaWidth: Double?
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
@@ -238,6 +241,12 @@ struct DrawingCanvas: View {
                         cachedObjectCount = newCount
                         spatialIndex.rebuild(from: document.snapshot)
                         rebuildLockedObjectsCache()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshVisibleHandles"))) { _ in
+                    // Refresh visible handles after anchor type conversion
+                    if viewState.currentTool == .directSelection {
+                        showHandlesForSelectedPoints()
                     }
                 }
         }

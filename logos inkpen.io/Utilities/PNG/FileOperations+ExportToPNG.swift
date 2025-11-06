@@ -222,7 +222,10 @@ extension FileOperations {
                         layerOpacity: layer.opacity,
                         layerBlendMode: layer.blendMode,
                         livePointPositions: [:],
-                        liveHandlePositions: [:]
+                        liveHandlePositions: [:],
+                        fillDeltaOpacity: nil,
+                        strokeDeltaOpacity: nil,
+                        strokeDeltaWidth: nil
                     )
                 }
             }

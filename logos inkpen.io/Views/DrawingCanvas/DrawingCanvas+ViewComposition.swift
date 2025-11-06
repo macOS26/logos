@@ -236,7 +236,10 @@ extension DrawingCanvas {
                 layerOpacity: layerOpacity,
                 layerBlendMode: layerBlendMode,
                 livePointPositions: livePointPositions,
-                liveHandlePositions: liveHandlePositions
+                liveHandlePositions: liveHandlePositions,
+                fillDeltaOpacity: fillDeltaOpacity,
+                strokeDeltaOpacity: strokeDeltaOpacity,
+                strokeDeltaWidth: strokeDeltaWidth
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
             .allowsHitTesting(isActiveLayer)
