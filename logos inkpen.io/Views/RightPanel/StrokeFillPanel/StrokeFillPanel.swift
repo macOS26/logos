@@ -352,8 +352,33 @@ struct StrokeFillPanel: View {
 
             // Convert line element to curve if needed (for rectangles/polygons)
             // Only convert THIS element, not neighbors
+            // Start with handles collapsed at anchor
             if case .line = elements[elementIndex] {
                 print("🔶 Converting LINE element to CURVE element at index \(elementIndex)")
+
+                // Get previous point for incoming handle
+                var prevPoint = anchorPos
+                if elementIndex > 0 {
+                    switch elements[elementIndex - 1] {
+                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                        prevPoint = to
+                    case .close:
+                        break
+                    }
+                }
+
+                // Get next point for outgoing handle
+                var nextPoint = anchorPos
+                if elementIndex + 1 < elements.count {
+                    switch elements[elementIndex + 1] {
+                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                        nextPoint = to
+                    case .close:
+                        break
+                    }
+                }
+
+                // Convert to curve with handles collapsed at anchor
                 elements[elementIndex] = .curve(to: anchorPos, control1: anchorPos, control2: anchorPos)
             }
 
@@ -404,22 +429,12 @@ struct StrokeFillPanel: View {
                     anchorPos.y + sin(outgoingAngle) * handleLength
                 )
 
-                // Update incoming handle
-                if case .curve(_, let oldControl1, _) = elements[elementIndex] {
-                    elements[elementIndex] = .curve(to: anchorPos, control1: oldControl1, control2: newControl2)
+                // Update THIS element with cusp handles (must be curve by now)
+                if case .curve = elements[elementIndex] {
+                    elements[elementIndex] = .curve(to: anchorPos, control1: newControl1, control2: newControl2)
                 }
 
-                // Update outgoing handle
-                if elementIndex + 1 < elements.count {
-                    // Convert next element to curve if it's a line
-                    if case .line(let to) = elements[elementIndex + 1] {
-                        print("🔶 Converting NEXT LINE to CURVE for cusp outgoing handle")
-                        let toPoint = VectorPoint(to.x, to.y)
-                        elements[elementIndex + 1] = .curve(to: toPoint, control1: newControl1, control2: toPoint)
-                    } else if case .curve(let to, _, let oldControl2) = elements[elementIndex + 1] {
-                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: oldControl2)
-                    }
-                }
+                // DO NOT modify neighboring elements - they keep their structure
 
             case .smooth:
                 // Make handles collinear (180° aligned through anchor)
@@ -431,15 +446,12 @@ struct StrokeFillPanel: View {
                     incomingHandle = CGPoint(x: control2.x, y: control2.y)
                 }
 
-                // Get outgoing handle (control1 from next element)
-                if elementIndex + 1 < elements.count {
-                    if case .curve(_, let control1, _) = elements[elementIndex + 1] {
-                        outgoingHandle = CGPoint(x: control1.x, y: control1.y)
-                    } else if case .line(let to) = elements[elementIndex + 1] {
-                        // Next is line, create handle at anchor position
-                        outgoingHandle = anchorPosCG
-                    }
+                // Get outgoing handle (control1 from next element) - only if it's a curve
+                if elementIndex + 1 < elements.count,
+                   case .curve(_, let control1, _) = elements[elementIndex + 1] {
+                    outgoingHandle = CGPoint(x: control1.x, y: control1.y)
                 }
+                // If next is a line, we don't have an outgoing handle to align
 
                 // If both handles exist, align them
                 if let incoming = incomingHandle, let outgoing = outgoingHandle {
@@ -460,14 +472,11 @@ struct StrokeFillPanel: View {
                             anchorPosCG.x - norm.x * outLen,
                             anchorPosCG.y - norm.y * outLen
                         )
-                        // Convert next element to curve if it's a line
-                        if case .line(let to) = elements[elementIndex + 1] {
-                            print("🔶 Converting NEXT LINE to CURVE for smooth outgoing handle")
-                            let toPoint = VectorPoint(to.x, to.y)
-                            elements[elementIndex + 1] = .curve(to: toPoint, control1: newControl1, control2: toPoint)
-                        } else if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
+                        // Update ONLY if next element is already a curve
+                        if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                             elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
                         }
+                        // Don't touch line elements
                     } else if outLen > 0.1 {
                         // Align incoming to be opposite of outgoing
                         let norm = CGPoint(x: outVec.x / outLen, y: outVec.y / outLen)
