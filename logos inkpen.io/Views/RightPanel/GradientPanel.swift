@@ -875,12 +875,25 @@ struct GradientFillSection: View {
 
     static func getSelectedShapeGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument) -> VectorGradient? {
         let activeShapes = document.getActiveShapes()  // Keep using document method for now
-        guard let firstShape = activeShapes.first,
-              let fillStyle = firstShape.fillStyle,
-              case .gradient(let gradient) = fillStyle.color else {
+        guard let firstShape = activeShapes.first else {
             return nil
         }
-        return gradient
+
+        // Check fill or stroke based on activeColorTarget
+        switch document.viewState.activeColorTarget {
+        case .fill:
+            guard let fillStyle = firstShape.fillStyle,
+                  case .gradient(let gradient) = fillStyle.color else {
+                return nil
+            }
+            return gradient
+        case .stroke:
+            guard let strokeStyle = firstShape.strokeStyle,
+                  case .gradient(let gradient) = strokeStyle.color else {
+                return nil
+            }
+            return gradient
+        }
     }
 
     @MainActor static func createDefaultGradient(type: GradientType) -> VectorGradient {
