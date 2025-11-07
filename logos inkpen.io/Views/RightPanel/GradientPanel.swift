@@ -387,6 +387,9 @@ struct GradientFillSection: View {
             }
         }
 
+        // Clear the delta BEFORE executing command to prevent flash
+        activeGradientDelta = nil
+
         // Create and execute undo command - this will update the snapshot and trigger layer updates
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
@@ -397,9 +400,6 @@ struct GradientFillSection: View {
             newOpacities: newOpacities
         )
         document.commandManager.execute(command)
-
-        // Clear the delta AFTER the command executes
-        activeGradientDelta = nil
 
         // Sync currentGradient from snapshot after command executes
         if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
