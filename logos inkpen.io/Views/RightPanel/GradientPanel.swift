@@ -294,12 +294,12 @@ struct GradientFillSection: View {
     }
 
     private func captureOldGradientState() {
-        // Capture old gradients and opacities from snapshot before drag starts
+        // Capture old gradients and opacities from LIVE document.snapshot before drag starts
         dragStartGradients.removeAll()
         dragStartOpacities.removeAll()
 
         for objectID in selectedObjectIDs {
-            if let obj = snapshot.objects[objectID] {
+            if let obj = document.snapshot.objects[objectID] {
                 let shape = obj.shape
                 if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
                     dragStartGradients[objectID] = gradient
@@ -326,7 +326,7 @@ struct GradientFillSection: View {
 
         for objectID in selectedObjectIDs {
             newGradients[objectID] = newGradient
-            if let obj = snapshot.objects[objectID] {
+            if let obj = document.snapshot.objects[objectID] {
                 newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
             }
         }
