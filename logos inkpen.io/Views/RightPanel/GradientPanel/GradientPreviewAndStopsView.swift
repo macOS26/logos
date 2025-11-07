@@ -30,6 +30,7 @@ struct GradientPreviewAndStopsView: View {
     @State private var popoverManager = SlidingPopoverManager()
     @State private var anchorViews: [UUID: NSView] = [:]
     @FocusState private var focusedStopID: UUID?
+    @State private var isEditingOpacity: Bool = false
     @Environment(AppState.self) private var appState
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
@@ -466,16 +467,6 @@ struct GradientPreviewAndStopsView: View {
                                     .frame(width: 40)
                                     .font(.system(size: 11))
                                     .focused($focusedStopID, equals: stop.id)
-                                    .onChange(of: focusedStopID) { oldValue, newValue in
-                                        // When focus enters this field
-                                        if newValue == stop.id && oldValue != stop.id {
-                                            onStopEditingChanged(true)
-                                        }
-                                        // When focus leaves this field
-                                        else if oldValue == stop.id && newValue != stop.id {
-                                            onStopEditingChanged(false)
-                                        }
-                                    }
                                 }
                             }
 
@@ -492,6 +483,18 @@ struct GradientPreviewAndStopsView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                }
+            }
+            .onChange(of: focusedStopID) { oldValue, newValue in
+                // Focus entered a stop opacity field
+                if newValue != nil && oldValue == nil && !isEditingOpacity {
+                    isEditingOpacity = true
+                    onStopEditingChanged(true)
+                }
+                // Focus left all stop opacity fields
+                else if newValue == nil && oldValue != nil && isEditingOpacity {
+                    isEditingOpacity = false
+                    onStopEditingChanged(false)
                 }
             }
         }
