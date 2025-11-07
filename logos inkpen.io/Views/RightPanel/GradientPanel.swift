@@ -259,11 +259,13 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
-            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+            activeGradientDelta = currentGradient
+            document.viewState.objectUpdateTrigger &+= 1
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
-            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+            activeGradientDelta = currentGradient
+            document.viewState.objectUpdateTrigger &+= 1
         }
 
 //        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -376,7 +378,8 @@ struct GradientFillSection: View {
             radial.scaleY = newScale * currentAspectRatio
             currentGradient = .radial(radial)
         }
-        applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+        activeGradientDelta = currentGradient
+        document.viewState.objectUpdateTrigger &+= 1
     }
 
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
@@ -388,7 +391,8 @@ struct GradientFillSection: View {
         case .radial(var radial):
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
-            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+            activeGradientDelta = currentGradient
+            document.viewState.objectUpdateTrigger &+= 1
         }
     }
 
@@ -410,7 +414,8 @@ struct GradientFillSection: View {
         case .radial(var radial):
             radial.radius = newRadius
             currentGradient = .radial(radial)
-            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+            activeGradientDelta = currentGradient
+            document.viewState.objectUpdateTrigger &+= 1
         }
     }
 
@@ -432,14 +437,16 @@ struct GradientFillSection: View {
                 linear.stops[index].position = position
                 linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].position = position
                 radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
             }
         }
     }
@@ -452,13 +459,15 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].opacity = opacity
                 currentGradient = .linear(linear)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].opacity = opacity
                 currentGradient = .radial(radial)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
             }
         }
     }
@@ -471,7 +480,8 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if document.viewState.activeColorTarget == .fill {
@@ -484,7 +494,8 @@ struct GradientFillSection: View {
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
-                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
+                activeGradientDelta = currentGradient
+                document.viewState.objectUpdateTrigger &+= 1
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if document.viewState.activeColorTarget == .fill {
