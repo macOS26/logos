@@ -591,10 +591,19 @@ struct LayerCanvasView: View {
                     ? fillDeltaOpacity!
                     : fillStyle.opacity
 
-                if let gradient = fillStyle.gradient {
-                    // Create a fillStyle with effective opacity for gradients
-                    var effectiveFillStyle = fillStyle
-                    effectiveFillStyle.opacity = effectiveFillOpacity
+                // Check for activeGradientDelta FIRST (for live preview during drag)
+                if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
+                    print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for shape \(shape.id)")
+                    if case .linear(let linear) = activeGradientDelta {
+                        print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
+                    }
+
+                    // Create a fillStyle with activeGradientDelta and opacity
+                    let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
+                    renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
+                } else if let gradient = fillStyle.gradient {
+                    // Use gradient from snapshot
+                    let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if fillStyle.color != .clear {
                     context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
