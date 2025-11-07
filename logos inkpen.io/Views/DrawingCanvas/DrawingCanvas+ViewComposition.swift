@@ -242,7 +242,7 @@ extension DrawingCanvas {
                 strokeDeltaWidth: strokeDeltaWidth,
                 activeGradientDelta: activeGradientDelta
             )
-            .id("\(layer.id)-\(currentDragDelta)-\(activeGradientDelta != nil ? "gradient" : "none")")  // Force update when drag or gradient changes
+            .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
             .allowsHitTesting(isActiveLayer)
         }
     }
