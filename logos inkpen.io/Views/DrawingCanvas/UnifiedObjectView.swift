@@ -153,6 +153,10 @@ struct LayerCanvasView: View {
     var body: some View {
         Canvas { context, size in
             _ = objectUpdateTrigger
+            _ = activeGradientDelta  // Force redraw when gradient changes
+            _ = fillDeltaOpacity     // Force redraw when fill opacity changes
+            _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
+            _ = strokeDeltaWidth     // Force redraw when stroke width changes
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
