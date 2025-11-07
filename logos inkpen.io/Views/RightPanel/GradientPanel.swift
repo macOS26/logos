@@ -252,6 +252,8 @@ struct GradientFillSection: View {
             // Clear live state when switching to different gradient
             document.viewState.liveGradientOriginX = nil
             document.viewState.liveGradientOriginY = nil
+            // Clear delta so canvas uses snapshot gradient
+            activeGradientDelta = nil
         }
     }
 
@@ -387,24 +389,7 @@ struct GradientFillSection: View {
             }
         }
 
-        // Update snapshot FIRST so when we clear delta, canvas sees correct gradient
-        var affectedLayers = Set<Int>()
-        for objectID in selectedObjectIDs {
-            if var obj = document.snapshot.objects[objectID] {
-                var shape = obj.shape
-                let currentOpacity = shape.fillStyle?.opacity ?? 1.0
-                shape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.snapshot.objects[objectID] = obj
-                affectedLayers.insert(obj.layerIndex)
-            }
-        }
-        document.triggerLayerUpdates(for: affectedLayers)
-
-        // Clear the delta AFTER snapshot is updated
-        activeGradientDelta = nil
-
-        // Create and execute undo command - this just records for undo, snapshot already updated
+        // Create and execute undo command - this will update the snapshot and trigger layer updates
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
             target: .fill,
@@ -415,10 +400,8 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
-        // Sync currentGradient from snapshot after command executes
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
-            currentGradient = selectedGradient
-        }
+        // Don't clear delta here - let the changeToken handler do it
+        // This prevents flash during the transition
 
         print("🎨 GRADIENT ANGLE DRAG END: Command executed")
     }
