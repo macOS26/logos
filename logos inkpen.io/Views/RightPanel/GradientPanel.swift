@@ -255,17 +255,21 @@ struct GradientFillSection: View {
 
         //isEditingAngle = true
 
+        print("🎨 GRADIENT ANGLE: Updating to \(normalizedAngle)")
+
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
+            print("🎨 GRADIENT ANGLE: Set currentGradient (linear)")
             activeGradientDelta = currentGradient
-            document.viewState.objectUpdateTrigger &+= 1
+            print("🎨 GRADIENT ANGLE: Set activeGradientDelta (NO trigger increment)")
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
+            print("🎨 GRADIENT ANGLE: Set currentGradient (radial)")
             activeGradientDelta = currentGradient
-            document.viewState.objectUpdateTrigger &+= 1
+            print("🎨 GRADIENT ANGLE: Set activeGradientDelta (NO trigger increment)")
         }
 
 //        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -379,7 +383,7 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
         }
         activeGradientDelta = currentGradient
-        document.viewState.objectUpdateTrigger &+= 1
+        // Removed: Canvas will redraw automatically when activeGradientDelta changes
     }
 
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
@@ -392,7 +396,7 @@ struct GradientFillSection: View {
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            document.viewState.objectUpdateTrigger &+= 1
+            // Removed: Canvas will redraw automatically when activeGradientDelta changes
         }
     }
 
@@ -415,7 +419,7 @@ struct GradientFillSection: View {
             radial.radius = newRadius
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            document.viewState.objectUpdateTrigger &+= 1
+            // Removed: Canvas will redraw automatically when activeGradientDelta changes
         }
     }
 
@@ -438,7 +442,7 @@ struct GradientFillSection: View {
                 linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
@@ -446,7 +450,7 @@ struct GradientFillSection: View {
                 radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
             }
         }
     }
@@ -460,14 +464,14 @@ struct GradientFillSection: View {
                 linear.stops[index].opacity = opacity
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].opacity = opacity
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
             }
         }
     }
@@ -481,7 +485,7 @@ struct GradientFillSection: View {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if document.viewState.activeColorTarget == .fill {
@@ -495,7 +499,7 @@ struct GradientFillSection: View {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                document.viewState.objectUpdateTrigger &+= 1
+                // Removed: Canvas will redraw automatically when activeGradientDelta changes
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if document.viewState.activeColorTarget == .fill {

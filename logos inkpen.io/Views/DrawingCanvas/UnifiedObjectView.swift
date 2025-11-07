@@ -505,6 +505,14 @@ struct LayerCanvasView: View {
                         let effectiveGradient = (activeGradientDelta != nil && selectedObjectIDs.contains(shape.id))
                             ? activeGradientDelta!
                             : gradient
+
+                        if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
+                            print("🎨 CANVAS RENDER: Using activeGradientDelta for shape \(shape.id)")
+                            if case .linear(let linear) = activeGradientDelta {
+                                print("🎨 CANVAS RENDER: Delta angle = \(linear.angle)")
+                            }
+                        }
+
                         // Create a fillStyle with effective gradient and opacity
                         let effectiveFillStyle = FillStyle(gradient: effectiveGradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: effectiveGradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
