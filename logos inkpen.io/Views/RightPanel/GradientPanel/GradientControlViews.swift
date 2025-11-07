@@ -206,6 +206,7 @@ struct GradientScaleControlView: View {
     let updateAspectRatio: (Double) -> Void
     let getRadius: (VectorGradient) -> Double
     let updateRadius: (Double) -> Void
+    let onEditingChanged: (Bool) -> Void
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -219,9 +220,7 @@ struct GradientScaleControlView: View {
                             set: { newScale in
                                 updateScale(newScale)
                             }
-                        ), in: 0.01...8.0, onEditingChanged: { _ in
-                           
-                        })
+                        ), in: 0.01...8.0, onEditingChanged: onEditingChanged)
                         .controlSize(.regular)
 
                         TextField("", text: Binding(
@@ -254,9 +253,7 @@ struct GradientScaleControlView: View {
                                 set: { newAspectRatio in
                                     updateAspectRatio(newAspectRatio)
                                 }
-                            ), in: 0.01...2.0, onEditingChanged: { _ in
-                            
-                            })
+                            ), in: 0.01...2.0, onEditingChanged: onEditingChanged)
                             .controlSize(.regular)
 
                             TextField("", text: createNaturalNumberBinding(
@@ -277,9 +274,7 @@ struct GradientScaleControlView: View {
                                 set: { newRadius in
                                     updateRadius(newRadius)
                                 }
-                            ), in: 0.1...2.0, onEditingChanged: { _ in
-                              
-                            })
+                            ), in: 0.1...2.0, onEditingChanged: onEditingChanged)
                             .controlSize(.regular)
 
                             TextField("", text: createNaturalNumberBinding(

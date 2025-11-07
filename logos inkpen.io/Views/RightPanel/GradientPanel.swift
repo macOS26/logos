@@ -135,7 +135,14 @@ struct GradientFillSection: View {
                 getAspectRatio: getGradientAspectRatio,
                 updateAspectRatio: updateGradientAspectRatio,
                 getRadius: getGradientRadius,
-                updateRadius: updateGradientRadius
+                updateRadius: updateGradientRadius,
+                onEditingChanged: { isEditing in
+                    if isEditing {
+                        captureOldGradientState()
+                    } else {
+                        commitGradientChangeWithUndo()
+                    }
+                }
             )
 
             GradientPreviewAndStopsView(
