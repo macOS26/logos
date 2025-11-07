@@ -415,9 +415,9 @@ struct GradientFillSection: View {
             }
         }
 
-        // MUST clear delta immediately after command - changeToken handler won't fire
-        activeGradientDelta = nil
-        print("🎨 COMMIT END: Cleared activeGradientDelta")
+        // DON'T clear delta - snapshot is updated, delta will show same gradient anyway
+        // Clearing it causes a flash because SwiftUI renders before snapshot propagates
+        print("🎨 COMMIT END: Leaving activeGradientDelta set (snapshot now matches)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
