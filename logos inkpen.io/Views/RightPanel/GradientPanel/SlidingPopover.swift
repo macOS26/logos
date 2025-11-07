@@ -2,16 +2,19 @@ import SwiftUI
 import AppKit
 
 /// A popover manager that reuses a single NSPopover instance and smoothly repositions it when the anchor changes
-class SlidingPopoverManager {
+class SlidingPopoverManager: NSObject, NSPopoverDelegate {
     private var popover: NSPopover?
     private var currentAnchorView: NSView?
+    private var dismissCallback: (() -> Void)?
 
     /// Shows the popover or slides it to a new anchor if already visible
     /// - Parameters:
     ///   - content: SwiftUI view to display in the popover
     ///   - anchorView: The view to anchor the popover to
     ///   - edge: Preferred edge for the popover arrow
-    func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading) {
+    ///   - onDismiss: Optional callback when popover is dismissed
+    func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
+        self.dismissCallback = onDismiss
         if let existingPopover = popover, existingPopover.isShown {
             // Popover is already shown - update content and slide to new anchor
             slideToNewAnchor(anchorView: anchorView, edge: edge, updateContent: {
@@ -32,6 +35,7 @@ class SlidingPopoverManager {
             newPopover.contentViewController = hostingController
             newPopover.behavior = .transient
             newPopover.animates = true
+            newPopover.delegate = self
 
             // Add vibrancy/translucent effect
             if let popoverView = newPopover.contentViewController?.view {
@@ -93,6 +97,15 @@ class SlidingPopoverManager {
     /// Returns true if the popover is currently shown
     var isShown: Bool {
         return popover?.isShown ?? false
+    }
+
+    // MARK: - NSPopoverDelegate
+
+    func popoverDidClose(_ notification: Notification) {
+        dismissCallback?()
+        dismissCallback = nil
+        popover = nil
+        currentAnchorView = nil
     }
 }
 

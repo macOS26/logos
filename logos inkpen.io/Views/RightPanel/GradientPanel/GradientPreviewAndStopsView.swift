@@ -242,7 +242,17 @@ struct GradientPreviewAndStopsView: View {
         .frame(width: 300, height: 480)
         .environment(appState)
 
-        popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .leading)
+        popoverManager.show(
+            content: popoverContent,
+            anchorView: anchorView,
+            edge: .leading,
+            onDismiss: {
+                // Called when popover is dismissed by clicking outside
+                onStopEditingChanged(false)
+                isColorPickerOpen = false
+                popoverStopID = nil
+            }
+        )
         popoverStopID = stop.id
     }
 
