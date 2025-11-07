@@ -320,7 +320,7 @@ struct GradientFillSection: View {
         // Clear the delta
         activeGradientDelta = nil
 
-        // Collect new gradients and opacities
+        // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
         var newOpacities: [UUID: Double] = [:]
 
@@ -331,10 +331,7 @@ struct GradientFillSection: View {
             }
         }
 
-        // Apply the gradient to snapshot
-        applyGradientToSelectedShapesOptimized(isLiveDrag: false)
-
-        // Create and execute undo command
+        // Create and execute undo command - this will update the snapshot
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
             target: .fill,
