@@ -178,6 +178,10 @@ struct GradientFillSection: View {
                 syncLocalStateFromDocument()
             }
         }
+        .onChange(of: document.changeNotifier.changeToken) { _, _ in
+            // Sync gradient state from document when snapshot changes (e.g., after undo)
+            updateSelectedGradient()
+        }
     }
 
     private func turnOffEditingState() {
