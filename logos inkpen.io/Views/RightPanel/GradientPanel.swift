@@ -196,6 +196,9 @@ struct GradientFillSection: View {
         .onChange(of: selectedObjectIDs) { _, _ in
             updateSelectedGradient()
         }
+        .onChange(of: document.viewState.activeColorTarget) { _, _ in
+            updateSelectedGradient()
+        }
         .onChange(of: document.viewState.liveGradientOriginX) { _, newValue in
             if newValue == nil {
                 // Drag ended, sync from document gradient
