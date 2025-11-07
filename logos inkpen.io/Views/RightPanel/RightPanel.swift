@@ -112,7 +112,11 @@ struct RightPanel: View {
                         snapshot: snapshot,
                         selectedObjectIDs: viewState.selectedObjectIDs,
                         document: document,
-                        activeGradientDelta: $activeGradientDelta
+                        activeGradientDelta: $activeGradientDelta,
+                        activeColorTarget: Binding(
+                            get: { viewState.activeColorTarget },
+                            set: { viewState.activeColorTarget = $0 }
+                        )
                     )
                 case .color:
                     ColorPanel(

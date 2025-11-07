@@ -7,6 +7,7 @@ struct GradientPanel: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
     @Binding var activeGradientDelta: VectorGradient?
+    @Binding var activeColorTarget: ColorTarget
 
     var body: some View {
         ScrollView {
@@ -15,7 +16,8 @@ struct GradientPanel: View {
                     snapshot: snapshot,
                     selectedObjectIDs: selectedObjectIDs,
                     document: document,
-                    activeGradientDelta: $activeGradientDelta
+                    activeGradientDelta: $activeGradientDelta,
+                    activeColorTarget: $activeColorTarget
                 )
                 Spacer()
             }
@@ -28,6 +30,7 @@ struct GradientFillSection: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
     @Binding var activeGradientDelta: VectorGradient?
+    @Binding var activeColorTarget: ColorTarget
     @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
@@ -47,13 +50,14 @@ struct GradientFillSection: View {
         case radial = "Radial"
     }
 
-    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, activeGradientDelta: Binding<VectorGradient?>) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, activeGradientDelta: Binding<VectorGradient?>, activeColorTarget: Binding<ColorTarget>) {
         self.snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
         self.document = document
         self._activeGradientDelta = activeGradientDelta
+        self._activeColorTarget = activeColorTarget
 
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget.wrappedValue) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
             case .linear(let linear):
@@ -196,7 +200,7 @@ struct GradientFillSection: View {
         .onChange(of: selectedObjectIDs) { _, _ in
             updateSelectedGradient()
         }
-        .onChange(of: document.viewState.activeColorTarget) { _, _ in
+        .onChange(of: activeColorTarget) { _, _ in
             updateSelectedGradient()
         }
         .onChange(of: document.viewState.liveGradientOriginX) { _, newValue in
@@ -239,7 +243,7 @@ struct GradientFillSection: View {
 
     private func updateSelectedGradient() {
 
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(let linear):
@@ -262,7 +266,7 @@ struct GradientFillSection: View {
 
     private func updateSelectedGradientDisplay() {
 
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(let linear):
@@ -278,7 +282,7 @@ struct GradientFillSection: View {
     }
 
     private func syncLocalStateFromDocument() {
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(let linear):
@@ -362,7 +366,7 @@ struct GradientFillSection: View {
         dragStartGradients.removeAll()
         dragStartOpacities.removeAll()
 
-        let isStroke = document.viewState.activeColorTarget == .stroke
+        let isStroke = activeColorTarget == .stroke
 
         for objectID in selectedObjectIDs {
             if let obj = document.snapshot.objects[objectID] {
@@ -409,7 +413,7 @@ struct GradientFillSection: View {
         }
 
         // Create and execute undo command - this will update the snapshot and trigger layer updates
-        let target: GradientCommand.GradientTarget = document.viewState.activeColorTarget == .fill ? .fill : .stroke
+        let target: GradientCommand.GradientTarget = activeColorTarget == .fill ? .fill : .stroke
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
             target: target,
@@ -649,7 +653,7 @@ struct GradientFillSection: View {
                 // Removed: Canvas will redraw automatically when activeGradientDelta changes
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
-                if document.viewState.activeColorTarget == .fill {
+                if activeColorTarget == .fill {
                     document.defaultFillColor = .gradient(.linear(linear))
                 } else {
                     document.defaultStrokeColor = .gradient(.linear(linear))
@@ -663,7 +667,7 @@ struct GradientFillSection: View {
                 // Removed: Canvas will redraw automatically when activeGradientDelta changes
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
-                if document.viewState.activeColorTarget == .fill {
+                if activeColorTarget == .fill {
                     document.defaultFillColor = .gradient(.radial(radial))
                 } else {
                     document.defaultStrokeColor = .gradient(.radial(radial))
@@ -732,7 +736,7 @@ struct GradientFillSection: View {
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        let isStroke = document.viewState.activeColorTarget == .stroke
+        let isStroke = activeColorTarget == .stroke
 
         for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
@@ -810,7 +814,7 @@ struct GradientFillSection: View {
                 if let newVectorObject = document.snapshot.objects[objectID] {
                     var shape = newVectorObject.shape
 
-                    switch document.viewState.activeColorTarget {
+                    switch activeColorTarget {
                     case .fill:
                         let currentOpacity = shape.fillStyle?.opacity ?? 1.0
                         shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
@@ -841,7 +845,7 @@ struct GradientFillSection: View {
             if let newVectorObject = document.snapshot.objects[objectID] {
                 var shape = newVectorObject.shape
 
-                switch document.viewState.activeColorTarget {
+                switch activeColorTarget {
                 case .fill:
                     let currentOpacity = shape.fillStyle?.opacity ?? 1.0
                     shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
@@ -876,22 +880,24 @@ struct GradientFillSection: View {
 
     }
 
-    static func getSelectedShapeGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument) -> VectorGradient? {
-        let activeShapes = document.getActiveShapes()  // Keep using document method for now
-        guard let firstShape = activeShapes.first else {
+    static func getSelectedShapeGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, activeColorTarget: ColorTarget) -> VectorGradient? {
+        guard let firstID = selectedObjectIDs.first,
+              let obj = snapshot.objects[firstID] else {
             return nil
         }
 
+        let shape = obj.shape
+
         // Check fill or stroke based on activeColorTarget
-        switch document.viewState.activeColorTarget {
+        switch activeColorTarget {
         case .fill:
-            guard let fillStyle = firstShape.fillStyle,
+            guard let fillStyle = shape.fillStyle,
                   case .gradient(let gradient) = fillStyle.color else {
                 return nil
             }
             return gradient
         case .stroke:
-            guard let strokeStyle = firstShape.strokeStyle,
+            guard let strokeStyle = shape.strokeStyle,
                   case .gradient(let gradient) = strokeStyle.color else {
                 return nil
             }
