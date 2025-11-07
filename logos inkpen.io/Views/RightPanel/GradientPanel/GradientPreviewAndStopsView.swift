@@ -210,9 +210,23 @@ struct GradientPreviewAndStopsView: View {
     @State private var isDragging = false
     @State private var dragTranslation: CGSize = .zero
 
+    @State private var colorPickerStartGradient: VectorGradient? = nil
+    @State private var colorPickerStartOpacities: [UUID: Double] = [:]
+
     /// Shows the popover for a specific gradient stop
     private func showPopoverForStop(_ stop: GradientStop) {
         guard let anchorView = anchorViews[stop.id], let gradient = currentGradient else { return }
+
+        // Capture old gradient state when opening popover (only once per popover session)
+        if colorPickerStartGradient == nil {
+            colorPickerStartGradient = gradient
+            colorPickerStartOpacities.removeAll()
+            for objectID in document.viewState.selectedObjectIDs {
+                if let shape = document.findShape(by: objectID) {
+                    colorPickerStartOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+                }
+            }
+        }
 
         let popoverContent = GradientStopColorPicker(
             snapshot: document.snapshot,
@@ -224,6 +238,8 @@ struct GradientPreviewAndStopsView: View {
                 activateGradientStop(stop.id, color)
             },
             onDismiss: {
+                // Commit changes with undo when closing popover
+                commitColorPickerChangesWithUndo()
                 popoverManager.dismiss()
                 popoverStopID = nil
             }
@@ -233,6 +249,44 @@ struct GradientPreviewAndStopsView: View {
 
         popoverManager.show(content: popoverContent, anchorView: anchorView, edge: .leading)
         popoverStopID = stop.id
+    }
+
+    private func commitColorPickerChangesWithUndo() {
+        guard let oldGradient = colorPickerStartGradient,
+              let newGradient = currentGradient else {
+            colorPickerStartGradient = nil
+            colorPickerStartOpacities.removeAll()
+            return
+        }
+
+        // Create undo command for color change
+        var oldGradients: [UUID: VectorGradient?] = [:]
+        var newGradients: [UUID: VectorGradient?] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for objectID in document.viewState.selectedObjectIDs {
+            oldGradients[objectID] = oldGradient
+            newGradients[objectID] = newGradient
+            oldOpacities[objectID] = colorPickerStartOpacities[objectID] ?? 1.0
+            if let shape = document.findShape(by: objectID) {
+                newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+            }
+        }
+
+        let command = GradientCommand(
+            objectIDs: Array(document.viewState.selectedObjectIDs),
+            target: .fill,
+            oldGradients: oldGradients,
+            newGradients: newGradients,
+            oldOpacities: oldOpacities,
+            newOpacities: newOpacities
+        )
+        document.commandManager.execute(command)
+
+        // Clear the saved state
+        colorPickerStartGradient = nil
+        colorPickerStartOpacities.removeAll()
     }
 
     private let snapPoints: [(x: CGFloat, y: CGFloat)] = [
