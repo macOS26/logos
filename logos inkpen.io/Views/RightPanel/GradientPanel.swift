@@ -149,10 +149,17 @@ struct GradientFillSection: View {
                 getOriginY: getGradientOriginY,
                 getScale: getGradientScale,
                 getAspectRatio: getGradientAspectRatio,
-                updateOriginX: { updateGradientOriginX($0, applyToShapes: $1) },
-                updateOriginY: { updateGradientOriginY($0, applyToShapes: $1) },
-                updateOriginXOptimized: { updateGradientOriginXOptimized($0, applyToShapes: $1, isLiveDrag: $2) },
-                updateOriginYOptimized: { updateGradientOriginYOptimized($0, applyToShapes: $1, isLiveDrag: $2) },
+                updateOriginX: { _, _ in },  // Deprecated - using delta pattern
+                updateOriginY: { _, _ in },  // Deprecated - using delta pattern
+                updateOriginXOptimized: { newX, _, _ in updateGradientOrigin(x: newX, y: nil) },
+                updateOriginYOptimized: { newY, _, _ in updateGradientOrigin(x: nil, y: newY) },
+                onOriginEditingChanged: { isEditing in
+                    if isEditing {
+                        captureOldGradientState()
+                    } else {
+                        commitGradientChangeWithUndo()
+                    }
+                },
                 addColorStop: addColorStop,
                 updateStopPosition: updateStopPosition,
                 updateStopOpacity: updateStopOpacity,

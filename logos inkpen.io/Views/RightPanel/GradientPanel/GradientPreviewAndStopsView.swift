@@ -15,6 +15,7 @@ struct GradientPreviewAndStopsView: View {
     let updateOriginY: (Double, Bool) -> Void
     let updateOriginXOptimized: (Double, Bool, Bool) -> Void
     let updateOriginYOptimized: (Double, Bool, Bool) -> Void
+    let onOriginEditingChanged: (Bool) -> Void
     let addColorStop: () -> Void
     let updateStopPosition: (UUID, Double) -> Void
     let updateStopOpacity: (UUID, Double) -> Void
@@ -274,6 +275,8 @@ struct GradientPreviewAndStopsView: View {
                                     dragStartOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
                                 }
                             }
+                            // Notify that drag started
+                            onOriginEditingChanged(true)
                         }
 
                         dragTranslation = value.translation
@@ -296,6 +299,7 @@ struct GradientPreviewAndStopsView: View {
                         document.viewState.liveGradientOriginX = finalX
                         document.viewState.liveGradientOriginY = finalY
 
+                        // Update delta only - don't update snapshot during drag
                         updateOriginXOptimized(finalX, true, true)
                         updateOriginYOptimized(finalY, true, true)
                     }
@@ -306,32 +310,8 @@ struct GradientPreviewAndStopsView: View {
                         document.viewState.liveGradientOriginX = nil
                         document.viewState.liveGradientOriginY = nil
 
-                        applyGradientToSelectedShapesOptimized(false)
-
-                        // Create undo command
-                        if let startGradient = dragStartGradient, let endGradient = currentGradient {
-                            var oldGradients: [UUID: VectorGradient?] = [:]
-                            var newGradients: [UUID: VectorGradient?] = [:]
-                            var newOpacities: [UUID: Double] = [:]
-
-                            for objectID in document.viewState.selectedObjectIDs {
-                                oldGradients[objectID] = startGradient
-                                newGradients[objectID] = endGradient
-                                if let shape = document.findShape(by: objectID) {
-                                    newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
-                                }
-                            }
-
-                            let command = GradientCommand(
-                                objectIDs: Array(document.viewState.selectedObjectIDs),
-                                target: .fill,
-                                oldGradients: oldGradients,
-                                newGradients: newGradients,
-                                oldOpacities: dragStartOpacities,
-                                newOpacities: newOpacities
-                            )
-                            document.commandManager.execute(command)
-                        }
+                        // Notify that drag ended - this will commit with undo
+                        onOriginEditingChanged(false)
 
                         dragStartGradient = nil
                         dragStartOpacities.removeAll()
