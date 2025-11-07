@@ -506,8 +506,9 @@ struct LayerCanvasView: View {
 
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                        print("🎨 CANVAS RENDER: Using activeGradientDelta for shape \(shape.id)")
-                        print("🎨 CANVAS RENDER: Delta stops = \(activeGradientDelta!.stops.map { $0.color })")
+                        print("🎨🎨🎨 CANVAS RENDER WITH DELTA: shape \(shape.id)")
+                        print("🎨🎨🎨 DELTA GRADIENT STOPS: \(activeGradientDelta!.stops.map { $0.color })")
+                        print("🎨🎨🎨 FILL STYLE COLOR: \(fillStyle.color)")
 
                         // Create a fillStyle with activeGradientDelta and opacity
                         let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
