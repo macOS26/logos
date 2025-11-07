@@ -401,6 +401,11 @@ struct GradientFillSection: View {
         // Clear the delta AFTER the command executes
         activeGradientDelta = nil
 
+        // Sync currentGradient from snapshot after command executes
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
+            currentGradient = selectedGradient
+        }
+
         print("🎨 GRADIENT ANGLE DRAG END: Command executed")
     }
 
