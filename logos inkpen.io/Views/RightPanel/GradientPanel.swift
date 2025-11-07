@@ -173,7 +173,14 @@ struct GradientFillSection: View {
                 removeColorStop: removeColorStop,
                 applyGradientToSelectedShapes: applyGradientToSelectedShapes,
                 applyGradientToSelectedShapesOptimized: applyGradientToSelectedShapesOptimized,
-                activateGradientStop: updateStopColor
+                activateGradientStop: updateStopColor,
+                onStopEditingChanged: { isEditing in
+                    if isEditing {
+                        captureOldGradientState()
+                    } else {
+                        commitGradientChangeWithUndo()
+                    }
+                }
             )
 
             GradientApplyButtonView(

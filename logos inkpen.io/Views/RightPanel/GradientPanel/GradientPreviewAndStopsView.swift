@@ -23,6 +23,7 @@ struct GradientPreviewAndStopsView: View {
     let applyGradientToSelectedShapes: () -> Void
     let applyGradientToSelectedShapesOptimized: (Bool) -> Void
     let activateGradientStop: (UUID, VectorColor) -> Void
+    let onStopEditingChanged: (Bool) -> Void
 
     @State private var popoverStopID: UUID? = nil
     @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
@@ -394,7 +395,7 @@ struct GradientPreviewAndStopsView: View {
                                     Slider(value: Binding(
                                         get: { stop.position },
                                         set: { updateStopPosition(stop.id, $0) }
-                                    ), in: 0...1)
+                                    ), in: 0...1, onEditingChanged: onStopEditingChanged)
                                     .controlSize(.regular)
 
                                     TextField("", text: Binding(
