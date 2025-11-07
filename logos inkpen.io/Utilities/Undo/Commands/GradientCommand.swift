@@ -44,15 +44,26 @@ class GradientCommand: BaseCommand {
                   let opacity = opacities[id],
                   var obj = document.snapshot.objects[id] else { continue }
 
+            print("⚡️ GradientCommand: Applying to object \(id)")
+
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 switch target {
                 case .fill:
                     if let gradient = gradient {
+                        print("⚡️ GradientCommand: BEFORE fill = \(shape.fillStyle?.color ?? .clear)")
+                        print("⚡️ GradientCommand: BEFORE stroke = \(shape.strokeStyle?.color ?? .clear)")
                         shape.fillStyle = FillStyle(gradient: gradient, opacity: opacity)
+                        print("⚡️ GradientCommand: AFTER fill = \(shape.fillStyle?.color ?? .clear)")
+                        print("⚡️ GradientCommand: AFTER stroke = \(shape.strokeStyle?.color ?? .clear)")
+                        if let fillGradient = shape.fillStyle?.gradient {
+                            print("⚡️ GradientCommand: Applied gradient stops = \(fillGradient.stops.map { $0.color })")
+                        }
                     }
                 case .stroke:
                     if let gradient = gradient {
+                        print("⚡️ GradientCommand: BEFORE fill = \(shape.fillStyle?.color ?? .clear)")
+                        print("⚡️ GradientCommand: BEFORE stroke = \(shape.strokeStyle?.color ?? .clear)")
                         let currentStroke = shape.strokeStyle
                         shape.strokeStyle = StrokeStyle(
                             gradient: gradient,
@@ -63,17 +74,22 @@ class GradientCommand: BaseCommand {
                             miterLimit: currentStroke?.miterLimit ?? 10.0,
                             opacity: opacity
                         )
+                        print("⚡️ GradientCommand: AFTER fill = \(shape.fillStyle?.color ?? .clear)")
+                        print("⚡️ GradientCommand: AFTER stroke = \(shape.strokeStyle?.color ?? .clear)")
                     }
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
+                print("⚡️ GradientCommand: Updated snapshot.objects[\(id)]")
                 affectedLayers.insert(obj.layerIndex)
             case .text:
                 break
             }
         }
 
+        print("⚡️ GradientCommand: Triggering layer updates for \(affectedLayers.count) layers")
         // Trigger layer updates so SwiftUI re-renders
         document.triggerLayerUpdates(for: affectedLayers)
+        print("⚡️ GradientCommand: Layer updates triggered")
     }
 }
