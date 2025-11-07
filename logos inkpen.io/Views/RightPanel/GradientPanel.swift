@@ -376,7 +376,8 @@ struct GradientFillSection: View {
     private func commitGradientChangeWithUndo() {
         guard let newGradient = currentGradient else { return }
 
-        print("🎨 GRADIENT ANGLE DRAG END: Committing with undo")
+        print("🎨 COMMIT START: activeGradientDelta = \(activeGradientDelta != nil ? "SET" : "nil")")
+        print("🎨 COMMIT START: currentGradient stops = \(newGradient.stops.map { $0.color })")
 
         // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
@@ -386,6 +387,9 @@ struct GradientFillSection: View {
             newGradients[objectID] = newGradient
             if let obj = document.snapshot.objects[objectID] {
                 newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
+                if let fillGradient = obj.shape.fillStyle?.gradient {
+                    print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
+                }
             }
         }
 
@@ -400,10 +404,20 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
-        // Don't clear delta here - let the changeToken handler do it
-        // This prevents flash during the transition
+        print("🎨 COMMIT END: Command executed")
 
-        print("🎨 GRADIENT ANGLE DRAG END: Command executed")
+        // Check snapshot after command
+        for objectID in selectedObjectIDs {
+            if let obj = document.snapshot.objects[objectID] {
+                if let fillGradient = obj.shape.fillStyle?.gradient {
+                    print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
+                }
+            }
+        }
+
+        // MUST clear delta immediately after command - changeToken handler won't fire
+        activeGradientDelta = nil
+        print("🎨 COMMIT END: Cleared activeGradientDelta")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
