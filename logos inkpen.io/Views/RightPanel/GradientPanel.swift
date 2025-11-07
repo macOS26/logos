@@ -90,7 +90,8 @@ struct GradientFillSection: View {
             GradientAngleControlView(
                 currentGradient: currentGradient,
                 document: document,
-                onAngleChange: updateGradientAngle
+                onAngleChange: updateGradientAngle,
+                onEditingEnded: commitGradientChange
             )
 
             GradientOriginControlView(
@@ -253,28 +254,26 @@ struct GradientFillSection: View {
             normalizedAngle += 360
         }
 
-        //isEditingAngle = true
-
-        print("🎨 GRADIENT ANGLE: Updating to \(normalizedAngle)")
-
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
-            print("🎨 GRADIENT ANGLE: Set currentGradient (linear)")
             activeGradientDelta = currentGradient
-            print("🎨 GRADIENT ANGLE: Set activeGradientDelta (NO trigger increment)")
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
-            print("🎨 GRADIENT ANGLE: Set currentGradient (radial)")
             activeGradientDelta = currentGradient
-            print("🎨 GRADIENT ANGLE: Set activeGradientDelta (NO trigger increment)")
         }
+    }
 
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-//            self.isEditingAngle = false
-//        }
+    private func commitGradientChange() {
+        guard currentGradient != nil else { return }
+
+        // Clear the delta
+        activeGradientDelta = nil
+
+        // Apply to document snapshot + record undo
+        applyGradientToSelectedShapes()
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
@@ -306,6 +305,7 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
+        print("🔴 updateGradientOriginXOptimized called: newX=\(newX), applyToShapes=\(applyToShapes), isLiveDrag=\(isLiveDrag)")
         guard let gradient = currentGradient else { return }
 
         switch gradient {
@@ -323,6 +323,7 @@ struct GradientFillSection: View {
             } else {
                 document.viewState.liveGradientOriginX = nil
             }
+            print("🔴 CALLING applyGradientToSelectedShapesOptimized - THIS UPDATES SNAPSHOT!")
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
