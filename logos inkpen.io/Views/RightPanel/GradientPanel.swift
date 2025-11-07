@@ -317,9 +317,6 @@ struct GradientFillSection: View {
 
         print("🎨 GRADIENT ANGLE DRAG END: Committing with undo")
 
-        // Clear the delta
-        activeGradientDelta = nil
-
         // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
         var newOpacities: [UUID: Double] = [:]
@@ -331,7 +328,7 @@ struct GradientFillSection: View {
             }
         }
 
-        // Create and execute undo command - this will update the snapshot
+        // Create and execute undo command - this will update the snapshot and trigger layer updates
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
             target: .fill,
@@ -341,6 +338,9 @@ struct GradientFillSection: View {
             newOpacities: newOpacities
         )
         document.commandManager.execute(command)
+
+        // Clear the delta AFTER the command executes
+        activeGradientDelta = nil
 
         print("🎨 GRADIENT ANGLE DRAG END: Command executed")
     }

@@ -37,10 +37,12 @@ class GradientCommand: BaseCommand {
     }
 
     private func applyGradients(_ gradients: [UUID: VectorGradient?], opacities: [UUID: Double], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
+
         for id in objectIDs {
             guard let gradient = gradients[id],
                   let opacity = opacities[id],
-                  let obj = document.snapshot.objects[id] else { continue }
+                  var obj = document.snapshot.objects[id] else { continue }
 
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
@@ -63,11 +65,15 @@ class GradientCommand: BaseCommand {
                         )
                     }
                 }
-                let updatedObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                document.snapshot.objects[id] = updatedObj
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.snapshot.objects[id] = obj
+                affectedLayers.insert(obj.layerIndex)
             case .text:
                 break
             }
         }
+
+        // Trigger layer updates so SwiftUI re-renders
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
