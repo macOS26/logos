@@ -107,7 +107,7 @@ struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
-    let onEditingEnded: () -> Void
+    let onEditingChanged: (Bool) -> Void
     var body: some View {
         if let gradient = currentGradient {
             let angle: Double = {
@@ -135,11 +135,7 @@ struct GradientAngleControlView: View {
                             // Only call callback - parent handles activeGradientDelta
                             onAngleChange(newAngle)
                         }
-                    ), in: -180...180, onEditingChanged: { editing in
-                        if !editing {
-                            onEditingEnded()
-                        }
-                    })
+                    ), in: -180...180, onEditingChanged: onEditingChanged)
                     .controlSize(.regular)
 
                     TextField("", text: createNaturalNumberBinding(
@@ -151,7 +147,7 @@ struct GradientAngleControlView: View {
                     ))
                     .gradientTextField(width: 60)
                     .onSubmit {
-                        onEditingEnded()
+                        onEditingChanged(false)
                     }
                 }
             }

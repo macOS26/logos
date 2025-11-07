@@ -40,6 +40,7 @@ struct GradientFillSection: View {
     @State private var localOriginY: Double = 0.5
     @State private var dragStartGradient: VectorGradient? = nil
     @State private var dragStartOpacities: [UUID: Double] = [:]
+    @State private var dragStartGradients: [UUID: VectorGradient?] = [:]
 
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -91,7 +92,15 @@ struct GradientFillSection: View {
                 currentGradient: currentGradient,
                 document: document,
                 onAngleChange: updateGradientAngle,
-                onEditingEnded: commitGradientChange
+                onEditingChanged: { isEditing in
+                    if isEditing {
+                        // Drag started - capture old gradient state
+                        captureOldGradientState()
+                    } else {
+                        // Drag ended - commit with undo
+                        commitGradientChangeWithUndo()
+                    }
+                }
             )
 
             GradientOriginControlView(
@@ -282,6 +291,61 @@ struct GradientFillSection: View {
         // Apply to document snapshot + record undo
         applyGradientToSelectedShapes()
         print("🎨 GRADIENT DRAG END: Applied to snapshot + recorded undo")
+    }
+
+    private func captureOldGradientState() {
+        // Capture old gradients and opacities from snapshot before drag starts
+        dragStartGradients.removeAll()
+        dragStartOpacities.removeAll()
+
+        for objectID in selectedObjectIDs {
+            if let obj = snapshot.objects[objectID] {
+                let shape = obj.shape
+                if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
+                    dragStartGradients[objectID] = gradient
+                    dragStartOpacities[objectID] = fillStyle.opacity
+                } else {
+                    dragStartGradients[objectID] = nil
+                    dragStartOpacities[objectID] = 1.0
+                }
+            }
+        }
+    }
+
+    private func commitGradientChangeWithUndo() {
+        guard let newGradient = currentGradient else { return }
+
+        print("🎨 GRADIENT ANGLE DRAG END: Committing with undo")
+
+        // Clear the delta
+        activeGradientDelta = nil
+
+        // Collect new gradients and opacities
+        var newGradients: [UUID: VectorGradient?] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for objectID in selectedObjectIDs {
+            newGradients[objectID] = newGradient
+            if let obj = snapshot.objects[objectID] {
+                newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
+            }
+        }
+
+        // Apply the gradient to snapshot
+        applyGradientToSelectedShapesOptimized(isLiveDrag: false)
+
+        // Create and execute undo command
+        let command = GradientCommand(
+            objectIDs: Array(selectedObjectIDs),
+            target: .fill,
+            oldGradients: dragStartGradients,
+            newGradients: newGradients,
+            oldOpacities: dragStartOpacities,
+            newOpacities: newOpacities
+        )
+        document.commandManager.execute(command)
+
+        print("🎨 GRADIENT ANGLE DRAG END: Command executed")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
