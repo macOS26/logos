@@ -359,15 +359,27 @@ struct GradientFillSection: View {
         dragStartGradients.removeAll()
         dragStartOpacities.removeAll()
 
+        let isStroke = document.viewState.activeColorTarget == .stroke
+
         for objectID in selectedObjectIDs {
             if let obj = document.snapshot.objects[objectID] {
                 let shape = obj.shape
-                if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
-                    dragStartGradients[objectID] = gradient
-                    dragStartOpacities[objectID] = fillStyle.opacity
+                if isStroke {
+                    if let strokeStyle = shape.strokeStyle, case .gradient(let gradient) = strokeStyle.color {
+                        dragStartGradients[objectID] = gradient
+                        dragStartOpacities[objectID] = strokeStyle.opacity
+                    } else {
+                        dragStartGradients[objectID] = nil
+                        dragStartOpacities[objectID] = 1.0
+                    }
                 } else {
-                    dragStartGradients[objectID] = nil
-                    dragStartOpacities[objectID] = 1.0
+                    if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
+                        dragStartGradients[objectID] = gradient
+                        dragStartOpacities[objectID] = fillStyle.opacity
+                    } else {
+                        dragStartGradients[objectID] = nil
+                        dragStartOpacities[objectID] = 1.0
+                    }
                 }
             }
         }
@@ -394,9 +406,10 @@ struct GradientFillSection: View {
         }
 
         // Create and execute undo command - this will update the snapshot and trigger layer updates
+        let target: GradientCommand.GradientTarget = document.viewState.activeColorTarget == .fill ? .fill : .stroke
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
-            target: .fill,
+            target: target,
             oldGradients: dragStartGradients,
             newGradients: newGradients,
             oldOpacities: dragStartOpacities,
@@ -716,19 +729,22 @@ struct GradientFillSection: View {
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
+        let isStroke = document.viewState.activeColorTarget == .stroke
+
         for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
                 oldGradients[objectID] = oldGradient
                 newGradients[objectID] = newGradient
-                let opacity = shape.fillStyle?.opacity ?? 1.0
+                let opacity = isStroke ? (shape.strokeStyle?.opacity ?? 1.0) : (shape.fillStyle?.opacity ?? 1.0)
                 oldOpacities[objectID] = opacity
                 newOpacities[objectID] = opacity
             }
         }
 
+        let target: GradientCommand.GradientTarget = isStroke ? .stroke : .fill
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
-            target: .fill,
+            target: target,
             oldGradients: oldGradients,
             newGradients: newGradients,
             oldOpacities: oldOpacities,
