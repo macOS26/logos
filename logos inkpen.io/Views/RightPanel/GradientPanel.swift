@@ -268,6 +268,13 @@ struct GradientFillSection: View {
             activeGradientDelta = currentGradient
             print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
         }
+
+        // Update snapshot objects during drag for live preview
+        updateSnapshotGradientsLive()
+    }
+
+    private func updateSnapshotGradientsLive() {
+        applyGradientToSelectedShapesOptimized(isLiveDrag: true)
     }
 
     private func commitGradientChange() {
