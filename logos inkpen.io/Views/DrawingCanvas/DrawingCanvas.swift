@@ -19,6 +19,7 @@ struct DrawingCanvas: View {
     @Binding var fillDeltaOpacity: Double?
     @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
+    @Binding var activeGradientDelta: VectorGradient?
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?

@@ -65,6 +65,7 @@ struct LayerCanvasView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
+    let activeGradientDelta: VectorGradient?
 
     var appState = AppState.shared
 
@@ -500,10 +501,13 @@ struct LayerCanvasView: View {
                         : fillStyle.opacity
 
                     if let gradient = fillStyle.gradient {
-                        // Create a fillStyle with effective opacity for gradients
-                        var effectiveFillStyle = fillStyle
-                        effectiveFillStyle.opacity = effectiveFillOpacity
-                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
+                        // Use activeGradientDelta if available and shape is selected
+                        let effectiveGradient = (activeGradientDelta != nil && selectedObjectIDs.contains(shape.id))
+                            ? activeGradientDelta!
+                            : gradient
+                        // Create a fillStyle with effective gradient and opacity
+                        let effectiveFillStyle = FillStyle(gradient: effectiveGradient, opacity: effectiveFillOpacity)
+                        renderGradientToContext(gradient: effectiveGradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
                         layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                     }
@@ -524,11 +528,21 @@ struct LayerCanvasView: View {
 
                     if strokeStyle.placement == .center {
                         if let gradient = strokeStyle.gradient {
+                            // Use activeGradientDelta if available and shape is selected
+                            let effectiveGradient = (activeGradientDelta != nil && isSelected)
+                                ? activeGradientDelta!
+                                : gradient
                             // Create a strokeStyle with effective values for gradients
-                            var effectiveStrokeStyle = strokeStyle
-                            effectiveStrokeStyle.opacity = effectiveStrokeOpacity
-                            effectiveStrokeStyle.width = effectiveStrokeWidth
-                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
+                            let effectiveStrokeStyle = StrokeStyle(
+                                gradient: effectiveGradient,
+                                width: effectiveStrokeWidth,
+                                placement: strokeStyle.placement,
+                                lineCap: strokeStyle.lineCap.cgLineCap,
+                                lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                                miterLimit: strokeStyle.miterLimit,
+                                opacity: effectiveStrokeOpacity
+                            )
+                            renderGradientToContext(gradient: effectiveGradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
                             layerContext.stroke(
                                 Path(cgPath),
@@ -955,6 +969,7 @@ struct IsolatedLayerView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
+    let activeGradientDelta: VectorGradient?
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1037,7 +1052,8 @@ struct IsolatedLayerView: View {
                 liveHandlePositions: liveHandlePositions,
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
-                strokeDeltaWidth: strokeDeltaWidth
+                strokeDeltaWidth: strokeDeltaWidth,
+                activeGradientDelta: activeGradientDelta
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

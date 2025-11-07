@@ -225,7 +225,8 @@ extension FileOperations {
                         liveHandlePositions: [:],
                         fillDeltaOpacity: nil,
                         strokeDeltaOpacity: nil,
-                        strokeDeltaWidth: nil
+                        strokeDeltaWidth: nil,
+                        activeGradientDelta: nil
                     )
                 }
             }

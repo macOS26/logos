@@ -239,7 +239,8 @@ extension DrawingCanvas {
                 liveHandlePositions: liveHandlePositions,
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
-                strokeDeltaWidth: strokeDeltaWidth
+                strokeDeltaWidth: strokeDeltaWidth,
+                activeGradientDelta: activeGradientDelta
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
             .allowsHitTesting(isActiveLayer)

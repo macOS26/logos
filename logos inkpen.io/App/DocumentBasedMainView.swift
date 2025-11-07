@@ -27,6 +27,7 @@ struct DocumentBasedMainView: View {
     @State private var fillDeltaOpacity: Double? = nil
     @State private var strokeDeltaOpacity: Double? = nil
     @State private var strokeDeltaWidth: Double? = nil
+    @State private var activeGradientDelta: VectorGradient? = nil
     @State private var selectedLayerIndex: Int? = nil
     @State private var processedLayersDuringDrag: Set<Int> = []
     @State private var processedObjectsDuringDrag: Set<UUID> = []
@@ -55,7 +56,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth)
+                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, activeGradientDelta: $activeGradientDelta)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
@@ -88,6 +89,7 @@ struct DocumentBasedMainView: View {
                     fillDeltaOpacity: $fillDeltaOpacity,
                     strokeDeltaOpacity: $strokeDeltaOpacity,
                     strokeDeltaWidth: $strokeDeltaWidth,
+                    activeGradientDelta: $activeGradientDelta,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,
                     processedObjectsDuringDrag: $processedObjectsDuringDrag

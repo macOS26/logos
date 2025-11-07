@@ -11,6 +11,7 @@ struct RightPanel: View {
     @Binding var fillDeltaOpacity: Double?
     @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
+    @Binding var activeGradientDelta: VectorGradient?
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
@@ -109,7 +110,8 @@ struct RightPanel: View {
                     GradientPanel(
                         snapshot: snapshot,
                         selectedObjectIDs: viewState.selectedObjectIDs,
-                        document: document
+                        document: document,
+                        activeGradientDelta: $activeGradientDelta
                     )
                 case .color:
                     ColorPanel(
@@ -181,6 +183,7 @@ struct RightPanel: View {
         fillDeltaOpacity: .constant(nil),
         strokeDeltaOpacity: .constant(nil),
         strokeDeltaWidth: .constant(nil),
+        activeGradientDelta: .constant(nil),
         selectedLayerIndex: .constant(nil),
         processedLayersDuringDrag: .constant([]),
         processedObjectsDuringDrag: .constant([])

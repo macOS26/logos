@@ -6,6 +6,7 @@ struct GradientPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+    @Binding var activeGradientDelta: VectorGradient?
 
     var body: some View {
         ScrollView {
@@ -13,7 +14,8 @@ struct GradientPanel: View {
                 GradientFillSection(
                     snapshot: snapshot,
                     selectedObjectIDs: selectedObjectIDs,
-                    document: document
+                    document: document,
+                    activeGradientDelta: $activeGradientDelta
                 )
                 Spacer()
             }
@@ -25,6 +27,7 @@ struct GradientFillSection: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+    @Binding var activeGradientDelta: VectorGradient?
     @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
@@ -43,10 +46,11 @@ struct GradientFillSection: View {
         case radial = "Radial"
     }
 
-    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, activeGradientDelta: Binding<VectorGradient?>) {
         self.snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
         self.document = document
+        self._activeGradientDelta = activeGradientDelta
 
         if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
             _currentGradient = State(initialValue: selectedGradient)
