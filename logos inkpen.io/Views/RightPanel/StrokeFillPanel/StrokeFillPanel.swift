@@ -18,6 +18,7 @@ struct StrokeFillPanel: View {
     let currentTool: DrawingTool
     let hasPressureInput: Bool
     let changeToken: UUID
+    let document: VectorDocument
     let onTriggerLayerUpdates: (Set<Int>) -> Void
     let onAddColorSwatch: (VectorColor) -> Void
     let onRemoveColorSwatch: (VectorColor) -> Void
@@ -996,13 +997,34 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 fillDeltaOpacity = fillOpacityState
                             } else {
+                                // Drag ended - commit with undo
                                 fillDeltaOpacity = nil
                                 defaultFillOpacity = fillOpacityState
-                                // Update the document with final value
-                                updateFillOpacityLive(fillOpacityState, isEditing: false)
+
+                                // Collect old and new opacities for undo
+                                var oldOpacities: [UUID: Double] = [:]
+                                var newOpacities: [UUID: Double] = [:]
+
                                 for objectID in selectedObjectIDs {
-                                    onUpdateObjectOpacity(objectID, fillOpacityState, .fill)
+                                    if let obj = snapshot.objects[objectID] {
+                                        switch obj.objectType {
+                                        case .text(let shape):
+                                            oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
+                                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                                            oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+                                        }
+                                        newOpacities[objectID] = fillOpacityState
+                                    }
                                 }
+
+                                // Create and execute command
+                                let command = OpacityCommand(
+                                    objectIDs: Array(selectedObjectIDs),
+                                    target: .fill,
+                                    oldOpacities: oldOpacities,
+                                    newOpacities: newOpacities
+                                )
+                                document.commandManager.execute(command)
                             }
                         }
                     )
@@ -1061,26 +1083,67 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 strokeDeltaWidth = strokeWidthState
                             } else {
+                                // Drag ended - commit with undo
                                 strokeDeltaWidth = nil
                                 defaultStrokeWidth = strokeWidthState
-                                // Update the document with final value
-                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
+
+                                // Collect old and new widths for undo
+                                var oldWidths: [UUID: Double] = [:]
+                                var newWidths: [UUID: Double] = [:]
+
                                 for objectID in selectedObjectIDs {
-                                    onUpdateObjectStrokeWidth(objectID, strokeWidthState)
+                                    if let obj = snapshot.objects[objectID] {
+                                        switch obj.objectType {
+                                        case .text(let shape):
+                                            oldWidths[objectID] = shape.typography?.strokeWidth ?? 1.0
+                                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                                            oldWidths[objectID] = shape.strokeStyle?.width ?? 1.0
+                                        }
+                                        newWidths[objectID] = strokeWidthState
+                                    }
                                 }
+
+                                // Create and execute command
+                                let command = StrokeWidthCommand(
+                                    objectIDs: Array(selectedObjectIDs),
+                                    oldWidths: oldWidths,
+                                    newWidths: newWidths
+                                )
+                                document.commandManager.execute(command)
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
                                 strokeDeltaOpacity = strokeOpacityState
                             } else {
+                                // Drag ended - commit with undo
                                 strokeDeltaOpacity = nil
                                 defaultStrokeOpacity = strokeOpacityState
-                                // Update the document with final value
-                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
+
+                                // Collect old and new opacities for undo
+                                var oldOpacities: [UUID: Double] = [:]
+                                var newOpacities: [UUID: Double] = [:]
+
                                 for objectID in selectedObjectIDs {
-                                    onUpdateObjectOpacity(objectID, strokeOpacityState, .stroke)
+                                    if let obj = snapshot.objects[objectID] {
+                                        switch obj.objectType {
+                                        case .text(let shape):
+                                            oldOpacities[objectID] = shape.typography?.strokeOpacity ?? 1.0
+                                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                                            oldOpacities[objectID] = shape.strokeStyle?.opacity ?? 1.0
+                                        }
+                                        newOpacities[objectID] = strokeOpacityState
+                                    }
                                 }
+
+                                // Create and execute command
+                                let command = OpacityCommand(
+                                    objectIDs: Array(selectedObjectIDs),
+                                    target: .stroke,
+                                    oldOpacities: oldOpacities,
+                                    newOpacities: newOpacities
+                                )
+                                document.commandManager.execute(command)
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in

@@ -72,6 +72,7 @@ struct RightPanel: View {
                         currentTool: viewState.currentTool,
                         hasPressureInput: viewState.hasPressureInput,
                         changeToken: document.changeNotifier.changeToken,
+                        document: document,
                         onTriggerLayerUpdates: { indices in document.triggerLayerUpdates(for: indices) },
                         onAddColorSwatch: { color in document.addColorSwatch(color) },
                         onRemoveColorSwatch: { color in document.removeColorSwatch(color) },
