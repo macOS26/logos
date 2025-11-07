@@ -228,13 +228,13 @@ extension DrawingCanvas {
     }
 
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
-        // Get the final gradient from the document (it was already applied during drag)
-        guard let finalShape = document.findShape(by: shape.id),
-              let fillStyle = finalShape.fillStyle,
-              case .gradient(let finalGradient) = fillStyle.color,
-              let startGradient = dragStartGradient else {
+        // Get the final gradient from activeGradientDelta
+        guard let finalGradient = activeGradientDelta,
+              let startGradient = dragStartGradient,
+              let fillStyle = document.findShape(by: shape.id)?.fillStyle else {
             document.viewState.liveGradientOriginX = nil
             document.viewState.liveGradientOriginY = nil
+            activeGradientDelta = nil
             dragStartGradient = nil
             return
         }
@@ -250,9 +250,10 @@ extension DrawingCanvas {
         )
         document.commandManager.execute(command)
 
-        // Clear live state
+        // Clear live state and delta AFTER command executes
         document.viewState.liveGradientOriginX = nil
         document.viewState.liveGradientOriginY = nil
+        activeGradientDelta = nil
         dragStartGradient = nil
     }
     
@@ -308,16 +309,8 @@ extension DrawingCanvas {
             newGradient = .radial(radial)
         }
 
-        // Update snapshot.objects directly for immediate feedback (like GradientPanel does)
-        if let newVectorObject = document.snapshot.objects[shape.id] {
-            var updatedShape = newVectorObject.shape
-            let currentOpacity = updatedShape.fillStyle?.opacity ?? 1.0
-            updatedShape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
-
-            let updatedObject = VectorObject(shape: updatedShape, layerIndex: newVectorObject.layerIndex)
-            document.snapshot.objects[shape.id] = updatedObject
-            document.triggerLayerUpdates(for: [updatedObject.layerIndex])
-        }
+        // Set the delta for live preview - don't update snapshot during drag
+        activeGradientDelta = newGradient
     }
     
     private func updateShapeGradient(shape: VectorShape, newGradient: VectorGradient) {
