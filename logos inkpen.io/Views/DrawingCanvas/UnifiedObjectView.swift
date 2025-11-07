@@ -500,22 +500,20 @@ struct LayerCanvasView: View {
                         ? fillDeltaOpacity!
                         : fillStyle.opacity
 
-                    if let gradient = fillStyle.gradient {
-                        // Use activeGradientDelta if available and shape is selected
-                        let effectiveGradient = (activeGradientDelta != nil && selectedObjectIDs.contains(shape.id))
-                            ? activeGradientDelta!
-                            : gradient
-
-                        if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                            print("🎨 CANVAS RENDER: Using activeGradientDelta for shape \(shape.id)")
-                            if case .linear(let linear) = activeGradientDelta {
-                                print("🎨 CANVAS RENDER: Delta angle = \(linear.angle)")
-                            }
+                    // Check for activeGradientDelta FIRST (for live preview during drag)
+                    if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
+                        print("🎨 CANVAS RENDER: Using activeGradientDelta for shape \(shape.id)")
+                        if case .linear(let linear) = activeGradientDelta {
+                            print("🎨 CANVAS RENDER: Delta angle = \(linear.angle)")
                         }
 
-                        // Create a fillStyle with effective gradient and opacity
-                        let effectiveFillStyle = FillStyle(gradient: effectiveGradient, opacity: effectiveFillOpacity)
-                        renderGradientToContext(gradient: effectiveGradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
+                        // Create a fillStyle with activeGradientDelta and opacity
+                        let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
+                        renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
+                    } else if let gradient = fillStyle.gradient {
+                        // Use gradient from snapshot
+                        let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
+                        renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
                         layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                     }
@@ -535,14 +533,10 @@ struct LayerCanvasView: View {
                         : strokeStyle.width
 
                     if strokeStyle.placement == .center {
-                        if let gradient = strokeStyle.gradient {
-                            // Use activeGradientDelta if available and shape is selected
-                            let effectiveGradient = (activeGradientDelta != nil && isSelected)
-                                ? activeGradientDelta!
-                                : gradient
-                            // Create a strokeStyle with effective values for gradients
+                        // Check for activeGradientDelta FIRST (for live preview during drag)
+                        if activeGradientDelta != nil && isSelected {
                             let effectiveStrokeStyle = StrokeStyle(
-                                gradient: effectiveGradient,
+                                gradient: activeGradientDelta!,
                                 width: effectiveStrokeWidth,
                                 placement: strokeStyle.placement,
                                 lineCap: strokeStyle.lineCap.cgLineCap,
@@ -550,7 +544,19 @@ struct LayerCanvasView: View {
                                 miterLimit: strokeStyle.miterLimit,
                                 opacity: effectiveStrokeOpacity
                             )
-                            renderGradientToContext(gradient: effectiveGradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
+                            renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
+                        } else if let gradient = strokeStyle.gradient {
+                            // Use gradient from snapshot
+                            let effectiveStrokeStyle = StrokeStyle(
+                                gradient: gradient,
+                                width: effectiveStrokeWidth,
+                                placement: strokeStyle.placement,
+                                lineCap: strokeStyle.lineCap.cgLineCap,
+                                lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                                miterLimit: strokeStyle.miterLimit,
+                                opacity: effectiveStrokeOpacity
+                            )
+                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
                             layerContext.stroke(
                                 Path(cgPath),
