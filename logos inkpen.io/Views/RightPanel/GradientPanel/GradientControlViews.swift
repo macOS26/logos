@@ -162,6 +162,7 @@ struct GradientOriginControlView: View {
     @Binding var originY: Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
+    let onEditingChanged: (Bool) -> Void
     var body: some View {
         if currentGradient != nil {
             // Use live state if available, otherwise use local state
@@ -179,9 +180,7 @@ struct GradientOriginControlView: View {
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginX,
-                        onEditingChanged: { _ in
-
-                        }
+                        onEditingChanged: onEditingChanged
                     )
 
                     GradientSliderControl(
@@ -190,9 +189,7 @@ struct GradientOriginControlView: View {
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginY,
-                        onEditingChanged: { _ in
-
-                        }
+                        onEditingChanged: onEditingChanged
                     )
                 }
             }

@@ -110,11 +110,20 @@ struct GradientFillSection: View {
                 originY: $localOriginY,
                 updateOriginX: { newX in
                     localOriginX = newX
-                    updateGradientOriginXOptimized(newX, applyToShapes: true, isLiveDrag: true)
+                    updateGradientOrigin(x: newX, y: nil)
                 },
                 updateOriginY: { newY in
                     localOriginY = newY
-                    updateGradientOriginYOptimized(newY, applyToShapes: true, isLiveDrag: true)
+                    updateGradientOrigin(x: nil, y: newY)
+                },
+                onEditingChanged: { isEditing in
+                    if isEditing {
+                        // Drag started - capture old gradient state
+                        captureOldGradientState()
+                    } else {
+                        // Drag ended - commit with undo
+                        commitGradientChangeWithUndo()
+                    }
                 }
             )
 
@@ -280,6 +289,31 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
             print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
+        }
+    }
+
+    private func updateGradientOrigin(x: Double?, y: Double?) {
+        guard let gradient = currentGradient else { return }
+
+        switch gradient {
+        case .linear(var linear):
+            if let newX = x {
+                linear.originPoint.x = newX
+            }
+            if let newY = y {
+                linear.originPoint.y = newY
+            }
+            currentGradient = .linear(linear)
+            activeGradientDelta = currentGradient
+        case .radial(var radial):
+            if let newX = x {
+                radial.originPoint.x = newX
+            }
+            if let newY = y {
+                radial.originPoint.y = newY
+            }
+            currentGradient = .radial(radial)
+            activeGradientDelta = currentGradient
         }
     }
 
