@@ -387,10 +387,24 @@ struct GradientFillSection: View {
             }
         }
 
-        // Clear the delta BEFORE executing command to prevent flash
+        // Update snapshot FIRST so when we clear delta, canvas sees correct gradient
+        var affectedLayers = Set<Int>()
+        for objectID in selectedObjectIDs {
+            if var obj = document.snapshot.objects[objectID] {
+                var shape = obj.shape
+                let currentOpacity = shape.fillStyle?.opacity ?? 1.0
+                shape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.snapshot.objects[objectID] = obj
+                affectedLayers.insert(obj.layerIndex)
+            }
+        }
+        document.triggerLayerUpdates(for: affectedLayers)
+
+        // Clear the delta AFTER snapshot is updated
         activeGradientDelta = nil
 
-        // Create and execute undo command - this will update the snapshot and trigger layer updates
+        // Create and execute undo command - this just records for undo, snapshot already updated
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
             target: .fill,
