@@ -89,6 +89,8 @@ class SlidingPopoverManager: NSObject, NSPopoverDelegate {
 
     /// Dismisses the popover
     func dismiss() {
+        // Clear callback BEFORE closing to prevent double-dismiss
+        dismissCallback = nil
         popover?.performClose(nil)
         popover = nil
         currentAnchorView = nil
@@ -101,8 +103,12 @@ class SlidingPopoverManager: NSObject, NSPopoverDelegate {
 
     // MARK: - NSPopoverDelegate
 
-    func popoverDidClose(_ notification: Notification) {
+    func popoverWillClose(_ notification: Notification) {
+        // Call callback BEFORE close to prevent stale updates
         dismissCallback?()
+    }
+
+    func popoverDidClose(_ notification: Notification) {
         dismissCallback = nil
         popover = nil
         currentAnchorView = nil

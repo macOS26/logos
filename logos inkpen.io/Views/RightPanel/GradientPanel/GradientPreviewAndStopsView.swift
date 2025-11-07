@@ -211,6 +211,7 @@ struct GradientPreviewAndStopsView: View {
     @State private var dragTranslation: CGSize = .zero
 
     @State private var isColorPickerOpen = false
+    @State private var isColorPickerDismissing = false
 
     /// Shows the popover for a specific gradient stop
     private func showPopoverForStop(_ stop: GradientStop) {
@@ -229,6 +230,7 @@ struct GradientPreviewAndStopsView: View {
             stopColor: stop.color,
             currentGradient: gradient,
             onColorChanged: { color in
+                guard !isColorPickerDismissing else { return }
                 activateGradientStop(stop.id, color)
             },
             onDismiss: {
@@ -248,9 +250,17 @@ struct GradientPreviewAndStopsView: View {
             edge: .leading,
             onDismiss: {
                 // Called when popover is dismissed by clicking outside
+                guard !isColorPickerDismissing else { return }
+                isColorPickerDismissing = true
+
                 onStopEditingChanged(false)
                 isColorPickerOpen = false
                 popoverStopID = nil
+
+                // Reset flag after a delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isColorPickerDismissing = false
+                }
             }
         )
         popoverStopID = stop.id
