@@ -254,26 +254,34 @@ struct GradientFillSection: View {
             normalizedAngle += 360
         }
 
+        print("🎨 GRADIENT ANGLE DRAG: Updating to \(normalizedAngle)")
+
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
             activeGradientDelta = currentGradient
+            print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
+            print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
         }
     }
 
     private func commitGradientChange() {
         guard currentGradient != nil else { return }
 
+        print("🎨 GRADIENT DRAG END: Committing gradient change")
+
         // Clear the delta
         activeGradientDelta = nil
+        print("🎨 GRADIENT DRAG END: Cleared activeGradientDelta")
 
         // Apply to document snapshot + record undo
         applyGradientToSelectedShapes()
+        print("🎨 GRADIENT DRAG END: Applied to snapshot + recorded undo")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
