@@ -29,6 +29,7 @@ struct GradientPreviewAndStopsView: View {
     @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
     @State private var popoverManager = SlidingPopoverManager()
     @State private var anchorViews: [UUID: NSView] = [:]
+    @FocusState private var focusedStopID: UUID?
     @Environment(AppState.self) private var appState
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
@@ -464,6 +465,17 @@ struct GradientPreviewAndStopsView: View {
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .frame(width: 40)
                                     .font(.system(size: 11))
+                                    .focused($focusedStopID, equals: stop.id)
+                                    .onChange(of: focusedStopID) { oldValue, newValue in
+                                        // When focus enters this field
+                                        if newValue == stop.id && oldValue != stop.id {
+                                            onStopEditingChanged(true)
+                                        }
+                                        // When focus leaves this field
+                                        else if oldValue == stop.id && newValue != stop.id {
+                                            onStopEditingChanged(false)
+                                        }
+                                    }
                                 }
                             }
 
