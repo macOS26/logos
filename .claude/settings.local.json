@@ -119,7 +119,8 @@
       "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && head -30 \"\"\"\"{}\"\"\"\" | grep -A 20 \"\"\"\"var body:\"\"\"\"')",
       "Bash(xcrun swift:*)",
       "Bash(xcrun swiftc:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
