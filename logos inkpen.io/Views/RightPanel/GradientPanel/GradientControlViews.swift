@@ -131,27 +131,7 @@ struct GradientAngleControlView: View {
                     Slider(value: Binding(
                         get: { angle },
                         set: { newAngle in
-                            // Update snapshot directly
-                            var layerIndices = Set<Int>()
-                            for objectID in document.viewState.selectedObjectIDs {
-                                if let obj = document.snapshot.objects[objectID] {
-                                    var shape = obj.shape
-                                    if let fillStyle = shape.fillStyle, var fillGradient = fillStyle.gradient {
-                                        switch fillGradient {
-                                        case .linear(var linear):
-                                            linear.angle = newAngle
-                                            fillGradient = .linear(linear)
-                                        case .radial(var radial):
-                                            radial.angle = newAngle
-                                            fillGradient = .radial(radial)
-                                        }
-                                        shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
-                                        document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                                        layerIndices.insert(obj.layerIndex)
-                                    }
-                                }
-                            }
-                            document.triggerLayerUpdates(for: layerIndices)
+                            // Only call callback - parent handles activeGradientDelta
                             onAngleChange(newAngle)
                         }
                     ), in: -180...180, onEditingChanged: { _ in
@@ -162,27 +142,7 @@ struct GradientAngleControlView: View {
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
                         setValue: { newAngle in
-                            // Update snapshot directly
-                            var layerIndices = Set<Int>()
-                            for objectID in document.viewState.selectedObjectIDs {
-                                if let obj = document.snapshot.objects[objectID] {
-                                    var shape = obj.shape
-                                    if let fillStyle = shape.fillStyle, var fillGradient = fillStyle.gradient {
-                                        switch fillGradient {
-                                        case .linear(var linear):
-                                            linear.angle = newAngle
-                                            fillGradient = .linear(linear)
-                                        case .radial(var radial):
-                                            radial.angle = newAngle
-                                            fillGradient = .radial(radial)
-                                        }
-                                        shape.fillStyle = FillStyle(gradient: fillGradient, opacity: fillStyle.opacity)
-                                        document.snapshot.objects[objectID] = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                                        layerIndices.insert(obj.layerIndex)
-                                    }
-                                }
-                            }
-                            document.triggerLayerUpdates(for: layerIndices)
+                            // Only call callback - parent handles activeGradientDelta
                             onAngleChange(newAngle)
                         }
                     ))
