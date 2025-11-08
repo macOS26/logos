@@ -33,6 +33,9 @@ struct MainView: View {
     @State private var strokeDeltaWidth: Double?
     @State private var activeGradientDelta: VectorGradient?
     @State private var fontSizeDelta: Double?
+    @State private var lineSpacingDelta: Double?
+    @State private var lineHeightDelta: Double?
+    @State private var letterSpacingDelta: Double?
     @State private var selectedLayerIndex: Int?
     @State private var processedLayersDuringDrag: Set<Int> = []
     @State private var processedObjectsDuringDrag: Set<UUID> = []
@@ -104,6 +107,9 @@ struct MainView: View {
                     strokeDeltaWidth: $strokeDeltaWidth,
                     activeGradientDelta: $activeGradientDelta,
                     fontSizeDelta: $fontSizeDelta,
+                    lineSpacingDelta: $lineSpacingDelta,
+                    lineHeightDelta: $lineHeightDelta,
+                    letterSpacingDelta: $letterSpacingDelta,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,
                     processedObjectsDuringDrag: $processedObjectsDuringDrag

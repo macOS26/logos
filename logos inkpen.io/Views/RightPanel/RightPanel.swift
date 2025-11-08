@@ -13,6 +13,9 @@ struct RightPanel: View {
     @Binding var strokeDeltaWidth: Double?
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var fontSizeDelta: Double?
+    @Binding var lineSpacingDelta: Double?
+    @Binding var lineHeightDelta: Double?
+    @Binding var letterSpacingDelta: Double?
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
@@ -163,7 +166,10 @@ struct RightPanel: View {
                         snapshot: snapshot,
                         selectedObjectIDs: viewState.selectedObjectIDs,
                         document: document,
-                        fontSizeDelta: $fontSizeDelta
+                        fontSizeDelta: $fontSizeDelta,
+                        lineSpacingDelta: $lineSpacingDelta,
+                        lineHeightDelta: $lineHeightDelta,
+                        letterSpacingDelta: $letterSpacingDelta
                     )
             }
         }
@@ -192,6 +198,9 @@ struct RightPanel: View {
         strokeDeltaWidth: .constant(nil),
         activeGradientDelta: .constant(nil),
         fontSizeDelta: .constant(nil),
+        lineSpacingDelta: .constant(nil),
+        lineHeightDelta: .constant(nil),
+        letterSpacingDelta: .constant(nil),
         selectedLayerIndex: .constant(nil),
         processedLayersDuringDrag: .constant([]),
         processedObjectsDuringDrag: .constant([])

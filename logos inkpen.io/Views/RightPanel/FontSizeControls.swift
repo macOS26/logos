@@ -9,6 +9,9 @@ struct FontSizeControls: View {
     let selectedText: VectorText?
     let editingText: VectorText?
     @Binding var fontSizeDelta: Double?
+    @Binding var lineSpacingDelta: Double?
+    @Binding var lineHeightDelta: Double?
+    @Binding var letterSpacingDelta: Double?
 
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
@@ -117,18 +120,18 @@ struct FontSizeControls: View {
                     set: { newSpacing in
                         let rounded = (newSpacing * 10).rounded() / 10
                         previewLineSpacing = rounded
-                        updateLineSpacing(rounded, isPreview: isDraggingLineSpacing)
+                        // During drag: ONLY update lineSpacingDelta for live preview
+                        lineSpacingDelta = Double(rounded)
                     }
                 ), in: 0...(currentFontSizeState / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
+                        // Drag ended: clear delta and commit actual change
+                        lineSpacingDelta = nil
                         if let preview = previewLineSpacing {
                             updateLineSpacing(preview, isPreview: false)
                         }
                         previewLineSpacing = nil
-                        if let textID = selectedObjectIDs.first {
-                            document.clearTextPreviewTypography(id: textID)
-                        }
                     }
                 })
                 .controlSize(.regular)
@@ -151,18 +154,18 @@ struct FontSizeControls: View {
                     set: { newHeight in
                         let rounded = (newHeight * 10).rounded() / 10
                         previewLineHeight = rounded
-                        updateLineHeight(rounded, isPreview: isDraggingLineHeight)
+                        // During drag: ONLY update lineHeightDelta for live preview
+                        lineHeightDelta = Double(rounded)
                     }
                 ), in: (currentFontSizeState / 2)...(currentFontSizeState * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
+                        // Drag ended: clear delta and commit actual change
+                        lineHeightDelta = nil
                         if let preview = previewLineHeight {
                             updateLineHeight(preview, isPreview: false)
                         }
                         previewLineHeight = nil
-                        if let textID = selectedObjectIDs.first {
-                            document.clearTextPreviewTypography(id: textID)
-                        }
                     }
                 })
                 .controlSize(.regular)
@@ -186,11 +189,14 @@ struct FontSizeControls: View {
                     set: { newSpacing in
                         let rounded = (newSpacing * 10).rounded() / 10
                         previewLetterSpacing = rounded
-                        updateLetterSpacing(rounded, isPreview: isDraggingLetterSpacing)
+                        // During drag: ONLY update letterSpacingDelta for live preview
+                        letterSpacingDelta = Double(rounded)
                     }
                 ), in: -10...20, onEditingChanged: { editing in
                     isDraggingLetterSpacing = editing
                     if !editing {
+                        // Drag ended: clear delta and commit actual change
+                        letterSpacingDelta = nil
                         if let preview = previewLetterSpacing {
                             updateLetterSpacing(preview, isPreview: false)
                         }

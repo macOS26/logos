@@ -29,6 +29,9 @@ struct DocumentBasedMainView: View {
     @State private var strokeDeltaWidth: Double? = nil
     @State private var activeGradientDelta: VectorGradient? = nil
     @State private var fontSizeDelta: Double? = nil
+    @State private var lineSpacingDelta: Double? = nil
+    @State private var lineHeightDelta: Double? = nil
+    @State private var letterSpacingDelta: Double? = nil
     @State private var selectedLayerIndex: Int? = nil
     @State private var processedLayersDuringDrag: Set<Int> = []
     @State private var processedObjectsDuringDrag: Set<UUID> = []
@@ -100,6 +103,9 @@ struct DocumentBasedMainView: View {
                     strokeDeltaWidth: $strokeDeltaWidth,
                     activeGradientDelta: $activeGradientDelta,
                     fontSizeDelta: $fontSizeDelta,
+                    lineSpacingDelta: $lineSpacingDelta,
+                    lineHeightDelta: $lineHeightDelta,
+                    letterSpacingDelta: $letterSpacingDelta,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,
                     processedObjectsDuringDrag: $processedObjectsDuringDrag

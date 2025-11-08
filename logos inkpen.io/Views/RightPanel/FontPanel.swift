@@ -5,6 +5,9 @@ struct FontPanel: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
     @Binding var fontSizeDelta: Double?
+    @Binding var lineSpacingDelta: Double?
+    @Binding var lineHeightDelta: Double?
+    @Binding var letterSpacingDelta: Double?
     @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
@@ -100,7 +103,10 @@ struct FontPanel: View {
                             document: document,
                             selectedText: selectedText,
                             editingText: editingText,
-                            fontSizeDelta: $fontSizeDelta
+                            fontSizeDelta: $fontSizeDelta,
+                            lineSpacingDelta: $lineSpacingDelta,
+                            lineHeightDelta: $lineHeightDelta,
+                            letterSpacingDelta: $letterSpacingDelta
                         )
 
                         FontAlignmentControls(
