@@ -27,17 +27,8 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
-        print("🟣 updateShapeByID: shapeID=\(shapeID)")
-        print("🟣 CALLER STACK:")
-        for (index, symbol) in Thread.callStackSymbols.prefix(8).enumerated() {
-            print("  [\(index)] \(symbol)")
-        }
-
-        var foundInTopLevel = false
-
         // Update in snapshot (primary) if exists as top-level
         if let object = snapshot.objects[shapeID] {
-            print("🟣 updateShapeByID: found in snapshot.objects as top-level")
             let layerIndex = object.layerIndex
             var updatedObject = object
 
@@ -78,20 +69,15 @@ extension VectorDocument {
             if !silent {
                 triggerLayerUpdate(for: layerIndex)
             }
-            print("🟣 updateShapeByID: updated top-level object")
-            foundInTopLevel = true
             // DON'T RETURN - also need to update in groups!
         }
 
-        print("🟣 updateShapeByID: searching groups for shape copies...")
         // ALSO check in groups for child shapes (even if found in top-level)
         for (groupID, groupObject) in snapshot.objects {
             switch groupObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
-                print("🟣 updateShapeByID: checking group \(groupID), isGroupContainer=\(groupShape.isGroupContainer), groupedShapes.count=\(groupShape.groupedShapes.count)")
                 if groupShape.isGroupContainer {
                     if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
-                        print("🟣 updateShapeByID: FOUND in group \(groupID) at index \(childIndex)!")
                         var childShape = groupShape.groupedShapes[childIndex]
                         update(&childShape)
                         groupShape.groupedShapes[childIndex] = childShape
@@ -114,17 +100,12 @@ extension VectorDocument {
                         if !silent {
                             triggerLayerUpdate(for: layerIndex)
                         }
-                        print("🟣 updateShapeByID: updated grouped object copy")
                         // Continue searching - might be in multiple groups
                     }
                 }
             default:
                 continue
             }
-        }
-
-        if !foundInTopLevel {
-            print("🟣 updateShapeByID: WARNING - shape not found in top-level snapshot.objects")
         }
     }
 
