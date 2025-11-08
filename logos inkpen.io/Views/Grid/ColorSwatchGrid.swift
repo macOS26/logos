@@ -112,6 +112,8 @@ struct ColorSwatchGrid: View {
     }
 
     var body: some View {
+        let _ = document.defaultFillColor  // Force re-render when defaultFillColor changes
+        let _ = document.defaultStrokeColor  // Force re-render when defaultStrokeColor changes
         VStack(spacing: 4) {
             ZStack {
                 Button {
