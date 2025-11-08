@@ -257,7 +257,7 @@ struct LayerCanvasView: View {
                                     layerContext.transform = contentTransform
 
                                     if VectorText.from(liveContentShape) != nil {
-                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                     } else if liveContentShape.embeddedImageData != nil {
                                         renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     } else {
@@ -293,7 +293,7 @@ struct LayerCanvasView: View {
                                 let liveContentNoClip = applyLivePositions(to: contentShape)
 
                                 if VectorText.from(liveContentNoClip) != nil {
-                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity)
+                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity)
                                 } else if liveContentNoClip.embeddedImageData != nil {
                                     renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 } else {
@@ -343,7 +343,7 @@ struct LayerCanvasView: View {
                                 layerContext.transform = contentTransform
 
                                 if VectorText.from(liveContentColorMode) != nil {
-                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: nil)
+                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                 } else if liveContentColorMode.embeddedImageData != nil {
                                     renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 } else {
@@ -391,7 +391,7 @@ struct LayerCanvasView: View {
                         let liveChildShape = applyLivePositions(to: childShape)
 
                         if VectorText.from(liveChildShape) != nil {
-                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                         } else if liveChildShape.embeddedImageData != nil {
                             renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         } else {
@@ -432,7 +432,7 @@ struct LayerCanvasView: View {
                     }()
                     let liveTextShape = applyLivePositions(to: shape)
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, maskShape: maskShape)
+                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                 }
             }
         }
@@ -831,7 +831,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, maskShape: VectorShape? = nil) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, fillDeltaOpacity: Double? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -848,7 +848,12 @@ struct LayerCanvasView: View {
                 cgContext.clip()
             }
 
-            cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
+            // Apply live fill opacity delta if dragging and selected
+            let effectiveFillOpacity = (fillDeltaOpacity != nil && isSelected)
+                ? fillDeltaOpacity!
+                : vectorText.typography.fillOpacity
+
+            cgContext.setAlpha(CGFloat(effectiveFillOpacity))
 
             // Apply live font size delta if dragging and selected
             let effectiveFontSize: CGFloat
