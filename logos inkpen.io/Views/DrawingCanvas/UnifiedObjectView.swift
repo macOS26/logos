@@ -67,6 +67,7 @@ struct LayerCanvasView: View {
     let strokeDeltaWidth: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
+    let fontSizeDelta: Double?
 
     var appState = AppState.shared
 
@@ -152,13 +153,14 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        let _ = print("🔵 LayerCanvasView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+        // let _ = print("🔵 LayerCanvasView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         Canvas { context, size in
             _ = objectUpdateTrigger
             _ = activeGradientDelta  // Force redraw when gradient changes
             _ = fillDeltaOpacity     // Force redraw when fill opacity changes
             _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
             _ = strokeDeltaWidth     // Force redraw when stroke width changes
+            _ = fontSizeDelta        // Force redraw when font size changes
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -430,7 +432,7 @@ struct LayerCanvasView: View {
                     }()
                     let liveTextShape = applyLivePositions(to: shape)
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, maskShape: maskShape)
+                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, maskShape: maskShape)
                 }
             }
         }
@@ -829,7 +831,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -848,6 +850,33 @@ struct LayerCanvasView: View {
 
             cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
+            // Apply live font size delta if dragging and selected
+            let effectiveFontSize = if let delta = fontSizeDelta, isSelected {
+                CGFloat(delta)
+            } else {
+                vectorText.typography.fontSize
+            }
+
+            // Create NSFont with effective size
+            let nsFont: NSFont = {
+                if let variant = vectorText.typography.fontVariant {
+                    let fontManager = NSFontManager.shared
+                    let members = fontManager.availableMembers(ofFontFamily: vectorText.typography.fontFamily) ?? []
+
+                    for member in members {
+                        if let postScriptName = member[0] as? String,
+                           let displayName = member[1] as? String,
+                           displayName == variant {
+                            if let font = NSFont(name: postScriptName, size: effectiveFontSize) {
+                                return font
+                            }
+                        }
+                    }
+                }
+
+                return NSFont(name: vectorText.typography.fontFamily, size: effectiveFontSize) ?? NSFont.systemFont(ofSize: effectiveFontSize)
+            }()
+
             // Build paragraph style once (O(1))
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
@@ -855,7 +884,6 @@ struct LayerCanvasView: View {
             paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
             paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
 
-            let nsFont = vectorText.typography.nsFont
             let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
 
             // Shared attributes to avoid duplicate dictionary creation
@@ -1017,6 +1045,7 @@ struct IsolatedLayerView: View {
     let strokeDeltaWidth: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
+    let fontSizeDelta: Double?
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1082,7 +1111,7 @@ struct IsolatedLayerView: View {
     }
 
     var body: some View {
-        let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+        // let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
@@ -1102,7 +1131,8 @@ struct IsolatedLayerView: View {
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
                 activeGradientDelta: $activeGradientDelta,
-                activeColorTarget: activeColorTarget
+                activeColorTarget: activeColorTarget,
+                fontSizeDelta: fontSizeDelta
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
