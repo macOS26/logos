@@ -527,10 +527,10 @@ struct VectorShape: Hashable, Identifiable {
 
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         // print("🟣 VectorShape.group() INPUT shapes count = \(shapes.count)")
-        for (index, shape) in shapes.enumerated() {
-            let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            // print("🟣 VectorShape.group() INPUT shapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        }
+        // for (index, shape) in shapes.enumerated() {
+        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
+        //     print("🟣 VectorShape.group() INPUT shapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+        // }
 
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
@@ -553,10 +553,10 @@ struct VectorShape: Hashable, Identifiable {
         }
 
         // print("🟣 VectorShape.group() FINAL preservedShapes count = \(preservedShapes.count)")
-        for (index, shape) in preservedShapes.enumerated() {
-            let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            // print("🟣 VectorShape.group() FINAL preservedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        }
+        // for (index, shape) in preservedShapes.enumerated() {
+        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
+        //     print("🟣 VectorShape.group() FINAL preservedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+        // }
 
         let groupPath = VectorPath(elements: [], isClosed: false)
         var groupShape = VectorShape(
@@ -579,10 +579,10 @@ struct VectorShape: Hashable, Identifiable {
         groupShape.bounds = calculatedGroupBounds
 
         // print("🟣 VectorShape.group() RESULT groupedShapes count = \(groupShape.groupedShapes.count)")
-        for (index, shape) in groupShape.groupedShapes.enumerated() {
-            let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            // print("🟣 VectorShape.group() RESULT groupedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        }
+        // for (index, shape) in groupShape.groupedShapes.enumerated() {
+        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
+        //     print("🟣 VectorShape.group() RESULT groupedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+        // }
 
         return groupShape
     }

@@ -406,9 +406,9 @@ struct GradientFillSection: View {
             newGradients[objectID] = newGradient
             if let obj = document.snapshot.objects[objectID] {
                 newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
-                if let fillGradient = obj.shape.fillStyle?.gradient {
-                    // print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
-                }
+                // if let fillGradient = obj.shape.fillStyle?.gradient {
+                //     print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
+                // }
             }
         }
 
@@ -427,13 +427,13 @@ struct GradientFillSection: View {
         // print("🎨 COMMIT END: Command executed")
 
         // Check snapshot after command
-        for objectID in selectedObjectIDs {
-            if let obj = document.snapshot.objects[objectID] {
-                if let fillGradient = obj.shape.fillStyle?.gradient {
-                    // print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
-                }
-            }
-        }
+        // for objectID in selectedObjectIDs {
+        //     if let obj = document.snapshot.objects[objectID] {
+        //         if let fillGradient = obj.shape.fillStyle?.gradient {
+        //             print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
+        //         }
+        //     }
+        // }
 
         // DON'T clear delta - snapshot is updated, delta will show same gradient anyway
         // Clearing it causes a flash because SwiftUI renders before snapshot propagates

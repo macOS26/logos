@@ -19,19 +19,19 @@ extension VectorDocument {
         }
 
         // print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
-        for (index, obj) in objectsToRemove.enumerated() {
-            let typeName: String
-            switch obj.objectType {
-            case .text: typeName = "TEXT"
-            case .shape: typeName = "SHAPE"
-            case .image: typeName = "IMAGE"
-            case .warp: typeName = "WARP"
-            case .group: typeName = "GROUP"
-            case .clipGroup: typeName = "CLIPGROUP"
-            case .clipMask: typeName = "CLIPMASK"
-            }
-            // print("🔴 GROUP: objectsToRemove[\(index)] = \(typeName) id=\(obj.id)")
-        }
+        // for (index, obj) in objectsToRemove.enumerated() {
+        //     let typeName: String
+        //     switch obj.objectType {
+        //     case .text: typeName = "TEXT"
+        //     case .shape: typeName = "SHAPE"
+        //     case .image: typeName = "IMAGE"
+        //     case .warp: typeName = "WARP"
+        //     case .group: typeName = "GROUP"
+        //     case .clipGroup: typeName = "CLIPGROUP"
+        //     case .clipMask: typeName = "CLIPMASK"
+        //     }
+        //     print("🔴 GROUP: objectsToRemove[\(index)] = \(typeName) id=\(obj.id)")
+        // }
 
         for obj in objectsToRemove {
             switch obj.objectType {
@@ -49,10 +49,10 @@ extension VectorDocument {
         let selectedShapes = getSelectedShapesInStackingOrder()
 
         // print("🔴 GROUP: selectedShapes count = \(selectedShapes.count)")
-        for (index, shape) in selectedShapes.enumerated() {
-            let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            // print("🔴 GROUP: selectedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        }
+        // for (index, shape) in selectedShapes.enumerated() {
+        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
+        //     print("🔴 GROUP: selectedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+        // }
 
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 

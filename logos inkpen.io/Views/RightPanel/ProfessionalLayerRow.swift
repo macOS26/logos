@@ -87,7 +87,8 @@ struct ProfessionalLayerRow: View {
     }
 
     var body: some View {
-        let triggerValue = document.viewState.layerUpdateTriggers[layer.id] ?? 0
+        // Trigger refresh when layer updates
+        // _ = document.viewState.layerUpdateTriggers[layer.id] ?? 0
 
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {

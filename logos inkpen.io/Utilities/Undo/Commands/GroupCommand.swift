@@ -87,12 +87,12 @@ class GroupCommand: BaseCommand {
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
 
             // Log group contents
-            if shape.isGroup || shape.isClippingGroup {
-                // print("🟣 GroupCommand: Created \(shape.isClippingGroup ? "CLIPGROUP" : "GROUP") with \(shape.groupedShapes.count) children")
-                for (idx, child) in shape.groupedShapes.enumerated() {
-                    // print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
-                }
-            }
+            // if shape.isGroup || shape.isClippingGroup {
+            //     print("🟣 GroupCommand: Created \(shape.isClippingGroup ? "CLIPGROUP" : "GROUP") with \(shape.groupedShapes.count) children")
+            //     for (idx, child) in shape.groupedShapes.enumerated() {
+            //         print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
+            //     }
+            // }
         }
 
         // print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
@@ -104,9 +104,9 @@ class GroupCommand: BaseCommand {
     override func undo(on document: VectorDocument) {
         // print("🔵 UNDO GROUP: operation=\(operation)")
         // print("🔵 UNDO GROUP: removedObjectIDs count=\(removedObjectIDs.count)")
-        for (i, id) in removedObjectIDs.enumerated() {
-            // print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
-        }
+        // for (i, id) in removedObjectIDs.enumerated() {
+        //     print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
+        // }
 
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
 

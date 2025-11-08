@@ -1086,7 +1086,7 @@ class ClipboardManager {
 
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
-            let originalSelectedObjectIDs = document.viewState.selectedObjectIDs
+            _ = document.viewState.selectedObjectIDs
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 

@@ -59,9 +59,9 @@ class GradientCommand: BaseCommand {
                         shape.fillStyle = FillStyle(gradient: gradient, opacity: opacity)
                         // print("⚡️ GradientCommand: AFTER fill = \(shape.fillStyle?.color ?? .clear)")
                         // print("⚡️ GradientCommand: AFTER stroke = \(shape.strokeStyle?.color ?? .clear)")
-                        if let fillGradient = shape.fillStyle?.gradient {
-                            // print("⚡️ GradientCommand: Applied gradient stops = \(fillGradient.stops.map { $0.color })")
-                        }
+                        // if shape.fillStyle?.gradient != nil {
+                        //     print("⚡️ GradientCommand: Applied gradient stops = \(fillGradient.stops.map { $0.color })")
+                        // }
                     }
                 case .stroke:
                     if let gradient = gradient {

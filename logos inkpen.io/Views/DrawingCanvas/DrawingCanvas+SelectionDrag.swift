@@ -98,18 +98,18 @@ extension DrawingCanvas {
         let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
         // Log selected objects during drag
-        for obj in selectedObjects {
-            let typeName = switch obj.objectType {
-                case .shape: "SHAPE"
-                case .text: "TEXT"
-                case .image: "IMAGE"
-                case .group: "GROUP"
-                case .clipGroup: "CLIPGROUP"
-                case .clipMask: "CLIPMASK"
-                case .warp: "WARP"
-            }
-            // print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
-        }
+        // for obj in selectedObjects {
+        //     let typeName = switch obj.objectType {
+        //         case .shape: "SHAPE"
+        //         case .text: "TEXT"
+        //         case .image: "IMAGE"
+        //         case .group: "GROUP"
+        //         case .clipGroup: "CLIPGROUP"
+        //         case .clipMask: "CLIPMASK"
+        //         case .warp: "WARP"
+        //     }
+        //     print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
+        // }
 
         for object in selectedObjects {
             if object.layerIndex < document.snapshot.layers.count {
@@ -495,7 +495,7 @@ extension DrawingCanvas {
 
         // Update child in parent group's groupedShapes array
         // print("🟠 DRAG END: Checking parent for childID=\(movedShape.id)")
-        if let parentGroup = document.findParentGroup(for: movedShape.id) {
+        if document.findParentGroup(for: movedShape.id) != nil {
             // print("🟠 DRAG END: Found parent group id=\(parentGroup.id), updating groupedShapes")
             if let updatedObject = document.snapshot.objects[movedShape.id] {
                 document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)

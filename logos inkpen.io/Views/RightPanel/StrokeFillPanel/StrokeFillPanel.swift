@@ -349,9 +349,9 @@ struct StrokeFillPanel: View {
 
             // print("🔹 Element \(elementIndex): \(elements[elementIndex])")
             // print("📋 BEFORE conversion - All elements:")
-            for (idx, el) in elements.enumerated() {
-                // print("   [\(idx)]: \(el)")
-            }
+            // for (idx, el) in elements.enumerated() {
+            //     print("   [\(idx)]: \(el)")
+            // }
 
             // Get anchor position
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
@@ -383,9 +383,9 @@ struct StrokeFillPanel: View {
             }
 
             // print("📋 AFTER line-to-curve conversion - All elements:")
-            for (idx, el) in elements.enumerated() {
-                // print("   [\(idx)]: \(el)")
-            }
+            // for (idx, el) in elements.enumerated() {
+            //     print("   [\(idx)]: \(el)")
+            // }
 
             // Modify the element and next element based on type
             switch type {
@@ -429,7 +429,7 @@ struct StrokeFillPanel: View {
                     if elements.count > 1 {
                         let lastIndex = elements.count - 1
                         switch elements[lastIndex] {
-                        case .curve(_, let from, _):
+                        case .curve(_, _, _):
                             // For closing curve, the previous position is where it comes from
                             if lastIndex > 0, case .line(let to) = elements[lastIndex - 1] {
                                 prevPos = CGPoint(x: to.x, y: to.y)
@@ -681,9 +681,9 @@ struct StrokeFillPanel: View {
             // print("📋 StrokeFillPanel: All anchor types for shape: \(shape.anchorTypes)")
 
             // print("📋 FINAL - All elements after conversion:")
-            for (idx, el) in elements.enumerated() {
-                // print("   [\(idx)]: \(el)")
-            }
+            // for (idx, el) in elements.enumerated() {
+            //     print("   [\(idx)]: \(el)")
+            // }
 
             // Update the shape
             shape.path = VectorPath(elements: elements)

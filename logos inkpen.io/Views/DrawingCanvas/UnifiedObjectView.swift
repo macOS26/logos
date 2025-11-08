@@ -195,9 +195,9 @@ struct LayerCanvasView: View {
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
                     // print("🔵 CLIPGROUP: maskShape.id=\(maskShape.id)")
-                    for (idx, child) in contentShapes.enumerated() {
-                        // print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
-                    }
+                    // for (idx, child) in contentShapes.enumerated() {
+                    //     print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
+                    // }
 
                     // Save parent's transform (includes drag delta if parent clipGroup is selected)
                     let parentTransform = context.transform
@@ -598,9 +598,9 @@ struct LayerCanvasView: View {
                 // Check for activeGradientDelta FIRST (for live preview during drag)
                 if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
                     // print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for shape \(shape.id)")
-                    if case .linear(let linear) = activeGradientDelta {
-                        // print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
-                    }
+                    // if case .linear(_) = activeGradientDelta {
+                    //     print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
+                    // }
 
                     // Create a fillStyle with activeGradientDelta and opacity
                     let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
