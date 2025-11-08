@@ -618,6 +618,68 @@ extension DrawingCanvas {
         return false
     }
 
+    private func applyPointUpdatesToShape(shapeID: UUID, pointUpdates: [(PointID, CGPoint)]) {
+        guard let object = document.snapshot.objects[shapeID],
+              case .shape(let shape) = object.objectType else { return }
+
+        var elements = shape.path.elements
+
+        // Apply all point updates to the elements array
+        for (pointID, newPosition) in pointUpdates {
+            guard pointID.elementIndex < elements.count else { continue }
+
+            let newPoint = VectorPoint(newPosition.x, newPosition.y)
+            let originalPosition: CGPoint
+
+            // Get original position
+            switch elements[pointID.elementIndex] {
+            case .move(let to), .line(let to):
+                originalPosition = CGPoint(x: to.x, y: to.y)
+            case .curve(let to, _, _):
+                originalPosition = CGPoint(x: to.x, y: to.y)
+            case .quadCurve(let to, _):
+                originalPosition = CGPoint(x: to.x, y: to.y)
+            case .close:
+                continue
+            }
+
+            let deltaX = newPosition.x - originalPosition.x
+            let deltaY = newPosition.y - originalPosition.y
+
+            // Update the point
+            switch elements[pointID.elementIndex] {
+            case .move(_):
+                elements[pointID.elementIndex] = .move(to: newPoint)
+            case .line(_):
+                elements[pointID.elementIndex] = .line(to: newPoint)
+            case .curve(let oldTo, let control1, let control2):
+                let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
+                let newControl1 = control1
+                let newControl2 = control2Collapsed ? newPoint : VectorPoint(control2.x + deltaX, control2.y + deltaY)
+                elements[pointID.elementIndex] = .curve(to: newPoint, control1: newControl1, control2: newControl2)
+            case .quadCurve(_, let control):
+                elements[pointID.elementIndex] = .quadCurve(to: newPoint, control: control)
+            case .close:
+                break
+            }
+
+            // Update next element's outgoing control if it's collapsed
+            if pointID.elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, let nextControl1, let nextControl2) = elements[pointID.elementIndex + 1] {
+                    let outgoingCollapsed = (abs(nextControl1.x - originalPosition.x) < 0.1 && abs(nextControl1.y - originalPosition.y) < 0.1)
+                    let newNextControl1 = outgoingCollapsed ? newPoint : VectorPoint(nextControl1.x + deltaX, nextControl1.y + deltaY)
+                    elements[pointID.elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
+                }
+            }
+        }
+
+        // Update shape once with all changes
+        document.updateShapeByID(shapeID, silent: true) { shape in
+            shape.path.elements = elements
+            shape.updateBounds()
+        }
+    }
+
     private func applyHandleUpdatesToShape(shapeID: UUID, handleUpdates: [(HandleID, CGPoint)]) {
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -749,8 +811,14 @@ extension DrawingCanvas {
         // We already calculated linked handles during drag, so skip recalculating them
         let originalSelectedHandles = selectedHandles  // Save current selection
 
+        // Group points by shapeID to batch updates
+        var pointsByShape: [UUID: [(PointID, CGPoint)]] = [:]
         for (pointID, livePosition) in livePointPositions {
-            movePointToAbsolutePosition(pointID, to: livePosition)
+            pointsByShape[pointID.shapeID, default: []].append((pointID, livePosition))
+        }
+
+        for (shapeID, points) in pointsByShape {
+            applyPointUpdatesToShape(shapeID: shapeID, pointUpdates: points)
         }
 
         // Group handles by shapeID to batch updates
@@ -1430,9 +1498,14 @@ extension DrawingCanvas {
             applyHandleUpdatesToShape(shapeID: shapeID, handleUpdates: handles)
         }
 
-        // Apply all live point positions (for line segment dragging)
+        // Apply all live point positions (for line segment dragging) - group by shape to batch updates
+        var pointsByShape: [UUID: [(PointID, CGPoint)]] = [:]
         for (pointID, livePosition) in livePointPositions {
-            movePointToAbsolutePosition(pointID, to: livePosition)
+            pointsByShape[pointID.shapeID, default: []].append((pointID, livePosition))
+        }
+
+        for (shapeID, points) in pointsByShape {
+            applyPointUpdatesToShape(shapeID: shapeID, pointUpdates: points)
         }
 
         // Clear live state
