@@ -180,60 +180,7 @@ extension FileOperations {
             throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
         }
 
-        let contentView = ZStack {
-            if includeBackground {
-                PasteboardBackgroundView(
-                    pasteboardSize: CGSize(
-                        width: document.settings.sizeInPoints.width * 10,
-                        height: document.settings.sizeInPoints.height * 10
-                    ),
-                    pasteboardOrigin: CGPoint(
-                        x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
-                        y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
-                    ),
-                    zoomLevel: scale,
-                    canvasOffset: .zero
-                )
-
-                CanvasBackgroundView(
-                    canvasSize: document.settings.sizeInPoints,
-                    backgroundColor: document.settings.backgroundColor.color,
-                    zoomLevel: scale,
-                    canvasOffset: .zero
-                )
-            }
-
-            // Render layers directly
-            ForEach(document.snapshot.layers.indices, id: \.self) { layerIndex in
-                if document.snapshot.layers[layerIndex].isVisible,
-                   layerIndex >= 2 { // Skip background layers
-                    let layer = document.snapshot.layers[layerIndex]
-                    IsolatedLayerView(
-                        objectIDs: layer.objectIDs,
-                        document: document,
-                        zoomLevel: scale,
-                        canvasOffset: .zero,
-                        selectedObjectIDs: [],
-                        viewMode: .color,
-                        dragPreviewDelta: .zero,
-                        dragPreviewTrigger: false,
-                        objectUpdateTrigger: 0,
-                        liveScaleTransform: .identity,
-                        layerOpacity: layer.opacity,
-                        layerBlendMode: layer.blendMode,
-                        livePointPositions: [:],
-                        liveHandlePositions: [:],
-                        fillDeltaOpacity: nil,
-                        strokeDeltaOpacity: nil,
-                        strokeDeltaWidth: nil,
-                        activeGradientDelta: nil,
-                        activeColorTarget: .fill
-                    )
-                }
-            }
-        }
-        .frame(width: outputSize.width, height: outputSize.height)
-        .background(Color.clear)
+        let contentView = PNGExportView(document: document, scale: scale, includeBackground: includeBackground, outputSize: outputSize)
 
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.frame = CGRect(origin: .zero, size: outputSize)
@@ -491,5 +438,71 @@ extension FileOperations {
         CTLineDraw(line, context)
 
         context.restoreGState()
+    }
+}
+
+// Helper view for PNG export with @State binding support
+private struct PNGExportView: View {
+    let document: VectorDocument
+    let scale: CGFloat
+    let includeBackground: Bool
+    let outputSize: CGSize
+    @State private var activeGradientDelta: VectorGradient? = nil
+
+    var body: some View {
+        ZStack {
+            if includeBackground {
+                PasteboardBackgroundView(
+                    pasteboardSize: CGSize(
+                        width: document.settings.sizeInPoints.width * 10,
+                        height: document.settings.sizeInPoints.height * 10
+                    ),
+                    pasteboardOrigin: CGPoint(
+                        x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
+                        y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
+                    ),
+                    zoomLevel: scale,
+                    canvasOffset: .zero
+                )
+
+                CanvasBackgroundView(
+                    canvasSize: document.settings.sizeInPoints,
+                    backgroundColor: document.settings.backgroundColor.color,
+                    zoomLevel: scale,
+                    canvasOffset: .zero
+                )
+            }
+
+            // Render layers directly
+            ForEach(document.snapshot.layers.indices, id: \.self) { layerIndex in
+                if document.snapshot.layers[layerIndex].isVisible,
+                   layerIndex >= 2 { // Skip background layers
+                    let layer = document.snapshot.layers[layerIndex]
+                    IsolatedLayerView(
+                        objectIDs: layer.objectIDs,
+                        document: document,
+                        zoomLevel: scale,
+                        canvasOffset: .zero,
+                        selectedObjectIDs: [],
+                        viewMode: .color,
+                        dragPreviewDelta: .zero,
+                        dragPreviewTrigger: false,
+                        objectUpdateTrigger: 0,
+                        liveScaleTransform: .identity,
+                        layerOpacity: layer.opacity,
+                        layerBlendMode: layer.blendMode,
+                        livePointPositions: [:],
+                        liveHandlePositions: [:],
+                        fillDeltaOpacity: nil,
+                        strokeDeltaOpacity: nil,
+                        strokeDeltaWidth: nil,
+                        activeGradientDelta: $activeGradientDelta,
+                        activeColorTarget: .fill
+                    )
+                }
+            }
+        }
+        .frame(width: outputSize.width, height: outputSize.height)
+        .background(Color.clear)
     }
 }

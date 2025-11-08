@@ -65,7 +65,7 @@ struct LayerCanvasView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
-    let activeGradientDelta: VectorGradient?
+    @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
 
     var appState = AppState.shared
@@ -1010,7 +1010,7 @@ struct IsolatedLayerView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
-    let activeGradientDelta: VectorGradient?
+    @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
 
     // Compute objects fresh from snapshot on every render
@@ -1095,7 +1095,7 @@ struct IsolatedLayerView: View {
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
-                activeGradientDelta: activeGradientDelta,
+                activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: activeColorTarget
             )
 
