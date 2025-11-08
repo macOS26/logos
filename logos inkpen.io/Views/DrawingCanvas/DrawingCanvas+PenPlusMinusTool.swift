@@ -11,10 +11,9 @@ extension DrawingCanvas {
             return
         }
 
-        if let segmentHit = findCurveSegmentAt(location: location, tolerance: tolerance) {
-            insertPointOnCurve(
-                layerIndex: segmentHit.layerIndex,
-                shapeIndex: segmentHit.shapeIndex,
+        if let segmentHit = findSegmentAt(location: location, tolerance: tolerance) {
+            insertPointOnSegment(
+                shapeID: segmentHit.shapeID,
                 elementIndex: segmentHit.elementIndex,
                 at: location
             )
@@ -23,17 +22,12 @@ extension DrawingCanvas {
 
     }
 
-    private func insertPointOnCurve(layerIndex: Int, shapeIndex: Int, elementIndex: Int, at location: CGPoint) {
-        guard layerIndex < document.snapshot.layers.count,
-              shapeIndex < document.getShapeCount(layerIndex: layerIndex),
-              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+    private func insertPointOnSegment(shapeID: UUID, elementIndex: Int, at location: CGPoint) {
+        guard let object = document.snapshot.objects[shapeID],
+              case .shape(let shape) = object.objectType,
               elementIndex < shape.path.elements.count else { return }
 
         let element = shape.path.elements[elementIndex]
-
-        guard case .curve(let to, let control1, let control2) = element else {
-            return
-        }
 
         let oldPath = shape.path
         var startPoint: VectorPoint
@@ -49,56 +43,98 @@ extension DrawingCanvas {
             return
         }
 
-        let t = findParametricValueOnCurve(
-            start: CGPoint(x: startPoint.x, y: startPoint.y),
-            control1: CGPoint(x: control1.x, y: control1.y),
-            control2: CGPoint(x: control2.x, y: control2.y),
-            end: CGPoint(x: to.x, y: to.y),
-            targetPoint: location
-        )
+        var elements = shape.path.elements
 
-        let splitResult = splitCubicBezierAt(
-            p0: CGPoint(x: startPoint.x, y: startPoint.y),
-            p1: CGPoint(x: control1.x, y: control1.y),
-            p2: CGPoint(x: control2.x, y: control2.y),
-            p3: CGPoint(x: to.x, y: to.y),
-            t: t
-        )
+        switch element {
+        case .curve(let to, let control1, let control2):
+            // Split curve into two curves
+            let t = findParametricValueOnCurve(
+                start: CGPoint(x: startPoint.x, y: startPoint.y),
+                control1: CGPoint(x: control1.x, y: control1.y),
+                control2: CGPoint(x: control2.x, y: control2.y),
+                end: CGPoint(x: to.x, y: to.y),
+                targetPoint: location
+            )
 
-        let firstCurve = PathElement.curve(
-            to: VectorPoint(splitResult.splitPoint),
-            control1: VectorPoint(splitResult.leftControl1),
-            control2: VectorPoint(splitResult.leftControl2),
-        )
+            let splitResult = splitCubicBezierAt(
+                p0: CGPoint(x: startPoint.x, y: startPoint.y),
+                p1: CGPoint(x: control1.x, y: control1.y),
+                p2: CGPoint(x: control2.x, y: control2.y),
+                p3: CGPoint(x: to.x, y: to.y),
+                t: t
+            )
 
-        let secondCurve = PathElement.curve(
-            to: to,
-            control1: VectorPoint(splitResult.rightControl1),
-            control2: VectorPoint(splitResult.rightControl2),
-        )
+            let firstCurve = PathElement.curve(
+                to: VectorPoint(splitResult.splitPoint),
+                control1: VectorPoint(splitResult.leftControl1),
+                control2: VectorPoint(splitResult.leftControl2)
+            )
+
+            let secondCurve = PathElement.curve(
+                to: to,
+                control1: VectorPoint(splitResult.rightControl1),
+                control2: VectorPoint(splitResult.rightControl2)
+            )
+
+            elements[elementIndex] = firstCurve
+            elements.insert(secondCurve, at: elementIndex + 1)
+
+        case .line(let to):
+            // Split line into two lines
+            let start = CGPoint(x: startPoint.x, y: startPoint.y)
+            let end = CGPoint(x: to.x, y: to.y)
+
+            // Find closest point on line to click location
+            let t = closestPointOnLineSegment(point: location, start: start, end: end)
+            let splitPoint = CGPoint(
+                x: start.x + t * (end.x - start.x),
+                y: start.y + t * (end.y - start.y)
+            )
+
+            let firstLine = PathElement.line(to: VectorPoint(splitPoint))
+            let secondLine = PathElement.line(to: to)
+
+            elements[elementIndex] = firstLine
+            elements.insert(secondLine, at: elementIndex + 1)
+
+        default:
+            return
+        }
 
         var modifiedShape = shape
-        var elements = modifiedShape.path.elements
-        elements[elementIndex] = firstCurve
-        elements.insert(secondCurve, at: elementIndex + 1)
-
         modifiedShape.path.elements = elements
         modifiedShape.updateBounds()
 
         let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
-        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
+        document.updateShapeByID(shapeID) { shape in
+            shape.path = newPath
+            shape.updateBounds()
+        }
 
         let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
         document.commandManager.execute(command)
     }
 
-    private func deletePointWithCurvePreservation(pointID: PointID) {
-        guard let unifiedObject = document.findObject(by: pointID.shapeID),
-              case .shape(let shape) = unifiedObject.objectType else { return }
+    private func closestPointOnLineSegment(point: CGPoint, start: CGPoint, end: CGPoint) -> Double {
+        let A = point.x - start.x
+        let B = point.y - start.y
+        let C = end.x - start.x
+        let D = end.y - start.y
+        let dot = A * C + B * D
+        let lenSq = C * C + D * D
 
-        let layerIndex = unifiedObject.layerIndex
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }) else { return }
+        if lenSq == 0 {
+            return 0.0
+        }
+
+        var param = dot / lenSq
+        param = max(0.0, min(1.0, param))
+        return param
+    }
+
+    private func deletePointWithCurvePreservation(pointID: PointID) {
+        guard let object = document.snapshot.objects[pointID.shapeID],
+              case .shape(let shape) = object.objectType else { return }
         let elements = shape.path.elements
 
         guard pointID.elementIndex < elements.count else { return }
@@ -131,12 +167,11 @@ extension DrawingCanvas {
                 pointIndex: pointID.elementIndex
             )
 
-            var modifiedShape = shape
-            modifiedShape.path.elements = updatedElements
-            modifiedShape.updateBounds()
-
             let newPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
+            document.updateShapeByID(pointID.shapeID) { shape in
+                shape.path = newPath
+                shape.updateBounds()
+            }
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -167,14 +202,10 @@ extension DrawingCanvas {
         return nil
     }
 
-    private func findCurveSegmentAt(location: CGPoint, tolerance: Double) -> (layerIndex: Int, shapeIndex: Int, elementIndex: Int)? {
-        for newVectorObject in document.snapshot.objects.values.reversed() {
-            if case .shape(let shape) = newVectorObject.objectType {
+    private func findSegmentAt(location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
+        for object in document.snapshot.objects.values.reversed() {
+            if case .shape(let shape) = object.objectType {
                 if !shape.isVisible || shape.isLocked { continue }
-
-                let layerIndex = newVectorObject.layerIndex
-                let shapesInLayer = document.getShapesForLayer(layerIndex)
-                guard let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == shape.id }) else { continue }
 
                 var previousPoint: VectorPoint?
 
@@ -188,7 +219,7 @@ extension DrawingCanvas {
                             let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
 
                             if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
-                                return (layerIndex, shapeIndex, elementIndex)
+                                return (shape.id, elementIndex)
                             }
                         }
                         previousPoint = to
@@ -200,7 +231,7 @@ extension DrawingCanvas {
                             let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
 
                             if isPointNearBezierCurve(point: location, p0: start, p1: c1, p2: c2, p3: end, tolerance: tolerance) {
-                                return (layerIndex, shapeIndex, elementIndex)
+                                return (shape.id, elementIndex)
                             }
                         }
                         previousPoint = to
