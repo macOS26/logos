@@ -406,10 +406,12 @@ struct GradientFillSection: View {
         for objectID in selectedObjectIDs {
             newGradients[objectID] = newGradient
             if let obj = document.snapshot.objects[objectID] {
-                newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
-                // if let fillGradient = obj.shape.fillStyle?.gradient {
-                //     print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
-                // }
+                // Use the correct opacity based on activeColorTarget
+                if activeColorTarget == .fill {
+                    newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
+                } else {
+                    newOpacities[objectID] = obj.shape.strokeStyle?.opacity ?? 1.0
+                }
             }
         }
 
