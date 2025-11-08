@@ -655,15 +655,6 @@ struct GradientFillSection: View {
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
                 print("🎨🎨🎨 updateStopColor: SET activeGradientDelta for LINEAR")
-
-                // Update toolbar active color to show the GRADIENT, not the solid color
-                if activeColorTarget == .fill {
-                    print("🎨🎨🎨 updateStopColor: Setting FILL gradient")
-                    document.defaultFillColor = .gradient(.linear(linear))
-                } else {
-                    print("🎨🎨🎨 updateStopColor: Setting STROKE gradient")
-                    document.defaultStrokeColor = .gradient(.linear(linear))
-                }
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
@@ -671,15 +662,6 @@ struct GradientFillSection: View {
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
                 print("🎨🎨🎨 updateStopColor: SET activeGradientDelta for RADIAL")
-
-                // Update toolbar active color to show the GRADIENT, not the solid color
-                if activeColorTarget == .fill {
-                    print("🎨🎨🎨 updateStopColor: Setting FILL gradient")
-                    document.defaultFillColor = .gradient(.radial(radial))
-                } else {
-                    print("🎨🎨🎨 updateStopColor: Setting STROKE gradient")
-                    document.defaultStrokeColor = .gradient(.radial(radial))
-                }
             }
         }
     }
