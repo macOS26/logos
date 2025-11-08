@@ -866,20 +866,19 @@ extension ProfessionalPathOperations {
 
 extension ProfessionalPathOperations {
 
-    static func testDuplicatePointMerger() {
-        let testElements: [PathElement] = [
-            .move(to: VectorPoint(0, 0)),
-            .line(to: VectorPoint(100, 0)),
-            .line(to: VectorPoint(100, 0)),
-            .curve(to: VectorPoint(200, 100), control1: VectorPoint(150, 0), control2: VectorPoint(200, 50)),
-            .line(to: VectorPoint(200, 100)),
-            .line(to: VectorPoint(100, 200)),
-            .line(to: VectorPoint(0, 100)),
-            .close
-        ]
-
-        let testPath = VectorPath(elements: testElements, isClosed: true)
-
-        _ = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
-    }
+    // static func testDuplicatePointMerger() {
+    //     let testElements: [PathElement] = [
+    //         .move(to: VectorPoint(0, 0)),
+    //         .line(to: VectorPoint(100, 0)),
+    //         .line(to: VectorPoint(100, 0)),
+    //         .curve(to: VectorPoint(200, 100), control1: VectorPoint(150, 0), control2: VectorPoint(200, 50)),
+    //         .line(to: VectorPoint(200, 100)),
+    //         .line(to: VectorPoint(100, 200)),
+    //         .line(to: VectorPoint(0, 100)),
+    //         .close
+    //     ]
+    //
+    //     let testPath = VectorPath(elements: testElements, isClosed: true)
+    //     _ = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
+    // }
 }

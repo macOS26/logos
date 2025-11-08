@@ -398,11 +398,11 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("k", modifiers: [.command, .option])
                     .help("Clean duplicate points in all shapes in the document")
 
-                    Button("Test Duplicate Point Merger") {
-                        documentState?.testDuplicatePointMerger()
-                    }
-                    .keyboardShortcut("k", modifiers: [.command, .shift, .option])
-                    .help("Run a test to verify the duplicate point merger works correctly")
+                    // Button("Test Duplicate Point Merger") {
+                    //     documentState?.testDuplicatePointMerger()
+                    // }
+                    // .keyboardShortcut("k", modifiers: [.command, .shift, .option])
+                    // .help("Run a test to verify the duplicate point merger works correctly")
                 }
 
                 CommandMenu("Panel") {
@@ -1086,7 +1086,6 @@ class ClipboardManager {
 
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
-            _ = document.viewState.selectedObjectIDs
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 

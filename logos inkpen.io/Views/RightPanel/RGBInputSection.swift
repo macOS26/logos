@@ -354,7 +354,6 @@ struct RGBInputSection: View {
             colorDeltaOpacity = nil
 
             // Update defaults
-            _ = redValue / 255.0
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorRed(
             //     normalizedValue,
@@ -395,7 +394,6 @@ struct RGBInputSection: View {
             colorDeltaOpacity = nil
 
             // Update defaults
-            _ = greenValue / 255.0
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorGreen(
             //     normalizedValue,
@@ -436,7 +434,6 @@ struct RGBInputSection: View {
             colorDeltaOpacity = nil
 
             // Update defaults
-            _ = blueValue / 255.0
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorBlue(
             //     normalizedValue,

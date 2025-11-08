@@ -1115,9 +1115,9 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
-    func testDuplicatePointMerger() {
-        ProfessionalPathOperations.testDuplicatePointMerger()
-    }
+    // func testDuplicatePointMerger() {
+    //     ProfessionalPathOperations.testDuplicatePointMerger()
+    // }
 
     func switchToTool(_ tool: DrawingTool) {
         guard let document = document else { return }
