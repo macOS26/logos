@@ -278,8 +278,6 @@ extension DrawingCanvas {
                                 return (shape.id, elementIndex)
                             }
                         }
-                    default:
-                        break
                     }
                 }
             }

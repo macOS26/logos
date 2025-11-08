@@ -486,7 +486,7 @@ extension DrawingCanvas {
 
         // If dragging first curve's outgoing handle (control1) -> update last curve's incoming handle (control2)
         if handleID.handleType == .control2 && handleID.elementIndex == 0 {
-            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
+            if case .curve(_, _, _) = elements[lastElementIndex],
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -501,7 +501,7 @@ extension DrawingCanvas {
 
         // If dragging last curve's incoming handle (control2) -> update first curve's outgoing handle (control1)
         if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
-            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
+            if elements.count > 1, case .curve(_, _, _) = elements[1],
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -516,7 +516,7 @@ extension DrawingCanvas {
 
         // If dragging first curve's outgoing handle (control1 at element 1) -> update last curve's incoming handle
         if handleID.handleType == .control1 && handleID.elementIndex == 1 {
-            if case .curve(_, _, let lastControl2) = elements[lastElementIndex],
+            if case .curve(_, _, _) = elements[lastElementIndex],
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -531,7 +531,7 @@ extension DrawingCanvas {
 
         // If dragging next curve's outgoing handle (control1) -> update first curve's outgoing handle
         if handleID.handleType == .control1 && handleID.elementIndex == lastElementIndex {
-            if elements.count > 1, case .curve(_, let secondControl1, _) = elements[1],
+            if elements.count > 1, case .curve(_, _, _) = elements[1],
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
