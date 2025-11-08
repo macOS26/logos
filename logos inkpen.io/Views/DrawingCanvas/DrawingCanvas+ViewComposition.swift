@@ -175,7 +175,7 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy) -> some View {
+    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
         let layerBlendMode = layer.blendMode
 
@@ -241,7 +241,8 @@ extension DrawingCanvas {
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
                 activeGradientDelta: $activeGradientDelta,
-                activeColorTarget: document.viewState.activeColorTarget
+                activeColorTarget: document.viewState.activeColorTarget,
+                fontSizeDelta: fontSizeDelta
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
             .allowsHitTesting(isActiveLayer)
@@ -254,7 +255,7 @@ extension DrawingCanvas {
             // Render layers with background fills for special layers
             ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
                 if layer.isVisible {
-                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry)
+                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta)
                 }
             }
 
