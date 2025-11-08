@@ -8,6 +8,8 @@ struct VerticalToolbar: View {
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @Binding var colorDeltaBlendMode: BlendMode?
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
     @StateObject private var toolGroupManager = ToolGroupManager.shared
 
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -264,7 +266,9 @@ struct VerticalToolbar: View {
 
                     ToolSection {
                         ColorSwatchGrid(
-                            document: document
+                            document: document,
+                            defaultFillColor: $defaultFillColor,
+                            defaultStrokeColor: $defaultStrokeColor
                         )
                     }
 
@@ -474,7 +478,9 @@ struct VerticalToolbarButton: View {
         document: doc,
         colorDeltaColor: .constant(nil),
         colorDeltaOpacity: .constant(nil),
-        colorDeltaBlendMode: .constant(nil)
+        colorDeltaBlendMode: .constant(nil),
+        defaultFillColor: .constant(.white),
+        defaultStrokeColor: .constant(.black)
     )
     .frame(height: 600)
 }

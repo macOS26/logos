@@ -42,7 +42,15 @@ struct DocumentBasedMainView: View {
                     document: document,
                     colorDeltaColor: $colorDeltaColor,
                     colorDeltaOpacity: $colorDeltaOpacity,
-                    colorDeltaBlendMode: $colorDeltaBlendMode
+                    colorDeltaBlendMode: $colorDeltaBlendMode,
+                    defaultFillColor: Binding(
+                        get: { document.defaultFillColor },
+                        set: { document.defaultFillColor = $0 }
+                    ),
+                    defaultStrokeColor: Binding(
+                        get: { document.defaultStrokeColor },
+                        set: { document.defaultStrokeColor = $0 }
+                    )
                 )
                 .frame(width: 48)
                 .contentShape(Rectangle())

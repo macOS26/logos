@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ColorSwatchGrid: View {
     @ObservedObject var document: VectorDocument
+    @Binding var defaultFillColor: VectorColor
+    @Binding var defaultStrokeColor: VectorColor
     @Environment(AppState.self) private var appState
     @State private var selectedFillColor: VectorColor = .white
     @State private var selectedStrokeColor: VectorColor = .black
@@ -35,7 +37,7 @@ struct ColorSwatchGrid: View {
             }
         }
 
-        return document.defaultFillColor
+        return defaultFillColor
     }
 
     private var currentStrokeColor: VectorColor {
@@ -62,7 +64,7 @@ struct ColorSwatchGrid: View {
             }
         }
 
-        return document.defaultStrokeColor
+        return defaultStrokeColor
     }
 
     private var currentFillOpacity: Double {
@@ -112,8 +114,6 @@ struct ColorSwatchGrid: View {
     }
 
     var body: some View {
-        let _ = document.defaultFillColor  // Force re-render when defaultFillColor changes
-        let _ = document.defaultStrokeColor  // Force re-render when defaultStrokeColor changes
         VStack(spacing: 4) {
             ZStack {
                 Button {
