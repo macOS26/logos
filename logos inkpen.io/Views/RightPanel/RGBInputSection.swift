@@ -316,6 +316,13 @@ struct RGBInputSection: View {
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+
+            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            if activeColorTarget == .fill {
+                defaultFillColor = previewColor
+            } else {
+                defaultStrokeColor = previewColor
+            }
         }
         // All other updates happen on drag end
     }
@@ -327,6 +334,13 @@ struct RGBInputSection: View {
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+
+            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            if activeColorTarget == .fill {
+                defaultFillColor = previewColor
+            } else {
+                defaultStrokeColor = previewColor
+            }
         }
         // All other updates happen on drag end
     }
@@ -338,6 +352,13 @@ struct RGBInputSection: View {
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+
+            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            if activeColorTarget == .fill {
+                defaultFillColor = previewColor
+            } else {
+                defaultStrokeColor = previewColor
+            }
         }
         // All other updates happen on drag end
     }
