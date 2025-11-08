@@ -28,6 +28,8 @@ extension VectorDocument {
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
         print("🟣 updateShapeByID: shapeID=\(shapeID)")
+        let callers = Thread.callStackSymbols.prefix(6).map { String($0.split(separator: " ").last ?? "") }
+        print("🟣 CALLER: \(callers.joined(separator: " <- "))")
 
         var foundInTopLevel = false
 
