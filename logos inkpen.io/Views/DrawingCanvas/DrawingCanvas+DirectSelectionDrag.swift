@@ -618,6 +618,44 @@ extension DrawingCanvas {
         return false
     }
 
+    private func applyHandleUpdatesToShape(shapeID: UUID, handleUpdates: [(HandleID, CGPoint)]) {
+        guard let object = document.snapshot.objects[shapeID],
+              case .shape(let shape) = object.objectType else { return }
+
+        var elements = shape.path.elements
+
+        // Apply all handle updates to the elements array
+        for (handleID, newPosition) in handleUpdates {
+            guard handleID.elementIndex < elements.count else { continue }
+
+            let newHandle = VectorPoint(newPosition.x, newPosition.y)
+
+            switch elements[handleID.elementIndex] {
+            case .curve(let to, let control1, let control2):
+                if handleID.handleType == .control1 {
+                    elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
+                } else {
+                    elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
+                }
+            case .quadCurve(let to, _):
+                if handleID.handleType == .control1 {
+                    elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
+                }
+            default:
+                break
+            }
+
+            // Handle coincident points for smooth tangency
+            let _ = handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
+        }
+
+        // Update shape once with all changes
+        document.updateShapeByID(shapeID, silent: true) { shape in
+            shape.path.elements = elements
+            shape.updateBounds()
+        }
+    }
+
     private func moveHandleToAbsolutePositionWithoutLinked(_ handleID: HandleID, to newPosition: CGPoint) {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -715,8 +753,15 @@ extension DrawingCanvas {
             movePointToAbsolutePosition(pointID, to: livePosition)
         }
 
+        // Group handles by shapeID to batch updates
+        var handlesByShape: [UUID: [(HandleID, CGPoint)]] = [:]
         for (handleID, livePosition) in liveHandlePositions {
-            moveHandleToAbsolutePositionWithoutLinked(handleID, to: livePosition)
+            handlesByShape[handleID.shapeID, default: []].append((handleID, livePosition))
+        }
+
+        // Update each shape once with all its handle changes
+        for (shapeID, handles) in handlesByShape {
+            applyHandleUpdatesToShape(shapeID: shapeID, handleUpdates: handles)
         }
 
         // Restore original selection (don't select auto-calculated linked handles)
@@ -1375,9 +1420,14 @@ extension DrawingCanvas {
             return
         }
 
-        // Apply all live handle positions
+        // Apply all live handle positions - group by shape to batch updates
+        var handlesByShape: [UUID: [(HandleID, CGPoint)]] = [:]
         for (handleID, livePosition) in liveHandlePositions {
-            moveHandleToAbsolutePositionWithoutLinked(handleID, to: livePosition)
+            handlesByShape[handleID.shapeID, default: []].append((handleID, livePosition))
+        }
+
+        for (shapeID, handles) in handlesByShape {
+            applyHandleUpdatesToShape(shapeID: shapeID, handleUpdates: handles)
         }
 
         // Apply all live point positions (for line segment dragging)
