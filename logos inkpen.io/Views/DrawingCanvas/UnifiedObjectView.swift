@@ -851,10 +851,17 @@ struct LayerCanvasView: View {
             cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
             // Apply live font size delta if dragging and selected
-            let effectiveFontSize = if let delta = fontSizeDelta, isSelected {
-                CGFloat(delta)
+            let effectiveFontSize: CGFloat
+            let effectiveLineHeight: CGFloat
+
+            if let delta = fontSizeDelta, isSelected {
+                // Calculate proportional line height based on original ratio
+                let lineHeightRatio = vectorText.typography.lineHeight / vectorText.typography.fontSize
+                effectiveFontSize = CGFloat(delta)
+                effectiveLineHeight = effectiveFontSize * lineHeightRatio
             } else {
-                vectorText.typography.fontSize
+                effectiveFontSize = vectorText.typography.fontSize
+                effectiveLineHeight = vectorText.typography.lineHeight
             }
 
             // Create NSFont with effective size
@@ -881,8 +888,8 @@ struct LayerCanvasView: View {
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
             paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
-            paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
-            paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+            paragraphStyle.minimumLineHeight = effectiveLineHeight
+            paragraphStyle.maximumLineHeight = effectiveLineHeight
 
             let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
 
