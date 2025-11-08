@@ -13,12 +13,15 @@ struct FontSizeControls: View {
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
     @State private var isDraggingLineHeight = false
+    @State private var isDraggingLetterSpacing = false
     @State private var previewFontSize: CGFloat? = nil
     @State private var previewLineSpacing: CGFloat? = nil
     @State private var previewLineHeight: CGFloat? = nil
+    @State private var previewLetterSpacing: CGFloat? = nil
     @State private var currentFontSizeState: CGFloat = 12.0
     @State private var currentLineSpacingState: CGFloat = 0.0
     @State private var currentLineHeightState: CGFloat = 12.0
+    @State private var currentLetterSpacingState: CGFloat = 0.0
 
     private var currentFontSize: CGFloat {
         if let selectedText = selectedText {
@@ -47,6 +50,16 @@ struct FontSizeControls: View {
             return editingText.typography.lineHeight
         } else {
             return selectedLineHeight
+        }
+    }
+
+    private var currentLetterSpacing: CGFloat {
+        if let selectedText = selectedText {
+            return selectedText.typography.letterSpacing
+        } else if let editingText = editingText {
+            return editingText.typography.letterSpacing
+        } else {
+            return 0.0
         }
     }
 
@@ -154,6 +167,38 @@ struct FontSizeControls: View {
                 })
                 .controlSize(.regular)
             }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Letter Spacing")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    let spacing = previewLetterSpacing ?? currentLetterSpacingState
+                    Text(spacing == 0 ? "0 pt" : String(format: "%.1f pt", spacing))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Slider(value: Binding(
+                    get: { previewLetterSpacing ?? currentLetterSpacingState },
+                    set: { newSpacing in
+                        let rounded = (newSpacing * 10).rounded() / 10
+                        previewLetterSpacing = rounded
+                        updateLetterSpacing(rounded, isPreview: isDraggingLetterSpacing)
+                    }
+                ), in: -10...20, onEditingChanged: { editing in
+                    isDraggingLetterSpacing = editing
+                    if !editing {
+                        if let preview = previewLetterSpacing {
+                            updateLetterSpacing(preview, isPreview: false)
+                        }
+                        previewLetterSpacing = nil
+                    }
+                })
+                .controlSize(.regular)
+            }
         }
         .onAppear {
             syncFontStates()
@@ -178,6 +223,7 @@ struct FontSizeControls: View {
         currentFontSizeState = currentFontSize
         currentLineSpacingState = currentLineSpacing
         currentLineHeightState = currentLineHeight
+        currentLetterSpacingState = currentLetterSpacing
     }
 
     private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
@@ -234,5 +280,20 @@ struct FontSizeControls: View {
         }
 
         document.fontManager.selectedLineHeight = Double(newHeight)
+    }
+
+    private func updateLetterSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
+        currentLetterSpacingState = newSpacing
+
+        for textID in selectedObjectIDs {
+            document.updateShapeByID(textID) { shape in
+                var typography = shape.typography ?? TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
+                typography.letterSpacing = Double(newSpacing)
+                shape.typography = typography
+            }
+        }
     }
 }
