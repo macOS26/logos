@@ -645,18 +645,23 @@ struct GradientFillSection: View {
     func updateStopColor(stopId: UUID, color: VectorColor) {
         guard let gradient = currentGradient else { return }
 
+        print("🎨🎨🎨 updateStopColor: activeColorTarget = \(activeColorTarget)")
+        print("🎨🎨🎨 updateStopColor: setting activeGradientDelta")
+
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+                print("🎨🎨🎨 updateStopColor: SET activeGradientDelta for LINEAR")
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if activeColorTarget == .fill {
+                    print("🎨🎨🎨 updateStopColor: Setting FILL gradient")
                     document.defaultFillColor = .gradient(.linear(linear))
                 } else {
+                    print("🎨🎨🎨 updateStopColor: Setting STROKE gradient")
                     document.defaultStrokeColor = .gradient(.linear(linear))
                 }
             }
@@ -665,12 +670,14 @@ struct GradientFillSection: View {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+                print("🎨🎨🎨 updateStopColor: SET activeGradientDelta for RADIAL")
 
                 // Update toolbar active color to show the GRADIENT, not the solid color
                 if activeColorTarget == .fill {
+                    print("🎨🎨🎨 updateStopColor: Setting FILL gradient")
                     document.defaultFillColor = .gradient(.radial(radial))
                 } else {
+                    print("🎨🎨🎨 updateStopColor: Setting STROKE gradient")
                     document.defaultStrokeColor = .gradient(.radial(radial))
                 }
             }
