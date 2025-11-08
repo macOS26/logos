@@ -8,6 +8,7 @@ struct FontSizeControls: View {
     let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
+    @Binding var fontSizeDelta: Double?
 
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
@@ -68,11 +69,14 @@ struct FontSizeControls: View {
                     set: { newSize in
                         let rounded = (newSize * 10).rounded() / 10
                         previewFontSize = rounded
-                        updateFontSize(rounded, isPreview: isDraggingFontSize)
+                        // During drag: ONLY update fontSizeDelta for live preview
+                        fontSizeDelta = Double(rounded)
                     }
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                     if !editing {
+                        // Drag ended: clear delta and commit actual change
+                        fontSizeDelta = nil
                         if let preview = previewFontSize {
                             updateFontSize(preview, isPreview: false)
                         }
