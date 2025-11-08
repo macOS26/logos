@@ -3,6 +3,7 @@ import SwiftUI
 struct GradientPreviewAndStopsView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
+    let activeColorTarget: ColorTarget
     @Binding var editingGradientStopId: UUID?
     @Binding var editingGradientStopColor: VectorColor
     @Binding var showingGradientColorPicker: Bool
@@ -231,6 +232,7 @@ struct GradientPreviewAndStopsView: View {
             document: document,
             stopColor: stop.color,
             currentGradient: gradient,
+            activeColorTarget: activeColorTarget,
             onColorChanged: { color in
                 guard !isColorPickerDismissing else { return }
                 activateGradientStop(stop.id, color)

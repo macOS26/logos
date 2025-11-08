@@ -152,6 +152,7 @@ struct GradientFillSection: View {
             GradientPreviewAndStopsView(
                 currentGradient: currentGradient,
                 document: document,
+                activeColorTarget: activeColorTarget,
                 editingGradientStopId: $editingGradientStopId,
                 editingGradientStopColor: $editingGradientStopColor,
                 showingGradientColorPicker: $showingGradientColorPicker,

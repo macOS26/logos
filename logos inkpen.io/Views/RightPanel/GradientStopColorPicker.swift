@@ -6,18 +6,20 @@ struct GradientStopColorPicker: View {
     let document: VectorDocument
     let stopColor: VectorColor
     let currentGradient: VectorGradient
+    let activeColorTarget: ColorTarget
     let onColorChanged: (VectorColor) -> Void
     let onDismiss: () -> Void
 
     @State private var currentColor: VectorColor
     @State private var isDismissing = false
 
-    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, stopColor: VectorColor, currentGradient: VectorGradient, onColorChanged: @escaping (VectorColor) -> Void, onDismiss: @escaping () -> Void) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, stopColor: VectorColor, currentGradient: VectorGradient, activeColorTarget: ColorTarget, onColorChanged: @escaping (VectorColor) -> Void, onDismiss: @escaping () -> Void) {
         self.snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
         self.document = document
         self.stopColor = stopColor
         self.currentGradient = currentGradient
+        self.activeColorTarget = activeColorTarget
         self.onColorChanged = onColorChanged
         self.onDismiss = onDismiss
         self._currentColor = State(initialValue: stopColor)
@@ -66,7 +68,7 @@ struct GradientStopColorPicker: View {
                 if document.settings.colorMode == .pms {
                     HSBInputSection(
                         sharedColor: $currentColor,
-                        activeColorTarget: document.viewState.activeColorTarget,
+                        activeColorTarget: activeColorTarget,
                         defaultFillColor: .constant(.black),
                         defaultStrokeColor: .constant(.black),
                         colorDeltaColor: .constant(nil),
@@ -79,7 +81,7 @@ struct GradientStopColorPicker: View {
                 } else if document.settings.colorMode == .cmyk {
                     CMYKInputSection(
                         sharedColor: $currentColor,
-                        activeColorTarget: document.viewState.activeColorTarget,
+                        activeColorTarget: activeColorTarget,
                         defaultFillColor: .constant(.black),
                         defaultStrokeColor: .constant(.black),
                         colorDeltaColor: .constant(nil),
@@ -97,7 +99,7 @@ struct GradientStopColorPicker: View {
                             set: { document.snapshot = $0 }
                         ),
                         selectedObjectIDs: selectedObjectIDs,
-                        activeColorTarget: document.viewState.activeColorTarget,
+                        activeColorTarget: activeColorTarget,
                         defaultFillColor: Binding(
                             get: { document.defaultFillColor },
                             set: { document.defaultFillColor = $0 }
