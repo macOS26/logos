@@ -89,8 +89,8 @@ extension DrawingCanvas {
     }
 
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
-        print("🟡 handleSelectionConversion: \(oldTool.rawValue) -> \(newTool.rawValue)")
-        print("🟡 selectedObjectIDs BEFORE: \(document.viewState.selectedObjectIDs)")
+        // print("🟡 handleSelectionConversion: \(oldTool.rawValue) -> \(newTool.rawValue)")
+        // print("🟡 selectedObjectIDs BEFORE: \(document.viewState.selectedObjectIDs)")
 
         if newTool == .selection {
             if !selectedObjectIDs.isEmpty {
@@ -128,13 +128,13 @@ extension DrawingCanvas {
 
         // Maintain selection when switching to font tool
         else if newTool == .font {
-            print("🟡 Switching to .font, keeping selection unchanged")
+            // print("🟡 Switching to .font, keeping selection unchanged")
 
             // Find first text object in selection and set it to editing
             for selectedID in document.viewState.selectedObjectIDs {
                 if let obj = document.snapshot.objects[selectedID],
                    case .text = obj.objectType {
-                    print("🟡 Setting first text \(selectedID) to isEditing=true")
+                    // print("🟡 Setting first text \(selectedID) to isEditing=true")
                     document.setTextEditingInUnified(id: selectedID, isEditing: true)
                     break
                 }
@@ -143,7 +143,7 @@ extension DrawingCanvas {
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font && newTool != .hand {
-            print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
+            // print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
@@ -156,7 +156,7 @@ extension DrawingCanvas {
             // Hand tool is temporary - don't modify selection state
         }
 
-        print("🟡 selectedObjectIDs AFTER: \(document.viewState.selectedObjectIDs)")
+        // print("🟡 selectedObjectIDs AFTER: \(document.viewState.selectedObjectIDs)")
     }
 
     internal func clearToolState() {

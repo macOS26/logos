@@ -4,7 +4,7 @@ extension DrawingCanvas {
 
     internal func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
 
-        print("🔵 updateLinkedHandle: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
+        // print("🔵 updateLinkedHandle: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
 
         // Check if user explicitly set anchor type to cusp or corner
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
@@ -18,22 +18,22 @@ extension DrawingCanvas {
                 anchorElementIndex = draggedHandleID.elementIndex - 1
             }
 
-            print("🔵 updateLinkedHandle: Checking anchor element \(anchorElementIndex)")
+            // print("🔵 updateLinkedHandle: Checking anchor element \(anchorElementIndex)")
 
             // Check for explicit anchor type
             if let explicitType = shape.anchorTypes[anchorElementIndex] {
-                print("🔶 updateLinkedHandle: Found stored anchor type: \(explicitType)")
+                // print("🔶 updateLinkedHandle: Found stored anchor type: \(explicitType)")
                 switch explicitType {
                 case .cusp, .corner:
                     // User explicitly set cusp or corner - don't link handles
-                    print("❌ updateLinkedHandle: CUSP/CORNER - NOT linking handles")
+                    // print("❌ updateLinkedHandle: CUSP/CORNER - NOT linking handles")
                     return
                 case .smooth, .auto:
-                    print("✅ updateLinkedHandle: SMOOTH/AUTO - will link handles")
+                    // print("✅ updateLinkedHandle: SMOOTH/AUTO - will link handles")
                     break  // Continue with linking
                 }
             } else {
-                print("⚠️ updateLinkedHandle: No stored anchor type for element \(anchorElementIndex)")
+                // print("⚠️ updateLinkedHandle: No stored anchor type for element \(anchorElementIndex)")
             }
 
             // Check coincident point (element 0)
@@ -43,14 +43,14 @@ extension DrawingCanvas {
                                         (draggedHandleID.handleType == .control2 && draggedHandleID.elementIndex == elements.count - 1)
 
                 if isCoincidentHandle {
-                    print("🔶 updateLinkedHandle: This is a COINCIDENT point handle, stored type: \(explicitType)")
+                    // print("🔶 updateLinkedHandle: This is a COINCIDENT point handle, stored type: \(explicitType)")
                     switch explicitType {
                     case .cusp, .corner:
                         // User explicitly set cusp or corner for coincident point - don't link
-                        print("❌ updateLinkedHandle: COINCIDENT CUSP/CORNER - NOT linking handles")
+                        // print("❌ updateLinkedHandle: COINCIDENT CUSP/CORNER - NOT linking handles")
                         return
                     case .smooth, .auto:
-                        print("✅ updateLinkedHandle: COINCIDENT SMOOTH/AUTO - will link handles")
+                        // print("✅ updateLinkedHandle: COINCIDENT SMOOTH/AUTO - will link handles")
                         break  // Continue with linking
                     }
                 }

@@ -45,10 +45,10 @@ class GroupCommand: BaseCommand {
     override func execute(on document: VectorDocument) {
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
 
-        print("🟣 GroupCommand.execute: operation=\(operation)")
-        print("🟣 GroupCommand.execute: removedObjectIDs=\(removedObjectIDs)")
-        print("🟣 GroupCommand.execute: addedObjectIDs=\(addedObjectIDs)")
-        print("🟣 GroupCommand.execute: BEFORE layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+        // print("🟣 GroupCommand.execute: operation=\(operation)")
+        // print("🟣 GroupCommand.execute: removedObjectIDs=\(removedObjectIDs)")
+        // print("🟣 GroupCommand.execute: addedObjectIDs=\(addedObjectIDs)")
+        // print("🟣 GroupCommand.execute: BEFORE layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
         // Find the index in layer.objectIDs for insertion
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
@@ -57,7 +57,7 @@ class GroupCommand: BaseCommand {
         // Remove from layer.objectIDs only (children stay in snapshot.objects for direct selection)
         document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
-        print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+        // print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
         // Insert objects at the correct position in the order they appear in addedObjectIDs
         for (offset, objectID) in addedObjectIDs.enumerated() {
@@ -88,24 +88,24 @@ class GroupCommand: BaseCommand {
 
             // Log group contents
             if shape.isGroup || shape.isClippingGroup {
-                print("🟣 GroupCommand: Created \(shape.isClippingGroup ? "CLIPGROUP" : "GROUP") with \(shape.groupedShapes.count) children")
+                // print("🟣 GroupCommand: Created \(shape.isClippingGroup ? "CLIPGROUP" : "GROUP") with \(shape.groupedShapes.count) children")
                 for (idx, child) in shape.groupedShapes.enumerated() {
-                    print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
+                    // print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
                 }
             }
         }
 
-        print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+        // print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
     }
 
     override func undo(on document: VectorDocument) {
-        print("🔵 UNDO GROUP: operation=\(operation)")
-        print("🔵 UNDO GROUP: removedObjectIDs count=\(removedObjectIDs.count)")
+        // print("🔵 UNDO GROUP: operation=\(operation)")
+        // print("🔵 UNDO GROUP: removedObjectIDs count=\(removedObjectIDs.count)")
         for (i, id) in removedObjectIDs.enumerated() {
-            print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
+            // print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
         }
 
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
@@ -113,7 +113,7 @@ class GroupCommand: BaseCommand {
         // Find the index in layer.objectIDs where the grouped object was to restore original order
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { addedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
-        print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
+        // print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
 
         // Remove group object from snapshot.objects
         for id in addedObjectIDs {
@@ -126,7 +126,7 @@ class GroupCommand: BaseCommand {
         // Restore child objects to layer.objectIDs (they never left snapshot.objects)
         for (offset, objectID) in removedObjectIDs.enumerated() {
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
-            print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
+            // print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs

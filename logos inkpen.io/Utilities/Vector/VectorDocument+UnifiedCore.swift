@@ -137,7 +137,7 @@ extension VectorDocument {
 
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else {
-            print("❌ addShapeToUnifiedSystem: Invalid layer index \(layerIndex), layers count: \(snapshot.layers.count)")
+            // print("❌ addShapeToUnifiedSystem: Invalid layer index \(layerIndex), layers count: \(snapshot.layers.count)")
             return
         }
 

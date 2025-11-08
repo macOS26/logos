@@ -464,7 +464,7 @@ struct TransformBoxHandles: View {
     }
 
     private func endScaling() {
-        print("🟢 END SCALING for shape \(shape.id)")
+        // print("🟢 END SCALING for shape \(shape.id)")
         isScaling = false
         document.isHandleScalingActive = false
         document.viewState.scalePreviewDimensions = .zero
@@ -483,14 +483,14 @@ struct TransformBoxHandles: View {
         }
 
         guard let oldObj = document.snapshot.objects[shape.id] else {
-            print("🔴 Cannot find shape \(shape.id) in snapshot.objects")
+            // print("🔴 Cannot find shape \(shape.id) in snapshot.objects")
             return
         }
         let oldShape = oldObj.shape
-        print("🟢 Found old shape in snapshot, transform: \(oldShape.transform)")
+        // print("🟢 Found old shape in snapshot, transform: \(oldShape.transform)")
 
         if oldShape.typography != nil {
-            print("🟢 Processing text box reflow")
+            // print("🟢 Processing text box reflow")
             // Text boxes: reflow text to new size instead of transforming
             if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
                 let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
@@ -510,55 +510,55 @@ struct TransformBoxHandles: View {
                 }
             }
         } else {
-            print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
+            // print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
             // Regular shapes: apply transform to path coordinates
             applyTransformToPath(shapeID: shape.id, transform: previewTransform)
-            print("🟢 Applied transform to path")
+            // print("🟢 Applied transform to path")
         }
         previewTransform = .identity
 
         document.updateTransformPanelValues()
 
         guard let newObj = document.snapshot.objects[shape.id] else {
-            print("🔴 Cannot find updated shape \(shape.id) in snapshot.objects")
+            // print("🔴 Cannot find updated shape \(shape.id) in snapshot.objects")
             return
         }
         let newShape = newObj.shape
-        print("🟢 Found new shape in snapshot, transform: \(newShape.transform)")
+        // print("🟢 Found new shape in snapshot, transform: \(newShape.transform)")
 
-        print("🟢 Creating undo command")
+        // print("🟢 Creating undo command")
         let command = ShapeModificationCommand(
             objectIDs: [shape.id],
             oldShapes: [shape.id: oldShape],
             newShapes: [shape.id: newShape]
         )
         document.executeCommand(command)
-        print("🟢 Executed undo command")
+        // print("🟢 Executed undo command")
     }
 
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
-        print("🔵 applyTransformToPath for \(shapeID), transform: \(transform)")
+        // print("🔵 applyTransformToPath for \(shapeID), transform: \(transform)")
         let t = transform
         if t.isIdentity {
-            print("🔵 Transform is identity, skipping")
+            // print("🔵 Transform is identity, skipping")
             return
         }
 
         guard let targetObj = document.snapshot.objects[shapeID] else {
-            print("🔴 Cannot find shape \(shapeID) in snapshot for path transform")
+            // print("🔴 Cannot find shape \(shapeID) in snapshot for path transform")
             return
         }
         let targetShape = targetObj.shape
-        print("🔵 Found target shape in snapshot")
+        // print("🔵 Found target shape in snapshot")
 
         if targetShape.typography != nil {
-            print("🔵 Text object, skipping path transform")
+            // print("🔵 Text object, skipping path transform")
             // Text objects don't use path transforms
             return
         }
 
         if targetShape.isGroupContainer {
-            print("🔵 Group container, transforming grouped shapes")
+            // print("🔵 Group container, transforming grouped shapes")
             var updatedShape = targetShape
             var transformedGroupedShapes: [VectorShape] = []
             for var groupedShape in updatedShape.groupedShapes {
@@ -595,10 +595,10 @@ struct TransformBoxHandles: View {
             // Update snapshot directly
             let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
-            print("🔵 Updated snapshot with transformed group")
-            print("🔵 Finished group transform")
+            // print("🔵 Updated snapshot with transformed group")
+            // print("🔵 Finished group transform")
         } else {
-            print("🔵 Regular shape, transforming path elements")
+            // print("🔵 Regular shape, transforming path elements")
             var transformedElements: [PathElement] = []
             for element in targetShape.path.elements {
                 switch element {
@@ -623,7 +623,7 @@ struct TransformBoxHandles: View {
             }
 
             let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-            print("🔵 Updating shape with new path, \(transformedElements.count) elements")
+            // print("🔵 Updating shape with new path, \(transformedElements.count) elements")
 
             var updatedShape = targetShape
             updatedShape.path = newPath
@@ -633,13 +633,13 @@ struct TransformBoxHandles: View {
             // Update snapshot directly
             let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
-            print("🔵 Updated snapshot with transformed shape")
-            print("🔵 Finished regular shape transform")
+            // print("🔵 Updated snapshot with transformed shape")
+            // print("🔵 Finished regular shape transform")
         }
     }
 
     private func applyMultiSelectionScaling() {
-        print("🟣 MULTI-SELECTION SCALING")
+        // print("🟣 MULTI-SELECTION SCALING")
 
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -647,7 +647,7 @@ struct TransformBoxHandles: View {
 
         for objectID in document.viewState.selectedObjectIDs {
             guard let oldObj = document.snapshot.objects[objectID] else {
-                print("🔴 Cannot find object \(objectID) in snapshot")
+                // print("🔴 Cannot find object \(objectID) in snapshot")
                 continue
             }
 
@@ -771,6 +771,6 @@ struct TransformBoxHandles: View {
         // Trigger layer updates
         document.triggerLayerUpdates(for: affectedLayers)
 
-        print("🟣 Completed multi-selection scaling for \(document.viewState.selectedObjectIDs.count) objects")
+        // print("🟣 Completed multi-selection scaling for \(document.viewState.selectedObjectIDs.count) objects")
     }
 }

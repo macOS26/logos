@@ -96,12 +96,12 @@ extension VectorDocument {
     }
 
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
-        print("🔴 setTextEditingInUnified: id=\(id), isEditing=\(isEditing)")
+        // print("🔴 setTextEditingInUnified: id=\(id), isEditing=\(isEditing)")
         updateShapeByID(id) { shape in
-            print("🔴 setTextEditingInUnified: inside update block, setting shape.isEditing=\(isEditing)")
+            // print("🔴 setTextEditingInUnified: inside update block, setting shape.isEditing=\(isEditing)")
             shape.isEditing = isEditing
         }
-        print("🔴 setTextEditingInUnified: after updateShapeByID")
+        // print("🔴 setTextEditingInUnified: after updateShapeByID")
     }
 
     func updateTextLayerInUnified(id: UUID, layerIndex: Int) {

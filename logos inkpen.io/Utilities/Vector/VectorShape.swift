@@ -526,10 +526,10 @@ struct VectorShape: Hashable, Identifiable {
     }
 
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
-        print("🟣 VectorShape.group() INPUT shapes count = \(shapes.count)")
+        // print("🟣 VectorShape.group() INPUT shapes count = \(shapes.count)")
         for (index, shape) in shapes.enumerated() {
             let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            print("🟣 VectorShape.group() INPUT shapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+            // print("🟣 VectorShape.group() INPUT shapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
         }
 
         var calculatedGroupBounds = CGRect.null
@@ -552,10 +552,10 @@ struct VectorShape: Hashable, Identifiable {
             }
         }
 
-        print("🟣 VectorShape.group() FINAL preservedShapes count = \(preservedShapes.count)")
+        // print("🟣 VectorShape.group() FINAL preservedShapes count = \(preservedShapes.count)")
         for (index, shape) in preservedShapes.enumerated() {
             let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            print("🟣 VectorShape.group() FINAL preservedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+            // print("🟣 VectorShape.group() FINAL preservedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
         }
 
         let groupPath = VectorPath(elements: [], isClosed: false)
@@ -578,10 +578,10 @@ struct VectorShape: Hashable, Identifiable {
 
         groupShape.bounds = calculatedGroupBounds
 
-        print("🟣 VectorShape.group() RESULT groupedShapes count = \(groupShape.groupedShapes.count)")
+        // print("🟣 VectorShape.group() RESULT groupedShapes count = \(groupShape.groupedShapes.count)")
         for (index, shape) in groupShape.groupedShapes.enumerated() {
             let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            print("🟣 VectorShape.group() RESULT groupedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+            // print("🟣 VectorShape.group() RESULT groupedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
         }
 
         return groupShape
@@ -689,10 +689,10 @@ struct VectorShape: Hashable, Identifiable {
     }
 
     static func from(_ vectorText: VectorText) -> VectorShape {
-        print("🔵 VectorShape.from() - vectorText.position: \(vectorText.position), vectorText.transform: \(vectorText.transform)")
+        // print("🔵 VectorShape.from() - vectorText.position: \(vectorText.position), vectorText.transform: \(vectorText.transform)")
         let emptyPath = VectorPath(elements: [], isClosed: false)
         let finalTransform = CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform)
-        print("🔵 VectorShape.from() - finalTransform: \(finalTransform)")
+        // print("🔵 VectorShape.from() - finalTransform: \(finalTransform)")
         var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,

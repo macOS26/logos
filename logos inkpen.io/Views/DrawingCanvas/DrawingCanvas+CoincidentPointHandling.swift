@@ -290,14 +290,14 @@ extension DrawingCanvas {
 
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
 
-        print("🟡 handleCoincidentSmoothPoints: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
+        // print("🟡 handleCoincidentSmoothPoints: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
 
         if handleFirstLastCoincidentPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
-            print("✅ handleCoincidentSmoothPoints: Handled by handleFirstLastCoincidentPoints")
+            // print("✅ handleCoincidentSmoothPoints: Handled by handleFirstLastCoincidentPoints")
             return true
         }
 
-        print("🔷 handleCoincidentSmoothPoints: Not first/last coincident, checking other coincident points")
+        // print("🔷 handleCoincidentSmoothPoints: Not first/last coincident, checking other coincident points")
 
         // ✅ CHECK STORED ANCHOR TYPE for the anchor point being dragged
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
@@ -311,19 +311,20 @@ extension DrawingCanvas {
                 anchorElementIndex = draggedHandleID.elementIndex - 1
             }
 
-            print("🔶 handleCoincidentSmoothPoints: Checking anchor element \(anchorElementIndex)")
+            // print("🔶 handleCoincidentSmoothPoints: Checking anchor element \(anchorElementIndex)")
 
             if let explicitType = shape.anchorTypes[anchorElementIndex] {
-                print("🔶 handleCoincidentSmoothPoints: Found stored anchor type: \(explicitType)")
+                // print("🔶 handleCoincidentSmoothPoints: Found stored anchor type: \(explicitType)")
                 switch explicitType {
                 case .cusp, .corner:
-                    print("❌ handleCoincidentSmoothPoints: CUSP/CORNER - NOT linking other coincident points")
+                    // print("❌ handleCoincidentSmoothPoints: CUSP/CORNER - NOT linking other coincident points")
                     return false
                 case .smooth, .auto:
-                    print("✅ handleCoincidentSmoothPoints: SMOOTH/AUTO - will check for coincident points")
+                    // print("✅ handleCoincidentSmoothPoints: SMOOTH/AUTO - will check for coincident points")
+                    break
                 }
             } else {
-                print("⚠️ handleCoincidentSmoothPoints: No stored anchor type for element \(anchorElementIndex)")
+                // print("⚠️ handleCoincidentSmoothPoints: No stored anchor type for element \(anchorElementIndex)")
             }
         }
 
@@ -475,19 +476,21 @@ extension DrawingCanvas {
            case .shape(let shape) = object.objectType,
            let explicitType = shape.anchorTypes[0] {  // Element 0 is the coincident point
 
-            print("🔶 handleFirstLastCoincidentPoints: Checking stored anchor type for element 0: \(explicitType)")
+            // print("🔶 handleFirstLastCoincidentPoints: Checking stored anchor type for element 0: \(explicitType)")
 
             switch explicitType {
             case .cusp, .corner:
-                print("❌ handleFirstLastCoincidentPoints: User set CUSP/CORNER - NOT linking handles")
+                // print("❌ handleFirstLastCoincidentPoints: User set CUSP/CORNER - NOT linking handles")
                 return false  // Don't link handles for cusp/corner
             case .smooth:
-                print("✅ handleFirstLastCoincidentPoints: User set SMOOTH - will link handles")
+                // print("✅ handleFirstLastCoincidentPoints: User set SMOOTH - will link handles")
+                break
             case .auto:
-                print("🔷 handleFirstLastCoincidentPoints: AUTO mode - using geometry detection")
+                // print("🔷 handleFirstLastCoincidentPoints: AUTO mode - using geometry detection")
+                break
             }
         } else {
-            print("⚠️ handleFirstLastCoincidentPoints: No stored anchor type - using geometry detection")
+            // print("⚠️ handleFirstLastCoincidentPoints: No stored anchor type - using geometry detection")
         }
 
         let firstPoint: CGPoint?

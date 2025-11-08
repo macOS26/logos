@@ -108,7 +108,7 @@ extension DrawingCanvas {
                 case .clipMask: "CLIPMASK"
                 case .warp: "WARP"
             }
-            print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
+            // print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
         }
 
         for object in selectedObjects {
@@ -307,15 +307,15 @@ extension DrawingCanvas {
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
         guard let object = document.snapshot.objects[objectID] else {
-            print("🔴 DRAG: Could not find object \(objectID)")
+            // print("🔴 DRAG: Could not find object \(objectID)")
             return
         }
 
-        print("🟠 DRAG END: Applying delta to objectID=\(objectID)")
+        // print("🟠 DRAG END: Applying delta to objectID=\(objectID)")
 
         switch object.objectType {
         case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-            print("🟠 DRAG END: Shape name=\(shape.name), isGroup=\(shape.isGroup), isClippingGroup=\(shape.isClippingGroup)")
+            // print("🟠 DRAG END: Shape name=\(shape.name), isGroup=\(shape.isGroup), isClippingGroup=\(shape.isClippingGroup)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
             return
@@ -406,7 +406,7 @@ extension DrawingCanvas {
                 if let childObj = document.snapshot.objects[groupedShape.id] {
                     let updatedChild = VectorObject(shape: groupedShape, layerIndex: childObj.layerIndex)
                     document.snapshot.objects[groupedShape.id] = updatedChild
-                    print("🟢 GROUP MOVE: Updated child \(groupedShape.id) in snapshot.objects")
+                    // print("🟢 GROUP MOVE: Updated child \(groupedShape.id) in snapshot.objects")
                 }
             }
 
@@ -494,15 +494,15 @@ extension DrawingCanvas {
         document.updateShapeByID(movedShape.id) { $0 = movedShape }
 
         // Update child in parent group's groupedShapes array
-        print("🟠 DRAG END: Checking parent for childID=\(movedShape.id)")
+        // print("🟠 DRAG END: Checking parent for childID=\(movedShape.id)")
         if let parentGroup = document.findParentGroup(for: movedShape.id) {
-            print("🟠 DRAG END: Found parent group id=\(parentGroup.id), updating groupedShapes")
+            // print("🟠 DRAG END: Found parent group id=\(parentGroup.id), updating groupedShapes")
             if let updatedObject = document.snapshot.objects[movedShape.id] {
                 document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)
-                print("🟠 DRAG END: Updated child in parent group")
+                // print("🟠 DRAG END: Updated child in parent group")
             }
         } else {
-            print("🟠 DRAG END: No parent group found for childID=\(movedShape.id)")
+            // print("🟠 DRAG END: No parent group found for childID=\(movedShape.id)")
         }
     }
 

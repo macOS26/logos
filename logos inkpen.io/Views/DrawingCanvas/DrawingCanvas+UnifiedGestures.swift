@@ -88,21 +88,21 @@ extension DrawingCanvas {
             handleBezierPenTap(at: canvasLocation)
 
         case .font:
-            print("🟢 Font tool tap at \(canvasLocation)")
+            // print("🟢 Font tool tap at \(canvasLocation)")
             // Same pattern as square tool - clear selection if no modifiers
             if !isShiftPressed && !isCommandPressed {
-                print("🟢 No modifiers pressed, checking for text...")
+                // print("🟢 No modifiers pressed, checking for text...")
                 if let existingTextID = findTextAt(location: canvasLocation) {
-                    print("🟢 Found text at location: \(existingTextID)")
+                    // print("🟢 Found text at location: \(existingTextID)")
                     startEditingText(textID: existingTextID, at: canvasLocation)
                 } else {
-                    print("🟢 No text found at location, clearing selection")
+                    // print("🟢 No text found at location, clearing selection")
                     // Click on empty canvas - deselect all text
                     document.viewState.selectedObjectIDs = []
                     handleAggressiveBackgroundTap(at: canvasLocation)
                 }
             } else {
-                print("🟢 Modifiers pressed: shift=\(isShiftPressed), command=\(isCommandPressed)")
+                // print("🟢 Modifiers pressed: shift=\(isShiftPressed), command=\(isCommandPressed)")
             }
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:

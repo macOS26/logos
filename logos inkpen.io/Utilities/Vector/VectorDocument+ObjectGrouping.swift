@@ -7,7 +7,7 @@ extension VectorDocument {
             return
         }
 
-        print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
+        // print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
 
         var removedShapes: [UUID: VectorShape] = [:]
         var objectsToRemove: [VectorObject] = []
@@ -18,7 +18,7 @@ extension VectorDocument {
             }
         }
 
-        print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
+        // print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
         for (index, obj) in objectsToRemove.enumerated() {
             let typeName: String
             switch obj.objectType {
@@ -30,7 +30,7 @@ extension VectorDocument {
             case .clipGroup: typeName = "CLIPGROUP"
             case .clipMask: typeName = "CLIPMASK"
             }
-            print("🔴 GROUP: objectsToRemove[\(index)] = \(typeName) id=\(obj.id)")
+            // print("🔴 GROUP: objectsToRemove[\(index)] = \(typeName) id=\(obj.id)")
         }
 
         for obj in objectsToRemove {
@@ -48,10 +48,10 @@ extension VectorDocument {
 
         let selectedShapes = getSelectedShapesInStackingOrder()
 
-        print("🔴 GROUP: selectedShapes count = \(selectedShapes.count)")
+        // print("🔴 GROUP: selectedShapes count = \(selectedShapes.count)")
         for (index, shape) in selectedShapes.enumerated() {
             let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-            print("🔴 GROUP: selectedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
+            // print("🔴 GROUP: selectedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
         }
 
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
@@ -138,10 +138,10 @@ extension VectorDocument {
     }
 
     func ungroupSelectedObjects() {
-        print("🟡 UNGROUP: Starting, viewState.selectedObjectIDs=\(viewState.selectedObjectIDs)")
+        // print("🟡 UNGROUP: Starting, viewState.selectedObjectIDs=\(viewState.selectedObjectIDs)")
         guard let layerIndex = selectedLayerIndex,
               !viewState.selectedObjectIDs.isEmpty else {
-            print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(viewState.selectedObjectIDs.isEmpty)")
+            // print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(viewState.selectedObjectIDs.isEmpty)")
             return
         }
 
@@ -152,12 +152,12 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
 
         for objectID in viewState.selectedObjectIDs {
-            print("🟡 UNGROUP: Processing objectID=\(objectID)")
+            // print("🟡 UNGROUP: Processing objectID=\(objectID)")
 
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .group(let shape), .clipGroup(let shape):
-                    print("🟡 UNGROUP: Found group, isGroupContainer=\(shape.isGroupContainer), groupedShapes.count=\(shape.groupedShapes.count)")
+                    // print("🟡 UNGROUP: Found group, isGroupContainer=\(shape.isGroupContainer), groupedShapes.count=\(shape.groupedShapes.count)")
 
                     if shape.isGroupContainer {
                         removedShapes[objectID] = shape
@@ -165,7 +165,7 @@ extension VectorDocument {
                         let shapesToUngroup = shape.groupedShapes
 
                         for groupedShape in shapesToUngroup {
-                            print("🟡 UNGROUP: Adding grouped shape id=\(groupedShape.id)")
+                            // print("🟡 UNGROUP: Adding grouped shape id=\(groupedShape.id)")
                             shapesToAdd.append(groupedShape)
                             newSelectedShapeIDs.insert(groupedShape.id)
                         }
@@ -175,11 +175,11 @@ extension VectorDocument {
                         newSelectedShapeIDs.insert(objectID)
                     }
                 case .shape, .image, .warp, .clipMask, .text:
-                    print("🟡 UNGROUP: Not a group, keeping selected")
+                    // print("🟡 UNGROUP: Not a group, keeping selected")
                     newSelectedShapeIDs.insert(objectID)
                 }
             } else {
-                print("🔴 UNGROUP: Could not find object \(objectID)")
+                // print("🔴 UNGROUP: Could not find object \(objectID)")
             }
         }
 

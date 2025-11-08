@@ -306,19 +306,19 @@ struct GradientFillSection: View {
             normalizedAngle += 360
         }
 
-        print("🎨 GRADIENT ANGLE DRAG: Updating to \(normalizedAngle)")
+        // print("🎨 GRADIENT ANGLE DRAG: Updating to \(normalizedAngle)")
 
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
             activeGradientDelta = currentGradient
-            print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
+            // print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
+            // print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
         }
     }
 
@@ -350,15 +350,15 @@ struct GradientFillSection: View {
     private func commitGradientChange() {
         guard currentGradient != nil else { return }
 
-        print("🎨 GRADIENT DRAG END: Committing gradient change")
+        // print("🎨 GRADIENT DRAG END: Committing gradient change")
 
         // Clear the delta
         activeGradientDelta = nil
-        print("🎨 GRADIENT DRAG END: Cleared activeGradientDelta")
+        // print("🎨 GRADIENT DRAG END: Cleared activeGradientDelta")
 
         // Apply to document snapshot + record undo
         applyGradientToSelectedShapes()
-        print("🎨 GRADIENT DRAG END: Applied to snapshot + recorded undo")
+        // print("🎨 GRADIENT DRAG END: Applied to snapshot + recorded undo")
     }
 
     private func captureOldGradientState() {
@@ -395,8 +395,8 @@ struct GradientFillSection: View {
     private func commitGradientChangeWithUndo() {
         guard let newGradient = currentGradient else { return }
 
-        print("🎨 COMMIT START: activeGradientDelta = \(activeGradientDelta != nil ? "SET" : "nil")")
-        print("🎨 COMMIT START: currentGradient stops = \(newGradient.stops.map { $0.color })")
+        // print("🎨 COMMIT START: activeGradientDelta = \(activeGradientDelta != nil ? "SET" : "nil")")
+        // print("🎨 COMMIT START: currentGradient stops = \(newGradient.stops.map { $0.color })")
 
         // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
@@ -407,7 +407,7 @@ struct GradientFillSection: View {
             if let obj = document.snapshot.objects[objectID] {
                 newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
                 if let fillGradient = obj.shape.fillStyle?.gradient {
-                    print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
+                    // print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
                 }
             }
         }
@@ -424,20 +424,20 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
-        print("🎨 COMMIT END: Command executed")
+        // print("🎨 COMMIT END: Command executed")
 
         // Check snapshot after command
         for objectID in selectedObjectIDs {
             if let obj = document.snapshot.objects[objectID] {
                 if let fillGradient = obj.shape.fillStyle?.gradient {
-                    print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
+                    // print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
                 }
             }
         }
 
         // DON'T clear delta - snapshot is updated, delta will show same gradient anyway
         // Clearing it causes a flash because SwiftUI renders before snapshot propagates
-        print("🎨 COMMIT END: Leaving activeGradientDelta set (snapshot now matches)")
+        // print("🎨 COMMIT END: Leaving activeGradientDelta set (snapshot now matches)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
@@ -469,7 +469,7 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
-        print("🔴 updateGradientOriginXOptimized called: newX=\(newX), applyToShapes=\(applyToShapes), isLiveDrag=\(isLiveDrag)")
+        // print("🔴 updateGradientOriginXOptimized called: newX=\(newX), applyToShapes=\(applyToShapes), isLiveDrag=\(isLiveDrag)")
         guard let gradient = currentGradient else { return }
 
         switch gradient {
@@ -487,7 +487,7 @@ struct GradientFillSection: View {
             } else {
                 document.viewState.liveGradientOriginX = nil
             }
-            print("🔴 CALLING applyGradientToSelectedShapesOptimized - THIS UPDATES SNAPSHOT!")
+            // print("🔴 CALLING applyGradientToSelectedShapesOptimized - THIS UPDATES SNAPSHOT!")
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }

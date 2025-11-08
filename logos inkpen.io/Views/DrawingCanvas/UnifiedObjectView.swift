@@ -186,17 +186,17 @@ struct LayerCanvasView: View {
                 switch object.objectType {
                 case .clipGroup(let clipGroupShape):
                     // ClipGroup: first grouped shape is the mask, rest are clipped content
-                    print("🔵 RENDERING CLIPGROUP: parent selected=\(isSelected), groupedShapes.count=\(clipGroupShape.groupedShapes.count)")
-                    print("🔵 RENDERING CLIPGROUP: selectedObjectIDs=\(selectedObjectIDs)")
-                    print("🔵 RENDERING CLIPGROUP: dragPreviewDelta=\(dragPreviewDelta)")
+                    // print("🔵 RENDERING CLIPGROUP: parent selected=\(isSelected), groupedShapes.count=\(clipGroupShape.groupedShapes.count)")
+                    // print("🔵 RENDERING CLIPGROUP: selectedObjectIDs=\(selectedObjectIDs)")
+                    // print("🔵 RENDERING CLIPGROUP: dragPreviewDelta=\(dragPreviewDelta)")
 
                     guard !clipGroupShape.groupedShapes.isEmpty else { break }
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    print("🔵 CLIPGROUP: maskShape.id=\(maskShape.id)")
+                    // print("🔵 CLIPGROUP: maskShape.id=\(maskShape.id)")
                     for (idx, child) in contentShapes.enumerated() {
-                        print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
+                        // print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
                     }
 
                     // Save parent's transform (includes drag delta if parent clipGroup is selected)
@@ -506,24 +506,24 @@ struct LayerCanvasView: View {
 
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                        print("🎨🎨🎨 CANVAS RENDER WITH DELTA: shape \(shape.id)")
-                        print("🎨🎨🎨 DELTA GRADIENT STOPS: \(activeGradientDelta!.stops.map { $0.color })")
-                        print("🎨🎨🎨 FILL STYLE COLOR: \(fillStyle.color)")
+                        // print("🎨🎨🎨 CANVAS RENDER WITH DELTA: shape \(shape.id)")
+                        // print("🎨🎨🎨 DELTA GRADIENT STOPS: \(activeGradientDelta!.stops.map { $0.color })")
+                        // print("🎨🎨🎨 FILL STYLE COLOR: \(fillStyle.color)")
 
                         // Create a fillStyle with activeGradientDelta and opacity
                         let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if let gradient = fillStyle.gradient {
                         // Use gradient from snapshot
-                        print("🎨 CANVAS RENDER: Using snapshot gradient for shape \(shape.id)")
-                        print("🎨 CANVAS RENDER: Snapshot stops = \(gradient.stops.map { $0.color })")
+                        // print("🎨 CANVAS RENDER: Using snapshot gradient for shape \(shape.id)")
+                        // print("🎨 CANVAS RENDER: Snapshot stops = \(gradient.stops.map { $0.color })")
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
-                        print("🎨 CANVAS RENDER: Using SOLID color for shape \(shape.id): \(fillStyle.color)")
+                        // print("🎨 CANVAS RENDER: Using SOLID color for shape \(shape.id): \(fillStyle.color)")
                         layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
                     } else {
-                        print("🎨 CANVAS RENDER: Using CLEAR (no fill) for shape \(shape.id)")
+                        // print("🎨 CANVAS RENDER: Using CLEAR (no fill) for shape \(shape.id)")
                     }
                 }
 
@@ -597,9 +597,9 @@ struct LayerCanvasView: View {
 
                 // Check for activeGradientDelta FIRST (for live preview during drag)
                 if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                    print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for shape \(shape.id)")
+                    // print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for shape \(shape.id)")
                     if case .linear(let linear) = activeGradientDelta {
-                        print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
+                        // print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
                     }
 
                     // Create a fillStyle with activeGradientDelta and opacity
@@ -1018,7 +1018,7 @@ struct IsolatedLayerView: View {
 
         var shapes: [(id: UUID, dragDelta: CGPoint)] = []
 
-        print("🔍 collectEditingTextShapes: checking snapshot directly")
+        // print("🔍 collectEditingTextShapes: checking snapshot directly")
 
         // Fetch FRESH data from document.snapshot.objects, not stale objects parameter
         for objectID in objects.map({ $0.id }) {
@@ -1028,21 +1028,21 @@ struct IsolatedLayerView: View {
             switch freshObject.objectType {
             case .text(let shape):
                 // Top-level text object
-                print("🔍 Found top-level text: id=\(shape.id), isEditing=\(shape.isEditing ?? false)")
+                // print("🔍 Found top-level text: id=\(shape.id), isEditing=\(shape.isEditing ?? false)")
                 if let vectorText = VectorText.from(shape),
                    vectorText.getState(in: document) == .editing {
                     let isSelected = selectedObjectIDs.contains(shape.id)
                     let delta = isSelected ? dragPreviewDelta : .zero
-                    print("✅ Adding top-level editing text: \(shape.id)")
+                    // print("✅ Adding top-level editing text: \(shape.id)")
                     shapes.append((id: shape.id, dragDelta: delta))
                 }
 
             case .group(let groupShape):
-                print("🔍 Found group: id=\(groupShape.id), groupedShapes.count=\(groupShape.groupedShapes.count)")
+                // print("🔍 Found group: id=\(groupShape.id), groupedShapes.count=\(groupShape.groupedShapes.count)")
                 // Text objects inside groups
                 for childShape in groupShape.groupedShapes {
                     if childShape.typography != nil {
-                        print("🔍 Found text in group: id=\(childShape.id), isEditing=\(childShape.isEditing ?? false)")
+                        // print("🔍 Found text in group: id=\(childShape.id), isEditing=\(childShape.isEditing ?? false)")
                     }
                     guard childShape.isVisible else { continue }
                     if let vectorText = VectorText.from(childShape),
@@ -1051,7 +1051,7 @@ struct IsolatedLayerView: View {
                         let isChildSelected = selectedObjectIDs.contains(childShape.id)
                         let isParentSelected = selectedObjectIDs.contains(freshObject.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
-                        print("✅ Adding grouped editing text: \(childShape.id)")
+                        // print("✅ Adding grouped editing text: \(childShape.id)")
                         shapes.append((id: childShape.id, dragDelta: delta))
                     }
                 }
@@ -1061,7 +1061,7 @@ struct IsolatedLayerView: View {
             }
         }
 
-        print("🔍 Total editing texts found: \(shapes.count)")
+        // print("🔍 Total editing texts found: \(shapes.count)")
         return shapes
     }
 

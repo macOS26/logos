@@ -173,7 +173,7 @@ extension DrawingCanvas {
         // CRITICAL: Groups must use groupBounds, not shape.bounds
         if shape.isGroupContainer {
             let groupTestBounds = shape.groupBounds
-            print("🔶 HIT TEST GROUP: location=\(location), groupBounds=\(groupTestBounds), contains=\(groupTestBounds.contains(location))")
+            // print("🔶 HIT TEST GROUP: location=\(location), groupBounds=\(groupTestBounds), contains=\(groupTestBounds.contains(location))")
             return groupTestBounds.contains(location)
         }
 

@@ -231,7 +231,7 @@ struct DrawingCanvas: View {
                     }
 
                     if !changedLayerIDs.isEmpty {
-                        print("🔷 Spatial index: rebuilding \(changedLayerIDs.count) layer(s)")
+                        // print("🔷 Spatial index: rebuilding \(changedLayerIDs.count) layer(s)")
                         spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
                         rebuildLockedObjectsCache()
                     }

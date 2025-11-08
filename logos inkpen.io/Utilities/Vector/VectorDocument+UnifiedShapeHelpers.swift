@@ -4,9 +4,9 @@ import Combine
 extension VectorDocument {
 
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
-        print("🔴 UPDATE FILL: Called for shape \(id), color=\(color)")
+        // print("🔴 UPDATE FILL: Called for shape \(id), color=\(color)")
         updateShapeByID(id) { shape in
-            print("🔴 UPDATE FILL: Found shape, isGroupContainer=\(shape.isGroupContainer)")
+            // print("🔴 UPDATE FILL: Found shape, isGroupContainer=\(shape.isGroupContainer)")
             // Update the shape itself
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
@@ -16,10 +16,10 @@ extension VectorDocument {
 
             // If this is a group, update all children
             if shape.isGroupContainer {
-                print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
+                // print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
-                    print("🔴 UPDATE FILL: Updating child \(childShape.id)")
+                    // print("🔴 UPDATE FILL: Updating child \(childShape.id)")
                     if childShape.fillStyle == nil {
                         childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
                     } else {
@@ -28,16 +28,16 @@ extension VectorDocument {
                     updatedChildren.append(childShape)
                 }
                 shape.groupedShapes = updatedChildren
-                print("🔴 UPDATE FILL: Updated children saved back to group")
+                // print("🔴 UPDATE FILL: Updated children saved back to group")
             }
-            print("🔴 UPDATE FILL: Updated shape saved to snapshot")
+            // print("🔴 UPDATE FILL: Updated shape saved to snapshot")
         }
     }
 
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
-        print("🟠 UPDATE STROKE: Called for shape \(id), color=\(color)")
+        // print("🟠 UPDATE STROKE: Called for shape \(id), color=\(color)")
         updateShapeByID(id) { shape in
-            print("🟠 UPDATE STROKE: Found shape, isGroupContainer=\(shape.isGroupContainer)")
+            // print("🟠 UPDATE STROKE: Found shape, isGroupContainer=\(shape.isGroupContainer)")
             // Update the shape itself
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
@@ -47,10 +47,10 @@ extension VectorDocument {
 
             // If this is a group, update all children
             if shape.isGroupContainer {
-                print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
+                // print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
-                    print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
+                    // print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
                     if childShape.strokeStyle == nil {
                         childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                     } else {
@@ -59,9 +59,9 @@ extension VectorDocument {
                     updatedChildren.append(childShape)
                 }
                 shape.groupedShapes = updatedChildren
-                print("🟠 UPDATE STROKE: Updated children saved back to group")
+                // print("🟠 UPDATE STROKE: Updated children saved back to group")
             }
-            print("🟠 UPDATE STROKE: Updated shape saved to snapshot")
+            // print("🟠 UPDATE STROKE: Updated shape saved to snapshot")
         }
     }
 

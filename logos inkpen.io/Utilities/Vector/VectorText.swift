@@ -632,10 +632,10 @@ class FontManager: ObservableObject {
 
         fontVariantsCache[family] = sortedVariants
 
-        print("🔤 FONT VARIANTS FOR \(family):")
+        // print("🔤 FONT VARIANTS FOR \(family):")
         for (index, variant) in sortedVariants.enumerated() {
             let order = getWeightOrder(variant)
-            print("  \(index): \(variant) (order: \(order))")
+            // print("  \(index): \(variant) (order: \(order))")
         }
 
         return sortedVariants

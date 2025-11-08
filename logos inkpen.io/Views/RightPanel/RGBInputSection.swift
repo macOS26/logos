@@ -348,7 +348,7 @@ struct RGBInputSection: View {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            print("HELLO")
+            // print("HELLO")
             // Clear colorDelta and actually update objects
             colorDeltaColor = nil
             colorDeltaOpacity = nil

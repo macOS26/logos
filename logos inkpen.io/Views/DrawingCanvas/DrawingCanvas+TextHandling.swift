@@ -5,7 +5,7 @@ extension DrawingCanvas {
 
     func handleFontToolTap(at location: CGPoint) {
         lastTapLocation = location
-        print("🟡 handleFontToolTap at \(location)")
+        // print("🟡 handleFontToolTap at \(location)")
 
         // Don't create new text if there's already a text object selected or in edit mode
         let hasSelectedOrEditingText = document.viewState.selectedObjectIDs.contains { id in
@@ -18,15 +18,15 @@ extension DrawingCanvas {
 
         if hasSelectedOrEditingText {
             // Ignore tap - text is already selected/editing
-            print("🟡 Ignoring tap - text already selected/editing")
+            // print("🟡 Ignoring tap - text already selected/editing")
             return
         }
 
         if let existingTextID = findTextAt(location: location) {
-            print("🟡 Found existing text at location: \(existingTextID)")
+            // print("🟡 Found existing text at location: \(existingTextID)")
             startEditingText(textID: existingTextID, at: location)
         } else {
-            print("🟡 Creating new text at location")
+            // print("🟡 Creating new text at location")
             createNewTextAt(location: location)
         }
     }
@@ -147,7 +147,7 @@ extension DrawingCanvas {
     }
 
     func startEditingText(textID: UUID, at location: CGPoint, isDoubleClickFromArrow: Bool = false) {
-        print("🔵 startEditingText: textID=\(textID), location=\(location)")
+        // print("🔵 startEditingText: textID=\(textID), location=\(location)")
 
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType,
@@ -158,7 +158,7 @@ extension DrawingCanvas {
         }
 
         if let textObject = document.findText(by: textID) {
-            print("🔵 startEditingText: found text object, content='\(textObject.content)'")
+            // print("🔵 startEditingText: found text object, content='\(textObject.content)'")
 
             // Calculate cursor position FIRST, before triggering any view updates
             var cursorPosition = calculateCursorPosition(in: textObject, at: location)
@@ -179,17 +179,17 @@ extension DrawingCanvas {
             document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
             // NOW set isEditing, which triggers view sync with correct cursor position
-            print("🔵 startEditingText: calling setTextEditingInUnified with isEditing=true")
+            // print("🔵 startEditingText: calling setTextEditingInUnified with isEditing=true")
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
             document.viewState.selectedObjectIDs = [textID]
 
             isEditingText = true
             editingTextID = textID
-            print("🔵 startEditingText: DONE")
+            // print("🔵 startEditingText: DONE")
 
         } else {
-            print("🔵 startEditingText: TEXT NOT FOUND!")
+            // print("🔵 startEditingText: TEXT NOT FOUND!")
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }
