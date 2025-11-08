@@ -362,7 +362,7 @@ struct LayersPanel: View {
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
 
-                        Color.red.opacity(0.3000000)
+                        Color.red.opacity(0.0000000)
                             .dragTarget()
                             .position(x: eyeIconX, y: iconCenterY)
                     }
@@ -403,7 +403,7 @@ struct LayersPanel: View {
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
 
-                        Color.red.opacity(0.3000000)
+                        Color.red.opacity(0.0000000)
                             .dragTarget()
                             .position(x: lockIconX, y: iconCenterY)
                     }
