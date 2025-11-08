@@ -66,6 +66,7 @@ struct LayerCanvasView: View {
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
     let activeGradientDelta: VectorGradient?
+    let activeColorTarget: ColorTarget
 
     var appState = AppState.shared
 
@@ -505,10 +506,10 @@ struct LayerCanvasView: View {
                         : fillStyle.opacity
 
                     // Check for activeGradientDelta FIRST (for live preview during drag)
-                    if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                        // print("🎨🎨🎨 CANVAS RENDER WITH DELTA: shape \(shape.id)")
-                        // print("🎨🎨🎨 DELTA GRADIENT STOPS: \(activeGradientDelta!.stops.map { $0.color })")
-                        // print("🎨🎨🎨 FILL STYLE COLOR: \(fillStyle.color)")
+                    // ONLY apply gradient delta if activeColorTarget is .fill
+                    if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
+                        print("🎨 FILL: Using activeGradientDelta for shape \(shape.id), activeColorTarget=\(activeColorTarget)")
+                        print("🎨 FILL: Delta stops: \(activeGradientDelta!.stops.map { $0.color })")
 
                         // Create a fillStyle with activeGradientDelta and opacity
                         let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
@@ -542,7 +543,10 @@ struct LayerCanvasView: View {
 
                     if strokeStyle.placement == .center {
                         // Check for activeGradientDelta FIRST (for live preview during drag)
-                        if activeGradientDelta != nil && isSelected {
+                        // ONLY apply gradient delta if activeColorTarget is .stroke
+                        if activeGradientDelta != nil && isSelected && activeColorTarget == .stroke {
+                            print("🎨 STROKE: Using activeGradientDelta for shape \(shape.id), activeColorTarget=\(activeColorTarget)")
+                            print("🎨 STROKE: Delta stops: \(activeGradientDelta!.stops.map { $0.color })")
                             let effectiveStrokeStyle = StrokeStyle(
                                 gradient: activeGradientDelta!,
                                 width: effectiveStrokeWidth,
@@ -1001,6 +1005,7 @@ struct IsolatedLayerView: View {
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
     let activeGradientDelta: VectorGradient?
+    let activeColorTarget: ColorTarget
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1084,7 +1089,8 @@ struct IsolatedLayerView: View {
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
-                activeGradientDelta: activeGradientDelta
+                activeGradientDelta: activeGradientDelta,
+                activeColorTarget: activeColorTarget
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

@@ -226,7 +226,8 @@ extension FileOperations {
                         fillDeltaOpacity: nil,
                         strokeDeltaOpacity: nil,
                         strokeDeltaWidth: nil,
-                        activeGradientDelta: nil
+                        activeGradientDelta: nil,
+                        activeColorTarget: .fill
                     )
                 }
             }

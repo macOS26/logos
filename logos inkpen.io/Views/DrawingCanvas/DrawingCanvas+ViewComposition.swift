@@ -240,7 +240,8 @@ extension DrawingCanvas {
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
-                activeGradientDelta: activeGradientDelta
+                activeGradientDelta: activeGradientDelta,
+                activeColorTarget: document.viewState.activeColorTarget
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
             .allowsHitTesting(isActiveLayer)
