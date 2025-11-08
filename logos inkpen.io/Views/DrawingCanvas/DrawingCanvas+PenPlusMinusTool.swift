@@ -97,6 +97,35 @@ extension DrawingCanvas {
             elements[elementIndex] = firstLine
             elements.insert(secondLine, at: elementIndex + 1)
 
+        case .close:
+            // Convert close to line, split it, and add close at the end
+            guard let firstElement = elements.first else { return }
+            let endPoint: VectorPoint
+            switch firstElement {
+            case .move(let to):
+                endPoint = to
+            default:
+                return
+            }
+
+            let start = CGPoint(x: startPoint.x, y: startPoint.y)
+            let end = CGPoint(x: endPoint.x, y: endPoint.y)
+
+            // Find closest point on line to click location
+            let t = closestPointOnLineSegment(point: location, start: start, end: end)
+            let splitPoint = CGPoint(
+                x: start.x + t * (end.x - start.x),
+                y: start.y + t * (end.y - start.y)
+            )
+
+            let firstLine = PathElement.line(to: VectorPoint(splitPoint))
+            let secondLine = PathElement.line(to: endPoint)
+            let closeElement = PathElement.close
+
+            elements[elementIndex] = firstLine
+            elements.insert(secondLine, at: elementIndex + 1)
+            elements.insert(closeElement, at: elementIndex + 2)
+
         default:
             return
         }
@@ -237,6 +266,18 @@ extension DrawingCanvas {
                         previousPoint = to
                     case .quadCurve(let to, _):
                         previousPoint = to
+                    case .close:
+                        // Handle close segment - line from last point back to first point
+                        if let prev = previousPoint,
+                           let firstPoint = shape.path.elements.first,
+                           case .move(let firstTo) = firstPoint {
+                            let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
+                            let end = CGPoint(x: firstTo.x, y: firstTo.y).applying(shape.transform)
+
+                            if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
+                                return (shape.id, elementIndex)
+                            }
+                        }
                     default:
                         break
                     }
