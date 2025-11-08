@@ -21,6 +21,9 @@ struct DrawingCanvas: View {
     @Binding var strokeDeltaWidth: Double?
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var fontSizeDelta: Double?
+    @Binding var lineSpacingDelta: Double?
+    @Binding var lineHeightDelta: Double?
+    @Binding var letterSpacingDelta: Double?
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?

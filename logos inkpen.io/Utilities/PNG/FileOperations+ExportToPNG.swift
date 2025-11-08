@@ -498,7 +498,10 @@ private struct PNGExportView: View {
                         strokeDeltaWidth: nil,
                         activeGradientDelta: $activeGradientDelta,
                         activeColorTarget: .fill,
-                        fontSizeDelta: nil
+                        fontSizeDelta: nil,
+                        lineSpacingDelta: nil,
+                        lineHeightDelta: nil,
+                        letterSpacingDelta: nil
                     )
                 }
             }

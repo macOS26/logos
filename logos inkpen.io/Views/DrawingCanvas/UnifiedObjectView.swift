@@ -68,6 +68,9 @@ struct LayerCanvasView: View {
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
     let fontSizeDelta: Double?
+    let lineSpacingDelta: Double?
+    let lineHeightDelta: Double?
+    let letterSpacingDelta: Double?
 
     var appState = AppState.shared
 
@@ -257,7 +260,7 @@ struct LayerCanvasView: View {
                                     layerContext.transform = contentTransform
 
                                     if VectorText.from(liveContentShape) != nil {
-                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
+                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                     } else if liveContentShape.embeddedImageData != nil {
                                         renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     } else {
@@ -293,7 +296,7 @@ struct LayerCanvasView: View {
                                 let liveContentNoClip = applyLivePositions(to: contentShape)
 
                                 if VectorText.from(liveContentNoClip) != nil {
-                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity)
+                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity)
                                 } else if liveContentNoClip.embeddedImageData != nil {
                                     renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 } else {
@@ -343,7 +346,7 @@ struct LayerCanvasView: View {
                                 layerContext.transform = contentTransform
 
                                 if VectorText.from(liveContentColorMode) != nil {
-                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
+                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                 } else if liveContentColorMode.embeddedImageData != nil {
                                     renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 } else {
@@ -391,7 +394,7 @@ struct LayerCanvasView: View {
                         let liveChildShape = applyLivePositions(to: childShape)
 
                         if VectorText.from(liveChildShape) != nil {
-                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
+                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                         } else if liveChildShape.embeddedImageData != nil {
                             renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         } else {
@@ -432,7 +435,7 @@ struct LayerCanvasView: View {
                     }()
                     let liveTextShape = applyLivePositions(to: shape)
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
+                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                 }
             }
         }
@@ -831,7 +834,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, fillDeltaOpacity: Double? = nil, maskShape: VectorShape? = nil) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -855,18 +858,49 @@ struct LayerCanvasView: View {
 
             cgContext.setAlpha(CGFloat(effectiveFillOpacity))
 
-            // Apply live font size delta if dragging and selected
+            // Apply live typography deltas if dragging and selected
             let effectiveFontSize: CGFloat
             let effectiveLineHeight: CGFloat
+            let effectiveLineSpacing: CGFloat
+            let effectiveLetterSpacing: CGFloat
 
-            if let delta = fontSizeDelta, isSelected {
-                // Calculate proportional line height based on original ratio
-                let lineHeightRatio = vectorText.typography.lineHeight / vectorText.typography.fontSize
-                effectiveFontSize = CGFloat(delta)
-                effectiveLineHeight = effectiveFontSize * lineHeightRatio
+            if isSelected {
+                // Font size
+                effectiveFontSize = if let delta = fontSizeDelta {
+                    CGFloat(delta)
+                } else {
+                    vectorText.typography.fontSize
+                }
+
+                // Line height (explicit delta overrides proportional)
+                if let delta = lineHeightDelta {
+                    effectiveLineHeight = CGFloat(delta)
+                } else if let fontDelta = fontSizeDelta {
+                    // Proportional line height based on font size delta
+                    let lineHeightRatio = vectorText.typography.lineHeight / vectorText.typography.fontSize
+                    effectiveLineHeight = CGFloat(fontDelta) * lineHeightRatio
+                } else {
+                    effectiveLineHeight = vectorText.typography.lineHeight
+                }
+
+                // Line spacing delta
+                effectiveLineSpacing = if let delta = lineSpacingDelta {
+                    CGFloat(delta)
+                } else {
+                    vectorText.typography.lineSpacing
+                }
+
+                // Letter spacing delta
+                effectiveLetterSpacing = if let delta = letterSpacingDelta {
+                    CGFloat(delta)
+                } else {
+                    vectorText.typography.letterSpacing
+                }
             } else {
                 effectiveFontSize = vectorText.typography.fontSize
                 effectiveLineHeight = vectorText.typography.lineHeight
+                effectiveLineSpacing = vectorText.typography.lineSpacing
+                effectiveLetterSpacing = vectorText.typography.letterSpacing
             }
 
             // Create NSFont with effective size
@@ -892,7 +926,7 @@ struct LayerCanvasView: View {
             // Build paragraph style once (O(1))
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
-            paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+            paragraphStyle.lineSpacing = max(0, effectiveLineSpacing)
             paragraphStyle.minimumLineHeight = effectiveLineHeight
             paragraphStyle.maximumLineHeight = effectiveLineHeight
 
@@ -902,7 +936,7 @@ struct LayerCanvasView: View {
             let commonAttributes: [NSAttributedString.Key: Any] = [
                 .font: nsFont,
                 .paragraphStyle: paragraphStyle,
-                .kern: vectorText.typography.letterSpacing
+                .kern: effectiveLetterSpacing
             ]
 
             // Create layout system once (O(n) where n = text length)
@@ -1058,6 +1092,9 @@ struct IsolatedLayerView: View {
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
     let fontSizeDelta: Double?
+    let lineSpacingDelta: Double?
+    let lineHeightDelta: Double?
+    let letterSpacingDelta: Double?
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1144,7 +1181,10 @@ struct IsolatedLayerView: View {
                 strokeDeltaWidth: strokeDeltaWidth,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: activeColorTarget,
-                fontSizeDelta: fontSizeDelta
+                fontSizeDelta: fontSizeDelta,
+                lineSpacingDelta: lineSpacingDelta,
+                lineHeightDelta: lineHeightDelta,
+                letterSpacingDelta: letterSpacingDelta
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

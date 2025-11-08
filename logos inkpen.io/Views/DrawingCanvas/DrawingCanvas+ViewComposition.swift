@@ -175,7 +175,7 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?) -> some View {
+    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
         let layerBlendMode = layer.blendMode
 
@@ -242,7 +242,10 @@ extension DrawingCanvas {
                 strokeDeltaWidth: strokeDeltaWidth,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: document.viewState.activeColorTarget,
-                fontSizeDelta: fontSizeDelta
+                fontSizeDelta: fontSizeDelta,
+                lineSpacingDelta: lineSpacingDelta,
+                lineHeightDelta: lineHeightDelta,
+                letterSpacingDelta: letterSpacingDelta
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
             .allowsHitTesting(isActiveLayer)
@@ -255,7 +258,7 @@ extension DrawingCanvas {
             // Render layers with background fills for special layers
             ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
                 if layer.isVisible {
-                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta)
+                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta)
                 }
             }
 
