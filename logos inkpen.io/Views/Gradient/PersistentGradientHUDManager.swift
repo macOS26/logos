@@ -13,6 +13,7 @@ class PersistentGradientHUDManager {
     var editingStopColor: VectorColor = .black
     var currentDocument: VectorDocument? = nil
     var currentGradient: VectorGradient? = nil
+    var activeColorTarget: ColorTarget = .fill
     var onColorSelected: ((UUID, VectorColor) -> Void)? = nil
     var onClose: (() -> Void)? = nil
 
@@ -22,7 +23,7 @@ class PersistentGradientHUDManager {
         self.appState = appState
     }
 
-    func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?,
+    func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?, activeColorTarget: ColorTarget,
               onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
         isHiding = false
 
@@ -30,10 +31,17 @@ class PersistentGradientHUDManager {
         self.editingStopColor = color
         self.currentDocument = document
         self.currentGradient = gradient
+        self.activeColorTarget = activeColorTarget
         self.onColorSelected = onColorSelected
         self.onClose = onClose
 
-        stableColorDocument.defaultFillColor = color
+        // Set color and target based on active color target
+        stableColorDocument.viewState.activeColorTarget = activeColorTarget
+        if activeColorTarget == .fill {
+            stableColorDocument.defaultFillColor = color
+        } else {
+            stableColorDocument.defaultStrokeColor = color
+        }
 
         isVisible = true
 
@@ -91,7 +99,12 @@ class PersistentGradientHUDManager {
     func updateStopColor(_ stopId: UUID, _ color: VectorColor) {
         if stopId == editingStopId {
             editingStopColor = color
-            stableColorDocument.defaultFillColor = color
+            // Update color based on active color target
+            if activeColorTarget == .fill {
+                stableColorDocument.defaultFillColor = color
+            } else {
+                stableColorDocument.defaultStrokeColor = color
+            }
         }
 
         onColorSelected?(stopId, color)
