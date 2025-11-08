@@ -152,6 +152,7 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
+        let _ = print("🔵 LayerCanvasView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         Canvas { context, size in
             _ = objectUpdateTrigger
             _ = activeGradientDelta  // Force redraw when gradient changes
@@ -606,11 +607,8 @@ struct LayerCanvasView: View {
                     : fillStyle.opacity
 
                 // Check for activeGradientDelta FIRST (for live preview during drag)
-                if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) {
-                    // print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for shape \(shape.id)")
-                    // if case .linear(_) = activeGradientDelta {
-                    //     print("🎨 CANVAS RENDER (no mask): Delta angle = \(linear.angle)")
-                    // }
+                if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
+                    print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for FILL shape \(shape.id)")
 
                     // Create a fillStyle with activeGradientDelta and opacity
                     let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
@@ -639,7 +637,14 @@ struct LayerCanvasView: View {
                     : strokeStyle.width
 
                 if strokeStyle.placement == .center {
-                    if let gradient = strokeStyle.gradient {
+                    // Check for activeGradientDelta FIRST (for live preview during drag)
+                    if activeGradientDelta != nil && isSelected && activeColorTarget == .stroke {
+                        print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for STROKE shape \(shape.id)")
+                        var effectiveStrokeStyle = strokeStyle
+                        effectiveStrokeStyle.opacity = effectiveStrokeOpacity
+                        effectiveStrokeStyle.width = effectiveStrokeWidth
+                        renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
+                    } else if let gradient = strokeStyle.gradient {
                         // Create a strokeStyle with effective values for gradients
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
@@ -1077,6 +1082,7 @@ struct IsolatedLayerView: View {
     }
 
     var body: some View {
+        let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
