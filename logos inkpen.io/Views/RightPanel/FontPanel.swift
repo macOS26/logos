@@ -4,6 +4,7 @@ struct FontPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+    @Binding var fontSizeDelta: Double?
     @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
@@ -98,7 +99,8 @@ struct FontPanel: View {
                             selectedLineHeight: document.fontManager.selectedLineHeight,
                             document: document,
                             selectedText: selectedText,
-                            editingText: editingText
+                            editingText: editingText,
+                            fontSizeDelta: $fontSizeDelta
                         )
 
                         FontAlignmentControls(
