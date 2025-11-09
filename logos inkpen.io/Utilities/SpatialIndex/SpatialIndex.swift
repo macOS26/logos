@@ -80,11 +80,10 @@ struct SpatialIndex {
                     let bounds: CGRect
                     switch object.objectType {
                     case .text(let shape):
-                        // Text uses textPosition + bounds, not transform
-                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        // Text uses transform for position like other shapes
                         bounds = CGRect(
-                            x: position.x,
-                            y: position.y,
+                            x: shape.transform.tx,
+                            y: shape.transform.ty,
                             width: shape.bounds.width,
                             height: shape.bounds.height
                         )
@@ -191,11 +190,10 @@ struct SpatialIndex {
                     let bounds: CGRect
                     switch object.objectType {
                     case .text(let shape):
-                        // Text uses textPosition + bounds, not transform
-                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        // Text uses transform for position like other shapes
                         bounds = CGRect(
-                            x: position.x,
-                            y: position.y,
+                            x: shape.transform.tx,
+                            y: shape.transform.ty,
                             width: shape.bounds.width,
                             height: shape.bounds.height
                         )

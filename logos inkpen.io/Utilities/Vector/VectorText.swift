@@ -682,16 +682,20 @@ extension VectorText {
             opacity: typography.strokeOpacity
         ) : nil
 
+        // Use transform for position, not textPosition
+        var finalTransform = transform
+        finalTransform.tx = position.x
+        finalTransform.ty = position.y
+
         var shape = VectorShape(
             name: "Text: \(content.prefix(20))",
             path: VectorPath(elements: []),
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
-            transform: transform
+            transform: finalTransform
         )
 
         shape.textContent = content
-        shape.textPosition = position
         shape.typography = typography
         shape.areaSize = areaSize
         shape.bounds = bounds
