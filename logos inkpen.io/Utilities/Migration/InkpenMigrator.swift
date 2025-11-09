@@ -206,6 +206,14 @@ struct InkpenMigrator {
             document.viewState.zoomLevel = zoomLevel
         }
 
+        // Set layer expansion state: collapse layers with > 20 objects
+        for layer in migratedLayers {
+            if layer.objectIDs.count > 20 {
+                document.settings.layerExpansionState[layer.id] = false
+                Log.fileOperation("  📦 Collapsed layer '\(layer.name)' (\(layer.objectIDs.count) objects)", level: .debug)
+            }
+        }
+
         Log.fileOperation("✅ Successfully migrated document to version 1.0.27", level: .info)
 
         return document
