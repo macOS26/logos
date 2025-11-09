@@ -31,7 +31,7 @@ struct InkpenMigrator {
     }
 
     private struct Legacy1_0Layer: Codable {
-        var color: String
+        var color: String?
         var id: String
         var isLocked: Bool?
         var name: String
@@ -151,7 +151,7 @@ struct InkpenMigrator {
                 isLocked: legacyLayer.isLocked ?? false,
                 opacity: legacyLayer.opacity ?? 1.0,
                 blendMode: BlendMode(rawValue: legacyLayer.blendMode ?? "Normal") ?? .normal,
-                color: LayerColor(name: legacyLayer.color)
+                color: LayerColor(name: legacyLayer.color ?? "gray")
             )
             migratedLayers.append(layer)
         }
