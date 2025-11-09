@@ -40,6 +40,10 @@ extension FileOperations {
             decoder.dateDecodingStrategy = .iso8601
 
             let document = try decoder.decode(VectorDocument.self, from: jsonData)
+
+            // Log version for migration tracking
+            Log.fileOperation("📦 Opened inkpen document version: \(document.snapshot.formatVersion)", level: .info)
+
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
             for obj in document.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {

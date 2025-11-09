@@ -65,6 +65,9 @@ extension FileOperations {
             decoder.dateDecodingStrategy = .iso8601
             let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
+            // Log version for migration tracking
+            Log.fileOperation("📦 Opened inkpen document from PDF, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
+
             return inkpenDocument
         }
 
