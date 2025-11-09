@@ -538,7 +538,7 @@ struct LayerCanvasView: View {
 
                 // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
                 if viewMode == .keyline {
-                    layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+                    layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
                 } else if let strokeStyle = shape.strokeStyle {
                     // Use delta values if available and shape is selected
                     let isSelected = selectedObjectIDs.contains(shape.id)
@@ -630,7 +630,7 @@ struct LayerCanvasView: View {
             // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
             // Stroke width stays constant regardless of scale transform
             if viewMode == .keyline {
-                context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0)
+                context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
             } else if let strokeStyle = shape.strokeStyle {
                 // Use delta values if available and shape is selected
                 let isSelected = selectedObjectIDs.contains(shape.id)
