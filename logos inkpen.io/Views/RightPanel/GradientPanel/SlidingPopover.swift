@@ -220,5 +220,9 @@ struct VibrancyEffectView<Content: View>: NSViewRepresentable {
 
     class Coordinator {
         var hostingController: NSHostingController<Content>?
+
+        deinit {
+            hostingController = nil
+        }
     }
 }
