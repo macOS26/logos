@@ -8,12 +8,14 @@ struct InkpenMigrator {
     /// - Returns: A migrated VectorDocument, or nil if migration fails
     static func migrateLegacyDocument(from data: Data) -> VectorDocument? {
         // Try to decode as legacy 1.0 format
-        if let legacyDoc = try? decodeLegacy1_0(from: data) {
+        do {
+            let legacyDoc = try decodeLegacy1_0(from: data)
             Log.fileOperation("🔄 Migrating document from version 1.0 to 1.0.27", level: .info)
             return migrate1_0_to_1_0_27(legacyDoc)
+        } catch {
+            Log.error("❌ Legacy migration failed: \(error)", category: .error)
+            return nil
         }
-
-        return nil
     }
 
     // MARK: - Legacy 1.0 Format
