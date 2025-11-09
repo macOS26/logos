@@ -4,13 +4,6 @@ import Combine
 extension DrawingCanvas {
 
     internal func handleSelectionTap(at location: CGPoint) {
-        // Re-read modifier flags at the moment of handling the tap
-        let modifierFlags = NSEvent.modifierFlags
-        isShiftPressed = modifierFlags.contains(.shift)
-        isOptionPressed = modifierFlags.contains(.option)
-        isCommandPressed = modifierFlags.contains(.command)
-        isControlPressed = modifierFlags.contains(.control)
-
         let validatedLocation = validateAndCorrectLocation(location)
 
         if isOptionPressed && document.viewState.currentTool == .selection {
