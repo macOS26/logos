@@ -51,6 +51,11 @@ class DocumentViewState: ObservableObject {
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
+            if selectedObjectIDs.count == 0 && oldValue.count > 0 {
+                print("❌ SELECTION CLEARED! Was \(oldValue.count), now 0")
+                print("❌ Stack trace:")
+                Thread.callStackSymbols.forEach { print("  \($0)") }
+            }
             PublishedSelectedObjectIDs = selectedObjectIDs
         }
     }
