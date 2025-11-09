@@ -280,17 +280,13 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         if keepOriginalPath {
-            if offsetDistance >= 0 {
-                for shape in selectedShapes {
-                    newShapes[shape.id] = shape
-                }
-            } else {
-                for shape in selectedShapes {
-                    newShapes[shape.id] = shape
-                }
+            // Keep original shapes in newShapes
+            for shape in selectedShapes {
+                newShapes[shape.id] = shape
             }
         } else {
-            document.removeSelectedShapes()
+            // Don't include original shapes in newShapes (they will be deleted)
+            // oldShapes already has them, newShapes only has offset shapes
         }
 
         document.viewState.selectedObjectIDs = newOffsetShapeIDs
