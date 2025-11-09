@@ -32,6 +32,13 @@ extension DrawingCanvas {
     }
 
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
+        // Update modifier key states at tap time
+        let modifierFlags = NSEvent.modifierFlags
+        isShiftPressed = modifierFlags.contains(.shift)
+        isOptionPressed = modifierFlags.contains(.option)
+        isCommandPressed = modifierFlags.contains(.command)
+        isControlPressed = modifierFlags.contains(.control)
+
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         let currentTime = Date()
         let timeSinceLastClick = currentTime.timeIntervalSince(lastClickTime)
