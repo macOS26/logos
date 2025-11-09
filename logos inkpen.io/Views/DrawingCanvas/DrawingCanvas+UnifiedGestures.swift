@@ -32,7 +32,6 @@ extension DrawingCanvas {
     }
 
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
-        print("⭐️ handleUnifiedTap called")
         // Update modifier key states at tap time
         let modifierFlags = NSEvent.modifierFlags
         isShiftPressed = modifierFlags.contains(.shift)
@@ -210,7 +209,6 @@ extension DrawingCanvas {
     }
 
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
-        print("🔚 DRAG ENDED - isDrawing=\(isDrawing)")
 
         switch document.viewState.currentTool {
         case .hand:
@@ -229,13 +227,11 @@ extension DrawingCanvas {
             resetTextBoxDrawingState()
 
         case .selection:
-            print("🔚 SELECTION DRAG ENDED - calling finishSelectionDrag")
             finishSelectionDrag()
             isDrawing = false
             if document.isHandleScalingActive {
                 document.isHandleScalingActive = false
             }
-            print("🔚 SELECTION DRAG ENDED - selection count after finish=\(document.viewState.selectedObjectIDs.count)")
 
         case .directSelection:
             finishDirectSelectionDrag()
@@ -280,7 +276,6 @@ extension DrawingCanvas {
         if !isDrawing {
             // DON'T re-read NSEvent.modifierFlags here - it's unreliable in SwiftUI gesture handlers
             // Trust the values set during the tap gesture in handleUnifiedTap
-            print("🟠 DRAG START - modifiers: shift=\(isShiftPressed), cmd=\(isCommandPressed), selection count=\(document.viewState.selectedObjectIDs.count)")
 
             // Don't change selection if shift-clicking to add to selection
             let shouldPreserveSelection = isShiftPressed || isCommandPressed
@@ -288,10 +283,7 @@ extension DrawingCanvas {
             if document.viewState.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
                 // Only call selectObjectAt if not preserving selection, or if selection is empty
                 if !shouldPreserveSelection || document.viewState.selectedObjectIDs.isEmpty {
-                    print("🟠 DRAG: Calling selectObjectAt")
                     selectObjectAt(startLocation)
-                } else {
-                    print("🟠 DRAG: Preserving selection (shift/cmd held)")
                 }
             }
 

@@ -11,8 +11,6 @@ extension DrawingCanvas {
         isCommandPressed = modifierFlags.contains(.command)
         isControlPressed = modifierFlags.contains(.control)
 
-        print("🔍 handleSelectionTap - modifiers: shift=\(isShiftPressed), cmd=\(isCommandPressed), option=\(isOptionPressed)")
-
         let validatedLocation = validateAndCorrectLocation(location)
 
         if isOptionPressed && document.viewState.currentTool == .selection {
@@ -108,9 +106,7 @@ extension DrawingCanvas {
             let objectToSelect = hitObject
 
             if isShiftPressed {
-                print("✅ SHIFT DETECTED - Adding to selection. Before: \(document.viewState.selectedObjectIDs.count), inserting: \(objectToSelect.id)")
                 document.viewState.selectedObjectIDs.insert(objectToSelect.id)
-                print("✅ After insert: \(document.viewState.selectedObjectIDs.count) objects selected")
             } else if isCommandPressed {
                 if document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
                     document.viewState.selectedObjectIDs.remove(objectToSelect.id)
