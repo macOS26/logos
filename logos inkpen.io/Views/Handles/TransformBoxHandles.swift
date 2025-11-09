@@ -49,8 +49,6 @@ struct TransformBoxHandles: View {
                 let zoom = zoomLevel
                 let offset = canvasOffset
 
-                guard !isKeylineMode else { return }
-
                 // Apply preview transform to bounds if scaling
                 let displayBounds = (isScaling && !previewTransform.isIdentity)
                     ? transformedBounds.applying(previewTransform)
