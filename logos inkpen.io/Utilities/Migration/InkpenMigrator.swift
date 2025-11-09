@@ -155,26 +155,28 @@ struct InkpenMigrator {
 
         // Re-encode and decode unifiedObjects through current VectorObject format
         // This is a workaround to convert the legacy format to current format
-        // IMPORTANT: Process in order to preserve Z-ordering
+        // IMPORTANT: Legacy format is front-to-back, current format is back-to-front
         if let objectsData = try? JSONEncoder().encode(legacy.unifiedObjects),
            let jsonArray = try? JSONSerialization.jsonObject(with: objectsData) as? [[String: Any]] {
 
-            // Process objects IN ORDER to preserve Z-index (front to back)
-            for (index, jsonObject) in jsonArray.enumerated() {
+            // Process objects IN REVERSE ORDER because:
+            // - Legacy unifiedObjects: front-to-back (index 0 = frontmost)
+            // - Current objectIDs: back-to-front (index 0 = backmost)
+            for (index, jsonObject) in jsonArray.reversed().enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    let vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
 
                     // Add object to snapshot
                     document.snapshot.objects[vectorObject.id] = vectorObject
 
-                    // Add object ID to appropriate layer IN ORDER
+                    // Add object ID to appropriate layer IN REVERSE ORDER
                     let layerIndex = vectorObject.layerIndex
                     if layerIndex >= 0 && layerIndex < migratedLayers.count {
                         migratedLayers[layerIndex].objectIDs.append(vectorObject.id)
-                        Log.fileOperation("  [\(index)] → Layer \(layerIndex): \(vectorObject.id)", level: .debug)
+                        Log.fileOperation("  [rev \(index)] → Layer \(layerIndex): \(vectorObject.id)", level: .debug)
                     }
                 } else {
-                    Log.fileOperation("⚠️ Failed to decode object at index \(index)", level: .warning)
+                    Log.fileOperation("⚠️ Failed to decode object at reverse index \(index)", level: .warning)
                 }
             }
 
