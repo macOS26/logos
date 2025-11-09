@@ -63,12 +63,22 @@ extension FileOperations {
 
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
-            // Log version for migration tracking
-            Log.fileOperation("📦 Opened inkpen document from PDF, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
+            // Try to decode as current format first
+            if let inkpenDocument = try? decoder.decode(VectorDocument.self, from: inkpenData) {
+                // Log version for migration tracking
+                Log.fileOperation("📦 Opened inkpen document from PDF, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
+                return inkpenDocument
+            }
 
-            return inkpenDocument
+            // Fallback: Try migration from legacy format
+            Log.fileOperation("⚠️ Current format failed, attempting legacy migration from PDF...", level: .warning)
+            if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: inkpenData) {
+                return migratedDocument
+            }
+
+            Log.error("❌ Failed to decode inkpen metadata from PDF", category: .error)
+            throw VectorImportError.parsingError("Invalid inkpen metadata in PDF", line: nil)
         }
 
         let document = VectorDocument()

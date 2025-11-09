@@ -34,13 +34,12 @@ extension FileOperations {
 
     static func importFromJSON(url: URL) throws -> VectorDocument {
 
-        do {
-            let jsonData = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+        let jsonData = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
 
-            let document = try decoder.decode(VectorDocument.self, from: jsonData)
-
+        // Try to decode as current format first
+        if let document = try? decoder.decode(VectorDocument.self, from: jsonData) {
             // Log version for migration tracking
             Log.fileOperation("📦 Opened inkpen document version: \(document.snapshot.formatVersion)", level: .info)
 
@@ -51,10 +50,22 @@ extension FileOperations {
                 }
             }
             return document
-        } catch {
-            Log.error("❌ JSON import failed: \(error)", category: .error)
-            throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
         }
+
+        // Fallback: Try migration from legacy format
+        Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
+        if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: jsonData) {
+            ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: migratedDocument)
+            for obj in migratedDocument.snapshot.objects.values {
+                if case .shape(let shape) = obj.objectType {
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
+                }
+            }
+            return migratedDocument
+        }
+
+        Log.error("❌ JSON import failed: Unable to decode as current or legacy format", category: .error)
+        throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
 
     static func importFromJSONData(_ data: Data) throws -> VectorDocument {
@@ -62,8 +73,8 @@ extension FileOperations {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        do {
-            let document = try decoder.decode(VectorDocument.self, from: data)
+        // Try to decode as current format first
+        if let document = try? decoder.decode(VectorDocument.self, from: data) {
             ImageContentRegistry.setBaseDirectory(nil, for: document)
             for obj in document.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
@@ -71,9 +82,21 @@ extension FileOperations {
                 }
             }
             return document
-        } catch {
-            Log.error("❌ JSON data import failed: \(error)", category: .error)
-            throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
         }
+
+        // Fallback: Try migration from legacy format
+        Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
+        if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: data) {
+            ImageContentRegistry.setBaseDirectory(nil, for: migratedDocument)
+            for obj in migratedDocument.snapshot.objects.values {
+                if case .shape(let shape) = obj.objectType {
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
+                }
+            }
+            return migratedDocument
+        }
+
+        Log.error("❌ JSON data import failed: Unable to decode as current or legacy format", category: .error)
+        throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
 }
