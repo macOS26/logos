@@ -130,7 +130,7 @@ struct LayersPanel: View {
                 // Use the layer's objectIDs array from snapshot
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
 
-                for objectID in objectIDs {
+                for objectID in objectIDs.reversed() {
                     if let object = document.snapshot.objects[objectID] {
                         rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
