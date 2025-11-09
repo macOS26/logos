@@ -56,8 +56,8 @@ struct InkpenMigrator {
         var snapToGrid: Bool?
         var snapToPoint: Bool?
         var unit: String?
-        var groupExpansionState: [String]?
-        var layerExpansionState: [String]?
+        var groupExpansionState: [AnyCodable]?  // Mixed array of String/Bool
+        var layerExpansionState: [AnyCodable]?  // Mixed array of String/Bool
         var customRgbSwatches: [[String: Double]]?
         var customCmykSwatches: [[String: Double]]?
         var customHsbSwatches: [[String: Double]]?
