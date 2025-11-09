@@ -133,7 +133,19 @@ extension VectorObject: Codable {
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
 
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
-        let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
+        var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
+
+        // MIGRATION: Fix old text objects that have textPosition instead of transform
+        if shape.typography != nil, let textPosition = shape.textPosition {
+            if shape.transform.tx == 0 && shape.transform.ty == 0 {
+                // Old format - migrate textPosition to transform
+                var newTransform = shape.transform
+                newTransform.tx = textPosition.x
+                newTransform.ty = textPosition.y
+                shape.transform = newTransform
+                shape.textPosition = nil
+            }
+        }
 
         // Try to decode the explicit type first (for new files)
         if let typeString = try? objectContainer.decode(String.self, forKey: .type) {
