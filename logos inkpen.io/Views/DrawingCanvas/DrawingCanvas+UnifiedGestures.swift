@@ -274,8 +274,14 @@ extension DrawingCanvas {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
 
         if !isDrawing {
+            // Don't change selection if shift-clicking to add to selection
+            let shouldPreserveSelection = isShiftPressed || isCommandPressed
+
             if document.viewState.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
-                selectObjectAt(startLocation)
+                // Only call selectObjectAt if not preserving selection, or if selection is empty
+                if !shouldPreserveSelection || document.viewState.selectedObjectIDs.isEmpty {
+                    selectObjectAt(startLocation)
+                }
             }
 
             if !document.viewState.selectedObjectIDs.isEmpty {
