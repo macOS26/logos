@@ -40,12 +40,13 @@ extension FileOperations {
 
             if let jsonData = try? encoder.encode(document) {
                 let base64String = jsonData.base64EncodedString()
+                let formatVersion = document.snapshot.formatVersion
                 let xmpMetadata = """
                 <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
                 <x:xmpmeta xmlns:x="adobe:ns:meta/">
                     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
                         <rdf:Description rdf:about=""
-                            xmlns:inkpen="https://inkpen.io/ns/1.0/">
+                            xmlns:inkpen="https://inkpen.io/ns/\(formatVersion)">
                             <inkpen:document>\(base64String)</inkpen:document>
                         </rdf:Description>
                     </rdf:RDF>
