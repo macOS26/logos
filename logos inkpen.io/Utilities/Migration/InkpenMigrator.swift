@@ -64,6 +64,7 @@ struct InkpenMigrator {
     private struct Legacy1_0Object: Codable {
         var id: String
         var layerIndex: Int
+        var orderID: Int?
         var objectType: AnyCodable
     }
 
@@ -153,15 +154,20 @@ struct InkpenMigrator {
             migratedLayers.append(layer)
         }
 
-        // Re-encode and decode unifiedObjects through current VectorObject format
+        // Sort objects by orderID to get correct Z-order
+        let sortedObjects = legacy.unifiedObjects.sorted { obj1, obj2 in
+            let order1 = obj1.orderID ?? 0
+            let order2 = obj2.orderID ?? 0
+            return order1 < order2
+        }
+
+        // Re-encode and decode sortedObjects through current VectorObject format
         // This is a workaround to convert the legacy format to current format
-        // IMPORTANT: Keep same order - both formats store back-to-front in the array
-        if let objectsData = try? JSONEncoder().encode(legacy.unifiedObjects),
+        // IMPORTANT: After sorting by orderID, objects are in back-to-front order
+        if let objectsData = try? JSONEncoder().encode(sortedObjects),
            let jsonArray = try? JSONSerialization.jsonObject(with: objectsData) as? [[String: Any]] {
 
-            // Process objects IN SAME ORDER
-            // - Legacy unifiedObjects: back-to-front (index 0 = backmost)
-            // - Current objectIDs: back-to-front (index 0 = backmost)
+            // Process objects IN ORDER (already sorted by orderID)
             for (index, jsonObject) in jsonArray.enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    let vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
@@ -169,11 +175,11 @@ struct InkpenMigrator {
                     // Add object to snapshot
                     document.snapshot.objects[vectorObject.id] = vectorObject
 
-                    // Add object ID to appropriate layer IN SAME ORDER
+                    // Add object ID to appropriate layer
                     let layerIndex = vectorObject.layerIndex
                     if layerIndex >= 0 && layerIndex < migratedLayers.count {
                         migratedLayers[layerIndex].objectIDs.append(vectorObject.id)
-                        Log.fileOperation("  [\(index)] → Layer \(layerIndex): \(vectorObject.id)", level: .debug)
+                        Log.fileOperation("  [\(index)] orderID → Layer \(layerIndex): \(vectorObject.id)", level: .debug)
                     }
                 } else {
                     Log.fileOperation("⚠️ Failed to decode object at index \(index)", level: .warning)
