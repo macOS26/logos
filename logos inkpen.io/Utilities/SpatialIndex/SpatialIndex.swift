@@ -76,8 +76,27 @@ struct SpatialIndex {
                         break
                     }
                 } else {
-                    // Regular objects - index normally
-                    let bounds = object.shape.bounds.applying(object.shape.transform)
+                    // Regular objects (including text) - index normally
+                    let bounds: CGRect
+                    switch object.objectType {
+                    case .text(let shape):
+                        // Text uses position + bounds, not transform
+                        bounds = CGRect(
+                            x: shape.transform.tx,
+                            y: shape.transform.ty,
+                            width: shape.bounds.width,
+                            height: shape.bounds.height
+                        )
+                    case .shape(let shape),
+                         .image(let shape),
+                         .warp(let shape),
+                         .clipMask(let shape):
+                        bounds = shape.bounds.applying(shape.transform)
+                    case .group, .clipGroup:
+                        // Already handled above
+                        continue
+                    }
+
                     objectBounds[objectID] = bounds
 
                     let cells = cellsForBounds(bounds)
@@ -167,8 +186,27 @@ struct SpatialIndex {
                         break
                     }
                 } else {
-                    // Regular objects
-                    let bounds = object.shape.bounds.applying(object.shape.transform)
+                    // Regular objects (including text)
+                    let bounds: CGRect
+                    switch object.objectType {
+                    case .text(let shape):
+                        // Text uses position + bounds, not transform
+                        bounds = CGRect(
+                            x: shape.transform.tx,
+                            y: shape.transform.ty,
+                            width: shape.bounds.width,
+                            height: shape.bounds.height
+                        )
+                    case .shape(let shape),
+                         .image(let shape),
+                         .warp(let shape),
+                         .clipMask(let shape):
+                        bounds = shape.bounds.applying(shape.transform)
+                    case .group, .clipGroup:
+                        // Already handled above
+                        continue
+                    }
+
                     objectBounds[objectID] = bounds
 
                     let cells = cellsForBounds(bounds)
