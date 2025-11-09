@@ -44,8 +44,9 @@ class SVGExporter {
             do {
                 let inkpenData = try FileOperations.exportToJSONData(document)
                 let base64String = inkpenData.base64EncodedString()
+                let formatVersion = document.snapshot.formatVersion
                 svg += "<metadata>\n"
-                svg += "  <inkpen:document xmlns:inkpen=\"https://inkpen.io/ns\">\n"
+                svg += "  <inkpen:document xmlns:inkpen=\"https://inkpen.io/ns/\(formatVersion)\">\n"
                 svg += "    \(base64String)\n"
                 svg += "  </inkpen:document>\n"
                 svg += "</metadata>\n"
