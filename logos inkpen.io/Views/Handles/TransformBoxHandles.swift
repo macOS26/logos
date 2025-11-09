@@ -41,7 +41,6 @@ struct TransformBoxHandles: View {
 
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
-        let isKeylineMode = document.viewState.viewMode == .keyline
 
         ZStack {
             // Render transform box outline using Canvas (like direct selection)
@@ -200,57 +199,55 @@ struct TransformBoxHandles: View {
                 }
             }
 
-            if !isKeylineMode {
-                // Apply preview transform to bounds for handle positioning if scaling
-                let displayBounds = (isScaling && !previewTransform.isIdentity)
-                    ? transformedBounds.applying(previewTransform)
-                    : transformedBounds
+            // Apply preview transform to bounds for handle positioning if scaling
+            let displayBounds = (isScaling && !previewTransform.isIdentity)
+                ? transformedBounds.applying(previewTransform)
+                : transformedBounds
 
-                ForEach(0..<9) { index in
-                    let pt = handlePosition(index: index, in: displayBounds)
-                    let isAnchorPoint = isHandleTheAnchor(index: index)
-                    let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
-                    let isDisabled = isAnchorPoint || isAdjacentToAnchor
+            ForEach(0..<9) { index in
+                let pt = handlePosition(index: index, in: displayBounds)
+                let isAnchorPoint = isHandleTheAnchor(index: index)
+                let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
+                let isDisabled = isAnchorPoint || isAdjacentToAnchor
 
-                    ZStack {
-                        Circle()
-                            .fill(Color.clear)
-                            .frame(width: scaledHitAreaSize, height: scaledHitAreaSize)
-                            .contentShape(Circle())
-                            .allowsHitTesting(true)
+                ZStack {
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: scaledHitAreaSize, height: scaledHitAreaSize)
+                        .contentShape(Circle())
+                        .allowsHitTesting(true)
 
-                        Circle()
-                            .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
-                            .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
-                            .frame(width: scaledHandleSize, height: scaledHandleSize)
-                            .allowsHitTesting(false)
+                    Circle()
+                        .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
+                        .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
+                        .frame(width: scaledHandleSize, height: scaledHandleSize)
+                        .allowsHitTesting(false)
+                }
+            .position(
+                (shape.typography != nil || containsTextBoxInGroup()) ?
+                CGPoint(
+                    x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x,
+                    y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y
+                )
+                :
+                CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
+            )
+            .onTapGesture {
+                setAnchorPoint(forHandle: index)
+            }
+            .simultaneousGesture(
+                isDisabled ? nil :
+                DragGesture(minimumDistance: 0.5)
+                    .onChanged { value in
+                        if !isScaling {
+                            beginScaling(startValue: value)
+                        }
+                        updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
                     }
-                .position(
-                    (shape.typography != nil || containsTextBoxInGroup()) ?
-                    CGPoint(
-                        x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x,
-                        y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y
-                    )
-                    :
-                    CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
-                )
-                .onTapGesture {
-                    setAnchorPoint(forHandle: index)
-                }
-                .simultaneousGesture(
-                    isDisabled ? nil :
-                    DragGesture(minimumDistance: 0.5)
-                        .onChanged { value in
-                            if !isScaling {
-                                beginScaling(startValue: value)
-                            }
-                            updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
-                        }
-                        .onEnded { _ in
-                            endScaling()
-                        }
-                )
-                }
+                    .onEnded { _ in
+                        endScaling()
+                    }
+            )
             }
         }
         .onAppear {
