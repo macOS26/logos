@@ -178,11 +178,12 @@ struct LayersPanel: View {
     }
 
     var body: some View {
-        let _ = document.snapshot.layers // Subscribe to layers array
-        let _ = document.snapshot.objects // Subscribe to objects dictionary
+        // Removed global subscriptions - rely on specific layer triggers instead
+        // let _ = document.snapshot.layers
+        // let _ = document.snapshot.objects
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
-        let _ = document.settings // Subscribe to settings changes
+        // let _ = document.settings // Subscribe to settings changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -342,9 +343,10 @@ struct LayersPanel: View {
     private var layersScrollContent: some View {
         return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
+                            .id(layer.id) // Stable identity for efficient updates
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.snapshot.layers.map { $0.id })

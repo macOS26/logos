@@ -14,17 +14,16 @@ struct ProfessionalLayerRow: View {
     @State private var selectionAnchorID: UUID? = nil
     @State private var selectionRangeMin: Int? = nil
     @State private var selectionRangeMax: Int? = nil
+    @State private var cachedLayerObjects: [VectorObject] = []
 
     // Check if this layer is selected using settings.selectedLayerId
     private var isSelected: Bool {
         document.settings.selectedLayerId == layer.id
     }
 
-    // Computed property to get objects directly from snapshot
+    // Use cached layer objects instead of recomputing every render
     private var layerObjects: [VectorObject] {
-        let objectIDs = layer.objectIDs
-        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
-        return objects
+        cachedLayerObjects
     }
 
     private var isVisibleBinding: Binding<Bool> {
@@ -62,6 +61,17 @@ struct ProfessionalLayerRow: View {
         } else {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
+
+        // Initialize cached layer objects
+        let objectIDs = layer.objectIDs
+        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
+        _cachedLayerObjects = State(initialValue: objects)
+    }
+
+    private func updateCachedObjects() {
+        let objectIDs = layer.objectIDs
+        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
+        cachedLayerObjects = objects
     }
 
     private func setExpanded(_ value: Bool) {
@@ -87,9 +97,6 @@ struct ProfessionalLayerRow: View {
     }
 
     var body: some View {
-        // Trigger refresh when layer updates
-        // _ = document.viewState.layerUpdateTriggers[layer.id] ?? 0
-
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
                 HStack(spacing: 2) {
@@ -302,6 +309,15 @@ struct ProfessionalLayerRow: View {
                 .cornerRadius(6)
                 .opacity(0.9)
             }
+        }
+        .onAppear {
+            updateCachedObjects()
+        }
+        .onChange(of: document.viewState.layerUpdateTriggers[layer.id]) { _, _ in
+            updateCachedObjects()
+        }
+        .onChange(of: layer.objectIDs) { _, _ in
+            updateCachedObjects()
         }
         .dropDestination(for: DraggableItem.self) { items, location in
             guard let droppedItem = items.first else { return false }
