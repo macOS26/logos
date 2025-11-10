@@ -29,10 +29,6 @@ class ImageTileCache {
     ///   - tileSize: The tile size in pixels (optional, defaults to user preference)
     /// - Returns: Array of tile coordinates and their rects in image coordinates
     func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
-        guard imageRect.intersects(viewportRect) else {
-            return []
-        }
-
         // Use provided tile size or default to preferences
         let currentTileSize = tileSize ?? tileSizePixels
 
@@ -42,28 +38,16 @@ class ImageTileCache {
 
         var tiles: [(TileCoordinate, CGRect)] = []
 
-        // Check each tile to see if it's visible
+        // Return ALL tiles - no culling
         for row in 0..<numRows {
             for col in 0..<numCols {
-                // Tile rect in pixel space
                 let tileX = CGFloat(col * currentTileSize)
                 let tileY = CGFloat(row * currentTileSize)
                 let tileW = min(CGFloat(currentTileSize), imageSize.width - tileX)
                 let tileH = min(CGFloat(currentTileSize), imageSize.height - tileY)
                 let tileRect = CGRect(x: tileX, y: tileY, width: tileW, height: tileH)
 
-                // Convert tile rect to screen space
-                let screenTileRect = CGRect(
-                    x: imageRect.minX + (tileX / imageSize.width) * imageRect.width,
-                    y: imageRect.minY + (tileY / imageSize.height) * imageRect.height,
-                    width: (tileW / imageSize.width) * imageRect.width,
-                    height: (tileH / imageSize.height) * imageRect.height
-                )
-
-                // Check if this tile intersects the viewport
-                if screenTileRect.intersects(viewportRect) {
-                    tiles.append((SIMD2(col, row), tileRect))
-                }
+                tiles.append((SIMD2(col, row), tileRect))
             }
         }
 
