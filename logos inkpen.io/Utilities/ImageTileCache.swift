@@ -22,25 +22,36 @@ class ImageTileCache {
 
     /// Calculate which tiles intersect the viewport
     /// - Parameters:
-    ///   - imageRect: The image bounds in canvas coordinates
-    ///   - viewportRect: The visible viewport in canvas coordinates
-    ///   - imageSize: The original image pixel dimensions
+    ///   - imageRect: The image bounds in SCREEN coordinates (with zoom applied)
+    ///   - viewportRect: The visible viewport in SCREEN coordinates
+    ///   - imageSize: The actual image pixel dimensions
+    ///   - canvasSize: The image size in CANVAS coordinates (before zoom)
     ///   - tileSize: The tile size in pixels (optional, defaults to user preference)
     /// - Returns: Array of tile coordinates and their rects in image coordinates
-    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
+    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
         guard imageRect.intersects(viewportRect) else { return [] }
 
         let intersection = imageRect.intersection(viewportRect)
 
-        // Calculate scale from displayed size to actual image pixels
-        let scaleX = imageSize.width / imageRect.width
-        let scaleY = imageSize.height / imageRect.height
+        // Calculate scale from CANVAS size to actual image pixels
+        let scaleX = imageSize.width / canvasSize.width
+        let scaleY = imageSize.height / canvasSize.height
 
-        // Convert intersection to pixel coordinates (relative to image origin)
-        let pixelMinX = (intersection.minX - imageRect.minX) * scaleX
-        let pixelMinY = (intersection.minY - imageRect.minY) * scaleY
-        let pixelMaxX = (intersection.maxX - imageRect.minX) * scaleX
-        let pixelMaxY = (intersection.maxY - imageRect.minY) * scaleY
+        // Calculate scale from SCREEN size to CANVAS size (inverse of zoom)
+        let screenToCanvasScaleX = canvasSize.width / imageRect.width
+        let screenToCanvasScaleY = canvasSize.height / imageRect.height
+
+        // Convert intersection from SCREEN space to CANVAS space, then to pixels
+        let canvasMinX = (intersection.minX - imageRect.minX) * screenToCanvasScaleX
+        let canvasMinY = (intersection.minY - imageRect.minY) * screenToCanvasScaleY
+        let canvasMaxX = (intersection.maxX - imageRect.minX) * screenToCanvasScaleX
+        let canvasMaxY = (intersection.maxY - imageRect.minY) * screenToCanvasScaleY
+
+        // Now convert from canvas space to pixel space
+        let pixelMinX = canvasMinX * scaleX
+        let pixelMinY = canvasMinY * scaleY
+        let pixelMaxX = canvasMaxX * scaleX
+        let pixelMaxY = canvasMaxY * scaleY
 
         // Use provided tile size or default to preferences
         let currentTileSize = tileSize ?? tileSizePixels

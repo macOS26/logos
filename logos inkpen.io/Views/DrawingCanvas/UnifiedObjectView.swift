@@ -1186,6 +1186,7 @@ struct LayerCanvasView: View {
             imageRect: screenBounds,
             viewportRect: viewportRect,
             imageSize: imagePixelSize,
+            canvasSize: renderBounds.size,
             tileSize: tileSize
         )
 
