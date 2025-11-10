@@ -52,6 +52,7 @@ struct CanvasBackgroundView: View {
 struct LayerCanvasView: View {
     let objects: [VectorObject]
     let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
+    let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -1022,6 +1023,47 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
+    private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?) -> NSImage? {
+        // 1. Try bookmark data first (security-scoped access)
+        if let bookmarkData = bookmarkData {
+            var isStale = false
+            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                let _ = url.startAccessingSecurityScopedResource()
+                defer { url.stopAccessingSecurityScopedResource() }
+                if let image = NSImage(contentsOf: url) {
+                    return image
+                }
+            }
+        }
+
+        // 2. Try absolute path
+        if let image = NSImage(contentsOfFile: linkedPath) {
+            return image
+        }
+
+        // 3. Try relative to document
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let relativeURL = docDir.appendingPathComponent(linkedPath)
+            if let image = NSImage(contentsOf: relativeURL) {
+                return image
+            }
+        }
+
+        // 4. Try next to document (same directory, just filename)
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
+            let sameDir = docDir.appendingPathComponent(filename)
+            if let image = NSImage(contentsOf: sameDir) {
+                return image
+            }
+        }
+
+        // 5. TODO: Prompt user for location
+        return nil
+    }
+
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         // Load image from either embedded data or linked path
         let nsImage: NSImage?
@@ -1029,21 +1071,8 @@ struct LayerCanvasView: View {
         if let imageData = shape.embeddedImageData {
             nsImage = NSImage(data: imageData)
         } else if let linkedPath = shape.linkedImagePath {
-            // Try bookmark data first (for security-scoped access)
-            if let bookmarkData = shape.linkedImageBookmarkData {
-                var isStale = false
-                if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                    let _ = url.startAccessingSecurityScopedResource()
-                    defer { url.stopAccessingSecurityScopedResource() }
-                    nsImage = NSImage(contentsOf: url)
-                } else {
-                    // Fallback to path if bookmark fails
-                    nsImage = NSImage(contentsOfFile: linkedPath)
-                }
-            } else {
-                // No bookmark, just use path
-                nsImage = NSImage(contentsOfFile: linkedPath)
-            }
+            // Try to resolve the linked image with pecking order
+            nsImage = resolveLinkedImage(linkedPath: linkedPath, documentURL: documentURL, bookmarkData: shape.linkedImageBookmarkData)
         } else {
             return
         }
@@ -1193,6 +1222,7 @@ struct IsolatedLayerView: View {
             LayerCanvasView(
                 objects: objects,
                 objectsDict: document.snapshot.objects,
+                documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedObjectIDs,
