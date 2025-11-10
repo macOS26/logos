@@ -1203,38 +1203,23 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Get image dimensions
-        let imageSize = CGSize(width: renderBounds.width, height: renderBounds.height)
-
-        // Calculate visible tiles
-        let visibleTileCoords = ImageTileCache.shared.visibleTiles(
-            imageRect: screenBounds,
-            viewportRect: estimatedViewport,
-            imageSize: imageSize
-        )
-
-        guard !visibleTileCoords.isEmpty else { return }
-
-        // Load tiles
-        let quality = ApplicationSettings.shared.imagePreviewQuality
-        let tiles: [TileCoordinate: CGImage]
+        // Load the full downsampled image (NOT tiles - tiling was completely wrong)
+        let cgImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
-            tiles = ImageTileCache.shared.loadTiles(from: imageData, tiles: visibleTileCoords, quality: quality)
+            cgImage = ImageCache.shared.downsampledImage(from: imageData)
         } else if let linkedPath = shape.linkedImagePath {
-            tiles = resolveAndLoadTiles(
+            cgImage = resolveAndDownsampleLinkedImage(
                 linkedPath: linkedPath,
                 documentURL: documentURL,
                 bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id,
-                tileCoords: visibleTileCoords,
-                quality: quality
+                shapeID: shape.id
             )
         } else {
             return
         }
 
-        guard !tiles.isEmpty else { return }
+        guard let image = cgImage else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -1265,25 +1250,8 @@ struct LayerCanvasView: View {
             cgContext.setShouldAntialias(true)
             cgContext.interpolationQuality = .medium
 
-            // Draw each tile at its position
-            let tileSize = CGFloat(ImageTileCache.shared.tileSizePixels)
-            for (coord, tileImage) in tiles {
-                // Calculate tile position in image coordinates
-                let tileX = CGFloat(coord.col) * tileSize
-                let tileY = CGFloat(coord.row) * tileSize
-                let tileW = min(tileSize, renderBounds.width - tileX)
-                let tileH = min(tileSize, renderBounds.height - tileY)
-
-                let tileRect = CGRect(
-                    x: tileX,
-                    y: tileY,
-                    width: tileW,
-                    height: tileH
-                )
-
-                // Draw tile
-                cgContext.draw(tileImage, in: tileRect)
-            }
+            // Draw the full image
+            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }
