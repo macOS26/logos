@@ -1143,19 +1143,7 @@ struct LayerCanvasView: View {
             height: renderBounds.height * zoomLevel
         )
 
-        // Use actual canvas size for viewport (from Canvas context)
-        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
-        let viewportRect = CGRect(
-            x: -viewportMargin,
-            y: -viewportMargin,
-            width: canvasSize.width + viewportMargin * 2,
-            height: canvasSize.height + viewportMargin * 2
-        )
-
-        // Viewport culling: Skip if image is completely outside visible area
-        guard screenBounds.intersects(viewportRect) else {
-            return
-        }
+        // NO CULLING - always render
 
         // Get the source image first to get actual pixel dimensions
         let quality = ApplicationSettings.shared.imagePreviewQuality
@@ -1184,7 +1172,7 @@ struct LayerCanvasView: View {
         let tileSize = ApplicationSettings.shared.imageTileSize
         let visibleTiles = ImageTileCache.shared.visibleTiles(
             imageRect: screenBounds,
-            viewportRect: viewportRect,
+            viewportRect: CGRect.zero,
             imageSize: imagePixelSize,
             canvasSize: renderBounds.size,
             tileSize: tileSize
