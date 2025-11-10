@@ -1216,11 +1216,15 @@ struct LayerCanvasView: View {
             cgContext.interpolationQuality = .medium
 
             // Draw each visible tile (CATiledLayer approach: draw full image clipped to tile rect)
-            for (_, tileRect) in visibleTiles {
+            for (tileCoord, tileRect) in visibleTiles {
                 cgContext.saveGState()
 
                 // Clip to tile rect
                 cgContext.clip(to: tileRect)
+
+                // DEBUG: Alternate opacity for checkerboard pattern to prove tiling works
+                let isEvenTile = (tileCoord.x + tileCoord.y) % 2 == 0
+                cgContext.setAlpha(isEvenTile ? 1.0 : 0.5)
 
                 // Draw full image (Core Graphics only decodes/draws the clipped region)
                 cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
