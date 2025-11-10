@@ -29,9 +29,13 @@ class ImageTileCache {
     ///   - tileSize: The tile size in pixels (optional, defaults to user preference)
     /// - Returns: Array of tile coordinates and their rects in image coordinates
     func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
-        guard imageRect.intersects(viewportRect) else { return [] }
+        guard imageRect.intersects(viewportRect) else {
+            print("❌ NO INTERSECTION: imageRect=\(imageRect), viewportRect=\(viewportRect)")
+            return []
+        }
 
         let intersection = imageRect.intersection(viewportRect)
+        print("✅ INTERSECTION: \(intersection)")
 
         // Calculate scale from CANVAS size to actual image pixels
         let scaleX = imageSize.width / canvasSize.width
@@ -62,6 +66,10 @@ class ImageTileCache {
         let maxCol = min(Int(imageSize.width / tileSizeF), Int(pixelMaxX / tileSizeF))
         let minRow = max(0, Int(pixelMinY / tileSizeF))
         let maxRow = min(Int(imageSize.height / tileSizeF), Int(pixelMaxY / tileSizeF))
+
+        print("📊 TILE RANGE: cols=\(minCol)...\(maxCol), rows=\(minRow)...\(maxRow)")
+        print("   pixelBounds: x=\(pixelMinX)...\(pixelMaxX), y=\(pixelMinY)...\(pixelMaxY)")
+        print("   imageSize: \(imageSize), canvasSize: \(canvasSize), tileSize: \(currentTileSize)")
 
         // Pre-allocate array size for performance
         let numTiles = (maxCol - minCol + 1) * (maxRow - minRow + 1)
