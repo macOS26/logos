@@ -1218,6 +1218,10 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
+            // DEBUG: Log culling info
+            var culledCount = 0
+            var drawnCount = 0
+
             // Draw each visible tile
             for (tileCoord, tileRect) in visibleTiles {
                 // Calculate tile destination in canvas space
@@ -1237,9 +1241,12 @@ struct LayerCanvasView: View {
                 )
 
                 // Cull: Skip if tile is completely outside viewport
-                guard screenTileRect.intersects(viewportRect) else {
+                if !screenTileRect.intersects(viewportRect) {
+                    culledCount += 1
                     continue
                 }
+
+                drawnCount += 1
 
                 cgContext.saveGState()
 
@@ -1254,6 +1261,11 @@ struct LayerCanvasView: View {
                 cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
                 cgContext.restoreGState()
+            }
+
+            print("🎨 TILES: drawn=\(drawnCount), culled=\(culledCount), total=\(visibleTiles.count)")
+            if drawnCount == 0 && visibleTiles.count > 0 {
+                print("⚠️ ALL TILES CULLED! viewport=\(viewportRect), zoom=\(zoomLevel), offset=\(canvasOffset)")
             }
 
             cgContext.restoreGState()
