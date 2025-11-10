@@ -1023,6 +1023,56 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
+    private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, targetSize: CGSize, scale: CGFloat) -> CGImage? {
+        // 1. Try bookmark data first (security-scoped access)
+        if let bookmarkData = bookmarkData {
+            var isStale = false
+            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                let _ = url.startAccessingSecurityScopedResource()
+                defer { url.stopAccessingSecurityScopedResource() }
+                if let image = ImageCache.shared.downsampledImage(from: url, targetSize: targetSize, scale: scale) {
+                    return image
+                }
+            }
+        }
+
+        // 2. Try absolute path
+        let absoluteURL = URL(fileURLWithPath: linkedPath)
+        if let image = ImageCache.shared.downsampledImage(from: absoluteURL, targetSize: targetSize, scale: scale) {
+            return image
+        }
+
+        // 3. Try relative to document
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let relativeURL = docDir.appendingPathComponent(linkedPath)
+            if let image = ImageCache.shared.downsampledImage(from: relativeURL, targetSize: targetSize, scale: scale) {
+                return image
+            }
+        }
+
+        // 4. Try next to document (same directory, just filename)
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
+            let sameDir = docDir.appendingPathComponent(filename)
+            if let image = ImageCache.shared.downsampledImage(from: sameDir, targetSize: targetSize, scale: scale) {
+                return image
+            }
+        }
+
+        // 5. Image not found - notify so user can be prompted
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: Notification.Name("MissingLinkedImage"),
+                object: nil,
+                userInfo: ["shapeID": shapeID, "path": linkedPath]
+            )
+        }
+
+        return nil
+    }
+
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> NSImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
@@ -1073,20 +1123,50 @@ struct LayerCanvasView: View {
     }
 
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
-        // Load image from either embedded data or linked path
-        let nsImage: NSImage?
+        // Get image bounds to check viewport culling
+        let pathBounds = shape.path.cgPath.boundingBoxOfPath
+        var renderBounds = pathBounds
+        if scaleTransform != .identity {
+            renderBounds = pathBounds.applying(scaleTransform)
+        }
+        if !shape.transform.isIdentity {
+            renderBounds = renderBounds.applying(shape.transform)
+        }
+
+        // Viewport culling: Skip if image is completely outside visible area
+        // TODO: Pass actual viewport bounds for culling check
+        // For now, we proceed with rendering
+
+        // Calculate target display size (in points, accounting for zoom)
+        let targetSize = CGSize(
+            width: renderBounds.width * zoomLevel,
+            height: renderBounds.height * zoomLevel
+        )
+
+        // Get display scale for retina displays
+        let displayScale = NSScreen.main?.backingScaleFactor ?? 2.0
+
+        // Load and downsample image
+        let cgImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
-            nsImage = NSImage(data: imageData)
+            // Downsample from embedded data
+            cgImage = ImageCache.shared.downsampledImage(from: imageData, targetSize: targetSize, scale: displayScale)
         } else if let linkedPath = shape.linkedImagePath {
-            // Try to resolve the linked image with pecking order
-            nsImage = resolveLinkedImage(linkedPath: linkedPath, documentURL: documentURL, bookmarkData: shape.linkedImageBookmarkData, shapeID: shape.id)
+            // Try to resolve and downsample from linked path
+            cgImage = resolveAndDownsampleLinkedImage(
+                linkedPath: linkedPath,
+                documentURL: documentURL,
+                bookmarkData: shape.linkedImageBookmarkData,
+                shapeID: shape.id,
+                targetSize: targetSize,
+                scale: displayScale
+            )
         } else {
             return
         }
 
-        guard let image = nsImage else { return }
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        guard let image = cgImage else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -1103,15 +1183,6 @@ struct LayerCanvasView: View {
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // Get image bounds from path
-            let pathBounds = shape.path.cgPath.boundingBoxOfPath
-
-            // Apply scale transform if active
-            var renderBounds = pathBounds
-            if scaleTransform != .identity {
-                renderBounds = pathBounds.applying(scaleTransform)
-            }
-
             // Apply the shape's transform
             if !shape.transform.isIdentity {
                 cgContext.concatenate(shape.transform)
@@ -1121,13 +1192,13 @@ struct LayerCanvasView: View {
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
             cgContext.scaleBy(x: 1.0, y: -1.0)
 
-            // Set high-quality rendering
+            // Use medium quality for downsampled images (they're already optimized)
             cgContext.setAllowsAntialiasing(true)
             cgContext.setShouldAntialias(true)
-            cgContext.interpolationQuality = .high
+            cgContext.interpolationQuality = .medium
 
-            // Draw the image
-            cgContext.draw(cgImage, in: CGRect(origin: .zero, size: renderBounds.size))
+            // Draw the downsampled image
+            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }
