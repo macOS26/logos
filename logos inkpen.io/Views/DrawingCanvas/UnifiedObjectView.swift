@@ -1143,7 +1143,19 @@ struct LayerCanvasView: View {
             height: renderBounds.height * zoomLevel
         )
 
-        // NO CULLING - always render
+        // Use actual canvas size for viewport (from Canvas context)
+        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
+        let viewportRect = CGRect(
+            x: -viewportMargin,
+            y: -viewportMargin,
+            width: canvasSize.width + viewportMargin * 2,
+            height: canvasSize.height + viewportMargin * 2
+        )
+
+        // Viewport culling: Skip if image is completely outside visible area
+        guard screenBounds.intersects(viewportRect) else {
+            return
+        }
 
         // Get the source image first to get actual pixel dimensions
         let quality = ApplicationSettings.shared.imagePreviewQuality
@@ -1172,7 +1184,7 @@ struct LayerCanvasView: View {
         let tileSize = ApplicationSettings.shared.imageTileSize
         let visibleTiles = ImageTileCache.shared.visibleTiles(
             imageRect: screenBounds,
-            viewportRect: CGRect.zero,
+            viewportRect: viewportRect,
             imageSize: imagePixelSize,
             canvasSize: renderBounds.size,
             tileSize: tileSize
@@ -1206,19 +1218,26 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Draw each visible tile (CATiledLayer approach: draw full image clipped to tile rect)
+            // Draw each visible tile
             for (tileCoord, tileRect) in visibleTiles {
                 cgContext.saveGState()
-
-                // Clip to tile rect
-                cgContext.clip(to: tileRect)
 
                 // DEBUG: Alternate opacity for checkerboard pattern to prove tiling works
                 let isEvenTile = (tileCoord.x + tileCoord.y) % 2 == 0
                 cgContext.setAlpha(isEvenTile ? 1.0 : 0.5)
 
-                // Draw full image (Core Graphics only decodes/draws the clipped region)
-                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+                // Calculate destination rect in canvas space
+                let destRect = CGRect(
+                    x: tileRect.minX * (renderBounds.width / CGFloat(image.width)),
+                    y: tileRect.minY * (renderBounds.height / CGFloat(image.height)),
+                    width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
+                    height: tileRect.height * (renderBounds.height / CGFloat(image.height))
+                )
+
+                // Crop the image to this tile
+                if let croppedImage = image.cropping(to: tileRect) {
+                    cgContext.draw(croppedImage, in: destRect)
+                }
 
                 cgContext.restoreGState()
             }
