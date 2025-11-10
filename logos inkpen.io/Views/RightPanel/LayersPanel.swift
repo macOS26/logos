@@ -168,9 +168,7 @@ struct LayersPanel: View {
             allHeightsSame = (maxHeight - minHeight) <= heightTolerance
         }
 
-        // Disable overlays if too many rows (performance optimization)
-        let maxOverlayRows = 100
-        let canDisplayOverlays = expectedRowCount > 0 && expectedRowCount <= maxOverlayRows && allHeightsSame && overlayRowCount == expectedRowCount
+        let canDisplayOverlays = expectedRowCount > 0 && allHeightsSame && overlayRowCount == expectedRowCount
 
         DispatchQueue.main.async {
             if self.overlaysEnabled != canDisplayOverlays {
