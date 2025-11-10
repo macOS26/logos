@@ -98,5 +98,10 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
     }
 
+    // MARK: - Image Settings
+    @Published var embedImagesByDefault: Bool = UserDefaults.standard.object(forKey: "embedImagesByDefault") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
+    }
+
     private init() {}
 }
