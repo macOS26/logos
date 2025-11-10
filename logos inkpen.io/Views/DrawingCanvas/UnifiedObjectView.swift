@@ -1023,14 +1023,14 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
-    private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, targetSize: CGSize, scale: CGFloat) -> CGImage? {
+    private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
-                if let image = ImageCache.shared.downsampledImage(from: url, targetSize: targetSize, scale: scale) {
+                if let image = ImageCache.shared.downsampledImage(from: url) {
                     return image
                 }
             }
@@ -1038,7 +1038,7 @@ struct LayerCanvasView: View {
 
         // 2. Try absolute path
         let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let image = ImageCache.shared.downsampledImage(from: absoluteURL, targetSize: targetSize, scale: scale) {
+        if let image = ImageCache.shared.downsampledImage(from: absoluteURL) {
             return image
         }
 
@@ -1046,7 +1046,7 @@ struct LayerCanvasView: View {
         if let docURL = documentURL {
             let docDir = docURL.deletingLastPathComponent()
             let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = ImageCache.shared.downsampledImage(from: relativeURL, targetSize: targetSize, scale: scale) {
+            if let image = ImageCache.shared.downsampledImage(from: relativeURL) {
                 return image
             }
         }
@@ -1056,7 +1056,7 @@ struct LayerCanvasView: View {
             let docDir = docURL.deletingLastPathComponent()
             let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
             let sameDir = docDir.appendingPathComponent(filename)
-            if let image = ImageCache.shared.downsampledImage(from: sameDir, targetSize: targetSize, scale: scale) {
+            if let image = ImageCache.shared.downsampledImage(from: sameDir) {
                 return image
             }
         }
@@ -1154,48 +1154,24 @@ struct LayerCanvasView: View {
 
         // Viewport culling: Skip if image is completely outside visible area
         guard screenBounds.intersects(estimatedViewport) else {
-            // Image is completely offscreen - skip loading and rendering
+            // Image is completely offscreen - skip loading and rendering entirely
             return
         }
 
-        // Calculate visible portion of image (intersection with viewport)
-        let visibleRect = screenBounds.intersection(estimatedViewport)
-        let visiblePercentage = (visibleRect.width * visibleRect.height) / (screenBounds.width * screenBounds.height)
-
-        // Calculate target display size (in points, accounting for zoom)
-        var targetSize = CGSize(
-            width: renderBounds.width * zoomLevel,
-            height: renderBounds.height * zoomLevel
-        )
-
-        // For partially visible images, downsample more aggressively
-        // Only decode the portion we can see + small margin
-        if visiblePercentage < 0.9 {
-            // Scale down target size based on visible percentage
-            // Add 20% margin for smooth panning
-            let scaleFactor = sqrt(visiblePercentage) * 1.2
-            targetSize.width *= scaleFactor
-            targetSize.height *= scaleFactor
-        }
-
-        // Get display scale for retina displays
-        let displayScale = NSScreen.main?.backingScaleFactor ?? 2.0
-
-        // Load and downsample image
+        // Load and downsample image to fixed size (2048px max)
+        // GPU will handle scaling efficiently from there
         let cgImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
             // Downsample from embedded data
-            cgImage = ImageCache.shared.downsampledImage(from: imageData, targetSize: targetSize, scale: displayScale)
+            cgImage = ImageCache.shared.downsampledImage(from: imageData)
         } else if let linkedPath = shape.linkedImagePath {
             // Try to resolve and downsample from linked path
             cgImage = resolveAndDownsampleLinkedImage(
                 linkedPath: linkedPath,
                 documentURL: documentURL,
                 bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id,
-                targetSize: targetSize,
-                scale: displayScale
+                shapeID: shape.id
             )
         } else {
             return
