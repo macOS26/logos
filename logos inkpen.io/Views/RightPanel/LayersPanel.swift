@@ -103,9 +103,13 @@ struct LayersPanel: View {
     @State private var lastSentPercentage: Int = 100
 
     // Get selected layer index from settings.selectedLayerId
+    // Defaults to first editable layer (index 2, "Layer 1") if no layer is selected
     private var selectedIndex: Int? {
-        guard let selectedLayerId = document.settings.selectedLayerId else { return nil }
-        return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
+        if let selectedLayerId = document.settings.selectedLayerId {
+            return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
+        }
+        // Default to Layer 1 (index 2) when no layer is selected
+        return document.snapshot.layers.count > 2 ? 2 : nil
     }
 
     private enum RowType: Hashable {
@@ -203,6 +207,10 @@ struct LayersPanel: View {
         )
         .onAppear {
             validateOverlays()
+            // Initialize layerOpacityState when view appears
+            if let index = selectedIndex, index < document.snapshot.layers.count {
+                layerOpacityState = document.snapshot.layers[index].opacity
+            }
         }
         .onChange(of: document.snapshot.layers.map { $0.id }) { _, _ in
             validateOverlays()
