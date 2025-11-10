@@ -1023,6 +1023,54 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
+    private func resolveAndLoadTiles(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, tileCoords: [TileCoordinate], quality: Double) -> [TileCoordinate: CGImage] {
+        // 1. Try bookmark data first
+        if let bookmarkData = bookmarkData {
+            var isStale = false
+            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                let _ = url.startAccessingSecurityScopedResource()
+                defer { url.stopAccessingSecurityScopedResource() }
+                let tiles = ImageTileCache.shared.loadTiles(from: url, tiles: tileCoords, quality: quality)
+                if !tiles.isEmpty {
+                    return tiles
+                }
+            }
+        }
+
+        // 2. Try absolute path
+        let absoluteURL = URL(fileURLWithPath: linkedPath)
+        var tiles = ImageTileCache.shared.loadTiles(from: absoluteURL, tiles: tileCoords, quality: quality)
+        if !tiles.isEmpty { return tiles }
+
+        // 3. Try relative to document
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let relativeURL = docDir.appendingPathComponent(linkedPath)
+            tiles = ImageTileCache.shared.loadTiles(from: relativeURL, tiles: tileCoords, quality: quality)
+            if !tiles.isEmpty { return tiles }
+        }
+
+        // 4. Try next to document
+        if let docURL = documentURL {
+            let docDir = docURL.deletingLastPathComponent()
+            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
+            let sameDir = docDir.appendingPathComponent(filename)
+            tiles = ImageTileCache.shared.loadTiles(from: sameDir, tiles: tileCoords, quality: quality)
+            if !tiles.isEmpty { return tiles }
+        }
+
+        // 5. Image not found
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: Notification.Name("MissingLinkedImage"),
+                object: nil,
+                userInfo: ["shapeID": shapeID, "path": linkedPath]
+            )
+        }
+
+        return [:]
+    }
+
     private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
@@ -1142,42 +1190,51 @@ struct LayerCanvasView: View {
         )
 
         // Get canvas size (viewport)
-        // Note: Canvas context doesn't expose size, so we'll use a generous viewport
-        // This will be optimized when we have actual viewport bounds
         let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
         let estimatedViewport = CGRect(
             x: -viewportMargin,
             y: -viewportMargin,
-            width: 5000 + viewportMargin * 2,  // Generous viewport estimate
+            width: 5000 + viewportMargin * 2,
             height: 5000 + viewportMargin * 2
         )
 
         // Viewport culling: Skip if image is completely outside visible area
         guard screenBounds.intersects(estimatedViewport) else {
-            // Image is completely offscreen - skip loading and rendering entirely
             return
         }
 
-        // Load and downsample image to fixed size (2048px max)
-        // GPU will handle scaling efficiently from there
-        let cgImage: CGImage?
+        // Get image dimensions
+        let imageSize = CGSize(width: renderBounds.width, height: renderBounds.height)
+
+        // Calculate visible tiles
+        let visibleTileCoords = ImageTileCache.shared.visibleTiles(
+            imageRect: screenBounds,
+            viewportRect: estimatedViewport,
+            imageSize: imageSize
+        )
+
+        guard !visibleTileCoords.isEmpty else { return }
+
+        // Load tiles
+        let quality = ApplicationSettings.shared.imagePreviewQuality
+        let tiles: [TileCoordinate: CGImage]
 
         if let imageData = shape.embeddedImageData {
-            // Downsample from embedded data
-            cgImage = ImageCache.shared.downsampledImage(from: imageData)
+            tiles = ImageTileCache.shared.loadTiles(from: imageData, tiles: visibleTileCoords, quality: quality)
         } else if let linkedPath = shape.linkedImagePath {
-            // Try to resolve and downsample from linked path
-            cgImage = resolveAndDownsampleLinkedImage(
+            tiles = resolveAndLoadTiles(
                 linkedPath: linkedPath,
                 documentURL: documentURL,
                 bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id
+                shapeID: shape.id,
+                tileCoords: visibleTileCoords,
+                quality: quality
             )
         } else {
             return
         }
 
-        guard let image = cgImage else { return }
+        guard !tiles.isEmpty else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -1203,13 +1260,30 @@ struct LayerCanvasView: View {
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
             cgContext.scaleBy(x: 1.0, y: -1.0)
 
-            // Use medium quality for downsampled images (they're already optimized)
+            // Set rendering quality
             cgContext.setAllowsAntialiasing(true)
             cgContext.setShouldAntialias(true)
             cgContext.interpolationQuality = .medium
 
-            // Draw the downsampled image
-            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+            // Draw each tile at its position
+            let tileSize = CGFloat(ImageTileCache.shared.tileSizePixels)
+            for (coord, tileImage) in tiles {
+                // Calculate tile position in image coordinates
+                let tileX = CGFloat(coord.col) * tileSize
+                let tileY = CGFloat(coord.row) * tileSize
+                let tileW = min(tileSize, renderBounds.width - tileX)
+                let tileH = min(tileSize, renderBounds.height - tileY)
+
+                let tileRect = CGRect(
+                    x: tileX,
+                    y: tileY,
+                    width: tileW,
+                    height: tileH
+                )
+
+                // Draw tile
+                cgContext.draw(tileImage, in: tileRect)
+            }
 
             cgContext.restoreGState()
         }
