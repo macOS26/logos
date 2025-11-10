@@ -596,6 +596,7 @@ struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
+    @State private var imageQuality: Double = ApplicationSettings.shared.imagePreviewQuality
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -643,15 +644,12 @@ struct PreferencesView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text("Preview Quality: \(Int(ApplicationSettings.shared.imagePreviewQuality * 100))%")
+                            Text("Preview Quality: \(Int(imageQuality * 100))%")
                                 .font(.subheadline)
                             Spacer()
                         }
 
-                        Slider(value: Binding(
-                            get: { ApplicationSettings.shared.imagePreviewQuality },
-                            set: { ApplicationSettings.shared.imagePreviewQuality = $0 }
-                        ), in: 0.1...1.0, step: 0.05)
+                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
 
                         Text("Controls image resolution in canvas. Lower values use less memory.")
                             .font(.caption)
@@ -660,17 +658,17 @@ struct PreferencesView: View {
 
                     HStack(spacing: 8) {
                         Button("Low (20%)") {
-                            ApplicationSettings.shared.imagePreviewQuality = 0.2
+                            imageQuality = 0.2
                         }
                         .buttonStyle(.bordered)
 
                         Button("Medium (50%)") {
-                            ApplicationSettings.shared.imagePreviewQuality = 0.5
+                            imageQuality = 0.5
                         }
                         .buttonStyle(.bordered)
 
                         Button("High (100%)") {
-                            ApplicationSettings.shared.imagePreviewQuality = 1.0
+                            imageQuality = 1.0
                         }
                         .buttonStyle(.bordered)
 
@@ -686,9 +684,13 @@ struct PreferencesView: View {
         .frame(minWidth: 400, minHeight: 550)
         .onAppear {
             loadPressureCurve()
+            imageQuality = ApplicationSettings.shared.imagePreviewQuality
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
+        }
+        .onChange(of: imageQuality) { oldValue, newValue in
+            ApplicationSettings.shared.imagePreviewQuality = newValue
         }
     }
 
