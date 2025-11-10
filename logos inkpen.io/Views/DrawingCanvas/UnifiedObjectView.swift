@@ -1230,10 +1230,6 @@ struct LayerCanvasView: View {
 
                 cgContext.saveGState()
 
-                // DEBUG: Alternate opacity for checkerboard pattern to prove tiling works
-                let isEvenTile = (tileCoord.x + tileCoord.y) % 2 == 0
-                cgContext.setAlpha(isEvenTile ? 1.0 : 0.5)
-
                 // Clip to tile destination area
                 cgContext.clip(to: destRect)
 
