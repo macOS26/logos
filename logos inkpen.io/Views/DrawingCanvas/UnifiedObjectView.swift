@@ -261,7 +261,7 @@ struct LayerCanvasView: View {
 
                                     if VectorText.from(liveContentShape) != nil {
                                         renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
-                                    } else if liveContentShape.embeddedImageData != nil {
+                                    } else if hasImageData(liveContentShape) {
                                         renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     } else {
                                         renderShape(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
@@ -297,7 +297,7 @@ struct LayerCanvasView: View {
 
                                 if VectorText.from(liveContentNoClip) != nil {
                                     renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity)
-                                } else if liveContentNoClip.embeddedImageData != nil {
+                                } else if hasImageData(liveContentNoClip) {
                                     renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 } else {
                                     renderShape(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
@@ -347,7 +347,7 @@ struct LayerCanvasView: View {
 
                                 if VectorText.from(liveContentColorMode) != nil {
                                     renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
-                                } else if liveContentColorMode.embeddedImageData != nil {
+                                } else if hasImageData(liveContentColorMode) {
                                     renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 } else {
                                     renderShape(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
@@ -395,7 +395,7 @@ struct LayerCanvasView: View {
 
                         if VectorText.from(liveChildShape) != nil {
                             renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
-                        } else if liveChildShape.embeddedImageData != nil {
+                        } else if hasImageData(liveChildShape) {
                             renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         } else {
                             renderShape(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
@@ -1018,11 +1018,38 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Image Rendering
 
+    private func hasImageData(_ shape: VectorShape) -> Bool {
+        return shape.embeddedImageData != nil || shape.linkedImagePath != nil
+    }
+
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
-        // Fast validation (O(1))
-        guard let imageData = shape.embeddedImageData else { return }
-        guard let nsImage = NSImage(data: imageData) else { return }
-        guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        // Load image from either embedded data or linked path
+        let nsImage: NSImage?
+
+        if let imageData = shape.embeddedImageData {
+            nsImage = NSImage(data: imageData)
+        } else if let linkedPath = shape.linkedImagePath {
+            // Try bookmark data first (for security-scoped access)
+            if let bookmarkData = shape.linkedImageBookmarkData {
+                var isStale = false
+                if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                    let _ = url.startAccessingSecurityScopedResource()
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    nsImage = NSImage(contentsOf: url)
+                } else {
+                    // Fallback to path if bookmark fails
+                    nsImage = NSImage(contentsOfFile: linkedPath)
+                }
+            } else {
+                // No bookmark, just use path
+                nsImage = NSImage(contentsOfFile: linkedPath)
+            }
+        } else {
+            return
+        }
+
+        guard let image = nsImage else { return }
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
