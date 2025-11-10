@@ -792,6 +792,16 @@ struct logos_inken_ioApp: App {
                         }
                     }
                     .help("When enabled, imported images are embedded in the document. When disabled, images are linked by path.")
+
+                    Menu("Image Preview Quality: \(Int(ApplicationSettings.shared.imagePreviewQuality * 100))%") {
+                        Button("10%") { ApplicationSettings.shared.imagePreviewQuality = 0.1 }
+                        Button("20%") { ApplicationSettings.shared.imagePreviewQuality = 0.2 }
+                        Button("30%") { ApplicationSettings.shared.imagePreviewQuality = 0.3 }
+                        Button("50%") { ApplicationSettings.shared.imagePreviewQuality = 0.5 }
+                        Button("75%") { ApplicationSettings.shared.imagePreviewQuality = 0.75 }
+                        Button("100%") { ApplicationSettings.shared.imagePreviewQuality = 1.0 }
+                    }
+                    .help("Controls the resolution of cached image previews. Lower values use less memory but may appear pixelated when zoomed in.")
                 }
 
                 if SandboxChecker.isNotSandboxed {

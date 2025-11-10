@@ -13,27 +13,38 @@ class ImageCache {
         cache.totalCostLimit = 500 * 1024 * 1024  // 500MB cache limit
     }
 
-    /// Downsample and cache an image to a reasonable display size
+    /// Downsample and cache an image based on quality preference
     /// - Parameters:
     ///   - imageData: The raw image data
-    /// - Returns: Downsampled CGImage (max 2048px) - let GPU handle further scaling
+    /// - Returns: Downsampled CGImage based on user's quality setting
     func downsampledImage(from imageData: Data) -> CGImage? {
-        // Create cache key based on data hash only (single cached version)
-        let cacheKey = "\(imageData.hashValue)" as NSString
+        // Get quality setting from preferences
+        let quality = ApplicationSettings.shared.imagePreviewQuality
+
+        // Create cache key based on data hash and quality
+        let cacheKey = "\(imageData.hashValue)-\(Int(quality * 100))" as NSString
 
         // Check cache first
         if let cachedImage = cache.object(forKey: cacheKey) {
             return cachedImage
         }
 
-        // Downsample the image to reasonable size (2048px max)
+        // Downsample the image based on quality setting
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
         }
 
-        // Fixed max size - good balance between quality and memory
-        // GPU scaling is fast, so we don't need multiple versions
-        let maxPixelSize: CGFloat = 2048
+        // Get original image dimensions
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
+              let height = properties[kCGImagePropertyPixelHeight] as? CGFloat else {
+            return nil
+        }
+
+        // Calculate max pixel size based on quality setting
+        // quality: 0.1 (10%) to 1.0 (100%)
+        let maxDimension = max(width, height)
+        let maxPixelSize = maxDimension * quality
 
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -53,10 +64,13 @@ class ImageCache {
         return downsampledImage
     }
 
-    /// Downsample from a file URL to reasonable size (max 2048px)
+    /// Downsample from a file URL based on quality preference
     func downsampledImage(from url: URL) -> CGImage? {
-        // Create cache key based on path only (single cached version per file)
-        let cacheKey = url.path as NSString
+        // Get quality setting from preferences
+        let quality = ApplicationSettings.shared.imagePreviewQuality
+
+        // Create cache key based on path and quality
+        let cacheKey = "\(url.path)-\(Int(quality * 100))" as NSString
 
         // Check cache first
         if let cachedImage = cache.object(forKey: cacheKey) {
@@ -68,8 +82,16 @@ class ImageCache {
             return nil
         }
 
-        // Fixed max size - GPU handles the rest
-        let maxPixelSize: CGFloat = 2048
+        // Get original image dimensions
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
+              let height = properties[kCGImagePropertyPixelHeight] as? CGFloat else {
+            return nil
+        }
+
+        // Calculate max pixel size based on quality setting
+        let maxDimension = max(width, height)
+        let maxPixelSize = maxDimension * quality
 
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,

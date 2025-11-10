@@ -103,5 +103,13 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
 
+    @Published var imagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 0.5 {
+        didSet {
+            UserDefaults.standard.set(imagePreviewQuality, forKey: "imagePreviewQuality")
+            // Clear image cache when quality changes
+            ImageCache.shared.clearCache()
+        }
+    }
+
     private init() {}
 }
