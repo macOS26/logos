@@ -99,7 +99,7 @@ class ApplicationSettings: ObservableObject {
     }
 
     // MARK: - Image Settings
-    @Published var embedImagesByDefault: Bool = UserDefaults.standard.object(forKey: "embedImagesByDefault") as? Bool ?? true {
+    @Published var embedImagesByDefault: Bool = UserDefaults.standard.object(forKey: "embedImagesByDefault") as? Bool ?? false {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
 
