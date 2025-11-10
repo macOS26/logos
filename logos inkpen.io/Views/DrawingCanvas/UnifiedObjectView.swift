@@ -165,6 +165,7 @@ struct LayerCanvasView: View {
             _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
             _ = strokeDeltaWidth     // Force redraw when stroke width changes
             _ = fontSizeDelta        // Force redraw when font size changes
+
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -1156,20 +1157,8 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Get source image dimensions
-        let imagePixelSize = CGSize(width: renderBounds.width, height: renderBounds.height)
-
-        // Calculate visible tiles (CATiledLayer approach)
+        // Get the source image (downsampled version for memory efficiency)
         let quality = ApplicationSettings.shared.imagePreviewQuality
-        let visibleTiles = ImageTileCache.shared.visibleTiles(
-            imageRect: screenBounds,
-            viewportRect: estimatedViewport,
-            imageSize: imagePixelSize
-        )
-
-        guard !visibleTiles.isEmpty else { return }
-
-        // Get the source image (full downsampled version)
         let sourceImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
@@ -1188,8 +1177,10 @@ struct LayerCanvasView: View {
 
         guard let image = sourceImage else { return }
 
-        // Drag delta is now applied at canvas level, not per-object
+        // Use Image for optimized rendering
+        let swiftUIImage = Image(decorative: image, scale: 1.0)
 
+        // Draw using SwiftUI Image (more efficient than CGContext)
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
@@ -1208,30 +1199,11 @@ struct LayerCanvasView: View {
                 cgContext.concatenate(shape.transform)
             }
 
-            // Flip coordinate system for image rendering
-            cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
-            cgContext.scaleBy(x: 1.0, y: -1.0)
-
-            // Set rendering quality
-            cgContext.setAllowsAntialiasing(true)
-            cgContext.setShouldAntialias(true)
-            cgContext.interpolationQuality = .medium
-
-            // Draw each visible tile (CATiledLayer approach: draw full image clipped to tile rect)
-            for (_, tileRect) in visibleTiles {
-                cgContext.saveGState()
-
-                // Clip to tile rect
-                cgContext.clip(to: tileRect)
-
-                // Draw full image (Core Graphics only decodes/draws the clipped region)
-                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-
-                cgContext.restoreGState()
-            }
-
             cgContext.restoreGState()
         }
+
+        // Draw the Image directly on the Canvas context
+        context.draw(swiftUIImage, in: renderBounds)
     }
 
 }
