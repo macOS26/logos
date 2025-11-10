@@ -1207,12 +1207,19 @@ class DocumentState: ObservableObject {
 
             // Update the shape with the new path and bookmark
             if var shape = document.snapshot.objects[shapeID]?.shape {
+                // Clear any old embedded data (we're linking now)
+                shape.embeddedImageData = nil
+
+                // Set new linked path
                 shape.linkedImagePath = newURL.path
 
                 // Create new security-scoped bookmark
                 if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                     shape.linkedImageBookmarkData = bookmark
                 }
+
+                print("🔗 Updated image link: \(newURL.path)")
+                print("🔖 Bookmark created: \(shape.linkedImageBookmarkData != nil)")
 
                 // Update the object in snapshot
                 if let existingObject = document.snapshot.objects[shapeID] {
@@ -1225,6 +1232,10 @@ class DocumentState: ObservableObject {
 
                     // Trigger layer update for the layer containing this object
                     document.triggerLayerUpdate(for: existingObject.layerIndex)
+                    print("✅ Layer \(existingObject.layerIndex) update triggered")
+
+                    // Mark document as dirty so it saves
+                    self.window?.isDocumentEdited = true
                 }
 
                 // Remove from prompted set so it can be prompted again if still missing
