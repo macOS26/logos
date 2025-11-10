@@ -1133,9 +1133,30 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
+        // Scale bounds to screen coordinates
+        let screenBounds = CGRect(
+            x: renderBounds.origin.x * zoomLevel + canvasOffset.x,
+            y: renderBounds.origin.y * zoomLevel + canvasOffset.y,
+            width: renderBounds.width * zoomLevel,
+            height: renderBounds.height * zoomLevel
+        )
+
+        // Get canvas size (viewport)
+        // Note: Canvas context doesn't expose size, so we'll use a generous viewport
+        // This will be optimized when we have actual viewport bounds
+        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
+        let estimatedViewport = CGRect(
+            x: -viewportMargin,
+            y: -viewportMargin,
+            width: 5000 + viewportMargin * 2,  // Generous viewport estimate
+            height: 5000 + viewportMargin * 2
+        )
+
         // Viewport culling: Skip if image is completely outside visible area
-        // TODO: Pass actual viewport bounds for culling check
-        // For now, we proceed with rendering
+        guard screenBounds.intersects(estimatedViewport) else {
+            // Image is completely offscreen - skip loading and rendering
+            return
+        }
 
         // Calculate target display size (in points, accounting for zoom)
         let targetSize = CGSize(
