@@ -262,9 +262,8 @@ struct ProfessionalLayerRow: View {
             }
 
             if isExpanded {
-                VStack(spacing: 0) {
-                    ForEach(layerObjects, id: \.id) { newVectorObject in
-                        let index = layerObjects.firstIndex(where: { $0.id == newVectorObject.id }) ?? 0
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(layerObjects.enumerated()), id: \.element.id) { index, newVectorObject in
                         let isLast = index == layerObjects.count - 1
                         objectRowForType(newVectorObject: newVectorObject, isLast: isLast)
                     }
