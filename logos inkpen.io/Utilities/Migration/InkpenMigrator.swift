@@ -58,9 +58,9 @@ struct InkpenMigrator {
         var unit: String?
         var groupExpansionState: [AnyCodable]?  // Mixed array of String/Bool
         var layerExpansionState: [AnyCodable]?  // Mixed array of String/Bool
-        var customRgbSwatches: [[String: Double]]?
-        var customCmykSwatches: [[String: Double]]?
-        var customHsbSwatches: [[String: Double]]?
+        var customRgbSwatches: [AnyCodable]?  // Can be [[String: Double]] or nested dictionaries
+        var customCmykSwatches: [AnyCodable]?
+        var customHsbSwatches: [AnyCodable]?
     }
 
     private struct Legacy1_0Object: Codable {
