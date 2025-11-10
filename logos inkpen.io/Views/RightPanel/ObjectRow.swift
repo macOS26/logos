@@ -597,6 +597,7 @@ struct PreferencesView: View {
     @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @State private var imageQuality: Double = ApplicationSettings.shared.imagePreviewQuality
+    @State private var tileSize: Double = Double(ApplicationSettings.shared.imageTileSize)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -674,6 +675,42 @@ struct PreferencesView: View {
 
                         Spacer()
                     }
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Tile Size: \(Int(tileSize))px")
+                                .font(.subheadline)
+                            Spacer()
+                        }
+
+                        Slider(value: $tileSize, in: 32...1024, step: 32)
+
+                        Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack(spacing: 8) {
+                        Button("Small (128px)") {
+                            tileSize = 128
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Medium (512px)") {
+                            tileSize = 512
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Large (1024px)") {
+                            tileSize = 1024
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+                    }
                 }
                 .padding(.vertical, 8)
             }
@@ -685,12 +722,16 @@ struct PreferencesView: View {
         .onAppear {
             loadPressureCurve()
             imageQuality = ApplicationSettings.shared.imagePreviewQuality
+            tileSize = Double(ApplicationSettings.shared.imageTileSize)
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
         }
         .onChange(of: imageQuality) { oldValue, newValue in
             ApplicationSettings.shared.imagePreviewQuality = newValue
+        }
+        .onChange(of: tileSize) { oldValue, newValue in
+            ApplicationSettings.shared.imageTileSize = Int(newValue)
         }
     }
 

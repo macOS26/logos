@@ -10,14 +10,15 @@ typealias TileCoordinate = SIMD2<Int>
 class ImageTileCache {
     static let shared = ImageTileCache()
 
-    private let tileSize: Int = 512  // 512x512 pixel tiles
     private var sourceImageCache: [String: CGImage] = [:]  // imageKey -> source image
     private var cacheLock = NSLock()
 
     private init() {}
 
-    /// Get the tile size
-    var tileSizePixels: Int { tileSize }
+    /// Get the current tile size from preferences
+    var tileSizePixels: Int {
+        ApplicationSettings.shared.imageTileSize
+    }
 
     /// Calculate which tiles intersect the viewport
     /// - Parameters:
@@ -40,8 +41,11 @@ class ImageTileCache {
         let pixelMaxX = (intersection.maxX - imageRect.minX) * scaleX
         let pixelMaxY = (intersection.maxY - imageRect.minY) * scaleY
 
+        // Get current tile size from preferences
+        let currentTileSize = tileSizePixels
+        let tileSizeF = CGFloat(currentTileSize)
+
         // Calculate tile range using integer math for speed
-        let tileSizeF = CGFloat(tileSize)
         let minCol = max(0, Int(pixelMinX / tileSizeF))
         let maxCol = min(Int(imageSize.width / tileSizeF), Int(pixelMaxX / tileSizeF))
         let minRow = max(0, Int(pixelMinY / tileSizeF))
@@ -57,11 +61,11 @@ class ImageTileCache {
         let imageHeight = imageSize.height
 
         for row in minRow...maxRow {
-            let tileY = CGFloat(row * tileSize)
+            let tileY = CGFloat(row * currentTileSize)
             let tileH = min(tileSizeF, imageHeight - tileY)
 
             for col in minCol...maxCol {
-                let tileX = CGFloat(col * tileSize)
+                let tileX = CGFloat(col * currentTileSize)
                 let tileW = min(tileSizeF, imageWidth - tileX)
 
                 tiles.append((SIMD2(col, row), CGRect(x: tileX, y: tileY, width: tileW, height: tileH)))

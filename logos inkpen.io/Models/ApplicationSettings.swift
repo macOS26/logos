@@ -111,5 +111,13 @@ class ApplicationSettings: ObservableObject {
         }
     }
 
+    @Published var imageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512 {
+        didSet {
+            UserDefaults.standard.set(imageTileSize, forKey: "imageTileSize")
+            // Clear image cache when tile size changes
+            ImageTileCache.shared.clearCache()
+        }
+    }
+
     private init() {}
 }
