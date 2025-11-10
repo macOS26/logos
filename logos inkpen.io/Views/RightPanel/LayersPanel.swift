@@ -101,6 +101,7 @@ struct LayersPanel: View {
     @State private var rowHeights: [CGFloat] = []
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
+    @State private var computedSelectedIndex: Int? = nil
 
     // Get selected layer index from settings.selectedLayerId
     // Defaults to first editable layer (index 2, "Layer 1") if no layer is selected
@@ -110,6 +111,16 @@ struct LayersPanel: View {
         }
         // Default to Layer 1 (index 2) when no layer is selected
         return document.snapshot.layers.count > 2 ? 2 : nil
+    }
+
+    private func updateSelectedIndex() {
+        let newIndex = selectedIndex
+        if computedSelectedIndex != newIndex {
+            computedSelectedIndex = newIndex
+            if let index = newIndex, index < document.snapshot.layers.count {
+                layerOpacityState = document.snapshot.layers[index].opacity
+            }
+        }
     }
 
     private enum RowType: Hashable {
@@ -192,7 +203,7 @@ struct LayersPanel: View {
             layersHeader
             Divider().padding(.horizontal, 6.5)
 
-            if let index = selectedIndex {
+            if let index = computedSelectedIndex {
                 layerControlsSection(for: index)
                     .frame(maxWidth: .infinity)
                 Divider().padding(.horizontal, 6.5)
@@ -206,13 +217,14 @@ struct LayersPanel: View {
         )
         .onAppear {
             validateOverlays()
-            // Initialize layerOpacityState when view appears
-            if let index = selectedIndex, index < document.snapshot.layers.count {
-                layerOpacityState = document.snapshot.layers[index].opacity
-            }
+            updateSelectedIndex()
         }
         .onChange(of: document.snapshot.layers.map { $0.id }) { _, _ in
             validateOverlays()
+            updateSelectedIndex()
+        }
+        .onChange(of: document.snapshot.layers.count) { _, _ in
+            updateSelectedIndex()
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
             validateOverlays()
@@ -224,9 +236,7 @@ struct LayersPanel: View {
             validateOverlays()
         }
         .onChange(of: document.settings.selectedLayerId) { _, _ in
-            if let index = selectedIndex, index < document.snapshot.layers.count {
-                layerOpacityState = document.snapshot.layers[index].opacity
-            }
+            updateSelectedIndex()
         }
     }
 
