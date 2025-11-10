@@ -1248,9 +1248,15 @@ struct LayerCanvasView: View {
                     let destW = sizeW * SIMD4<Double>(repeating: scaleX)
                     let destH = sizeH * SIMD4<Double>(repeating: scaleY)
 
-                    // Draw all 4 tiles
+                    // Draw all 4 tiles with 0.5px overlap to eliminate seams
+                    let overlap: Double = 0.5
                     for i in 0..<4 {
-                        let destRect = CGRect(x: destX[i], y: destY[i], width: destW[i], height: destH[i])
+                        let destRect = CGRect(
+                            x: destX[i] - overlap,
+                            y: destY[i] - overlap,
+                            width: destW[i] + overlap * 2,
+                            height: destH[i] + overlap * 2
+                        )
                         cgContext.saveGState()
                         cgContext.clip(to: destRect)
                         cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
@@ -1259,14 +1265,15 @@ struct LayerCanvasView: View {
 
                     tileIndex += 4
                 } else {
-                    // Handle remaining tiles (1-3) with scalar ops
+                    // Handle remaining tiles (1-3) with scalar ops and overlap
+                    let overlap: CGFloat = 0.5
                     for i in 0..<batchSize {
                         let tileRect = visibleTiles[tileIndex + i].rect
                         let destRect = CGRect(
-                            x: tileRect.minX * scaleX,
-                            y: tileRect.minY * scaleY,
-                            width: tileRect.width * scaleX,
-                            height: tileRect.height * scaleY
+                            x: tileRect.minX * scaleX - overlap,
+                            y: tileRect.minY * scaleY - overlap,
+                            width: tileRect.width * scaleX + overlap * 2,
+                            height: tileRect.height * scaleY + overlap * 2
                         )
                         cgContext.saveGState()
                         cgContext.clip(to: destRect)
