@@ -1157,22 +1157,8 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Get source image dimensions
-        let imagePixelSize = CGSize(width: renderBounds.width, height: renderBounds.height)
-
-        // Calculate visible tiles (reads from ApplicationSettings for live updates)
+        // Get the source image first to get actual pixel dimensions
         let quality = ApplicationSettings.shared.imagePreviewQuality
-        let tileSize = ApplicationSettings.shared.imageTileSize
-        let visibleTiles = ImageTileCache.shared.visibleTiles(
-            imageRect: screenBounds,
-            viewportRect: viewportRect,
-            imageSize: imagePixelSize,
-            tileSize: tileSize
-        )
-
-        guard !visibleTiles.isEmpty else { return }
-
-        // Get the source image (downsampled version)
         let sourceImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
@@ -1190,6 +1176,20 @@ struct LayerCanvasView: View {
         }
 
         guard let image = sourceImage else { return }
+
+        // Get actual image pixel dimensions
+        let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
+
+        // Calculate visible tiles (reads from ApplicationSettings for live updates)
+        let tileSize = ApplicationSettings.shared.imageTileSize
+        let visibleTiles = ImageTileCache.shared.visibleTiles(
+            imageRect: screenBounds,
+            viewportRect: viewportRect,
+            imageSize: imagePixelSize,
+            tileSize: tileSize
+        )
+
+        guard !visibleTiles.isEmpty else { return }
 
         // Draw using CGContext with tiling
         context.withCGContext { cgContext in
