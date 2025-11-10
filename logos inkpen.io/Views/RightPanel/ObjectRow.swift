@@ -639,6 +639,47 @@ struct PreferencesView: View {
                 .padding(.vertical, 8)
             }
 
+            GroupBox(label: Label("Image Settings", systemImage: "photo").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Preview Quality: \(Int(ApplicationSettings.shared.imagePreviewQuality * 100))%")
+                                .font(.subheadline)
+                            Spacer()
+                        }
+
+                        Slider(value: Binding(
+                            get: { ApplicationSettings.shared.imagePreviewQuality },
+                            set: { ApplicationSettings.shared.imagePreviewQuality = $0 }
+                        ), in: 0.1...1.0, step: 0.05)
+
+                        Text("Controls image resolution in canvas. Lower values use less memory.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack(spacing: 8) {
+                        Button("Low (20%)") {
+                            ApplicationSettings.shared.imagePreviewQuality = 0.2
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Medium (50%)") {
+                            ApplicationSettings.shared.imagePreviewQuality = 0.5
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("High (100%)") {
+                            ApplicationSettings.shared.imagePreviewQuality = 1.0
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+
             Spacer()
         }
         .padding(24)
