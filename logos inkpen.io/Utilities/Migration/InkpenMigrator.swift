@@ -172,7 +172,19 @@ struct InkpenMigrator {
             // Process objects IN ORDER (already sorted by orderID)
             for (index, jsonObject) in jsonArray.enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
-                   let vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
+                   var vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
+
+                    // Convert legacy .shape with linkedImagePath to .image type
+                    if case .shape(let shape) = vectorObject.objectType {
+                        if shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+                            vectorObject = VectorObject(
+                                id: vectorObject.id,
+                                layerIndex: vectorObject.layerIndex,
+                                objectType: .image(shape)
+                            )
+                            Log.fileOperation("  [\(index)] Converted linked image to .image type: \(vectorObject.id)", level: .debug)
+                        }
+                    }
 
                     // Add object to snapshot
                     document.snapshot.objects[vectorObject.id] = vectorObject
@@ -217,5 +229,33 @@ struct InkpenMigrator {
         Log.fileOperation("✅ Successfully migrated document to version 1.0.27", level: .info)
 
         return document
+    }
+
+    /// Hydrates linked images after migration
+    /// - Parameters:
+    ///   - document: The migrated document
+    ///   - sourceURL: The URL of the source .inkpen file
+    static func hydrateLinkedImages(in document: VectorDocument, from sourceURL: URL?) {
+        guard let sourceURL = sourceURL else { return }
+
+        let baseDirectory = sourceURL.deletingLastPathComponent()
+        ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
+
+        var imagesHydrated = 0
+        for obj in document.snapshot.objects.values {
+            if case .shape(let shape) = obj.objectType {
+                if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
+                    imagesHydrated += 1
+                }
+            } else if case .image(let shape) = obj.objectType {
+                if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
+                    imagesHydrated += 1
+                }
+            }
+        }
+
+        if imagesHydrated > 0 {
+            Log.fileOperation("  🖼️ Hydrated \(imagesHydrated) linked image(s)", level: .info)
+        }
     }
 }

@@ -68,16 +68,22 @@ extension FileOperations {
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
 
-    static func importFromJSONData(_ data: Data) throws -> VectorDocument {
+    static func importFromJSONData(_ data: Data, sourceURL: URL? = nil) throws -> VectorDocument {
 
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
         // Try to decode as current format first
         if let document = try? decoder.decode(VectorDocument.self, from: data) {
-            ImageContentRegistry.setBaseDirectory(nil, for: document)
+            // Set base directory for image hydration
+            let baseDirectory = sourceURL?.deletingLastPathComponent()
+            ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
+
+            // Hydrate all images
             for obj in document.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
+                } else if case .image(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
@@ -87,9 +93,15 @@ extension FileOperations {
         // Fallback: Try migration from legacy format
         Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
         if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: data) {
-            ImageContentRegistry.setBaseDirectory(nil, for: migratedDocument)
+            // Set base directory for image hydration
+            let baseDirectory = sourceURL?.deletingLastPathComponent()
+            ImageContentRegistry.setBaseDirectory(baseDirectory, for: migratedDocument)
+
+            // Hydrate all images (including legacy linked images)
             for obj in migratedDocument.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
+                } else if case .image(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
                 }
             }
