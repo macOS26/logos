@@ -718,7 +718,7 @@ struct PreferencesView: View {
             Spacer()
         }
         .padding(24)
-        .frame(minWidth: 400, minHeight: 550)
+        .frame(minWidth: 400, minHeight: 750)
         .onAppear {
             loadPressureCurve()
             imageQuality = ApplicationSettings.shared.imagePreviewQuality
