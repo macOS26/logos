@@ -41,7 +41,7 @@ struct InkpenMigrator {
     }
 
     private struct Legacy1_0Settings: Codable {
-        var backgroundColor: String?
+        var backgroundColor: AnyCodable?  // Can be String or dictionary
         var colorMode: String?
         var fillColor: AnyCodable?
         var strokeColor: AnyCodable?
@@ -176,7 +176,13 @@ struct InkpenMigrator {
 
                     // Convert legacy .shape with image data to .image type
                     if case .shape(let shape) = vectorObject.objectType {
-                        if shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil {
+                        let hasImage = shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil
+
+                        if index == 2 {
+                            Log.fileOperation("  [\(index)] DEBUG: name=\(shape.name), hasLinkedPath=\(shape.linkedImagePath != nil), hasBookmark=\(shape.linkedImageBookmarkData != nil), hasEmbedded=\(shape.embeddedImageData != nil)", level: .info)
+                        }
+
+                        if hasImage {
                             vectorObject = VectorObject(
                                 id: vectorObject.id,
                                 layerIndex: vectorObject.layerIndex,
@@ -184,6 +190,10 @@ struct InkpenMigrator {
                             )
                             let imageType = shape.embeddedImageData != nil ? "embedded" : (shape.linkedImagePath != nil ? "linked path" : "bookmark")
                             Log.fileOperation("  [\(index)] Converted \(imageType) image to .image type: \(vectorObject.id)", level: .info)
+                        }
+                    } else if case .image(let shape) = vectorObject.objectType {
+                        if index == 2 {
+                            Log.fileOperation("  [\(index)] DEBUG: Already .image type, name=\(shape.name)", level: .info)
                         }
                     }
 
