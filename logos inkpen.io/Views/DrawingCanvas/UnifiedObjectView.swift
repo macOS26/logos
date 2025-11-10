@@ -1143,13 +1143,18 @@ struct LayerCanvasView: View {
             height: renderBounds.height * zoomLevel
         )
 
-        // Get canvas size (viewport)
-        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
+        // Calculate actual viewport in screen coordinates
+        // The viewport size needs to account for the window size
+        // For now, use a large estimated viewport that covers most screens at any zoom
+        let screenWidth: CGFloat = 4000  // Estimated screen width
+        let screenHeight: CGFloat = 3000  // Estimated screen height
+        let viewportMargin: CGFloat = 1000  // Extra margin for smooth scrolling
+
         let estimatedViewport = CGRect(
             x: -viewportMargin,
             y: -viewportMargin,
-            width: 5000 + viewportMargin * 2,
-            height: 5000 + viewportMargin * 2
+            width: screenWidth + viewportMargin * 2,
+            height: screenHeight + viewportMargin * 2
         )
 
         // Viewport culling: Skip if image is completely outside visible area
