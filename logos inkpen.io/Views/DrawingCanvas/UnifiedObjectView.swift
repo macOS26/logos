@@ -1023,31 +1023,32 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
-    private func resolveAndLoadTiles(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, tileCoords: [TileCoordinate], quality: Double) -> [TileCoordinate: CGImage] {
+    private func resolveAndGetSourceImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, quality: Double) -> CGImage? {
         // 1. Try bookmark data first
         if let bookmarkData = bookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
-                let tiles = ImageTileCache.shared.loadTiles(from: url, tiles: tileCoords, quality: quality)
-                if !tiles.isEmpty {
-                    return tiles
+                if let image = ImageTileCache.shared.getSourceImage(from: url, quality: quality) {
+                    return image
                 }
             }
         }
 
         // 2. Try absolute path
         let absoluteURL = URL(fileURLWithPath: linkedPath)
-        var tiles = ImageTileCache.shared.loadTiles(from: absoluteURL, tiles: tileCoords, quality: quality)
-        if !tiles.isEmpty { return tiles }
+        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality) {
+            return image
+        }
 
         // 3. Try relative to document
         if let docURL = documentURL {
             let docDir = docURL.deletingLastPathComponent()
             let relativeURL = docDir.appendingPathComponent(linkedPath)
-            tiles = ImageTileCache.shared.loadTiles(from: relativeURL, tiles: tileCoords, quality: quality)
-            if !tiles.isEmpty { return tiles }
+            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality) {
+                return image
+            }
         }
 
         // 4. Try next to document
@@ -1055,8 +1056,9 @@ struct LayerCanvasView: View {
             let docDir = docURL.deletingLastPathComponent()
             let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
             let sameDir = docDir.appendingPathComponent(filename)
-            tiles = ImageTileCache.shared.loadTiles(from: sameDir, tiles: tileCoords, quality: quality)
-            if !tiles.isEmpty { return tiles }
+            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality) {
+                return image
+            }
         }
 
         // 5. Image not found
@@ -1068,7 +1070,7 @@ struct LayerCanvasView: View {
             )
         }
 
-        return [:]
+        return nil
     }
 
     private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
@@ -1203,23 +1205,37 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Load the full downsampled image (NOT tiles - tiling was completely wrong)
-        let cgImage: CGImage?
+        // Get source image dimensions
+        let imagePixelSize = CGSize(width: renderBounds.width, height: renderBounds.height)
+
+        // Calculate visible tiles (CATiledLayer approach)
+        let quality = ApplicationSettings.shared.imagePreviewQuality
+        let visibleTiles = ImageTileCache.shared.visibleTiles(
+            imageRect: screenBounds,
+            viewportRect: estimatedViewport,
+            imageSize: imagePixelSize
+        )
+
+        guard !visibleTiles.isEmpty else { return }
+
+        // Get the source image (full downsampled version)
+        let sourceImage: CGImage?
 
         if let imageData = shape.embeddedImageData {
-            cgImage = ImageCache.shared.downsampledImage(from: imageData)
+            sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
         } else if let linkedPath = shape.linkedImagePath {
-            cgImage = resolveAndDownsampleLinkedImage(
+            sourceImage = resolveAndGetSourceImage(
                 linkedPath: linkedPath,
                 documentURL: documentURL,
                 bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id
+                shapeID: shape.id,
+                quality: quality
             )
         } else {
             return
         }
 
-        guard let image = cgImage else { return }
+        guard let image = sourceImage else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -1250,8 +1266,18 @@ struct LayerCanvasView: View {
             cgContext.setShouldAntialias(true)
             cgContext.interpolationQuality = .medium
 
-            // Draw the full image
-            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+            // Draw each visible tile (CATiledLayer approach: draw full image clipped to tile rect)
+            for (_, tileRect) in visibleTiles {
+                cgContext.saveGState()
+
+                // Clip to tile rect
+                cgContext.clip(to: tileRect)
+
+                // Draw full image (Core Graphics only decodes/draws the clipped region)
+                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+
+                cgContext.restoreGState()
+            }
 
             cgContext.restoreGState()
         }
