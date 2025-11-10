@@ -25,8 +25,9 @@ class ImageTileCache {
     ///   - imageRect: The image bounds in canvas coordinates
     ///   - viewportRect: The visible viewport in canvas coordinates
     ///   - imageSize: The original image pixel dimensions
+    ///   - tileSize: The tile size in pixels (optional, defaults to user preference)
     /// - Returns: Array of tile coordinates and their rects in image coordinates
-    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize) -> [(coord: TileCoordinate, rect: CGRect)] {
+    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
         guard imageRect.intersects(viewportRect) else { return [] }
 
         let intersection = imageRect.intersection(viewportRect)
@@ -41,8 +42,8 @@ class ImageTileCache {
         let pixelMaxX = (intersection.maxX - imageRect.minX) * scaleX
         let pixelMaxY = (intersection.maxY - imageRect.minY) * scaleY
 
-        // Get current tile size from preferences
-        let currentTileSize = tileSizePixels
+        // Use provided tile size or default to preferences
+        let currentTileSize = tileSize ?? tileSizePixels
         let tileSizeF = CGFloat(currentTileSize)
 
         // Calculate tile range using integer math for speed
