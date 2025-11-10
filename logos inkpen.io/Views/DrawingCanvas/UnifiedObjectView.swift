@@ -1158,11 +1158,25 @@ struct LayerCanvasView: View {
             return
         }
 
+        // Calculate visible portion of image (intersection with viewport)
+        let visibleRect = screenBounds.intersection(estimatedViewport)
+        let visiblePercentage = (visibleRect.width * visibleRect.height) / (screenBounds.width * screenBounds.height)
+
         // Calculate target display size (in points, accounting for zoom)
-        let targetSize = CGSize(
+        var targetSize = CGSize(
             width: renderBounds.width * zoomLevel,
             height: renderBounds.height * zoomLevel
         )
+
+        // For partially visible images, downsample more aggressively
+        // Only decode the portion we can see + small margin
+        if visiblePercentage < 0.9 {
+            // Scale down target size based on visible percentage
+            // Add 20% margin for smooth panning
+            let scaleFactor = sqrt(visiblePercentage) * 1.2
+            targetSize.width *= scaleFactor
+            targetSize.height *= scaleFactor
+        }
 
         // Get display scale for retina displays
         let displayScale = NSScreen.main?.backingScaleFactor ?? 2.0
