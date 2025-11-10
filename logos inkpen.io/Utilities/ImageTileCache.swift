@@ -30,65 +30,40 @@ class ImageTileCache {
     /// - Returns: Array of tile coordinates and their rects in image coordinates
     func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
         guard imageRect.intersects(viewportRect) else {
-            print("❌ NO INTERSECTION: imageRect=\(imageRect), viewportRect=\(viewportRect)")
             return []
         }
 
-        let intersection = imageRect.intersection(viewportRect)
-        print("✅ INTERSECTION: \(intersection)")
-
-        // Calculate scale from CANVAS size to actual image pixels
-        let scaleX = imageSize.width / canvasSize.width
-        let scaleY = imageSize.height / canvasSize.height
-
-        // Calculate scale from SCREEN size to CANVAS size (inverse of zoom)
-        let screenToCanvasScaleX = canvasSize.width / imageRect.width
-        let screenToCanvasScaleY = canvasSize.height / imageRect.height
-
-        // Convert intersection from SCREEN space to CANVAS space, then to pixels
-        let canvasMinX = (intersection.minX - imageRect.minX) * screenToCanvasScaleX
-        let canvasMinY = (intersection.minY - imageRect.minY) * screenToCanvasScaleY
-        let canvasMaxX = (intersection.maxX - imageRect.minX) * screenToCanvasScaleX
-        let canvasMaxY = (intersection.maxY - imageRect.minY) * screenToCanvasScaleY
-
-        // Now convert from canvas space to pixel space
-        let pixelMinX = canvasMinX * scaleX
-        let pixelMinY = canvasMinY * scaleY
-        let pixelMaxX = canvasMaxX * scaleX
-        let pixelMaxY = canvasMaxY * scaleY
-
         // Use provided tile size or default to preferences
         let currentTileSize = tileSize ?? tileSizePixels
-        let tileSizeF = CGFloat(currentTileSize)
 
-        // Calculate tile range using integer math for speed
-        let minCol = max(0, Int(pixelMinX / tileSizeF))
-        let maxCol = min(Int(imageSize.width / tileSizeF), Int(pixelMaxX / tileSizeF))
-        let minRow = max(0, Int(pixelMinY / tileSizeF))
-        let maxRow = min(Int(imageSize.height / tileSizeF), Int(pixelMaxY / tileSizeF))
+        // Calculate total number of tiles in the image
+        let numCols = Int(ceil(imageSize.width / CGFloat(currentTileSize)))
+        let numRows = Int(ceil(imageSize.height / CGFloat(currentTileSize)))
 
-        print("📊 TILE RANGE: cols=\(minCol)...\(maxCol), rows=\(minRow)...\(maxRow)")
-        print("   pixelBounds: x=\(pixelMinX)...\(pixelMaxX), y=\(pixelMinY)...\(pixelMaxY)")
-        print("   imageSize: \(imageSize), canvasSize: \(canvasSize), tileSize: \(currentTileSize)")
-
-        // Pre-allocate array size for performance
-        let numTiles = (maxCol - minCol + 1) * (maxRow - minRow + 1)
         var tiles: [(TileCoordinate, CGRect)] = []
-        tiles.reserveCapacity(numTiles)
 
-        // Generate tile coordinates with their rects in image pixel space
-        let imageWidth = imageSize.width
-        let imageHeight = imageSize.height
-
-        for row in minRow...maxRow {
-            let tileY = CGFloat(row * currentTileSize)
-            let tileH = min(tileSizeF, imageHeight - tileY)
-
-            for col in minCol...maxCol {
+        // Check each tile to see if it's visible
+        for row in 0..<numRows {
+            for col in 0..<numCols {
+                // Tile rect in pixel space
                 let tileX = CGFloat(col * currentTileSize)
-                let tileW = min(tileSizeF, imageWidth - tileX)
+                let tileY = CGFloat(row * currentTileSize)
+                let tileW = min(CGFloat(currentTileSize), imageSize.width - tileX)
+                let tileH = min(CGFloat(currentTileSize), imageSize.height - tileY)
+                let tileRect = CGRect(x: tileX, y: tileY, width: tileW, height: tileH)
 
-                tiles.append((SIMD2(col, row), CGRect(x: tileX, y: tileY, width: tileW, height: tileH)))
+                // Convert tile rect to screen space
+                let screenTileRect = CGRect(
+                    x: imageRect.minX + (tileX / imageSize.width) * imageRect.width,
+                    y: imageRect.minY + (tileY / imageSize.height) * imageRect.height,
+                    width: (tileW / imageSize.width) * imageRect.width,
+                    height: (tileH / imageSize.height) * imageRect.height
+                )
+
+                // Check if this tile intersects the viewport
+                if screenTileRect.intersects(viewportRect) {
+                    tiles.append((SIMD2(col, row), tileRect))
+                }
             }
         }
 
