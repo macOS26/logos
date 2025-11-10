@@ -107,7 +107,7 @@ class ApplicationSettings: ObservableObject {
         didSet {
             UserDefaults.standard.set(imagePreviewQuality, forKey: "imagePreviewQuality")
             // Clear image cache when quality changes
-            ImageCache.shared.clearCache()
+            ImageTileCache.shared.clearCache()
         }
     }
 

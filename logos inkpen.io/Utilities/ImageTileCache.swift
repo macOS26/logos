@@ -3,17 +3,8 @@ import AppKit
 import ImageIO
 import simd
 
-/// Represents a tile coordinate using SIMD for efficient computation
-struct TileCoordinate: Hashable {
-    let coord: SIMD2<Int>  // (col, row)
-
-    init(col: Int, row: Int) {
-        self.coord = SIMD2(col, row)
-    }
-
-    var col: Int { coord.x }
-    var row: Int { coord.y }
-}
+/// Tile coordinate using SIMD for efficient computation (x=col, y=row)
+typealias TileCoordinate = SIMD2<Int>
 
 /// Manages image sources and calculates visible tiles (CATiledLayer approach)
 class ImageTileCache {
@@ -39,45 +30,41 @@ class ImageTileCache {
 
         let intersection = imageRect.intersection(viewportRect)
 
-        // Convert intersection to image-local coordinates (0,0 = top-left of image)
-        let localIntersection = CGRect(
-            x: intersection.origin.x - imageRect.origin.x,
-            y: intersection.origin.y - imageRect.origin.y,
-            width: intersection.width,
-            height: intersection.height
-        )
-
         // Calculate scale from displayed size to actual image pixels
         let scaleX = imageSize.width / imageRect.width
         let scaleY = imageSize.height / imageRect.height
 
-        // Convert to pixel coordinates
-        let pixelIntersection = CGRect(
-            x: localIntersection.origin.x * scaleX,
-            y: localIntersection.origin.y * scaleY,
-            width: localIntersection.width * scaleX,
-            height: localIntersection.height * scaleY
-        )
+        // Convert intersection to pixel coordinates (relative to image origin)
+        let pixelMinX = (intersection.minX - imageRect.minX) * scaleX
+        let pixelMinY = (intersection.minY - imageRect.minY) * scaleY
+        let pixelMaxX = (intersection.maxX - imageRect.minX) * scaleX
+        let pixelMaxY = (intersection.maxY - imageRect.minY) * scaleY
 
-        // Calculate tile range
-        let minCol = max(0, Int(floor(pixelIntersection.minX / CGFloat(tileSize))))
-        let maxCol = min(Int(ceil(imageSize.width / CGFloat(tileSize))) - 1,
-                        Int(ceil(pixelIntersection.maxX / CGFloat(tileSize))))
-        let minRow = max(0, Int(floor(pixelIntersection.minY / CGFloat(tileSize))))
-        let maxRow = min(Int(ceil(imageSize.height / CGFloat(tileSize))) - 1,
-                        Int(ceil(pixelIntersection.maxY / CGFloat(tileSize))))
+        // Calculate tile range using integer math for speed
+        let tileSizeF = CGFloat(tileSize)
+        let minCol = max(0, Int(pixelMinX / tileSizeF))
+        let maxCol = min(Int(imageSize.width / tileSizeF), Int(pixelMaxX / tileSizeF))
+        let minRow = max(0, Int(pixelMinY / tileSizeF))
+        let maxRow = min(Int(imageSize.height / tileSizeF), Int(pixelMaxY / tileSizeF))
+
+        // Pre-allocate array size for performance
+        let numTiles = (maxCol - minCol + 1) * (maxRow - minRow + 1)
+        var tiles: [(TileCoordinate, CGRect)] = []
+        tiles.reserveCapacity(numTiles)
 
         // Generate tile coordinates with their rects in image pixel space
-        var tiles: [(TileCoordinate, CGRect)] = []
+        let imageWidth = imageSize.width
+        let imageHeight = imageSize.height
+
         for row in minRow...maxRow {
+            let tileY = CGFloat(row * tileSize)
+            let tileH = min(tileSizeF, imageHeight - tileY)
+
             for col in minCol...maxCol {
                 let tileX = CGFloat(col * tileSize)
-                let tileY = CGFloat(row * tileSize)
-                let tileW = min(CGFloat(tileSize), imageSize.width - tileX)
-                let tileH = min(CGFloat(tileSize), imageSize.height - tileY)
+                let tileW = min(tileSizeF, imageWidth - tileX)
 
-                let tileRect = CGRect(x: tileX, y: tileY, width: tileW, height: tileH)
-                tiles.append((TileCoordinate(col: col, row: row), tileRect))
+                tiles.append((SIMD2(col, row), CGRect(x: tileX, y: tileY, width: tileW, height: tileH)))
             }
         }
 

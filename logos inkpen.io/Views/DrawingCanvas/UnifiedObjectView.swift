@@ -1073,55 +1073,6 @@ struct LayerCanvasView: View {
         return nil
     }
 
-    private func resolveAndDownsampleLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
-        // 1. Try bookmark data first (security-scoped access)
-        if let bookmarkData = bookmarkData {
-            var isStale = false
-            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                let _ = url.startAccessingSecurityScopedResource()
-                defer { url.stopAccessingSecurityScopedResource() }
-                if let image = ImageCache.shared.downsampledImage(from: url) {
-                    return image
-                }
-            }
-        }
-
-        // 2. Try absolute path
-        let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let image = ImageCache.shared.downsampledImage(from: absoluteURL) {
-            return image
-        }
-
-        // 3. Try relative to document
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = ImageCache.shared.downsampledImage(from: relativeURL) {
-                return image
-            }
-        }
-
-        // 4. Try next to document (same directory, just filename)
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
-            let sameDir = docDir.appendingPathComponent(filename)
-            if let image = ImageCache.shared.downsampledImage(from: sameDir) {
-                return image
-            }
-        }
-
-        // 5. Image not found - notify so user can be prompted
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(
-                name: Notification.Name("MissingLinkedImage"),
-                object: nil,
-                userInfo: ["shapeID": shapeID, "path": linkedPath]
-            )
-        }
-
-        return nil
-    }
 
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> NSImage? {
         // 1. Try bookmark data first (security-scoped access)
