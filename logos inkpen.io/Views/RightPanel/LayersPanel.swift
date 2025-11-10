@@ -182,12 +182,11 @@ struct LayersPanel: View {
     }
 
     var body: some View {
-        // Removed global subscriptions - rely on specific layer triggers instead
-        // let _ = document.snapshot.layers
-        // let _ = document.snapshot.objects
+        // Subscribe to layer changes to update selectedIndex
+        let _ = document.snapshot.layers.count // Trigger view update when layers change
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
-        // let _ = document.settings // Subscribe to settings changes
+        let _ = document.settings.selectedLayerId // Subscribe to selected layer changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
