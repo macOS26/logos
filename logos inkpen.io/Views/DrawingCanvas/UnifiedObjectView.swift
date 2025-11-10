@@ -1218,14 +1218,25 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
+            // SIMD-accelerated tile coordinate transformation
+            let scaleX = renderBounds.width / CGFloat(image.width)
+            let scaleY = renderBounds.height / CGFloat(image.height)
+            let scale = SIMD2<Double>(scaleX, scaleY)
+
             // Draw each visible tile (NO CULLING)
-            for (tileCoord, tileRect) in visibleTiles {
-                // Calculate tile destination in canvas space
+            for (_, tileRect) in visibleTiles {
+                // SIMD-accelerated rect transformation (vectorized x/y and width/height in parallel)
+                let origin = SIMD2<Double>(tileRect.minX, tileRect.minY)
+                let size = SIMD2<Double>(tileRect.width, tileRect.height)
+
+                let destOrigin = origin * scale
+                let destSize = size * scale
+
                 let destRect = CGRect(
-                    x: tileRect.minX * (renderBounds.width / CGFloat(image.width)),
-                    y: tileRect.minY * (renderBounds.height / CGFloat(image.height)),
-                    width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
-                    height: tileRect.height * (renderBounds.height / CGFloat(image.height))
+                    x: destOrigin.x,
+                    y: destOrigin.y,
+                    width: destSize.x,
+                    height: destSize.y
                 )
 
                 cgContext.saveGState()
