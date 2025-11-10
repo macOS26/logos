@@ -238,15 +238,21 @@ class VectorImportManager {
 
         rectShape.bounds = CGRect(origin: .zero, size: size)
 
-        rectShape.linkedImagePath = url.path
-        if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
-            rectShape.linkedImageBookmarkData = bookmark
-        }
-        // Store image data in shape - will be loaded into document's imageStorage when document is created
-        if let tiffData = nsImage.tiffRepresentation,
-           let bitmapRep = NSBitmapImageRep(data: tiffData),
-           let pngData = bitmapRep.representation(using: .png, properties: [:]) {
-            rectShape.embeddedImageData = pngData
+        let shouldEmbed = ApplicationSettings.shared.embedImagesByDefault
+
+        if shouldEmbed {
+            // Embed the image data
+            if let tiffData = nsImage.tiffRepresentation,
+               let bitmapRep = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                rectShape.embeddedImageData = pngData
+            }
+        } else {
+            // Link to the image file
+            rectShape.linkedImagePath = url.path
+            if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                rectShape.linkedImageBookmarkData = bookmark
+            }
         }
         let meta = VectorImportMetadata(
             originalFormat: .pdf,
