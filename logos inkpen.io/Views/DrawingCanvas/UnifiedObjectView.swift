@@ -1023,7 +1023,7 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
-    private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?) -> NSImage? {
+    private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> NSImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
             var isStale = false
@@ -1060,7 +1060,15 @@ struct LayerCanvasView: View {
             }
         }
 
-        // 5. TODO: Prompt user for location
+        // 5. Image not found - notify so user can be prompted
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: Notification.Name("MissingLinkedImage"),
+                object: nil,
+                userInfo: ["shapeID": shapeID, "path": linkedPath]
+            )
+        }
+
         return nil
     }
 
@@ -1072,7 +1080,7 @@ struct LayerCanvasView: View {
             nsImage = NSImage(data: imageData)
         } else if let linkedPath = shape.linkedImagePath {
             // Try to resolve the linked image with pecking order
-            nsImage = resolveLinkedImage(linkedPath: linkedPath, documentURL: documentURL, bookmarkData: shape.linkedImageBookmarkData)
+            nsImage = resolveLinkedImage(linkedPath: linkedPath, documentURL: documentURL, bookmarkData: shape.linkedImageBookmarkData, shapeID: shape.id)
         } else {
             return
         }

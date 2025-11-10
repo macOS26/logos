@@ -27,6 +27,8 @@ class DocumentState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var isTerminating = false
     private var pasteboardChangeCount: Int = 0
+    private var missingImageObserver: NSObjectProtocol?
+    private var promptedMissingImages = Set<UUID>()  // Track which images we've already prompted for
 
     init() {
 
@@ -52,10 +54,31 @@ class DocumentState: ObservableObject {
                 // print("🟡 Window notification but not matching (window: \(self.window != nil ? "set" : "nil"))")
             }
         }
+
+        // Listen for missing linked images
+        missingImageObserver = NotificationCenter.default.addObserver(
+            forName: Notification.Name("MissingLinkedImage"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self,
+                  let userInfo = notification.userInfo,
+                  let shapeID = userInfo["shapeID"] as? UUID,
+                  let path = userInfo["path"] as? String else { return }
+
+            // Only prompt once per image
+            guard !self.promptedMissingImages.contains(shapeID) else { return }
+            self.promptedMissingImages.insert(shapeID)
+
+            self.promptForMissingImage(shapeID: shapeID, originalPath: path)
+        }
     }
 
     deinit {
         if let observer = windowObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = missingImageObserver {
             NotificationCenter.default.removeObserver(observer)
         }
         cancellables.removeAll()
@@ -1154,5 +1177,59 @@ class DocumentState: ObservableObject {
         }
 
         document.viewState.selectedObjectIDs.removeAll()
+    }
+
+    private func promptForMissingImage(shapeID: UUID, originalPath: String) {
+        guard let document = document else { return }
+
+        let filename = URL(fileURLWithPath: originalPath).lastPathComponent
+
+        let panel = NSOpenPanel()
+        panel.message = "The linked image '\(filename)' could not be found. Please locate it."
+        panel.prompt = "Choose Image"
+        panel.allowedContentTypes = [.png, .jpeg, .image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        // Try to start in the original directory if it exists
+        let originalDir = URL(fileURLWithPath: originalPath).deletingLastPathComponent()
+        if FileManager.default.fileExists(atPath: originalDir.path) {
+            panel.directoryURL = originalDir
+        }
+
+        panel.begin { [weak self] response in
+            guard let self = self,
+                  response == .OK,
+                  let newURL = panel.url else {
+                // User cancelled or no selection
+                return
+            }
+
+            // Update the shape with the new path and bookmark
+            if var shape = document.snapshot.objects[shapeID]?.shape {
+                shape.linkedImagePath = newURL.path
+
+                // Create new security-scoped bookmark
+                if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                    shape.linkedImageBookmarkData = bookmark
+                }
+
+                // Update the object in snapshot
+                if let existingObject = document.snapshot.objects[shapeID] {
+                    let updatedObject = VectorObject(
+                        id: shapeID,
+                        layerIndex: existingObject.layerIndex,
+                        objectType: .image(shape)
+                    )
+                    document.snapshot.objects[shapeID] = updatedObject
+
+                    // Trigger refresh
+                    document.objectWillChange.send()
+                }
+
+                // Remove from prompted set so it can be prompted again if still missing
+                self.promptedMissingImages.remove(shapeID)
+            }
+        }
     }
 }
