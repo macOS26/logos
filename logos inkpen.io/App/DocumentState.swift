@@ -1223,8 +1223,8 @@ class DocumentState: ObservableObject {
                     )
                     document.snapshot.objects[shapeID] = updatedObject
 
-                    // Trigger refresh
-                    document.objectWillChange.send()
+                    // Trigger layer update for the layer containing this object
+                    document.triggerLayerUpdate(for: existingObject.layerIndex)
                 }
 
                 // Remove from prompted set so it can be prompted again if still missing
