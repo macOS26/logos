@@ -1218,11 +1218,7 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // DEBUG: Log culling info
-            var culledCount = 0
-            var drawnCount = 0
-
-            // Draw each visible tile
+            // Draw each visible tile (NO CULLING)
             for (tileCoord, tileRect) in visibleTiles {
                 // Calculate tile destination in canvas space
                 let destRect = CGRect(
@@ -1231,22 +1227,6 @@ struct LayerCanvasView: View {
                     width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
                     height: tileRect.height * (renderBounds.height / CGFloat(image.height))
                 )
-
-                // Convert to screen space for culling
-                let screenTileRect = CGRect(
-                    x: destRect.minX * zoomLevel + canvasOffset.x,
-                    y: destRect.minY * zoomLevel + canvasOffset.y,
-                    width: destRect.width * zoomLevel,
-                    height: destRect.height * zoomLevel
-                )
-
-                // Cull: Skip if tile is completely outside viewport
-                if !screenTileRect.intersects(viewportRect) {
-                    culledCount += 1
-                    continue
-                }
-
-                drawnCount += 1
 
                 cgContext.saveGState()
 
@@ -1261,11 +1241,6 @@ struct LayerCanvasView: View {
                 cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
                 cgContext.restoreGState()
-            }
-
-            print("🎨 TILES: drawn=\(drawnCount), culled=\(culledCount), total=\(visibleTiles.count)")
-            if drawnCount == 0 && visibleTiles.count > 0 {
-                print("⚠️ ALL TILES CULLED! viewport=\(viewportRect), zoom=\(zoomLevel), offset=\(canvasOffset)")
             }
 
             cgContext.restoreGState()
