@@ -264,7 +264,7 @@ struct LayerCanvasView: View {
                                     if VectorText.from(liveContentShape) != nil {
                                         renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                     } else if hasImageData(liveContentShape) {
-                                        renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                        renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
                                     } else {
                                         renderShape(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                     }
@@ -300,7 +300,7 @@ struct LayerCanvasView: View {
                                 if VectorText.from(liveContentNoClip) != nil {
                                     renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity)
                                 } else if hasImageData(liveContentNoClip) {
-                                    renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
+                                    renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, canvasSize: size)
                                 } else {
                                     renderShape(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 }
@@ -350,7 +350,7 @@ struct LayerCanvasView: View {
                                 if VectorText.from(liveContentColorMode) != nil {
                                     renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
                                 } else if hasImageData(liveContentColorMode) {
-                                    renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
                                 } else {
                                     renderShape(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
                                 }
@@ -398,7 +398,7 @@ struct LayerCanvasView: View {
                         if VectorText.from(liveChildShape) != nil {
                             renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                         } else if hasImageData(liveChildShape) {
-                            renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape, canvasSize: size)
                         } else {
                             renderShape(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
                         }
@@ -425,7 +425,7 @@ struct LayerCanvasView: View {
                         return maskObject.shape
                     }()
                     let liveImageShape = applyLivePositions(to: shape)
-                    renderImage(liveImageShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
+                    renderImage(liveImageShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape, canvasSize: size)
 
                 case .text(let shape):
                     let maskShape: VectorShape? = {
@@ -1124,7 +1124,7 @@ struct LayerCanvasView: View {
         return nil
     }
 
-    private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
+    private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
         // Get image bounds to check viewport culling
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
         var renderBounds = pathBounds
@@ -1143,22 +1143,17 @@ struct LayerCanvasView: View {
             height: renderBounds.height * zoomLevel
         )
 
-        // Calculate actual viewport in screen coordinates
-        // The viewport size needs to account for the window size
-        // For now, use a large estimated viewport that covers most screens at any zoom
-        let screenWidth: CGFloat = 4000  // Estimated screen width
-        let screenHeight: CGFloat = 3000  // Estimated screen height
-        let viewportMargin: CGFloat = 1000  // Extra margin for smooth scrolling
-
-        let estimatedViewport = CGRect(
+        // Use actual canvas size for viewport (from Canvas context)
+        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
+        let viewportRect = CGRect(
             x: -viewportMargin,
             y: -viewportMargin,
-            width: screenWidth + viewportMargin * 2,
-            height: screenHeight + viewportMargin * 2
+            width: canvasSize.width + viewportMargin * 2,
+            height: canvasSize.height + viewportMargin * 2
         )
 
         // Viewport culling: Skip if image is completely outside visible area
-        guard screenBounds.intersects(estimatedViewport) else {
+        guard screenBounds.intersects(viewportRect) else {
             return
         }
 
@@ -1170,7 +1165,7 @@ struct LayerCanvasView: View {
         let tileSize = ApplicationSettings.shared.imageTileSize
         let visibleTiles = ImageTileCache.shared.visibleTiles(
             imageRect: screenBounds,
-            viewportRect: estimatedViewport,
+            viewportRect: viewportRect,
             imageSize: imagePixelSize,
             tileSize: tileSize
         )
