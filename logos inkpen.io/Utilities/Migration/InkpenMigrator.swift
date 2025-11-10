@@ -174,15 +174,16 @@ struct InkpenMigrator {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    var vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
 
-                    // Convert legacy .shape with linkedImagePath to .image type
+                    // Convert legacy .shape with image data to .image type
                     if case .shape(let shape) = vectorObject.objectType {
-                        if shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+                        if shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil {
                             vectorObject = VectorObject(
                                 id: vectorObject.id,
                                 layerIndex: vectorObject.layerIndex,
                                 objectType: .image(shape)
                             )
-                            Log.fileOperation("  [\(index)] Converted linked image to .image type: \(vectorObject.id)", level: .debug)
+                            let imageType = shape.embeddedImageData != nil ? "embedded" : (shape.linkedImagePath != nil ? "linked path" : "bookmark")
+                            Log.fileOperation("  [\(index)] Converted \(imageType) image to .image type: \(vectorObject.id)", level: .info)
                         }
                     }
 
