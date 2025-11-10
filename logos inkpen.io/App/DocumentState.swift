@@ -1213,12 +1213,17 @@ class DocumentState: ObservableObject {
                 // Set new linked path
                 shape.linkedImagePath = newURL.path
 
+                // Update shape name to match new filename
+                let newFilename = newURL.lastPathComponent
+                shape.name = "[IMG] \(newFilename)"
+
                 // Create new security-scoped bookmark
                 if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                     shape.linkedImageBookmarkData = bookmark
                 }
 
                 print("🔗 Updated image link: \(newURL.path)")
+                print("📝 Updated shape name: \(shape.name)")
                 print("🔖 Bookmark created: \(shape.linkedImageBookmarkData != nil)")
 
                 // Update the object in snapshot
