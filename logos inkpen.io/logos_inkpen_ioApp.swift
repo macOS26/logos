@@ -777,6 +777,21 @@ struct logos_inken_ioApp: App {
                     }
                     .keyboardShortcut("i", modifiers: [.command, .shift])
                     .help("Toggle spatial index bounds overlay (red dashed boxes)")
+
+                    Divider()
+
+                    Toggle(isOn: Binding(
+                        get: { ApplicationSettings.shared.embedImagesByDefault },
+                        set: { ApplicationSettings.shared.embedImagesByDefault = $0 }
+                    )) {
+                        HStack {
+                            if ApplicationSettings.shared.embedImagesByDefault {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Embed Images by Default")
+                        }
+                    }
+                    .help("When enabled, imported images are embedded in the document. When disabled, images are linked by path.")
                 }
 
                 if SandboxChecker.isNotSandboxed {
