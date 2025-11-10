@@ -1220,6 +1220,27 @@ struct LayerCanvasView: View {
 
             // Draw each visible tile
             for (tileCoord, tileRect) in visibleTiles {
+                // Calculate tile destination in canvas space
+                let destRect = CGRect(
+                    x: tileRect.minX * (renderBounds.width / CGFloat(image.width)),
+                    y: tileRect.minY * (renderBounds.height / CGFloat(image.height)),
+                    width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
+                    height: tileRect.height * (renderBounds.height / CGFloat(image.height))
+                )
+
+                // Convert to screen space for culling
+                let screenTileRect = CGRect(
+                    x: destRect.minX * zoomLevel + canvasOffset.x,
+                    y: destRect.minY * zoomLevel + canvasOffset.y,
+                    width: destRect.width * zoomLevel,
+                    height: destRect.height * zoomLevel
+                )
+
+                // Cull: Skip if tile is completely outside viewport
+                guard screenTileRect.intersects(viewportRect) else {
+                    continue
+                }
+
                 cgContext.saveGState()
 
                 // DEBUG: Alternate opacity for checkerboard pattern to prove tiling works
@@ -1227,12 +1248,6 @@ struct LayerCanvasView: View {
                 cgContext.setAlpha(isEvenTile ? 1.0 : 0.5)
 
                 // Clip to tile destination area
-                let destRect = CGRect(
-                    x: tileRect.minX * (renderBounds.width / CGFloat(image.width)),
-                    y: tileRect.minY * (renderBounds.height / CGFloat(image.height)),
-                    width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
-                    height: tileRect.height * (renderBounds.height / CGFloat(image.height))
-                )
                 cgContext.clip(to: destRect)
 
                 // Draw the FULL image (CG will only decode the clipped portion)
