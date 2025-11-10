@@ -1226,18 +1226,17 @@ struct LayerCanvasView: View {
                 let isEvenTile = (tileCoord.x + tileCoord.y) % 2 == 0
                 cgContext.setAlpha(isEvenTile ? 1.0 : 0.5)
 
-                // Calculate destination rect in canvas space
+                // Clip to tile destination area
                 let destRect = CGRect(
                     x: tileRect.minX * (renderBounds.width / CGFloat(image.width)),
                     y: tileRect.minY * (renderBounds.height / CGFloat(image.height)),
                     width: tileRect.width * (renderBounds.width / CGFloat(image.width)),
                     height: tileRect.height * (renderBounds.height / CGFloat(image.height))
                 )
+                cgContext.clip(to: destRect)
 
-                // Crop the image to this tile
-                if let croppedImage = image.cropping(to: tileRect) {
-                    cgContext.draw(croppedImage, in: destRect)
-                }
+                // Draw the FULL image (CG will only decode the clipped portion)
+                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
                 cgContext.restoreGState()
             }
