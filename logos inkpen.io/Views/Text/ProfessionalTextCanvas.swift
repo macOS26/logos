@@ -42,19 +42,6 @@ struct ProfessionalTextCanvas: View {
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
         .id("\(dragPreviewTrigger)-\(viewModel.textObject.typography.letterSpacing)")
         .onKeyPress(action: handleKeyPress)
-        .onAppear {
-            if let currentTextObject = document.findText(by: textObjectID) {
-                viewModel.syncFromDocument(currentTextObject)
-            }
-        }
-        .onReceive(document.objectWillChange) { _ in
-            if let currentTextObject = document.findText(by: textObjectID) {
-                viewModel.syncFromDocument(currentTextObject)
-            }
-        }
-        .onChange(of: viewModel.textObject.isEditing) { _, newValue in
-            viewModel.isEditing = newValue
-        }
     }
 
     private func shouldApplyDragPreview() -> Bool {
