@@ -1243,6 +1243,24 @@ struct LayerCanvasView: View {
                 cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
             }
 
+            // DEBUG: Draw checkerboard pattern over tiles at 50% opacity
+            for tile in visibleTiles {
+                let row = tile.coord.y
+                let col = tile.coord.x
+                let isEvenTile = (row + col) % 2 == 0
+
+                if isEvenTile {
+                    cgContext.setFillColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 0.5)
+                    let tileRect = CGRect(
+                        x: tile.rect.origin.x * renderBounds.width / imagePixelSize.width,
+                        y: tile.rect.origin.y * renderBounds.height / imagePixelSize.height,
+                        width: tile.rect.width * renderBounds.width / imagePixelSize.width,
+                        height: tile.rect.height * renderBounds.height / imagePixelSize.height
+                    )
+                    cgContext.fill(tileRect)
+                }
+            }
+
             cgContext.restoreGState()
         }
     }
