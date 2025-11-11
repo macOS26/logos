@@ -36,12 +36,20 @@ struct ProfessionalTextCanvas: View {
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
         let position = textObject.position
-        // Use delta during drag, otherwise use actual value (secret formula!)
-        let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
-        let lineHeight = lineHeightDelta ?? textObject.typography.lineHeight
+
+        // SECRET FORMULA: Apply deltas with proportional line height
         let fontSize = fontSizeDelta ?? textObject.typography.fontSize
 
-        TextViewRepresentable(
+        // Line height: explicit delta overrides proportional (ternary to avoid control flow in body)
+        let lineHeight = lineHeightDelta != nil
+            ? CGFloat(lineHeightDelta!)
+            : (fontSizeDelta != nil
+                ? (CGFloat(fontSizeDelta!) * (textObject.typography.lineHeight / textObject.typography.fontSize))
+                : textObject.typography.lineHeight)
+
+        let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
+
+        return TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
             letterSpacing: letterSpacing,
