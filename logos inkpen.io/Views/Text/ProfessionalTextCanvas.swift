@@ -149,9 +149,25 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            // Use live fontSize and fontFamily for font
-            let fontName = fontVariant ?? fontFamily
-            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            // Use SAME font logic as CTLine rendering
+            let liveFont: NSFont = {
+                if let variant = fontVariant {
+                    let fontManager = NSFontManager.shared
+                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
+
+                    for member in members {
+                        if let postScriptName = member[0] as? String,
+                           let displayName = member[1] as? String,
+                           displayName == variant {
+                            if let font = NSFont(name: postScriptName, size: fontSize) {
+                                return font
+                            }
+                        }
+                    }
+                }
+
+                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            }()
             textView.font = liveFont
             textView.textColor = NSColor.systemPink  // DEBUG: Change to .clear to hide NSTextView
             textView.allowsInteraction = true
@@ -223,8 +239,25 @@ struct ProfessionalTextCanvas: View {
             }
 
             // Always apply font (comparing NSFont objects doesn't work reliably)
-            let fontName = fontVariant ?? fontFamily
-            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            // Use SAME font logic as CTLine rendering
+            let liveFont: NSFont = {
+                if let variant = fontVariant {
+                    let fontManager = NSFontManager.shared
+                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
+
+                    for member in members {
+                        if let postScriptName = member[0] as? String,
+                           let displayName = member[1] as? String,
+                           displayName == variant {
+                            if let font = NSFont(name: postScriptName, size: fontSize) {
+                                return font
+                            }
+                        }
+                    }
+                }
+
+                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            }()
             nsView.font = liveFont
             if nsView.string.count > 0 {
                 let range = NSRange(location: 0, length: nsView.string.count)
@@ -276,8 +309,25 @@ struct ProfessionalTextCanvas: View {
             paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
 
-            let fontName = fontVariant ?? fontFamily
-            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            // Use SAME font logic as CTLine rendering
+            let liveFont: NSFont = {
+                if let variant = fontVariant {
+                    let fontManager = NSFontManager.shared
+                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
+
+                    for member in members {
+                        if let postScriptName = member[0] as? String,
+                           let displayName = member[1] as? String,
+                           displayName == variant {
+                            if let font = NSFont(name: postScriptName, size: fontSize) {
+                                return font
+                            }
+                        }
+                    }
+                }
+
+                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            }()
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,
                 .foregroundColor: NSColor.systemPink,  // DEBUG: Change to .clear to hide NSTextView
