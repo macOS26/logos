@@ -197,14 +197,16 @@ extension DrawingCanvas {
             y: (preciseFocalY - preciseOffsetY) / preciseOldZoom
         )
 
-        document.viewState.zoomLevel = newZoomLevel
-
         let newOffset = CGPoint(
             x: preciseFocalX - (Double(canvasPointAtFocus.x) * preciseNewZoom),
             y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
         )
 
-        document.viewState.canvasOffset = newOffset
+        // Batch update zoom and offset together in single transaction
+        withAnimation(.none) {
+            document.viewState.zoomLevel = newZoomLevel
+            document.viewState.canvasOffset = newOffset
+        }
 
     }
 
