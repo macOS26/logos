@@ -278,6 +278,18 @@ struct DocumentBasedMainView: View {
 
             calculateInitialZoom()
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomIn"))) { _ in
+            zoomLevel = min(zoomLevel * 1.25, 50.0)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomOut"))) { _ in
+            zoomLevel = max(zoomLevel / 1.25, 0.01)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FitToPage"))) { _ in
+            calculateInitialZoom()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ActualSize"))) { _ in
+            zoomLevel = 1.0
+        }
         .onDisappear {
             documentState.cleanup()
         }

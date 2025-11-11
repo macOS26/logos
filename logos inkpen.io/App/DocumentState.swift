@@ -1037,25 +1037,19 @@ class DocumentState: ObservableObject {
     }
 
     func zoomIn() {
-        guard let document = document else { return }
-        let newZoom = min(document.viewState.zoomLevel * 1.25, 50.0)
-        document.viewState.zoomLevel = newZoom
+        NotificationCenter.default.post(name: Notification.Name("ZoomIn"), object: nil)
     }
 
     func zoomOut() {
-        guard let document = document else { return }
-        let newZoom = max(document.viewState.zoomLevel / 1.25, 0.01)
-        document.viewState.zoomLevel = newZoom
+        NotificationCenter.default.post(name: Notification.Name("ZoomOut"), object: nil)
     }
 
     func fitToPage() {
-        guard let document = document else { return }
-        document.requestZoom(to: 0.0, mode: .fitToPage)
+        NotificationCenter.default.post(name: Notification.Name("FitToPage"), object: nil)
     }
 
     func actualSize() {
-        guard let document = document else { return }
-        document.viewState.zoomLevel = 1.0
+        NotificationCenter.default.post(name: Notification.Name("ActualSize"), object: nil)
     }
 
     func toggleColorKeylineView() {
