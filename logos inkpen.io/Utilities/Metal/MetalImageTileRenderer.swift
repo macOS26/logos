@@ -28,7 +28,7 @@ class MetalImageTileRenderer {
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
 
         // Setup vertex descriptor to match shader attributes
         let vertexDescriptor = MTLVertexDescriptor()
@@ -46,14 +46,8 @@ class MetalImageTileRenderer {
 
         pipelineDescriptor.vertexDescriptor = vertexDescriptor
 
-        // Enable blending for transparency
-        pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
-        pipelineDescriptor.colorAttachments[0].rgbBlendOperation = .add
-        pipelineDescriptor.colorAttachments[0].alphaBlendOperation = .add
-        pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        pipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
-        pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-        pipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
+        // Disable blending - straight copy
+        pipelineDescriptor.colorAttachments[0].isBlendingEnabled = false
 
         do {
             pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
@@ -75,7 +69,7 @@ class MetalImageTileRenderer {
             let texture = try textureLoader.newTexture(cgImage: cgImage, options: [
                 .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
                 .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-                .SRGB: NSNumber(value: true)
+                .SRGB: NSNumber(value: false)
             ])
             textureCache[cacheKey] = texture
             return texture
@@ -98,7 +92,7 @@ class MetalImageTileRenderer {
 
         // Create offscreen render target
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm_srgb,
+            pixelFormat: .bgra8Unorm,
             width: Int(outputSize.width),
             height: Int(outputSize.height),
             mipmapped: false
@@ -301,20 +295,12 @@ class MetalImageTileRenderer {
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.getBytes(&data, bytesPerRow: rowBytes, from: region, mipmapLevel: 0)
 
-        // Swap R and B channels (Metal BGRA -> RGBA for CGImage)
-        for i in stride(from: 0, to: length, by: 4) {
-            let b = data[i]
-            let r = data[i + 2]
-            data[i] = r
-            data[i + 2] = b
-        }
-
         guard let providerRef = CGDataProvider(data: Data(bytes: &data, count: length) as CFData) else {
             return nil
         }
 
-        // Now data is RGBA with premultiplied alpha
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+        // Metal texture is .bgra8Unorm_srgb (BGRA with premultiplied alpha, little endian)
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
 
         return CGImage(
             width: width,
