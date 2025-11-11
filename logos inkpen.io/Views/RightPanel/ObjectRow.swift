@@ -596,8 +596,8 @@ struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
-    @State private var imageQuality: Double = ApplicationSettings.shared.imagePreviewQuality
-    @State private var tileSize: Double = Double(ApplicationSettings.shared.imageTileSize)
+    @State private var imageQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0
+    @State private var tileSize: Double = Double(UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -721,17 +721,17 @@ struct PreferencesView: View {
         .frame(minWidth: 400, minHeight: 750)
         .onAppear {
             loadPressureCurve()
-            imageQuality = ApplicationSettings.shared.imagePreviewQuality
-            tileSize = Double(ApplicationSettings.shared.imageTileSize)
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
         }
         .onChange(of: imageQuality) { oldValue, newValue in
-            ApplicationSettings.shared.imagePreviewQuality = newValue
+            UserDefaults.standard.set(newValue, forKey: "imagePreviewQuality")
+            ImageTileCache.shared.clearCache()
         }
         .onChange(of: tileSize) { oldValue, newValue in
-            ApplicationSettings.shared.imageTileSize = Int(newValue)
+            UserDefaults.standard.set(Int(newValue), forKey: "imageTileSize")
+            ImageTileCache.shared.clearCache()
         }
     }
 
