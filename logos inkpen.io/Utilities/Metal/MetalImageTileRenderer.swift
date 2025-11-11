@@ -137,10 +137,12 @@ class MetalImageTileRenderer {
     func compositeImageTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
-        outputSize: CGSize
+        outputSize: CGSize,
+        shapeID: UUID
     ) -> CGImage? {
-        // Create cache key based on image, output size, and tile count
-        let cacheKey = "\(image.hashValue)-\(Int(outputSize.width))x\(Int(outputSize.height))-\(tiles.count)"
+        // Create cache key based on shape UUID and output size
+        // Use shape UUID so same image data across shapes shares cache entry
+        let cacheKey = "\(shapeID)-\(Int(outputSize.width))x\(Int(outputSize.height))"
 
         // Return cached result if available
         if let cachedImage = compositedImageCache[cacheKey] {

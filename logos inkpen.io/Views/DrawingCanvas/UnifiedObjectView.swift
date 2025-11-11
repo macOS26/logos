@@ -1238,7 +1238,8 @@ struct LayerCanvasView: View {
                let compositedImage = metalRenderer.compositeImageTiles(
                    image: image,
                    tiles: visibleTiles,
-                   outputSize: imagePixelSize
+                   outputSize: imagePixelSize,
+                   shapeID: shape.id
                ) {
                 // Draw the Metal-composited result in one draw call
                 cgContext.draw(compositedImage, in: CGRect(origin: .zero, size: renderBounds.size))
