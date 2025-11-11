@@ -59,7 +59,8 @@ struct PreferencesView: View {
                         }
 
                         Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
-                            .onChange(of: imageQuality) { _, newValue in
+                            .onChange(of: imageQuality) { oldValue, newValue in
+                                guard oldValue != newValue else { return }
                                 ApplicationSettings.shared.imagePreviewQuality = newValue
                                 ImageTileCache.shared.clearCache()
                             }
@@ -102,7 +103,8 @@ struct PreferencesView: View {
                             get: { Double(tileSize) },
                             set: { tileSize = Int($0) }
                         ), in: 32...1024, step: 32)
-                            .onChange(of: tileSize) { _, newValue in
+                            .onChange(of: tileSize) { oldValue, newValue in
+                                guard oldValue != newValue else { return }
                                 ApplicationSettings.shared.imageTileSize = newValue
                                 ImageTileCache.shared.clearCache()
                             }
