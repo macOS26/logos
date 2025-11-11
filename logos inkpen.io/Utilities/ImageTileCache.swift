@@ -61,7 +61,6 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
-            print("📊 ImageTileCache: Returning CACHED image for quality: \(quality)")
             return cached
         }
         cacheLock.unlock()
@@ -109,7 +108,6 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
-            print("📊 ImageTileCache: Returning CACHED image for quality: \(quality)")
             return cached
         }
         cacheLock.unlock()
