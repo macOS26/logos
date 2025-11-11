@@ -175,23 +175,21 @@ struct ProfessionalTextCanvas: View {
                 nsView.string = viewModel.text
             }
 
-            // Detect letter spacing changes
+            // READ letterSpacing directly so SwiftUI detects dependency
             let currentLetterSpacing = viewModel.textObject.typography.letterSpacing
-            if abs(coordinator.lastLetterSpacing - currentLetterSpacing) > 0.01 {
-                coordinator.lastLetterSpacing = currentLetterSpacing
 
-                if nsView.string.count > 0 {
-                    let range = NSRange(location: 0, length: nsView.string.count)
-                    nsView.textStorage?.beginEditing()
-                    nsView.textStorage?.addAttribute(.kern, value: currentLetterSpacing, range: range)
-                    nsView.textStorage?.endEditing()
+            // Apply letter spacing to entire text (ALWAYS, not just on change)
+            if nsView.string.count > 0 {
+                let range = NSRange(location: 0, length: nsView.string.count)
+                nsView.textStorage?.beginEditing()
+                nsView.textStorage?.addAttribute(.kern, value: currentLetterSpacing, range: range)
+                nsView.textStorage?.endEditing()
 
-                    if let textContainer = nsView.textContainer {
-                        nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                        nsView.layoutManager?.ensureLayout(for: textContainer)
-                    }
-                    nsView.needsDisplay = true
+                if let textContainer = nsView.textContainer {
+                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                    nsView.layoutManager?.ensureLayout(for: textContainer)
                 }
+                nsView.needsDisplay = true
             }
 
             if nsView.font != viewModel.selectedFont {
@@ -283,11 +281,9 @@ struct ProfessionalTextCanvas: View {
             var lastUpdateTime: Date = Date()
             var isRestoringSelection: Bool = false
             weak var textView: DisabledContextMenuTextView?
-            var lastLetterSpacing: CGFloat = 0.0
 
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
-                self.lastLetterSpacing = parent.viewModel.textObject.typography.letterSpacing
             }
 
             func textDidChange(_ notification: Notification) {
