@@ -3,6 +3,8 @@ import SwiftUI
 struct RulersView: View {
     var document: VectorDocument
     let geometry: GeometryProxy
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
 
     private let rulerThickness: CGFloat = 20
 
@@ -85,15 +87,15 @@ struct RulersView: View {
                     }
                 }
 
-                PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness)
+                PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
             }
         }
     }
     private func drawHorizontalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
-        let zoomLevel = document.viewState.zoomLevel
-        let canvasOffset = document.viewState.canvasOffset
+        let zoomLevel = zoomLevel
+        let canvasOffset = canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
@@ -274,8 +276,8 @@ struct RulersView: View {
     private func drawVerticalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
-        let zoomLevel = document.viewState.zoomLevel
-        let canvasOffset = document.viewState.canvasOffset
+        let zoomLevel = zoomLevel
+        let canvasOffset = canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
@@ -585,6 +587,8 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
 struct GuidelinesView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
     @State private var horizontalGuidelines: [Double] = []
     @State private var verticalGuidelines: [Double] = []
 
@@ -594,7 +598,7 @@ struct GuidelinesView: View {
                 Rectangle()
                     .fill(Color.cyan)
                     .frame(height: 1)
-                    .position(x: geometry.size.width / 2, y: y * document.viewState.zoomLevel + document.viewState.canvasOffset.y)
+                    .position(x: geometry.size.width / 2, y: y * zoomLevel + canvasOffset.y)
                     .opacity(0.7)
             }
 
@@ -602,7 +606,7 @@ struct GuidelinesView: View {
                 Rectangle()
                     .fill(Color.cyan)
                     .frame(width: 1)
-                    .position(x: x * document.viewState.zoomLevel + document.viewState.canvasOffset.x, y: geometry.size.height / 2)
+                    .position(x: x * zoomLevel + canvasOffset.x, y: geometry.size.height / 2)
                     .opacity(0.7)
             }
         }
@@ -672,6 +676,8 @@ struct PageOriginCrosshair: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let rulerThickness: CGFloat
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
 
     @State private var isDragging = false
     @State private var currentDragLocation: CGPoint?
@@ -747,15 +753,15 @@ struct PageOriginCrosshair: View {
             y: screenPoint.y - rulerThickness
         )
         return CGPoint(
-            x: (canvasScreenPoint.x - document.viewState.canvasOffset.x) / document.viewState.zoomLevel,
-            y: (canvasScreenPoint.y - document.viewState.canvasOffset.y) / document.viewState.zoomLevel
+            x: (canvasScreenPoint.x - canvasOffset.x) / zoomLevel,
+            y: (canvasScreenPoint.y - canvasOffset.y) / zoomLevel
         )
     }
 
     private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
         return CGPoint(
-            x: canvasPoint.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-            y: canvasPoint.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+            x: canvasPoint.x * zoomLevel + canvasOffset.x,
+            y: canvasPoint.y * zoomLevel + canvasOffset.y
         )
     }
 

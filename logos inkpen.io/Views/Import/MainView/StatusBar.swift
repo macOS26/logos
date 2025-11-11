@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct StatusBar: View {
+    let zoomLevel: Double
     @ObservedObject var document: VectorDocument
     var body: some View {
         HStack {
@@ -54,7 +55,7 @@ struct StatusBar: View {
 
             Spacer()
 
-            Text("Zoom: \(Int(document.viewState.zoomLevel * 100))%")
+            Text("Zoom: \(Int(zoomLevel * 100))%")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

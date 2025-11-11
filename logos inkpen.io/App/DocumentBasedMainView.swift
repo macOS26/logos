@@ -79,7 +79,9 @@ struct DocumentBasedMainView: View {
 
                         RulersView(
                             document: document,
-                            geometry: geometry
+                            geometry: geometry,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset
                         )
                         .zIndex(50)
                         .allowsHitTesting(true)
@@ -143,7 +145,7 @@ struct DocumentBasedMainView: View {
             //     document.defaultStrokeWidth = newWidth
             // }
 
-            StatusBar(document: document)
+            StatusBar(zoomLevel: zoomLevel, document: document)
         }
         .frame(minHeight: 524)
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)

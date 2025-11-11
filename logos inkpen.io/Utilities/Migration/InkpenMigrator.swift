@@ -224,7 +224,7 @@ struct InkpenMigrator {
         if let canvasOffset = legacy.canvasOffset, canvasOffset.count >= 2 {
         }
 
-        if let zoomLevel = legacy.zoomLevel {
+        if let _ = legacy.zoomLevel {
         }
 
         // Set layer expansion state: collapse layers with > 20 objects

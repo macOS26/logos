@@ -84,7 +84,7 @@ struct MainView: View {
                             .zIndex(1)
                             .allowsHitTesting(true)
 
-                        RulersView(document: document, geometry: geometry)
+                        RulersView(document: document, geometry: geometry, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
                             .zIndex(50)
                             .allowsHitTesting(false)
                     }
@@ -124,7 +124,7 @@ struct MainView: View {
             .frame(minWidth: 828, minHeight: 400)
             .layoutPriority(1)
 
-            StatusBar(document: document)
+            StatusBar(zoomLevel: zoomLevel, document: document)
                 .frame(height: 24)
                 .frame(minHeight: 24)
                 .frame(maxWidth: .infinity)
