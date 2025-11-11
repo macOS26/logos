@@ -30,6 +30,22 @@ class MetalImageTileRenderer {
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
 
+        // Setup vertex descriptor to match shader attributes
+        let vertexDescriptor = MTLVertexDescriptor()
+        // Position: float2 at attribute(0)
+        vertexDescriptor.attributes[0].format = .float2
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        // TexCoord: float2 at attribute(1)
+        vertexDescriptor.attributes[1].format = .float2
+        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.size * 2
+        vertexDescriptor.attributes[1].bufferIndex = 0
+        // Layout stride (4 floats per vertex: x, y, u, v)
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.size * 4
+        vertexDescriptor.layouts[0].stepFunction = .perVertex
+
+        pipelineDescriptor.vertexDescriptor = vertexDescriptor
+
         // Enable blending for transparency
         pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
         pipelineDescriptor.colorAttachments[0].rgbBlendOperation = .add
@@ -108,6 +124,10 @@ class MetalImageTileRenderer {
 
         var opacityBuffer: Float = 1.0
         renderEncoder.setFragmentBytes(&opacityBuffer, length: MemoryLayout<Float>.size, index: 0)
+
+        // Create orthographic projection matrix for the output size
+        var mvpMatrix = createOrthographicMatrix(width: Float(outputSize.width), height: Float(outputSize.height))
+        renderEncoder.setVertexBytes(&mvpMatrix, length: MemoryLayout<simd_float4x4>.size, index: 1)
 
         // Calculate scale factors
         let scaleX = Float(outputSize.width / CGFloat(image.width))
@@ -201,6 +221,10 @@ class MetalImageTileRenderer {
 
         var opacityBuffer = opacity
         renderEncoder.setFragmentBytes(&opacityBuffer, length: MemoryLayout<Float>.size, index: 0)
+
+        // Create orthographic projection matrix for the viewport
+        var mvpMatrix = createOrthographicMatrix(width: Float(viewportSize.width), height: Float(viewportSize.height))
+        renderEncoder.setVertexBytes(&mvpMatrix, length: MemoryLayout<simd_float4x4>.size, index: 1)
 
         // Calculate scale factors
         let scaleX = Float(renderBounds.width / CGFloat(image.width))
@@ -301,5 +325,31 @@ class MetalImageTileRenderer {
     /// Clear texture cache
     func clearCache() {
         textureCache.removeAll()
+    }
+
+    /// Create orthographic projection matrix for 2D rendering
+    private func createOrthographicMatrix(width: Float, height: Float) -> simd_float4x4 {
+        // Convert from pixel coordinates (0,0 at top-left) to NDC (-1,-1 to 1,1)
+        let left: Float = 0
+        let right = width
+        let bottom = height
+        let top: Float = 0
+        let near: Float = -1
+        let far: Float = 1
+
+        let scaleX = 2.0 / (right - left)
+        let scaleY = 2.0 / (top - bottom)
+        let scaleZ = -2.0 / (far - near)
+
+        let translateX = -(right + left) / (right - left)
+        let translateY = -(top + bottom) / (top - bottom)
+        let translateZ = -(far + near) / (far - near)
+
+        return simd_float4x4(
+            SIMD4<Float>(scaleX, 0, 0, 0),
+            SIMD4<Float>(0, scaleY, 0, 0),
+            SIMD4<Float>(0, 0, scaleZ, 0),
+            SIMD4<Float>(translateX, translateY, translateZ, 1)
+        )
     }
 }
