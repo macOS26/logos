@@ -75,6 +75,9 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
+    // Metal renderer for GPU-accelerated tile compositing
+    private static let metalRenderer = MetalImageTileRenderer()
+
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -1218,68 +1221,18 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // SIMD-accelerated tile coordinate transformation (batch process 4 tiles at once)
-            let scaleX = renderBounds.width / CGFloat(image.width)
-            let scaleY = renderBounds.height / CGFloat(image.height)
-
-            let tileCount = visibleTiles.count
-            var tileIndex = 0
-
-            // Process tiles in batches of 4 using SIMD4
-            while tileIndex < tileCount {
-                let batchSize = min(4, tileCount - tileIndex)
-
-                if batchSize == 4 {
-                    // Full SIMD4 batch - process 4 tiles in parallel
-                    let tile0 = visibleTiles[tileIndex].rect
-                    let tile1 = visibleTiles[tileIndex + 1].rect
-                    let tile2 = visibleTiles[tileIndex + 2].rect
-                    let tile3 = visibleTiles[tileIndex + 3].rect
-
-                    // Pack 4 x-coordinates into SIMD4
-                    let originX = SIMD4<Double>(tile0.minX, tile1.minX, tile2.minX, tile3.minX)
-                    let originY = SIMD4<Double>(tile0.minY, tile1.minY, tile2.minY, tile3.minY)
-                    let sizeW = SIMD4<Double>(tile0.width, tile1.width, tile2.width, tile3.width)
-                    let sizeH = SIMD4<Double>(tile0.height, tile1.height, tile2.height, tile3.height)
-
-                    // Vectorized multiplication (4 tiles computed in parallel)
-                    let destX = originX * SIMD4<Double>(repeating: scaleX)
-                    let destY = originY * SIMD4<Double>(repeating: scaleY)
-                    let destW = sizeW * SIMD4<Double>(repeating: scaleX)
-                    let destH = sizeH * SIMD4<Double>(repeating: scaleY)
-
-                    // Draw all 4 tiles - NO OVERLAP
-                    for i in 0..<4 {
-                        let destRect = CGRect(
-                            x: destX[i],
-                            y: destY[i],
-                            width: destW[i],
-                            height: destH[i]
-                        )
-                        cgContext.saveGState()
-                        cgContext.clip(to: destRect)
-                        cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-                        cgContext.restoreGState()
-                    }
-
-                    tileIndex += 4
-                } else {
-                    // Handle remaining tiles (1-3) with scalar ops - NO OVERLAP
-                    for i in 0..<batchSize {
-                        let tileRect = visibleTiles[tileIndex + i].rect
-                        let destRect = CGRect(
-                            x: tileRect.minX * scaleX,
-                            y: tileRect.minY * scaleY,
-                            width: tileRect.width * scaleX,
-                            height: tileRect.height * scaleY
-                        )
-                        cgContext.saveGState()
-                        cgContext.clip(to: destRect)
-                        cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-                        cgContext.restoreGState()
-                    }
-                    tileIndex += batchSize
-                }
+            // Use Metal to composite tiles on GPU, then draw result once
+            if let metalRenderer = Self.metalRenderer,
+               let compositedImage = metalRenderer.compositeImageTiles(
+                   image: image,
+                   tiles: visibleTiles,
+                   outputSize: renderBounds.size
+               ) {
+                // Draw the Metal-composited result in one draw call
+                cgContext.draw(compositedImage, in: CGRect(origin: .zero, size: renderBounds.size))
+            } else {
+                // Fallback: draw full image without tiling
+                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
             }
 
             cgContext.restoreGState()

@@ -68,7 +68,72 @@ class MetalImageTileRenderer {
         }
     }
 
-    /// Render image tiles to a Metal drawable
+    /// Render image tiles to an offscreen texture and return as CGImage
+    func compositeImageTiles(
+        image: CGImage,
+        tiles: [(coord: SIMD2<Int>, rect: CGRect)],
+        outputSize: CGSize
+    ) -> CGImage? {
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let sourceTexture = getTexture(from: image, cacheKey: "\(image.hashValue)") else {
+            return nil
+        }
+
+        // Create offscreen render target
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: Int(outputSize.width),
+            height: Int(outputSize.height),
+            mipmapped: false
+        )
+        textureDescriptor.usage = [.renderTarget, .shaderRead]
+
+        guard let renderTarget = device.makeTexture(descriptor: textureDescriptor) else {
+            return nil
+        }
+
+        // Setup render pass
+        let renderPassDescriptor = MTLRenderPassDescriptor()
+        renderPassDescriptor.colorAttachments[0].texture = renderTarget
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        renderPassDescriptor.colorAttachments[0].storeAction = .store
+
+        guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+            return nil
+        }
+
+        renderEncoder.setRenderPipelineState(pipelineState)
+        renderEncoder.setFragmentTexture(sourceTexture, index: 0)
+
+        var opacityBuffer: Float = 1.0
+        renderEncoder.setFragmentBytes(&opacityBuffer, length: MemoryLayout<Float>.size, index: 0)
+
+        // Calculate scale factors
+        let scaleX = Float(outputSize.width / CGFloat(image.width))
+        let scaleY = Float(outputSize.height / CGFloat(image.height))
+
+        // Render each tile as a quad
+        for (_, tileRect) in tiles {
+            renderTileQuad(
+                encoder: renderEncoder,
+                tileRect: tileRect,
+                imageSize: CGSize(width: image.width, height: image.height),
+                outputSize: outputSize,
+                scaleX: scaleX,
+                scaleY: scaleY
+            )
+        }
+
+        renderEncoder.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        // Convert Metal texture back to CGImage
+        return cgImage(from: renderTarget)
+    }
+
+    /// Render image tiles to a Metal drawable (legacy - for direct screen rendering)
     func renderTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -107,8 +172,7 @@ class MetalImageTileRenderer {
                 encoder: renderEncoder,
                 tileRect: tileRect,
                 imageSize: CGSize(width: image.width, height: image.height),
-                renderBounds: renderBounds,
-                viewportSize: viewportSize,
+                outputSize: viewportSize,
                 scaleX: scaleX,
                 scaleY: scaleY
             )
@@ -123,8 +187,7 @@ class MetalImageTileRenderer {
         encoder: MTLRenderCommandEncoder,
         tileRect: CGRect,
         imageSize: CGSize,
-        renderBounds: CGRect,
-        viewportSize: CGSize,
+        outputSize: CGSize,
         scaleX: Float,
         scaleY: Float
     ) {
@@ -158,6 +221,40 @@ class MetalImageTileRenderer {
             indexType: .uint16,
             indexBuffer: device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: [])!,
             indexBufferOffset: 0
+        )
+    }
+
+    /// Convert Metal texture to CGImage
+    private func cgImage(from texture: MTLTexture) -> CGImage? {
+        let width = texture.width
+        let height = texture.height
+        let rowBytes = width * 4
+        let length = rowBytes * height
+
+        var data = [UInt8](repeating: 0, count: length)
+
+        let region = MTLRegionMake2D(0, 0, width, height)
+        texture.getBytes(&data, bytesPerRow: rowBytes, from: region, mipmapLevel: 0)
+
+        guard let providerRef = CGDataProvider(data: Data(bytes: &data, count: length) as CFData) else {
+            return nil
+        }
+
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
+            .union(.byteOrder32Little)
+
+        return CGImage(
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bitsPerPixel: 32,
+            bytesPerRow: rowBytes,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: bitmapInfo,
+            provider: providerRef,
+            decode: nil,
+            shouldInterpolate: true,
+            intent: .defaultIntent
         )
     }
 
