@@ -207,7 +207,7 @@ struct ProfessionalTextCanvas: View {
                 if nsView.string.count > 0 {
                     let range = NSRange(location: 0, length: nsView.string.count)
                     nsView.textStorage?.beginEditing()
-                    nsView.textStorage?.addAttribute(.font, value: viewModel.selectedFont, range: range)
+                    nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
                     nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
                     nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                     nsView.textStorage?.endEditing()
