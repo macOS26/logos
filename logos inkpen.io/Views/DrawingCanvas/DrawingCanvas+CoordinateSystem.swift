@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
 
@@ -202,11 +203,12 @@ extension DrawingCanvas {
             y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
         )
 
-        // Batch update zoom and offset together in single transaction
-        withAnimation(.none) {
-            document.viewState.zoomLevel = newZoomLevel
-            document.viewState.canvasOffset = newOffset
-        }
+        // Update non-@Published properties (no automatic view refresh)
+        document.viewState.zoomLevel = newZoomLevel
+        document.viewState.canvasOffset = newOffset
+
+        // Manually trigger view update once for both changes
+        document.viewState.objectWillChange.send()
 
     }
 

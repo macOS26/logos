@@ -20,8 +20,11 @@ class DocumentViewState: ObservableObject {
 
     // MARK: - Viewport State
     @Published var viewMode: ViewMode = .color
-    @Published var zoomLevel: Double = 1.0
-    @Published var canvasOffset: CGPoint = .zero
+
+    // Non-@Published for high-frequency updates (passed as @Binding to child views)
+    var zoomLevel: Double = 1.0
+    var canvasOffset: CGPoint = .zero
+
     @Published var zoomRequest: ZoomRequest? = nil
 
     // MARK: - Color UI State
