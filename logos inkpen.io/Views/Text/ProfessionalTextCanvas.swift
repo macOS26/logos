@@ -172,21 +172,7 @@ struct ProfessionalTextCanvas: View {
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
-            // Set text first
             textView.string = viewModel.text
-
-            // Now apply letter spacing to all text
-            if !viewModel.text.isEmpty {
-                let range = NSRange(location: 0, length: viewModel.text.count)
-                textView.textStorage?.beginEditing()
-                textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
-                textView.textStorage?.endEditing()
-
-                // Invalidate layout to force redraw with kern attribute
-                textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
-            }
-
             context.coordinator.textView = textView
 
             // Set initial cursor position from textObject
@@ -241,19 +227,6 @@ struct ProfessionalTextCanvas: View {
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             }()
             nsView.font = liveFont
-            if nsView.string.count > 0 {
-                let range = NSRange(location: 0, length: nsView.string.count)
-                nsView.textStorage?.beginEditing()
-                nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
-                nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)  // DEBUG: Change to .clear
-                nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
-                nsView.textStorage?.endEditing()
-
-                if let textContainer = nsView.textContainer {
-                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                    nsView.layoutManager?.ensureLayout(for: textContainer)
-                }
-            }
 
             let width = viewModel.textObject.areaSize?.width ?? viewModel.textObject.bounds.width
             let height = viewModel.textObject.areaSize?.height ?? viewModel.textObject.bounds.height
@@ -311,27 +284,11 @@ struct ProfessionalTextCanvas: View {
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             }()
             textView.typingAttributes = [
-                .font: textView.font ?? liveFont,
+                .font: liveFont,
                 .foregroundColor: NSColor.systemPink,  // DEBUG: Change to .clear to hide NSTextView
                 .paragraphStyle: paragraphStyle,
                 .kern: letterSpacing
             ]
-
-            if textView.string.count > 0 {
-                let range = NSRange(location: 0, length: textView.string.count)
-                textView.textStorage?.beginEditing()
-                textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)  // DEBUG: Change to .clear
-                textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
-                textView.textStorage?.endEditing()
-
-                // Force immediate layout update
-                if let textContainer = textView.textContainer {
-                    textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                    textView.layoutManager?.ensureLayout(for: textContainer)
-                }
-            }
-
         }
 
         func makeCoordinator() -> Coordinator {
@@ -372,14 +329,6 @@ struct ProfessionalTextCanvas: View {
             func textViewDidChangeSelection(_ notification: Notification) {
                 guard !isRestoringSelection, let textView = notification.object as? NSTextView else { return }
                 let selectedRange = textView.selectedRange()
-
-                // Update typing attributes to include kern at current cursor position
-                if textView.string.count > 0, selectedRange.location > 0 {
-                    let location = min(selectedRange.location - 1, textView.string.count - 1)
-                    if let attrs = textView.textStorage?.attributes(at: location, effectiveRange: nil) {
-                        textView.typingAttributes = attrs
-                    }
-                }
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
