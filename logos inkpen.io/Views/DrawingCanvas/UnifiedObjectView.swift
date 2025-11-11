@@ -1370,7 +1370,8 @@ struct IsolatedLayerView: View {
                     viewMode: viewMode,
                     letterSpacingDelta: letterSpacingDelta,
                     lineHeightDelta: lineHeightDelta,
-                    fontSizeDelta: fontSizeDelta
+                    fontSizeDelta: fontSizeDelta,
+                    lineSpacingDelta: lineSpacingDelta
                 )
                 .allowsHitTesting(document.viewState.currentTool == .font)
             }
