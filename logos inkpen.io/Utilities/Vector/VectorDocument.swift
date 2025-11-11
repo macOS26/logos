@@ -66,12 +66,6 @@ final class VectorDocument: ObservableObject, Codable {
     internal var imageStorage: [UUID: NSImage] = [:]
     internal var baseDirectoryURL: URL? = nil
 
-    // Track last quality/tilesize used for caching
-    private var cachedImageQuality: Double = 0.0
-    private var cachedImageTileSize: Int = 0
-    private var cancellableImageQuality: AnyCancellable? = nil
-    private var cancellableImageTileSize: AnyCancellable? = nil
-
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
@@ -251,79 +245,6 @@ final class VectorDocument: ObservableObject, Codable {
         fontManager.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellables)
-
-        // Watch for image quality/tile changes and reload images
-        setupImageSettingsObserver()
-    }
-
-    private func setupImageSettingsObserver() {
-        // Watch quality changes
-        cancellableImageQuality = ApplicationSettings.shared.$imagePreviewQuality
-            .dropFirst() // Skip initial value
-            .sink { [weak self] newQuality in
-                guard let self = self else { return }
-                Log.info("📊 Image quality changed: \(self.cachedImageQuality) → \(newQuality)", category: .general)
-                if self.cachedImageQuality != newQuality {
-                    self.cachedImageQuality = newQuality
-                    self.reloadAllImageCaches(quality: newQuality)
-                }
-            }
-
-        // Watch tile size changes
-        cancellableImageTileSize = ApplicationSettings.shared.$imageTileSize
-            .dropFirst() // Skip initial value
-            .sink { [weak self] newTileSize in
-                guard let self = self else { return }
-                Log.info("📊 Image tile size changed: \(self.cachedImageTileSize) → \(newTileSize)", category: .general)
-                if self.cachedImageTileSize != newTileSize {
-                    self.cachedImageTileSize = newTileSize
-                    // Tile size change doesn't require reloading images, just triggers redraw
-                    self.objectWillChange.send()
-                }
-            }
-    }
-
-    func reloadAllImageCaches(quality: Double) {
-        Log.info("🔄 Reloading all image caches with quality: \(quality)", category: .general)
-        var imageCount = 0
-        for (objID, obj) in snapshot.objects {
-            var shape: VectorShape? = nil
-
-            if case .image(let s) = obj.objectType {
-                shape = s
-            } else if case .shape(let s) = obj.objectType, s.embeddedImageData != nil || s.linkedImagePath != nil {
-                shape = s
-            }
-
-            guard var shape = shape else { continue }
-
-            // Reload CGImage with new quality
-            if let imageData = shape.embeddedImageData {
-                shape.cachedCGImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
-                imageCount += 1
-            } else if shape.linkedImagePath != nil {
-                // Resolve linked image path
-                if let bookmarkData = shape.linkedImageBookmarkData {
-                    var isStale = false
-                    if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                        let _ = url.startAccessingSecurityScopedResource()
-                        defer { url.stopAccessingSecurityScopedResource() }
-                        shape.cachedCGImage = ImageTileCache.shared.getSourceImage(from: url, quality: quality)
-                        imageCount += 1
-                    }
-                }
-            }
-
-            // Update snapshot
-            if case .image(_) = obj.objectType {
-                snapshot.objects[objID] = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .image(shape))
-            } else if case .shape(_) = obj.objectType {
-                snapshot.objects[objID] = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .shape(shape))
-            }
-        }
-
-        Log.info("✅ Reloaded \(imageCount) image(s) at quality \(quality)", category: .general)
-        objectWillChange.send()
     }
 
     private func refreshSystemLayers() {
