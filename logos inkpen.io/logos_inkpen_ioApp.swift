@@ -46,7 +46,7 @@ struct logos_inken_ioApp: App {
 
     var body: some Scene {
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
+            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL, imagePreviewQuality: $globalImagePreviewQuality, imageTileSize: $globalImageTileSize)
                 .environment(appState)
                 .navigationTitle(windowTitle(for: file.fileURL))
                 .onAppear {

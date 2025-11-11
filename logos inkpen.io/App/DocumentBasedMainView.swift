@@ -6,6 +6,8 @@ struct DocumentBasedMainView: View {
     let fileURL: URL?
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
+    @Binding var imagePreviewQuality: Double
+    @Binding var imageTileSize: Int
     @State private var showingDocumentSettings = false
     @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil
@@ -32,8 +34,6 @@ struct DocumentBasedMainView: View {
     @State private var lineSpacingDelta: Double? = nil
     @State private var lineHeightDelta: Double? = nil
     @State private var letterSpacingDelta: Double? = nil
-    @State private var imagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0
-    @State private var imageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
     @State private var selectedLayerIndex: Int? = nil
     @State private var processedLayersDuringDrag: Set<Int> = []
     @State private var processedObjectsDuringDrag: Set<UUID> = []
