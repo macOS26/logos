@@ -185,11 +185,15 @@ struct ProfessionalTextCanvas: View {
                 nsView.textStorage?.addAttribute(.kern, value: currentLetterSpacing, range: range)
                 nsView.textStorage?.endEditing()
 
-                if let textContainer = nsView.textContainer {
-                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                    nsView.layoutManager?.ensureLayout(for: textContainer)
+                if let textContainer = nsView.textContainer, let layoutManager = nsView.layoutManager {
+                    layoutManager.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                    layoutManager.ensureLayout(for: textContainer)
+
+                    // Force immediate display update
+                    let usedRect = layoutManager.usedRect(for: textContainer)
+                    nsView.setNeedsDisplay(usedRect)
                 }
-                nsView.needsDisplay = true
+                nsView.display()
             }
 
             if nsView.font != viewModel.selectedFont {
