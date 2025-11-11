@@ -117,6 +117,8 @@ extension DrawingCanvas {
             SelectionHandlesView(
                 document: document,
                 geometry: geometry,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset,
                 isShiftPressed: self.isShiftPressed,
                 isOptionPressed: self.isOptionPressed,
                 isCommandPressed: self.isCommandPressed,
@@ -133,6 +135,8 @@ extension DrawingCanvas {
         if document.viewState.currentTool == .directSelection || document.viewState.currentTool == .convertAnchorPoint || document.viewState.currentTool == .penPlusMinus {
             ProfessionalDirectSelectionView(
                 document: document,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset,
                 selectedPoints: selectedPoints,
                 selectedHandles: selectedHandles,
                 visibleHandles: visibleHandles,
@@ -533,7 +537,9 @@ private struct BrushPreviewStyleModifier: ViewModifier {
                 .opacity(document.defaultFillOpacity)
         }
     }
+}
 
+extension DrawingCanvas {
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
         if dragDelta != .zero && !document.viewState.selectedObjectIDs.isEmpty {
@@ -562,6 +568,8 @@ private struct BrushPreviewStyleModifier: ViewModifier {
     @ViewBuilder
     private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
         let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
+        let currentZoom = zoomLevel
+        let currentOffset = canvasOffset
         Path { path in
             addPathElements(offsetShape.path.elements, to: &path)
         }
@@ -572,19 +580,21 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             }
             .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
         )
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .scaleEffect(currentZoom, anchor: .topLeading)
+        .offset(x: currentOffset.x, y: currentOffset.y)
         .opacity(0.8)
     }
 
     @ViewBuilder
     private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
+        let currentZoom = zoomLevel
+        let currentOffset = canvasOffset
         Text(text.content)
-            .font(.system(size: text.typography.fontSize * zoomLevel))
+            .font(.system(size: text.typography.fontSize * currentZoom))
             .foregroundColor(text.typography.fillColor.color)
             .position(
-                x: (text.position.x + dragDelta.x) * zoomLevel + canvasOffset.x,
-                y: (text.position.y + dragDelta.y) * zoomLevel + canvasOffset.y
+                x: (text.position.x + dragDelta.x) * currentZoom + currentOffset.x,
+                y: (text.position.y + dragDelta.y) * currentZoom + currentOffset.y
             )
             .opacity(0.8)
     }

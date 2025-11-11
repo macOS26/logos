@@ -1037,23 +1037,27 @@ class DocumentState: ObservableObject {
     }
 
     func zoomIn() {
-        guard let document = document else { return }
-        let newZoom = min(document.viewState.zoomLevel * 1.25, 50.0)
-        document.requestZoom(to: newZoom, mode: .zoomIn)
+        // TODO: zoomLevel now managed as @State in DocumentBasedMainView - needs refactoring
+        // guard let document = document else { return }
+        // let newZoom = min(zoomLevel * 1.25, 50.0)
+        // document.requestZoom(to: newZoom, mode: .zoomIn)
     }
 
     func zoomOut() {
-        guard let document = document else { return }
-        let newZoom = max(document.viewState.zoomLevel / 1.25, 0.01)
-        document.requestZoom(to: newZoom, mode: .zoomOut)
+        // TODO: zoomLevel now managed as @State in DocumentBasedMainView - needs refactoring
+        // guard let document = document else { return }
+        // let newZoom = max(zoomLevel / 1.25, 0.01)
+        // document.requestZoom(to: newZoom, mode: .zoomOut)
     }
 
     func fitToPage() {
-        document?.requestZoom(to: 0.0, mode: .fitToPage)
+        // TODO: zoomLevel now managed as @State in DocumentBasedMainView - needs refactoring
+        // document?.requestZoom(to: 0.0, mode: .fitToPage)
     }
 
     func actualSize() {
-        document?.viewState.zoomLevel = 1.0
+        // TODO: zoomLevel now managed as @State in DocumentBasedMainView - needs refactoring
+        // zoomLevel = 1.0
     }
 
     func toggleColorKeylineView() {

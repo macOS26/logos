@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ProfessionalDirectSelectionView: View {
     let document: VectorDocument
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
     let selectedPoints: Set<PointID>
     let selectedHandles: Set<HandleID>
     let visibleHandles: Set<HandleID>
@@ -23,8 +25,8 @@ struct ProfessionalDirectSelectionView: View {
 
     var body: some View {
         Canvas { context, size in
-            let zoom = document.viewState.zoomLevel
-            let offset = document.viewState.canvasOffset
+            let zoom = zoomLevel
+            let offset = canvasOffset
 
             // Apply canvas transform GLOBALLY (EXACT same as LayerCanvasView)
             let baseTransform = CGAffineTransform.identity

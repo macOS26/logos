@@ -4,6 +4,8 @@ import AppKit
 struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
     let isShiftPressed: Bool
     let isOptionPressed: Bool
     let isCommandPressed: Bool
@@ -49,15 +51,15 @@ struct SelectionHandlesView: View {
                                         EnvelopeHandles(
                                             document: document,
                                             shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset
                                         )
                                     } else if shape.isWarpObject && dragPreviewDelta == .zero {
                                         PersistentWarpMarquee(
                                             document: document,
                                             shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
                                             isEnvelopeTool: false
                                         )
                                     } else {
@@ -70,8 +72,8 @@ struct SelectionHandlesView: View {
                                             TransformBoxHandles(
                                                 document: document,
                                                 shape: shape,
-                                                zoomLevel: document.viewState.zoomLevel,
-                                                canvasOffset: document.viewState.canvasOffset,
+                                                zoomLevel: zoomLevel,
+                                                canvasOffset: canvasOffset,
                                                 isShiftPressed: isShiftPressed,
                                                 transformOrigin: document.viewState.transformOrigin,
                                                 strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -81,8 +83,8 @@ struct SelectionHandlesView: View {
                                         ScaleHandles(
                                             document: document,
                                             shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
                                             isShiftPressed: isShiftPressed,
                                             liveScaleTransform: $liveScaleTransform
                                         )
@@ -90,16 +92,16 @@ struct SelectionHandlesView: View {
                                         RotateHandles(
                                             document: document,
                                             shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
                                             isShiftPressed: isShiftPressed
                                         )
                                     } else if document.viewState.currentTool == .shear {
                                         ShearHandles(
                                             document: document,
                                             shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
                                             isShiftPressed: isShiftPressed
                                         )
                                     }
@@ -122,15 +124,15 @@ struct SelectionHandlesView: View {
                 EnvelopeHandles(
                     document: document,
                     shape: shape,
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset
                 )
             } else if shape.isWarpObject && dragPreviewDelta == .zero {
                 PersistentWarpMarquee(
                     document: document,
                     shape: shape,
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
                     isEnvelopeTool: false
                 )
             } else {
@@ -143,8 +145,8 @@ struct SelectionHandlesView: View {
                     TransformBoxHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.viewState.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -154,8 +156,8 @@ struct SelectionHandlesView: View {
                     ScaleHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
                         isShiftPressed: isShiftPressed,
                         liveScaleTransform: $liveScaleTransform
                     )
@@ -163,16 +165,16 @@ struct SelectionHandlesView: View {
                     RotateHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
                         isShiftPressed: isShiftPressed
                     )
                 } else if document.viewState.currentTool == .shear {
                     ShearHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
                         isShiftPressed: isShiftPressed
                     )
                 }
@@ -232,8 +234,8 @@ struct SelectionHandlesView: View {
                 TransformBoxHandles(
                     document: document,
                     shape: createCombinedShape(from: bounds),
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
                     isShiftPressed: isShiftPressed,
                     transformOrigin: document.viewState.transformOrigin,
                     strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),

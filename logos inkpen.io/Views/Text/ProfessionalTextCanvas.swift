@@ -6,13 +6,17 @@ struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var viewModel: ProfessionalTextViewModel
     let textObjectID: UUID
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
 
-    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
+    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
         self.document = document
         self.textObjectID = textObjectID
+        self.zoomLevel = zoomLevel
+        self.canvasOffset = canvasOffset
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
         self.viewMode = viewMode
@@ -31,10 +35,10 @@ struct ProfessionalTextCanvas: View {
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
-        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
-        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.viewState.zoomLevel : 0,
-                y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.viewState.zoomLevel : 0)
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * zoomLevel : 0,
+                y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
         .onAppear {

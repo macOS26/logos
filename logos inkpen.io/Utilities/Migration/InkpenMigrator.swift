@@ -222,11 +222,9 @@ struct InkpenMigrator {
 
         // Migrate view state
         if let canvasOffset = legacy.canvasOffset, canvasOffset.count >= 2 {
-            document.viewState.canvasOffset = CGPoint(x: canvasOffset[0], y: canvasOffset[1])
         }
 
         if let zoomLevel = legacy.zoomLevel {
-            document.viewState.zoomLevel = zoomLevel
         }
 
         // Set layer expansion state: collapse layers with > 20 objects

@@ -46,7 +46,6 @@ struct InkpenDocument: FileDocument {
                 }
 
                 if minX != .infinity && minY != .infinity {
-                    self.document.viewState.canvasOffset = CGPoint(x: -minX, y: -minY)
                 }
 
                 for unifiedObj in self.document.snapshot.objects.values {

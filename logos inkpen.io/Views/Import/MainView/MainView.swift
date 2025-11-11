@@ -38,9 +38,9 @@ struct MainView: View {
     @State private var letterSpacingDelta: Double?
     @State private var selectedLayerIndex: Int?
     @State private var processedLayersDuringDrag: Set<Int> = []
+    @State private var processedObjectsDuringDrag: Set<UUID> = []
     @State private var zoomLevel: Double = 1.0
     @State private var canvasOffset: CGPoint = .zero
-    @State private var processedObjectsDuringDrag: Set<UUID> = []
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -77,7 +77,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta)
+                        DrawingCanvas(viewState: document.viewState, document: document, zoomLevel: $zoomLevel, canvasOffset: $canvasOffset, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)
@@ -172,8 +172,7 @@ struct MainView: View {
                     document.viewState.selectedObjectIDs = newDocument.viewState.selectedObjectIDs
                     document.viewState.currentTool = newDocument.viewState.currentTool
                     document.viewState.viewMode = newDocument.viewState.viewMode
-                    document.viewState.zoomLevel = newDocument.viewState.zoomLevel
-                    document.viewState.canvasOffset = newDocument.viewState.canvasOffset
+                    // zoomLevel and canvasOffset managed by @State, not from loaded document
                     document.gridSettings = newDocument.gridSettings
 
                     currentDocumentURL = suggestedURL
@@ -347,8 +346,8 @@ struct MainView: View {
     }
 
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
-        document.viewState.zoomLevel = 1.0
-        document.viewState.canvasOffset = .zero
+        zoomLevel = 1.0
+        canvasOffset = .zero
         document.settings = importedDoc.settings
         document.snapshot.layers = importedDoc.snapshot.layers
         document.colorSwatches = importedDoc.colorSwatches

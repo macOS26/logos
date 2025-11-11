@@ -109,8 +109,6 @@ final class VectorDocument: ObservableObject, Codable {
         }
         self.viewState.scalingAnchor = .center
         self.viewState.viewMode = .color
-        self.viewState.zoomLevel = 1.0
-        self.viewState.canvasOffset = .zero
         self.gridSettings = GridSettings(
             showRulers: settings.showRulers,
             showGrid: settings.showGrid,
@@ -192,8 +190,6 @@ final class VectorDocument: ObservableObject, Codable {
         viewState.warpBounds = [:]
 
         viewState.viewMode = .color
-        viewState.zoomLevel = 1.0
-        viewState.canvasOffset = .zero
         viewState.zoomRequest = nil
 
         isUndoRedoOperation = false

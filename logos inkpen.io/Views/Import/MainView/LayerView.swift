@@ -70,6 +70,8 @@ struct LayerView: View {
                             ProfessionalTextCanvas(
                                 document: document,
                                 textObjectID: currentShape.id,
+                                zoomLevel: zoomLevel,
+                                canvasOffset: canvasOffset,
                                 dragPreviewDelta: dragPreviewDelta,
                                 dragPreviewTrigger: dragPreviewTrigger,
                                 viewMode: viewMode
