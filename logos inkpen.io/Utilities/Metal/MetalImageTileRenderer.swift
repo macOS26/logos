@@ -28,7 +28,7 @@ class MetalImageTileRenderer {
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
 
         // Setup vertex descriptor to match shader attributes
         let vertexDescriptor = MTLVertexDescriptor()
@@ -75,7 +75,7 @@ class MetalImageTileRenderer {
             let texture = try textureLoader.newTexture(cgImage: cgImage, options: [
                 .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
                 .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-                .SRGB: NSNumber(value: false)
+                .SRGB: NSNumber(value: true)
             ])
             textureCache[cacheKey] = texture
             return texture
@@ -98,7 +98,7 @@ class MetalImageTileRenderer {
 
         // Create offscreen render target
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
+            pixelFormat: .bgra8Unorm_srgb,
             width: Int(outputSize.width),
             height: Int(outputSize.height),
             mipmapped: false
@@ -305,7 +305,7 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Metal texture is .bgra8Unorm (BGRA with premultiplied alpha, little endian)
+        // Metal texture is .bgra8Unorm_srgb (BGRA with premultiplied alpha, little endian, sRGB)
         let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
 
         return CGImage(
@@ -314,7 +314,7 @@ class MetalImageTileRenderer {
             bitsPerComponent: 8,
             bitsPerPixel: 32,
             bytesPerRow: rowBytes,
-            space: CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpaceCreateDeviceRGB(),
+            space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: bitmapInfo,
             provider: providerRef,
             decode: nil,
