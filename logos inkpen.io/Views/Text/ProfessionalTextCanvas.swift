@@ -123,11 +123,27 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            textView.string = viewModel.text
             textView.font = viewModel.selectedFont
             textView.textColor = NSColor.systemPink
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
+
+            // Apply text with letter spacing via attributed string
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = viewModel.textAlignment
+            paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
+            paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
+            paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: viewModel.selectedFont,
+                .foregroundColor: NSColor.systemPink,
+                .paragraphStyle: paragraphStyle,
+                .kern: viewModel.textObject.typography.letterSpacing
+            ]
+
+            let attributedString = NSAttributedString(string: viewModel.text, attributes: attributes)
+            textView.textStorage?.setAttributedString(attributedString)
 
             context.coordinator.textView = textView
 
@@ -167,6 +183,7 @@ struct ProfessionalTextCanvas: View {
                     let range = NSRange(location: 0, length: nsView.string.count)
                     nsView.textStorage?.addAttribute(.font, value: viewModel.selectedFont, range: range)
                     nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
+                    nsView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
                     if let textContainer = nsView.textContainer {
                         nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                         nsView.layoutManager?.ensureLayout(for: textContainer)
@@ -266,6 +283,14 @@ struct ProfessionalTextCanvas: View {
             func textViewDidChangeSelection(_ notification: Notification) {
                 guard !isRestoringSelection, let textView = notification.object as? NSTextView else { return }
                 let selectedRange = textView.selectedRange()
+
+                // Update typing attributes to include kern at current cursor position
+                if textView.string.count > 0, selectedRange.location > 0 {
+                    let location = min(selectedRange.location - 1, textView.string.count - 1)
+                    if let attrs = textView.textStorage?.attributes(at: location, effectiveRange: nil) {
+                        textView.typingAttributes = attrs
+                    }
+                }
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
