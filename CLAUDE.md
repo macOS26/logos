@@ -46,3 +46,5 @@
    use these helpers, but the core infrastructure is now in place!
 
   Commit: b5b2d798 - Add helper methods for layer objectIDs updates
+- image settings in preferences are supposed to use @ binding and not combine... combine is too slow... same for tile size in profernces use @ binding.. I have told you to stop using combine repeatedly
+- image settings in preferences are supposed to use @ binding and not combine... combine is too slow... same for tile size in profernces use @ binding.. I have told you to stop using combine repeatedly

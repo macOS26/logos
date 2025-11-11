@@ -180,7 +180,7 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?) -> some View {
+    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
         let layerBlendMode = layer.blendMode
 
@@ -250,7 +250,9 @@ extension DrawingCanvas {
                 fontSizeDelta: fontSizeDelta,
                 lineSpacingDelta: lineSpacingDelta,
                 lineHeightDelta: lineHeightDelta,
-                letterSpacingDelta: letterSpacingDelta
+                letterSpacingDelta: letterSpacingDelta,
+                imagePreviewQuality: imagePreviewQuality,
+                imageTileSize: imageTileSize
             )
             .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
             .allowsHitTesting(isActiveLayer)
@@ -258,12 +260,12 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
+    internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
         ZStack {
             // Render layers with background fills for special layers
             ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
                 if layer.isVisible {
-                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta)
+                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
                 }
             }
 
@@ -336,7 +338,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            canvasBaseContent(geometry: geometry)
+            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
 
             pressureSensitiveOverlay(geometry: geometry)
 

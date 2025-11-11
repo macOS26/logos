@@ -501,7 +501,9 @@ private struct PNGExportView: View {
                         fontSizeDelta: nil,
                         lineSpacingDelta: nil,
                         lineHeightDelta: nil,
-                        letterSpacingDelta: nil
+                        letterSpacingDelta: nil,
+                        imagePreviewQuality: ApplicationSettings.shared.imagePreviewQuality,
+                        imageTileSize: ApplicationSettings.shared.imageTileSize
                     )
                 }
             }

@@ -7,6 +7,8 @@ struct logos_inken_ioApp: App {
     private var appState = AppState.shared
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
+    @State private var globalImagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0
+    @State private var globalImageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
 
     init() {
         UserDefaults.standard.register(defaults: [
@@ -875,7 +877,7 @@ struct logos_inken_ioApp: App {
         .handlesExternalEvents(matching: Set<String>())
 
         Window("Preferences", id: "preferences") {
-            PreferencesView()
+            PreferencesView(imageQuality: $globalImagePreviewQuality, tileSize: $globalImageTileSize)
                 .environment(appState)
                 .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
                     if let window = notification.object as? NSWindow,
@@ -954,7 +956,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
 
         Window("Preferences", id: "app-preferences") {
-            PreferencesView()
+            PreferencesView(imageQuality: $globalImagePreviewQuality, tileSize: $globalImageTileSize)
                 .environment(appState)
                 .background(WindowAccessor { window in
                     window?.tabbingMode = .disallowed

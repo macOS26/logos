@@ -203,7 +203,7 @@ extension DrawingCanvas {
         ZStack {
             //optionalMetalAcceleratedOverlay(geometry: geometry)
 
-            canvasBaseContent(geometry: geometry)
+            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
 
             pressureSensitiveOverlay(geometry: geometry)
 

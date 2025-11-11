@@ -4,8 +4,8 @@ struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
-    @State private var imageQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0
-    @State private var tileSize: Double = Double(UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512)
+    @Binding var imageQuality: Double
+    @Binding var tileSize: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -58,10 +58,10 @@ struct PreferencesView: View {
                             Spacer()
                         }
 
-                        Slider(value: Binding(
-                            get: { imageQuality },
-                            set: { imageQuality = $0; ApplicationSettings.shared.imagePreviewQuality = $0 }
-                        ), in: 0.1...1.0, step: 0.05)
+                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
+                            .onChange(of: imageQuality) { _, newValue in
+                                ApplicationSettings.shared.imagePreviewQuality = newValue
+                            }
 
                         Text("Controls image resolution in canvas. Lower values use less memory.")
                             .font(.caption)
@@ -98,9 +98,12 @@ struct PreferencesView: View {
                         }
 
                         Slider(value: Binding(
-                            get: { tileSize },
-                            set: { tileSize = $0; ApplicationSettings.shared.imageTileSize = Int($0) }
+                            get: { Double(tileSize) },
+                            set: { tileSize = Int($0) }
                         ), in: 32...1024, step: 32)
+                            .onChange(of: tileSize) { _, newValue in
+                                ApplicationSettings.shared.imageTileSize = newValue
+                            }
 
                         Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
                             .font(.caption)

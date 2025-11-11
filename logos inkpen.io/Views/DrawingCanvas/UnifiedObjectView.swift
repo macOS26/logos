@@ -72,6 +72,8 @@ struct LayerCanvasView: View {
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
     let letterSpacingDelta: Double?
+    let imagePreviewQuality: Double
+    let imageTileSize: Int
 
     var appState = AppState.shared
 
@@ -168,6 +170,8 @@ struct LayerCanvasView: View {
             _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
             _ = strokeDeltaWidth     // Force redraw when stroke width changes
             _ = fontSizeDelta        // Force redraw when font size changes
+            _ = imagePreviewQuality  // Force redraw when image quality changes
+            _ = imageTileSize        // Force redraw when tile size changes
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
@@ -1167,16 +1171,15 @@ struct LayerCanvasView: View {
             sourceImage = cachedImage
         } else {
             // Fallback: load on-demand if not cached (shouldn't happen normally)
-            let quality = ApplicationSettings.shared.imagePreviewQuality
             if let imageData = shape.embeddedImageData {
-                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
+                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality)
             } else if let linkedPath = shape.linkedImagePath {
                 sourceImage = resolveAndGetSourceImage(
                     linkedPath: linkedPath,
                     documentURL: documentURL,
                     bookmarkData: shape.linkedImageBookmarkData,
                     shapeID: shape.id,
-                    quality: quality
+                    quality: imagePreviewQuality
                 )
             } else {
                 return
@@ -1188,8 +1191,8 @@ struct LayerCanvasView: View {
         // Get actual image pixel dimensions
         let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
 
-        // Calculate visible tiles (reads from ApplicationSettings for live updates)
-        let tileSize = ApplicationSettings.shared.imageTileSize
+        // Calculate visible tiles
+        let tileSize = imageTileSize
         let visibleTiles = ImageTileCache.shared.visibleTiles(
             imageRect: screenBounds,
             viewportRect: viewportRect,
@@ -1270,6 +1273,8 @@ struct IsolatedLayerView: View {
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
     let letterSpacingDelta: Double?
+    let imagePreviewQuality: Double
+    let imageTileSize: Int
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1360,7 +1365,9 @@ struct IsolatedLayerView: View {
                 fontSizeDelta: fontSizeDelta,
                 lineSpacingDelta: lineSpacingDelta,
                 lineHeightDelta: lineHeightDelta,
-                letterSpacingDelta: letterSpacingDelta
+                letterSpacingDelta: letterSpacingDelta,
+                imagePreviewQuality: imagePreviewQuality,
+                imageTileSize: imageTileSize
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
