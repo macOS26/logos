@@ -1160,22 +1160,27 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Get the source image first to get actual pixel dimensions
-        let quality = ApplicationSettings.shared.imagePreviewQuality
+        // Use cached CGImage if available (loaded once at document open)
         let sourceImage: CGImage?
 
-        if let imageData = shape.embeddedImageData {
-            sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
-        } else if let linkedPath = shape.linkedImagePath {
-            sourceImage = resolveAndGetSourceImage(
-                linkedPath: linkedPath,
-                documentURL: documentURL,
-                bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id,
-                quality: quality
-            )
+        if let cachedImage = shape.cachedCGImage {
+            sourceImage = cachedImage
         } else {
-            return
+            // Fallback: load on-demand if not cached (shouldn't happen normally)
+            let quality = ApplicationSettings.shared.imagePreviewQuality
+            if let imageData = shape.embeddedImageData {
+                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
+            } else if let linkedPath = shape.linkedImagePath {
+                sourceImage = resolveAndGetSourceImage(
+                    linkedPath: linkedPath,
+                    documentURL: documentURL,
+                    bookmarkData: shape.linkedImageBookmarkData,
+                    shapeID: shape.id,
+                    quality: quality
+                )
+            } else {
+                return
+            }
         }
 
         guard let image = sourceImage else { return }

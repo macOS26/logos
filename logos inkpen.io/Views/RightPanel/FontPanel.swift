@@ -8,7 +8,6 @@ struct FontPanel: View {
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
     @Binding var letterSpacingDelta: Double?
-    @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
 
@@ -133,22 +132,6 @@ struct FontPanel: View {
                 .padding(.horizontal, 12)
 
                 Spacer()
-            }
-        }
-        .onAppear {
-        }
-        .onChange(of: document.viewState.selectedObjectIDs) { oldIDs, newIDs in
-
-            if let firstID = newIDs.first,
-               let obj = document.snapshot.objects[firstID],
-               case .text(let shape) = obj.objectType {
-                if shape.id != lastLoggedSelection {
-                    lastLoggedSelection = shape.id
-                }
-            } else {
-                if lastLoggedSelection != nil {
-                    lastLoggedSelection = nil
-                }
             }
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
