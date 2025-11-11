@@ -213,22 +213,20 @@ struct ProfessionalTextCanvas: View {
                 nsView.display()
             }
 
-            // Check if font OR fontSize changed
+            // Always apply font (comparing NSFont objects doesn't work reliably)
             let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
-            if nsView.font != liveFont {
-                nsView.font = liveFont
-                if nsView.string.count > 0 {
-                    let range = NSRange(location: 0, length: nsView.string.count)
-                    nsView.textStorage?.beginEditing()
-                    nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
-                    nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)  // DEBUG: Change to .clear
-                    nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
-                    nsView.textStorage?.endEditing()
+            nsView.font = liveFont
+            if nsView.string.count > 0 {
+                let range = NSRange(location: 0, length: nsView.string.count)
+                nsView.textStorage?.beginEditing()
+                nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
+                nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)  // DEBUG: Change to .clear
+                nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
+                nsView.textStorage?.endEditing()
 
-                    if let textContainer = nsView.textContainer {
-                        nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                        nsView.layoutManager?.ensureLayout(for: textContainer)
-                    }
+                if let textContainer = nsView.textContainer {
+                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                    nsView.layoutManager?.ensureLayout(for: textContainer)
                 }
             }
 
