@@ -37,6 +37,7 @@ struct DocumentBasedMainView: View {
     @State private var processedObjectsDuringDrag: Set<UUID> = []
     @State private var zoomLevel: Double = 1.0
     @State private var canvasOffset: CGPoint = .zero
+    @State private var viewportSize: CGSize = .zero
 
 
     var body: some View {
@@ -76,6 +77,12 @@ struct DocumentBasedMainView: View {
                             .background(Color.clear)
                             .zIndex(1)
                             .allowsHitTesting(true)
+                            .onChange(of: geometry.size) { _, newSize in
+                                viewportSize = newSize
+                            }
+                            .onAppear {
+                                viewportSize = geometry.size
+                            }
 
                         RulersView(
                             document: document,
@@ -279,10 +286,42 @@ struct DocumentBasedMainView: View {
             calculateInitialZoom()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomIn"))) { _ in
-            zoomLevel = min(zoomLevel * 1.25, 50.0)
+            let oldZoom = zoomLevel
+            let newZoom = min(zoomLevel * 1.25, 50.0)
+
+            // Calculate viewport center
+            let viewportCenterX = viewportSize.width / 2
+            let viewportCenterY = viewportSize.height / 2
+
+            // Convert to canvas coordinates
+            let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
+            let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
+
+            // Update zoom
+            zoomLevel = newZoom
+
+            // Adjust offset to keep center point fixed
+            canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
+            canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomOut"))) { _ in
-            zoomLevel = max(zoomLevel / 1.25, 0.01)
+            let oldZoom = zoomLevel
+            let newZoom = max(zoomLevel / 1.25, 0.01)
+
+            // Calculate viewport center
+            let viewportCenterX = viewportSize.width / 2
+            let viewportCenterY = viewportSize.height / 2
+
+            // Convert to canvas coordinates
+            let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
+            let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
+
+            // Update zoom
+            zoomLevel = newZoom
+
+            // Adjust offset to keep center point fixed
+            canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
+            canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FitToPage"))) { _ in
             calculateInitialZoom()
