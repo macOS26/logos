@@ -40,12 +40,8 @@ class MetalImageTileRenderer {
         vertexDescriptor.attributes[1].format = .float2
         vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.size * 2
         vertexDescriptor.attributes[1].bufferIndex = 0
-        // Opacity: float at attribute(2)
-        vertexDescriptor.attributes[2].format = .float
-        vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.size * 4
-        vertexDescriptor.attributes[2].bufferIndex = 0
-        // Layout stride (5 floats per vertex: x, y, u, v, opacity)
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.size * 5
+        // Layout stride (4 floats per vertex: x, y, u, v)
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.size * 4
         vertexDescriptor.layouts[0].stepFunction = .perVertex
 
         pipelineDescriptor.vertexDescriptor = vertexDescriptor
@@ -188,7 +184,7 @@ class MetalImageTileRenderer {
         var vertices: [Float] = []
         var indices: [UInt16] = []
 
-        for (index, (coord, tileRect)) in tiles.enumerated() {
+        for (index, (_, tileRect)) in tiles.enumerated() {
             let baseVertex = UInt16(index * 4)
 
             // Calculate destination rect
@@ -203,15 +199,12 @@ class MetalImageTileRenderer {
             let texMaxX = Float(tileRect.maxX / CGFloat(imageWidth))
             let texMaxY = Float(tileRect.maxY / CGFloat(imageHeight))
 
-            // Checkerboard opacity: 50% for alternating tiles
-            let tileOpacity: Float = ((coord.x + coord.y) % 2 == 0) ? 0.5 : 1.0
-
-            // Quad vertices for this tile (position + texCoord + opacity)
+            // Quad vertices for this tile (position + texCoord)
             vertices.append(contentsOf: [
-                destX,        destY,        texMinX, texMinY, tileOpacity,  // Bottom-left
-                destX + destW, destY,        texMaxX, texMinY, tileOpacity,  // Bottom-right
-                destX,        destY + destH, texMinX, texMaxY, tileOpacity,  // Top-left
-                destX + destW, destY + destH, texMaxX, texMaxY, tileOpacity   // Top-right
+                destX,        destY,        texMinX, texMinY,  // Bottom-left
+                destX + destW, destY,        texMaxX, texMinY,  // Bottom-right
+                destX,        destY + destH, texMinX, texMaxY,  // Top-left
+                destX + destW, destY + destH, texMaxX, texMaxY   // Top-right
             ])
 
             // Two triangles per tile
