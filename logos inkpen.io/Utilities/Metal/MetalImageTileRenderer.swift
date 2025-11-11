@@ -304,8 +304,8 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
-            .union(.byteOrder32Little)
+        // Metal texture is .bgra8Unorm (BGRA with premultiplied alpha, little endian)
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
 
         return CGImage(
             width: width,
