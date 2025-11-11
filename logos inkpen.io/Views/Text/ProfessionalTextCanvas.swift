@@ -52,13 +52,19 @@ struct ProfessionalTextCanvas: View {
         let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
         let lineSpacing = lineSpacingDelta ?? textObject.typography.lineSpacing
 
+        // Read font directly from document, not viewModel!
+        let fontFamily = textObject.typography.fontFamily
+        let fontVariant = textObject.typography.fontVariant
+
         return TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
             letterSpacing: letterSpacing,
             lineHeight: lineHeight,
             fontSize: fontSize,
-            lineSpacing: lineSpacing
+            lineSpacing: lineSpacing,
+            fontFamily: fontFamily,
+            fontVariant: fontVariant
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -113,6 +119,8 @@ struct ProfessionalTextCanvas: View {
         let lineHeight: CGFloat
         let fontSize: CGFloat
         let lineSpacing: CGFloat
+        let fontFamily: String
+        let fontVariant: String?
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -141,8 +149,9 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            // Use live fontSize for font
-            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
+            // Use live fontSize and fontFamily for font
+            let fontName = fontVariant ?? fontFamily
+            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             textView.font = liveFont
             textView.textColor = NSColor.systemPink  // DEBUG: Change to .clear to hide NSTextView
             textView.allowsInteraction = true
@@ -214,7 +223,8 @@ struct ProfessionalTextCanvas: View {
             }
 
             // Always apply font (comparing NSFont objects doesn't work reliably)
-            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
+            let fontName = fontVariant ?? fontFamily
+            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             nsView.font = liveFont
             if nsView.string.count > 0 {
                 let range = NSRange(location: 0, length: nsView.string.count)
@@ -266,7 +276,8 @@ struct ProfessionalTextCanvas: View {
             paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
 
-            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
+            let fontName = fontVariant ?? fontFamily
+            let liveFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,
                 .foregroundColor: NSColor.systemPink,  // DEBUG: Change to .clear to hide NSTextView
