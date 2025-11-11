@@ -35,6 +35,8 @@ struct DocumentBasedMainView: View {
     @State private var selectedLayerIndex: Int? = nil
     @State private var processedLayersDuringDrag: Set<Int> = []
     @State private var processedObjectsDuringDrag: Set<UUID> = []
+    @State private var zoomLevel: Double = 1.0
+    @State private var canvasOffset: CGPoint = .zero
 
 
     var body: some View {
@@ -68,7 +70,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(viewState: document.viewState, document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta)
+                        DrawingCanvas(viewState: document.viewState, document: document, zoomLevel: $zoomLevel, canvasOffset: $canvasOffset, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
@@ -296,7 +298,7 @@ struct DocumentBasedMainView: View {
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))
 
-        document.viewState.zoomLevel = fitZoom
+        zoomLevel = fitZoom
 
         let visibleCenter = CGPoint(
             x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
@@ -306,7 +308,7 @@ struct DocumentBasedMainView: View {
             x: documentBounds.midX,
             y: documentBounds.midY
         )
-        document.viewState.canvasOffset = CGPoint(
+        canvasOffset = CGPoint(
             x: visibleCenter.x - (documentCenter.x * fitZoom),
             y: visibleCenter.y - (documentCenter.y * fitZoom)
         )

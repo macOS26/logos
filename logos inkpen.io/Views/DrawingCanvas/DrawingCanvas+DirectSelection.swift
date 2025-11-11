@@ -38,8 +38,8 @@ extension DrawingCanvas {
     }
 
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
-        let pointSelectionRadius: Double = 6.0 / document.viewState.zoomLevel
-        let handleSelectionRadius: Double = 4.0 / document.viewState.zoomLevel
+        let pointSelectionRadius: Double = 6.0 / zoomLevel
+        let handleSelectionRadius: Double = 4.0 / zoomLevel
 
         // Always use Metal GPU for point selection
         var points: [CGPoint] = []
@@ -233,7 +233,7 @@ extension DrawingCanvas {
     internal func handleDirectSelectionTap(at location: CGPoint) {
 
         let screenTolerance: Double = 15.0
-        let tolerance: Double = screenTolerance / document.viewState.zoomLevel
+        let tolerance: Double = screenTolerance / zoomLevel
         var foundSelection = false
 
         if !selectedObjectIDs.isEmpty {

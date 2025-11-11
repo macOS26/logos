@@ -154,7 +154,7 @@ extension DrawingCanvas {
 
         // Direct selection always uses path hit test
         let baseTolerance: CGFloat = 8.0
-        let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
+        let tolerance = max(2.0, baseTolerance / zoomLevel)
         return PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
     }
 
@@ -179,7 +179,7 @@ extension DrawingCanvas {
 
         if isOptionPressed {
             let baseTolerance: CGFloat = 8.0
-            let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
+            let tolerance = max(2.0, baseTolerance / zoomLevel)
             let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
             return isHit
         } else {
@@ -192,7 +192,7 @@ extension DrawingCanvas {
                     return true
                 } else {
                     let baseTolerance: CGFloat = 4.0
-                    let tolerance = max(1.0, baseTolerance / document.viewState.zoomLevel)
+                    let tolerance = max(1.0, baseTolerance / zoomLevel)
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
                     return isHit
                 }
@@ -208,7 +208,7 @@ extension DrawingCanvas {
                     return true
                 } else {
                     let baseTolerance: CGFloat = 4.0
-                    let tolerance = max(1.0, baseTolerance / document.viewState.zoomLevel)
+                    let tolerance = max(1.0, baseTolerance / zoomLevel)
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
                     return isHit
                 }

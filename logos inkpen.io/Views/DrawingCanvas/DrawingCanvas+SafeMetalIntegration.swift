@@ -63,8 +63,8 @@ extension DrawingCanvas {
     }
 
     private func renderGridWithMetal(cgContext: CGContext, size: CGSize, geometry: GeometryProxy) {
-        let gridSpacing: CGFloat = 20 * document.viewState.zoomLevel
-        let offset = document.viewState.canvasOffset
+        let gridSpacing: CGFloat = 20 * zoomLevel
+        let offset = canvasOffset
 
         cgContext.setStrokeColor(CGColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 0.5))
         cgContext.setLineWidth(0.5)
@@ -133,17 +133,17 @@ extension DrawingCanvas {
 
     private func transformPointToView(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
         return CGPoint(
-            x: point.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-            y: point.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+            x: point.x * zoomLevel + canvasOffset.x,
+            y: point.y * zoomLevel + canvasOffset.y
         )
     }
 
     private func transformRectToView(_ rect: CGRect, geometry: GeometryProxy) -> CGRect {
         return CGRect(
-            x: rect.origin.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
-            y: rect.origin.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y,
-            width: rect.width * document.viewState.zoomLevel,
-            height: rect.height * document.viewState.zoomLevel
+            x: rect.origin.x * zoomLevel + canvasOffset.x,
+            y: rect.origin.y * zoomLevel + canvasOffset.y,
+            width: rect.width * zoomLevel,
+            height: rect.height * zoomLevel
         )
     }
 
@@ -211,8 +211,8 @@ extension DrawingCanvas {
                 isHovering: isCanvasHovering,
                 currentTool: document.viewState.currentTool,
                 isPanActive: isPanGestureActive,
-                zoomLevel: document.viewState.zoomLevel,
-                canvasOffset: document.viewState.canvasOffset
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
             )
 
 //            if appState.showPerformanceOverlay {
@@ -333,7 +333,7 @@ extension DrawingCanvas {
                 handleZoomRequest(request, geometry: geometry)
             }
         }
-        .onChange(of: document.viewState.zoomLevel) { _, _ in
+        .onChange(of: zoomLevel) { _, _ in
             if isCanvasHovering {
                 switch document.viewState.currentTool {
                 case .hand:
@@ -367,7 +367,7 @@ extension DrawingCanvas {
                 }
             }
         }
-        .onChange(of: document.viewState.canvasOffset) { _, _ in
+        .onChange(of: canvasOffset) { _, _ in
             if isCanvasHovering {
                 switch document.viewState.currentTool {
                 case .hand:

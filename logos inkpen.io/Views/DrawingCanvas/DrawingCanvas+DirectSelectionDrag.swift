@@ -6,7 +6,7 @@ extension DrawingCanvas {
         if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle && !isDraggingCurveSegment {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let screenTolerance: Double = 10.0
-            let tolerance: Double = screenTolerance / document.viewState.zoomLevel
+            let tolerance: Double = screenTolerance / zoomLevel
 
             // Try to find a curve segment at the click location (only if shapes are selected)
             if !selectedObjectIDs.isEmpty {
@@ -35,7 +35,7 @@ extension DrawingCanvas {
         if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle && !isDraggingCurveSegment {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let screenTolerance: Double = 15.0
-            let tolerance: Double = screenTolerance / document.viewState.zoomLevel
+            let tolerance: Double = screenTolerance / zoomLevel
             var foundPointOrHandle = false
 
             if !selectedObjectIDs.isEmpty {
@@ -105,7 +105,7 @@ extension DrawingCanvas {
             captureOriginalPositions()
         }
 
-        let preciseZoom = Double(document.viewState.zoomLevel)
+        let preciseZoom = Double(zoomLevel)
         let preciseTranslationX = Double(value.translation.width)
         let preciseTranslationY = Double(value.translation.height)
         let delta = CGPoint(

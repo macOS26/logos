@@ -4,6 +4,8 @@ import Combine
 struct GradientCenterPointCanvasView: View {
     let document: VectorDocument
     let geometry: GeometryProxy
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
@@ -12,8 +14,8 @@ struct GradientCenterPointCanvasView: View {
             guard let selectedGradient = getSelectedShapeGradient(document: document),
                   let selectedShape = getSelectedShapeWithGradient(document: document) else { return }
 
-            let zoom = document.viewState.zoomLevel
-            let offset = document.viewState.canvasOffset
+            let zoom = zoomLevel
+            let offset = canvasOffset
 
             // Apply canvas transform (same as direct selection)
             let baseTransform = CGAffineTransform.identity
@@ -133,6 +135,8 @@ extension DrawingCanvas {
             GradientCenterPointCanvasView(
                 document: document,
                 geometry: geometry,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset,
                 onDragChanged: { value in
                     if let selectedShape = getSelectedShapeWithGradient(),
                        let selectedGradient = getSelectedShapeGradient(document: document) {

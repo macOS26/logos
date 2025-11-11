@@ -7,7 +7,7 @@ extension DrawingCanvas {
     internal func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
 
         if initialCanvasOffset == CGPoint.zero && handToolDragStart == CGPoint.zero {
-            initialCanvasOffset = document.viewState.canvasOffset
+            initialCanvasOffset = canvasOffset
             handToolDragStart = value.startLocation
             isPanGestureActive = true
 
@@ -22,7 +22,7 @@ extension DrawingCanvas {
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
-        document.viewState.canvasOffset = CGPoint(
+        canvasOffset = CGPoint(
             x: initialCanvasOffset.x + cursorDelta.x,
             y: initialCanvasOffset.y + cursorDelta.y
         )

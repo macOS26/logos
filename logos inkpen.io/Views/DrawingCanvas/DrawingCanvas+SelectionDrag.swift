@@ -139,7 +139,7 @@ extension DrawingCanvas {
             y: value.location.y - selectionDragStart.y
         )
 
-        let preciseZoom = Double(document.viewState.zoomLevel)
+        let preciseZoom = Double(zoomLevel)
         var canvasDelta = CGPoint(
             x: cursorDelta.x / preciseZoom,
             y: cursorDelta.y / preciseZoom

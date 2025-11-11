@@ -10,6 +10,8 @@ import SwiftUI
 struct DrawingCanvas: View {
     var viewState: DocumentViewState = DocumentViewState()
     var document: VectorDocument = VectorDocument()
+    @Binding var zoomLevel: Double
+    @Binding var canvasOffset: CGPoint
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize

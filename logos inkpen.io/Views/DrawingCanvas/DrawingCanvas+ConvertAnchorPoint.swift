@@ -4,7 +4,7 @@ import Combine
 extension DrawingCanvas {
     func handleConvertAnchorPointTap(at location: CGPoint) {
         let baseTolerance: Double = 8.0
-        let zoomLevel = document.viewState.zoomLevel
+        let zoomLevel = zoomLevel
         let tolerance = max(2.0, baseTolerance / zoomLevel)
 
         if let restoreResult = restoreCollapsedHandlesIfClicked(at: location, tolerance: tolerance) {

@@ -20,12 +20,10 @@ class DocumentViewState: ObservableObject {
 
     // MARK: - Viewport State
     @Published var viewMode: ViewMode = .color
-
-    // Non-@Published for high-frequency updates (passed as @Binding to child views)
-    var zoomLevel: Double = 1.0
-    var canvasOffset: CGPoint = .zero
-
     @Published var zoomRequest: ZoomRequest? = nil
+
+    // NOTE: zoomLevel and canvasOffset removed - now managed as @State in DocumentBasedMainView
+    // and passed as @Binding to child views (same pattern as fillDeltaOpacity, etc.)
 
     // MARK: - Color UI State
     @Published var activeColorTarget: ColorTarget = .fill

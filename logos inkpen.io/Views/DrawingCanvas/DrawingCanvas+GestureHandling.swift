@@ -27,7 +27,7 @@ extension DrawingCanvas {
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
                     let baseCloseTolerance: Double = 5.0
-                    let zoomLevel = document.viewState.zoomLevel
+                    let zoomLevel = zoomLevel
                     let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel)
 
                     if distance(canvasLocation, firstPointLocation) <= closeTolerance {

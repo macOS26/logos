@@ -38,6 +38,8 @@ struct MainView: View {
     @State private var letterSpacingDelta: Double?
     @State private var selectedLayerIndex: Int?
     @State private var processedLayersDuringDrag: Set<Int> = []
+    @State private var zoomLevel: Double = 1.0
+    @State private var canvasOffset: CGPoint = .zero
     @State private var processedObjectsDuringDrag: Set<UUID> = []
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {

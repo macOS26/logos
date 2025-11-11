@@ -4,7 +4,7 @@ import Combine
 extension DrawingCanvas {
 
     func handlePenPlusMinusTap(at location: CGPoint) {
-        let tolerance: Double = 8.0 / document.viewState.zoomLevel
+        let tolerance: Double = 8.0 / zoomLevel
 
         if let pointToDelete = findAnchorPointAt(location: location, tolerance: tolerance) {
             deletePointWithCurvePreservation(pointID: pointToDelete)
