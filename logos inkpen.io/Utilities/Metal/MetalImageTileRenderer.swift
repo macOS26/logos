@@ -3,13 +3,15 @@ import simd
 
 /// GPU-accelerated image tile renderer using Metal
 class MetalImageTileRenderer {
+    static let shared = MetalImageTileRenderer()
+
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
     private var textureCache: [String: MTLTexture] = [:]
     private var compositedImageCache: [String: CGImage] = [:]  // Cache composited results
 
-    init?() {
+    private init?() {
         guard let device = MTLCreateSystemDefaultDevice(),
               let commandQueue = device.makeCommandQueue() else {
             return nil

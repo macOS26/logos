@@ -106,12 +106,18 @@ class ApplicationSettings: ObservableObject {
     @Published var imagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0 {
         didSet {
             UserDefaults.standard.set(imagePreviewQuality, forKey: "imagePreviewQuality")
+            // Clear image cache when quality changes
+            ImageTileCache.shared.clearCache()
+            MetalImageTileRenderer.shared?.clearCache()
         }
     }
 
     @Published var imageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512 {
         didSet {
             UserDefaults.standard.set(imageTileSize, forKey: "imageTileSize")
+            // Clear image cache when tile size changes
+            ImageTileCache.shared.clearCache()
+            MetalImageTileRenderer.shared?.clearCache()
         }
     }
 

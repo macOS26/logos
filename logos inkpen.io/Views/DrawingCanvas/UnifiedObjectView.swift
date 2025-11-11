@@ -77,9 +77,6 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
-    // Metal renderer for GPU-accelerated tile compositing
-    private static let metalRenderer = MetalImageTileRenderer()
-
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -1234,8 +1231,7 @@ struct LayerCanvasView: View {
             cgContext.interpolationQuality = .medium
 
             // Use Metal to composite tiles on GPU at FULL IMAGE RESOLUTION, then draw result
-            if let metalRenderer = Self.metalRenderer,
-               let compositedImage = metalRenderer.compositeImageTiles(
+            if let compositedImage = MetalImageTileRenderer.shared?.compositeImageTiles(
                    image: image,
                    tiles: visibleTiles,
                    outputSize: imagePixelSize,
