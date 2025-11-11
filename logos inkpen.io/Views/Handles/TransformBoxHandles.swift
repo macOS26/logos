@@ -12,6 +12,7 @@ struct TransformBoxHandles: View {
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
     @Binding var liveScaleTransform: CGAffineTransform
+    @Binding var liveScaleDimensions: CGSize
 
     @State private var isScaling: Bool = false
     @State private var initialTransform: CGAffineTransform = .identity
@@ -455,14 +456,14 @@ struct TransformBoxHandles: View {
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
-        document.viewState.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
+        liveScaleDimensions = CGSize(width: newBounds.width, height: newBounds.height)
     }
 
     private func endScaling() {
         // print("🟢 END SCALING for shape \(shape.id)")
         isScaling = false
         document.isHandleScalingActive = false
-        document.viewState.scalePreviewDimensions = .zero
+        liveScaleDimensions = .zero
 
         // Reset live scale transform
         if settings.liveScalingPreview {

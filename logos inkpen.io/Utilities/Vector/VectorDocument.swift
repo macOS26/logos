@@ -185,7 +185,7 @@ final class VectorDocument: ObservableObject, Codable {
         currentDragOffset = .zero
         cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
-        viewState.scalePreviewDimensions = .zero
+        // NOTE: scalePreviewDimensions removed - now using liveScaleDimensions as @State
         viewState.warpEnvelopeCorners = [:]
         viewState.warpBounds = [:]
 

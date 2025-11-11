@@ -12,6 +12,7 @@ struct SelectionHandlesView: View {
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
     @Binding var liveScaleTransform: CGAffineTransform
+    @Binding var liveScaleDimensions: CGSize
 
     // Force view to update when selection changes
     private var selectionID: String {
@@ -77,7 +78,8 @@ struct SelectionHandlesView: View {
                                                 isShiftPressed: isShiftPressed,
                                                 transformOrigin: document.viewState.transformOrigin,
                                                 strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
-                                                liveScaleTransform: $liveScaleTransform
+                                                liveScaleTransform: $liveScaleTransform,
+                                                liveScaleDimensions: $liveScaleDimensions
                                             )
                                     } else if document.viewState.currentTool == .scale {
                                         ScaleHandles(
@@ -86,7 +88,8 @@ struct SelectionHandlesView: View {
                                             zoomLevel: zoomLevel,
                                             canvasOffset: canvasOffset,
                                             isShiftPressed: isShiftPressed,
-                                            liveScaleTransform: $liveScaleTransform
+                                            liveScaleTransform: $liveScaleTransform,
+                                            liveScaleDimensions: $liveScaleDimensions
                                         )
                                     } else if document.viewState.currentTool == .rotate {
                                         RotateHandles(
@@ -150,7 +153,8 @@ struct SelectionHandlesView: View {
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.viewState.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
-                        liveScaleTransform: $liveScaleTransform
+                        liveScaleTransform: $liveScaleTransform,
+                        liveScaleDimensions: $liveScaleDimensions
                     )
                 } else if document.viewState.currentTool == .scale {
                     ScaleHandles(
@@ -159,7 +163,8 @@ struct SelectionHandlesView: View {
                         zoomLevel: zoomLevel,
                         canvasOffset: canvasOffset,
                         isShiftPressed: isShiftPressed,
-                        liveScaleTransform: $liveScaleTransform
+                        liveScaleTransform: $liveScaleTransform,
+                        liveScaleDimensions: $liveScaleDimensions
                     )
                 } else if document.viewState.currentTool == .rotate {
                     RotateHandles(
@@ -239,7 +244,8 @@ struct SelectionHandlesView: View {
                     isShiftPressed: isShiftPressed,
                     transformOrigin: document.viewState.transformOrigin,
                     strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
-                    liveScaleTransform: $liveScaleTransform
+                    liveScaleTransform: $liveScaleTransform,
+                    liveScaleDimensions: $liveScaleDimensions
                 )
             }
         }

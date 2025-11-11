@@ -124,7 +124,8 @@ extension DrawingCanvas {
                 isCommandPressed: self.isCommandPressed,
                 isTemporarySelectionViaCommand: self.isTemporarySelectionViaCommand,
                 dragPreviewDelta: currentDragDelta,
-                liveScaleTransform: $liveScaleTransform
+                liveScaleTransform: $liveScaleTransform,
+                liveScaleDimensions: $liveScaleDimensions
             )
         }
 

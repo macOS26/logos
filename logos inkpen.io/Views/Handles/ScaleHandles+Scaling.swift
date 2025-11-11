@@ -51,7 +51,7 @@ extension ScaleHandles {
         scalingStarted = false
         isScaling = false
         document.isHandleScalingActive = false
-        document.viewState.scalePreviewDimensions = .zero
+        liveScaleDimensions = .zero
         liveScaleTransform = .identity
 
         var oldShapes: [UUID: VectorShape] = [:]
@@ -167,7 +167,7 @@ extension ScaleHandles {
         let newWidth = initialBounds.width * abs(scaleX)
         let newHeight = initialBounds.height * abs(scaleY)
 
-        document.viewState.scalePreviewDimensions = CGSize(width: newWidth, height: newHeight)
+        liveScaleDimensions = CGSize(width: newWidth, height: newHeight)
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         finalMarqueeBounds = currentBounds.applying(scaleTransform)
