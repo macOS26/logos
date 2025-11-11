@@ -1218,70 +1218,27 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // SIMD-accelerated tile coordinate transformation (batch process 4 tiles at once)
+            // Draw each tile by cropping the source image and drawing only that portion
+            // This eliminates hairlines by drawing exact tile boundaries without clipping
             let scaleX = renderBounds.width / CGFloat(image.width)
             let scaleY = renderBounds.height / CGFloat(image.height)
 
-            let tileCount = visibleTiles.count
-            var tileIndex = 0
+            for tileInfo in visibleTiles {
+                let tileRect = tileInfo.rect
 
-            // Process tiles in batches of 4 using SIMD4
-            while tileIndex < tileCount {
-                let batchSize = min(4, tileCount - tileIndex)
+                // Crop the source image to this tile's region
+                guard let tileImage = image.cropping(to: tileRect) else { continue }
 
-                if batchSize == 4 {
-                    // Full SIMD4 batch - process 4 tiles in parallel
-                    let tile0 = visibleTiles[tileIndex].rect
-                    let tile1 = visibleTiles[tileIndex + 1].rect
-                    let tile2 = visibleTiles[tileIndex + 2].rect
-                    let tile3 = visibleTiles[tileIndex + 3].rect
+                // Calculate destination rect in canvas coordinates (no overlap needed!)
+                let destRect = CGRect(
+                    x: tileRect.minX * scaleX,
+                    y: tileRect.minY * scaleY,
+                    width: tileRect.width * scaleX,
+                    height: tileRect.height * scaleY
+                )
 
-                    // Pack 4 x-coordinates into SIMD4
-                    let originX = SIMD4<Double>(tile0.minX, tile1.minX, tile2.minX, tile3.minX)
-                    let originY = SIMD4<Double>(tile0.minY, tile1.minY, tile2.minY, tile3.minY)
-                    let sizeW = SIMD4<Double>(tile0.width, tile1.width, tile2.width, tile3.width)
-                    let sizeH = SIMD4<Double>(tile0.height, tile1.height, tile2.height, tile3.height)
-
-                    // Vectorized multiplication (4 tiles computed in parallel)
-                    let destX = originX * SIMD4<Double>(repeating: scaleX)
-                    let destY = originY * SIMD4<Double>(repeating: scaleY)
-                    let destW = sizeW * SIMD4<Double>(repeating: scaleX)
-                    let destH = sizeH * SIMD4<Double>(repeating: scaleY)
-
-                    // Draw all 4 tiles with 0.5px overlap to eliminate seams
-                    let overlap: Double = 0.5
-                    for i in 0..<4 {
-                        let destRect = CGRect(
-                            x: destX[i] - overlap,
-                            y: destY[i] - overlap,
-                            width: destW[i] + overlap * 2,
-                            height: destH[i] + overlap * 2
-                        )
-                        cgContext.saveGState()
-                        cgContext.clip(to: destRect)
-                        cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-                        cgContext.restoreGState()
-                    }
-
-                    tileIndex += 4
-                } else {
-                    // Handle remaining tiles (1-3) with scalar ops and overlap
-                    let overlap: CGFloat = 0.5
-                    for i in 0..<batchSize {
-                        let tileRect = visibleTiles[tileIndex + i].rect
-                        let destRect = CGRect(
-                            x: tileRect.minX * scaleX - overlap,
-                            y: tileRect.minY * scaleY - overlap,
-                            width: tileRect.width * scaleX + overlap * 2,
-                            height: tileRect.height * scaleY + overlap * 2
-                        )
-                        cgContext.saveGState()
-                        cgContext.clip(to: destRect)
-                        cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-                        cgContext.restoreGState()
-                    }
-                    tileIndex += batchSize
-                }
+                // Draw the cropped tile directly to its destination
+                cgContext.draw(tileImage, in: destRect)
             }
 
             cgContext.restoreGState()
