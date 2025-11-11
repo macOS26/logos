@@ -298,102 +298,16 @@ class ProfessionalTextViewModel: ObservableObject {
     }
 
     private func convertUsingNSLayoutManager() {
-        let nsFont = selectedFont
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = textAlignment
-        paragraphStyle.lineSpacing = max(0, textObject.typography.lineSpacing)
-        paragraphStyle.minimumLineHeight = textObject.typography.lineHeight
-        paragraphStyle.maximumLineHeight = textObject.typography.lineHeight
-
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: nsFont,
-            .paragraphStyle: paragraphStyle
-        ]
-
-        let attributedString = NSAttributedString(string: text, attributes: attributes)
-        let textStorage = NSTextStorage(attributedString: attributedString)
-        let layoutManager = NSLayoutManager()
-        textStorage.addLayoutManager(layoutManager)
-
-        let textContainer = NSTextContainer(size: CGSize(width: textBoxFrame.width, height: CGFloat.greatestFiniteMagnitude))
-        textContainer.lineFragmentPadding = 0
-        textContainer.lineBreakMode = .byWordWrapping
-        layoutManager.addTextContainer(textContainer)
-
-        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: text.count))
-        layoutManager.ensureLayout(for: textContainer)
-        linePaths = []
-        let combinedPath = CGMutablePath()
-        let ctFont = CTFontCreateWithGraphicsFont(
-            CTFontCopyGraphicsFont(nsFont as CTFont, nil),
-            nsFont.pointSize,
-            nil,
-            nil
+        // Use shared CTLine converter (same as Canvas rendering for WYSIWYG)
+        linePaths = CTLineTextConverter.convertTextToPaths(
+            text: text,
+            font: selectedFont,
+            textBoxFrame: textBoxFrame,
+            alignment: textAlignment,
+            lineSpacing: textObject.typography.lineSpacing,
+            lineHeight: textObject.typography.lineHeight,
+            letterSpacing: textObject.typography.letterSpacing
         )
-
-        let glyphRange = layoutManager.glyphRange(for: textContainer)
-        var skippedGlyphCount = 0
-
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
-            let linePath = CGMutablePath()
-
-            for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
-                let glyph = layoutManager.cgGlyph(at: glyphIndex)
-                let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
-                var actualLineRect = CGRect.zero
-                var actualUsedRect = CGRect.zero
-                var effectiveRange = NSRange()
-                actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
-                actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
-
-                let glyphX: CGFloat
-
-                switch self.textAlignment {
-                case .left, .justified:
-                    glyphX = self.textBoxFrame.origin.x + actualUsedRect.origin.x + glyphLocation.x
-
-                case .center, .right:
-                    glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
-
-                default:
-                    glyphX = self.textBoxFrame.origin.x + actualUsedRect.origin.x + glyphLocation.x
-                }
-
-                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y + glyphLocation.y
-
-                if let glyphPath = CTFontCreatePathForGlyph(ctFont, CGGlyph(glyph), nil) {
-                    if self.isRectangleGlyph(glyphPath) {
-                        skippedGlyphCount += 1
-
-                        let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
-                        let char = (self.text as NSString).substring(with: NSRange(location: charIndex, length: 1))
-                        Log.warning("⚠️ SKIPPING RECTANGLE GLYPH: Character '\(char)' at index \(charIndex) - missing from font", category: .general)
-                        continue
-                    }
-
-                    var unionedGlyph: CGPath
-                    if let unionResult = ProfessionalPathOperations.union([glyphPath, glyphPath]) {
-                        unionedGlyph = unionResult.normalized()
-                    } else {
-                        unionedGlyph = glyphPath
-                    }
-
-                    var transform = CGAffineTransform(scaleX: 1.0, y: -1.0)
-                    transform = transform.translatedBy(x: glyphX, y: -glyphY)
-
-                    linePath.addPath(unionedGlyph, transform: transform)
-                }
-            }
-
-            if !linePath.isEmpty {
-                self.linePaths.append(linePath)
-                combinedPath.addPath(linePath)
-            }
-        }
-
-        if skippedGlyphCount > 0 {
-            Log.warning("⚠️ RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
-        }
     }
 
     private func convertToCoreTextPath() {
