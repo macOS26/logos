@@ -128,22 +128,14 @@ struct ProfessionalTextCanvas: View {
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
-            // Apply text with letter spacing via attributed string
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = viewModel.textAlignment
-            paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
-            paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
-            paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+            // Set text first
+            textView.string = viewModel.text
 
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: viewModel.selectedFont,
-                .foregroundColor: NSColor.systemPink,
-                .paragraphStyle: paragraphStyle,
-                .kern: viewModel.textObject.typography.letterSpacing
-            ]
-
-            let attributedString = NSAttributedString(string: viewModel.text, attributes: attributes)
-            textView.textStorage?.setAttributedString(attributedString)
+            // Now apply letter spacing to all text
+            if !viewModel.text.isEmpty {
+                let range = NSRange(location: 0, length: viewModel.text.count)
+                textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+            }
 
             context.coordinator.textView = textView
 
