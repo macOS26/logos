@@ -11,7 +11,6 @@ struct FontPanel: View {
     @ObservedObject var document: VectorDocument
     
     @State private var lastLoggedSelection: UUID?
-    @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
 
     private var selectedTextTypography: TypographyProperties? {
@@ -180,32 +179,6 @@ struct FontPanel: View {
                 if lastLoggedSelection != nil {
                     lastLoggedSelection = nil
                     Log.fileOperation("🎯 TYPE PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)", level: .info)
-                }
-            }
-        }
-        .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
-            let freshEditingText = document.unifiedObjects.first { obj in
-                if case .shape(let shape) = obj.objectType, shape.isTextObject {
-                    return shape.isEditing == true
-                }
-                return false
-            }.flatMap { obj -> VectorText? in
-                if case .shape(let shape) = obj.objectType, var text = VectorText.from(shape) {
-                    text.layerIndex = obj.layerIndex
-                    return text
-                }
-                return nil
-            }
-
-            if let newEditingText = freshEditingText {
-                if newEditingText.id != lastLoggedEditing {
-                    lastLoggedEditing = newEditingText.id
-                    Log.fileOperation("🎯 TYPE PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))", level: .info)
-                }
-            } else {
-                if lastLoggedEditing != nil {
-                    lastLoggedEditing = nil
-                    Log.fileOperation("🎯 TYPE PANEL: No editing text found", level: .info)
                 }
             }
         }
