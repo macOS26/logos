@@ -61,6 +61,7 @@ struct PreferencesView: View {
                         Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
                             .onChange(of: imageQuality) { _, newValue in
                                 ApplicationSettings.shared.imagePreviewQuality = newValue
+                                ImageTileCache.shared.clearCache()
                             }
 
                         Text("Controls image resolution in canvas. Lower values use less memory.")
@@ -103,6 +104,7 @@ struct PreferencesView: View {
                         ), in: 32...1024, step: 32)
                             .onChange(of: tileSize) { _, newValue in
                                 ApplicationSettings.shared.imageTileSize = newValue
+                                ImageTileCache.shared.clearCache()
                             }
 
                         Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
