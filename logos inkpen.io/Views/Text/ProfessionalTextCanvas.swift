@@ -134,7 +134,13 @@ struct ProfessionalTextCanvas: View {
             // Now apply letter spacing to all text
             if !viewModel.text.isEmpty {
                 let range = NSRange(location: 0, length: viewModel.text.count)
+                textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                textView.textStorage?.endEditing()
+
+                // Invalidate layout to force redraw with kern attribute
+                textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
             }
 
             context.coordinator.textView = textView
@@ -173,9 +179,12 @@ struct ProfessionalTextCanvas: View {
                 nsView.font = viewModel.selectedFont
                 if nsView.string.count > 0 {
                     let range = NSRange(location: 0, length: nsView.string.count)
+                    nsView.textStorage?.beginEditing()
                     nsView.textStorage?.addAttribute(.font, value: viewModel.selectedFont, range: range)
                     nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
                     nsView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                    nsView.textStorage?.endEditing()
+
                     if let textContainer = nsView.textContainer {
                         nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                         nsView.layoutManager?.ensureLayout(for: textContainer)
@@ -228,9 +237,14 @@ struct ProfessionalTextCanvas: View {
 
             if textView.string.count > 0 {
                 let range = NSRange(location: 0, length: textView.string.count)
+                textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                 textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
                 textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                textView.textStorage?.endEditing()
+
+                textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
             }
 
             textView.textContainer.flatMap { textView.layoutManager?.ensureLayout(for: $0) }
