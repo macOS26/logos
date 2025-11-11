@@ -12,8 +12,9 @@ struct ProfessionalTextCanvas: View {
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
     let letterSpacingDelta: Double?
+    let lineHeightDelta: Double?
 
-    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil) {
+    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil) {
         self.document = document
         self.textObjectID = textObjectID
         self.zoomLevel = zoomLevel
@@ -22,6 +23,7 @@ struct ProfessionalTextCanvas: View {
         self.dragPreviewTrigger = dragPreviewTrigger
         self.viewMode = viewMode
         self.letterSpacingDelta = letterSpacingDelta
+        self.lineHeightDelta = lineHeightDelta
 
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
@@ -34,11 +36,13 @@ struct ProfessionalTextCanvas: View {
         let position = textObject.position
         // Use delta during drag, otherwise use actual value
         let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
+        let lineHeight = lineHeightDelta ?? textObject.typography.lineHeight
 
         TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
-            letterSpacing: letterSpacing
+            letterSpacing: letterSpacing,
+            lineHeight: lineHeight
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -90,6 +94,7 @@ struct ProfessionalTextCanvas: View {
         @State var isUpdatingFromTyping: Bool = false
         let viewMode: ViewMode
         let letterSpacing: CGFloat  // Direct value, not from @ObservedObject
+        let lineHeight: CGFloat
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -237,8 +242,8 @@ struct ProfessionalTextCanvas: View {
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = viewModel.textAlignment
             paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
-            paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
-            paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+            paragraphStyle.minimumLineHeight = lineHeight
+            paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
 
             textView.typingAttributes = [
