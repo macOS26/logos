@@ -39,9 +39,6 @@ final class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier
     let changeNotifier = DocumentChangeNotifier()
 
-    // Combine subscriptions for nested ObservableObjects
-    private var cancellables = Set<AnyCancellable>()
-
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
     var currentDragOffset: CGPoint = .zero
@@ -234,17 +231,7 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     private func setupViewStateForwarding() {
-        viewState.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
-        }.store(in: &cancellables)
-
-        changeNotifier.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
-        }.store(in: &cancellables)
-
-        fontManager.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
-        }.store(in: &cancellables)
+        // View state changes handled via direct property updates
     }
 
     private func refreshSystemLayers() {
