@@ -72,7 +72,7 @@ struct ProfessionalTextCanvas: View {
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * zoomLevel : 0,
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
-        .id("\(dragPreviewTrigger)-\(letterSpacing)")
+        .id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
     }
 
@@ -220,23 +220,6 @@ struct ProfessionalTextCanvas: View {
                 nsView.string = viewModel.text
             }
 
-            // Apply letter spacing from direct property (SwiftUI detects this!)
-            if nsView.string.count > 0 {
-                let range = NSRange(location: 0, length: nsView.string.count)
-                nsView.textStorage?.beginEditing()
-                nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
-                nsView.textStorage?.endEditing()
-
-                if let textContainer = nsView.textContainer, let layoutManager = nsView.layoutManager {
-                    layoutManager.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                    layoutManager.ensureLayout(for: textContainer)
-
-                    // Force immediate display update
-                    let usedRect = layoutManager.usedRect(for: textContainer)
-                    nsView.setNeedsDisplay(usedRect)
-                }
-                nsView.display()
-            }
 
             // Always apply font (comparing NSFont objects doesn't work reliably)
             // Use SAME font logic as CTLine rendering
@@ -350,9 +333,6 @@ struct ProfessionalTextCanvas: View {
                 }
             }
 
-            // Force immediate display update
-            textView.needsDisplay = true
-            textView.needsLayout = true
         }
 
         func makeCoordinator() -> Coordinator {
