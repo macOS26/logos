@@ -7,6 +7,7 @@ class MetalImageTileRenderer {
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
     private var textureCache: [String: MTLTexture] = [:]
+    private var compositedImageCache: [String: CGImage] = [:]  // Cache composited results
 
     init?() {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -138,6 +139,14 @@ class MetalImageTileRenderer {
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
         outputSize: CGSize
     ) -> CGImage? {
+        // Create cache key based on image, output size, and tile count
+        let cacheKey = "\(image.hashValue)-\(Int(outputSize.width))x\(Int(outputSize.height))-\(tiles.count)"
+
+        // Return cached result if available
+        if let cachedImage = compositedImageCache[cacheKey] {
+            return cachedImage
+        }
+
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let sourceTexture = getTexture(from: image, cacheKey: "\(image.hashValue)") else {
             return nil
@@ -231,17 +240,18 @@ class MetalImageTileRenderer {
         )
 
         renderEncoder.endEncoding()
-
-        // Synchronize GPU -> CPU for texture readback
-        let blitEncoder = commandBuffer.makeBlitCommandEncoder()
-        blitEncoder?.synchronize(resource: renderTarget)
-        blitEncoder?.endEncoding()
-
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
         // Convert Metal texture back to CGImage
-        return cgImage(from: renderTarget)
+        guard let resultImage = cgImage(from: renderTarget) else {
+            return nil
+        }
+
+        // Cache the composited result
+        compositedImageCache[cacheKey] = resultImage
+
+        return resultImage
     }
 
     /// Render image tiles to a Metal drawable (legacy - for direct screen rendering)
@@ -376,6 +386,7 @@ class MetalImageTileRenderer {
     /// Clear texture cache
     func clearCache() {
         textureCache.removeAll()
+        compositedImageCache.removeAll()
     }
 
     /// Create orthographic projection matrix for 2D rendering
