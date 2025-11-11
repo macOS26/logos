@@ -1143,10 +1143,13 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
-        // Scale bounds to screen coordinates
+        // Apply dragPreviewDelta to renderBounds if selected and dragging
+        let effectiveDragDelta = (isSelected && dragPreviewDelta != .zero) ? dragPreviewDelta : .zero
+
+        // Scale bounds to screen coordinates (include drag delta)
         let screenBounds = CGRect(
-            x: renderBounds.origin.x * zoomLevel + canvasOffset.x,
-            y: renderBounds.origin.y * zoomLevel + canvasOffset.y,
+            x: renderBounds.origin.x * zoomLevel + canvasOffset.x + effectiveDragDelta.x,
+            y: renderBounds.origin.y * zoomLevel + canvasOffset.y + effectiveDragDelta.y,
             width: renderBounds.width * zoomLevel,
             height: renderBounds.height * zoomLevel
         )
@@ -1189,6 +1192,21 @@ struct LayerCanvasView: View {
 
         guard let image = sourceImage else { return }
 
+        // Get actual image pixel dimensions
+        let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
+
+        // Calculate visible tiles
+        let tileSize = imageTileSize
+        let visibleTiles = ImageTileCache.shared.visibleTiles(
+            imageRect: screenBounds,
+            viewportRect: viewportRect,
+            imageSize: imagePixelSize,
+            canvasSize: renderBounds.size,
+            tileSize: tileSize
+        )
+
+        guard !visibleTiles.isEmpty else { return }
+
         // Draw using CGContext with tiling
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -1215,9 +1233,19 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Draw the cached downsampled image directly
-            // (No GPU tiling needed - image is already at correct quality)
-            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+            // Use Metal to composite tiles on GPU at FULL IMAGE RESOLUTION, then draw result
+            if let metalRenderer = Self.metalRenderer,
+               let compositedImage = metalRenderer.compositeImageTiles(
+                   image: image,
+                   tiles: visibleTiles,
+                   outputSize: imagePixelSize
+               ) {
+                // Draw the Metal-composited result in one draw call
+                cgContext.draw(compositedImage, in: CGRect(origin: .zero, size: renderBounds.size))
+            } else {
+                // Fallback: draw full image without tiling
+                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+            }
 
             cgContext.restoreGState()
         }
