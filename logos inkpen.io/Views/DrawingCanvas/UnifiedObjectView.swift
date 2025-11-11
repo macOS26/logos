@@ -1218,28 +1218,8 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Draw each tile by cropping the source image and drawing only that portion
-            // This eliminates hairlines by drawing exact tile boundaries without clipping
-            let scaleX = renderBounds.width / CGFloat(image.width)
-            let scaleY = renderBounds.height / CGFloat(image.height)
-
-            for tileInfo in visibleTiles {
-                let tileRect = tileInfo.rect
-
-                // Crop the source image to this tile's region
-                guard let tileImage = image.cropping(to: tileRect) else { continue }
-
-                // Calculate destination rect in canvas coordinates (no overlap needed!)
-                let destRect = CGRect(
-                    x: tileRect.minX * scaleX,
-                    y: tileRect.minY * scaleY,
-                    width: tileRect.width * scaleX,
-                    height: tileRect.height * scaleY
-                )
-
-                // Draw the cropped tile directly to its destination
-                cgContext.draw(tileImage, in: destRect)
-            }
+            // Draw the full image once - no tiling needed for correctness
+            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }
