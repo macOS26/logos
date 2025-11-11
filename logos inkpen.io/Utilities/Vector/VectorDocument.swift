@@ -259,6 +259,7 @@ final class VectorDocument: ObservableObject, Codable {
             .dropFirst() // Skip initial value
             .sink { [weak self] newQuality in
                 guard let self = self else { return }
+                Log.info("📊 Image quality changed: \(self.cachedImageQuality) → \(newQuality)", category: .general)
                 if self.cachedImageQuality != newQuality {
                     self.cachedImageQuality = newQuality
                     self.reloadAllImageCaches(quality: newQuality)
@@ -267,6 +268,8 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     func reloadAllImageCaches(quality: Double) {
+        Log.info("🔄 Reloading all image caches with quality: \(quality)", category: .general)
+        var imageCount = 0
         for (objID, obj) in snapshot.objects {
             var shape: VectorShape? = nil
 
@@ -281,6 +284,7 @@ final class VectorDocument: ObservableObject, Codable {
             // Reload CGImage with new quality
             if let imageData = shape.embeddedImageData {
                 shape.cachedCGImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality)
+                imageCount += 1
             } else if shape.linkedImagePath != nil {
                 // Resolve linked image path
                 if let bookmarkData = shape.linkedImageBookmarkData {
@@ -289,6 +293,7 @@ final class VectorDocument: ObservableObject, Codable {
                         let _ = url.startAccessingSecurityScopedResource()
                         defer { url.stopAccessingSecurityScopedResource() }
                         shape.cachedCGImage = ImageTileCache.shared.getSourceImage(from: url, quality: quality)
+                        imageCount += 1
                     }
                 }
             }
@@ -301,6 +306,7 @@ final class VectorDocument: ObservableObject, Codable {
             }
         }
 
+        Log.info("✅ Reloaded \(imageCount) image(s) at quality \(quality)", category: .general)
         objectWillChange.send()
     }
 
