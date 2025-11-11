@@ -144,7 +144,7 @@ struct ProfessionalTextCanvas: View {
             // Use live fontSize for font
             let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
             textView.font = liveFont
-            textView.textColor = NSColor.systemPink
+            textView.textColor = NSColor.clear  // DEBUG: Change to .systemPink to see NSTextView
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
@@ -221,7 +221,7 @@ struct ProfessionalTextCanvas: View {
                     let range = NSRange(location: 0, length: nsView.string.count)
                     nsView.textStorage?.beginEditing()
                     nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
-                    nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
+                    nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)  // DEBUG: Change to .systemPink
                     nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                     nsView.textStorage?.endEditing()
 
@@ -271,7 +271,7 @@ struct ProfessionalTextCanvas: View {
             let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,
-                .foregroundColor: NSColor.systemPink,
+                .foregroundColor: NSColor.clear,  // DEBUG: Change to .systemPink to see NSTextView
                 .paragraphStyle: paragraphStyle,
                 .kern: letterSpacing
             ]
@@ -280,7 +280,7 @@ struct ProfessionalTextCanvas: View {
                 let range = NSRange(location: 0, length: textView.string.count)
                 textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
+                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)  // DEBUG: Change to .systemPink
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
