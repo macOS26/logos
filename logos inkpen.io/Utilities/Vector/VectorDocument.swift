@@ -68,7 +68,9 @@ final class VectorDocument: ObservableObject, Codable {
 
     // Track last quality/tilesize used for caching
     private var cachedImageQuality: Double = 0.0
-    private var cancellableImageSettings: AnyCancellable? = nil
+    private var cachedImageTileSize: Int = 0
+    private var cancellableImageQuality: AnyCancellable? = nil
+    private var cancellableImageTileSize: AnyCancellable? = nil
 
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
@@ -255,7 +257,8 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     private func setupImageSettingsObserver() {
-        cancellableImageSettings = ApplicationSettings.shared.$imagePreviewQuality
+        // Watch quality changes
+        cancellableImageQuality = ApplicationSettings.shared.$imagePreviewQuality
             .dropFirst() // Skip initial value
             .sink { [weak self] newQuality in
                 guard let self = self else { return }
@@ -263,6 +266,19 @@ final class VectorDocument: ObservableObject, Codable {
                 if self.cachedImageQuality != newQuality {
                     self.cachedImageQuality = newQuality
                     self.reloadAllImageCaches(quality: newQuality)
+                }
+            }
+
+        // Watch tile size changes
+        cancellableImageTileSize = ApplicationSettings.shared.$imageTileSize
+            .dropFirst() // Skip initial value
+            .sink { [weak self] newTileSize in
+                guard let self = self else { return }
+                Log.info("📊 Image tile size changed: \(self.cachedImageTileSize) → \(newTileSize)", category: .general)
+                if self.cachedImageTileSize != newTileSize {
+                    self.cachedImageTileSize = newTileSize
+                    // Tile size change doesn't require reloading images, just triggers redraw
+                    self.objectWillChange.send()
                 }
             }
     }
