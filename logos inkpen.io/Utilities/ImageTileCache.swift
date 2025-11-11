@@ -61,6 +61,7 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
+            print("📊 ImageTileCache: Returning CACHED image for quality: \(quality)")
             return cached
         }
         cacheLock.unlock()
@@ -77,6 +78,8 @@ class ImageTileCache {
 
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
+
+        print("📊 ImageTileCache [Data]: original=\(width)×\(height), quality=\(quality), target=\(Int(targetPixelSize))px")
 
         // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
@@ -106,6 +109,7 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
+            print("📊 ImageTileCache: Returning CACHED image for quality: \(quality)")
             return cached
         }
         cacheLock.unlock()
@@ -122,6 +126,8 @@ class ImageTileCache {
 
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
+
+        print("📊 ImageTileCache [URL]: original=\(width)×\(height), quality=\(quality), target=\(Int(targetPixelSize))px")
 
         // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
