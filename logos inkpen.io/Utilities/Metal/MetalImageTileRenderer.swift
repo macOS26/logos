@@ -74,7 +74,8 @@ class MetalImageTileRenderer {
         do {
             let texture = try textureLoader.newTexture(cgImage: cgImage, options: [
                 .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-                .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue)
+                .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
+                .SRGB: NSNumber(value: false)
             ])
             textureCache[cacheKey] = texture
             return texture
@@ -313,7 +314,7 @@ class MetalImageTileRenderer {
             bitsPerComponent: 8,
             bitsPerPixel: 32,
             bytesPerRow: rowBytes,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: bitmapInfo,
             provider: providerRef,
             decode: nil,
