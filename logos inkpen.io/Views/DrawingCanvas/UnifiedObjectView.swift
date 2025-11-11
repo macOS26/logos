@@ -1369,7 +1369,8 @@ struct IsolatedLayerView: View {
                     dragPreviewTrigger: dragPreviewTrigger,
                     viewMode: viewMode,
                     letterSpacingDelta: letterSpacingDelta,
-                    lineHeightDelta: lineHeightDelta
+                    lineHeightDelta: lineHeightDelta,
+                    fontSizeDelta: fontSizeDelta
                 )
                 .allowsHitTesting(document.viewState.currentTool == .font)
             }

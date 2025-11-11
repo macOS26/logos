@@ -13,8 +13,9 @@ struct ProfessionalTextCanvas: View {
     let viewMode: ViewMode
     let letterSpacingDelta: Double?
     let lineHeightDelta: Double?
+    let fontSizeDelta: Double?
 
-    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil) {
+    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, fontSizeDelta: Double? = nil) {
         self.document = document
         self.textObjectID = textObjectID
         self.zoomLevel = zoomLevel
@@ -24,6 +25,7 @@ struct ProfessionalTextCanvas: View {
         self.viewMode = viewMode
         self.letterSpacingDelta = letterSpacingDelta
         self.lineHeightDelta = lineHeightDelta
+        self.fontSizeDelta = fontSizeDelta
 
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
@@ -34,15 +36,17 @@ struct ProfessionalTextCanvas: View {
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
         let position = textObject.position
-        // Use delta during drag, otherwise use actual value
+        // Use delta during drag, otherwise use actual value (secret formula!)
         let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
         let lineHeight = lineHeightDelta ?? textObject.typography.lineHeight
+        let fontSize = fontSizeDelta ?? textObject.typography.fontSize
 
         TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
             letterSpacing: letterSpacing,
-            lineHeight: lineHeight
+            lineHeight: lineHeight,
+            fontSize: fontSize
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -95,6 +99,7 @@ struct ProfessionalTextCanvas: View {
         let viewMode: ViewMode
         let letterSpacing: CGFloat  // Direct value, not from @ObservedObject
         let lineHeight: CGFloat
+        let fontSize: CGFloat
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -123,7 +128,9 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            textView.font = viewModel.selectedFont
+            // Use live fontSize for font
+            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
+            textView.font = liveFont
             textView.textColor = NSColor.systemPink
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
@@ -193,8 +200,10 @@ struct ProfessionalTextCanvas: View {
                 nsView.display()
             }
 
-            if nsView.font != viewModel.selectedFont {
-                nsView.font = viewModel.selectedFont
+            // Check if font OR fontSize changed
+            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
+            if nsView.font != liveFont {
+                nsView.font = liveFont
                 if nsView.string.count > 0 {
                     let range = NSRange(location: 0, length: nsView.string.count)
                     nsView.textStorage?.beginEditing()
@@ -246,8 +255,9 @@ struct ProfessionalTextCanvas: View {
             paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
 
+            let liveFont = NSFont(name: viewModel.selectedFont.fontName, size: fontSize) ?? viewModel.selectedFont
             textView.typingAttributes = [
-                .font: textView.font ?? viewModel.selectedFont,
+                .font: textView.font ?? liveFont,
                 .foregroundColor: NSColor.systemPink,
                 .paragraphStyle: paragraphStyle,
                 .kern: letterSpacing
