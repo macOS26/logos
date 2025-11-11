@@ -231,6 +231,12 @@ class MetalImageTileRenderer {
         )
 
         renderEncoder.endEncoding()
+
+        // Synchronize GPU -> CPU for texture readback
+        let blitEncoder = commandBuffer.makeBlitCommandEncoder()
+        blitEncoder?.synchronize(resource: renderTarget)
+        blitEncoder?.endEncoding()
+
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
