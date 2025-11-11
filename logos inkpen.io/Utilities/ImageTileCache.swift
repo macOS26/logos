@@ -78,6 +78,7 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
+        // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -85,7 +86,9 @@ class ImageTileCache {
             kCGImageSourceShouldCache: false
         ]
 
-        guard let downsampledImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+        let resultImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
+
+        guard let downsampledImage = resultImage else {
             return nil
         }
 
@@ -120,6 +123,7 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
+        // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -127,7 +131,9 @@ class ImageTileCache {
             kCGImageSourceShouldCache: false
         ]
 
-        guard let downsampledImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+        let resultImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
+
+        guard let downsampledImage = resultImage else {
             return nil
         }
 
