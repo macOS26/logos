@@ -85,15 +85,12 @@ struct DocumentBasedMainView: View {
                             .onChange(of: imagePreviewQuality) { _, newQuality in
                                 // Clear cached images from all shapes when quality changes
                                 for (objID, obj) in document.snapshot.objects {
-                                    var updated = obj
-                                    if case .image(var shape) = obj.objectType {
+                                    if case .image(var shape) = obj.objectType, shape.cachedCGImage != nil {
                                         shape.cachedCGImage = nil
-                                        updated = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .image(shape))
-                                        document.snapshot.objects[objID] = updated
-                                    } else if case .shape(var shape) = obj.objectType {
+                                        document.snapshot.objects[objID] = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .image(shape))
+                                    } else if case .shape(var shape) = obj.objectType, shape.cachedCGImage != nil {
                                         shape.cachedCGImage = nil
-                                        updated = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .shape(shape))
-                                        document.snapshot.objects[objID] = updated
+                                        document.snapshot.objects[objID] = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .shape(shape))
                                     }
                                 }
                             }
