@@ -26,13 +26,16 @@ struct ProfessionalTextCanvas: View {
     }
 
     var body: some View {
-        let bounds = viewModel.textObject.bounds
-        let position = viewModel.textObject.position
+        // Read from document directly, not viewModel
+        let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
+        let bounds = textObject.bounds
+        let position = textObject.position
+        let letterSpacing = textObject.typography.letterSpacing
 
         TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
-            letterSpacing: viewModel.textObject.typography.letterSpacing
+            letterSpacing: letterSpacing
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -40,7 +43,7 @@ struct ProfessionalTextCanvas: View {
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * zoomLevel : 0,
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
-        .id("\(dragPreviewTrigger)-\(viewModel.textObject.typography.letterSpacing)")
+        .id("\(dragPreviewTrigger)-\(letterSpacing)")
         .onKeyPress(action: handleKeyPress)
     }
 
