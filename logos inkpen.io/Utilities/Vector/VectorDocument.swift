@@ -232,6 +232,7 @@ final class VectorDocument: ObservableObject, Codable {
 
     private func setupViewStateForwarding() {
         // View state changes handled via direct property updates
+        // Do NOT forward objectWillChange - causes massive re-renders
     }
 
     private func refreshSystemLayers() {
