@@ -11,8 +11,9 @@ struct ProfessionalTextCanvas: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
+    let letterSpacingDelta: Double?
 
-    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
+    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil) {
         self.document = document
         self.textObjectID = textObjectID
         self.zoomLevel = zoomLevel
@@ -20,6 +21,7 @@ struct ProfessionalTextCanvas: View {
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
         self.viewMode = viewMode
+        self.letterSpacingDelta = letterSpacingDelta
 
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
@@ -30,7 +32,8 @@ struct ProfessionalTextCanvas: View {
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
         let position = textObject.position
-        let letterSpacing = textObject.typography.letterSpacing
+        // Use delta during drag, otherwise use actual value
+        let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
 
         TextViewRepresentable(
             viewModel: viewModel,

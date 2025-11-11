@@ -123,7 +123,8 @@
       "Bash(git restore:*)",
       "Bash(git log:*)",
       "Bash(python3:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:stackoverflow.com)"
     ],
     "deny": [],
     "ask": []
