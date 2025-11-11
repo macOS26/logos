@@ -221,11 +221,7 @@ struct InkpenMigrator {
         document.snapshot.formatVersion = "1.0.27"
 
         // Migrate view state
-        if let canvasOffset = legacy.canvasOffset, canvasOffset.count >= 2 {
-        }
-
-        if let _ = legacy.zoomLevel {
-        }
+        // Note: zoom/canvas offset no longer saved - managed as @State in view
 
         // Set layer expansion state: collapse layers with > 20 objects
         for layer in migratedLayers {
