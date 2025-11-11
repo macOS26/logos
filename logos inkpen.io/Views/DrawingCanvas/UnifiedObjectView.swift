@@ -1221,12 +1221,12 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Use Metal to composite tiles on GPU, then draw result once
+            // Use Metal to composite tiles on GPU at FULL IMAGE RESOLUTION, then draw result
             if let metalRenderer = Self.metalRenderer,
                let compositedImage = metalRenderer.compositeImageTiles(
                    image: image,
                    tiles: visibleTiles,
-                   outputSize: renderBounds.size
+                   outputSize: imagePixelSize
                ) {
                 // Draw the Metal-composited result in one draw call
                 cgContext.draw(compositedImage, in: CGRect(origin: .zero, size: renderBounds.size))
