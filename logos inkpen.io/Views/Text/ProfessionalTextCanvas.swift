@@ -31,7 +31,8 @@ struct ProfessionalTextCanvas: View {
 
         TextViewRepresentable(
             viewModel: viewModel,
-            viewMode: viewMode
+            viewMode: viewMode,
+            letterSpacing: viewModel.textObject.typography.letterSpacing
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -95,6 +96,7 @@ struct ProfessionalTextCanvas: View {
         @ObservedObject var viewModel: ProfessionalTextViewModel
         @State var isUpdatingFromTyping: Bool = false
         let viewMode: ViewMode
+        let letterSpacing: CGFloat  // Direct value, not from @ObservedObject
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -135,7 +137,7 @@ struct ProfessionalTextCanvas: View {
             if !viewModel.text.isEmpty {
                 let range = NSRange(location: 0, length: viewModel.text.count)
                 textView.textStorage?.beginEditing()
-                textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
                 // Invalidate layout to force redraw with kern attribute
@@ -175,14 +177,11 @@ struct ProfessionalTextCanvas: View {
                 nsView.string = viewModel.text
             }
 
-            // READ letterSpacing directly so SwiftUI detects dependency
-            let currentLetterSpacing = viewModel.textObject.typography.letterSpacing
-
-            // Apply letter spacing to entire text (ALWAYS, not just on change)
+            // Apply letter spacing from direct property (SwiftUI detects this!)
             if nsView.string.count > 0 {
                 let range = NSRange(location: 0, length: nsView.string.count)
                 nsView.textStorage?.beginEditing()
-                nsView.textStorage?.addAttribute(.kern, value: currentLetterSpacing, range: range)
+                nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 nsView.textStorage?.endEditing()
 
                 if let textContainer = nsView.textContainer, let layoutManager = nsView.layoutManager {
@@ -203,7 +202,7 @@ struct ProfessionalTextCanvas: View {
                     nsView.textStorage?.beginEditing()
                     nsView.textStorage?.addAttribute(.font, value: viewModel.selectedFont, range: range)
                     nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
-                    nsView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                    nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                     nsView.textStorage?.endEditing()
 
                     if let textContainer = nsView.textContainer {
@@ -253,7 +252,7 @@ struct ProfessionalTextCanvas: View {
                 .font: textView.font ?? viewModel.selectedFont,
                 .foregroundColor: NSColor.systemPink,
                 .paragraphStyle: paragraphStyle,
-                .kern: viewModel.textObject.typography.letterSpacing
+                .kern: letterSpacing
             ]
 
             if textView.string.count > 0 {
@@ -261,7 +260,7 @@ struct ProfessionalTextCanvas: View {
                 textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                 textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
-                textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
+                textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
                 // Force immediate layout update
