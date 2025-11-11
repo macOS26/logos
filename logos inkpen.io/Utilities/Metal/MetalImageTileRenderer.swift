@@ -63,10 +63,34 @@ class MetalImageTileRenderer {
             return cached
         }
 
+        // Convert CGImage to consistent color space (sRGB) before loading into Metal
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: cgImage.width,
+            height: cgImage.height,
+            bitsPerComponent: 8,
+            bytesPerRow: cgImage.width * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            print("❌ Failed to create CGContext for color space conversion")
+            return nil
+        }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
+
+        guard let convertedImage = context.makeImage() else {
+            print("❌ Failed to convert image to consistent color space")
+            return nil
+        }
+
         let textureLoader = MTKTextureLoader(device: device)
 
         do {
-            let texture = try textureLoader.newTexture(cgImage: cgImage, options: [
+            let texture = try textureLoader.newTexture(cgImage: convertedImage, options: [
                 .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
                 .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
                 .SRGB: NSNumber(value: false)
