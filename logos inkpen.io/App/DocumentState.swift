@@ -24,9 +24,9 @@ class DocumentState: ObservableObject {
     @Published var canExpandWarpObject = false
     @Published var canEmbedLinkedImages = false
 
-    private var cancellables = Set<AnyCancellable>()
     private var isTerminating = false
     private var pasteboardChangeCount: Int = 0
+    private var pasteboardTimer: Timer?
     private var missingImageObserver: NSObjectProtocol?
     private var promptedMissingImages = Set<UUID>()  // Track which images we've already prompted for
 
@@ -81,12 +81,11 @@ class DocumentState: ObservableObject {
         if let observer = missingImageObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        cancellables.removeAll()
+        pasteboardTimer?.invalidate()
+        pasteboardTimer = nil
     }
 
     func setDocument(_ document: VectorDocument) {
-        cancellables.removeAll()
-
         self.document = document
         updateAllStates()
 
@@ -96,13 +95,11 @@ class DocumentState: ObservableObject {
     }
 
     func cleanup() {
-        cancellables.removeAll()
         document = nil
     }
 
     func forceCleanup() {
         isTerminating = true
-        cancellables.removeAll()
 
         document = nil
 
@@ -125,29 +122,18 @@ class DocumentState: ObservableObject {
     }
 
     private func startPasteboardMonitoring() {
-        Timer.publish(every: 0.5, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self, !self.isTerminating else { return }
-                let currentChangeCount = NSPasteboard.general.changeCount
-                if currentChangeCount != self.pasteboardChangeCount {
-                    self.pasteboardChangeCount = currentChangeCount
-                    self.canPaste = ClipboardManager.shared.canPaste()
-                }
+        pasteboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self = self, !self.isTerminating else { return }
+            let currentChangeCount = NSPasteboard.general.changeCount
+            if currentChangeCount != self.pasteboardChangeCount {
+                self.pasteboardChangeCount = currentChangeCount
+                self.canPaste = ClipboardManager.shared.canPaste()
             }
-            .store(in: &cancellables)
+        }
     }
 
     private func setupDocumentObserversAsync() async {
-        guard let document = document else { return }
-
-        document.objectWillChange.sink { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.updateAllStates()
-            }
-        }
-        .store(in: &cancellables)
+        // Document observation handled via direct property updates
     }
 
     private func updateAllStates() {
