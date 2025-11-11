@@ -68,7 +68,7 @@ class MetalImageTileRenderer {
         }
     }
 
-    /// Render image tiles to an offscreen texture and return as CGImage
+    /// Render image tiles to an offscreen texture and return as CGImage using INSTANCED RENDERING
     func compositeImageTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -112,18 +112,58 @@ class MetalImageTileRenderer {
         // Calculate scale factors
         let scaleX = Float(outputSize.width / CGFloat(image.width))
         let scaleY = Float(outputSize.height / CGFloat(image.height))
+        let imageWidth = Float(image.width)
+        let imageHeight = Float(image.height)
 
-        // Render each tile as a quad
-        for (_, tileRect) in tiles {
-            renderTileQuad(
-                encoder: renderEncoder,
-                tileRect: tileRect,
-                imageSize: CGSize(width: image.width, height: image.height),
-                outputSize: outputSize,
-                scaleX: scaleX,
-                scaleY: scaleY
-            )
+        // Build instance data for ALL tiles (one quad per tile)
+        var vertices: [Float] = []
+        var indices: [UInt16] = []
+
+        for (index, (_, tileRect)) in tiles.enumerated() {
+            let baseVertex = UInt16(index * 4)
+
+            // Calculate destination rect
+            let destX = Float(tileRect.minX) * scaleX
+            let destY = Float(tileRect.minY) * scaleY
+            let destW = Float(tileRect.width) * scaleX
+            let destH = Float(tileRect.height) * scaleY
+
+            // Texture coordinates (normalized 0-1)
+            let texMinX = Float(tileRect.minX / CGFloat(imageWidth))
+            let texMinY = Float(tileRect.minY / CGFloat(imageHeight))
+            let texMaxX = Float(tileRect.maxX / CGFloat(imageWidth))
+            let texMaxY = Float(tileRect.maxY / CGFloat(imageHeight))
+
+            // Quad vertices for this tile (position + texCoord)
+            vertices.append(contentsOf: [
+                destX,        destY,        texMinX, texMinY,  // Bottom-left
+                destX + destW, destY,        texMaxX, texMinY,  // Bottom-right
+                destX,        destY + destH, texMinX, texMaxY,  // Top-left
+                destX + destW, destY + destH, texMaxX, texMaxY   // Top-right
+            ])
+
+            // Two triangles per tile
+            indices.append(contentsOf: [
+                baseVertex + 0, baseVertex + 1, baseVertex + 2,
+                baseVertex + 2, baseVertex + 1, baseVertex + 3
+            ])
         }
+
+        // Upload vertex and index buffers to GPU
+        guard let vertexBuffer = device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Float>.size, options: []),
+              let indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: []) else {
+            return nil
+        }
+
+        // ONE DRAW CALL for ALL tiles
+        renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        renderEncoder.drawIndexedPrimitives(
+            type: .triangle,
+            indexCount: indices.count,
+            indexType: .uint16,
+            indexBuffer: indexBuffer,
+            indexBufferOffset: 0
+        )
 
         renderEncoder.endEncoding()
         commandBuffer.commit()
