@@ -82,6 +82,21 @@ struct DocumentBasedMainView: View {
                             .onChange(of: geometry.size) { _, newSize in
                                 viewportSize = newSize
                             }
+                            .onChange(of: imagePreviewQuality) { _, newQuality in
+                                // Clear cached images from all shapes when quality changes
+                                for (objID, obj) in document.snapshot.objects {
+                                    var updated = obj
+                                    if case .image(var shape) = obj.objectType {
+                                        shape.cachedCGImage = nil
+                                        updated = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .image(shape))
+                                        document.snapshot.objects[objID] = updated
+                                    } else if case .shape(var shape) = obj.objectType {
+                                        shape.cachedCGImage = nil
+                                        updated = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: .shape(shape))
+                                        document.snapshot.objects[objID] = updated
+                                    }
+                                }
+                            }
                             .onAppear {
                                 viewportSize = geometry.size
                             }
