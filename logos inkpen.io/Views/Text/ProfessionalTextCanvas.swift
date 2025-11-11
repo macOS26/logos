@@ -125,7 +125,7 @@ struct ProfessionalTextCanvas: View {
             textView.delegate = context.coordinator
             textView.string = viewModel.text
             textView.font = viewModel.selectedFont
-            textView.textColor = NSColor.clear
+            textView.textColor = NSColor.systemPink
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
@@ -166,7 +166,7 @@ struct ProfessionalTextCanvas: View {
                 if nsView.string.count > 0 {
                     let range = NSRange(location: 0, length: nsView.string.count)
                     nsView.textStorage?.addAttribute(.font, value: viewModel.selectedFont, range: range)
-                    nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)
+                    nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
                     if let textContainer = nsView.textContainer {
                         nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                         nsView.layoutManager?.ensureLayout(for: textContainer)
@@ -212,7 +212,7 @@ struct ProfessionalTextCanvas: View {
 
             textView.typingAttributes = [
                 .font: textView.font ?? viewModel.selectedFont,
-                .foregroundColor: NSColor.clear,
+                .foregroundColor: NSColor.systemPink,
                 .paragraphStyle: paragraphStyle,
                 .kern: viewModel.textObject.typography.letterSpacing
             ]
@@ -220,7 +220,7 @@ struct ProfessionalTextCanvas: View {
             if textView.string.count > 0 {
                 let range = NSRange(location: 0, length: textView.string.count)
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)
+                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.systemPink, range: range)
                 textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
             }
 
