@@ -243,12 +243,16 @@ struct ProfessionalTextCanvas: View {
                 textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
-                textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+                // Force immediate layout update
+                if let textContainer = textView.textContainer {
+                    textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                    textView.layoutManager?.ensureLayout(for: textContainer)
+                }
             }
 
-            textView.textContainer.flatMap { textView.layoutManager?.ensureLayout(for: $0) }
+            // Force immediate display update
             textView.needsDisplay = true
+            textView.needsLayout = true
         }
 
         func makeCoordinator() -> Coordinator {
