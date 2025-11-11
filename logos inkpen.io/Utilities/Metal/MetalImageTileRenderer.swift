@@ -140,9 +140,8 @@ class MetalImageTileRenderer {
         outputSize: CGSize,
         shapeID: UUID
     ) -> CGImage? {
-        // Create cache key based on shape UUID and output size
-        // Use shape UUID so same image data across shapes shares cache entry
-        let cacheKey = "\(shapeID)-\(Int(outputSize.width))x\(Int(outputSize.height))"
+        // Cache key is just the shape UUID - image dimensions already determined by UUID + quality
+        let cacheKey = shapeID.uuidString
 
         // Return cached result if available
         if let cachedImage = compositedImageCache[cacheKey] {
