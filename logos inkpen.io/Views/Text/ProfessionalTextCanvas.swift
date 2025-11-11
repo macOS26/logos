@@ -213,13 +213,15 @@ struct ProfessionalTextCanvas: View {
             textView.typingAttributes = [
                 .font: textView.font ?? viewModel.selectedFont,
                 .foregroundColor: NSColor.clear,
-                .paragraphStyle: paragraphStyle
+                .paragraphStyle: paragraphStyle,
+                .kern: viewModel.textObject.typography.letterSpacing
             ]
 
             if textView.string.count > 0 {
                 let range = NSRange(location: 0, length: textView.string.count)
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                 textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)
+                textView.textStorage?.addAttribute(.kern, value: viewModel.textObject.typography.letterSpacing, range: range)
             }
 
             textView.textContainer.flatMap { textView.layoutManager?.ensureLayout(for: $0) }
