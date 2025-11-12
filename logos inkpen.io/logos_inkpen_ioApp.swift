@@ -7,8 +7,8 @@ struct logos_inken_ioApp: App {
     private var appState = AppState.shared
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
-    @State private var globalImagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0
-    @State private var globalImageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
+    @State private var globalImagePreviewQuality: Double = ApplicationSettings.shared.imagePreviewQuality
+    @State private var globalImageTileSize: Int = ApplicationSettings.shared.imageTileSize
 
     init() {
         UserDefaults.standard.register(defaults: [
@@ -54,6 +54,15 @@ struct logos_inken_ioApp: App {
                         openWindow: { id in openWindow(id: id) },
                         dismissWindow: { id in dismissWindow(id: id) }
                     )
+                    // Sync state with ApplicationSettings
+                    globalImagePreviewQuality = ApplicationSettings.shared.imagePreviewQuality
+                    globalImageTileSize = ApplicationSettings.shared.imageTileSize
+                }
+                .onReceive(ApplicationSettings.shared.$imagePreviewQuality) { newValue in
+                    globalImagePreviewQuality = newValue
+                }
+                .onReceive(ApplicationSettings.shared.$imageTileSize) { newValue in
+                    globalImageTileSize = newValue
                 }
                 .background(WindowAccessor { window in
                     if let window = window {
