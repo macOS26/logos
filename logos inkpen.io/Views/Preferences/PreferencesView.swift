@@ -58,12 +58,12 @@ struct PreferencesView: View {
                             Spacer()
                         }
 
-                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
-                            .onChange(of: imageQuality) { oldValue, newValue in
-                                guard oldValue != newValue else { return }
-                                ApplicationSettings.shared.imagePreviewQuality = newValue
+                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05, onEditingChanged: { editing in
+                            if !editing {
+                                ApplicationSettings.shared.imagePreviewQuality = imageQuality
                                 ImageTileCache.shared.clearCache()
                             }
+                        })
 
                         Text("Controls image resolution in canvas. Lower values use less memory.")
                             .font(.caption)
@@ -102,12 +102,12 @@ struct PreferencesView: View {
                         Slider(value: Binding(
                             get: { Double(tileSize) },
                             set: { tileSize = Int($0) }
-                        ), in: 32...1024, step: 32)
-                            .onChange(of: tileSize) { oldValue, newValue in
-                                guard oldValue != newValue else { return }
-                                ApplicationSettings.shared.imageTileSize = newValue
+                        ), in: 32...1024, step: 32, onEditingChanged: { editing in
+                            if !editing {
+                                ApplicationSettings.shared.imageTileSize = tileSize
                                 ImageTileCache.shared.clearCache()
                             }
+                        })
 
                         Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
                             .font(.caption)
