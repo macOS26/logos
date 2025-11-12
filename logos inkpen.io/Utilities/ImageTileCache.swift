@@ -61,11 +61,11 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
-            print("✅ ImageTileCache.getSourceImage [Data]: CACHE HIT for key=\(imageKey)")
+            // print("✅ ImageTileCache.getSourceImage [Data]: CACHE HIT for key=\(imageKey)")
             return cached
         }
         cacheLock.unlock()
-        print("❌ ImageTileCache.getSourceImage [Data]: CACHE MISS for key=\(imageKey), creating new image")
+        // print("❌ ImageTileCache.getSourceImage [Data]: CACHE MISS for key=\(imageKey), creating new image")
 
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
@@ -111,11 +111,11 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
-            print("✅ ImageTileCache.getSourceImage [URL]: CACHE HIT for key=\(imageKey)")
+            // print("✅ ImageTileCache.getSourceImage [URL]: CACHE HIT for key=\(imageKey)")
             return cached
         }
         cacheLock.unlock()
-        print("❌ ImageTileCache.getSourceImage [URL]: CACHE MISS for key=\(imageKey), creating new image")
+        // print("❌ ImageTileCache.getSourceImage [URL]: CACHE MISS for key=\(imageKey), creating new image")
 
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil

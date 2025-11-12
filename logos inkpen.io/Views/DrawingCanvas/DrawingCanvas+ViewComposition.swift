@@ -107,10 +107,21 @@ extension DrawingCanvas {
             }
         }
 
-        bezierAnchorPoints()
-        bezierControlHandles()
-        bezierClosePathHint()
-        bezierContinuePathHint()
+        if isBezierDrawing && document.viewState.currentTool == .bezierPen {
+            ProfessionalBezierView(
+                document: document,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset,
+                bezierPoints: bezierPoints,
+                bezierHandles: bezierHandles,
+                activeBezierPointIndex: activeBezierPointIndex,
+                showClosePathHint: showClosePathHint,
+                showContinuePathHint: showContinuePathHint,
+                closePathHintLocation: closePathHintLocation,
+                continuePathHintLocation: continuePathHintLocation
+            )
+            bezierDrawingDimensionsOverlay()
+        }
 
         if !(document.viewState.currentTool == .bezierPen && isBezierDrawing) &&
            !isCornerRadiusEditMode {
@@ -127,10 +138,6 @@ extension DrawingCanvas {
                 liveScaleTransform: $liveScaleTransform,
                 liveScaleDimensions: $liveScaleDimensions
             )
-        }
-
-        if isBezierDrawing && document.viewState.currentTool == .bezierPen {
-            bezierDrawingDimensionsOverlay()
         }
 
         if document.viewState.currentTool == .directSelection || document.viewState.currentTool == .convertAnchorPoint || document.viewState.currentTool == .penPlusMinus {
@@ -261,15 +268,11 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
-        ZStack {
-            // Render layers with background fills for special layers
-            ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
-                if layer.isVisible {
-                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
-                }
+        // Render layers with background fills for special layers
+        ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
+            if layer.isVisible {
+                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
             }
-
-            canvasOverlays(geometry: geometry)
         }
     }
 

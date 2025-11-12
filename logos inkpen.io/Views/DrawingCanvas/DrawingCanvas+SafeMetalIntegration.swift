@@ -205,6 +205,8 @@ extension DrawingCanvas {
 
             canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
 
+            canvasOverlays(geometry: geometry)
+
             pressureSensitiveOverlay(geometry: geometry)
 
             CanvasCursorOverlayView(

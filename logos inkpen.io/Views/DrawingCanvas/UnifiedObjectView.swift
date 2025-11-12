@@ -159,7 +159,6 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        let _ = Self._printChanges()
         // let _ = print("🔵 LayerCanvasView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         Canvas { context, size in
 //            _ = objectUpdateTrigger
