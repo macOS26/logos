@@ -42,7 +42,6 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func rubberBandFillPreview(geometry: GeometryProxy) -> some View {
         if let mouseLocation = currentMouseLocation,
-           let currentBezierPath = bezierPath,
            bezierPoints.count >= 2 {
 
             let rawCanvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
@@ -56,8 +55,31 @@ extension DrawingCanvas {
                 rawCanvasMouseLocation
 
             Path { path in
-                addPathElements(currentBezierPath.elements, to: &path)
+                // Build path EXACTLY like ProfessionalBezierView does
+                path.move(to: firstPointLocation)
 
+                for i in 1..<bezierPoints.count {
+                    let currentPoint = bezierPoints[i]
+                    let previousPoint = bezierPoints[i - 1]
+                    let previousHandles = liveBezierHandles[i - 1] ?? bezierHandles[i - 1]
+                    let currentHandles = liveBezierHandles[i] ?? bezierHandles[i]
+                    let hasOutgoingHandle = previousHandles?.control2 != nil
+                    let hasIncomingHandle = currentHandles?.control1 != nil
+
+                    if hasOutgoingHandle || hasIncomingHandle {
+                        let control1 = previousHandles?.control2 ?? VectorPoint(previousPoint.x, previousPoint.y)
+                        let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
+                        path.addCurve(
+                            to: CGPoint(x: currentPoint.x, y: currentPoint.y),
+                            control1: CGPoint(x: control1.x, y: control1.y),
+                            control2: CGPoint(x: control2.x, y: control2.y)
+                        )
+                    } else {
+                        path.addLine(to: CGPoint(x: currentPoint.x, y: currentPoint.y))
+                    }
+                }
+
+                // Add segment from last point to mouse
                 let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
                 if let lastPointHandles = lastPointHandles,
                    let lastControl2 = lastPointHandles.control2 {
@@ -71,7 +93,7 @@ extension DrawingCanvas {
                     path.addLine(to: canvasMouseLocation)
                 }
 
-                // Always use curve for closing segment if first point has control1 handle
+                // Add segment from mouse back to first point
                 let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
                 if let firstPointHandles = firstPointHandles,
                    let firstControl1 = firstPointHandles.control1 {
