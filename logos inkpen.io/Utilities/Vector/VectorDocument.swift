@@ -39,6 +39,9 @@ final class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier
     let changeNotifier = DocumentChangeNotifier()
 
+    // Combine subscriptions for nested ObservableObjects
+    private var cancellables = Set<AnyCancellable>()
+
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
     var currentDragOffset: CGPoint = .zero
@@ -231,8 +234,9 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     private func setupViewStateForwarding() {
-        // View state changes handled via direct property updates
-        // Do NOT forward objectWillChange - causes massive re-renders
+        // DO NOT forward objectWillChange from nested objects - causes massive re-renders!
+        // These objects update frequently (60fps during drag) and should NOT trigger full document updates
+        // Views that need these updates should observe them directly
     }
 
     private func refreshSystemLayers() {
