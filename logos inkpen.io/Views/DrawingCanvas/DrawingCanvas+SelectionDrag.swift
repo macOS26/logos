@@ -284,19 +284,22 @@ extension DrawingCanvas {
             document.updateTransformPanelValues()
             // Note: Layer triggers handled by ShapeModificationCommand
 
+            // Batch all state cleanup to avoid multiple updates per frame
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
-            document.currentDragOffset = .zero
-            document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
-
-            // Clear layer preview opacities
             layerPreviewOpacities.removeAll()
+
+            // Defer document property updates to next frame to avoid "multiple updates per frame" warning
+            DispatchQueue.main.async {
+                self.document.currentDragOffset = .zero
+                self.document.dragPreviewCoordinates = .zero
+                self.document.cachedSelectionBounds = nil
+                self.document.activeLayerIndexDuringDrag = nil
+            }
 
         } else {
             liveDragOffset = .zero
