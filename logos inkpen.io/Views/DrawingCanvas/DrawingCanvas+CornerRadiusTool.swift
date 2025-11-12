@@ -5,13 +5,13 @@ extension DrawingCanvas {
     @ViewBuilder
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
         if document.viewState.currentTool == .cornerRadius,
-           let selectedShape = getSelectedRectangleShape() {
-            let boundsToUse = getProperShapeBounds(for: selectedShape)
-            let corners = getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)
+           let currentShape = getSelectedRectangleShape() {
+            let boundsToUse = getProperShapeBounds(for: currentShape)
+            let corners = getCornerScreenPositions(bounds: boundsToUse, shape: currentShape, geometry: geometry)
 
-            // Show live preview during drag
+            // Show live preview during drag using CURRENT shape position
             if isDraggingCorner && !liveCornerRadii.isEmpty {
-                cornerRadiusLivePreview(shape: selectedShape, geometry: geometry)
+                cornerRadiusLivePreview(shape: currentShape, geometry: geometry)
             }
 
             ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
@@ -19,11 +19,11 @@ extension DrawingCanvas {
                     cornerIndex: index,
                     position: (isDraggingCorner && draggedCornerIndex == index)
                         ? currentMousePosition
-                        : getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)[index],
+                        : getCornerScreenPositions(bounds: boundsToUse, shape: currentShape, geometry: geometry)[index],
                     radius: isDraggingCorner && !liveCornerRadii.isEmpty
                         ? (liveCornerRadii[safe: index] ?? 0.0)
-                        : (selectedShape.cornerRadii[safe: index] ?? 0.0),
-                    shape: selectedShape,
+                        : (currentShape.cornerRadii[safe: index] ?? 0.0),
+                    shape: currentShape,
                     geometry: geometry
                 )
             }
@@ -94,17 +94,20 @@ extension DrawingCanvas {
         shape: VectorShape,
         geometry: GeometryProxy
     ) {
+        // Always get the CURRENT shape from document
+        guard let currentShape = getSelectedRectangleShape() else { return }
+
         if !isDraggingCorner {
             isDraggingCorner = true
             draggedCornerIndex = cornerIndex
             cornerDragStart = value.startLocation
-            initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
+            initialCornerRadius = currentShape.cornerRadii[safe: cornerIndex] ?? 0.0
 
-            sharedOriginalShape = shape
+            sharedOriginalShape = currentShape
 
             // Capture original corner radii for live state
-            originalCornerRadii = shape.cornerRadii
-            liveCornerRadii = shape.cornerRadii
+            originalCornerRadii = currentShape.cornerRadii
+            liveCornerRadii = currentShape.cornerRadii
             while liveCornerRadii.count < 4 {
                 liveCornerRadii.append(0.0)
             }
@@ -134,7 +137,7 @@ extension DrawingCanvas {
 
         let tentativeRadius = initialCornerRadius + diagonalMovement
 
-        if let originalBounds = shape.originalBounds {
+        if let originalBounds = currentShape.originalBounds {
             let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
