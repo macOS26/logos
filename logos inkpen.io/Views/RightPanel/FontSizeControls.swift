@@ -315,7 +315,13 @@ struct FontSizeControls: View {
     private func updateLetterSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLetterSpacingState = newSpacing
 
+        var affectedLayerIndices = Set<Int>()
+
         for textID in selectedObjectIDs {
+            if let object = document.snapshot.objects[textID] {
+                affectedLayerIndices.insert(object.layerIndex)
+            }
+
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -325,5 +331,7 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
+
+        document.triggerLayerUpdates(for: affectedLayerIndices)
     }
 }
