@@ -236,7 +236,14 @@ struct FontSizeControls: View {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
 
+        var affectedLayerIndices = Set<Int>()
+
         for textID in selectedObjectIDs {
+            // Track layer index before update
+            if let object = document.snapshot.objects[textID] {
+                affectedLayerIndices.insert(object.layerIndex)
+            }
+
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -249,6 +256,9 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
+
+        // Trigger layer updates for all affected layers
+        document.triggerLayerUpdates(for: affectedLayerIndices)
 
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
