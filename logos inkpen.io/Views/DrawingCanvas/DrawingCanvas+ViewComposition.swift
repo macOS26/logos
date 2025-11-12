@@ -266,7 +266,7 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize
             )
-            .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes (gradient handled by trigger)
+            .id(isActiveLayer ? "\(layer.id)-\(currentDragDelta)" : "\(layer.id)")  // Only active layer uses drag delta in ID
             .allowsHitTesting(isActiveLayer)
         }
     }
