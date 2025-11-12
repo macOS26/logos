@@ -49,7 +49,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View {
+struct LayerCanvasView: View, Equatable {
     let objects: [VectorObject]
     let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
     let documentURL: URL?  // For resolving relative image paths
@@ -76,6 +76,30 @@ struct LayerCanvasView: View {
     let imageTileSize: Int
 
     var appState = AppState.shared
+
+    static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
+        lhs.objects.map { $0.id } == rhs.objects.map { $0.id } &&
+        lhs.zoomLevel == rhs.zoomLevel &&
+        lhs.canvasOffset == rhs.canvasOffset &&
+        lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
+        lhs.viewMode == rhs.viewMode &&
+        lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
+        lhs.liveScaleTransform == rhs.liveScaleTransform &&
+        lhs.objectUpdateTrigger == rhs.objectUpdateTrigger &&
+        lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+        lhs.livePointPositions == rhs.livePointPositions &&
+        lhs.liveHandlePositions == rhs.liveHandlePositions &&
+        lhs.fillDeltaOpacity == rhs.fillDeltaOpacity &&
+        lhs.strokeDeltaOpacity == rhs.strokeDeltaOpacity &&
+        lhs.strokeDeltaWidth == rhs.strokeDeltaWidth &&
+        lhs.activeColorTarget == rhs.activeColorTarget &&
+        lhs.fontSizeDelta == rhs.fontSizeDelta &&
+        lhs.lineSpacingDelta == rhs.lineSpacingDelta &&
+        lhs.lineHeightDelta == rhs.lineHeightDelta &&
+        lhs.letterSpacingDelta == rhs.letterSpacingDelta &&
+        lhs.imagePreviewQuality == rhs.imagePreviewQuality &&
+        lhs.imageTileSize == rhs.imageTileSize
+    }
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
