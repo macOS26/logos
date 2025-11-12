@@ -154,7 +154,7 @@ class MetalImageTileRenderer {
         }
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let sourceTexture = getTexture(from: image, cacheKey: "\(image.hashValue)") else {
+              let sourceTexture = getTexture(from: image, cacheKey: shapeID.uuidString) else {
             return nil
         }
 
