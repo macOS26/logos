@@ -33,7 +33,36 @@ struct ProfessionalBezierView: View {
 
             context.transform = baseTransform
 
-            // Draw control handles FIRST (so they appear behind anchor points)
+            // Draw the path with live handles FIRST
+            if bezierPoints.count >= 2 {
+                var pathToDraw = Path()
+                pathToDraw.move(to: CGPoint(x: bezierPoints[0].x, y: bezierPoints[0].y))
+
+                for i in 1..<bezierPoints.count {
+                    let currentPoint = bezierPoints[i]
+                    let previousPoint = bezierPoints[i - 1]
+                    let previousHandles = liveBezierHandles[i - 1] ?? bezierHandles[i - 1]
+                    let currentHandles = liveBezierHandles[i] ?? bezierHandles[i]
+                    let hasOutgoingHandle = previousHandles?.control2 != nil
+                    let hasIncomingHandle = currentHandles?.control1 != nil
+
+                    if hasOutgoingHandle || hasIncomingHandle {
+                        let control1 = previousHandles?.control2 ?? VectorPoint(previousPoint.x, previousPoint.y)
+                        let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
+                        pathToDraw.addCurve(
+                            to: CGPoint(x: currentPoint.x, y: currentPoint.y),
+                            control1: CGPoint(x: control1.x, y: control1.y),
+                            control2: CGPoint(x: control2.x, y: control2.y)
+                        )
+                    } else {
+                        pathToDraw.addLine(to: CGPoint(x: currentPoint.x, y: currentPoint.y))
+                    }
+                }
+
+                context.stroke(pathToDraw, with: .color(.blue), lineWidth: 1.0 / zoom)
+            }
+
+            // Draw control handles AFTER path (so they appear on top)
             for index in bezierPoints.indices {
                 // Use live handles if available, otherwise use actual handles
                 let handleInfo = liveBezierHandles[index] ?? bezierHandles[index]
