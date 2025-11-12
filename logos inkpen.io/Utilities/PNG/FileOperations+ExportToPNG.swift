@@ -480,6 +480,7 @@ private struct PNGExportView: View {
                     let layer = document.snapshot.layers[layerIndex]
                     IsolatedLayerView(
                         objectIDs: layer.objectIDs,
+                        snapshot: document.snapshot,
                         document: document,
                         zoomLevel: scale,
                         canvasOffset: .zero,

@@ -50,8 +50,8 @@ struct CanvasBackgroundView: View {
 }
 
 struct LayerCanvasView: View {
-    let objects: [VectorObject]
-    let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
+    let snapshot: DocumentSnapshot  // Use snapshot instead of objects array
+    let objectIDs: [UUID]  // Which objects to render from snapshot
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -76,6 +76,11 @@ struct LayerCanvasView: View {
     let imageTileSize: Int
 
     var appState = AppState.shared
+
+    // Compute objects from snapshot
+    private var objects: [VectorObject] {
+        objectIDs.compactMap { snapshot.objects[$0] }
+    }
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -392,7 +397,7 @@ struct LayerCanvasView: View {
                         // Check if child itself is clipped by another object
                         let maskShape: VectorShape? = {
                             guard let maskID = childShape.clippedByShapeID,
-                                  let maskObject = objectsDict[maskID] else {
+                                  let maskObject = snapshot.objects[maskID] else {
                                 return nil
                             }
                             return maskObject.shape
@@ -413,7 +418,7 @@ struct LayerCanvasView: View {
                     // Get mask shape if this object is clipped by another object
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -424,7 +429,7 @@ struct LayerCanvasView: View {
                 case .image(let shape):
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -435,7 +440,7 @@ struct LayerCanvasView: View {
                 case .text(let shape):
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -1243,7 +1248,8 @@ struct LayerCanvasView: View {
 
 struct IsolatedLayerView: View {
     let objectIDs: [UUID]  // Changed from objects array
-    let document: VectorDocument
+    let snapshot: DocumentSnapshot  // Use snapshot instead of full document
+    let document: VectorDocument  // Still need for text editing state
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -1270,7 +1276,7 @@ struct IsolatedLayerView: View {
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
-        objectIDs.compactMap { document.snapshot.objects[$0] }
+        objectIDs.compactMap { snapshot.objects[$0] }
     }
 
     // Helper to collect all text shapes (both top-level and grouped)
@@ -1286,9 +1292,9 @@ struct IsolatedLayerView: View {
 
         // print("🔍 collectEditingTextShapes: checking snapshot directly")
 
-        // Fetch FRESH data from document.snapshot.objects, not stale objects parameter
+        // Fetch FRESH data from snapshot.objects, not stale objects parameter
         for objectID in objects.map({ $0.id }) {
-            guard let freshObject = document.snapshot.objects[objectID],
+            guard let freshObject = snapshot.objects[objectID],
                   freshObject.isVisible else { continue }
 
             switch freshObject.objectType {
@@ -1336,8 +1342,8 @@ struct IsolatedLayerView: View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
-                objects: objects,
-                objectsDict: document.snapshot.objects,
+                snapshot: snapshot,
+                objectIDs: objectIDs,
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
