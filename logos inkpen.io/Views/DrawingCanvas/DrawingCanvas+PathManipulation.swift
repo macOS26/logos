@@ -12,8 +12,9 @@ extension DrawingCanvas {
         for i in 1..<bezierPoints.count {
             let currentPoint = bezierPoints[i]
             let previousPoint = bezierPoints[i - 1]
-            let previousHandles = bezierHandles[i - 1]
-            let currentHandles = bezierHandles[i]
+            // Use live handles if available during drag, otherwise use actual handles
+            let previousHandles = liveBezierHandles[i - 1] ?? bezierHandles[i - 1]
+            let currentHandles = liveBezierHandles[i] ?? bezierHandles[i]
             let hasOutgoingHandle = previousHandles?.control2 != nil
             let hasIncomingHandle = currentHandles?.control1 != nil
 
