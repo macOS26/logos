@@ -1140,13 +1140,10 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
-        // Apply dragPreviewDelta to renderBounds if selected and dragging
-        let effectiveDragDelta = (isSelected && dragPreviewDelta != .zero) ? dragPreviewDelta : .zero
-
-        // Scale bounds to screen coordinates (include drag delta)
+        // Scale bounds to screen coordinates (DO NOT apply dragPreviewDelta here - it's applied via canvas transform)
         let screenBounds = CGRect(
-            x: renderBounds.origin.x * zoomLevel + canvasOffset.x + effectiveDragDelta.x,
-            y: renderBounds.origin.y * zoomLevel + canvasOffset.y + effectiveDragDelta.y,
+            x: renderBounds.origin.x * zoomLevel + canvasOffset.x,
+            y: renderBounds.origin.y * zoomLevel + canvasOffset.y,
             width: renderBounds.width * zoomLevel,
             height: renderBounds.height * zoomLevel
         )
