@@ -71,7 +71,18 @@ extension DrawingCanvas {
                     path.addLine(to: canvasMouseLocation)
                 }
 
-                path.addLine(to: firstPointLocation)
+                // Use curve to close back to first point if first point has handles
+                let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
+                if let firstControl1 = firstPointHandles?.control1 {
+                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                    path.addCurve(
+                        to: firstPointLocation,
+                        control1: canvasMouseLocation,
+                        control2: firstControl1Location
+                    )
+                } else {
+                    path.addLine(to: firstPointLocation)
+                }
 
                 path.closeSubpath()
             }
