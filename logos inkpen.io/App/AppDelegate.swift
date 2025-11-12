@@ -20,7 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "ViewBridge to RemoteViewService Terminated",
             "VCVoiceShortcutClient",
             "Interrupted 0x",
-            "Unable to create bundle at URL"
+            "Unable to create bundle at URL",
+            "Internal inconsistency in menus",
+            "[AFPreferences _languageCodeWithFallback:]"
         ])
 
         let enabled = UserDefaults.standard.bool(forKey: "enableSystemMetalHUD")
