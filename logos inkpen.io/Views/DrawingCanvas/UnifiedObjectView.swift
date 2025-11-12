@@ -187,7 +187,6 @@ struct LayerCanvasView: View {
                 let isTextObject = if case .text = object.objectType { true } else { false }
 
                 if isSelected && dragPreviewDelta != .zero {
-                    print("🔴 CANVAS TRANSFORM: Applying dragPreviewDelta=\(dragPreviewDelta) to selected image")
                     context.transform = baseTransform
                         .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
                 } else {
@@ -1131,23 +1130,14 @@ struct LayerCanvasView: View {
     }
 
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
-        print("🖼️ renderImage START: shapeID=\(shape.id), isSelected=\(isSelected)")
-        print("   dragPreviewDelta=\(dragPreviewDelta)")
-        print("   shape.transform=\(shape.transform)")
-        print("   scaleTransform=\(scaleTransform)")
-
         // Get image bounds to check viewport culling
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
-        print("   pathBounds=\(pathBounds)")
-
         var renderBounds = pathBounds
         if scaleTransform != .identity {
             renderBounds = pathBounds.applying(scaleTransform)
-            print("   Applied scaleTransform: renderBounds=\(renderBounds)")
         }
         if !shape.transform.isIdentity {
             renderBounds = renderBounds.applying(shape.transform)
-            print("   Applied shape.transform: renderBounds=\(renderBounds)")
         }
 
         // Scale bounds to screen coordinates
@@ -1158,7 +1148,6 @@ struct LayerCanvasView: View {
             width: renderBounds.width * zoomLevel,
             height: renderBounds.height * zoomLevel
         )
-        print("   screenBounds=\(screenBounds)")
 
         // Use actual canvas size for viewport (from Canvas context)
         let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
@@ -1227,11 +1216,10 @@ struct LayerCanvasView: View {
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // NOTE: Do NOT apply shape.transform here - it's already baked into renderBounds at line 1148-1150
+            // NOTE: Do NOT apply shape.transform here - it's already baked into renderBounds at line 1139-1141
             // Applying it again would cause double transformation
 
             // Flip coordinate system for image rendering
-            print("   🔵 Translating by renderBounds: minX=\(renderBounds.minX), maxY=\(renderBounds.maxY)")
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
             cgContext.scaleBy(x: 1.0, y: -1.0)
 

@@ -333,18 +333,14 @@ extension DrawingCanvas {
         // print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
 
         if ImageContentRegistry.containsImage(shape, in: document) {
-            print("🔴 DRAG END IMAGE: shape.id=\(shape.id), delta=\(delta)")
-            print("   OLD shape.transform=\(shape.transform)")
             var updatedShape = shape
 
             if updatedShape.transform.isIdentity {
                 updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
-                print("   NEW transform (was identity)=\(updatedShape.transform)")
             } else {
                 let currentTransform = updatedShape.transform
                 let translationTransform = CGAffineTransform(translationX: delta.x, y: delta.y)
                 updatedShape.transform = currentTransform.concatenating(translationTransform)
-                print("   NEW transform (concatenated)=\(updatedShape.transform)")
             }
 
             document.updateShapeTransformAndPathInUnified(id: updatedShape.id, transform: updatedShape.transform)
