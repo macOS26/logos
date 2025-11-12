@@ -267,7 +267,13 @@ struct FontSizeControls: View {
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
 
+        var affectedLayerIndices = Set<Int>()
+
         for textID in selectedObjectIDs {
+            if let object = document.snapshot.objects[textID] {
+                affectedLayerIndices.insert(object.layerIndex)
+            }
+
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -278,6 +284,7 @@ struct FontSizeControls: View {
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineSpacing = Double(newSpacing)
     }
 
