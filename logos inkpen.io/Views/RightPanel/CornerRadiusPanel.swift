@@ -1,8 +1,12 @@
 import SwiftUI
-import Combine
 
 struct CornerRadiusPanel: View {
-    let document: VectorDocument
+    @Binding var snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    let changeToken: UUID
+    let onUpdateShapeCornerRadii: (UUID, [Double], VectorPath) -> Void
+    let onExecuteCommand: (any Command) -> Void
+
     @State private var cornerValues: [Double] = [0, 0, 0, 0]
     @State private var isEditing = false
 
@@ -16,10 +20,10 @@ struct CornerRadiusPanel: View {
         .onAppear {
             updateCornerValues()
         }
-        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
+        .onChange(of: selectedObjectIDs) { _, _ in
             updateCornerValues()
         }
-        .onReceive(document.objectWillChange) { _ in
+        .onChange(of: changeToken) { _, _ in
             updateCornerValues()
         }
     }
@@ -136,34 +140,28 @@ struct CornerRadiusPanel: View {
 
         oldShapes[selectedShape.id] = selectedShape
 
-        if let layerIndex = document.selectedLayerIndex {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
-               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-            var updatedRadii = shape.cornerRadii
+        var updatedRadii = selectedShape.cornerRadii
 
-            while updatedRadii.count <= index {
-                updatedRadii.append(0.0)
-            }
-
-            updatedRadii[index] = max(0.0, value)
-
-            let currentBounds = shape.path.cgPath.boundingBox
-            let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
-                rect: currentBounds,
-                cornerRadii: updatedRadii
-            )
-
-            document.updateShapeCornerRadiiInUnified(id: selectedShape.id, cornerRadii: updatedRadii, path: newPath)
-
-            if let updatedShape = document.findShape(by: selectedShape.id) {
-                newShapes[selectedShape.id] = updatedShape
-            }
-
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-            }
+        while updatedRadii.count <= index {
+            updatedRadii.append(0.0)
         }
+
+        updatedRadii[index] = max(0.0, value)
+
+        let currentBounds = selectedShape.path.cgPath.boundingBox
+        let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
+            rect: currentBounds,
+            cornerRadii: updatedRadii
+        )
+
+        onUpdateShapeCornerRadii(selectedShape.id, updatedRadii, newPath)
+
+        if let obj = snapshot.objects[selectedShape.id], case .shape(let updatedShape) = obj.objectType {
+            newShapes[selectedShape.id] = updatedShape
+        }
+
+        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        onExecuteCommand(command)
     }
 
     private func makeSquare() {
@@ -196,11 +194,12 @@ struct CornerRadiusPanel: View {
     }
 
     private func getSelectedRoundedRectangle() -> VectorShape? {
-        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else {
+        guard let firstSelectedID = selectedObjectIDs.first else {
             return nil
         }
 
-        guard let shape = document.findShape(by: firstSelectedID) else {
+        guard let obj = snapshot.objects[firstSelectedID],
+              case .shape(let shape) = obj.objectType else {
             return nil
         }
 
