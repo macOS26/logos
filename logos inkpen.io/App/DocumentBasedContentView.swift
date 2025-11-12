@@ -26,25 +26,25 @@ struct DocumentBasedContentView: View {
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
-                return ImageTileCache.shared.getSourceImage(from: url, quality: quality)
+                return ImageTileCache.shared.getSourceImage(from: url, quality: quality, shapeID: shape.id)
             }
         }
 
         let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality) {
+        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality, shapeID: shape.id) {
             return image
         }
 
         if let docURL = inkpenDocument.document.baseDirectoryURL {
             let docDir = docURL.deletingLastPathComponent()
             let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality) {
+            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality, shapeID: shape.id) {
                 return image
             }
 
             let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
             let sameDir = docDir.appendingPathComponent(filename)
-            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality) {
+            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality, shapeID: shape.id) {
                 return image
             }
         }
@@ -82,7 +82,7 @@ struct DocumentBasedContentView: View {
                         // Cache CGImage in shape for rendering performance
                         let quality = ApplicationSettings.shared.imagePreviewQuality
                         if let imageData = shape.embeddedImageData {
-                            if let cgImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality) {
+                            if let cgImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality, shapeID: shape.id) {
                                 var updatedShape = shape
                                 updatedShape.cachedCGImage = cgImage
                                 if case .image(_) = obj.objectType {

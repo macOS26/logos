@@ -55,8 +55,8 @@ class ImageTileCache {
     }
 
     /// Get downsampled source image (cached)
-    func getSourceImage(from imageData: Data, quality: Double) -> CGImage? {
-        let imageKey = "\(imageData.hashValue)-\(Int(quality * 100))"
+    func getSourceImage(from imageData: Data, quality: Double, shapeID: UUID) -> CGImage? {
+        let imageKey = shapeID.uuidString
 
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
@@ -105,8 +105,8 @@ class ImageTileCache {
     }
 
     /// Get downsampled source image from URL (cached)
-    func getSourceImage(from url: URL, quality: Double) -> CGImage? {
-        let imageKey = "\(url.path)-\(Int(quality * 100))"
+    func getSourceImage(from url: URL, quality: Double, shapeID: UUID) -> CGImage? {
+        let imageKey = shapeID.uuidString
 
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {

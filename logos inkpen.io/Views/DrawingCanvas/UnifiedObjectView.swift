@@ -1036,7 +1036,7 @@ struct LayerCanvasView: View {
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
-                if let image = ImageTileCache.shared.getSourceImage(from: url, quality: quality) {
+                if let image = ImageTileCache.shared.getSourceImage(from: url, quality: quality, shapeID: shapeID) {
                     return image
                 }
             }
@@ -1044,7 +1044,7 @@ struct LayerCanvasView: View {
 
         // 2. Try absolute path
         let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality) {
+        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality, shapeID: shapeID) {
             return image
         }
 
@@ -1052,7 +1052,7 @@ struct LayerCanvasView: View {
         if let docURL = documentURL {
             let docDir = docURL.deletingLastPathComponent()
             let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality) {
+            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality, shapeID: shapeID) {
                 return image
             }
         }
@@ -1062,7 +1062,7 @@ struct LayerCanvasView: View {
             let docDir = docURL.deletingLastPathComponent()
             let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
             let sameDir = docDir.appendingPathComponent(filename)
-            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality) {
+            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality, shapeID: shapeID) {
                 return image
             }
         }
@@ -1171,7 +1171,7 @@ struct LayerCanvasView: View {
         } else {
             // Fallback: load on-demand if not cached (shouldn't happen normally)
             if let imageData = shape.embeddedImageData {
-                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality)
+                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality, shapeID: shape.id)
             } else if let linkedPath = shape.linkedImagePath {
                 sourceImage = resolveAndGetSourceImage(
                     linkedPath: linkedPath,
