@@ -28,10 +28,6 @@ extension DrawingCanvas {
             }
         }
 
-        // DON'T update @State bezierPath during drag - only update on mouse up
-        // During drag, the Canvas overlay shows live handles directly
-        if !isDraggingBezierHandle {
-            bezierPath = VectorPath(elements: newElements, isClosed: path.isClosed)
-        }
+        bezierPath = VectorPath(elements: newElements, isClosed: path.isClosed)
     }
 }

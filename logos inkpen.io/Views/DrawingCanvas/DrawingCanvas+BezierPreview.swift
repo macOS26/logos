@@ -8,8 +8,8 @@ extension DrawingCanvas {
             let lastPointIndex = bezierPoints.count - 1
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-            let lastPointHandles = bezierHandles[lastPointIndex]
-            let firstPointHandles = bezierHandles[0]
+            let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+            let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
 
             Path { path in
                 addPathElements(currentBezierPath.elements, to: &path)
@@ -58,7 +58,8 @@ extension DrawingCanvas {
             Path { path in
                 addPathElements(currentBezierPath.elements, to: &path)
 
-                if let lastPointHandles = bezierHandles[lastPointIndex],
+                let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                if let lastPointHandles = lastPointHandles,
                    let lastControl2 = lastPointHandles.control2 {
                     let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                     path.addCurve(
@@ -149,8 +150,8 @@ extension DrawingCanvas {
             if showClosePathHint && bezierPoints.count >= 3 {
                 let firstPoint = bezierPoints[0]
                 let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                let lastPointHandles = bezierHandles[lastPointIndex]
-                let firstPointHandles = bezierHandles[0]
+                let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
 
                 Path { path in
                     path.move(to: lastPointLocation)
@@ -176,7 +177,8 @@ extension DrawingCanvas {
                 Path { path in
                     path.move(to: lastPointLocation)
 
-                    if let lastPointHandles = bezierHandles[lastPointIndex],
+                    let lastPointHandlesForRubber = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                    if let lastPointHandles = lastPointHandlesForRubber,
                        let lastControl2 = lastPointHandles.control2 {
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
 
@@ -252,7 +254,8 @@ extension DrawingCanvas {
     internal func bezierControlHandles() -> some View {
         if isBezierDrawing {
             ForEach(bezierPoints.indices, id: \.self) { index in
-                if let handleInfo = bezierHandles[index], handleInfo.hasHandles {
+                let handleInfo = liveBezierHandles[index] ?? bezierHandles[index]
+                if let handleInfo = handleInfo, handleInfo.hasHandles {
                     let pointLocation = CGPoint(x: bezierPoints[index].x, y: bezierPoints[index].y)
 
                     if let control1 = handleInfo.control1 {
