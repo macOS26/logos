@@ -32,24 +32,20 @@ extension DrawingCanvas {
 
     @ViewBuilder
     private func cornerRadiusLivePreview(shape: VectorShape, geometry: GeometryProxy) -> some View {
-        if let bounds = shape.originalBounds {
-            let previewPath = createRoundedRectPathWithIndividualCorners(
-                rect: bounds,
-                cornerRadii: liveCornerRadii
-            )
+        // Use the transformed path bounds, not originalBounds
+        let currentBounds = shape.path.cgPath.boundingBox
+        let previewPath = createRoundedRectPathWithIndividualCorners(
+            rect: currentBounds,
+            cornerRadii: liveCornerRadii
+        )
 
-            let originalPath = Path { path in
-                addPathElements(previewPath.elements, to: &path)
-            }
-
-            // Apply the shape's transform to match its current position
-            let transformedPath = originalPath.applying(shape.transform)
-
-            transformedPath
-                .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
+        Path { path in
+            addPathElements(previewPath.elements, to: &path)
         }
+        .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
+        .transformEffect(shape.transform)
+        .scaleEffect(zoomLevel, anchor: UnitPoint.topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
     @ViewBuilder
