@@ -15,7 +15,9 @@ extension DrawingCanvas {
                     position: (isDraggingCorner && draggedCornerIndex == index)
                         ? currentMousePosition
                         : getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)[index],
-                    radius: selectedShape.cornerRadii[safe: index] ?? 0.0,
+                    radius: isDraggingCorner && !liveCornerRadii.isEmpty
+                        ? (liveCornerRadii[safe: index] ?? 0.0)
+                        : (selectedShape.cornerRadii[safe: index] ?? 0.0),
                     shape: selectedShape,
                     geometry: geometry
                 )
@@ -72,6 +74,13 @@ extension DrawingCanvas {
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
 
             sharedOriginalShape = shape
+
+            // Capture original corner radii for live state
+            originalCornerRadii = shape.cornerRadii
+            liveCornerRadii = shape.cornerRadii
+            while liveCornerRadii.count < 4 {
+                liveCornerRadii.append(0.0)
+            }
         }
 
         currentMousePosition = value.location
@@ -102,90 +111,44 @@ extension DrawingCanvas {
             let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+
+            // Update live state instead of actual shape during drag
             if isShiftCurrentlyPressed {
-
-                var allRadii = shape.cornerRadii
-                while allRadii.count < 4 {
-                    allRadii.append(0.0)
-                }
-
-                let originalRadius = allRadii[cornerIndex]
+                let originalRadius = originalCornerRadii[safe: cornerIndex] ?? 0.0
 
                 if originalRadius > 0 {
                     let ratio = newRadius / originalRadius
 
                     for i in 0..<4 {
-                        let originalCornerRadius = allRadii[i]
+                        let originalCornerRadius = originalCornerRadii[safe: i] ?? 0.0
                         let proportionalRadius = originalCornerRadius * ratio
                         let constrainedRadius = max(0.0, min(maxRadius, proportionalRadius))
-                        allRadii[i] = constrainedRadius
+                        liveCornerRadii[i] = constrainedRadius
                     }
-
                 } else {
                     for i in 0..<4 {
                         let constrainedRadius = max(0.0, min(maxRadius, newRadius))
-                        allRadii[i] = constrainedRadius
+                        liveCornerRadii[i] = constrainedRadius
                     }
-
                 }
-
-                updateAllCornerRadiiToValues(
-                    shapeID: shape.id,
-                    cornerRadii: allRadii
-                )
             } else {
-                updateCornerRadiusToValue(
-                    shapeID: shape.id,
-                    cornerIndex: cornerIndex,
-                    newRadius: newRadius
-                )
+                liveCornerRadii[cornerIndex] = newRadius
             }
         }
     }
 
     private func finishCornerRadiusToolDrag() {
         if isDraggingCorner {
+            // Commit live radii to actual shape
             if let selectedShape = getSelectedRectangleShape() {
-                let currentRadius = selectedShape.cornerRadii[safe: draggedCornerIndex ?? -1] ?? 0.0
-                let roundedRadius = round(currentRadius)
+                // Round the live radii
+                let finalRadii = liveCornerRadii.map { round($0) }
 
-                if abs(currentRadius - roundedRadius) > 0.01 {
-                    let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
-                    if isShiftCurrentlyPressed {
-                        var allRadii = selectedShape.cornerRadii
-                        while allRadii.count < 4 {
-                            allRadii.append(0.0)
-                        }
-
-                        let originalRadius = allRadii[draggedCornerIndex ?? 0]
-
-                        if originalRadius > 0 {
-                            let ratio = roundedRadius / originalRadius
-
-                            for i in 0..<4 {
-                                let originalCornerRadius = allRadii[i]
-                                allRadii[i] = round(originalCornerRadius * ratio)
-                            }
-
-                        } else {
-                            for i in 0..<4 {
-                                allRadii[i] = round(max(0.0, roundedRadius))
-                            }
-
-                        }
-
-                        updateAllCornerRadiiToValues(
-                            shapeID: selectedShape.id,
-                            cornerRadii: allRadii
-                        )
-                    } else {
-                        updateCornerRadiusToValue(
-                            shapeID: selectedShape.id,
-                            cornerIndex: draggedCornerIndex ?? 0,
-                            newRadius: roundedRadius
-                        )
-                    }
-                }
+                // Apply final rounded radii to shape
+                updateAllCornerRadiiToValues(
+                    shapeID: selectedShape.id,
+                    cornerRadii: finalRadii
+                )
             }
 
             if let originalShape = sharedOriginalShape,
@@ -203,12 +166,15 @@ extension DrawingCanvas {
 
             sharedOriginalShape = nil
 
+            // Clear live state
+            liveCornerRadii.removeAll()
+            originalCornerRadii.removeAll()
+
             isDraggingCorner = false
             draggedCornerIndex = nil
             cornerDragStart = .zero
             initialCornerRadius = 0.0
             currentMousePosition = .zero
-
         }
     }
 }

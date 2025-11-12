@@ -171,6 +171,8 @@ struct DrawingCanvas: View {
     @State internal var isDraggingCorner = false
     @State internal var draggedCornerIndex: Int? = nil
     @State internal var currentMousePosition: CGPoint = .zero
+    @State internal var liveCornerRadii: [Double] = []
+    @State internal var originalCornerRadii: [Double] = []
     @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointRadius: CGFloat = 2.0
     @State internal var coincidentPointTolerance: Double = 0.1
