@@ -61,9 +61,11 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
+            print("✅ ImageTileCache.getSourceImage [Data]: CACHE HIT for key=\(imageKey)")
             return cached
         }
         cacheLock.unlock()
+        print("❌ ImageTileCache.getSourceImage [Data]: CACHE MISS for key=\(imageKey), creating new image")
 
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
@@ -97,6 +99,7 @@ class ImageTileCache {
         cacheLock.lock()
         sourceImageCache[imageKey] = downsampledImage
         cacheLock.unlock()
+        print("💾 ImageTileCache.getSourceImage [Data]: CACHED new image with key=\(imageKey)")
 
         return downsampledImage
     }
@@ -108,9 +111,11 @@ class ImageTileCache {
         cacheLock.lock()
         if let cached = sourceImageCache[imageKey] {
             cacheLock.unlock()
+            print("✅ ImageTileCache.getSourceImage [URL]: CACHE HIT for key=\(imageKey)")
             return cached
         }
         cacheLock.unlock()
+        print("❌ ImageTileCache.getSourceImage [URL]: CACHE MISS for key=\(imageKey), creating new image")
 
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil
@@ -144,6 +149,7 @@ class ImageTileCache {
         cacheLock.lock()
         sourceImageCache[imageKey] = downsampledImage
         cacheLock.unlock()
+        print("💾 ImageTileCache.getSourceImage [URL]: CACHED new image with key=\(imageKey)")
 
         return downsampledImage
     }
@@ -151,7 +157,9 @@ class ImageTileCache {
     /// Clear all cached images
     func clearCache() {
         cacheLock.lock()
+        let count = sourceImageCache.count
         sourceImageCache.removeAll()
         cacheLock.unlock()
+        print("🗑️ ImageTileCache.clearCache() removed \(count) cached images")
     }
 }
