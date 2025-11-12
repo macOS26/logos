@@ -132,8 +132,17 @@ class DocumentState: ObservableObject {
         }
     }
 
+    private var selectionCancellable: AnyCancellable?
+
     private func setupDocumentObserversAsync() async {
-        // Document observation handled via direct property updates
+        // Observe selection changes
+        guard let document = document else { return }
+
+        await MainActor.run {
+            selectionCancellable = document.viewState.objectWillChange.sink { [weak self] _ in
+                self?.updateAllStates()
+            }
+        }
     }
 
     private func updateAllStates() {
