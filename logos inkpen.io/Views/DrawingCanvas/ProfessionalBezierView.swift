@@ -6,6 +6,7 @@ struct ProfessionalBezierView: View {
     let canvasOffset: CGPoint
     let bezierPoints: [VectorPoint]
     let bezierHandles: [Int: BezierHandleInfo]
+    let liveBezierHandles: [Int: BezierHandleInfo]
     let activeBezierPointIndex: Int?
     let showClosePathHint: Bool
     let showContinuePathHint: Bool
@@ -34,7 +35,10 @@ struct ProfessionalBezierView: View {
 
             // Draw control handles FIRST (so they appear behind anchor points)
             for index in bezierPoints.indices {
-                if let handleInfo = bezierHandles[index], handleInfo.hasHandles {
+                // Use live handles if available, otherwise use actual handles
+                let handleInfo = liveBezierHandles[index] ?? bezierHandles[index]
+
+                if let handleInfo = handleInfo, handleInfo.hasHandles {
                     let anchorPoint = CGPoint(x: bezierPoints[index].x, y: bezierPoints[index].y)
 
                     if let control1 = handleInfo.control1 {

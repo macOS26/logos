@@ -199,6 +199,15 @@ extension DrawingCanvas {
     }
 
     internal func finishBezierPenDrag() {
+        // Commit live handles to actual handles
+        for (index, liveHandle) in liveBezierHandles {
+            bezierHandles[index] = liveHandle
+        }
+
+        // Clear live state
+        liveBezierHandles.removeAll()
+        originalBezierHandles.removeAll()
+
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
 
@@ -491,6 +500,8 @@ extension DrawingCanvas {
         if !isDraggingBezierHandle {
             isDraggingBezierHandle = true
             isDraggingBezierPoint = true
+            // Capture original handles at start of drag
+            originalBezierHandles = bezierHandles
         }
 
         let point = bezierPoints[pointIndex]
@@ -509,7 +520,8 @@ extension DrawingCanvas {
             pointLocation.y + dragVector.y
         )
 
-        bezierHandles[pointIndex] = BezierHandleInfo(
+        // Update live handles instead of actual handles during drag
+        liveBezierHandles[pointIndex] = BezierHandleInfo(
             control1: control1,
             control2: control2,
             hasHandles: true
@@ -522,6 +534,8 @@ extension DrawingCanvas {
     private func createNewPointWithHandles(startLocation: CGPoint, currentLocation: CGPoint) {
         if !isDraggingBezierHandle {
             isDraggingBezierHandle = true
+            // Capture original handles at start of drag
+            originalBezierHandles = bezierHandles
 
             let lastPoint = bezierPoints.last
             let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
@@ -556,7 +570,8 @@ extension DrawingCanvas {
             activeLocation.y + dragVector.y * 0.5
         )
 
-        bezierHandles[activeIndex] = BezierHandleInfo(
+        // Update live handles instead of actual handles during drag
+        liveBezierHandles[activeIndex] = BezierHandleInfo(
             control1: control1,
             control2: control2,
             hasHandles: true

@@ -114,6 +114,7 @@ extension DrawingCanvas {
                 canvasOffset: canvasOffset,
                 bezierPoints: bezierPoints,
                 bezierHandles: bezierHandles,
+                liveBezierHandles: liveBezierHandles,
                 activeBezierPointIndex: activeBezierPointIndex,
                 showClosePathHint: showClosePathHint,
                 showContinuePathHint: showContinuePathHint,

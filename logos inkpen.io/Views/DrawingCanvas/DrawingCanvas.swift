@@ -67,6 +67,8 @@ struct DrawingCanvas: View {
     @State internal var activeBezierPointIndex: Int? = nil
     @State internal var isDraggingBezierPoint = false
     @State internal var bezierHandles: [Int: BezierHandleInfo] = [:]
+    @State internal var liveBezierHandles: [Int: BezierHandleInfo] = [:]
+    @State internal var originalBezierHandles: [Int: BezierHandleInfo] = [:]
     @State internal var currentMouseLocation: CGPoint? = nil
     @State internal var showClosePathHint = false
     @State internal var closePathHintLocation: CGPoint = .zero

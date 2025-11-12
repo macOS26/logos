@@ -11,6 +11,8 @@ extension DrawingCanvas {
         bezierPath = nil
         bezierPoints.removeAll()
         bezierHandles.removeAll()
+        liveBezierHandles.removeAll()
+        originalBezierHandles.removeAll()
         activeBezierPointIndex = nil
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
