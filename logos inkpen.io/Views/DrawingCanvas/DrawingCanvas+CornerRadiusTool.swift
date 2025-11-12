@@ -38,12 +38,17 @@ extension DrawingCanvas {
                 cornerRadii: liveCornerRadii
             )
 
-            Path { path in
+            let originalPath = Path { path in
                 addPathElements(previewPath.elements, to: &path)
             }
-            .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
+
+            // Apply the shape's transform to match its current position
+            let transformedPath = originalPath.applying(shape.transform)
+
+            transformedPath
+                .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
