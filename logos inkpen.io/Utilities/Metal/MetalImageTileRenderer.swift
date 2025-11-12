@@ -63,8 +63,10 @@ class MetalImageTileRenderer {
     /// Convert CGImage to Metal texture (cached)
     func getTexture(from cgImage: CGImage, cacheKey: String) -> MTLTexture? {
         if let cached = textureCache[cacheKey] {
+            print("✅ MetalImageTileRenderer.getTexture: CACHE HIT for key=\(cacheKey)")
             return cached
         }
+        print("❌ MetalImageTileRenderer.getTexture: CACHE MISS for key=\(cacheKey), creating new texture")
 
         // Check if image is already in a compatible format
         let needsConversion: Bool = {
@@ -128,6 +130,7 @@ class MetalImageTileRenderer {
                 .SRGB: NSNumber(value: false)
             ])
             textureCache[cacheKey] = texture
+            print("💾 MetalImageTileRenderer.getTexture: CACHED new texture for key=\(cacheKey)")
             return texture
         } catch {
             print("❌ Failed to create Metal texture: \(error)")
@@ -388,8 +391,11 @@ class MetalImageTileRenderer {
 
     /// Clear texture cache
     func clearCache() {
+        let textureCount = textureCache.count
+        let compositedCount = compositedImageCache.count
         textureCache.removeAll()
         compositedImageCache.removeAll()
+        print("🗑️ MetalImageTileRenderer.clearCache() removed \(textureCount) textures and \(compositedCount) composited images")
     }
 
     /// Create orthographic projection matrix for 2D rendering
