@@ -291,7 +291,13 @@ struct FontSizeControls: View {
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
 
+        var affectedLayerIndices = Set<Int>()
+
         for textID in selectedObjectIDs {
+            if let object = document.snapshot.objects[textID] {
+                affectedLayerIndices.insert(object.layerIndex)
+            }
+
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -302,6 +308,7 @@ struct FontSizeControls: View {
             }
         }
 
+        document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineHeight = Double(newHeight)
     }
 
