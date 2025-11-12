@@ -3,7 +3,11 @@ import SwiftUI
 @main
 struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @FocusedObject var documentState: DocumentState?
+    @FocusedObject var documentState: DocumentState? {
+        didSet {
+            print("📋 documentState changed: \(documentState != nil ? "EXISTS" : "NIL"), hasSelection: \(documentState?.hasSelection ?? false)")
+        }
+    }
     private var appState = AppState.shared
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
