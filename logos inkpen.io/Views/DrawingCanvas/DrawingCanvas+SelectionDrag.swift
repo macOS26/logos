@@ -176,7 +176,11 @@ extension DrawingCanvas {
             }
         }
 
-        currentDragDelta = canvasDelta
+        // Throttle updates for complex shapes - only update every 2nd frame
+        dragUpdateCounter += 1
+        if dragUpdateCounter % 2 == 0 {
+            currentDragDelta = canvasDelta
+        }
         liveDragOffset = canvasDelta
 
         // Set active layer for performance optimization (hides other layers during drag)
