@@ -235,12 +235,16 @@ extension DrawingCanvas {
         if !layer.objectIDs.isEmpty {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
+            // Only pass selectedObjectIDs that are actually in this layer to avoid unnecessary redraws
+            let layerObjectIDsSet = Set(layer.objectIDs)
+            let selectedInThisLayer = document.viewState.selectedObjectIDs.intersection(layerObjectIDsSet)
+
             IsolatedLayerView(
                 objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
                 dragPreviewTrigger: dragPreviewUpdateTrigger,
