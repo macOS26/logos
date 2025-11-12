@@ -211,6 +211,8 @@ extension DrawingCanvas {
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
 
+        // Now update path and document ONCE
+        updatePathWithHandles()
         updateActiveBezierShapeInDocument()
     }
 
@@ -526,9 +528,6 @@ extension DrawingCanvas {
             control2: control2,
             hasHandles: true
         )
-
-        updatePathWithHandles()
-        updateActiveBezierShapeInDocument(isLiveDrag: true)
     }
 
     private func createNewPointWithHandles(startLocation: CGPoint, currentLocation: CGPoint) {
@@ -576,9 +575,6 @@ extension DrawingCanvas {
             control2: control2,
             hasHandles: true
         )
-
-        updatePathWithHandles()
-        updateActiveBezierShapeInDocument(isLiveDrag: true)
     }
 
     private func applyFinalColorsToPath(shape: VectorShape) {
