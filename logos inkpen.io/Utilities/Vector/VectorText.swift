@@ -641,6 +641,22 @@ class FontManager: ObservableObject {
         return sortedVariants
     }
 
+    /// Get PostScript font name for a specific family and variant (cached lookup)
+    func getPostScriptName(family: String, variant: String) -> String? {
+        let fontManager = NSFontManager.shared
+        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
+
+        for member in members {
+            if let postScriptName = member[0] as? String,
+               let displayName = member[1] as? String,
+               displayName == variant {
+                return postScriptName
+            }
+        }
+
+        return nil
+    }
+
 }
 
 extension NSBezierPath {

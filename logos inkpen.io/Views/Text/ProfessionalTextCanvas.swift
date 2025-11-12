@@ -63,7 +63,8 @@ struct ProfessionalTextCanvas: View {
             fontSize: fontSize,
             lineSpacing: lineSpacing,
             fontFamily: fontFamily,
-            fontVariant: fontVariant
+            fontVariant: fontVariant,
+            fontManager: document.fontManager
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -120,6 +121,7 @@ struct ProfessionalTextCanvas: View {
         let lineSpacing: CGFloat
         let fontFamily: String
         let fontVariant: String?
+        let fontManager: FontManager
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -150,19 +152,10 @@ struct ProfessionalTextCanvas: View {
             textView.delegate = context.coordinator
             // Use SAME font logic as CTLine rendering
             let liveFont: NSFont = {
-                if let variant = fontVariant {
-                    let fontManager = NSFontManager.shared
-                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
-
-                    for member in members {
-                        if let postScriptName = member[0] as? String,
-                           let displayName = member[1] as? String,
-                           displayName == variant {
-                            if let font = NSFont(name: postScriptName, size: fontSize) {
-                                return font
-                            }
-                        }
-                    }
+                if let variant = fontVariant,
+                   let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+                   let font = NSFont(name: postScriptName, size: fontSize) {
+                    return font
                 }
 
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
@@ -223,19 +216,10 @@ struct ProfessionalTextCanvas: View {
             // Always apply font (comparing NSFont objects doesn't work reliably)
             // Use SAME font logic as CTLine rendering
             let liveFont: NSFont = {
-                if let variant = fontVariant {
-                    let fontManager = NSFontManager.shared
-                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
-
-                    for member in members {
-                        if let postScriptName = member[0] as? String,
-                           let displayName = member[1] as? String,
-                           displayName == variant {
-                            if let font = NSFont(name: postScriptName, size: fontSize) {
-                                return font
-                            }
-                        }
-                    }
+                if let variant = fontVariant,
+                   let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+                   let font = NSFont(name: postScriptName, size: fontSize) {
+                    return font
                 }
 
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
@@ -293,19 +277,10 @@ struct ProfessionalTextCanvas: View {
 
             // Use SAME font logic as CTLine rendering
             let liveFont: NSFont = {
-                if let variant = fontVariant {
-                    let fontManager = NSFontManager.shared
-                    let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
-
-                    for member in members {
-                        if let postScriptName = member[0] as? String,
-                           let displayName = member[1] as? String,
-                           displayName == variant {
-                            if let font = NSFont(name: postScriptName, size: fontSize) {
-                                return font
-                            }
-                        }
-                    }
+                if let variant = fontVariant,
+                   let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+                   let font = NSFont(name: postScriptName, size: fontSize) {
+                    return font
                 }
 
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
