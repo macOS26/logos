@@ -34,7 +34,7 @@ extension DrawingCanvas {
     }
 
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
-        guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
+        guard !isBezierDrawing && !isPanGestureActive else {
             return
         }
 
@@ -57,7 +57,7 @@ extension DrawingCanvas {
             isZoomGestureActive = false
         }
 
-        guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
+        guard !isBezierDrawing && !isPanGestureActive else {
             return
         }
 
