@@ -451,6 +451,7 @@ class FontManager: ObservableObject {
     var googleFonts: [String] = []
 
     private var fontVariantsCache: [String: [String]] = [:]
+    private var postScriptNameCache: [String: String] = [:]  // "family-variant" -> PostScript name
 
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"
@@ -465,6 +466,7 @@ class FontManager: ObservableObject {
 
     func clearVariantsCache() {
         fontVariantsCache.removeAll()
+        postScriptNameCache.removeAll()
     }
 
     private func loadAvailableFonts() {
@@ -641,8 +643,16 @@ class FontManager: ObservableObject {
         return sortedVariants
     }
 
-    /// Get PostScript font name for a specific family and variant (cached lookup)
+    /// Get PostScript font name for a specific family and variant (O(1) cached lookup)
     func getPostScriptName(family: String, variant: String) -> String? {
+        let cacheKey = "\(family)-\(variant)"
+
+        // O(1) cache lookup
+        if let cached = postScriptNameCache[cacheKey] {
+            return cached
+        }
+
+        // Cache miss - do the expensive lookup once
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
 
@@ -650,6 +660,8 @@ class FontManager: ObservableObject {
             if let postScriptName = member[0] as? String,
                let displayName = member[1] as? String,
                displayName == variant {
+                // Cache the result for O(1) future lookups
+                postScriptNameCache[cacheKey] = postScriptName
                 return postScriptName
             }
         }
