@@ -9,6 +9,11 @@ extension DrawingCanvas {
             let boundsToUse = getProperShapeBounds(for: selectedShape)
             let corners = getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)
 
+            // Show live preview during drag
+            if isDraggingCorner && !liveCornerRadii.isEmpty {
+                cornerRadiusLivePreview(shape: selectedShape, geometry: geometry)
+            }
+
             ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
                 cornerRadiusHandle(
                     cornerIndex: index,
@@ -22,6 +27,23 @@ extension DrawingCanvas {
                     geometry: geometry
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private func cornerRadiusLivePreview(shape: VectorShape, geometry: GeometryProxy) -> some View {
+        if let bounds = shape.originalBounds {
+            let previewPath = createRoundedRectPathWithIndividualCorners(
+                rect: bounds,
+                cornerRadii: liveCornerRadii
+            )
+
+            Path { path in
+                addPathElements(previewPath.elements, to: &path)
+            }
+            .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
