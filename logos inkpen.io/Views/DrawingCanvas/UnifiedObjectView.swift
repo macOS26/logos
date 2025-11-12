@@ -1163,26 +1163,21 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Use cached CGImage if available (loaded once at document open)
+        // Always fetch from ImageTileCache to respect quality settings
         let sourceImage: CGImage?
 
-        if let cachedImage = shape.cachedCGImage {
-            sourceImage = cachedImage
+        if let imageData = shape.embeddedImageData {
+            sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality, shapeID: shape.id)
+        } else if let linkedPath = shape.linkedImagePath {
+            sourceImage = resolveAndGetSourceImage(
+                linkedPath: linkedPath,
+                documentURL: documentURL,
+                bookmarkData: shape.linkedImageBookmarkData,
+                shapeID: shape.id,
+                quality: imagePreviewQuality
+            )
         } else {
-            // Fallback: load on-demand if not cached (shouldn't happen normally)
-            if let imageData = shape.embeddedImageData {
-                sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality, shapeID: shape.id)
-            } else if let linkedPath = shape.linkedImagePath {
-                sourceImage = resolveAndGetSourceImage(
-                    linkedPath: linkedPath,
-                    documentURL: documentURL,
-                    bookmarkData: shape.linkedImageBookmarkData,
-                    shapeID: shape.id,
-                    quality: imagePreviewQuality
-                )
-            } else {
-                return
-            }
+            return
         }
 
         guard let image = sourceImage else { return }
