@@ -210,81 +210,11 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            var oldShapes: [UUID: VectorShape] = [:]
-            var affectedObjectIDs: Set<UUID> = []
+            // Capture state before cleanup for async processing
+            let dragDelta = currentDragDelta
             let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-            for object in selectedObjects {
-                if case .shape(let shape) = object.objectType {
-                    oldShapes[object.id] = shape
-                    affectedObjectIDs.insert(object.id)
-
-                    if shape.isClippingPath {
-                        let allShapes = document.getShapesForLayer(object.layerIndex)
-                        for clippedShape in allShapes {
-                            if clippedShape.clippedByShapeID == shape.id {
-                                if let clippedObj = document.snapshot.objects[clippedShape.id] {
-                                    oldShapes[clippedObj.id] = clippedShape
-                                    affectedObjectIDs.insert(clippedObj.id)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
-            for object in selectedObjects {
-                switch object.objectType {
-                case .text(let shape):
-                    // print("🟣 DRAG FINISH: Text object \(shape.id)")
-                    document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
-                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
-                }
-            }
-
-            // syncUnifiedObjectsAfterMovement()
-
-            var newShapes: [UUID: VectorShape] = [:]
-            for objectID in affectedObjectIDs {
-                if let object = document.snapshot.objects[objectID] {
-                    switch object.objectType {
-                    case .text(let shape):
-                        if let updatedObject = document.snapshot.objects[shape.id],
-                           case .text(let updatedShape) = updatedObject.objectType {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
-                        }
-                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        if let updatedShape = document.findShape(by: shape.id) {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
-                        }
-                    }
-                }
-            }
-
-            if !oldShapes.isEmpty && !newShapes.isEmpty {
-                let command = ShapeModificationCommand(
-                    objectIDs: Array(affectedObjectIDs),
-                    oldShapes: oldShapes,
-                    newShapes: newShapes
-                )
-                document.executeCommand(command)
-            }
-
-            document.updateTransformPanelValues()
-            // Note: Layer triggers handled by ShapeModificationCommand
-
-            // Batch all state cleanup to avoid multiple updates per frame
+            // Clear drag state IMMEDIATELY to show transform box
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
@@ -292,13 +222,79 @@ extension DrawingCanvas {
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             layerPreviewOpacities.removeAll()
+            document.currentDragOffset = .zero
+            document.dragPreviewCoordinates = .zero
+            document.cachedSelectionBounds = nil
+            document.activeLayerIndexDuringDrag = nil
 
-            // Defer document property updates to next frame to avoid "multiple updates per frame" warning
+            // Process heavy updates async so UI responds immediately
             DispatchQueue.main.async {
-                self.document.currentDragOffset = .zero
-                self.document.dragPreviewCoordinates = .zero
-                self.document.cachedSelectionBounds = nil
-                self.document.activeLayerIndexDuringDrag = nil
+                var oldShapes: [UUID: VectorShape] = [:]
+                var affectedObjectIDs: Set<UUID> = []
+
+                for object in selectedObjects {
+                    if case .shape(let shape) = object.objectType {
+                        oldShapes[object.id] = shape
+                        affectedObjectIDs.insert(object.id)
+
+                        if shape.isClippingPath {
+                            let allShapes = self.document.getShapesForLayer(object.layerIndex)
+                            for clippedShape in allShapes {
+                                if clippedShape.clippedByShapeID == shape.id {
+                                    if let clippedObj = self.document.snapshot.objects[clippedShape.id] {
+                                        oldShapes[clippedObj.id] = clippedShape
+                                        affectedObjectIDs.insert(clippedObj.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for object in selectedObjects {
+                    switch object.objectType {
+                    case .text(let shape):
+                        self.document.translateTextInUnified(id: shape.id, delta: dragDelta)
+                        affectedObjectIDs.insert(object.id)
+                        oldShapes[object.id] = shape
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        self.applyDragDeltaToUnifiedObject(objectID: shape.id, delta: dragDelta)
+                        affectedObjectIDs.insert(object.id)
+                        oldShapes[object.id] = shape
+                    }
+                }
+
+                var newShapes: [UUID: VectorShape] = [:]
+                for objectID in affectedObjectIDs {
+                    if let object = self.document.snapshot.objects[objectID] {
+                        switch object.objectType {
+                        case .text(let shape):
+                            if let updatedObject = self.document.snapshot.objects[shape.id],
+                               case .text(let updatedShape) = updatedObject.objectType {
+                                newShapes[objectID] = updatedShape
+                            } else {
+                                newShapes[objectID] = shape
+                            }
+                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                            if let updatedShape = self.document.findShape(by: shape.id) {
+                                newShapes[objectID] = updatedShape
+                            } else {
+                                newShapes[objectID] = shape
+                            }
+                        }
+                    }
+                }
+
+                if !oldShapes.isEmpty && !newShapes.isEmpty {
+                    let command = ShapeModificationCommand(
+                        objectIDs: Array(affectedObjectIDs),
+                        oldShapes: oldShapes,
+                        newShapes: newShapes
+                    )
+                    self.document.executeCommand(command)
+                }
+
+                self.document.updateTransformPanelValues()
             }
 
         } else {
