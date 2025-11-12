@@ -214,10 +214,14 @@ struct logos_inken_ioApp: App {
                     .disabled(documentState?.canPaste != true)
 
                     Button("Delete") {
+                        print("🗑️ Delete button pressed - documentState exists: \(documentState != nil), hasSelection: \(documentState?.hasSelection ?? false)")
                         documentState?.delete()
                     }
                     .keyboardShortcut(.delete)
                     .disabled(documentState?.hasSelection != true)
+                    .onChange(of: documentState?.hasSelection) { old, new in
+                        print("🗑️ Delete button - hasSelection changed: \(old ?? false) -> \(new ?? false), documentState: \(documentState != nil)")
+                    }
                 }
 
                 CommandGroup(replacing: .textEditing) {
