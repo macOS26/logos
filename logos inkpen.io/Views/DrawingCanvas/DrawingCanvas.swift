@@ -119,6 +119,12 @@ struct DrawingCanvas: View {
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0
+
+    // Live zoom/pan deltas - applied as GPU transforms during gesture, baked on end
+    @State internal var liveZoomDelta: CGFloat = 1.0
+    @State internal var livePanDelta: CGPoint = .zero
+    @State internal var isActivelyZooming: Bool = false
+    @State internal var isActivelyPanning: Bool = false
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []
     @State internal var visibleHandles: Set<HandleID> = []

@@ -181,7 +181,7 @@ extension DrawingCanvas {
 
     }
 
-    internal func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy) {
+    internal func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy, isLive: Bool = false) {
         let oldZoomLevel = zoomLevel
 
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
@@ -202,9 +202,18 @@ extension DrawingCanvas {
             y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
         )
 
-        // Update @Binding - SwiftUI handles view refresh automatically
-        zoomLevel = newZoomLevel
-        canvasOffset = newOffset
+        if isLive {
+            // During active gesture - update deltas only (GPU transform, no Canvas re-render)
+            liveZoomDelta = newZoomLevel / zoomLevel
+            livePanDelta = CGPoint(
+                x: newOffset.x - canvasOffset.x,
+                y: newOffset.y - canvasOffset.y
+            )
+        } else {
+            // After gesture end - bake deltas into real values
+            zoomLevel = newZoomLevel
+            canvasOffset = newOffset
+        }
 
     }
 

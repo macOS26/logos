@@ -157,6 +157,7 @@ extension DrawingCanvas {
             if zoomToolDragStartPoint == .zero {
                 zoomToolDragStartPoint = value.startLocation
                 zoomToolInitialZoomLevel = zoomLevel
+                isActivelyZooming = true
             }
             MagnifyingGlassCursor.set()
             let deltaY = value.location.y - zoomToolDragStartPoint.y
@@ -164,7 +165,7 @@ extension DrawingCanvas {
             var scaleChange = exp(-deltaY / sensitivity)
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
-            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry, isLive: true)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
@@ -215,6 +216,21 @@ extension DrawingCanvas {
             finishPanGesture()
 
         case .zoom:
+            // Bake deltas into real zoom/pan values
+            if isActivelyZooming {
+                let finalZoom = zoomLevel * liveZoomDelta
+                let finalOffset = CGPoint(
+                    x: canvasOffset.x + livePanDelta.x,
+                    y: canvasOffset.y + livePanDelta.y
+                )
+                zoomLevel = finalZoom
+                canvasOffset = finalOffset
+
+                // Reset deltas
+                liveZoomDelta = 1.0
+                livePanDelta = .zero
+                isActivelyZooming = false
+            }
             zoomToolDragStartPoint = .zero
             zoomToolInitialZoomLevel = zoomLevel
 
