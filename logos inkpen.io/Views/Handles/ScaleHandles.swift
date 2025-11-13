@@ -46,41 +46,7 @@ struct ScaleHandles: View {
             // TransformBoxHandles shows the outline, so we don't need to duplicate it here
             pathPointsView()
 
-            if shape.isGroup && !shape.groupedShapes.isEmpty {
-                // Use preview bounds if scaling, otherwise original bounds
-                let displayBounds = (isScaling && finalMarqueeBounds != .zero) ? finalMarqueeBounds : bounds
-                let displayCenter = CGPoint(x: displayBounds.midX, y: displayBounds.midY)
-
-                // TransformBoxHandles shows the bounding box, so we just show corner handles here
-                ForEach(0..<4) { i in
-                    let cornerPos = cornerPosition(for: i, in: displayBounds, center: displayCenter)
-                    let cornerIndex = pathPoints.count + i
-                    let isLockedPin = lockedPinPointIndex == cornerIndex
-
-                    Circle()
-                        .fill(isLockedPin ? Color.red : Color.green)
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: handleSize, height: handleSize)
-                        .offset(
-                            x: cornerPos.x * zoomLevel + canvasOffset.x - (handleSize) / 2,
-                            y: cornerPos.y * zoomLevel + canvasOffset.y - (handleSize) / 2
-                        )
-                        .onTapGesture {
-                            if !isScaling {
-                                setLockedPinPoint(cornerIndex)
-                            }
-                        }
-                        .highPriorityGesture(
-                            DragGesture(minimumDistance: 3)
-                                .onChanged { value in
-                                    handleScalingFromPoint(draggedPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
-                                }
-                                .onEnded { _ in
-                                    finishScaling()
-                                }
-                        )
-                }
-            }
+            // Removed green corner handles for groups - TransformBoxHandles shows the transform box
 
             let isCenterLockedPin = (lockedPinPointIndex == nil)
             Circle()
