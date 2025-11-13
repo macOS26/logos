@@ -14,19 +14,37 @@ extension DrawingCanvas {
                 cornerRadiusLivePreview(shape: currentShape, geometry: geometry)
             }
 
-            ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
-                cornerRadiusHandle(
-                    cornerIndex: index,
-                    position: (isDraggingCorner && draggedCornerIndex == index)
+            // Use Canvas for all handles - single view, single gesture
+            Canvas { context, size in
+                for (index, position) in corners.enumerated() {
+                    let handlePosition = (isDraggingCorner && draggedCornerIndex == index)
                         ? currentMousePosition
-                        : getCornerScreenPositions(bounds: boundsToUse, shape: currentShape, geometry: geometry)[index],
-                    radius: isDraggingCorner && !liveCornerRadii.isEmpty
-                        ? (liveCornerRadii[safe: index] ?? 0.0)
-                        : (currentShape.cornerRadii[safe: index] ?? 0.0),
-                    shape: currentShape,
-                    geometry: geometry
-                )
+                        : position
+
+                    // Outer circle (orange with white stroke)
+                    let outerRect = CGRect(x: handlePosition.x - 6, y: handlePosition.y - 6, width: 12, height: 12)
+                    context.fill(Path(ellipseIn: outerRect), with: .color(.orange.opacity(0.8)))
+                    context.stroke(Path(ellipseIn: outerRect), with: .color(.white), lineWidth: 2.0)
+
+                    // Inner circle (white)
+                    let innerRect = CGRect(x: handlePosition.x - 2, y: handlePosition.y - 2, width: 4, height: 4)
+                    context.fill(Path(ellipseIn: innerRect), with: .color(.white))
+                }
             }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        handleCornerRadiusCanvasDrag(
+                            value: value,
+                            shape: currentShape,
+                            corners: corners,
+                            geometry: geometry
+                        )
+                    }
+                    .onEnded { _ in
+                        finishCornerRadiusToolDrag()
+                    }
+            )
         }
     }
 
@@ -48,40 +66,46 @@ extension DrawingCanvas {
         // .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
-    @ViewBuilder
-    private func cornerRadiusHandle(
-        cornerIndex: Int,
-        position: CGPoint,
-        radius: Double,
+    private func handleCornerRadiusCanvasDrag(
+        value: DragGesture.Value,
         shape: VectorShape,
+        corners: [CGPoint],
         geometry: GeometryProxy
-    ) -> some View {
-        ZStack {
-            Circle()
-                .fill(Color.orange.opacity(0.8))
-                .stroke(Color.white, lineWidth: 2.0)
-                .frame(width: 12, height: 12)
+    ) {
+        // Determine which corner was clicked (only on first drag event)
+        if !isDraggingCorner {
+            let hitRadius: CGFloat = 15.0 // Slightly larger hit area
+            var nearestIndex: Int?
+            var nearestDistance = CGFloat.infinity
 
-            Circle()
-                .fill(Color.white)
-                .frame(width: 4, height: 4)
+            for (index, cornerPosition) in corners.enumerated() {
+                let distance = hypot(value.startLocation.x - cornerPosition.x, value.startLocation.y - cornerPosition.y)
+                if distance < hitRadius && distance < nearestDistance {
+                    nearestDistance = distance
+                    nearestIndex = index
+                }
+            }
+
+            guard let cornerIndex = nearestIndex else { return }
+
+            // Start dragging this corner
+            handleCornerRadiusToolDrag(
+                cornerIndex: cornerIndex,
+                value: value,
+                shape: shape,
+                geometry: geometry
+            )
+        } else {
+            // Continue dragging
+            if let cornerIndex = draggedCornerIndex {
+                handleCornerRadiusToolDrag(
+                    cornerIndex: cornerIndex,
+                    value: value,
+                    shape: shape,
+                    geometry: geometry
+                )
+            }
         }
-        .position(position)
-        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    handleCornerRadiusToolDrag(
-                        cornerIndex: cornerIndex,
-                        value: value,
-                        shape: shape,
-                        geometry: geometry
-                    )
-                }
-                .onEnded { _ in
-                    finishCornerRadiusToolDrag()
-                }
-        )
     }
 
     private func handleCornerRadiusToolDrag(
