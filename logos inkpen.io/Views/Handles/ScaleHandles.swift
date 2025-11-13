@@ -121,21 +121,25 @@ struct ScaleHandles: View {
             pathPointsView()
 
             if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // Use preview bounds if scaling, otherwise original bounds
+                let displayBounds = (isScaling && finalMarqueeBounds != .zero) ? finalMarqueeBounds : bounds
+                let displayCenter = CGPoint(x: displayBounds.midX, y: displayBounds.midY)
+
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
                     let screenRect = CGRect(
-                        x: (center.x - bounds.width/2) * zoom + offset.x,
-                        y: (center.y - bounds.height/2) * zoom + offset.y,
-                        width: bounds.width * zoom,
-                        height: bounds.height * zoom
+                        x: displayBounds.minX * zoom + offset.x,
+                        y: displayBounds.minY * zoom + offset.y,
+                        width: displayBounds.width * zoom,
+                        height: displayBounds.height * zoom
                     )
                     context.stroke(Path(screenRect), with: .color(.green), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [3.0, 3.0]))
                 }
                 .allowsHitTesting(false)
 
                 ForEach(0..<4) { i in
-                    let cornerPos = cornerPosition(for: i, in: bounds, center: center)
+                    let cornerPos = cornerPosition(for: i, in: displayBounds, center: displayCenter)
                     let cornerIndex = pathPoints.count + i
                     let isLockedPin = lockedPinPointIndex == cornerIndex
 

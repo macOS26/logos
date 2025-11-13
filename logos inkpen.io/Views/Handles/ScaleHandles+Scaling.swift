@@ -38,7 +38,9 @@ extension ScaleHandles {
         scaleX = min(max(scaleX, minScale), maxScale)
         scaleY = min(max(scaleY, minScale), maxScale)
 
-        if isShiftPressed {
+        // Check shift key in real-time during drag for uniform scaling
+        let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
+        if isShiftCurrentlyPressed {
             let uniformScale = max(scaleX, scaleY)
             scaleX = uniformScale
             scaleY = uniformScale
@@ -131,11 +133,12 @@ extension ScaleHandles {
         scaleX = min(max(scaleX, minScale), maxScale)
         scaleY = min(max(scaleY, minScale), maxScale)
 
-        if isShiftPressed {
+        // Check shift key in real-time during drag for uniform scaling
+        let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
+        if isShiftCurrentlyPressed {
             let uniformScale = max(scaleX, scaleY)
             scaleX = uniformScale
             scaleY = uniformScale
-        } else {
         }
 
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
