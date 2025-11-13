@@ -461,10 +461,3 @@ struct NewDocumentSetupView: View {
         isPresented = false
     }
 }
-
-#Preview {
-    NewDocumentSetupView(
-        isPresented: .constant(true),
-        onDocumentCreated: { _, _ in }
-    )
-}
