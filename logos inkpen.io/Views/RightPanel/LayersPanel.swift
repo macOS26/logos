@@ -59,8 +59,6 @@ struct LayerPercentageStyle: ViewModifier {
 }
 
 struct DragTargetStyle: ViewModifier {
-    let isActive: Bool
-    
     func body(content: Content) -> some View {
         content
             .frame(width: 20, height: 20)
@@ -72,17 +70,17 @@ extension View {
     func layerLabel() -> some View {
         modifier(LayerLabelStyle())
     }
-    
+
     func layerControlLabel() -> some View {
         modifier(LayerControlLabelStyle())
     }
-    
+
     func layerPercentage() -> some View {
         modifier(LayerPercentageStyle())
     }
-    
-    func dragTarget(isActive: Bool = false) -> some View {
-        modifier(DragTargetStyle(isActive: isActive))
+
+    func dragTarget() -> some View {
+        modifier(DragTargetStyle())
     }
 }
 
