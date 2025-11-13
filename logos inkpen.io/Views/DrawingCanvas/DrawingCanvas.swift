@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct DrawingCanvas: View {
-    var viewState: DocumentViewState = DocumentViewState()
     var document: VectorDocument = VectorDocument()
     @Binding var zoomLevel: Double
     @Binding var canvasOffset: CGPoint
@@ -32,11 +31,8 @@ struct DrawingCanvas: View {
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
     @State internal var isDrawing = false
-    @State internal var dragOffset = CGSize.zero
-    @State internal var lastPanLocation = CGPoint.zero
     @State internal var drawingStartPoint: CGPoint?
     @State internal var currentDrawingPoints: [CGPoint] = []
-    @State internal var lastTapTime: Date = Date()
 
     @State internal var initialCanvasOffset = CGPoint.zero
     @State internal var handToolDragStart = CGPoint.zero
@@ -53,13 +49,9 @@ struct DrawingCanvas: View {
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
 
-    // PROTOTYPE: Test anchor point types
-    @State internal var testAnchorTypes: [PointID: AnchorPointType] = [:]
-
     // Spatial index for O(1) hit testing
     @State internal var spatialIndex = SpatialIndex()
     @State internal var isDraggingDirectSelectedShapes = false
-    @State internal var keyEventMonitor: Any?
     @State internal var bezierPath: VectorPath?
     @State internal var bezierPoints: [VectorPoint] = []
     @State internal var isBezierDrawing = false
@@ -102,9 +94,7 @@ struct DrawingCanvas: View {
 
     @State internal var isTemporaryHandToolActive = false
     @State internal var temporaryToolPreviousTool: DrawingTool? = nil
-    @State internal var isTemporaryDirectSelectionViaCommand = false
     @State internal var isTemporarySelectionViaCommand = false
-    @State internal var temporaryCommandPreviousTool: DrawingTool? = nil
     @State internal var initialZoomLevel: CGFloat = 1.0
 
     @State internal var isZoomGestureActive = false
@@ -140,17 +130,17 @@ struct DrawingCanvas: View {
     @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
 
     internal func syncDirectSelectionWithDocument() {
-        viewState.selectedObjectIDs = selectedObjectIDs
-        viewState.selectedPoints = selectedPoints
-        viewState.selectedHandles = selectedHandles
+        document.viewState.selectedObjectIDs = selectedObjectIDs
+        document.viewState.selectedPoints = selectedPoints
+        document.viewState.selectedHandles = selectedHandles
 
         if !selectedObjectIDs.isEmpty {
-            viewState.selectedObjectIDs = Set(selectedObjectIDs)
-            viewState.selectedObjectIDs = selectedObjectIDs
-        } else if viewState.currentTool == .directSelection ||
-                  viewState.currentTool == .convertAnchorPoint ||
-                    viewState.currentTool == .penPlusMinus {
-            viewState.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs = Set(selectedObjectIDs)
+            document.viewState.selectedObjectIDs = selectedObjectIDs
+        } else if document.viewState.currentTool == .directSelection ||
+                  document.viewState.currentTool == .convertAnchorPoint ||
+                    document.viewState.currentTool == .penPlusMinus {
+            document.viewState.selectedObjectIDs.removeAll()
         }
     }
 
@@ -180,11 +170,7 @@ struct DrawingCanvas: View {
     @State internal var liveCornerRadii: [Double] = []
     @State internal var originalCornerRadii: [Double] = []
     @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
-    @State internal var coincidentPointRadius: CGFloat = 2.0
     @State internal var coincidentPointTolerance: Double = 0.1
-    @State internal var isHUDDragging = false
-    @State internal var hudDragStartOffsetX: CGFloat = 0
-    @State internal var hudDragStartOffsetY: CGFloat = 0
     @State internal var isEditingText = false
     @State internal var editingTextID: UUID? = nil
     @State internal var currentCursorPosition: Int = 0
@@ -192,22 +178,7 @@ struct DrawingCanvas: View {
     @State internal var lastTapLocation: CGPoint = .zero
     @State internal var isHit = false
     @State internal var foundPointOrHandle = false
-    @State internal var sharedElements: [PathElement] = []
-    @State internal var sharedNewElements: [PathElement] = []
-    @State internal var sharedValidElements: [PathElement] = []
-    @State internal var sharedMaxDistance: Double = 0
-    @State internal var sharedMaxIndex: Int = 0
-    @State internal var sharedClosestDistance: Double = Double.infinity
-    @State internal var sharedClosestPressure: Double = 1.0
-    @State internal var sharedThicknessPoints: [(location: CGPoint, thickness: Double)] = []
-
-    @State internal var sharedOutgoingHandleCollapsed: Bool = true
-    @State internal var sharedUpdatedShape: VectorShape?
     @State internal var sharedOriginalShape: VectorShape?
-    @State internal var sharedCurvePositions: [CGPoint] = []
-
-    @State internal var sharedAllRadii: [Double] = []
-    @State internal var sharedUpdatedRadii: [Double] = []
     @State internal var hasPerformedInitialFitToPage = false
     @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
 
@@ -264,7 +235,7 @@ struct DrawingCanvas: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshVisibleHandles"))) { _ in
                     // Refresh visible handles after anchor type conversion
-                    if viewState.currentTool == .directSelection {
+                    if document.viewState.currentTool == .directSelection {
                         showHandlesForSelectedPoints()
                     }
                 }
