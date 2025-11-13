@@ -1130,10 +1130,60 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
-        // Render through Metal: NSImage → Metal (BGRA) → CGImage (BGRA)
-        guard let renderer = MetalImageTileRenderer.shared,
-              let image = renderer.renderImage(from: sourceNSImage, quality: imagePreviewQuality) else {
-            return
+        // Direct conversion: NSImage → CGImage (with quality downsampling)
+        let image: CGImage
+        if imagePreviewQuality < 1.0 {
+            // Downsample for lower quality
+            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
+            guard let fullImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+                return
+            }
+
+            let maxDimension = max(fullImage.width, fullImage.height)
+            let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
+
+            let aspectRatio = Double(fullImage.width) / Double(fullImage.height)
+            let targetWidth: Int
+            let targetHeight: Int
+
+            if fullImage.width >= fullImage.height {
+                targetWidth = targetSize
+                targetHeight = Int(Double(targetSize) / aspectRatio)
+            } else {
+                targetHeight = targetSize
+                targetWidth = Int(Double(targetSize) * aspectRatio)
+            }
+
+            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+            let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+
+            guard let context = CGContext(
+                data: nil,
+                width: targetWidth,
+                height: targetHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: targetWidth * 4,
+                space: colorSpace,
+                bitmapInfo: bitmapInfo
+            ) else {
+                return
+            }
+
+            context.interpolationQuality = .high
+            context.draw(fullImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
+
+            guard let downsampled = context.makeImage() else {
+                return
+            }
+
+            image = downsampled
+        } else {
+            // Full quality - direct conversion
+            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
+            guard let fullImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+                return
+            }
+            image = fullImage
         }
 
         // Get actual image pixel dimensions
