@@ -1079,7 +1079,7 @@ struct LayerCanvasView: View {
     }
 
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
-        // Get image bounds to check viewport culling
+        // Get render bounds
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
         var renderBounds = pathBounds
         if scaleTransform != .identity {
@@ -1089,32 +1089,8 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
-        // Scale bounds to screen coordinates
-        // NOTE: Do NOT add dragPreviewDelta here - it's already applied via canvas transform (line 189-194)
-        let screenBounds = CGRect(
-            x: renderBounds.origin.x * zoomLevel + canvasOffset.x,
-            y: renderBounds.origin.y * zoomLevel + canvasOffset.y,
-            width: renderBounds.width * zoomLevel,
-            height: renderBounds.height * zoomLevel
-        )
-
-        // Use actual canvas size for viewport (from Canvas context)
-        let viewportMargin: CGFloat = 500  // Extra margin for smooth scrolling
-        let viewportRect = CGRect(
-            x: -viewportMargin,
-            y: -viewportMargin,
-            width: canvasSize.width + viewportMargin * 2,
-            height: canvasSize.height + viewportMargin * 2
-        )
-
-        // Viewport culling: Skip if image is completely outside visible area
-        guard screenBounds.intersects(viewportRect) else {
-            return
-        }
-
-        // Load NSImage and render through Metal pipeline
+        // Load NSImage - NO viewport culling, NO caching, just render
         let nsImage: NSImage?
-
         if let imageData = shape.embeddedImageData {
             nsImage = NSImage(data: imageData)
         } else if let linkedPath = shape.linkedImagePath {
@@ -1130,80 +1106,11 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
-        // Use cached CGImage from shape if available and quality/tile hasn't changed
-        let image: CGImage
-        if let cachedImage = shape.cachedRenderedImage,
-           shape.cachedImageQuality == imagePreviewQuality,
-           shape.cachedImageTileSize == imageTileSize {
-            // ✅ Use pre-cached CGImage - NO rendering during pan/zoom!
-            image = cachedImage
-        } else {
-            // ❌ CACHE MISS - downsample with CoreGraphics (ONCE per quality change)
-            // This should only happen when:
-            // 1. First time loading image
-            // 2. Quality/tile settings changed
-            // print("⚠️ renderImage: CACHE MISS - downsampling shape \(shape.id) at quality \(imagePreviewQuality)")
-
-            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-            guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
-                return
-            }
-
-            // Downsample with CoreGraphics if quality < 1.0
-            let finalImage: CGImage
-            if imagePreviewQuality < 1.0 {
-                let maxDimension = max(cgImage.width, cgImage.height)
-                let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
-                let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-                let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
-                let aspectRatio = Double(cgImage.width) / Double(cgImage.height)
-                let targetWidth: Int
-                let targetHeight: Int
-                if cgImage.width >= cgImage.height {
-                    targetWidth = targetSize
-                    targetHeight = Int(Double(targetSize) / aspectRatio)
-                } else {
-                    targetHeight = targetSize
-                    targetWidth = Int(Double(targetSize) * aspectRatio)
-                }
-                guard let downsampleContext = CGContext(
-                    data: nil,
-                    width: targetWidth,
-                    height: targetHeight,
-                    bitsPerComponent: 8,
-                    bytesPerRow: targetWidth * 4,
-                    space: colorSpace,
-                    bitmapInfo: bitmapInfo
-                ) else {
-                    image = cgImage
-                    return
-                }
-                downsampleContext.interpolationQuality = .high
-                downsampleContext.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
-                finalImage = downsampleContext.makeImage() ?? cgImage
-            } else {
-                finalImage = cgImage
-            }
-
-            image = finalImage
-            // NOTE: Cannot cache here - shape is immutable in Canvas body
-            // Cache will be populated on NEXT frame by reading the rendered image
+        // Get CGImage - NO downsampling, just use it directly
+        var rect = CGRect(origin: .zero, size: sourceNSImage.size)
+        guard let image = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+            return
         }
-
-        // Get actual image pixel dimensions
-        let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
-
-        // Calculate visible tiles
-        let tileSize = imageTileSize
-        let visibleTiles = ImageTileCache.shared.visibleTiles(
-            imageRect: screenBounds,
-            viewportRect: viewportRect,
-            imageSize: imagePixelSize,
-            canvasSize: renderBounds.size,
-            tileSize: tileSize
-        )
-
-        guard !visibleTiles.isEmpty else { return }
 
         // Draw using CGContext with tiling
         context.withCGContext { cgContext in
