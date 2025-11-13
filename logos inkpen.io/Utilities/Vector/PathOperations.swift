@@ -590,13 +590,7 @@ class PathOperations {
         }
 
         // Use GPU-accelerated path hit test for stroke detection
-        let gpuResult = MetalComputeEngine.shared.pathHitTestGPU(path, point: point, tolerance: tolerance)
-        if gpuResult {
-            return true
-        }
-
-        // Fallback to CPU if GPU unavailable or failed
-        return isPointNearStroke(path, point: point, tolerance: tolerance)
+        return MetalComputeEngine.shared.pathHitTestGPU(path, point: point, tolerance: tolerance)
     }
 
     private static func isPointNearStroke(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {

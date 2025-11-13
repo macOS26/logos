@@ -1246,13 +1246,10 @@ class MetalComputeEngine {
 
     /// GPU-accelerated path hit test - tests if a point is within tolerance of a path
     func pathHitTestGPU(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
-        guard let pipeline = pathHitTestPipeline else {
-            return false  // Fall back to CPU if pipeline not available
-        }
-
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+        guard let pipeline = pathHitTestPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return false
+            fatalError("Metal GPU path hit test pipeline not available")
         }
 
         // Convert CGPath to PathSegment array
@@ -1306,7 +1303,7 @@ class MetalComputeEngine {
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let segmentsBuffer = device.makeBuffer(bytes: segments, length: segments.count * MemoryLayout<MetalPathSegment>.stride, options: bufferOptions),
               let hitResultBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
-            return false
+            fatalError("Failed to create Metal buffers for path hit test")
         }
 
         // Initialize result to 0 (no hit)
