@@ -210,6 +210,17 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
+            // IMMEDIATELY clear drag state to show transform box
+            let finalDelta = currentDragDelta
+            currentDragDelta = .zero
+            liveDragOffset = .zero
+            cachedSelectionBoundsForDrag = nil
+            document.currentDragOffset = .zero
+            document.dragPreviewCoordinates = .zero
+            document.cachedSelectionBounds = nil
+            document.activeLayerIndexDuringDrag = nil
+            layerPreviewOpacities.removeAll()
+
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
             let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
@@ -237,12 +248,12 @@ extension DrawingCanvas {
                 switch object.objectType {
                 case .text(let shape):
                     // print("🟣 DRAG FINISH: Text object \(shape.id)")
-                    document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
+                    document.translateTextInUnified(id: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
-                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
+                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 }
@@ -283,19 +294,10 @@ extension DrawingCanvas {
             document.updateTransformPanelValues()
             // Note: Layer triggers handled by ShapeModificationCommand
 
+            // Clear remaining drag state (drag state already cleared above for immediate transform box)
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
-            currentDragDelta = .zero
-            liveDragOffset = .zero
-            cachedSelectionBoundsForDrag = nil
-            document.currentDragOffset = .zero
-            document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
-
-            // Clear layer preview opacities
-            layerPreviewOpacities.removeAll()
 
         } else {
             liveDragOffset = .zero
