@@ -430,7 +430,9 @@ struct ShearHandles: View {
         var finalShearY = shearFactorY
 
         // Shift key: constrain to pure horizontal OR pure vertical shear
-        if isShiftPressed {
+        // Check shift key in real-time during drag
+        let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
+        if isShiftCurrentlyPressed {
             if abs(deltaX) > abs(deltaY) {
                 // Dragging more horizontally → pure horizontal shear, zero vertical
                 finalShearY = 0
