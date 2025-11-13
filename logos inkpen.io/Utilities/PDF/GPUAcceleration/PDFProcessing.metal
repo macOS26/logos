@@ -187,3 +187,120 @@ kernel void rasterizePathSegments(
     uint2 gid [[thread_position_in_grid]])
 {
 }
+
+// Path segment types
+#define PATH_MOVE 0
+#define PATH_LINE 1
+#define PATH_CURVE 2
+#define PATH_QUAD 3
+#define PATH_CLOSE 4
+
+struct PathSegment {
+    uint type;           // Path element type
+    float2 point;        // End point (for all except close)
+    float2 control1;     // First control point (for curves)
+    float2 control2;     // Second control point (for cubic curves)
+};
+
+// Distance from point to line segment
+float distanceToLineSegment(float2 p, float2 a, float2 b) {
+    float2 ab = b - a;
+    float2 ap = p - a;
+
+    float abLenSq = dot(ab, ab);
+    if (abLenSq < 0.0001) {
+        return length(ap);
+    }
+
+    float t = clamp(dot(ap, ab) / abLenSq, 0.0f, 1.0f);
+    float2 closest = a + t * ab;
+    return length(p - closest);
+}
+
+// Distance from point to cubic bezier curve (approximate via sampling)
+float distanceToCubicBezier(float2 p, float2 p0, float2 p1, float2 p2, float2 p3) {
+    float minDist = INFINITY;
+
+    // Sample the curve at 20 points
+    for (int i = 0; i <= 20; i++) {
+        float t = float(i) / 20.0;
+        float mt = 1.0 - t;
+        float mt2 = mt * mt;
+        float mt3 = mt2 * mt;
+        float t2 = t * t;
+        float t3 = t2 * t;
+
+        float2 curvePoint = mt3 * p0 + 3.0 * mt2 * t * p1 + 3.0 * mt * t2 * p2 + t3 * p3;
+        float dist = length(p - curvePoint);
+        minDist = min(minDist, dist);
+    }
+
+    return minDist;
+}
+
+// Distance from point to quadratic bezier curve
+float distanceToQuadraticBezier(float2 p, float2 p0, float2 p1, float2 p2) {
+    float minDist = INFINITY;
+
+    for (int i = 0; i <= 20; i++) {
+        float t = float(i) / 20.0;
+        float mt = 1.0 - t;
+        float mt2 = mt * mt;
+        float t2 = t * t;
+
+        float2 curvePoint = mt2 * p0 + 2.0 * mt * t * p1 + t2 * p2;
+        float dist = length(p - curvePoint);
+        minDist = min(minDist, dist);
+    }
+
+    return minDist;
+}
+
+// GPU-accelerated path hit test
+// Tests if a point is within tolerance of a path's stroke
+kernel void path_hit_test(
+    const device PathSegment* segments [[buffer(0)]],
+    constant uint& segmentCount [[buffer(1)]],
+    constant float2& tapPoint [[buffer(2)]],
+    constant float& tolerance [[buffer(3)]],
+    device uint* hitResult [[buffer(4)]],
+    uint gid [[thread_position_in_grid]])
+{
+    if (gid >= segmentCount) return;
+
+    PathSegment segment = segments[gid];
+    float2 prevPoint = gid > 0 ? segments[gid - 1].point : segment.point;
+
+    float minDist = INFINITY;
+
+    switch (segment.type) {
+        case PATH_MOVE:
+            // Just a position marker, check distance to point
+            minDist = length(tapPoint - segment.point);
+            break;
+
+        case PATH_LINE:
+            // Distance to line segment
+            minDist = distanceToLineSegment(tapPoint, prevPoint, segment.point);
+            break;
+
+        case PATH_CURVE:
+            // Distance to cubic bezier
+            minDist = distanceToCubicBezier(tapPoint, prevPoint, segment.control1, segment.control2, segment.point);
+            break;
+
+        case PATH_QUAD:
+            // Distance to quadratic bezier
+            minDist = distanceToQuadraticBezier(tapPoint, prevPoint, segment.control1, segment.point);
+            break;
+
+        case PATH_CLOSE:
+            // Line back to first point (handled separately)
+            break;
+    }
+
+    // If any segment is within tolerance, mark as hit
+    if (minDist <= tolerance) {
+        atomic_store_explicit((device atomic_uint*)hitResult, 1, memory_order_relaxed);
+    }
+}
