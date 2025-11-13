@@ -234,55 +234,6 @@ extension DrawingCanvas {
         }
     }
 
-    @ViewBuilder
-    internal func bezierClosePathHint() -> some View {
-        if showClosePathHint {
-            ZStack {
-                Circle()
-                    .stroke(Color.green, lineWidth: 2.0)
-                    .fill(Color.green.opacity(0.1))
-                    .frame(width: 16, height: 16)
-                    .position(CGPoint(
-                        x: closePathHintLocation.x * zoomLevel + canvasOffset.x,
-                        y: closePathHintLocation.y * zoomLevel + canvasOffset.y
-                    ))
-
-                Image(systemName: "multiply.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.system(size: 12))
-                    .position(CGPoint(
-                        x: closePathHintLocation.x * zoomLevel + canvasOffset.x,
-                        y: closePathHintLocation.y * zoomLevel + canvasOffset.y
-                    ))
-            }
-            .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
-        }
-    }
-
-    @ViewBuilder
-    internal func bezierContinuePathHint() -> some View {
-        if showContinuePathHint {
-            ZStack {
-                Circle()
-                    .stroke(Color.blue, lineWidth: 2.0)
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 16, height: 16)
-                    .position(CGPoint(
-                        x: continuePathHintLocation.x * zoomLevel + canvasOffset.x,
-                        y: continuePathHintLocation.y * zoomLevel + canvasOffset.y
-                    ))
-
-                Image(systemName: "arrow.right.circle.fill")
-                    .foregroundColor(.blue)
-                    .font(.system(size: 12))
-                    .position(CGPoint(
-                        x: continuePathHintLocation.x * zoomLevel + canvasOffset.x,
-                        y: continuePathHintLocation.y * zoomLevel + canvasOffset.y
-                    ))
-            }
-            .animation(.easeInOut(duration: 0.2), value: showContinuePathHint)
-        }
-    }
 
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
