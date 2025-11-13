@@ -20,6 +20,7 @@ struct SelectionHandlesView: View {
     }
 
     var body: some View {
+        let _ = print("🟢🟢🟢 TRANSFORM BOX START RENDERING at \(CFAbsoluteTimeGetCurrent())")
         ZStack {
             // Only render if there are selected objects
             if !document.viewState.selectedObjectIDs.isEmpty {
@@ -117,6 +118,9 @@ struct SelectionHandlesView: View {
             }
         }
         .id(selectionID) // Force re-render when selection changes
+        .onAppear {
+            print("🟢🟢🟢 TRANSFORM BOX ON SCREEN at \(CFAbsoluteTimeGetCurrent())")
+        }
     }
 
     @ViewBuilder

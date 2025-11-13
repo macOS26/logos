@@ -195,6 +195,7 @@ extension DrawingCanvas {
     }
 
     internal func finishSelectionDrag() {
+        print("🔴🔴🔴 DRAG END at \(CFAbsoluteTimeGetCurrent())")
         if document.isHandleScalingActive {
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
@@ -202,7 +203,7 @@ extension DrawingCanvas {
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
-            document.activeLayerIndexDuringDrag = nil
+            // document.activeLayerIndexDuringDrag = nil  // Don't clear - causes redraw
             layerPreviewOpacities.removeAll()
             return
         }
@@ -210,10 +211,13 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
+            let start = CFAbsoluteTimeGetCurrent()
             let dragDelta = currentDragDelta
             let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
+            print("⏱️ finishDrag: fetch selectedObjects took \((CFAbsoluteTimeGetCurrent() - start) * 1000)ms")
 
             // Collect old shapes BEFORE transform
+            let t1 = CFAbsoluteTimeGetCurrent()
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
             for object in selectedObjects {
@@ -222,18 +226,36 @@ extension DrawingCanvas {
                     affectedObjectIDs.insert(object.id)
                 }
             }
+            print("⏱️ finishDrag: collect oldShapes took \((CFAbsoluteTimeGetCurrent() - t1) * 1000)ms")
 
-            // Apply transforms (O(1) - just updates transform matrix)
+            // Apply transforms (O(1) - Metal cache now uses image pointer, not shape ID)
+            // Use silent updates to batch changes and trigger layer update once at the end
+            let t2 = CFAbsoluteTimeGetCurrent()
+            var affectedLayers = Set<Int>()
+
             for object in selectedObjects {
+                affectedLayers.insert(object.layerIndex)
                 switch object.objectType {
                 case .text(let shape):
-                    document.translateTextInUnified(id: shape.id, delta: dragDelta)
+                    // Text uses textPosition, not transform
+                    if let currentPos = shape.textPosition {
+                        let newPos = CGPoint(x: currentPos.x + dragDelta.x, y: currentPos.y + dragDelta.y)
+                        document.updateShapeByID(shape.id, silent: true) { s in s.textPosition = newPos }
+                    }
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: dragDelta)
+                    let translationTransform = CGAffineTransform(translationX: dragDelta.x, y: dragDelta.y)
+                    let newTransform = shape.transform.concatenating(translationTransform)
+                    document.updateShapeByID(shape.id, silent: true) { s in s.transform = newTransform }
                 }
             }
 
+            // Trigger layer updates once for all affected layers
+            document.triggerLayerUpdates(for: affectedLayers)
+
+            print("⏱️ finishDrag: apply transforms took \((CFAbsoluteTimeGetCurrent() - t2) * 1000)ms")
+
             // Collect new shapes AFTER transform
+            let t3 = CFAbsoluteTimeGetCurrent()
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
                 if let object = document.snapshot.objects[objectID] {
@@ -249,8 +271,10 @@ extension DrawingCanvas {
                     }
                 }
             }
+            print("⏱️ finishDrag: collect newShapes took \((CFAbsoluteTimeGetCurrent() - t3) * 1000)ms")
 
             // Create undo command
+            let t4 = CFAbsoluteTimeGetCurrent()
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: Array(affectedObjectIDs),
@@ -259,21 +283,41 @@ extension DrawingCanvas {
                 )
                 document.executeCommand(command)
             }
+            print("⏱️ finishDrag: executeCommand took \((CFAbsoluteTimeGetCurrent() - t4) * 1000)ms")
 
+            let t5 = CFAbsoluteTimeGetCurrent()
             document.updateTransformPanelValues()
+            print("⏱️ finishDrag: updateTransformPanelValues took \((CFAbsoluteTimeGetCurrent() - t5) * 1000)ms")
+            print("⏱️ finishDrag: TOTAL took \((CFAbsoluteTimeGetCurrent() - start) * 1000)ms")
 
             // Clear drag state
+            let t6 = CFAbsoluteTimeGetCurrent()
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
+            print("⏱️ finishDrag: clear local state took \((CFAbsoluteTimeGetCurrent() - t6) * 1000)ms")
+
+            let t7 = CFAbsoluteTimeGetCurrent()
+            print("⏱️ finishDrag: BEFORE set currentDragDelta=0")
             currentDragDelta = .zero
+            print("⏱️ finishDrag: AFTER set currentDragDelta=0, took \((CFAbsoluteTimeGetCurrent() - t7) * 1000)ms")
+
+            let t8 = CFAbsoluteTimeGetCurrent()
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             layerPreviewOpacities.removeAll()
+            print("⏱️ finishDrag: clear drag visuals took \((CFAbsoluteTimeGetCurrent() - t8) * 1000)ms")
+
+            let t9 = CFAbsoluteTimeGetCurrent()
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
+            // DON'T clear activeLayerIndexDuringDrag - it causes all layers to redraw!
+            // document.activeLayerIndexDuringDrag = nil
+            print("⏱️ finishDrag: clear document drag state took \((CFAbsoluteTimeGetCurrent() - t9) * 1000)ms")
+
+            print("🔴🔴🔴 DRAG END COMPLETE at \(CFAbsoluteTimeGetCurrent())")
+            print("⏱️ finishDrag: END OF FUNCTION")
 
         } else {
             liveDragOffset = .zero
@@ -305,13 +349,15 @@ extension DrawingCanvas {
     }
 
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
-        // O(1): Just update transform instead of iterating through all path elements
-        var updatedShape = shape
-
+        // O(1): Just update transform, don't recalculate bounds (already correct from drag preview)
         let translationTransform = CGAffineTransform(translationX: delta.x, y: delta.y)
-        updatedShape.transform = shape.transform.concatenating(translationTransform)
+        let newTransform = shape.transform.concatenating(translationTransform)
 
-        document.updateShapeTransformAndPathInUnified(id: updatedShape.id, transform: updatedShape.transform)
+        // Use silent update to skip bounds recalculation (O(1))
+        document.updateShapeByID(shape.id, silent: false) { existingShape in
+            existingShape.transform = newTransform
+            // Don't call updateBounds() - bounds are already correct
+        }
     }
 
     private func applyDragDeltaToShape_OLD(shape: VectorShape, delta: CGPoint) {
