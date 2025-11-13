@@ -22,6 +22,7 @@ struct ScaleHandles: View {
     @State var pathPoints: [VectorPoint] = []
     @State var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State var pointsRefreshTrigger: Int = 0
+    @State var cachedPreviewPath: Path? = nil
     let handleSize: CGFloat = 10
 
     private var calculatedBounds: CGRect {
@@ -216,85 +217,23 @@ struct ScaleHandles: View {
                         }
                 )
 
-            if isScaling && !previewTransform.isIdentity {
+            if isScaling && !previewTransform.isIdentity, let cachedPath = cachedPreviewPath {
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
 
-                    if shape.isGroup && !shape.groupedShapes.isEmpty {
-                        for groupedShape in shape.groupedShapes {
-                            var path = Path()
-                            for element in groupedShape.path.elements {
-                                switch element {
-                                case .move(let to):
-                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                    let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
-                                    path.move(to: screenP)
-                                case .line(let to):
-                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                    let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
-                                    path.addLine(to: screenP)
-                                case .curve(let to, let control1, let control2):
-                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                    let tc1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
-                                    let tc2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
-                                    let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
-                                    let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
-                                    let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
-                                    path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
-                                case .quadCurve(let to, let control):
-                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                    let tc = CGPoint(x: control.x, y: control.y).applying(previewTransform)
-                                    let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
-                                    let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
-                                    path.addQuadCurve(to: screenTo, control: screenC)
-                                case .close:
-                                    path.closeSubpath()
-                                }
-                            }
-                            context.stroke(path, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
-                        }
+                    // Transform the cached path to screen coordinates
+                    let transform = CGAffineTransform.identity
+                        .translatedBy(x: offset.x, y: offset.y)
+                        .scaledBy(x: zoom, y: zoom)
 
-                        // Draw green transformed bounds box
+                    context.transform = transform
+                    context.stroke(cachedPath, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoom, dash: [4.0 / zoom, 4.0 / zoom]))
+
+                    // Draw green transformed bounds box for groups
+                    if shape.isGroup && !shape.groupedShapes.isEmpty {
                         let transformedBounds = bounds.applying(previewTransform)
-                        let screenRect = CGRect(
-                            x: transformedBounds.minX * zoom + offset.x,
-                            y: transformedBounds.minY * zoom + offset.y,
-                            width: transformedBounds.width * zoom,
-                            height: transformedBounds.height * zoom
-                        )
-                        context.stroke(Path(screenRect), with: .color(.green.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.5, dash: [3.0, 3.0]))
-                    } else {
-                        var path = Path()
-                        for element in shape.path.elements {
-                            switch element {
-                            case .move(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
-                                path.move(to: screenP)
-                            case .line(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
-                                path.addLine(to: screenP)
-                            case .curve(let to, let control1, let control2):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let tc1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
-                                let tc2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
-                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
-                                let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
-                                let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
-                                path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
-                            case .quadCurve(let to, let control):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                                let tc = CGPoint(x: control.x, y: control.y).applying(previewTransform)
-                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
-                                let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
-                                path.addQuadCurve(to: screenTo, control: screenC)
-                            case .close:
-                                path.closeSubpath()
-                            }
-                        }
-                        context.stroke(path, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
+                        context.stroke(Path(transformedBounds), with: .color(.green.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.5 / zoom, dash: [3.0 / zoom, 3.0 / zoom]))
                     }
                 }
                 .allowsHitTesting(false)
@@ -314,6 +253,63 @@ struct ScaleHandles: View {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
             }
+        }
+        .onChange(of: previewTransform) { _, newTransform in
+            guard isScaling && newTransform != .identity else {
+                cachedPreviewPath = nil
+                return
+            }
+
+            // Build cached transformed path
+            var path = Path()
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                for groupedShape in shape.groupedShapes {
+                    for element in groupedShape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                            path.move(to: p)
+                        case .line(let to):
+                            let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                            path.addLine(to: p)
+                        case .curve(let to, let control1, let control2):
+                            let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                            let tc1 = CGPoint(x: control1.x, y: control1.y).applying(newTransform)
+                            let tc2 = CGPoint(x: control2.x, y: control2.y).applying(newTransform)
+                            path.addCurve(to: tp, control1: tc1, control2: tc2)
+                        case .quadCurve(let to, let control):
+                            let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                            let tc = CGPoint(x: control.x, y: control.y).applying(newTransform)
+                            path.addQuadCurve(to: tp, control: tc)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                }
+            } else {
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                        path.move(to: p)
+                    case .line(let to):
+                        let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                        path.addLine(to: p)
+                    case .curve(let to, let control1, let control2):
+                        let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                        let tc1 = CGPoint(x: control1.x, y: control1.y).applying(newTransform)
+                        let tc2 = CGPoint(x: control2.x, y: control2.y).applying(newTransform)
+                        path.addCurve(to: tp, control1: tc1, control2: tc2)
+                    case .quadCurve(let to, let control):
+                        let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                        let tc = CGPoint(x: control.x, y: control.y).applying(newTransform)
+                        path.addQuadCurve(to: tp, control: tc)
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            cachedPreviewPath = path
         }
         .id("scale-handles-\(pointsRefreshTrigger)")
     }
