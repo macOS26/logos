@@ -87,26 +87,6 @@ struct ShapeView: View {
                 } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
                     // Images are now rendered on Canvas via .image object type
                     EmptyView()
-                } else if false {
-                    if let imageData = shape.embeddedImageData, let image = NSImage(data: imageData) {
-                        let pathBounds = shape.path.cgPath.boundingBoxOfPath
-                        let transformedBounds = pathBounds.applying(shape.transform)
-
-                        ImageNSView(
-                            image: image,
-                            bounds: transformedBounds,
-                            opacity: shape.opacity,
-                            fillStyle: shape.fillStyle,
-                            viewMode: effectiveViewMode
-                        )
-                        .offset(x: isSelected ? dragPreviewDelta.x : 0,
-                                y: isSelected ? dragPreviewDelta.y : 0)
-                    } else {
-                        let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))
-                        placeholder
-                            .stroke(Color.gray.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                            .transformEffect(shape.transform)
-                    }
                 } else {
                     let originalPath = Path { path in
                         addPathElements(shape.path.elements, to: &path)
