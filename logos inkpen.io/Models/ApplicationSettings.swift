@@ -103,31 +103,8 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
 
-    @Published var imagePreviewQuality: Double = UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0 {
-        didSet {
-            print("🔴 ApplicationSettings.imagePreviewQuality changed: \(oldValue) -> \(imagePreviewQuality)")
-            UserDefaults.standard.set(imagePreviewQuality, forKey: "imagePreviewQuality")
-            // Clear image cache when quality changes
-            print("🔴 Clearing ImageTileCache")
-            ImageTileCache.shared.clearCache()
-            print("🔴 Clearing MetalImageTileRenderer cache")
-            MetalImageTileRenderer.shared?.clearCache()
-            print("🔴 Cache clear complete")
-        }
-    }
-
-    @Published var imageTileSize: Int = UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512 {
-        didSet {
-            print("🔵 ApplicationSettings.imageTileSize changed: \(oldValue) -> \(imageTileSize)")
-            UserDefaults.standard.set(imageTileSize, forKey: "imageTileSize")
-            // Clear image cache when tile size changes
-            print("🔵 Clearing ImageTileCache")
-            ImageTileCache.shared.clearCache()
-            print("🔵 Clearing MetalImageTileRenderer cache")
-            MetalImageTileRenderer.shared?.clearCache()
-            print("🔵 Cache clear complete")
-        }
-    }
+    // Image settings now use @AppStorage in views directly for better performance
+    // No need for @Published or didSet - onChange in views handles cache clearing
 
     private init() {}
 }

@@ -502,8 +502,8 @@ private struct PNGExportView: View {
                         lineSpacingDelta: nil,
                         lineHeightDelta: nil,
                         letterSpacingDelta: nil,
-                        imagePreviewQuality: ApplicationSettings.shared.imagePreviewQuality,
-                        imageTileSize: ApplicationSettings.shared.imageTileSize
+                        imagePreviewQuality: UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0,
+                        imageTileSize: UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
                     )
                 }
             }

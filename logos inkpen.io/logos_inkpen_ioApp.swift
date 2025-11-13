@@ -11,8 +11,7 @@ struct logos_inken_ioApp: App {
     private var appState = AppState.shared
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
-    @State private var globalImagePreviewQuality: Double = ApplicationSettings.shared.imagePreviewQuality
-    @State private var globalImageTileSize: Int = ApplicationSettings.shared.imageTileSize
+    @AppStorage("imagePreviewQuality") private var imagePreviewQuality: Double = 1.0
 
     init() {
         UserDefaults.standard.register(defaults: [
@@ -50,7 +49,7 @@ struct logos_inken_ioApp: App {
 
     var body: some Scene {
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL, imagePreviewQuality: $globalImagePreviewQuality, imageTileSize: $globalImageTileSize)
+            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
                 .environment(appState)
                 .navigationTitle(windowTitle(for: file.fileURL))
                 .onAppear {
@@ -58,15 +57,6 @@ struct logos_inken_ioApp: App {
                         openWindow: { id in openWindow(id: id) },
                         dismissWindow: { id in dismissWindow(id: id) }
                     )
-                    // Sync state with ApplicationSettings
-                    globalImagePreviewQuality = ApplicationSettings.shared.imagePreviewQuality
-                    globalImageTileSize = ApplicationSettings.shared.imageTileSize
-                }
-                .onReceive(ApplicationSettings.shared.$imagePreviewQuality) { newValue in
-                    globalImagePreviewQuality = newValue
-                }
-                .onReceive(ApplicationSettings.shared.$imageTileSize) { newValue in
-                    globalImageTileSize = newValue
                 }
                 .background(WindowAccessor { window in
                     if let window = window {
@@ -812,13 +802,37 @@ struct logos_inken_ioApp: App {
                     }
                     .help("When enabled, imported images are embedded in the document. When disabled, images are linked by path.")
 
-                    Menu("Image Preview Quality: \(Int(ApplicationSettings.shared.imagePreviewQuality * 100))%") {
-                        Button("10%") { ApplicationSettings.shared.imagePreviewQuality = 0.1 }
-                        Button("20%") { ApplicationSettings.shared.imagePreviewQuality = 0.2 }
-                        Button("30%") { ApplicationSettings.shared.imagePreviewQuality = 0.3 }
-                        Button("50%") { ApplicationSettings.shared.imagePreviewQuality = 0.5 }
-                        Button("75%") { ApplicationSettings.shared.imagePreviewQuality = 0.75 }
-                        Button("100%") { ApplicationSettings.shared.imagePreviewQuality = 1.0 }
+                    Menu("Image Preview Quality: \(Int(imagePreviewQuality * 100))%") {
+                        Button("10%") {
+                            imagePreviewQuality = 0.1
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
+                        Button("20%") {
+                            imagePreviewQuality = 0.2
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
+                        Button("30%") {
+                            imagePreviewQuality = 0.3
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
+                        Button("50%") {
+                            imagePreviewQuality = 0.5
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
+                        Button("75%") {
+                            imagePreviewQuality = 0.75
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
+                        Button("100%") {
+                            imagePreviewQuality = 1.0
+                            ImageTileCache.shared.clearCache()
+                            MetalImageTileRenderer.shared?.clearCache()
+                        }
                     }
                     .help("Controls the resolution of cached image previews. Lower values use less memory but may appear pixelated when zoomed in.")
                 }
@@ -894,7 +908,7 @@ struct logos_inken_ioApp: App {
         .handlesExternalEvents(matching: Set<String>())
 
         Window("Preferences", id: "preferences") {
-            PreferencesView(imageQuality: $globalImagePreviewQuality, tileSize: $globalImageTileSize)
+            PreferencesView()
                 .environment(appState)
                 .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
                     if let window = notification.object as? NSWindow,
@@ -973,7 +987,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
 
         Window("Preferences", id: "app-preferences") {
-            PreferencesView(imageQuality: $globalImagePreviewQuality, tileSize: $globalImageTileSize)
+            PreferencesView()
                 .environment(appState)
                 .background(WindowAccessor { window in
                     window?.tabbingMode = .disallowed

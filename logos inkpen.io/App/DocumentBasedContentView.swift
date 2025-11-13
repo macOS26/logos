@@ -4,8 +4,8 @@ struct DocumentBasedContentView: View {
     @Binding var inkpenDocument: InkpenDocument
     let fileURL: URL?
     @State private var hasHydratedImages = false
-    @Binding var imagePreviewQuality: Double
-    @Binding var imageTileSize: Int
+    @AppStorage("imagePreviewQuality") var imagePreviewQuality: Double = 1.0
+    @AppStorage("imageTileSize") var imageTileSize: Int = 512
 
     var body: some View {
         DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize)
@@ -80,7 +80,7 @@ struct DocumentBasedContentView: View {
                         imagesHydrated += 1
 
                         // Cache CGImage in shape for rendering performance
-                        let quality = ApplicationSettings.shared.imagePreviewQuality
+                        let quality = imagePreviewQuality
                         if let imageData = shape.embeddedImageData {
                             if let cgImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: quality, shapeID: shape.id) {
                                 var updatedShape = shape

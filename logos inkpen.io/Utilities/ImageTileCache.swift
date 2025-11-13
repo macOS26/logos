@@ -17,7 +17,7 @@ class ImageTileCache {
 
     /// Get the current tile size from preferences
     var tileSizePixels: Int {
-        ApplicationSettings.shared.imageTileSize
+        UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
     }
 
     /// Calculate which tiles intersect the viewport

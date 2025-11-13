@@ -4,8 +4,8 @@ struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
-    @Binding var imageQuality: Double
-    @Binding var tileSize: Int
+    @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
+    @AppStorage("imageTileSize") var tileSize: Int = 512
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -58,12 +58,7 @@ struct PreferencesView: View {
                             Spacer()
                         }
 
-                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05, onEditingChanged: { editing in
-                            if !editing {
-                                ApplicationSettings.shared.imagePreviewQuality = imageQuality
-                                ImageTileCache.shared.clearCache()
-                            }
-                        })
+                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
 
                         Text("Controls image resolution in canvas. Lower values use less memory.")
                             .font(.caption)
@@ -102,12 +97,7 @@ struct PreferencesView: View {
                         Slider(value: Binding(
                             get: { Double(tileSize) },
                             set: { tileSize = Int($0) }
-                        ), in: 32...1024, step: 32, onEditingChanged: { editing in
-                            if !editing {
-                                ApplicationSettings.shared.imageTileSize = tileSize
-                                ImageTileCache.shared.clearCache()
-                            }
-                        })
+                        ), in: 32...1024, step: 32)
 
                         Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
                             .font(.caption)
@@ -145,6 +135,14 @@ struct PreferencesView: View {
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
+        }
+        .onChange(of: imageQuality) { oldValue, newValue in
+            ImageTileCache.shared.clearCache()
+            MetalImageTileRenderer.shared?.clearCache()
+        }
+        .onChange(of: tileSize) { oldValue, newValue in
+            ImageTileCache.shared.clearCache()
+            MetalImageTileRenderer.shared?.clearCache()
         }
     }
 
