@@ -127,78 +127,60 @@ class MetalImageTileRenderer {
 
     /// Convert CGImage to Metal texture (no caching - render directly)
     func getTexture(from cgImage: CGImage) -> MTLTexture? {
-        // Check if image is already in a compatible format
-        let needsConversion: Bool = {
-            // Check if color space is sRGB or device RGB
-            guard let imageColorSpace = cgImage.colorSpace else { return true }
-            let srgbColorSpace = CGColorSpace(name: CGColorSpace.sRGB)
+        // Don't use MTKTextureLoader - it always converts to BGRA
+        // Instead, manually create texture with correct RGBA format
 
-            // If not sRGB, needs conversion
-            if imageColorSpace != srgbColorSpace && imageColorSpace.name != CGColorSpace.genericRGBLinear {
-                return true
-            }
+        let width = cgImage.width
+        let height = cgImage.height
 
-            // Check bitmap format - we want 32-bit RGBA with premultiplied alpha
-            let byteOrder = cgImage.bitmapInfo.contains(.byteOrder32Big) || cgImage.bitmapInfo.contains(.byteOrder32Little)
+        // Create RGBA context to normalize the image
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
-            if cgImage.bitsPerPixel != 32 || !byteOrder {
-                return true
-            }
-
-            return false
-        }()
-
-        let imageToLoad: CGImage
-
-        if needsConversion {
-            // Convert CGImage to consistent color space (sRGB RGBA)
-            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-            let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
-
-            guard let context = CGContext(
-                data: nil,
-                width: cgImage.width,
-                height: cgImage.height,
-                bitsPerComponent: 8,
-                bytesPerRow: cgImage.width * 4,
-                space: colorSpace,
-                bitmapInfo: bitmapInfo
-            ) else {
-                print("❌ Failed to create CGContext for color space conversion")
-                return nil
-            }
-
-            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
-
-            guard let convertedImage = context.makeImage() else {
-                print("❌ Failed to convert image to consistent color space")
-                return nil
-            }
-
-            imageToLoad = convertedImage
-        } else {
-            imageToLoad = cgImage
-        }
-
-        let textureLoader = MTKTextureLoader(device: device)
-
-        do {
-            // Force RGBA format instead of BGRA
-            let texture = try textureLoader.newTexture(cgImage: imageToLoad, options: [
-                .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-                .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-                .SRGB: NSNumber(value: false),
-                .generateMipmaps: NSNumber(value: false)
-            ])
-
-            print("📊 Metal texture format: \(texture.pixelFormat.rawValue) (10=RGBA8Unorm, 80=BGRA8Unorm)")
-
-            // No caching - render directly each frame
-            return texture
-        } catch {
-            print("❌ Failed to create Metal texture: \(error)")
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            print("❌ Failed to create CGContext")
             return nil
         }
+
+        // Draw image into RGBA context
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Get RGBA pixel data
+        guard let data = context.data else {
+            print("❌ Failed to get context data")
+            return nil
+        }
+
+        // Create RGBA Metal texture descriptor
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .rgba8Unorm,  // Use RGBA, not BGRA
+            width: width,
+            height: height,
+            mipmapped: false
+        )
+        textureDescriptor.usage = [.shaderRead]
+        textureDescriptor.storageMode = .private
+
+        guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
+            print("❌ Failed to create Metal texture")
+            return nil
+        }
+
+        // Upload RGBA data to texture
+        let region = MTLRegionMake2D(0, 0, width, height)
+        texture.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: width * 4)
+
+        print("📊 Created Metal texture format: \(texture.pixelFormat.rawValue) (10=RGBA8Unorm, 80=BGRA8Unorm)")
+
+        return texture
     }
 
     /// Render NSImage through Metal and return as CGImage (simple passthrough with quality)
@@ -209,7 +191,7 @@ class MetalImageTileRenderer {
 
         // Create offscreen render target with .shared storage for CPU readback
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
+            pixelFormat: .rgba8Unorm,  // Match source texture format
             width: metalTexture.width,
             height: metalTexture.height,
             mipmapped: false
@@ -481,8 +463,7 @@ class MetalImageTileRenderer {
         let width = texture.width
         let height = texture.height
 
-        // Create a CGContext and render the Metal texture into it
-        // This lets CoreGraphics handle the format conversion properly
+        // Metal texture is RGBA, CGImage expects RGBA - direct copy!
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
@@ -498,20 +479,11 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Read BGRA data from Metal texture
-        var data = [UInt8](repeating: 0, count: width * height * 4)
+        // Read RGBA data from Metal texture
         let region = MTLRegionMake2D(0, 0, width, height)
-        texture.getBytes(&data, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
+        texture.getBytes(context.data!, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
 
-        // Swap BGRA → RGBA for the CGContext
-        for i in stride(from: 0, to: data.count, by: 4) {
-            data.swapAt(i, i + 2)  // Swap B and R
-        }
-
-        // Copy RGBA data into context
-        if let contextData = context.data {
-            contextData.copyMemory(from: data, byteCount: data.count)
-        }
+        print("📊 Reading texture format: \(texture.pixelFormat.rawValue) - should be 10 (RGBA)")
 
         return context.makeImage()
     }
