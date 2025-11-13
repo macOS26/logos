@@ -77,17 +77,6 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
-    // Cache loaded images per shape+quality (invalidated when quality changes)
-    private static var imageCache: [String: CGImage] = [:]
-    private static var imageCacheLock = NSLock()
-
-    static func clearImageCache() {
-        imageCacheLock.lock()
-        imageCache.removeAll()
-        imageCacheLock.unlock()
-        print("🗑️ Cleared image cache (\(imageCache.count) images)")
-    }
-
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -1141,97 +1130,26 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
-        // Check cache first (key = shapeID + quality)
-        let cacheKey = "\(shape.id.uuidString)-\(imagePreviewQuality)"
-
-        Self.imageCacheLock.lock()
-        if let cachedImage = Self.imageCache[cacheKey] {
-            Self.imageCacheLock.unlock()
-
-            // Use cached image - fast path
-            let imagePixelSize = CGSize(width: CGFloat(cachedImage.width), height: CGFloat(cachedImage.height))
-
-            context.withCGContext { cgContext in
-                cgContext.saveGState()
-
-                if let maskShape = maskShape {
-                    let maskPath = maskShape.cachedCGPath
-                    cgContext.addPath(maskPath)
-                    cgContext.clip()
-                }
-
-                cgContext.setAlpha(CGFloat(shape.opacity))
-                cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
-                cgContext.scaleBy(x: 1.0, y: -1.0)
-                cgContext.interpolationQuality = .medium
-                cgContext.draw(cachedImage, in: CGRect(origin: .zero, size: renderBounds.size))
-
-                cgContext.restoreGState()
-            }
+        // Use Metal to render CGImage (only re-renders if quality/tile changes)
+        guard let renderer = MetalImageTileRenderer.shared else {
             return
         }
-        Self.imageCacheLock.unlock()
 
-        // Direct conversion: NSImage → CGImage (with quality downsampling)
         let image: CGImage
-        if imagePreviewQuality < 1.0 {
-            // Downsample for lower quality
-            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-            guard let fullImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
-                return
-            }
 
-            let maxDimension = max(fullImage.width, fullImage.height)
-            let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
+        // Check if we need to render (based on shapeID + quality + tileSize)
+        let renderKey = "\(shape.id.uuidString)-q\(imagePreviewQuality)-t\(imageTileSize)"
 
-            let aspectRatio = Double(fullImage.width) / Double(fullImage.height)
-            let targetWidth: Int
-            let targetHeight: Int
-
-            if fullImage.width >= fullImage.height {
-                targetWidth = targetSize
-                targetHeight = Int(Double(targetSize) / aspectRatio)
-            } else {
-                targetHeight = targetSize
-                targetWidth = Int(Double(targetSize) * aspectRatio)
-            }
-
-            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-            let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
-
-            guard let context = CGContext(
-                data: nil,
-                width: targetWidth,
-                height: targetHeight,
-                bitsPerComponent: 8,
-                bytesPerRow: targetWidth * 4,
-                space: colorSpace,
-                bitmapInfo: bitmapInfo
-            ) else {
-                return
-            }
-
-            context.interpolationQuality = .high
-            context.draw(fullImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
-
-            guard let downsampled = context.makeImage() else {
-                return
-            }
-
-            image = downsampled
+        if let cachedImage = renderer.getCachedImage(for: renderKey) {
+            // Use cached CGImage from Metal renderer
+            image = cachedImage
         } else {
-            // Full quality - direct conversion
-            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-            guard let fullImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+            // Render through Metal and cache
+            guard let renderedImage = renderer.renderImage(from: sourceNSImage, quality: imagePreviewQuality, cacheKey: renderKey) else {
                 return
             }
-            image = fullImage
+            image = renderedImage
         }
-
-        // Cache the loaded image
-        Self.imageCacheLock.lock()
-        Self.imageCache[cacheKey] = image
-        Self.imageCacheLock.unlock()
 
         // Get actual image pixel dimensions
         let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))

@@ -12,9 +12,22 @@ class MetalImageTileRenderer {
     // NOTE: No texture cache - render directly from CGImage to SwiftUI Canvas
     // Metal is fast enough that we don't need to cache textures in VRAM
 
-    // Disk cache for composited images (stores paths, not images in RAM)
-    private var diskCachePaths: [String: String] = [:] // [shapeID.uuidString: /tmp/path]
+    // Disk cache for rendered CGImages (stores paths, not images in RAM)
+    private var diskCachePaths: [String: String] = [:] // [renderKey: /tmp/path]
     private let diskCacheLock = NSLock()
+
+    // Get cached CGImage from disk
+    func getCachedImage(for key: String) -> CGImage? {
+        diskCacheLock.lock()
+        defer { diskCacheLock.unlock() }
+
+        guard let cachedPath = diskCachePaths[key],
+              FileManager.default.fileExists(atPath: cachedPath) else {
+            return nil
+        }
+
+        return loadImageFromDisk(path: cachedPath)
+    }
 
     private init?() {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -183,8 +196,8 @@ class MetalImageTileRenderer {
         return texture
     }
 
-    /// Render NSImage through Metal and return as CGImage (simple passthrough with quality)
-    func renderImage(from nsImage: NSImage, quality: Double) -> CGImage? {
+    /// Render NSImage through Metal and return as CGImage (caches to disk)
+    func renderImage(from nsImage: NSImage, quality: Double, cacheKey: String) -> CGImage? {
         guard let metalTexture = getTexture(from: nsImage, quality: quality) else {
             return nil
         }
@@ -226,7 +239,19 @@ class MetalImageTileRenderer {
         commandBuffer.waitUntilCompleted()
 
         // Convert back to CGImage
-        return cgImage(from: renderTarget)
+        guard let resultImage = cgImage(from: renderTarget) else {
+            return nil
+        }
+
+        // Save to disk cache
+        if let diskPath = saveImageToDisk(image: resultImage, key: cacheKey) {
+            diskCacheLock.lock()
+            diskCachePaths[cacheKey] = diskPath
+            diskCacheLock.unlock()
+            print("💾 Cached Metal-rendered image to disk: \(cacheKey)")
+        }
+
+        return resultImage
     }
 
     /// Render image tiles to an offscreen texture and return as CGImage using INSTANCED RENDERING
