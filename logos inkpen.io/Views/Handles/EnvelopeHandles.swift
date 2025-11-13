@@ -26,62 +26,88 @@ struct EnvelopeHandles: View {
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
         ZStack {
-            if shape.isGroup && !shape.groupedShapes.isEmpty {
-                ForEach(shape.groupedShapes.indices, id: \.self) { index in
-                    let groupedShape = shape.groupedShapes[index]
-                    let cachedPath = Path { path in
+            // Render shape outline using Canvas
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
+
+                if shape.isGroup && !shape.groupedShapes.isEmpty {
+                    for groupedShape in shape.groupedShapes {
+                        var path = Path()
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
-                                path.move(to: to.cgPoint)
+                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                                path.move(to: screenP)
                             case .line(let to):
-                                path.addLine(to: to.cgPoint)
+                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                                path.addLine(to: screenP)
                             case .curve(let to, let control1, let control2):
-                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                                let tp = to.cgPoint.applying(groupedShape.transform)
+                                let tc1 = control1.cgPoint.applying(groupedShape.transform)
+                                let tc2 = control2.cgPoint.applying(groupedShape.transform)
+                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                                let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                                let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                                path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                             case .quadCurve(let to, let control):
-                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                                let tp = to.cgPoint.applying(groupedShape.transform)
+                                let tc = control.cgPoint.applying(groupedShape.transform)
+                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                                let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                                path.addQuadCurve(to: screenTo, control: screenC)
                             case .close:
                                 path.closeSubpath()
                             }
                         }
+                        context.stroke(path, with: .color(.purple), lineWidth: 2.0)
                     }
-                    cachedPath
-                        .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .transformEffect(groupedShape.transform)
-                }
-            } else {
-                let cachedPath = Path { path in
+                } else {
+                    var path = Path()
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            path.move(to: to.cgPoint)
+                            let p = to.cgPoint.applying(shape.transform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.move(to: screenP)
                         case .line(let to):
-                            path.addLine(to: to.cgPoint)
+                            let p = to.cgPoint.applying(shape.transform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.addLine(to: screenP)
                         case .curve(let to, let control1, let control2):
-                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            let tp = to.cgPoint.applying(shape.transform)
+                            let tc1 = control1.cgPoint.applying(shape.transform)
+                            let tc2 = control2.cgPoint.applying(shape.transform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                            let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                            path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                         case .quadCurve(let to, let control):
-                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            let tp = to.cgPoint.applying(shape.transform)
+                            let tc = control.cgPoint.applying(shape.transform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                            path.addQuadCurve(to: screenTo, control: screenC)
                         case .close:
                             path.closeSubpath()
                         }
                     }
+                    context.stroke(path, with: .color(.purple), lineWidth: 2.0)
                 }
-                cachedPath
-                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
             }
+            .allowsHitTesting(false)
 
             envelopeCornerHandles()
 
-            if document.viewState.currentTool == .warp && warpedCorners.count == 4 {
+            // Show grid during dragging for performance
+            if document.viewState.currentTool == .warp && warpedCorners.count == 4 && isWarping {
                 envelopeGridPreview()
             }
 
-            if previewPath != nil {
+            // Only show the warped preview after drag ends
+            if previewPath != nil && !isWarping {
                 warpedShapePreview()
             }
         }
@@ -195,11 +221,14 @@ struct EnvelopeHandles: View {
 
     @ViewBuilder
     private func envelopeGridPreview() -> some View {
-        let gridLines = 4
+        Canvas { context, size in
+            let zoom = zoomLevel
+            let offset = canvasOffset
+            let gridLines = 4
 
-        ForEach(0..<4) { row in
-            let t = CGFloat(row) / CGFloat(gridLines - 1)
-            Path { path in
+            // Draw horizontal grid lines
+            for row in 0..<4 {
+                let t = CGFloat(row) / CGFloat(gridLines - 1)
                 let startPoint = bilinearInterpolation(
                     topLeft: warpedCorners[0],
                     topRight: warpedCorners[1],
@@ -214,18 +243,18 @@ struct EnvelopeHandles: View {
                     bottomRight: warpedCorners[2],
                     u: 1.0, v: t
                 )
-                path.move(to: startPoint)
-                path.addLine(to: endPoint)
-            }
-            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .opacity(0.6)
-        }
+                let screenStart = CGPoint(x: startPoint.x * zoom + offset.x, y: startPoint.y * zoom + offset.y)
+                let screenEnd = CGPoint(x: endPoint.x * zoom + offset.x, y: endPoint.y * zoom + offset.y)
 
-        ForEach(0..<4) { col in
-            let u = CGFloat(col) / CGFloat(gridLines - 1)
-            Path { path in
+                var path = Path()
+                path.move(to: screenStart)
+                path.addLine(to: screenEnd)
+                context.stroke(path, with: .color(.blue.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
+            }
+
+            // Draw vertical grid lines
+            for col in 0..<4 {
+                let u = CGFloat(col) / CGFloat(gridLines - 1)
                 let startPoint = bilinearInterpolation(
                     topLeft: warpedCorners[0],
                     topRight: warpedCorners[1],
@@ -240,39 +269,50 @@ struct EnvelopeHandles: View {
                     bottomRight: warpedCorners[2],
                     u: u, v: 1.0
                 )
-                path.move(to: startPoint)
-                path.addLine(to: endPoint)
+                let screenStart = CGPoint(x: startPoint.x * zoom + offset.x, y: startPoint.y * zoom + offset.y)
+                let screenEnd = CGPoint(x: endPoint.x * zoom + offset.x, y: endPoint.y * zoom + offset.y)
+
+                var path = Path()
+                path.move(to: screenStart)
+                path.addLine(to: screenEnd)
+                context.stroke(path, with: .color(.blue.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
-            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .opacity(0.6)
         }
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder
     private func warpedShapePreview() -> some View {
         if let warpedPath = previewPath {
-            Path { path in
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
+
+                var path = Path()
                 for element in warpedPath.elements {
                     switch element {
                     case .move(let to):
-                        path.move(to: to.cgPoint)
+                        let screenP = CGPoint(x: to.x * zoom + offset.x, y: to.y * zoom + offset.y)
+                        path.move(to: screenP)
                     case .line(let to):
-                        path.addLine(to: to.cgPoint)
+                        let screenP = CGPoint(x: to.x * zoom + offset.x, y: to.y * zoom + offset.y)
+                        path.addLine(to: screenP)
                     case .curve(let to, let control1, let control2):
-                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        let screenTo = CGPoint(x: to.x * zoom + offset.x, y: to.y * zoom + offset.y)
+                        let screenC1 = CGPoint(x: control1.x * zoom + offset.x, y: control1.y * zoom + offset.y)
+                        let screenC2 = CGPoint(x: control2.x * zoom + offset.x, y: control2.y * zoom + offset.y)
+                        path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                     case .quadCurve(let to, let control):
-                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        let screenTo = CGPoint(x: to.x * zoom + offset.x, y: to.y * zoom + offset.y)
+                        let screenC = CGPoint(x: control.x * zoom + offset.x, y: control.y * zoom + offset.y)
+                        path.addQuadCurve(to: screenTo, control: screenC)
                     case .close:
                         path.closeSubpath()
                     }
                 }
+                context.stroke(path, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
             }
-            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .opacity(0.8)
+            .allowsHitTesting(false)
         }
     }
 
@@ -369,7 +409,8 @@ struct EnvelopeHandles: View {
         let maxY = warpedCorners.map { $0.y }.max() ?? 0
         document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
 
-        calculateEnvelopeWarpPreview()
+        // Don't recalculate the expensive warp preview on every frame - just show the grid
+        // The preview will be calculated when the drag ends
     }
 
     private func startEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
@@ -603,6 +644,9 @@ struct EnvelopeHandles: View {
         isWarping = false
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
+
+        // Calculate the warp preview now that dragging is done
+        calculateEnvelopeWarpPreview()
 
         guard let oldObject = document.findObject(by: shape.id) else { return }
         let oldShape = oldObject.shape
