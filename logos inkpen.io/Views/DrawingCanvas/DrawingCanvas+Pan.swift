@@ -26,6 +26,7 @@ extension DrawingCanvas {
 
         // ONLY update livePanDelta during gesture (NOT real canvasOffset!)
         livePanDelta = cursorDelta
+        print("📍 PAN DELTA: \(cursorDelta) | canvasOffset: \(canvasOffset) (should NOT change)")
 
     }
 }

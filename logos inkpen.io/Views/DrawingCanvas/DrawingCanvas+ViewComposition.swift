@@ -348,9 +348,11 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
-                .scaleEffect(liveZoomDelta, anchor: .topLeading)
-                .offset(x: livePanDelta.x, y: livePanDelta.y)
+            ZStack {
+                canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+            }
+            .scaleEffect(liveZoomDelta, anchor: .topLeading)
+            .offset(x: livePanDelta.x, y: livePanDelta.y)
 
             pressureSensitiveOverlay(geometry: geometry)
 
