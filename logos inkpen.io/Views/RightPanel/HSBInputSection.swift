@@ -35,9 +35,9 @@ struct HSBInputSection: View {
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
     @State private var pmsEntryText: String = ""
-    
+
     @State private var livePMSPreview: PantoneLibraryColor? = nil
-    @ObservedObject private var pantoneLibrary = PantoneLibrary()
+    @ObservedObject private var pantoneLibrary = PantoneLibrary.shared
     
     private var currentColor: HSBColorModel {
         let h = Double(hueValue) ?? 0

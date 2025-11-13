@@ -62,9 +62,11 @@ struct PantoneLibraryColor: Codable, Hashable {
 }
 
 class PantoneLibrary: ObservableObject {
+    static let shared = PantoneLibrary()
+
     @Published var allColors: [PantoneLibraryColor] = []
 
-    init() {
+    private init() {
         loadPantoneColors()
     }
 
