@@ -8,25 +8,6 @@ extension DrawingCanvas {
     }
 
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        if false {
-            let preciseOffsetX = Double(canvasOffset.x)
-            let preciseOffsetY = Double(canvasOffset.y)
-            let preciseZoom = Double(zoomLevel)
-            let inverseTransform = CGAffineTransform(
-                a: 1.0 / preciseZoom, b: 0,
-                c: 0, d: 1.0 / preciseZoom,
-                tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
-            )
-
-            let metalEngine = MetalComputeEngine.shared
-            let transformResult = metalEngine.transformPointsGPU(points, transform: inverseTransform)
-            switch transformResult {
-            case .success(let transformedPoints):
-                return transformedPoints
-            case .failure(_):
-                return screenToCanvasCPU(points)
-            }
-        }
         return screenToCanvasCPU(points)
     }
 
@@ -50,25 +31,6 @@ extension DrawingCanvas {
     }
 
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        if false {
-            let preciseOffsetX = Double(canvasOffset.x)
-            let preciseOffsetY = Double(canvasOffset.y)
-            let preciseZoom = Double(zoomLevel)
-            let transform = CGAffineTransform(
-                a: preciseZoom, b: 0,
-                c: 0, d: preciseZoom,
-                tx: preciseOffsetX, ty: preciseOffsetY
-            )
-
-            let metalEngine = MetalComputeEngine.shared
-            let transformResult = metalEngine.transformPointsGPU(points, transform: transform)
-            switch transformResult {
-            case .success(let transformedPoints):
-                return transformedPoints
-            case .failure(_):
-                return canvasToScreenCPU(points, geometry: geometry)
-            }
-        }
         return canvasToScreenCPU(points, geometry: geometry)
     }
 
