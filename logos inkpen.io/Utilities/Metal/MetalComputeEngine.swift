@@ -35,6 +35,7 @@ class MetalComputeEngine {
     private var findPointsInRadiusPipeline: MTLComputePipelineState?
     private var findNearestHandlePipeline: MTLComputePipelineState?
     private var pathHitTestPipeline: MTLComputePipelineState?
+    private var findNearestSnapPointPipeline: MTLComputePipelineState?
 
     static let shared: MetalComputeEngine = {
         do {
@@ -145,6 +146,9 @@ class MetalComputeEngine {
         }
         if let function = library.makeFunction(name: "path_hit_test") {
             pathHitTestPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "find_nearest_snap_point") {
+            findNearestSnapPointPipeline = try device.makeComputePipelineState(function: function)
         }
     }
 
@@ -1331,6 +1335,70 @@ class MetalComputeEngine {
 
         let hitResult = hitResultBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee
         return hitResult == 1
+    }
+
+    // MARK: - Snap-to-Point (GPU-Accelerated)
+
+    /// GPU-accelerated snap point detection - finds nearest snap point within threshold
+    func findNearestSnapPointGPU(snapPoints: [CGPoint], objectIDs: [UUID], mousePoint: CGPoint, threshold: CGFloat) -> (index: Int, objectID: UUID, point: CGPoint)? {
+        guard let pipeline = findNearestSnapPointPipeline,
+              !snapPoints.isEmpty,
+              snapPoints.count == objectIDs.count else {
+            return nil
+        }
+
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return nil
+        }
+
+        // Convert to Metal-compatible formats
+        let snapFloat2Array = snapPoints.map { simd_float2(Float($0.x), Float($0.y)) }
+
+        let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
+        guard let snapPointsBuffer = device.makeBuffer(bytes: snapFloat2Array, length: snapFloat2Array.count * MemoryLayout<simd_float2>.stride, options: bufferOptions),
+              let distancesBuffer = device.makeBuffer(length: snapPoints.count * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return nil
+        }
+
+        var snapCount = UInt32(snapPoints.count)
+        var mouseFloat2 = simd_float2(Float(mousePoint.x), Float(mousePoint.y))
+        var thresholdFloat = Float(threshold)
+
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(snapPointsBuffer, offset: 0, index: 0)
+        computeEncoder.setBytes(&snapCount, length: MemoryLayout<UInt32>.stride, index: 1)
+        computeEncoder.setBytes(&mouseFloat2, length: MemoryLayout<simd_float2>.stride, index: 2)
+        computeEncoder.setBytes(&thresholdFloat, length: MemoryLayout<Float>.stride, index: 3)
+        computeEncoder.setBuffer(distancesBuffer, offset: 0, index: 4)
+
+        let threadsPerGroup = MTLSize(width: min(pipeline.maxTotalThreadsPerThreadgroup, snapPoints.count), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (snapPoints.count + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        // Read distances back and find minimum (still faster than CPU nested loops)
+        let distancesPtr = distancesBuffer.contents().bindMemory(to: Float.self, capacity: snapPoints.count)
+        var nearestIndex: Int?
+        var nearestDist = Float(threshold)
+
+        for i in 0..<snapPoints.count {
+            let dist = distancesPtr[i]
+            if dist < nearestDist {
+                nearestDist = dist
+                nearestIndex = i
+            }
+        }
+
+        guard let index = nearestIndex else {
+            return nil
+        }
+
+        return (index: index, objectID: objectIDs[index], point: snapPoints[index])
     }
 }
 
