@@ -66,9 +66,9 @@ final class VectorDocument: ObservableObject, Codable {
     internal var imageStorage: [UUID: NSImage] = [:]
     internal var baseDirectoryURL: URL? = nil
 
-    // CGImage cache: final rendered images ready to draw (load from disk ONCE, cache forever)
-    // Key: UUID of shape
-    internal var cgImageCache: [UUID: CGImage] = [:]
+    // CGImage cache: final rendered images ready to draw (load from disk ONCE, cache per quality)
+    // Key: "UUID-qQUALITY" (e.g., "UUID-q0.5")
+    internal var cgImageCache: [String: CGImage] = [:]
 
     // Track hash of last drawn CGImage per shape - if same hash, skip cgContext.draw() call
     internal var lastDrawnImageHash: [UUID: Int] = [:]

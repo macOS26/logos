@@ -1091,9 +1091,13 @@ struct LayerCanvasView: View {
         }
 
         // Check cache FIRST - if CGImage is cached, use it (NO disk I/O!)
+        // Cache key includes quality so changing quality re-renders
+        let cacheKey = "\(shape.id.uuidString)-q\(imagePreviewQuality)"
+        print("📦 Cache size: \(document.cgImageCache.count), looking for key: \(cacheKey)")
+
         let image: CGImage
-        if let cachedImage = document.cgImageCache[shape.id] {
-            print("✅ CACHE HIT: Using cached CGImage for \(shape.id)")
+        if let cachedImage = document.cgImageCache[cacheKey] {
+            print("✅ CACHE HIT: Using cached CGImage")
             image = cachedImage
         } else {
             // CACHE MISS - load from disk ONCE and cache it
@@ -1101,8 +1105,10 @@ struct LayerCanvasView: View {
 
             let nsImage: NSImage?
             if let imageData = shape.embeddedImageData {
+                print("🔵 Loading from embeddedImageData")
                 nsImage = NSImage(data: imageData)
             } else if let linkedPath = shape.linkedImagePath {
+                print("🔵 Loading from linked path: \(linkedPath)")
                 nsImage = resolveLinkedImage(
                     linkedPath: linkedPath,
                     documentURL: documentURL,
@@ -1110,34 +1116,90 @@ struct LayerCanvasView: View {
                     shapeID: shape.id
                 )
             } else {
+                print("🔴 NO IMAGE DATA - returning early")
                 return
             }
 
-            guard let sourceNSImage = nsImage else { return }
+            guard let sourceNSImage = nsImage else {
+                print("🔴 NSImage is nil - returning early")
+                return
+            }
 
+            print("🔵 Converting NSImage to CGImage")
             var rect = CGRect(origin: .zero, size: sourceNSImage.size)
             guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+                print("🔴 CGImage conversion failed - returning early")
                 return
             }
 
-            // Cache it for next frame
-            document.cgImageCache[shape.id] = cgImage
-            print("💾 Cached CGImage for \(shape.id)")
-            image = cgImage
+            // Downsample if quality < 1.0
+            let finalImage: CGImage
+            if imagePreviewQuality < 1.0 {
+                print("🔵 Downsampling to quality \(imagePreviewQuality)")
+                let maxDimension = max(cgImage.width, cgImage.height)
+                let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
+                let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+                let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+                let aspectRatio = Double(cgImage.width) / Double(cgImage.height)
+                let targetWidth: Int
+                let targetHeight: Int
+                if cgImage.width >= cgImage.height {
+                    targetWidth = targetSize
+                    targetHeight = Int(Double(targetSize) / aspectRatio)
+                } else {
+                    targetHeight = targetSize
+                    targetWidth = Int(Double(targetSize) * aspectRatio)
+                }
+                guard let downsampleContext = CGContext(
+                    data: nil,
+                    width: targetWidth,
+                    height: targetHeight,
+                    bitsPerComponent: 8,
+                    bytesPerRow: targetWidth * 4,
+                    space: colorSpace,
+                    bitmapInfo: bitmapInfo
+                ) else {
+                    finalImage = cgImage
+                    image = finalImage
+                    return
+                }
+                downsampleContext.interpolationQuality = .high
+                downsampleContext.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
+                finalImage = downsampleContext.makeImage() ?? cgImage
+                print("🔵 Downsampled from \(cgImage.width)x\(cgImage.height) to \(finalImage.width)x\(finalImage.height)")
+            } else {
+                finalImage = cgImage
+            }
+
+            print("🔵 About to write to cache with key: \(cacheKey)")
+            // Cache the downsampled image with quality in key
+            document.cgImageCache[cacheKey] = finalImage
+            print("💾 WROTE TO CACHE, cache size now: \(document.cgImageCache.count)")
+
+            // Verify it was written
+            if document.cgImageCache[cacheKey] != nil {
+                print("✅ VERIFIED: Cache entry exists!")
+            } else {
+                print("❌ FAILED: Cache entry does NOT exist after write!")
+            }
+
+            image = finalImage
         }
 
-        // Check if this is the SAME CGImage we drew last frame - if so, SKIP the draw!
+        // Check hash for debugging, but ALWAYS draw (Canvas clears every frame)
         let imageHash = ObjectIdentifier(image).hashValue
         let lastHash = document.lastDrawnImageHash[shape.id]
 
         if lastHash == imageHash {
-            print("⏭️ SKIP DRAW: Same CGImage as last frame for \(shape.id)")
-            return
+            print("🔄 Same CGImage as last frame - but drawing anyway (Canvas clears)")
+        } else {
+            print("🆕 New/changed CGImage - drawing")
+            document.lastDrawnImageHash[shape.id] = imageHash
         }
 
-        // Image changed or first draw - update hash and draw it
-        document.lastDrawnImageHash[shape.id] = imageHash
-        print("🎨 DRAWING CGImage for \(shape.id)")
+        // ALWAYS draw - Canvas clears every frame, we MUST redraw
+        print("🖌️ Drawing image at bounds: \(renderBounds), opacity: \(shape.opacity)")
+        print("🖌️ Image size: \(image.width)x\(image.height)")
 
         // Draw using CGContext
         context.withCGContext { cgContext in
@@ -1148,6 +1210,7 @@ struct LayerCanvasView: View {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
                 cgContext.clip()
+                print("🖌️ Applied clipping mask")
             }
 
             // Apply opacity
@@ -1161,10 +1224,13 @@ struct LayerCanvasView: View {
             cgContext.interpolationQuality = .medium
 
             // Draw the image
+            print("🖌️ Calling cgContext.draw() NOW")
             cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+            print("🖌️ cgContext.draw() completed")
 
             cgContext.restoreGState()
         }
+        print("🖌️ Image drawing FINISHED")
     }
 
 }
