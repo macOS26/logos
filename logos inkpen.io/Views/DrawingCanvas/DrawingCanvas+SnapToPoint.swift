@@ -12,8 +12,10 @@ extension DrawingCanvas {
     func findNearestSnapPoint(to point: CGPoint, threshold: CGFloat = 10.0) -> SnapPoint? {
         guard document.gridSettings.snapToPoint else { return nil }
 
-        var nearestSnapPoint: SnapPoint?
-        var nearestDistance = threshold
+        // Collect all snap points and their metadata
+        var allSnapPoints: [CGPoint] = []
+        var allObjectIDs: [UUID] = []
+        var snapPointMetadata: [(objectID: UUID, isAnchor: Bool, description: String)] = []
 
         for object in document.snapshot.objects.values {
             switch object.objectType {
@@ -29,16 +31,32 @@ extension DrawingCanvas {
                 let snapPoints = extractSnapPoints(from: shape)
 
                 for snapPoint in snapPoints {
-                    let distance = hypot(point.x - snapPoint.point.x, point.y - snapPoint.point.y)
-                    if distance < nearestDistance {
-                        nearestDistance = distance
-                        nearestSnapPoint = snapPoint
-                    }
+                    allSnapPoints.append(snapPoint.point)
+                    allObjectIDs.append(snapPoint.objectID)
+                    snapPointMetadata.append((objectID: snapPoint.objectID, isAnchor: snapPoint.isAnchor, description: snapPoint.description))
                 }
             }
         }
 
-        return nearestSnapPoint
+        guard !allSnapPoints.isEmpty else { return nil }
+
+        // Use Metal GPU for parallel snap point detection
+        if let result = MetalComputeEngine.shared.findNearestSnapPointGPU(
+            snapPoints: allSnapPoints,
+            objectIDs: allObjectIDs,
+            mousePoint: point,
+            threshold: threshold
+        ) {
+            let metadata = snapPointMetadata[result.index]
+            return SnapPoint(
+                point: result.point,
+                objectID: metadata.objectID,
+                isAnchor: metadata.isAnchor,
+                description: metadata.description
+            )
+        }
+
+        return nil
     }
 
     private func extractSnapPoints(from shape: VectorShape) -> [SnapPoint] {
