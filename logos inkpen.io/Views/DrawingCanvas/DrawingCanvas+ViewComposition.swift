@@ -61,8 +61,15 @@ extension DrawingCanvas {
             Path { path in
                 addPathElements(preview.elements, to: &path)
             }
-            .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
+            .stroke(document.defaultStrokeColor.color,
+                    style: SwiftUI.StrokeStyle(
+                        lineWidth: document.defaultStrokeWidth,
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+            )
+            .opacity(document.defaultStrokeOpacity)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
@@ -604,30 +611,5 @@ extension DrawingCanvas {
             }
         })
         return offsetShape
-    }
-}
-
-private struct FreehandPreviewStyleModifier: ViewModifier {
-    @Environment(AppState.self) var appState
-    let appStateRef: AppState?
-    let document: VectorDocument
-    let preview: VectorPath
-
-    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
-        self.document = document
-        self.preview = preview
-        self.appStateRef = appState
-    }
-
-    func body(content: Content) -> some View {
-        Path { p in addPathElements(preview.elements, to: &p) }
-            .stroke(document.defaultStrokeColor.color,
-                    style: SwiftUI.StrokeStyle(
-                        lineWidth: document.defaultStrokeWidth,
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-            )
-            .opacity(document.defaultStrokeOpacity)
     }
 }
