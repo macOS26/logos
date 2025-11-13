@@ -420,18 +420,24 @@ struct ShearHandles: View {
         let sensitivity: CGFloat = 0.002
         let deltaX = currentDistance.x - startDistance.x
         let deltaY = currentDistance.y - startDistance.y
-        let shearFactorX = deltaY * sensitivity
-        let shearFactorY = deltaX * sensitivity
+
+        // Adobe Illustrator behavior:
+        // - Drag horizontally (deltaX) → horizontal shear (shearX)
+        // - Drag vertically (deltaY) → vertical shear (shearY)
+        let shearFactorX = deltaX * sensitivity  // Horizontal drag = horizontal shear
+        let shearFactorY = deltaY * sensitivity  // Vertical drag = vertical shear
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
 
+        // Shift key: constrain to pure horizontal OR pure vertical shear
         if isShiftPressed {
-            if abs(shearFactorX) > abs(shearFactorY) {
+            if abs(deltaX) > abs(deltaY) {
+                // Dragging more horizontally → pure horizontal shear, zero vertical
                 finalShearY = 0
             } else {
+                // Dragging more vertically → pure vertical shear, zero horizontal
                 finalShearX = 0
             }
-        } else {
         }
 
         calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
