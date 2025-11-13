@@ -1,5 +1,6 @@
 import MetalKit
 import simd
+import UniformTypeIdentifiers
 
 /// GPU-accelerated image tile renderer using Metal
 class MetalImageTileRenderer {
@@ -10,6 +11,10 @@ class MetalImageTileRenderer {
     private let pipelineState: MTLRenderPipelineState
     // NOTE: No texture cache - render directly from CGImage to SwiftUI Canvas
     // Metal is fast enough that we don't need to cache textures in VRAM
+
+    // Disk cache for composited images (stores paths, not images in RAM)
+    private var diskCachePaths: [String: String] = [:] // [shapeID.uuidString: /tmp/path]
+    private let diskCacheLock = NSLock()
 
     private init?() {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -138,8 +143,20 @@ class MetalImageTileRenderer {
         outputSize: CGSize,
         shapeID: UUID
     ) -> CGImage? {
-        // Don't cache composited CGImages - they use too much RAM
-        // Metal textures are already cached, so compositing is fast
+        let cacheKey = shapeID.uuidString
+
+        // Check disk cache first
+        diskCacheLock.lock()
+        if let cachedPath = diskCachePaths[cacheKey],
+           FileManager.default.fileExists(atPath: cachedPath),
+           let cachedImage = loadImageFromDisk(path: cachedPath) {
+            diskCacheLock.unlock()
+            print("✅ MetalImageTileRenderer: DISK CACHE HIT for \(cacheKey)")
+            return cachedImage
+        }
+        diskCacheLock.unlock()
+
+        print("❌ MetalImageTileRenderer: DISK CACHE MISS for \(cacheKey), compositing...")
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let sourceTexture = getTexture(from: image) else {
@@ -242,8 +259,14 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Don't cache CGImage - uses too much RAM
-        // Metal texture is already cached, re-compositing is fast
+        // Save to disk cache
+        if let diskPath = saveImageToDisk(image: resultImage, key: cacheKey) {
+            diskCacheLock.lock()
+            diskCachePaths[cacheKey] = diskPath
+            diskCacheLock.unlock()
+            print("💾 MetalImageTileRenderer: CACHED to disk at \(diskPath)")
+        }
+
         return resultImage
     }
 
@@ -378,8 +401,44 @@ class MetalImageTileRenderer {
 
     /// Clear texture cache (no-op - we don't cache textures anymore)
     func clearCache() {
-        // No cache to clear - textures are created on-demand each frame
-        print("🗑️ MetalImageTileRenderer.clearCache() - no cache to clear")
+        diskCacheLock.lock()
+        // Delete all cached files
+        for (_, path) in diskCachePaths {
+            try? FileManager.default.removeItem(atPath: path)
+        }
+        diskCachePaths.removeAll()
+        diskCacheLock.unlock()
+        print("🗑️ MetalImageTileRenderer.clearCache() - cleared disk cache")
+    }
+
+    /// Save CGImage to disk in /tmp
+    private func saveImageToDisk(image: CGImage, key: String) -> String? {
+        let tmpDir = NSTemporaryDirectory()
+        let filename = "metal_tile_\(key).png"
+        let filePath = (tmpDir as NSString).appendingPathComponent(filename)
+
+        guard let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: filePath) as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+            print("❌ Failed to create image destination for disk cache")
+            return nil
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else {
+            print("❌ Failed to write image to disk cache")
+            return nil
+        }
+
+        return filePath
+    }
+
+    /// Load CGImage from disk
+    private func loadImageFromDisk(path: String) -> CGImage? {
+        guard let imageSource = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+              let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+            print("❌ Failed to load image from disk cache at \(path)")
+            return nil
+        }
+        return image
     }
 
     /// Create orthographic projection matrix for 2D rendering
