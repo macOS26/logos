@@ -399,18 +399,11 @@ struct EnvelopeHandles: View {
             y: (currentLocation.y - canvasOffset.y) / preciseZoom
         )
 
+        // Only update local @State - don't touch document during drag
         warpedCorners[cornerIndex] = canvasLocation
 
-        document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
-
-        let minX = warpedCorners.map { $0.x }.min() ?? 0
-        let maxX = warpedCorners.map { $0.x }.max() ?? 0
-        let minY = warpedCorners.map { $0.y }.min() ?? 0
-        let maxY = warpedCorners.map { $0.y }.max() ?? 0
-        document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-
-        // Don't recalculate the expensive warp preview on every frame - just show the grid
-        // The preview will be calculated when the drag ends
+        // Don't update document.viewState during drag - causes slowdown
+        // These will be updated in finishEnvelopeWarp()
     }
 
     private func startEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
@@ -433,16 +426,6 @@ struct EnvelopeHandles: View {
         initialTransform = shape.transform
         startLocation = dragValue.startLocation
         draggingCornerIndex = cornerIndex
-
-        if warpedCorners.count == 4 {
-            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
-            let minX = warpedCorners.map { $0.x }.min() ?? 0
-            let maxX = warpedCorners.map { $0.x }.max() ?? 0
-            let minY = warpedCorners.map { $0.y }.min() ?? 0
-            let maxY = warpedCorners.map { $0.y }.max() ?? 0
-            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-        }
-
     }
 
     private func calculateEnvelopeWarpPreview() {
