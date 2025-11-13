@@ -236,20 +236,18 @@ extension DrawingCanvas {
         let tolerance: Double = screenTolerance / zoomLevel
         var foundSelection = false
 
+        // First, try to select a point/handle on currently selected shapes
         if !selectedObjectIDs.isEmpty {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
 
-        // If we have handles or points selected, don't allow clicking on the shape to deselect them
-        // This prevents clicking on handle lines or shape outlines from clearing handle selections
-        let hasPointOrHandleSelection = !selectedHandles.isEmpty || !selectedPoints.isEmpty
-
-        if !foundSelection && !hasPointOrHandleSelection {
+        // If no point/handle was clicked, try to select a whole shape
+        if !foundSelection {
             foundSelection = directSelectWholeShape(at: location)
         }
 
-        if !foundSelection && !hasPointOrHandleSelection {
-            Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
+        // If nothing was clicked, clear all selections
+        if !foundSelection {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             visibleHandles.removeAll()
