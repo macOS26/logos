@@ -216,11 +216,9 @@ extension DrawingCanvas {
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset
             )
-
-//            if appState.showPerformanceOverlay {
-//                performanceOverlay()
-//            }
         }
+        // Apply live pan as GPU transform for 60fps panning
+        .offset(x: livePanDelta.x, y: livePanDelta.y)
         .onAppear {
             setupCanvas()
             previousTool = document.viewState.currentTool
