@@ -483,12 +483,21 @@ class MetalImageTileRenderer {
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.getBytes(&data, bytesPerRow: rowBytes, from: region, mipmapLevel: 0)
 
+        // Swap BGRA to RGBA
+        for i in stride(from: 0, to: length, by: 4) {
+            let b = data[i]
+            let r = data[i + 2]
+            data[i] = r      // R
+            data[i + 2] = b  // B
+            // G at i+1 and A at i+3 stay the same
+        }
+
         guard let providerRef = CGDataProvider(data: Data(bytes: &data, count: length) as CFData) else {
             return nil
         }
 
-        // Metal texture is .bgra8Unorm_srgb (BGRA with premultiplied alpha, little endian)
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        // Now it's RGBA with premultiplied alpha
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
 
         return CGImage(
             width: width,
