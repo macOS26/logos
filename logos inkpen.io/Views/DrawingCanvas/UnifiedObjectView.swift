@@ -161,7 +161,6 @@ struct LayerCanvasView: View {
 
     var body: some View {
         // let _ = Self._printChanges()
-        // let _ = print("🔵 LayerCanvasView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         Canvas { context, size in
 //            _ = objectUpdateTrigger
 //            _ = activeGradientDelta  // Force redraw when gradient changes
@@ -201,17 +200,12 @@ struct LayerCanvasView: View {
                 switch object.objectType {
                 case .clipGroup(let clipGroupShape):
                     // ClipGroup: first grouped shape is the mask, rest are clipped content
-                    // print("🔵 RENDERING CLIPGROUP: parent selected=\(isSelected), groupedShapes.count=\(clipGroupShape.groupedShapes.count)")
-                    // print("🔵 RENDERING CLIPGROUP: selectedObjectIDs=\(selectedObjectIDs)")
-                    // print("🔵 RENDERING CLIPGROUP: dragPreviewDelta=\(dragPreviewDelta)")
 
                     guard !clipGroupShape.groupedShapes.isEmpty else { break }
                     let maskShape = clipGroupShape.groupedShapes[0]
                     let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
 
-                    // print("🔵 CLIPGROUP: maskShape.id=\(maskShape.id)")
                     // for (idx, child) in contentShapes.enumerated() {
-                    //     print("🔵 CLIPGROUP: contentShapes[\(idx)].id=\(child.id)")
                     // }
 
                     // Save parent's transform (includes drag delta if parent clipGroup is selected)
@@ -519,7 +513,6 @@ struct LayerCanvasView: View {
                         ? fillDeltaOpacity!
                         : fillStyle.opacity
 
-                    print("🔴 FILL RENDER: shape=\(shape.id), activeGradientDelta=\(activeGradientDelta != nil), isSelected=\(selectedObjectIDs.contains(shape.id)), activeColorTarget=\(activeColorTarget)")
 
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     // ONLY apply gradient delta if activeColorTarget is .fill
@@ -1093,22 +1086,17 @@ struct LayerCanvasView: View {
         // Check cache FIRST - if CGImage is cached, use it (NO disk I/O!)
         // Cache key includes quality so changing quality re-renders
         let cacheKey = "\(shape.id.uuidString)-q\(imagePreviewQuality)"
-        print("📦 Cache size: \(document.cgImageCache.count), looking for key: \(cacheKey)")
 
         let image: CGImage
         if let cachedImage = document.cgImageCache[cacheKey] {
-            print("✅ CACHE HIT: Using cached CGImage")
             image = cachedImage
         } else {
             // CACHE MISS - load from disk ONCE and cache it
-            print("❌ CACHE MISS: Loading image from disk for \(shape.id)")
 
             let nsImage: NSImage?
             if let imageData = shape.embeddedImageData {
-                print("🔵 Loading from embeddedImageData")
                 nsImage = NSImage(data: imageData)
             } else if let linkedPath = shape.linkedImagePath {
-                print("🔵 Loading from linked path: \(linkedPath)")
                 nsImage = resolveLinkedImage(
                     linkedPath: linkedPath,
                     documentURL: documentURL,
@@ -1116,26 +1104,21 @@ struct LayerCanvasView: View {
                     shapeID: shape.id
                 )
             } else {
-                print("🔴 NO IMAGE DATA - returning early")
                 return
             }
 
             guard let sourceNSImage = nsImage else {
-                print("🔴 NSImage is nil - returning early")
                 return
             }
 
-            print("🔵 Converting NSImage to CGImage")
             var rect = CGRect(origin: .zero, size: sourceNSImage.size)
             guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
-                print("🔴 CGImage conversion failed - returning early")
                 return
             }
 
             // Downsample if quality < 1.0
             let finalImage: CGImage
             if imagePreviewQuality < 1.0 {
-                print("🔵 Downsampling to quality \(imagePreviewQuality)")
                 let maxDimension = max(cgImage.width, cgImage.height)
                 let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
                 let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
@@ -1166,21 +1149,16 @@ struct LayerCanvasView: View {
                 downsampleContext.interpolationQuality = .high
                 downsampleContext.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
                 finalImage = downsampleContext.makeImage() ?? cgImage
-                print("🔵 Downsampled from \(cgImage.width)x\(cgImage.height) to \(finalImage.width)x\(finalImage.height)")
             } else {
                 finalImage = cgImage
             }
 
-            print("🔵 About to write to cache with key: \(cacheKey)")
             // Cache the downsampled image with quality in key
             document.cgImageCache[cacheKey] = finalImage
-            print("💾 WROTE TO CACHE, cache size now: \(document.cgImageCache.count)")
 
             // Verify it was written
             if document.cgImageCache[cacheKey] != nil {
-                print("✅ VERIFIED: Cache entry exists!")
             } else {
-                print("❌ FAILED: Cache entry does NOT exist after write!")
             }
 
             image = finalImage
@@ -1191,15 +1169,11 @@ struct LayerCanvasView: View {
         let lastHash = document.lastDrawnImageHash[shape.id]
 
         if lastHash == imageHash {
-            print("🔄 Same CGImage as last frame - but drawing anyway (Canvas clears)")
         } else {
-            print("🆕 New/changed CGImage - drawing")
             document.lastDrawnImageHash[shape.id] = imageHash
         }
 
         // ALWAYS draw - Canvas clears every frame, we MUST redraw
-        print("🖌️ Drawing image at bounds: \(renderBounds), opacity: \(shape.opacity)")
-        print("🖌️ Image size: \(image.width)x\(image.height)")
 
         // Draw using CGContext
         context.withCGContext { cgContext in
@@ -1210,7 +1184,6 @@ struct LayerCanvasView: View {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
                 cgContext.clip()
-                print("🖌️ Applied clipping mask")
             }
 
             // Apply opacity
@@ -1224,13 +1197,10 @@ struct LayerCanvasView: View {
             cgContext.interpolationQuality = .medium
 
             // Draw the image
-            print("🖌️ Calling cgContext.draw() NOW")
             cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-            print("🖌️ cgContext.draw() completed")
 
             cgContext.restoreGState()
         }
-        print("🖌️ Image drawing FINISHED")
     }
 
 }
@@ -1293,7 +1263,6 @@ struct IsolatedLayerView: View {
                    vectorText.getState(in: document) == .editing {
                     let isSelected = selectedObjectIDs.contains(shape.id)
                     let delta = isSelected ? dragPreviewDelta : .zero
-                    // print("✅ Adding top-level editing text: \(shape.id)")
                     shapes.append((id: shape.id, dragDelta: delta))
                 }
 
@@ -1311,7 +1280,6 @@ struct IsolatedLayerView: View {
                         let isChildSelected = selectedObjectIDs.contains(childShape.id)
                         let isParentSelected = selectedObjectIDs.contains(freshObject.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
-                        // print("✅ Adding grouped editing text: \(childShape.id)")
                         shapes.append((id: childShape.id, dragDelta: delta))
                     }
                 }
