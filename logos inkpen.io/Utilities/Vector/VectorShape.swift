@@ -401,6 +401,12 @@ struct VectorShape: Hashable, Identifiable {
     private var _cachedCGPath: CGPath?
     private var _cacheUpdateTrigger: UInt = 0
 
+    // Cached CGImage for Metal-rendered images (quality + tileSize baked in)
+    // This prevents re-rendering on every Canvas paint during pan/zoom
+    var cachedRenderedImage: CGImage? = nil
+    var cachedImageQuality: Double = 1.0
+    var cachedImageTileSize: Int = 32
+
     func cachedCGPath(updateTrigger: UInt? = nil) -> CGPath {
         // If trigger provided and different, rebuild cache
         if let trigger = updateTrigger, _cacheUpdateTrigger != trigger {

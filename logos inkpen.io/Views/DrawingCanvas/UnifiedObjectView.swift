@@ -1130,25 +1130,64 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
-        // Use Metal to render CGImage (only re-renders if quality/tile changes)
-        guard let renderer = MetalImageTileRenderer.shared else {
-            return
-        }
-
+        // Use cached CGImage from shape if available and quality/tile hasn't changed
         let image: CGImage
-
-        // Check if we need to render (based on shapeID + quality + tileSize)
-        let renderKey = "\(shape.id.uuidString)-q\(imagePreviewQuality)-t\(imageTileSize)"
-
-        if let cachedImage = renderer.getCachedImage(for: renderKey) {
-            // Use cached CGImage from Metal renderer
+        if let cachedImage = shape.cachedRenderedImage,
+           shape.cachedImageQuality == imagePreviewQuality,
+           shape.cachedImageTileSize == imageTileSize {
+            // ✅ Use pre-cached CGImage - NO rendering during pan/zoom!
             image = cachedImage
         } else {
-            // Render through Metal and cache
-            guard let renderedImage = renderer.renderImage(from: sourceNSImage, quality: imagePreviewQuality, cacheKey: renderKey) else {
+            // ❌ CACHE MISS - downsample with CoreGraphics (ONCE per quality change)
+            // This should only happen when:
+            // 1. First time loading image
+            // 2. Quality/tile settings changed
+            // print("⚠️ renderImage: CACHE MISS - downsampling shape \(shape.id) at quality \(imagePreviewQuality)")
+
+            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
+            guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
                 return
             }
-            image = renderedImage
+
+            // Downsample with CoreGraphics if quality < 1.0
+            let finalImage: CGImage
+            if imagePreviewQuality < 1.0 {
+                let maxDimension = max(cgImage.width, cgImage.height)
+                let targetSize = Int(Double(maxDimension) * imagePreviewQuality)
+                let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+                let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+                let aspectRatio = Double(cgImage.width) / Double(cgImage.height)
+                let targetWidth: Int
+                let targetHeight: Int
+                if cgImage.width >= cgImage.height {
+                    targetWidth = targetSize
+                    targetHeight = Int(Double(targetSize) / aspectRatio)
+                } else {
+                    targetHeight = targetSize
+                    targetWidth = Int(Double(targetSize) * aspectRatio)
+                }
+                guard let downsampleContext = CGContext(
+                    data: nil,
+                    width: targetWidth,
+                    height: targetHeight,
+                    bitsPerComponent: 8,
+                    bytesPerRow: targetWidth * 4,
+                    space: colorSpace,
+                    bitmapInfo: bitmapInfo
+                ) else {
+                    image = cgImage
+                    return
+                }
+                downsampleContext.interpolationQuality = .high
+                downsampleContext.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
+                finalImage = downsampleContext.makeImage() ?? cgImage
+            } else {
+                finalImage = cgImage
+            }
+
+            image = finalImage
+            // NOTE: Cannot cache here - shape is immutable in Canvas body
+            // Cache will be populated on NEXT frame by reading the rendered image
         }
 
         // Get actual image pixel dimensions
