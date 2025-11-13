@@ -304,3 +304,23 @@ kernel void path_hit_test(
         atomic_store_explicit((device atomic_uint*)hitResult, 1, memory_order_relaxed);
     }
 }
+
+// GPU-accelerated snap-to-point
+// Finds the nearest snap point within threshold distance
+// Each thread writes its distance, then CPU finds minimum
+kernel void find_nearest_snap_point(
+    const device float2* snapPoints [[buffer(0)]],
+    constant uint& snapCount [[buffer(1)]],
+    constant float2& mousePoint [[buffer(2)]],
+    constant float& threshold [[buffer(3)]],
+    device float* distances [[buffer(4)]],
+    uint gid [[thread_position_in_grid]])
+{
+    if (gid >= snapCount) return;
+
+    float2 snap = snapPoints[gid];
+    float dist = length(mousePoint - snap);
+
+    // Write distance for this snap point
+    distances[gid] = dist;
+}
