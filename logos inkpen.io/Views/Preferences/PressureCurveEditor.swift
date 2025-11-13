@@ -130,16 +130,3 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
 
     return curveOutput
 }
-
-#Preview {
-    @Previewable @State var previewCurve: [CGPoint] = [
-        CGPoint(x: 0.0, y: 0.0),
-        CGPoint(x: 0.25, y: 0.25),
-        CGPoint(x: 0.5, y: 0.5),
-        CGPoint(x: 0.75, y: 0.75),
-        CGPoint(x: 1.0, y: 1.0)
-    ]
-
-    return PressureCurveEditor(curve: $previewCurve, size: 280)
-        .padding()
-}
