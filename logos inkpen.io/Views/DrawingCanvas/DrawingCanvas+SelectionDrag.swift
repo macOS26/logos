@@ -219,14 +219,13 @@ extension DrawingCanvas {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
-                    if shape.isClippingPath {
-                        let allShapes = document.getShapesForLayer(object.layerIndex)
-                        for clippedShape in allShapes {
-                            if clippedShape.clippedByShapeID == shape.id {
-                                if let clippedObj = document.snapshot.objects[clippedShape.id] {
-                                    oldShapes[clippedObj.id] = clippedShape
-                                    affectedObjectIDs.insert(clippedObj.id)
-                                }
+                    // Use O(1) cache lookup for clipped objects
+                    if shape.isClippingPath, let clippedIDs = document.snapshot.clippedObjectsCache[shape.id] {
+                        for clippedID in clippedIDs {
+                            if let clippedObj = document.snapshot.objects[clippedID] {
+                                let clippedShape = clippedObj.shape
+                                oldShapes[clippedID] = clippedShape
+                                affectedObjectIDs.insert(clippedID)
                             }
                         }
                     }

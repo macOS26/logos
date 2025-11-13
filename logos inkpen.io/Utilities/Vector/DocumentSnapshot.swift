@@ -13,9 +13,13 @@ DocumentSnapshot: Equatable, Codable {
     // Not saved to disk - rebuilt on load
     var parentGroupCache: [UUID: UUID] = [:]
 
+    // O(1) lookup cache: clippingPathID -> [clippedObjectIDs]
+    // Not saved to disk - rebuilt on load
+    var clippedObjectsCache: [UUID: [UUID]] = [:]
+
     enum CodingKeys: String, CodingKey {
         case formatVersion, objects, layers, settings, colorSwatches, gridSettings
-        // parentGroupCache excluded - rebuilt on load
+        // parentGroupCache and clippedObjectsCache excluded - rebuilt on load
     }
 
     init(
@@ -33,6 +37,7 @@ DocumentSnapshot: Equatable, Codable {
         self.colorSwatches = colorSwatches
         self.gridSettings = gridSettings
         self.parentGroupCache = [:]
+        self.clippedObjectsCache = [:]
     }
 
     // Custom decoding to handle legacy files without formatVersion
@@ -47,5 +52,6 @@ DocumentSnapshot: Equatable, Codable {
         self.colorSwatches = try container.decode(ColorSwatches.self, forKey: .colorSwatches)
         self.gridSettings = try container.decode(GridSettings.self, forKey: .gridSettings)
         self.parentGroupCache = [:]  // Will be rebuilt after load
+        self.clippedObjectsCache = [:]  // Will be rebuilt after load
     }
 }

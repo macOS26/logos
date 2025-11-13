@@ -227,6 +227,8 @@ extension VectorDocument {
     /// Rebuild the entire parent group cache from scratch (called after document load)
     func rebuildParentGroupCache() {
         snapshot.parentGroupCache.removeAll()
+        snapshot.clippedObjectsCache.removeAll()
+
         for (groupID, object) in snapshot.objects {
             switch object.objectType {
             case .group(let groupShape), .clipGroup(let groupShape):
@@ -234,6 +236,23 @@ extension VectorDocument {
                     for childShape in groupShape.groupedShapes {
                         snapshot.parentGroupCache[childShape.id] = groupID
                     }
+                }
+            case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
+                // Build clipping path cache
+                if shape.isClippingPath {
+                    snapshot.clippedObjectsCache[shape.id] = []
+                }
+            default:
+                continue
+            }
+        }
+
+        // Second pass: find clipped objects
+        for (objectID, object) in snapshot.objects {
+            switch object.objectType {
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                if let clippingPathID = shape.clippedByShapeID {
+                    snapshot.clippedObjectsCache[clippingPathID, default: []].append(objectID)
                 }
             default:
                 continue
