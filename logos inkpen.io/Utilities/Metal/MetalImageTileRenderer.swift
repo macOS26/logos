@@ -145,8 +145,10 @@ class MetalImageTileRenderer {
         outputSize: CGSize,
         shapeID: UUID
     ) -> CGImage? {
-        // Cache key is just the shape UUID - image dimensions already determined by UUID + quality
-        let cacheKey = shapeID.uuidString
+        // Cache key is based on the IMAGE pointer, not shape ID
+        // This way multiple shapes using the same image share the same texture
+        let imagePointer = Unmanaged.passUnretained(image as CFTypeRef).toOpaque()
+        let cacheKey = "\(Int(bitPattern: imagePointer))"
 
         // Return cached result if available
         if let cachedImage = compositedImageCache[cacheKey] {
@@ -154,7 +156,7 @@ class MetalImageTileRenderer {
         }
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let sourceTexture = getTexture(from: image, cacheKey: shapeID.uuidString) else {
+              let sourceTexture = getTexture(from: image, cacheKey: cacheKey) else {
             return nil
         }
 
