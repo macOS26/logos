@@ -10,9 +10,6 @@ typealias TileCoordinate = SIMD2<Int>
 class ImageTileCache {
     static let shared = ImageTileCache()
 
-    private var sourceImageCache: [String: CGImage] = [:]  // imageKey -> source image
-    private var cacheLock = NSLock()
-
     private init() {}
 
     /// Get the current tile size from preferences
@@ -54,19 +51,8 @@ class ImageTileCache {
         return tiles
     }
 
-    /// Get downsampled source image (cached)
+    /// Get downsampled source image (no caching - render directly)
     func getSourceImage(from imageData: Data, quality: Double, shapeID: UUID) -> CGImage? {
-        let imageKey = shapeID.uuidString
-
-        cacheLock.lock()
-        if let cached = sourceImageCache[imageKey] {
-            cacheLock.unlock()
-            // print("✅ ImageTileCache.getSourceImage [Data]: CACHE HIT for key=\(imageKey)")
-            return cached
-        }
-        cacheLock.unlock()
-        // print("❌ ImageTileCache.getSourceImage [Data]: CACHE MISS for key=\(imageKey), creating new image")
-
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
         }
@@ -80,8 +66,6 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
-        print("📊 ImageTileCache [Data]: original=\(width)×\(height), quality=\(quality), target=\(Int(targetPixelSize))px")
-
         // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -90,33 +74,11 @@ class ImageTileCache {
             kCGImageSourceShouldCache: false
         ]
 
-        let resultImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
-
-        guard let downsampledImage = resultImage else {
-            return nil
-        }
-
-        cacheLock.lock()
-        sourceImageCache[imageKey] = downsampledImage
-        cacheLock.unlock()
-        print("💾 ImageTileCache.getSourceImage [Data]: CACHED new image with key=\(imageKey)")
-
-        return downsampledImage
+        return CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
     }
 
-    /// Get downsampled source image from URL (cached)
+    /// Get downsampled source image from URL (no caching - render directly)
     func getSourceImage(from url: URL, quality: Double, shapeID: UUID) -> CGImage? {
-        let imageKey = shapeID.uuidString
-
-        cacheLock.lock()
-        if let cached = sourceImageCache[imageKey] {
-            cacheLock.unlock()
-            // print("✅ ImageTileCache.getSourceImage [URL]: CACHE HIT for key=\(imageKey)")
-            return cached
-        }
-        cacheLock.unlock()
-        // print("❌ ImageTileCache.getSourceImage [URL]: CACHE MISS for key=\(imageKey), creating new image")
-
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil
         }
@@ -130,8 +92,6 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
-        print("📊 ImageTileCache [URL]: original=\(width)×\(height), quality=\(quality), target=\(Int(targetPixelSize))px")
-
         // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -140,26 +100,6 @@ class ImageTileCache {
             kCGImageSourceShouldCache: false
         ]
 
-        let resultImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
-
-        guard let downsampledImage = resultImage else {
-            return nil
-        }
-
-        cacheLock.lock()
-        sourceImageCache[imageKey] = downsampledImage
-        cacheLock.unlock()
-        print("💾 ImageTileCache.getSourceImage [URL]: CACHED new image with key=\(imageKey)")
-
-        return downsampledImage
-    }
-
-    /// Clear all cached images
-    func clearCache() {
-        cacheLock.lock()
-        let count = sourceImageCache.count
-        sourceImageCache.removeAll()
-        cacheLock.unlock()
-        print("🗑️ ImageTileCache.clearCache() removed \(count) cached images")
+        return CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
     }
 }
