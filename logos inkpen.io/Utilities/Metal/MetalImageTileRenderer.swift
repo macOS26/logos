@@ -480,35 +480,40 @@ class MetalImageTileRenderer {
     private func cgImage(from texture: MTLTexture) -> CGImage? {
         let width = texture.width
         let height = texture.height
-        let rowBytes = width * 4
-        let length = rowBytes * height
 
-        var data = [UInt8](repeating: 0, count: length)
+        // Create a CGContext and render the Metal texture into it
+        // This lets CoreGraphics handle the format conversion properly
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
-        let region = MTLRegionMake2D(0, 0, width, height)
-        texture.getBytes(&data, bytesPerRow: rowBytes, from: region, mipmapLevel: 0)
-
-        guard let providerRef = CGDataProvider(data: Data(bytes: &data, count: length) as CFData) else {
-            return nil
-        }
-
-        // Metal .bgra8Unorm format = BGRA byte order = ARGB in little-endian 32-bit
-        // CoreGraphics needs: .premultipliedFirst (alpha first) + .byteOrder32Little (BGRA bytes)
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
-
-        return CGImage(
+        guard let context = CGContext(
+            data: nil,
             width: width,
             height: height,
             bitsPerComponent: 8,
-            bitsPerPixel: 32,
-            bytesPerRow: rowBytes,
-            space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: bitmapInfo,
-            provider: providerRef,
-            decode: nil,
-            shouldInterpolate: true,
-            intent: .defaultIntent
-        )
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            return nil
+        }
+
+        // Read BGRA data from Metal texture
+        var data = [UInt8](repeating: 0, count: width * height * 4)
+        let region = MTLRegionMake2D(0, 0, width, height)
+        texture.getBytes(&data, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
+
+        // Swap BGRA → RGBA for the CGContext
+        for i in stride(from: 0, to: data.count, by: 4) {
+            data.swapAt(i, i + 2)  // Swap B and R
+        }
+
+        // Copy RGBA data into context
+        if let contextData = context.data {
+            contextData.copyMemory(from: data, byteCount: data.count)
+        }
+
+        return context.makeImage()
     }
 
     /// Clear texture cache (no-op - we don't cache textures anymore)
