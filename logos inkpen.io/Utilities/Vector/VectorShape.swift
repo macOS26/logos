@@ -369,7 +369,6 @@ struct VectorShape: Hashable, Identifiable {
     var embeddedImageData: Data? = nil
     var linkedImagePath: String? = nil
     var linkedImageBookmarkData: Data? = nil
-    var cachedCGImage: CGImage? = nil
     var isGroup: Bool
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
