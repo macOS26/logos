@@ -167,81 +167,6 @@ extension DrawingCanvas {
         return VectorPath(elements: [.move(to: VectorPoint(rawPointLocations[0]))])
     }
 
-    private func generateLivePreviewPathOffMain(
-        rawPoints: [BrushPoint],
-        thickness: Double,
-        pressureSensitivity: Double,
-        taper: Double,
-        previewTolerance: Double
-    ) -> VectorPath {
-        guard rawPoints.count >= 2 else {
-            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
-        }
-
-        var pointsToProcess = rawPoints
-        if rawPoints.count == 2 {
-            let startPoint = rawPoints[0]
-            let endPoint = rawPoints[1]
-            var interpolatedPoints: [BrushPoint] = [startPoint]
-
-            let dx = endPoint.location.x - startPoint.location.x
-            let dy = endPoint.location.y - startPoint.location.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-            let perpX = lineLength > 0 ? -dy / lineLength : 0
-            let perpY = lineLength > 0 ? dx / lineLength : 0
-            let numIntermediatePoints = 5
-            for i in 1...numIntermediatePoints {
-                let t = Double(i) / Double(numIntermediatePoints + 1)
-                let jitterAmount = sin(t * .pi) * 2.0
-
-                let interpolatedLocation = CGPoint(
-                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
-                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
-                )
-
-                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
-                let pressureVariation = sin(t * .pi) * 0.15
-                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
-
-                interpolatedPoints.append(BrushPoint(
-                    location: interpolatedLocation,
-                    pressure: interpolatedPressure
-                ))
-            }
-
-            interpolatedPoints.append(endPoint)
-            pointsToProcess = interpolatedPoints
-        }
-
-        let rawPointLocations = pointsToProcess.map { $0.location }
-        var simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.01)
-
-        if simplifiedPoints.count < 30 && rawPointLocations.count > 2 {
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.001)
-            if simplifiedPoints.count < 30 {
-                let stepSize = max(1, rawPointLocations.count / 50)
-                simplifiedPoints = []
-                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
-                    simplifiedPoints.append(rawPointLocations[i])
-                }
-                if let last = rawPointLocations.last, simplifiedPoints.last != last {
-                    simplifiedPoints.append(last)
-                }
-            }
-        }
-
-        if simplifiedPoints.count >= 2 {
-            return generatePreviewVariableWidthPath(
-                centerPoints: simplifiedPoints,
-                recentRawPoints: pointsToProcess,
-                thickness: thickness,
-                pressureSensitivity: pressureSensitivity,
-                taper: taper
-            )
-        } else {
-            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
-        }
-    }
 
     private func processBrushStroke() {
         guard brushRawPoints.count >= 2,
@@ -378,43 +303,6 @@ extension DrawingCanvas {
         document.addShape(shape)
     }
 
-    private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
-
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard shapeIndex < shapes.count else {
-            return
-        }
-
-        guard let brushStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            return
-        }
-
-        guard brushStroke.id == activeBrushShape?.id else {
-            return
-        }
-
-        let originalPath = brushStroke.path.cgPath
-
-        guard !originalPath.isEmpty else {
-            return
-        }
-
-        let pathBounds = originalPath.boundingBox
-        guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
-            return
-        }
-
-        if let cleanedPath = CoreGraphicsPathOperations.normalized(originalPath) {
-            guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
-                return
-            }
-            
-            let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
-            var updatedShape = brushStroke
-            updatedShape.path = cleanedVectorPath
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-        }
-    }
 
     private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -507,26 +395,6 @@ extension DrawingCanvas {
         return firstClosest.pressure
     }
 
-    private func detectStraightLine(points: [CGPoint]) -> Bool {
-        guard points.count >= 2 else { return false }
-
-        guard let start = points.first, let end = points.last else {
-            return false
-        }
-        let dx = end.x - start.x
-        let dy = end.y - start.y
-        let lineLength = sqrt(dx * dx + dy * dy)
-
-        if lineLength < 50 { return true }
-
-        var maxDeviation: Double = 0
-        for point in points {
-            let deviation = abs((dy * point.x - dx * point.y + end.x * start.y - end.y * start.x) / lineLength)
-            maxDeviation = max(maxDeviation, deviation)
-        }
-
-        return maxDeviation < lineLength * 0.05
-    }
 
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -645,31 +513,6 @@ extension DrawingCanvas {
         return offsetPoints
     }
 
-    private func createBrushStrokeOutline(leftEdge: [CGPoint], rightEdge: [CGPoint]) -> VectorPath {
-        var elements: [PathElement] = []
-
-        guard !leftEdge.isEmpty && !rightEdge.isEmpty else {
-            return VectorPath(elements: elements)
-        }
-
-        elements.append(.move(to: VectorPoint(leftEdge[0])))
-
-        for i in 1..<leftEdge.count {
-            elements.append(.line(to: VectorPoint(leftEdge[i])))
-        }
-
-        if let lastRightEdge = rightEdge.last {
-            elements.append(.line(to: VectorPoint(lastRightEdge)))
-        }
-
-        for i in stride(from: rightEdge.count - 2, through: 0, by: -1) {
-            elements.append(.line(to: VectorPoint(rightEdge[i])))
-        }
-
-        elements.append(.close)
-
-        return VectorPath(elements: elements)
-    }
 
     private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath) -> VectorPath {
         var elements: [PathElement] = []

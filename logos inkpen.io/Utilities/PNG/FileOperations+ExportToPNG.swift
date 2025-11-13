@@ -474,7 +474,7 @@ private struct PNGExportView: View {
             }
 
             // Render layers directly
-            ForEach(document.snapshot.layers.indices, id: \.self) { layerIndex in
+            ForEach(Array(document.snapshot.layers.indices), id: \.self) { layerIndex in
                 if document.snapshot.layers[layerIndex].isVisible,
                    layerIndex >= 2 { // Skip background layers
                     let layer = document.snapshot.layers[layerIndex]
@@ -487,7 +487,6 @@ private struct PNGExportView: View {
                         viewMode: .color,
                         dragPreviewDelta: .zero,
                         dragPreviewTrigger: false,
-                        objectUpdateTrigger: 0,
                         liveScaleTransform: .identity,
                         layerOpacity: layer.opacity,
                         layerBlendMode: layer.blendMode,

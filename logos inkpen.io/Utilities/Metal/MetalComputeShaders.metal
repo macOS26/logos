@@ -379,20 +379,94 @@ kernel void path_intersection_calculation(
     uint index [[thread_position_in_grid]]
 ) {
     if (index >= path1Count * path2Count) return;
-    
+
     uint path1Index = index / path2Count;
     uint path2Index = index % path2Count;
-    
+
     Point2D p1 = path1Points[path1Index];
     Point2D p2 = path2Points[path2Index];
-    
+
     float distance = sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
-    
+
     if (distance < 0.001) {
         atomic_fetch_add_explicit((device atomic_uint*)intersectionCount, 1, memory_order_relaxed);
         uint currentCount = atomic_fetch_add_explicit((device atomic_uint*)intersectionCount, 0, memory_order_relaxed);
         if (currentCount < 1000) {
             intersectionPoints[currentCount] = p1;
+        }
+    }
+}
+
+// Find nearest point within selection radius
+// Only checks distance to the point itself, not any connecting lines
+kernel void find_nearest_point(
+    device const float2* points [[buffer(0)]],
+    constant float2& tapLocation [[buffer(1)]],
+    constant float& selectionRadius [[buffer(2)]],
+    device float* distances [[buffer(3)]],
+    device uint* validIndices [[buffer(4)]],
+    uint index [[thread_position_in_grid]]
+) {
+    float2 point = points[index];
+    float2 delta = point - tapLocation;
+    float distance = length(delta);
+
+    distances[index] = distance;
+
+    // Mark as valid only if within selection radius
+    if (distance <= selectionRadius) {
+        validIndices[index] = index;
+    } else {
+        validIndices[index] = UINT_MAX;
+    }
+}
+
+// Find nearest handle within selection radius
+// ONLY checks the handle circle itself, NOT the connecting line to anchor
+kernel void find_nearest_handle(
+    device const float2* handlePoints [[buffer(0)]],
+    device const float2* anchorPoints [[buffer(1)]],
+    constant float2& tapLocation [[buffer(2)]],
+    constant float& selectionRadius [[buffer(3)]],
+    device float* distances [[buffer(4)]],
+    device uint* validIndices [[buffer(5)]],
+    uint index [[thread_position_in_grid]]
+) {
+    float2 handlePoint = handlePoints[index];
+
+    // Calculate distance from tap to HANDLE POINT ONLY (not the line)
+    float2 delta = handlePoint - tapLocation;
+    float distance = length(delta);
+
+    distances[index] = distance;
+
+    // Mark as valid only if within selection radius of the HANDLE itself
+    // The line connecting handle to anchor is NOT selectable
+    if (distance <= selectionRadius) {
+        validIndices[index] = index;
+    } else {
+        validIndices[index] = UINT_MAX;
+    }
+}
+
+// Find all points within a radius (for multi-select)
+kernel void find_points_in_radius(
+    device const float2* points [[buffer(0)]],
+    constant float2& tapLocation [[buffer(1)]],
+    constant float& selectionRadius [[buffer(2)]],
+    device uint* matchingIndices [[buffer(3)]],
+    device uint* matchCount [[buffer(4)]],
+    constant uint& maxMatches [[buffer(5)]],
+    uint index [[thread_position_in_grid]]
+) {
+    float2 point = points[index];
+    float2 delta = point - tapLocation;
+    float distance = length(delta);
+
+    if (distance <= selectionRadius) {
+        uint currentCount = atomic_fetch_add_explicit((device atomic_uint*)matchCount, 1, memory_order_relaxed);
+        if (currentCount < maxMatches) {
+            matchingIndices[currentCount] = index;
         }
     }
 }

@@ -255,7 +255,6 @@ extension DrawingCanvas {
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
                 dragPreviewTrigger: dragPreviewUpdateTrigger,
-                objectUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id, default: 0],
                 liveScaleTransform: liveScaleTransform,
                 layerOpacity: layerOpacity,
                 layerBlendMode: layerBlendMode,
