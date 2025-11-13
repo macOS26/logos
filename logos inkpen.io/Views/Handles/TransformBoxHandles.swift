@@ -44,6 +44,12 @@ struct TransformBoxHandles: View {
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
+        // Calculate display bounds here so it updates when liveScaleTransform changes
+        let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
+        let displayBoundsForHandles = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
+            ? transformedBounds.applying(activeTransform)
+            : transformedBounds
+
         ZStack {
             // Render transform box outline using Canvas (like direct selection)
             Canvas { context, size in
@@ -215,15 +221,9 @@ struct TransformBoxHandles: View {
                 .allowsHitTesting(false)
             }
 
-            // Apply preview transform to bounds for handle positioning if scaling
-            // Use liveScaleTransform from ScaleHandles if available, otherwise use local previewTransform
-            let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
-            let displayBounds = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
-                ? transformedBounds.applying(activeTransform)
-                : transformedBounds
-
+            // Use precalculated displayBounds from body
             ForEach(0..<9) { index in
-                let pt = handlePosition(index: index, in: displayBounds)
+                let pt = handlePosition(index: index, in: displayBoundsForHandles)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
                 let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
                 let isDisabled = isAnchorPoint || isAdjacentToAnchor
@@ -244,8 +244,8 @@ struct TransformBoxHandles: View {
             .position(
                 (shape.typography != nil || containsTextBoxInGroup()) ?
                 CGPoint(
-                    x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x,
-                    y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y
+                    x: (displayBoundsForHandles.midX + (pt.x - displayBoundsForHandles.midX)) * zoomLevel + canvasOffset.x,
+                    y: (displayBoundsForHandles.midY + (pt.y - displayBoundsForHandles.midY)) * zoomLevel + canvasOffset.y
                 )
                 :
                 CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
@@ -273,7 +273,6 @@ struct TransformBoxHandles: View {
         .onAppear {
             initialTransform = .identity
         }
-        .id("transform-box-\(liveScaleTransform.a)-\(liveScaleTransform.d)")  // Force update when live scale changes
     }
 
     private func computeTransformedBounds() -> CGRect {
