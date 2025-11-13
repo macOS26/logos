@@ -522,36 +522,6 @@ extension DrawingCanvas {
 
 }
 
-private struct BrushPreviewStyleModifier: ViewModifier {
-    @Environment(AppState.self) var appState
-    let appStateRef: AppState?
-    let document: VectorDocument
-    let preview: VectorPath
-    let zoomLevel: Double
-
-    init(appState: AppState, document: VectorDocument, preview: VectorPath, zoomLevel: Double) {
-        self.document = document
-        self.preview = preview
-        self.appStateRef = appState
-        self.zoomLevel = zoomLevel
-    }
-
-    func body(content: Content) -> some View {
-        switch appStateRef?.brushPreviewStyle ?? .outline {
-        case .outline:
-            ZStack {
-                content.opacity(0.001)
-                Path { p in addPathElements(preview.elements, to: &p) }
-                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / zoomLevel))
-            }
-        case .fill:
-            Path { p in addPathElements(preview.elements, to: &p) }
-                .fill(document.defaultFillColor.color)
-                .opacity(document.defaultFillOpacity)
-        }
-    }
-}
-
 extension DrawingCanvas {
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
