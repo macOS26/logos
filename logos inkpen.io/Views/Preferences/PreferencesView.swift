@@ -9,18 +9,102 @@ struct PreferencesView: View {
     @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox(label: Label("Transform", systemImage: "arrow.up.left.and.arrow.down.right").font(.headline)) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Include strokes in bounding box", isOn: $settings.boundingBoxIncludesStrokes)
+        HStack(alignment: .top, spacing: 20) {
+            // Left Column
+            VStack(alignment: .leading, spacing: 16) {
+                GroupBox(label: Label("Transform", systemImage: "arrow.up.left.and.arrow.down.right").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Include strokes in bounding box", isOn: $settings.boundingBoxIncludesStrokes)
 
-                    Text("When enabled, selection and transform boxes include stroke width for all shapes.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("When enabled, selection and transform boxes include stroke width for all shapes.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 8)
                 }
-                .padding(.vertical, 8)
-            }
 
+                GroupBox(label: Label("Image Settings", systemImage: "photo").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Preview Quality: \(Int(imageQuality * 100))%")
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+
+                            Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
+
+                            Text("Controls image resolution in canvas. Lower values use less memory.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        HStack(spacing: 8) {
+                            Button("Low (20%)") {
+                                imageQuality = 0.2
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Medium (50%)") {
+                                imageQuality = 0.5
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("High (100%)") {
+                                imageQuality = 1.0
+                            }
+                            .buttonStyle(.bordered)
+
+                            Spacer()
+                        }
+
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Tile Size: \(Int(tileSize))px")
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+
+                            Slider(value: Binding(
+                                get: { Double(tileSize) },
+                                set: { tileSize = Int($0) }
+                            ), in: 32...1024, step: 32)
+
+                            Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        HStack(spacing: 8) {
+                            Button("Small (128px)") {
+                                tileSize = 128
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Medium (512px)") {
+                                tileSize = 512
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Large (1024px)") {
+                                tileSize = 1024
+                            }
+                            .buttonStyle(.bordered)
+
+                            Spacer()
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+
+            // Right Column
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
 
@@ -60,88 +144,12 @@ struct PreferencesView: View {
                 }
                 .padding(.vertical, 8)
             }
-
-            GroupBox(label: Label("Image Settings", systemImage: "photo").font(.headline)) {
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("Preview Quality: \(Int(imageQuality * 100))%")
-                                .font(.subheadline)
-                            Spacer()
-                        }
-
-                        Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
-
-                        Text("Controls image resolution in canvas. Lower values use less memory.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack(spacing: 8) {
-                        Button("Low (20%)") {
-                            imageQuality = 0.2
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Medium (50%)") {
-                            imageQuality = 0.5
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("High (100%)") {
-                            imageQuality = 1.0
-                        }
-                        .buttonStyle(.bordered)
-
-                        Spacer()
-                    }
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("Tile Size: \(Int(tileSize))px")
-                                .font(.subheadline)
-                            Spacer()
-                        }
-
-                        Slider(value: Binding(
-                            get: { Double(tileSize) },
-                            set: { tileSize = Int($0) }
-                        ), in: 32...1024, step: 32)
-
-                        Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack(spacing: 8) {
-                        Button("Small (128px)") {
-                            tileSize = 128
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Medium (512px)") {
-                            tileSize = 512
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Large (1024px)") {
-                            tileSize = 1024
-                        }
-                        .buttonStyle(.bordered)
-
-                        Spacer()
-                    }
-                }
-                .padding(.vertical, 8)
-            }
+            .frame(width: 380)
 
             Spacer()
         }
         .padding(24)
-        .frame(minWidth: 400, minHeight: 750)
+        .frame(minWidth: 850, minHeight: 500)
         .onAppear {
             loadPressureCurve()
         }
