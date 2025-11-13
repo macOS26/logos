@@ -43,19 +43,140 @@ struct ScaleHandles: View {
         let center = calculatedCenter
 
         ZStack {
-            // TransformBoxHandles shows the outline, so we don't need to duplicate it here
+            // Render shape outline using Canvas
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
+
+                if shape.isGroup && !shape.groupedShapes.isEmpty {
+                    for groupedShape in shape.groupedShapes {
+                        var path = Path()
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                                path.move(to: screenP)
+                            case .line(let to):
+                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                                path.addLine(to: screenP)
+                            case .curve(let to, let control1, let control2):
+                                let tp = to.cgPoint.applying(groupedShape.transform)
+                                let tc1 = control1.cgPoint.applying(groupedShape.transform)
+                                let tc2 = control2.cgPoint.applying(groupedShape.transform)
+                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                                let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                                let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                                path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
+                            case .quadCurve(let to, let control):
+                                let tp = to.cgPoint.applying(groupedShape.transform)
+                                let tc = control.cgPoint.applying(groupedShape.transform)
+                                let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                                let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                                path.addQuadCurve(to: screenTo, control: screenC)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                        context.stroke(path, with: .color(.white), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0], dashPhase: 2.0))
+                        context.stroke(path, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
+                    }
+                } else {
+                    var path = Path()
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            let p = to.cgPoint.applying(shape.transform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.move(to: screenP)
+                        case .line(let to):
+                            let p = to.cgPoint.applying(shape.transform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.addLine(to: screenP)
+                        case .curve(let to, let control1, let control2):
+                            let tp = to.cgPoint.applying(shape.transform)
+                            let tc1 = control1.cgPoint.applying(shape.transform)
+                            let tc2 = control2.cgPoint.applying(shape.transform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                            let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                            path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
+                        case .quadCurve(let to, let control):
+                            let tp = to.cgPoint.applying(shape.transform)
+                            let tc = control.cgPoint.applying(shape.transform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                            path.addQuadCurve(to: screenTo, control: screenC)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                    context.stroke(path, with: .color(.white), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0], dashPhase: 2.0))
+                    context.stroke(path, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
+                }
+            }
+            .allowsHitTesting(false)
+
             pathPointsView()
 
-            // Removed green corner handles for groups - TransformBoxHandles shows the transform box
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // Use live transform if scaling, otherwise original bounds
+                let displayBounds = (isScaling && !previewTransform.isIdentity) ? bounds.applying(previewTransform) : bounds
+                let displayCenter = CGPoint(x: displayBounds.midX, y: displayBounds.midY)
+
+                Canvas { context, size in
+                    let zoom = zoomLevel
+                    let offset = canvasOffset
+                    let screenRect = CGRect(
+                        x: displayBounds.minX * zoom + offset.x,
+                        y: displayBounds.minY * zoom + offset.y,
+                        width: displayBounds.width * zoom,
+                        height: displayBounds.height * zoom
+                    )
+                    context.stroke(Path(screenRect), with: .color(.green), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [3.0, 3.0]))
+                }
+                .allowsHitTesting(false)
+
+                ForEach(0..<4) { i in
+                    let cornerPos = cornerPosition(for: i, in: displayBounds, center: displayCenter)
+                    let cornerIndex = pathPoints.count + i
+                    let isLockedPin = lockedPinPointIndex == cornerIndex
+
+                    Circle()
+                        .fill(isLockedPin ? Color.red : Color.green)
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize, height: handleSize)
+                        .offset(
+                            x: cornerPos.x * zoomLevel + canvasOffset.x - (handleSize) / 2,
+                            y: cornerPos.y * zoomLevel + canvasOffset.y - (handleSize) / 2
+                        )
+                        .onTapGesture {
+                            if !isScaling {
+                                setLockedPinPoint(cornerIndex)
+                            }
+                        }
+                        .highPriorityGesture(
+                            DragGesture(minimumDistance: 3)
+                                .onChanged { value in
+                                    handleScalingFromPoint(draggedPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
+                                }
+                                .onEnded { _ in
+                                    finishScaling()
+                                }
+                        )
+                }
+            }
 
             let isCenterLockedPin = (lockedPinPointIndex == nil)
+            let displayCenter = (isScaling && !previewTransform.isIdentity) ? center.applying(previewTransform) : center
             Circle()
                 .fill(isCenterLockedPin ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize)
                 .position(CGPoint(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: center.y * zoomLevel + canvasOffset.y
+                    x: displayCenter.x * zoomLevel + canvasOffset.x,
+                    y: displayCenter.y * zoomLevel + canvasOffset.y
                 ))
                 .zIndex(100)
                 .onTapGesture {

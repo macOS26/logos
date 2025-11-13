@@ -39,7 +39,8 @@ extension ScaleHandles {
         ForEach(pathPoints.indices, id: \.self) { index in
             let point = pathPoints[index]
             let isLockedPin = lockedPinPointIndex == index
-            let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+            let baseTransform = (isScaling && !previewTransform.isIdentity) ? previewTransform : shape.transform
+            let transformedPoint = CGPoint(x: point.x, y: point.y).applying(baseTransform)
             Circle()
                 .fill(isLockedPin ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
