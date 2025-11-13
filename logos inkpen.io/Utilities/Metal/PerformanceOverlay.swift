@@ -118,13 +118,3 @@ import SwiftUI
 //        return deviceName
 //    }
 //}
-//
-//#Preview {
-//    ZStack {
-//        Rectangle()
-//            .fill(.gray.opacity(0.2))
-//            .frame(width: 400, height: 300)
-//
-//        PerformanceOverlay(performanceMonitor: PerformanceMonitor())
-//    }
-//}
