@@ -202,7 +202,7 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Create offscreen render target matching texture size
+        // Create offscreen render target with .shared storage for CPU readback
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
             width: metalTexture.width,
@@ -210,7 +210,7 @@ class MetalImageTileRenderer {
             mipmapped: false
         )
         textureDescriptor.usage = [.renderTarget, .shaderRead]
-        textureDescriptor.storageMode = .private
+        textureDescriptor.storageMode = .shared  // Must be .shared for CPU readback
 
         guard let renderTarget = device.makeTexture(descriptor: textureDescriptor) else {
             return nil
