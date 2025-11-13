@@ -33,19 +33,3 @@ struct StylusToggleButton: View {
         }
     }
 }
-
-struct StylusToggleModifier: ViewModifier {
-    @Binding var isOn: Bool
-    var label: String = ""
-    var onChange: ((Bool) -> Void)?
-
-    func body(content: Content) -> some View {
-        StylusToggleButton(isOn: $isOn, label: label, onChange: onChange)
-    }
-}
-
-extension View {
-    func stylusToggle(isOn: Binding<Bool>, label: String = "", onChange: ((Bool) -> Void)? = nil) -> some View {
-        StylusToggleButton(isOn: isOn, label: label, onChange: onChange)
-    }
-}
