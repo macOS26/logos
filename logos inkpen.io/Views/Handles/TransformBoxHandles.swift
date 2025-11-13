@@ -11,6 +11,7 @@ struct TransformBoxHandles: View {
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
+    var enableDragGestures: Bool = true  // Disable when used with other tools
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
 
@@ -250,10 +251,12 @@ struct TransformBoxHandles: View {
                 CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
             )
             .onTapGesture {
-                setAnchorPoint(forHandle: index)
+                if enableDragGestures {
+                    setAnchorPoint(forHandle: index)
+                }
             }
             .simultaneousGesture(
-                isDisabled ? nil :
+                (isDisabled || !enableDragGestures) ? nil :
                 DragGesture(minimumDistance: 0.5)
                     .onChanged { value in
                         if !isScaling {
@@ -268,8 +271,9 @@ struct TransformBoxHandles: View {
             }
         }
         .onAppear {
-        initialTransform = .identity
-    }
+            initialTransform = .identity
+        }
+        .id("transform-box-\(liveScaleTransform.a)-\(liveScaleTransform.d)")  // Force update when live scale changes
     }
 
     private func computeTransformedBounds() -> CGRect {
