@@ -243,7 +243,8 @@ struct RotateHandles: View {
         let initialAngle = atan2(startVector.y, startVector.x)
         var rotationAngle = currentAngle - initialAngle
 
-        if isShiftPressed {
+        let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+        if isShiftCurrentlyPressed {
             let increment: CGFloat = .pi / 12
             rotationAngle = round(rotationAngle / increment) * increment
         }
