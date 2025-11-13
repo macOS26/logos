@@ -266,8 +266,8 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize
             )
-            .scaleEffect(liveZoomDelta, anchor: .topLeading)
-            .offset(x: livePanDelta.x, y: livePanDelta.y)
+            // .scaleEffect(liveZoomDelta, anchor: .topLeading)
+            // .offset(x: livePanDelta.x, y: livePanDelta.y)
             .id(isActiveLayer ? "\(layer.id)-\(currentDragDelta)" : "\(layer.id)")  // Only active layer uses drag delta in ID
             .allowsHitTesting(isActiveLayer)
         }
@@ -581,8 +581,6 @@ extension DrawingCanvas {
     @ViewBuilder
     private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
         let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
-        let currentZoom = zoomLevel
-        let currentOffset = canvasOffset
         Path { path in
             addPathElements(offsetShape.path.elements, to: &path)
         }
@@ -593,8 +591,8 @@ extension DrawingCanvas {
             }
             .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
         )
-        .scaleEffect(currentZoom, anchor: .topLeading)
-        .offset(x: currentOffset.x, y: currentOffset.y)
+        // .scaleEffect(currentZoom, anchor: .topLeading)
+        // .offset(x: currentOffset.x, y: currentOffset.y)
         .opacity(0.8)
     }
 
