@@ -411,7 +411,3 @@ struct SVGImportResultView: View {
         .shadow(radius: 1)
     }
 }
-
-#Preview {
-    SVGImportView()
-}
