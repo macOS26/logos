@@ -160,7 +160,6 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        let _ = print("🔴 Canvas.body RE-RENDERING - zoom:\(zoomLevel) offset:\(canvasOffset)")
         // let _ = Self._printChanges()
         Canvas { context, size in
 //            _ = objectUpdateTrigger
