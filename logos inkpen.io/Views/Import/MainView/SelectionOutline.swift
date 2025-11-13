@@ -7,6 +7,7 @@ struct SelectionOutline: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isOptionPressed: Bool
+    @ObservedObject private var settings = ApplicationSettings.shared
 
     private let handleSize: CGFloat = 8
 
@@ -113,7 +114,7 @@ struct SelectionOutline: View {
 
             let strokeExpandedBounds: CGRect = {
                 let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-                if isStrokeOnly && shape.strokeStyle != nil {
+                if settings.boundingBoxIncludesStrokes && isStrokeOnly && shape.strokeStyle != nil {
                     let strokeWidth = shape.strokeStyle?.width ?? 1.0
                     let strokeExpansion = strokeWidth / 2.0
                     return baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)

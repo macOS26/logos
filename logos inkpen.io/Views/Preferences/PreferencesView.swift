@@ -6,9 +6,21 @@ struct PreferencesView: View {
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
     @AppStorage("imageTileSize") var tileSize: Int = 512
+    @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            GroupBox(label: Label("Transform", systemImage: "arrow.up.left.and.arrow.down.right").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Include strokes in bounding box", isOn: $settings.boundingBoxIncludesStrokes)
+
+                    Text("When enabled, selection and transform boxes include stroke width for shapes without fill.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 8)
+            }
+
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
 

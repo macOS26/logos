@@ -11,7 +11,6 @@ struct TransformBoxHandles: View {
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
-    var enableDragGestures: Bool = true  // Disable when used with other tools
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
 
@@ -19,7 +18,6 @@ struct TransformBoxHandles: View {
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
-    @State private var lastLiveTransform: CGAffineTransform = .identity
     @ObservedObject private var settings = ApplicationSettings.shared
 
     private let handleSize: CGFloat = 10
@@ -45,12 +43,6 @@ struct TransformBoxHandles: View {
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
-        // Calculate display bounds here so it updates when liveScaleTransform changes
-        let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
-        let displayBoundsForHandles = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
-            ? transformedBounds.applying(activeTransform)
-            : transformedBounds
-
         ZStack {
             // Render transform box outline using Canvas (like direct selection)
             Canvas { context, size in
@@ -58,10 +50,8 @@ struct TransformBoxHandles: View {
                 let offset = canvasOffset
 
                 // Apply preview transform to bounds if scaling
-                // Use liveScaleTransform from ScaleHandles if available, otherwise use local previewTransform
-                let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
-                let displayBounds = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
-                    ? transformedBounds.applying(activeTransform)
+                let displayBounds = (isScaling && !previewTransform.isIdentity)
+                    ? transformedBounds.applying(previewTransform)
                     : transformedBounds
 
                 // Convert bounds to screen coordinates
@@ -222,9 +212,13 @@ struct TransformBoxHandles: View {
                 .allowsHitTesting(false)
             }
 
-            // Use precalculated displayBounds from body
+            // Apply preview transform to bounds for handle positioning if scaling
+            let displayBounds = (isScaling && !previewTransform.isIdentity)
+                ? transformedBounds.applying(previewTransform)
+                : transformedBounds
+
             ForEach(0..<9) { index in
-                let pt = handlePosition(index: index, in: displayBoundsForHandles)
+                let pt = handlePosition(index: index, in: displayBounds)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
                 let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
                 let isDisabled = isAnchorPoint || isAdjacentToAnchor
@@ -245,19 +239,17 @@ struct TransformBoxHandles: View {
             .position(
                 (shape.typography != nil || containsTextBoxInGroup()) ?
                 CGPoint(
-                    x: (displayBoundsForHandles.midX + (pt.x - displayBoundsForHandles.midX)) * zoomLevel + canvasOffset.x,
-                    y: (displayBoundsForHandles.midY + (pt.y - displayBoundsForHandles.midY)) * zoomLevel + canvasOffset.y
+                    x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x,
+                    y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y
                 )
                 :
                 CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
             )
             .onTapGesture {
-                if enableDragGestures {
-                    setAnchorPoint(forHandle: index)
-                }
+                setAnchorPoint(forHandle: index)
             }
             .simultaneousGesture(
-                (isDisabled || !enableDragGestures) ? nil :
+                isDisabled ? nil :
                 DragGesture(minimumDistance: 0.5)
                     .onChanged { value in
                         if !isScaling {
@@ -272,11 +264,8 @@ struct TransformBoxHandles: View {
             }
         }
         .onAppear {
-            initialTransform = .identity
-        }
-        .onChange(of: liveScaleTransform) { _, newValue in
-            lastLiveTransform = newValue
-        }
+        initialTransform = .identity
+    }
     }
 
     private func computeTransformedBounds() -> CGRect {
@@ -293,7 +282,7 @@ struct TransformBoxHandles: View {
 
         var strokeExpandedBounds = baseBounds
         let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-        if isStrokeOnly && shape.strokeStyle != nil {
+        if settings.boundingBoxIncludesStrokes && isStrokeOnly && shape.strokeStyle != nil {
             let strokeWidth = shape.strokeStyle?.width ?? 1.0
             let strokeExpansion = strokeWidth / 2.0
             strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
