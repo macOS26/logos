@@ -213,7 +213,17 @@ extension DrawingCanvas {
             let dragDelta = currentDragDelta
             let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-            // Apply transforms immediately (fast - just updates transform matrix)
+            // Collect old shapes BEFORE transform
+            var oldShapes: [UUID: VectorShape] = [:]
+            var affectedObjectIDs: Set<UUID> = []
+            for object in selectedObjects {
+                if case .shape(let shape) = object.objectType {
+                    oldShapes[object.id] = shape
+                    affectedObjectIDs.insert(object.id)
+                }
+            }
+
+            // Apply transforms (O(1) - just updates transform matrix)
             for object in selectedObjects {
                 switch object.objectType {
                 case .text(let shape):
@@ -223,7 +233,36 @@ extension DrawingCanvas {
                 }
             }
 
-            // Clear drag state IMMEDIATELY to show transform box
+            // Collect new shapes AFTER transform
+            var newShapes: [UUID: VectorShape] = [:]
+            for objectID in affectedObjectIDs {
+                if let object = document.snapshot.objects[objectID] {
+                    switch object.objectType {
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        if let updatedShape = document.findShape(by: shape.id) {
+                            newShapes[objectID] = updatedShape
+                        } else {
+                            newShapes[objectID] = shape
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+
+            // Create undo command
+            if !oldShapes.isEmpty && !newShapes.isEmpty {
+                let command = ShapeModificationCommand(
+                    objectIDs: Array(affectedObjectIDs),
+                    oldShapes: oldShapes,
+                    newShapes: newShapes
+                )
+                document.executeCommand(command)
+            }
+
+            document.updateTransformPanelValues()
+
+            // Clear drag state
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
@@ -235,47 +274,6 @@ extension DrawingCanvas {
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
             document.activeLayerIndexDuringDrag = nil
-
-            // Build undo command async (slow - collects old/new shapes)
-            DispatchQueue.global(qos: .userInitiated).async {
-                var oldShapes: [UUID: VectorShape] = [:]
-                var affectedObjectIDs: Set<UUID> = []
-
-                for object in selectedObjects {
-                    if case .shape(let shape) = object.objectType {
-                        oldShapes[object.id] = shape
-                        affectedObjectIDs.insert(object.id)
-                    }
-                }
-
-                var newShapes: [UUID: VectorShape] = [:]
-                for objectID in affectedObjectIDs {
-                    if let object = self.document.snapshot.objects[objectID] {
-                        switch object.objectType {
-                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                            if let updatedShape = self.document.findShape(by: shape.id) {
-                                newShapes[objectID] = updatedShape
-                            } else {
-                                newShapes[objectID] = shape
-                            }
-                        default:
-                            break
-                        }
-                    }
-                }
-
-                DispatchQueue.main.async {
-                    if !oldShapes.isEmpty && !newShapes.isEmpty {
-                        let command = ShapeModificationCommand(
-                            objectIDs: Array(affectedObjectIDs),
-                            oldShapes: oldShapes,
-                            newShapes: newShapes
-                        )
-                        self.document.executeCommand(command)
-                    }
-                    self.document.updateTransformPanelValues()
-                }
-            }
 
         } else {
             liveDragOffset = .zero
