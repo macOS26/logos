@@ -14,7 +14,7 @@ struct PreferencesView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Include strokes in bounding box", isOn: $settings.boundingBoxIncludesStrokes)
 
-                    Text("When enabled, selection and transform boxes include stroke width for shapes without fill.")
+                    Text("When enabled, selection and transform boxes include stroke width for all shapes.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

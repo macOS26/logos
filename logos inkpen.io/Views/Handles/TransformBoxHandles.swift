@@ -281,8 +281,7 @@ struct TransformBoxHandles: View {
         }
 
         var strokeExpandedBounds = baseBounds
-        let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-        if settings.boundingBoxIncludesStrokes && isStrokeOnly && shape.strokeStyle != nil {
+        if settings.boundingBoxIncludesStrokes && shape.strokeStyle != nil {
             let strokeWidth = shape.strokeStyle?.width ?? 1.0
             let strokeExpansion = strokeWidth / 2.0
             strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
