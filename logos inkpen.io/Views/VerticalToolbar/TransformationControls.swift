@@ -192,31 +192,6 @@ struct TransformationControls: View {
                             .strokeBorder(keepProportions ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
                     )
             )
-            .overlay(
-                keepProportions ?
-                AnyView(
-                    VStack(spacing: 0) {
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: 0))
-                            path.addLine(to: CGPoint(x: 24, y: 0))
-                        }
-                        .stroke(Color.orange, lineWidth: 2)
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: 0))
-                            path.addLine(to: CGPoint(x: 24, y: 0))
-                        }
-                        .stroke(Color.orange, lineWidth: 2)
-                    }
-                    .frame(width: 24, height: 24)
-                    .opacity(0)
-                    .allowsHitTesting(false)
-                ) :
-                AnyView(
-                    EmptyView()
-                        .frame(width: 24, height: 24)
-                        .allowsHitTesting(false)
-            )
-            )
             .shadow(color: keepProportions ?
                 Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3) :
                 Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3),

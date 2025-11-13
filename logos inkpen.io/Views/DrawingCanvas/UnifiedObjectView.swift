@@ -61,7 +61,6 @@ struct LayerCanvasView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let liveScaleTransform: CGAffineTransform
-    let objectUpdateTrigger: UInt
     let dragPreviewTrigger: Bool
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
@@ -1216,7 +1215,6 @@ struct IsolatedLayerView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    let objectUpdateTrigger: UInt
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
@@ -1310,7 +1308,6 @@ struct IsolatedLayerView: View {
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,
                 liveScaleTransform: liveScaleTransform,
-                objectUpdateTrigger: objectUpdateTrigger,
                 dragPreviewTrigger: dragPreviewTrigger,
                 livePointPositions: livePointPositions,
                 liveHandlePositions: liveHandlePositions,
