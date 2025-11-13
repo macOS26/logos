@@ -50,8 +50,10 @@ struct TransformBoxHandles: View {
                 let offset = canvasOffset
 
                 // Apply preview transform to bounds if scaling
-                let displayBounds = (isScaling && !previewTransform.isIdentity)
-                    ? transformedBounds.applying(previewTransform)
+                // Use liveScaleTransform from ScaleHandles if available, otherwise use local previewTransform
+                let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
+                let displayBounds = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
+                    ? transformedBounds.applying(activeTransform)
                     : transformedBounds
 
                 // Convert bounds to screen coordinates
@@ -213,8 +215,10 @@ struct TransformBoxHandles: View {
             }
 
             // Apply preview transform to bounds for handle positioning if scaling
-            let displayBounds = (isScaling && !previewTransform.isIdentity)
-                ? transformedBounds.applying(previewTransform)
+            // Use liveScaleTransform from ScaleHandles if available, otherwise use local previewTransform
+            let activeTransform = (liveScaleTransform != .identity) ? liveScaleTransform : previewTransform
+            let displayBounds = (isScaling && !previewTransform.isIdentity) || (liveScaleTransform != .identity)
+                ? transformedBounds.applying(activeTransform)
                 : transformedBounds
 
             ForEach(0..<9) { index in
