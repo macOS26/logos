@@ -249,9 +249,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Trigger layer updates once for all affected layers
-            document.triggerLayerUpdates(for: affectedLayers)
-
             print("⏱️ finishDrag: apply transforms took \((CFAbsoluteTimeGetCurrent() - t2) * 1000)ms")
 
             // Collect new shapes AFTER transform
@@ -297,24 +294,24 @@ extension DrawingCanvas {
             selectionDragStart = CGPoint.zero
             print("⏱️ finishDrag: clear local state took \((CFAbsoluteTimeGetCurrent() - t6) * 1000)ms")
 
+            // Clear drag state FIRST (before triggering updates)
             let t7 = CFAbsoluteTimeGetCurrent()
-            print("⏱️ finishDrag: BEFORE set currentDragDelta=0")
+            print("⏱️ finishDrag: BEFORE clear drag state")
             currentDragDelta = .zero
-            print("⏱️ finishDrag: AFTER set currentDragDelta=0, took \((CFAbsoluteTimeGetCurrent() - t7) * 1000)ms")
-
-            let t8 = CFAbsoluteTimeGetCurrent()
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             layerPreviewOpacities.removeAll()
-            print("⏱️ finishDrag: clear drag visuals took \((CFAbsoluteTimeGetCurrent() - t8) * 1000)ms")
-
-            let t9 = CFAbsoluteTimeGetCurrent()
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
             // DON'T clear activeLayerIndexDuringDrag - it causes all layers to redraw!
             // document.activeLayerIndexDuringDrag = nil
-            print("⏱️ finishDrag: clear document drag state took \((CFAbsoluteTimeGetCurrent() - t9) * 1000)ms")
+            print("⏱️ finishDrag: clear drag state took \((CFAbsoluteTimeGetCurrent() - t7) * 1000)ms")
+
+            // NOW trigger layer updates - this should cause ONE combined update
+            let t8 = CFAbsoluteTimeGetCurrent()
+            document.triggerLayerUpdates(for: affectedLayers)
+            print("⏱️ finishDrag: trigger layer updates took \((CFAbsoluteTimeGetCurrent() - t8) * 1000)ms")
 
             print("🔴🔴🔴 DRAG END COMPLETE at \(CFAbsoluteTimeGetCurrent())")
             print("⏱️ finishDrag: END OF FUNCTION")
