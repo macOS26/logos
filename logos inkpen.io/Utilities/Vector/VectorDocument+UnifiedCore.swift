@@ -72,8 +72,9 @@ extension VectorDocument {
             // DON'T RETURN - also need to update in groups!
         }
 
-        // ALSO check in groups for child shapes (even if found in top-level)
-        for (groupID, groupObject) in snapshot.objects {
+        // ALSO check in groups for child shapes using O(1) cache lookup
+        if let parentGroupID = snapshot.parentGroupCache[shapeID],
+           let groupObject = snapshot.objects[parentGroupID] {
             switch groupObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
                 if groupShape.isGroupContainer {
@@ -94,17 +95,16 @@ extension VectorDocument {
                         let updatedObject = VectorObject(id: groupShape.id, layerIndex: layerIndex, objectType: updatedType)
 
                         // Update snapshot ONLY
-                        snapshot.objects[groupID] = updatedObject
+                        snapshot.objects[parentGroupID] = updatedObject
 
                         // Trigger layer update (unless silent)
                         if !silent {
                             triggerLayerUpdate(for: layerIndex)
                         }
-                        // Continue searching - might be in multiple groups
                     }
                 }
             default:
-                continue
+                break
             }
         }
     }
@@ -218,5 +218,46 @@ extension VectorDocument {
             snapshot.layers[layerIndex].objectIDs.append(textShape.id)
         }
         triggerLayerUpdate(for: layerIndex)
+    }
+
+    // MARK: - Parent Group Cache Maintenance
+
+    /// Rebuild the entire parent group cache from scratch (called after document load)
+    func rebuildParentGroupCache() {
+        snapshot.parentGroupCache.removeAll()
+        for (groupID, object) in snapshot.objects {
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                if groupShape.isGroupContainer {
+                    for childShape in groupShape.groupedShapes {
+                        snapshot.parentGroupCache[childShape.id] = groupID
+                    }
+                }
+            default:
+                continue
+            }
+        }
+    }
+
+    /// Update cache when a group is created or modified
+    func updateParentCacheForGroup(_ groupID: UUID, childIDs: [UUID]) {
+        // Remove old mappings for this group's children
+        for (childID, parentID) in snapshot.parentGroupCache where parentID == groupID {
+            snapshot.parentGroupCache.removeValue(forKey: childID)
+        }
+        // Add new mappings
+        for childID in childIDs {
+            snapshot.parentGroupCache[childID] = groupID
+        }
+    }
+
+    /// Remove cache entries when a group is deleted
+    func removeParentCacheForGroup(_ groupID: UUID) {
+        snapshot.parentGroupCache = snapshot.parentGroupCache.filter { $0.value != groupID }
+    }
+
+    /// Remove cache entry when an object is removed from a group
+    func removeParentCacheForChild(_ childID: UUID) {
+        snapshot.parentGroupCache.removeValue(forKey: childID)
     }
 }

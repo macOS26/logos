@@ -9,6 +9,15 @@ DocumentSnapshot: Equatable, Codable {
     var colorSwatches: ColorSwatches
     var gridSettings: GridSettings
 
+    // O(1) lookup cache: childID -> parentGroupID
+    // Not saved to disk - rebuilt on load
+    var parentGroupCache: [UUID: UUID] = [:]
+
+    enum CodingKeys: String, CodingKey {
+        case formatVersion, objects, layers, settings, colorSwatches, gridSettings
+        // parentGroupCache excluded - rebuilt on load
+    }
+
     init(
         formatVersion: String = "1.0.27",
         objects: [UUID: VectorObject] = [:],
@@ -23,6 +32,7 @@ DocumentSnapshot: Equatable, Codable {
         self.settings = settings
         self.colorSwatches = colorSwatches
         self.gridSettings = gridSettings
+        self.parentGroupCache = [:]
     }
 
     // Custom decoding to handle legacy files without formatVersion
@@ -36,5 +46,6 @@ DocumentSnapshot: Equatable, Codable {
         self.settings = try container.decode(DocumentSettings.self, forKey: .settings)
         self.colorSwatches = try container.decode(ColorSwatches.self, forKey: .colorSwatches)
         self.gridSettings = try container.decode(GridSettings.self, forKey: .gridSettings)
+        self.parentGroupCache = [:]  // Will be rebuilt after load
     }
 }

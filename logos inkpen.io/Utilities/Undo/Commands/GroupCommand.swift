@@ -93,9 +93,22 @@ class GroupCommand: BaseCommand {
             //         print("🟣   Child[\(idx)]: id=\(child.id), in snapshot.objects=\(document.snapshot.objects[child.id] != nil)")
             //     }
             // }
+
+            // Update parent cache if this is a group
+            if operation == .group && (shape.isGroup || shape.isClippingGroup) {
+                let childIDs = shape.groupedShapes.map { $0.id }
+                document.updateParentCacheForGroup(objectID, childIDs: childIDs)
+            }
         }
 
         // print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
+
+        // Remove parent cache entries when ungrouping
+        if operation == .ungroup {
+            for objectID in removedObjectIDs {
+                document.removeParentCacheForChild(objectID)
+            }
+        }
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
@@ -115,9 +128,13 @@ class GroupCommand: BaseCommand {
             ?? document.snapshot.layers[layerIndex].objectIDs.count
         // print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
 
-        // Remove group object from snapshot.objects
+        // Remove group object from snapshot.objects and cache
         for id in addedObjectIDs {
             document.snapshot.objects.removeValue(forKey: id)
+            // Remove cache entries for deleted groups
+            if operation == .group {
+                document.removeParentCacheForGroup(id)
+            }
         }
 
         // Remove group from layer.objectIDs
@@ -127,6 +144,16 @@ class GroupCommand: BaseCommand {
         for (offset, objectID) in removedObjectIDs.enumerated() {
             document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
             // print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
+        }
+
+        // Restore parent cache when undoing ungroup (recreate the group cache)
+        if operation == .ungroup {
+            for groupID in addedObjectIDs {
+                if let shape = removedShapes[groupID], (shape.isGroup || shape.isClippingGroup) {
+                    let childIDs = shape.groupedShapes.map { $0.id }
+                    document.updateParentCacheForGroup(groupID, childIDs: childIDs)
+                }
+            }
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
