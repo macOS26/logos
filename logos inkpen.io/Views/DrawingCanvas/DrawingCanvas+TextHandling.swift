@@ -278,12 +278,6 @@ extension DrawingCanvas {
         return finalIndex
     }
 
-    private func updateTextViewModelCursorPosition(textID: UUID, position: Int, length: Int) {
-        if document.findText(by: textID) != nil {
-
-        }
-    }
-
     func createNewTextAt(location: CGPoint) {
         createNewTextWithSize(at: location, width: 300, height: 100)
     }
@@ -486,9 +480,6 @@ extension DrawingCanvas {
 
         Log.error("❌ Cancelled text editing", category: .error)
     }
-}
-
-extension DrawingCanvas {
 
     func handleTextKeyPress(_ key: String) {
         guard isEditingText else { return }
@@ -527,9 +518,6 @@ extension DrawingCanvas {
 
         }
     }
-}
-
-extension DrawingCanvas {
 
     func handleTextSelectionChange(textID: UUID, isSelected: Bool) {
         if isSelected {
