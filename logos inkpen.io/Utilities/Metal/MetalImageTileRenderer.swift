@@ -159,7 +159,7 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Create RGBA Metal texture descriptor
+        // Create RGBA Metal texture descriptor (.shared so we can upload data directly)
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .rgba8Unorm,  // Use RGBA, not BGRA
             width: width,
@@ -167,7 +167,7 @@ class MetalImageTileRenderer {
             mipmapped: false
         )
         textureDescriptor.usage = [.shaderRead]
-        textureDescriptor.storageMode = .private
+        textureDescriptor.storageMode = .shared  // Must be .shared to upload from CPU
 
         guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
             print("❌ Failed to create Metal texture")
