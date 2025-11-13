@@ -260,13 +260,3 @@ struct CornerRadiusToolbar: View {
                shapeName == "rounded rectangle" || shapeName == "pill"
     }
 }
-
-#Preview {
-    let doc = VectorDocument()
-    CornerRadiusToolbar(
-        selectedObjectIDs: doc.viewState.selectedObjectIDs,
-        snapshot: doc.snapshot,
-        document: doc
-    )
-    .padding()
-}
