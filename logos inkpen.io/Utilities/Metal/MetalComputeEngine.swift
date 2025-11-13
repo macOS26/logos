@@ -34,6 +34,7 @@ class MetalComputeEngine {
     private var findMinDistanceIndexPipeline: MTLComputePipelineState?
     private var findPointsInRadiusPipeline: MTLComputePipelineState?
     private var findNearestHandlePipeline: MTLComputePipelineState?
+    private var pathHitTestPipeline: MTLComputePipelineState?
 
     static let shared: MetalComputeEngine = {
         do {
@@ -141,6 +142,9 @@ class MetalComputeEngine {
         }
         if let function = library.makeFunction(name: "find_nearest_handle") {
             findNearestHandlePipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "path_hit_test") {
+            pathHitTestPipeline = try device.makeComputePipelineState(function: function)
         }
     }
 
@@ -1237,4 +1241,106 @@ class MetalComputeEngine {
         Mode: \(getPerformanceMode())
         """
     }
+
+    // MARK: - Path Hit Testing (GPU-Accelerated)
+
+    /// GPU-accelerated path hit test - tests if a point is within tolerance of a path
+    func pathHitTestGPU(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
+        guard let pipeline = pathHitTestPipeline else {
+            return false  // Fall back to CPU if pipeline not available
+        }
+
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return false
+        }
+
+        // Convert CGPath to PathSegment array
+        var segments: [MetalPathSegment] = []
+
+        path.applyWithBlock { element in
+            let points = element.pointee.points
+            switch element.pointee.type {
+            case .moveToPoint:
+                segments.append(MetalPathSegment(
+                    type: 0,  // PATH_MOVE
+                    point: simd_float2(Float(points[0].x), Float(points[0].y)),
+                    control1: simd_float2(0, 0),
+                    control2: simd_float2(0, 0)
+                ))
+            case .addLineToPoint:
+                segments.append(MetalPathSegment(
+                    type: 1,  // PATH_LINE
+                    point: simd_float2(Float(points[0].x), Float(points[0].y)),
+                    control1: simd_float2(0, 0),
+                    control2: simd_float2(0, 0)
+                ))
+            case .addQuadCurveToPoint:
+                segments.append(MetalPathSegment(
+                    type: 3,  // PATH_QUAD
+                    point: simd_float2(Float(points[1].x), Float(points[1].y)),
+                    control1: simd_float2(Float(points[0].x), Float(points[0].y)),
+                    control2: simd_float2(0, 0)
+                ))
+            case .addCurveToPoint:
+                segments.append(MetalPathSegment(
+                    type: 2,  // PATH_CURVE
+                    point: simd_float2(Float(points[2].x), Float(points[2].y)),
+                    control1: simd_float2(Float(points[0].x), Float(points[0].y)),
+                    control2: simd_float2(Float(points[1].x), Float(points[1].y))
+                ))
+            case .closeSubpath:
+                segments.append(MetalPathSegment(
+                    type: 4,  // PATH_CLOSE
+                    point: simd_float2(0, 0),
+                    control1: simd_float2(0, 0),
+                    control2: simd_float2(0, 0)
+                ))
+            @unknown default:
+                break
+            }
+        }
+
+        guard !segments.isEmpty else { return false }
+
+        let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
+        guard let segmentsBuffer = device.makeBuffer(bytes: segments, length: segments.count * MemoryLayout<MetalPathSegment>.stride, options: bufferOptions),
+              let hitResultBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
+            return false
+        }
+
+        // Initialize result to 0 (no hit)
+        hitResultBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee = 0
+
+        var segmentCount = UInt32(segments.count)
+        var tapPoint = simd_float2(Float(point.x), Float(point.y))
+        var toleranceFloat = Float(tolerance)
+
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(segmentsBuffer, offset: 0, index: 0)
+        computeEncoder.setBytes(&segmentCount, length: MemoryLayout<UInt32>.stride, index: 1)
+        computeEncoder.setBytes(&tapPoint, length: MemoryLayout<simd_float2>.stride, index: 2)
+        computeEncoder.setBytes(&toleranceFloat, length: MemoryLayout<Float>.stride, index: 3)
+        computeEncoder.setBuffer(hitResultBuffer, offset: 0, index: 4)
+
+        let threadsPerGroup = MTLSize(width: min(pipeline.maxTotalThreadsPerThreadgroup, segments.count), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (segments.count + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        let hitResult = hitResultBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee
+        return hitResult == 1
+    }
+}
+
+// Metal-compatible struct for path segments
+struct MetalPathSegment {
+    let type: UInt32
+    let point: simd_float2
+    let control1: simd_float2
+    let control2: simd_float2
 }
