@@ -182,28 +182,3 @@ struct RightPanel: View {
 
     }
 }
-
-#Preview {
-    let doc = VectorDocument()
-    RightPanel(
-        snapshot: doc.snapshot,
-        viewState: doc.viewState,
-        document: doc,
-        layerPreviewOpacities: .constant([:]),
-        colorDeltaColor: .constant(nil),
-        colorDeltaOpacity: .constant(nil),
-        colorDeltaBlendMode: .constant(nil),
-        fillDeltaOpacity: .constant(nil),
-        strokeDeltaOpacity: .constant(nil),
-        strokeDeltaWidth: .constant(nil),
-        activeGradientDelta: .constant(nil),
-        fontSizeDelta: .constant(nil),
-        lineSpacingDelta: .constant(nil),
-        lineHeightDelta: .constant(nil),
-        letterSpacingDelta: .constant(nil),
-        selectedLayerIndex: .constant(nil),
-        processedLayersDuringDrag: .constant([]),
-        processedObjectsDuringDrag: .constant([])
-    )
-    .frame(height: 600)
-}
