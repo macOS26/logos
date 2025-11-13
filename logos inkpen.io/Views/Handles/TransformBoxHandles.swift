@@ -19,6 +19,7 @@ struct TransformBoxHandles: View {
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
+    @State private var lastLiveTransform: CGAffineTransform = .identity
     @ObservedObject private var settings = ApplicationSettings.shared
 
     private let handleSize: CGFloat = 10
@@ -272,6 +273,9 @@ struct TransformBoxHandles: View {
         }
         .onAppear {
             initialTransform = .identity
+        }
+        .onChange(of: liveScaleTransform) { _, newValue in
+            lastLiveTransform = newValue
         }
     }
 
