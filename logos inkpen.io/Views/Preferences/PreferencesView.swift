@@ -137,11 +137,9 @@ struct PreferencesView: View {
             savePressureCurve()
         }
         .onChange(of: imageQuality) { oldValue, newValue in
-            ImageTileCache.shared.clearCache()
             MetalImageTileRenderer.shared?.clearCache()
         }
         .onChange(of: tileSize) { oldValue, newValue in
-            ImageTileCache.shared.clearCache()
             MetalImageTileRenderer.shared?.clearCache()
         }
     }

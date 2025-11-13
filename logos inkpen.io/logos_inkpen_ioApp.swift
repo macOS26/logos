@@ -805,32 +805,26 @@ struct logos_inken_ioApp: App {
                     Menu("Image Preview Quality: \(Int(imagePreviewQuality * 100))%") {
                         Button("10%") {
                             imagePreviewQuality = 0.1
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                         Button("20%") {
                             imagePreviewQuality = 0.2
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                         Button("30%") {
                             imagePreviewQuality = 0.3
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                         Button("50%") {
                             imagePreviewQuality = 0.5
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                         Button("75%") {
                             imagePreviewQuality = 0.75
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                         Button("100%") {
                             imagePreviewQuality = 1.0
-                            ImageTileCache.shared.clearCache()
                             MetalImageTileRenderer.shared?.clearCache()
                         }
                     }
