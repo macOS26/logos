@@ -27,7 +27,7 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
-        // Update in snapshot (primary) if exists as top-level
+        // Fast path: check if it's a top-level selected object first (most common case)
         if let object = snapshot.objects[shapeID] {
             let layerIndex = object.layerIndex
             var updatedObject = object
@@ -69,10 +69,12 @@ extension VectorDocument {
             if !silent {
                 triggerLayerUpdate(for: layerIndex)
             }
-            // DON'T RETURN - also need to update in groups!
+
+            // Early return for top-level objects - no need to check groups
+            return
         }
 
-        // ALSO check in groups for child shapes using O(1) cache lookup
+        // Only check parent group cache if not found as top-level object
         if let parentGroupID = snapshot.parentGroupCache[shapeID],
            let groupObject = snapshot.objects[parentGroupID] {
             switch groupObject.objectType {
