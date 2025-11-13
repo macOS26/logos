@@ -65,6 +65,66 @@ class MetalImageTileRenderer {
         }
     }
 
+    /// Convert NSImage to Metal texture (no caching - render directly)
+    func getTexture(from nsImage: NSImage, quality: Double) -> MTLTexture? {
+        // Get CGImage from NSImage with quality downsampling
+        var rect = CGRect(origin: .zero, size: nsImage.size)
+
+        guard let cgImage = nsImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+            print("❌ Failed to get CGImage from NSImage")
+            return nil
+        }
+
+        // Downsample if quality < 1.0
+        let finalImage: CGImage
+        if quality < 1.0 {
+            let maxDimension = max(cgImage.width, cgImage.height)
+            let targetSize = Int(Double(maxDimension) * quality)
+
+            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+            let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+
+            let aspectRatio = Double(cgImage.width) / Double(cgImage.height)
+            let targetWidth: Int
+            let targetHeight: Int
+
+            if cgImage.width >= cgImage.height {
+                targetWidth = targetSize
+                targetHeight = Int(Double(targetSize) / aspectRatio)
+            } else {
+                targetHeight = targetSize
+                targetWidth = Int(Double(targetSize) * aspectRatio)
+            }
+
+            guard let context = CGContext(
+                data: nil,
+                width: targetWidth,
+                height: targetHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: targetWidth * 4,
+                space: colorSpace,
+                bitmapInfo: bitmapInfo
+            ) else {
+                print("❌ Failed to create downsampling context")
+                return getTexture(from: cgImage)
+            }
+
+            context.interpolationQuality = .high
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
+
+            guard let downsampled = context.makeImage() else {
+                print("❌ Failed to downsample image")
+                return getTexture(from: cgImage)
+            }
+
+            finalImage = downsampled
+        } else {
+            finalImage = cgImage
+        }
+
+        return getTexture(from: finalImage)
+    }
+
     /// Convert CGImage to Metal texture (no caching - render directly)
     func getTexture(from cgImage: CGImage) -> MTLTexture? {
         // Check if image is already in a compatible format
@@ -134,6 +194,52 @@ class MetalImageTileRenderer {
             print("❌ Failed to create Metal texture: \(error)")
             return nil
         }
+    }
+
+    /// Render NSImage through Metal and return as CGImage (simple passthrough with quality)
+    func renderImage(from nsImage: NSImage, quality: Double) -> CGImage? {
+        guard let metalTexture = getTexture(from: nsImage, quality: quality) else {
+            return nil
+        }
+
+        // Create offscreen render target matching texture size
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: metalTexture.width,
+            height: metalTexture.height,
+            mipmapped: false
+        )
+        textureDescriptor.usage = [.renderTarget, .shaderRead]
+        textureDescriptor.storageMode = .private
+
+        guard let renderTarget = device.makeTexture(descriptor: textureDescriptor) else {
+            return nil
+        }
+
+        // Simple blit from source texture to render target
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let blitEncoder = commandBuffer.makeBlitCommandEncoder() else {
+            return nil
+        }
+
+        blitEncoder.copy(
+            from: metalTexture,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+            sourceSize: MTLSize(width: metalTexture.width, height: metalTexture.height, depth: 1),
+            to: renderTarget,
+            destinationSlice: 0,
+            destinationLevel: 0,
+            destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
+        )
+
+        blitEncoder.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        // Convert back to CGImage
+        return cgImage(from: renderTarget)
     }
 
     /// Render image tiles to an offscreen texture and return as CGImage using INSTANCED RENDERING
