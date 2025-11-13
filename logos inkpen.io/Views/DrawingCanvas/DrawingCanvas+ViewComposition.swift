@@ -8,8 +8,8 @@ extension DrawingCanvas {
                 addPathElements(currentPath.elements, to: &path)
             }
             .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-            // // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
             drawingDimensionsOverlay(for: currentPath)
         }
 
@@ -18,8 +18,8 @@ extension DrawingCanvas {
                 addPathElements(boundingBoxPath.elements, to: &path)
             }
             .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [5, 5]))
-            // // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
         if let currentPath = currentPath,
@@ -32,8 +32,8 @@ extension DrawingCanvas {
                 path.addRect(actualBounds)
             }
             .stroke(Color.blue.opacity(0.3), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4 / zoomLevel, 2 / zoomLevel]))
-            // // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
         rubberBandPreview(geometry: geometry)
@@ -45,15 +45,15 @@ extension DrawingCanvas {
                 }
                 .fill(document.defaultFillColor.color)
                 .opacity(document.defaultFillOpacity)
-                // // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
             } else {
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
                 .stroke(Color.blue, lineWidth: max(1.0, 1.0 / zoomLevel))
-                // // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
             }
         }
 
@@ -62,8 +62,8 @@ extension DrawingCanvas {
                 addPathElements(preview.elements, to: &path)
             }
             .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
-            // // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
         if let preview = markerPreviewPath {
@@ -94,16 +94,16 @@ extension DrawingCanvas {
                     ))
                     .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 )
-                // // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
             } else {
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
                 .fill(markerFillColor.color)
                 .opacity(ApplicationSettings.shared.currentMarkerOpacity)
-                // // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
             }
         }
 
@@ -181,7 +181,7 @@ extension DrawingCanvas {
                     }
                     .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / zoomLevel, dash: [10 / zoomLevel, 5 / zoomLevel]))
                     // .scaleEffect(zoomLevel, anchor: .topLeading)
-                    // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
             }
         }
