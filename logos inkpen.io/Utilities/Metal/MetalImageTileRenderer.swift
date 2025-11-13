@@ -8,8 +8,8 @@ class MetalImageTileRenderer {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
-    private var textureCache: [String: MTLTexture] = [:]
-    private var compositedImageCache: [String: CGImage] = [:]  // Cache composited results
+    // NOTE: No texture cache - render directly from CGImage to SwiftUI Canvas
+    // Metal is fast enough that we don't need to cache textures in VRAM
 
     private init?() {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -60,14 +60,8 @@ class MetalImageTileRenderer {
         }
     }
 
-    /// Convert CGImage to Metal texture (cached)
-    func getTexture(from cgImage: CGImage, cacheKey: String) -> MTLTexture? {
-        if let cached = textureCache[cacheKey] {
-            print("✅ MetalImageTileRenderer.getTexture: CACHE HIT for key=\(cacheKey)")
-            return cached
-        }
-        print("❌ MetalImageTileRenderer.getTexture: CACHE MISS for key=\(cacheKey), creating new texture")
-
+    /// Convert CGImage to Metal texture (no caching - render directly)
+    func getTexture(from cgImage: CGImage) -> MTLTexture? {
         // Check if image is already in a compatible format
         let needsConversion: Bool = {
             // Check if color space is sRGB or device RGB
@@ -129,8 +123,7 @@ class MetalImageTileRenderer {
                 .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
                 .SRGB: NSNumber(value: false)
             ])
-            textureCache[cacheKey] = texture
-            print("💾 MetalImageTileRenderer.getTexture: CACHED new texture for key=\(cacheKey)")
+            // No caching - render directly each frame
             return texture
         } catch {
             print("❌ Failed to create Metal texture: \(error)")
@@ -145,16 +138,11 @@ class MetalImageTileRenderer {
         outputSize: CGSize,
         shapeID: UUID
     ) -> CGImage? {
-        // Cache key is just the shape UUID - image dimensions already determined by UUID + quality
-        let cacheKey = shapeID.uuidString
-
-        // Return cached result if available
-        if let cachedImage = compositedImageCache[cacheKey] {
-            return cachedImage
-        }
+        // Don't cache composited CGImages - they use too much RAM
+        // Metal textures are already cached, so compositing is fast
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let sourceTexture = getTexture(from: image, cacheKey: shapeID.uuidString) else {
+              let sourceTexture = getTexture(from: image) else {
             return nil
         }
 
@@ -254,9 +242,8 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Cache the composited result
-        compositedImageCache[cacheKey] = resultImage
-
+        // Don't cache CGImage - uses too much RAM
+        // Metal texture is already cached, re-compositing is fast
         return resultImage
     }
 
@@ -270,7 +257,7 @@ class MetalImageTileRenderer {
         viewportSize: CGSize
     ) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let texture = getTexture(from: image, cacheKey: "\(image.hashValue)") else {
+              let texture = getTexture(from: image) else {
             return
         }
 
@@ -389,13 +376,10 @@ class MetalImageTileRenderer {
         )
     }
 
-    /// Clear texture cache
+    /// Clear texture cache (no-op - we don't cache textures anymore)
     func clearCache() {
-        let textureCount = textureCache.count
-        let compositedCount = compositedImageCache.count
-        textureCache.removeAll()
-        compositedImageCache.removeAll()
-        print("🗑️ MetalImageTileRenderer.clearCache() removed \(textureCount) textures and \(compositedCount) composited images")
+        // No cache to clear - textures are created on-demand each frame
+        print("🗑️ MetalImageTileRenderer.clearCache() - no cache to clear")
     }
 
     /// Create orthographic projection matrix for 2D rendering
