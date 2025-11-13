@@ -77,6 +77,17 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
+    // Cache loaded images per shape+quality (invalidated when quality changes)
+    private static var imageCache: [String: CGImage] = [:]
+    private static var imageCacheLock = NSLock()
+
+    static func clearImageCache() {
+        imageCacheLock.lock()
+        imageCache.removeAll()
+        imageCacheLock.unlock()
+        print("🗑️ Cleared image cache (\(imageCache.count) images)")
+    }
+
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
         objects.filter { object in
@@ -1130,6 +1141,37 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
+        // Check cache first (key = shapeID + quality)
+        let cacheKey = "\(shape.id.uuidString)-\(imagePreviewQuality)"
+
+        Self.imageCacheLock.lock()
+        if let cachedImage = Self.imageCache[cacheKey] {
+            Self.imageCacheLock.unlock()
+
+            // Use cached image - fast path
+            let imagePixelSize = CGSize(width: CGFloat(cachedImage.width), height: CGFloat(cachedImage.height))
+
+            context.withCGContext { cgContext in
+                cgContext.saveGState()
+
+                if let maskShape = maskShape {
+                    let maskPath = maskShape.cachedCGPath
+                    cgContext.addPath(maskPath)
+                    cgContext.clip()
+                }
+
+                cgContext.setAlpha(CGFloat(shape.opacity))
+                cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
+                cgContext.scaleBy(x: 1.0, y: -1.0)
+                cgContext.interpolationQuality = .medium
+                cgContext.draw(cachedImage, in: CGRect(origin: .zero, size: renderBounds.size))
+
+                cgContext.restoreGState()
+            }
+            return
+        }
+        Self.imageCacheLock.unlock()
+
         // Direct conversion: NSImage → CGImage (with quality downsampling)
         let image: CGImage
         if imagePreviewQuality < 1.0 {
@@ -1185,6 +1227,11 @@ struct LayerCanvasView: View {
             }
             image = fullImage
         }
+
+        // Cache the loaded image
+        Self.imageCacheLock.lock()
+        Self.imageCache[cacheKey] = image
+        Self.imageCacheLock.unlock()
 
         // Get actual image pixel dimensions
         let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
