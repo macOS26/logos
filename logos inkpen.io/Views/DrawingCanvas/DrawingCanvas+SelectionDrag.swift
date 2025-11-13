@@ -6,8 +6,6 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        dragUpdateCounter = 0
-
         let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
         for object in selectedObjects {
