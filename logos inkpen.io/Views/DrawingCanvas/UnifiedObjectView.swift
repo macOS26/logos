@@ -1221,19 +1221,9 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Use Metal to composite tiles on GPU at FULL IMAGE RESOLUTION, then draw result
-            if let compositedImage = MetalImageTileRenderer.shared?.compositeImageTiles(
-                   image: image,
-                   tiles: visibleTiles,
-                   outputSize: imagePixelSize,
-                   shapeID: shape.id
-               ) {
-                // Draw the Metal-composited result in one draw call
-                cgContext.draw(compositedImage, in: CGRect(origin: .zero, size: renderBounds.size))
-            } else {
-                // Fallback: draw full image without tiling
-                cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
-            }
+            // Draw cached image directly - SwiftUI Canvas will cache it internally
+            // No need for Metal tiling - the cached downsampled image is already small
+            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }
