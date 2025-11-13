@@ -215,7 +215,3 @@ struct StepView: View {
         }
     }
 }
-
-#Preview {
-    SVGToInkPenConverter()
-}
