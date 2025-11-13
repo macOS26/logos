@@ -484,29 +484,3 @@ struct RGBInputSection: View {
         }
     }
 }
-
-#Preview {
-    @Previewable @State var snapshot = DocumentSnapshot()
-    @Previewable @State var fillColor = VectorColor.black
-    @Previewable @State var strokeColor = VectorColor.black
-    @Previewable @State var sharedColor = VectorColor.black
-
-    RGBInputSection(
-        snapshot: $snapshot,
-        selectedObjectIDs: [],
-        activeColorTarget: .fill,
-        defaultFillColor: $fillColor,
-        defaultStrokeColor: $strokeColor,
-        defaultFillOpacity: 1.0,
-        defaultStrokeOpacity: 1.0,
-        onTriggerLayerUpdates: { _ in },
-        onAddColorSwatch: { _ in },
-        onSetActiveColor: { _ in },
-        colorDeltaColor: .constant(nil),
-        colorDeltaOpacity: .constant(nil),
-        sharedColor: $sharedColor,
-        onDismiss: nil
-    )
-    .padding()
-    .environment(AppState.shared)
-}
