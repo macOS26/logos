@@ -52,6 +52,7 @@ struct CanvasBackgroundView: View {
 struct LayerCanvasView: View {
     let objects: [VectorObject]
     let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
+    let document: VectorDocument  // Need this for cgImageCache!
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -1089,27 +1090,40 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
-        // Load NSImage - NO viewport culling, NO caching, just render
-        let nsImage: NSImage?
-        if let imageData = shape.embeddedImageData {
-            nsImage = NSImage(data: imageData)
-        } else if let linkedPath = shape.linkedImagePath {
-            nsImage = resolveLinkedImage(
-                linkedPath: linkedPath,
-                documentURL: documentURL,
-                bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id
-            )
+        // Check cache FIRST - if CGImage is cached, use it (NO disk I/O!)
+        let image: CGImage
+        if let cachedImage = document.cgImageCache[shape.id] {
+            print("✅ CACHE HIT: Using cached CGImage for \(shape.id)")
+            image = cachedImage
         } else {
-            return
-        }
+            // CACHE MISS - load from disk ONCE and cache it
+            print("❌ CACHE MISS: Loading image from disk for \(shape.id)")
 
-        guard let sourceNSImage = nsImage else { return }
+            let nsImage: NSImage?
+            if let imageData = shape.embeddedImageData {
+                nsImage = NSImage(data: imageData)
+            } else if let linkedPath = shape.linkedImagePath {
+                nsImage = resolveLinkedImage(
+                    linkedPath: linkedPath,
+                    documentURL: documentURL,
+                    bookmarkData: shape.linkedImageBookmarkData,
+                    shapeID: shape.id
+                )
+            } else {
+                return
+            }
 
-        // Get CGImage - NO downsampling, just use it directly
-        var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-        guard let image = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
-            return
+            guard let sourceNSImage = nsImage else { return }
+
+            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
+            guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+                return
+            }
+
+            // Cache it for next frame
+            document.cgImageCache[shape.id] = cgImage
+            print("💾 Cached CGImage for \(shape.id)")
+            image = cgImage
         }
 
         // Draw using CGContext with tiling
@@ -1243,6 +1257,7 @@ struct IsolatedLayerView: View {
             LayerCanvasView(
                 objects: objects,
                 objectsDict: document.snapshot.objects,
+                document: document,
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,

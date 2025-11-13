@@ -66,6 +66,10 @@ final class VectorDocument: ObservableObject, Codable {
     internal var imageStorage: [UUID: NSImage] = [:]
     internal var baseDirectoryURL: URL? = nil
 
+    // CGImage cache: final rendered images ready to draw (load from disk ONCE, cache forever)
+    // Key: UUID of shape
+    internal var cgImageCache: [UUID: CGImage] = [:]
+
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
