@@ -10,7 +10,7 @@ struct VerticalToolbar: View {
     @Binding var colorDeltaBlendMode: BlendMode?
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
-    @StateObject private var toolGroupManager = ToolGroupManager.shared
+    @ObservedObject private var toolGroupManager = ToolGroupManager.shared
 
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)

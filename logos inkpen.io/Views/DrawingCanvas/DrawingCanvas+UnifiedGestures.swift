@@ -3,21 +3,7 @@ import AppKit
 
 extension DrawingCanvas {
 
-    internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
-        screenToCanvas(location, geometry: geometry)
-    }
-
     internal func handleDoubleClick(at location: CGPoint, geometry: GeometryProxy) {
-        var clickType = "Double Click"
-        if isOptionPressed && isCommandPressed {
-            clickType = "Option+Command+Double Click"
-        } else if isOptionPressed {
-            clickType = "Option+Double Click"
-        } else if isCommandPressed {
-            clickType = "Command+Double Click"
-        }
-
-        detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
 
         let canvasLocation = screenToCanvas(location, geometry: geometry)
 
@@ -48,31 +34,10 @@ extension DrawingCanvas {
         lastClickTime = currentTime
         lastClickLocation = location
 
-        var clickType = "Single Click"
         if isDoubleClick {
-            if isOptionPressed && isCommandPressed {
-                clickType = "Option+Command+Double Click"
-            } else if isOptionPressed {
-                clickType = "Option+Double Click"
-            } else if isCommandPressed {
-                clickType = "Command+Double Click"
-            } else {
-                clickType = "Double Click"
-            }
-
             handleDoubleClick(at: location, geometry: geometry)
             return
-        } else {
-            if isOptionPressed && isCommandPressed {
-                clickType = "Option+Command+Click"
-            } else if isOptionPressed {
-                clickType = "Option+Click"
-            } else if isCommandPressed {
-                clickType = "Command+Click"
-            }
         }
-
-        detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
 
         if document.viewState.currentTool != .bezierPen && isBezierDrawing {
             cancelBezierDrawing()

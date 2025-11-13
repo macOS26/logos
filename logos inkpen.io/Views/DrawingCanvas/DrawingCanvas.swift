@@ -200,11 +200,6 @@ struct DrawingCanvas: View {
                     spatialIndex.rebuild(from: document.snapshot)
                     rebuildLockedObjectsCache()
                 }
-                .onChange(of: document.viewState.objectUpdateTrigger) { _, _ in
-                    // Rebuild spatial index when objects are updated (moved, transformed, visibility changed)
-                    spatialIndex.rebuild(from: document.snapshot)
-                    rebuildLockedObjectsCache()
-                }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
                     // Skip spatial index rebuild during live point drags for performance
                     guard !document.viewState.isLivePointDrag else { return }

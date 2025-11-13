@@ -124,7 +124,8 @@
       "Bash(git log:*)",
       "Bash(python3:*)",
       "Bash(cat:*)",
-      "WebFetch(domain:stackoverflow.com)"
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

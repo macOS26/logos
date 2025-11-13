@@ -132,28 +132,6 @@ struct DocumentBasedMainView: View {
             // TODO: Re-enable when properties are available
             // .onAppear {
             //     // Sync viewState colors from document defaults on appear
-            //     document.viewState.activeFillColor = document.defaultFillColor
-            //     document.viewState.activeStrokeColor = document.defaultStrokeColor
-            //     document.viewState.activeFillOpacity = document.defaultFillOpacity
-            //     document.viewState.activeStrokeOpacity = document.defaultStrokeOpacity
-            //     document.viewState.activeStrokeWidth = document.defaultStrokeWidth
-            // }
-            // .onChange(of: document.viewState.activeFillColor) { _, newColor in
-            //     document.defaultFillColor = newColor
-            // }
-            // .onChange(of: document.viewState.activeStrokeColor) { _, newColor in
-            //     document.defaultStrokeColor = newColor
-            // }
-            // .onChange(of: document.viewState.activeFillOpacity) { _, newOpacity in
-            //     document.defaultFillOpacity = newOpacity
-            // }
-            // .onChange(of: document.viewState.activeStrokeOpacity) { _, newOpacity in
-            //     document.defaultStrokeOpacity = newOpacity
-            // }
-            // .onChange(of: document.viewState.activeStrokeWidth) { _, newWidth in
-            //     document.defaultStrokeWidth = newWidth
-            // }
-
             StatusBar(zoomLevel: zoomLevel, document: document)
         }
         .frame(minHeight: 524)
