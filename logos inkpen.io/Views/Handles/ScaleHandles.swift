@@ -43,10 +43,11 @@ struct ScaleHandles: View {
         let center = calculatedCenter
 
         ZStack {
-            // Render shape outline using Canvas
+            // Render shape outline using Canvas (use live transform when scaling)
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
+                let activeTransform = (isScaling && !previewTransform.isIdentity) ? previewTransform : shape.transform
 
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
                     for groupedShape in shape.groupedShapes {
@@ -54,24 +55,24 @@ struct ScaleHandles: View {
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
-                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let p = to.cgPoint.applying(activeTransform)
                                 let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                 path.move(to: screenP)
                             case .line(let to):
-                                let p = to.cgPoint.applying(groupedShape.transform)
+                                let p = to.cgPoint.applying(activeTransform)
                                 let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                 path.addLine(to: screenP)
                             case .curve(let to, let control1, let control2):
-                                let tp = to.cgPoint.applying(groupedShape.transform)
-                                let tc1 = control1.cgPoint.applying(groupedShape.transform)
-                                let tc2 = control2.cgPoint.applying(groupedShape.transform)
+                                let tp = to.cgPoint.applying(activeTransform)
+                                let tc1 = control1.cgPoint.applying(activeTransform)
+                                let tc2 = control2.cgPoint.applying(activeTransform)
                                 let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                                 let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
                                 let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
                                 path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                             case .quadCurve(let to, let control):
-                                let tp = to.cgPoint.applying(groupedShape.transform)
-                                let tc = control.cgPoint.applying(groupedShape.transform)
+                                let tp = to.cgPoint.applying(activeTransform)
+                                let tc = control.cgPoint.applying(activeTransform)
                                 let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                                 let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
                                 path.addQuadCurve(to: screenTo, control: screenC)
@@ -87,24 +88,24 @@ struct ScaleHandles: View {
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            let p = to.cgPoint.applying(shape.transform)
+                            let p = to.cgPoint.applying(activeTransform)
                             let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                             path.move(to: screenP)
                         case .line(let to):
-                            let p = to.cgPoint.applying(shape.transform)
+                            let p = to.cgPoint.applying(activeTransform)
                             let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                             path.addLine(to: screenP)
                         case .curve(let to, let control1, let control2):
-                            let tp = to.cgPoint.applying(shape.transform)
-                            let tc1 = control1.cgPoint.applying(shape.transform)
-                            let tc2 = control2.cgPoint.applying(shape.transform)
+                            let tp = to.cgPoint.applying(activeTransform)
+                            let tc1 = control1.cgPoint.applying(activeTransform)
+                            let tc2 = control2.cgPoint.applying(activeTransform)
                             let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                             let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
                             let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
                             path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                         case .quadCurve(let to, let control):
-                            let tp = to.cgPoint.applying(shape.transform)
-                            let tc = control.cgPoint.applying(shape.transform)
+                            let tp = to.cgPoint.applying(activeTransform)
+                            let tc = control.cgPoint.applying(activeTransform)
                             let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                             let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
                             path.addQuadCurve(to: screenTo, control: screenC)
