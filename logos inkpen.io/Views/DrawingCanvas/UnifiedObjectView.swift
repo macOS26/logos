@@ -1126,7 +1126,20 @@ struct LayerCanvasView: View {
             image = cgImage
         }
 
-        // Draw using CGContext with tiling
+        // Check if this is the SAME CGImage we drew last frame - if so, SKIP the draw!
+        let imageHash = ObjectIdentifier(image).hashValue
+        let lastHash = document.lastDrawnImageHash[shape.id]
+
+        if lastHash == imageHash {
+            print("⏭️ SKIP DRAW: Same CGImage as last frame for \(shape.id)")
+            return
+        }
+
+        // Image changed or first draw - update hash and draw it
+        document.lastDrawnImageHash[shape.id] = imageHash
+        print("🎨 DRAWING CGImage for \(shape.id)")
+
+        // Draw using CGContext
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
@@ -1140,9 +1153,6 @@ struct LayerCanvasView: View {
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // NOTE: Do NOT apply shape.transform here - it's already baked into renderBounds at line 1139-1141
-            // Applying it again would cause double transformation
-
             // Flip coordinate system for image rendering
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
             cgContext.scaleBy(x: 1.0, y: -1.0)
@@ -1150,8 +1160,7 @@ struct LayerCanvasView: View {
             // Set rendering quality
             cgContext.interpolationQuality = .medium
 
-            // Draw cached image directly - SwiftUI Canvas will cache it internally
-            // No need for Metal tiling - the cached downsampled image is already small
+            // Draw the image
             cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()

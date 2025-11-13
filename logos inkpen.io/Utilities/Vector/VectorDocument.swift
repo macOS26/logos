@@ -70,6 +70,9 @@ final class VectorDocument: ObservableObject, Codable {
     // Key: UUID of shape
     internal var cgImageCache: [UUID: CGImage] = [:]
 
+    // Track hash of last drawn CGImage per shape - if same hash, skip cgContext.draw() call
+    internal var lastDrawnImageHash: [UUID: Int] = [:]
+
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
