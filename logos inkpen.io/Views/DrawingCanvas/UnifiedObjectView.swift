@@ -8,6 +8,7 @@ struct PasteboardBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
+        let _ = Self._printChanges()
         Canvas { context, size in
             let scaledRect = CGRect(
                 x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
@@ -161,7 +162,7 @@ struct LayerCanvasView: View {
 
     var body: some View {
         let _ = print("🔴 Canvas.body RE-RENDERING - zoom:\(zoomLevel) offset:\(canvasOffset)")
-        // let _ = Self._printChanges()
+        let _ = Self._printChanges()
         Canvas { context, size in
 //            _ = objectUpdateTrigger
 //            _ = activeGradientDelta  // Force redraw when gradient changes
