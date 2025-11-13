@@ -82,6 +82,19 @@ struct SelectionHandlesView: View {
                                                 liveScaleDimensions: $liveScaleDimensions
                                             )
                                     } else if document.viewState.currentTool == .scale {
+                                        // Show transform box that scales with the object
+                                        TransformBoxHandles(
+                                            document: document,
+                                            shape: shape,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
+                                            isShiftPressed: isShiftPressed,
+                                            transformOrigin: document.viewState.transformOrigin,
+                                            strokeColor: Color.black.opacity(0.5),
+                                            liveScaleTransform: $liveScaleTransform,
+                                            liveScaleDimensions: $liveScaleDimensions
+                                        )
+                                        // Show scale tool handles on top
                                         ScaleHandles(
                                             document: document,
                                             shape: shape,
