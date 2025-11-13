@@ -240,11 +240,15 @@ extension DrawingCanvas {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
 
-        if !foundSelection {
+        // If we have handles or points selected, don't allow clicking on the shape to deselect them
+        // This prevents clicking on handle lines or shape outlines from clearing handle selections
+        let hasPointOrHandleSelection = !selectedHandles.isEmpty || !selectedPoints.isEmpty
+
+        if !foundSelection && !hasPointOrHandleSelection {
             foundSelection = directSelectWholeShape(at: location)
         }
 
-        if !foundSelection {
+        if !foundSelection && !hasPointOrHandleSelection {
             Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
