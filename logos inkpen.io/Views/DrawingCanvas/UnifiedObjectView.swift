@@ -160,7 +160,6 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        let _ = print("🔴 Canvas.body RE-RENDERING - zoom:\(zoomLevel) offset:\(canvasOffset)")
         let _ = Self._printChanges()
         Canvas { context, size in
 //            _ = objectUpdateTrigger
@@ -518,23 +517,15 @@ struct LayerCanvasView: View {
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     // ONLY apply gradient delta if activeColorTarget is .fill
                     if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
-                        print("🎨 FILL: Using activeGradientDelta for shape \(shape.id), activeColorTarget=\(activeColorTarget)")
-                        print("🎨 FILL: Delta stops: \(activeGradientDelta!.stops.map { $0.color })")
-
                         // Create a fillStyle with activeGradientDelta and opacity
                         let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if let gradient = fillStyle.gradient {
                         // Use gradient from snapshot
-                        print("🎨 FILL: Using SNAPSHOT gradient for shape \(shape.id)")
-                        print("🎨 FILL: Snapshot gradient stops: \(gradient.stops.map { $0.color })")
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
-                        // print("🎨 CANVAS RENDER: Using SOLID color for shape \(shape.id): \(fillStyle.color)")
                         layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
-                    } else {
-                        // print("🎨 CANVAS RENDER: Using CLEAR (no fill) for shape \(shape.id)")
                     }
                 }
 
@@ -552,13 +543,9 @@ struct LayerCanvasView: View {
                         : strokeStyle.width
 
                     if strokeStyle.placement == .center {
-                        print("🟢 STROKE RENDER: shape=\(shape.id), activeGradientDelta=\(activeGradientDelta != nil), isSelected=\(isSelected), activeColorTarget=\(activeColorTarget)")
-
                         // Check for activeGradientDelta FIRST (for live preview during drag)
                         // ONLY apply gradient delta if activeColorTarget is .stroke
                         if activeGradientDelta != nil && isSelected && activeColorTarget == .stroke {
-                            print("🎨 STROKE: Using activeGradientDelta for shape \(shape.id), activeColorTarget=\(activeColorTarget)")
-                            print("🎨 STROKE: Delta stops: \(activeGradientDelta!.stops.map { $0.color })")
                             let effectiveStrokeStyle = StrokeStyle(
                                 gradient: activeGradientDelta!,
                                 width: effectiveStrokeWidth,
@@ -571,8 +558,6 @@ struct LayerCanvasView: View {
                             renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if let gradient = strokeStyle.gradient {
                             // Use gradient from snapshot
-                            print("🎨 STROKE: Using SNAPSHOT gradient for shape \(shape.id)")
-                            print("🎨 STROKE: Snapshot gradient stops: \(gradient.stops.map { $0.color })")
                             let effectiveStrokeStyle = StrokeStyle(
                                 gradient: gradient,
                                 width: effectiveStrokeWidth,
@@ -615,8 +600,6 @@ struct LayerCanvasView: View {
 
                 // Check for activeGradientDelta FIRST (for live preview during drag)
                 if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
-                    print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for FILL shape \(shape.id)")
-
                     // Create a fillStyle with activeGradientDelta and opacity
                     let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
@@ -646,7 +629,6 @@ struct LayerCanvasView: View {
                 if strokeStyle.placement == .center {
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     if activeGradientDelta != nil && isSelected && activeColorTarget == .stroke {
-                        print("🎨 CANVAS RENDER (no mask): Using activeGradientDelta for STROKE shape \(shape.id)")
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                         effectiveStrokeStyle.width = effectiveStrokeWidth
