@@ -703,7 +703,3 @@ struct VariableStrokePath {
     var points: [PressurePoint]
     var path: Path = Path()
 }
-
-#Preview {
-    PressureCalibrationView()
-}
