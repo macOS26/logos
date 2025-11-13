@@ -217,7 +217,8 @@ extension DrawingCanvas {
                 canvasOffset: canvasOffset
             )
         }
-        // Apply live pan as GPU transform for 60fps panning
+        // Apply live pan/zoom as GPU transforms for 60fps performance
+        .scaleEffect(liveZoomDelta)
         .offset(x: livePanDelta.x, y: livePanDelta.y)
         .onAppear {
             setupCanvas()
