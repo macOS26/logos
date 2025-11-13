@@ -584,10 +584,18 @@ class PathOperations {
         let bounds = path.boundingBoxOfPath.insetBy(dx: -tolerance, dy: -tolerance)
         guard bounds.contains(point) else { return false }
 
+        // Quick fill check first
         if path.contains(point) {
             return true
         }
 
+        // Use GPU-accelerated path hit test for stroke detection
+        let gpuResult = MetalComputeEngine.shared.pathHitTestGPU(path, point: point, tolerance: tolerance)
+        if gpuResult {
+            return true
+        }
+
+        // Fallback to CPU if GPU unavailable or failed
         return isPointNearStroke(path, point: point, tolerance: tolerance)
     }
 
