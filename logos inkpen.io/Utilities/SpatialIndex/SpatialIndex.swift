@@ -250,7 +250,26 @@ struct SpatialIndex {
 
         // Add new entries if object exists and is visible
         if let object = snapshot.objects[objectID], object.isVisible, let layerID = targetLayerID {
-            let bounds = object.shape.bounds.applying(object.shape.transform)
+            // Calculate bounds correctly based on object type
+            let bounds: CGRect
+            switch object.objectType {
+            case .text(let shape):
+                // Text uses transform for position, not bounds.applying(transform)
+                bounds = CGRect(
+                    x: shape.transform.tx,
+                    y: shape.transform.ty,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
+            case .shape(let shape),
+                 .image(let shape),
+                 .warp(let shape),
+                 .clipMask(let shape):
+                bounds = shape.bounds.applying(shape.transform)
+            case .group(let groupShape), .clipGroup(let groupShape):
+                bounds = groupShape.groupBounds
+            }
+
             objectBounds[objectID] = bounds
 
             let cells = cellsForBounds(bounds)
