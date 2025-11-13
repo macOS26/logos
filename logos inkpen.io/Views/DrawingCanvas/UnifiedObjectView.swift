@@ -1349,13 +1349,3 @@ struct IsolatedLayerView: View {
         .blendMode(layerBlendMode.swiftUIBlendMode)
     }
 }
-
-struct CGOpacityModifier: ViewModifier {
-    let opacity: CGFloat
-
-    func body(content: Content) -> some View {
-        content
-            .transformEffect(.identity)
-            .opacity(Double(opacity))
-    }
-}
