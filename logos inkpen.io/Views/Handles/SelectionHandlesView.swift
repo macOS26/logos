@@ -82,19 +82,6 @@ struct SelectionHandlesView: View {
                                                 liveScaleDimensions: $liveScaleDimensions
                                             )
                                     } else if document.viewState.currentTool == .scale {
-                                        // Show transform box that scales with the object
-                                        TransformBoxHandles(
-                                            document: document,
-                                            shape: shape,
-                                            zoomLevel: zoomLevel,
-                                            canvasOffset: canvasOffset,
-                                            isShiftPressed: isShiftPressed,
-                                            transformOrigin: document.viewState.transformOrigin,
-                                            strokeColor: Color.black.opacity(0.5),
-                                            liveScaleTransform: $liveScaleTransform,
-                                            liveScaleDimensions: $liveScaleDimensions
-                                        )
-                                        // Show scale tool handles on top
                                         ScaleHandles(
                                             document: document,
                                             shape: shape,
@@ -203,14 +190,23 @@ struct SelectionHandlesView: View {
     // Computed property for combined selection bounds
     private var combinedSelectionBounds: CGRect? {
         var combinedBounds: CGRect?
+        let settings = ApplicationSettings.shared
 
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
 
             switch object.objectType {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .text(let shape):
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                let transformedBounds = bounds.applying(shape.transform)
+                var baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+
+                // Apply stroke expansion if preference is enabled and shape has stroke
+                if settings.boundingBoxIncludesStrokes && shape.strokeStyle != nil && shape.typography == nil {
+                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                    let strokeExpansion = strokeWidth / 2.0
+                    baseBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
+                }
+
+                let transformedBounds = baseBounds.applying(shape.transform)
 
                 if let existing = combinedBounds {
                     combinedBounds = existing.union(transformedBounds)
