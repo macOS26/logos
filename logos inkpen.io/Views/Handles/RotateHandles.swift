@@ -54,79 +54,82 @@ struct RotateHandles: View {
         let center = calculatedCenter
 
         ZStack {
-            ZStack {
-                Path { path in
-                    for element in shape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            path.move(to: to.cgPoint)
-                        case .line(let to):
-                            path.addLine(to: to.cgPoint)
-                        case .curve(let to, let control1, let control2):
-                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                        case .quadCurve(let to, let control):
-                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-                        case .close:
-                            path.closeSubpath()
-                        }
-                    }
-                }
-                .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+            // Render shape outline using Canvas
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
 
-                Path { path in
-                    for element in shape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            path.move(to: to.cgPoint)
-                        case .line(let to):
-                            path.addLine(to: to.cgPoint)
-                        case .curve(let to, let control1, let control2):
-                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                        case .quadCurve(let to, let control):
-                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-                        case .close:
-                            path.closeSubpath()
-                        }
+                var path = Path()
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        let p = to.cgPoint.applying(shape.transform)
+                        let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                        path.move(to: screenP)
+                    case .line(let to):
+                        let p = to.cgPoint.applying(shape.transform)
+                        let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                        path.addLine(to: screenP)
+                    case .curve(let to, let control1, let control2):
+                        let tp = to.cgPoint.applying(shape.transform)
+                        let tc1 = control1.cgPoint.applying(shape.transform)
+                        let tc2 = control2.cgPoint.applying(shape.transform)
+                        let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                        let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                        let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                        path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
+                    case .quadCurve(let to, let control):
+                        let tp = to.cgPoint.applying(shape.transform)
+                        let tc = control.cgPoint.applying(shape.transform)
+                        let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                        let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                        path.addQuadCurve(to: screenTo, control: screenC)
+                    case .close:
+                        path.closeSubpath()
                     }
                 }
-                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                context.stroke(path, with: .color(.white), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0], dashPhase: 2.0))
+                context.stroke(path, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
+            .allowsHitTesting(false)
 
             if isRotating && !previewTransform.isIdentity {
-                Path { path in
+                Canvas { context, size in
+                    let zoom = zoomLevel
+                    let offset = canvasOffset
+
+                    var path = Path()
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.move(to: transformedPoint)
+                            let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.move(to: screenP)
                         case .line(let to):
-                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.addLine(to: transformedPoint)
+                            let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
+                            path.addLine(to: screenP)
                         case .curve(let to, let control1, let control2):
-                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
-                            let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
-                            path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
+                            let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let tc1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                            let tc2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC1 = CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y)
+                            let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
+                            path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                         case .quadCurve(let to, let control):
-                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
-                            path.addQuadCurve(to: transformedTo, control: transformedControl)
+                            let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let tc = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                            let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
+                            let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
+                            path.addQuadCurve(to: screenTo, control: screenC)
                         case .close:
                             path.closeSubpath()
                         }
                     }
+                    context.stroke(path, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
                 }
-                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .opacity(0.8)
-
+                .allowsHitTesting(false)
             }
 
             pathPointsView()
