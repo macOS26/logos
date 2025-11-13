@@ -313,6 +313,13 @@ extension DrawingCanvas {
             document.triggerLayerUpdates(for: affectedLayers)
             print("⏱️ finishDrag: trigger layer updates took \((CFAbsoluteTimeGetCurrent() - t8) * 1000)ms")
 
+            // Update spatial index for dragged objects
+            let t9 = CFAbsoluteTimeGetCurrent()
+            for objectID in document.viewState.selectedObjectIDs {
+                spatialIndex.updateObject(objectID, in: document.snapshot)
+            }
+            print("⏱️ finishDrag: update spatial index took \((CFAbsoluteTimeGetCurrent() - t9) * 1000)ms")
+
             print("🔴🔴🔴 DRAG END COMPLETE at \(CFAbsoluteTimeGetCurrent())")
             print("⏱️ finishDrag: END OF FUNCTION")
 
