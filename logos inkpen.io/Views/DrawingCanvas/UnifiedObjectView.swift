@@ -1029,57 +1029,6 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
-    private func resolveAndGetSourceImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID, quality: Double) -> CGImage? {
-        // 1. Try bookmark data first
-        if let bookmarkData = bookmarkData {
-            var isStale = false
-            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                let _ = url.startAccessingSecurityScopedResource()
-                defer { url.stopAccessingSecurityScopedResource() }
-                if let image = ImageTileCache.shared.getSourceImage(from: url, quality: quality, shapeID: shapeID) {
-                    return image
-                }
-            }
-        }
-
-        // 2. Try absolute path
-        let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let image = ImageTileCache.shared.getSourceImage(from: absoluteURL, quality: quality, shapeID: shapeID) {
-            return image
-        }
-
-        // 3. Try relative to document
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = ImageTileCache.shared.getSourceImage(from: relativeURL, quality: quality, shapeID: shapeID) {
-                return image
-            }
-        }
-
-        // 4. Try next to document
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
-            let sameDir = docDir.appendingPathComponent(filename)
-            if let image = ImageTileCache.shared.getSourceImage(from: sameDir, quality: quality, shapeID: shapeID) {
-                return image
-            }
-        }
-
-        // 5. Image not found
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(
-                name: Notification.Name("MissingLinkedImage"),
-                object: nil,
-                userInfo: ["shapeID": shapeID, "path": linkedPath]
-            )
-        }
-
-        return nil
-    }
-
-
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> NSImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
@@ -1163,24 +1112,29 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Always fetch from ImageTileCache to respect quality settings
-        let sourceImage: CGImage?
+        // Load NSImage and render through Metal pipeline
+        let nsImage: NSImage?
 
         if let imageData = shape.embeddedImageData {
-            sourceImage = ImageTileCache.shared.getSourceImage(from: imageData, quality: imagePreviewQuality, shapeID: shape.id)
+            nsImage = NSImage(data: imageData)
         } else if let linkedPath = shape.linkedImagePath {
-            sourceImage = resolveAndGetSourceImage(
+            nsImage = resolveLinkedImage(
                 linkedPath: linkedPath,
                 documentURL: documentURL,
                 bookmarkData: shape.linkedImageBookmarkData,
-                shapeID: shape.id,
-                quality: imagePreviewQuality
+                shapeID: shape.id
             )
         } else {
             return
         }
 
-        guard let image = sourceImage else { return }
+        guard let sourceNSImage = nsImage else { return }
+
+        // Render through Metal: NSImage → Metal → CGImage
+        guard let renderer = MetalImageTileRenderer.shared,
+              let image = renderer.renderImage(from: sourceNSImage, quality: imagePreviewQuality) else {
+            return
+        }
 
         // Get actual image pixel dimensions
         let imagePixelSize = CGSize(width: CGFloat(image.width), height: CGFloat(image.height))
