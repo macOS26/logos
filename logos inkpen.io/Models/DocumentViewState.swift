@@ -32,7 +32,6 @@ class DocumentViewState: ObservableObject {
 
     // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
-    @Published var objectUpdateTrigger: UInt = 0
     @Published var layerUpdateTriggers: [UUID: UInt] = [:]  // Per-layer update triggers keyed by Layer.id
     var isLivePointDrag: Bool = false  // Skip spatial index rebuild during live point drags
     // NOTE: scalePreviewDimensions removed - now using liveScaleDimensions as @State in DocumentBasedMainView
