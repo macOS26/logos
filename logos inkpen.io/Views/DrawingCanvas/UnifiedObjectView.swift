@@ -1354,19 +1354,8 @@ struct CGOpacityModifier: ViewModifier {
     let opacity: CGFloat
 
     func body(content: Content) -> some View {
-        content.overlay(
-            GeometryReader { _ in
-                Color.clear.preference(key: OpacityPreferenceKey.self, value: opacity)
-            }
-        )
-        .transformEffect(.identity)
-        .opacity(Double(opacity))
-    }
-}
-
-struct OpacityPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 1.0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+        content
+            .transformEffect(.identity)
+            .opacity(Double(opacity))
     }
 }
