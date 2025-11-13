@@ -469,18 +469,3 @@ struct VerticalToolbarButton: View {
         .buttonRepeatBehavior(shouldRepeat ? .enabled : .disabled)
     }
 }
-
-#Preview {
-    let doc = VectorDocument()
-    VerticalToolbar(
-        currentTool: doc.viewState.currentTool,
-        viewState: doc.viewState,
-        document: doc,
-        colorDeltaColor: .constant(nil),
-        colorDeltaOpacity: .constant(nil),
-        colorDeltaBlendMode: .constant(nil),
-        defaultFillColor: .constant(.white),
-        defaultStrokeColor: .constant(.black)
-    )
-    .frame(height: 600)
-}
