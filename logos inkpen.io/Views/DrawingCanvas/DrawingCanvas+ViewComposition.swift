@@ -266,6 +266,8 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize
             )
+            .scaleEffect(liveZoomDelta, anchor: .topLeading)
+            .offset(x: livePanDelta.x, y: livePanDelta.y)
             .id(isActiveLayer ? "\(layer.id)-\(currentDragDelta)" : "\(layer.id)")  // Only active layer uses drag delta in ID
             .allowsHitTesting(isActiveLayer)
         }
@@ -274,13 +276,11 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
         // Render layers with background fills for special layers
-        // Expand frame to prevent clipping during pan/zoom transforms
         ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
             if layer.isVisible {
                 renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
             }
         }
-        .frame(width: geometry.size.width * 3, height: geometry.size.height * 3, alignment: .topLeading)
     }
 
     @ViewBuilder
@@ -348,11 +348,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            ZStack {
-                canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
-            }
-            .scaleEffect(liveZoomDelta, anchor: .topLeading)
-            .offset(x: livePanDelta.x, y: livePanDelta.y)
+            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
 
             pressureSensitiveOverlay(geometry: geometry)
 

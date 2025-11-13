@@ -10,7 +10,6 @@ extension DrawingCanvas {
             initialCanvasOffset = canvasOffset
             handToolDragStart = value.startLocation
             isPanGestureActive = true
-            isActivelyPanning = true
 
             HandClosedCursor.set()
         }
@@ -23,10 +22,10 @@ extension DrawingCanvas {
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
-
-        // ONLY update livePanDelta during gesture (NOT real canvasOffset!)
-        livePanDelta = cursorDelta
-        print("📍 PAN DELTA: \(cursorDelta) | canvasOffset: \(canvasOffset) (should NOT change)")
+        canvasOffset = CGPoint(
+            x: initialCanvasOffset.x + cursorDelta.x,
+            y: initialCanvasOffset.y + cursorDelta.y
+        )
 
     }
 }
