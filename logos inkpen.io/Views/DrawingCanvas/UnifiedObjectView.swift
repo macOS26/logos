@@ -1130,9 +1130,9 @@ struct LayerCanvasView: View {
 
         guard let sourceNSImage = nsImage else { return }
 
-        // Get CGImage directly (bypass Metal for now to fix colors)
-        var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-        guard let image = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+        // Render through Metal: NSImage → Metal (BGRA) → CGImage (BGRA)
+        guard let renderer = MetalImageTileRenderer.shared,
+              let image = renderer.renderImage(from: sourceNSImage, quality: imagePreviewQuality) else {
             return
         }
 
