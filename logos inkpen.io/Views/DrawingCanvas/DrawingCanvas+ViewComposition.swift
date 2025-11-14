@@ -260,7 +260,7 @@ extension DrawingCanvas {
                 objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                canvasOffset: .zero,  // Applied at parent ZStack level
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
@@ -293,12 +293,15 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
-        // Render layers with background fills for special layers
-        ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
-            if layer.isVisible {
-                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+        // Wrap all layers in a container that applies canvasOffset via transform
+        ZStack {
+            ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
+                if layer.isVisible {
+                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+                }
             }
         }
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
     @ViewBuilder
