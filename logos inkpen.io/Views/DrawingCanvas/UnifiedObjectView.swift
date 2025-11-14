@@ -115,6 +115,11 @@ struct LayerCanvasView: View, Equatable {
         }
     }
 
+    // Get layer index for debug printing
+    private var layerInfo: String {
+        objects.first.map { obj in "Layer[\(obj.layerIndex)]" } ?? "Empty"
+    }
+
     // Apply live point/handle positions to a shape for rendering preview
     private func applyLivePositions(to shape: VectorShape) -> VectorShape {
         // Check if this shape has any live positions
@@ -213,6 +218,7 @@ struct LayerCanvasView: View, Equatable {
 
     var body: some View {
         let _ = Self._printChanges()
+        let _ = print("📊 LayerCanvasView \(layerInfo): rendering \(objects.count) objects")
         Canvas { context, size in
 //            _ = objectUpdateTrigger
 //            _ = activeGradientDelta  // Force redraw when gradient changes
