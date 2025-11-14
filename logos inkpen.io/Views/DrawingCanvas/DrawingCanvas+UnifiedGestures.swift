@@ -281,15 +281,6 @@ extension DrawingCanvas {
     }
 
     private func finishPanGesture() {
-        // Commit live pan delta to canvasOffset
-        let finalOffset = CGPoint(
-            x: canvasOffset.x + livePanDelta.x,
-            y: canvasOffset.y + livePanDelta.y
-        )
-        canvasOffset = finalOffset
-
-        // Reset state
-        livePanDelta = .zero
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
