@@ -17,6 +17,7 @@ struct DrawingCanvas: View {
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var livePointPositions: [PointID: CGPoint]
     @Binding var liveHandlePositions: [HandleID: CGPoint]
+    @Binding var colorDeltaColor: VectorColor?
     @Binding var fillDeltaOpacity: Double?
     @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
