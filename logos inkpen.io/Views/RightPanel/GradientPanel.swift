@@ -454,9 +454,10 @@ struct GradientFillSection: View {
             }
         }
 
-        // DON'T clear activeGradientDelta - snapshot now has the same gradient
-        // Clearing causes blank layer issue
-        print("🎨 COMMIT: Leaving activeGradientDelta set (snapshot matches)")
+        // Clear activeGradientDelta since the gradient is now in the snapshot
+        // This ensures the canvas renders from snapshot, not from the delta
+        activeGradientDelta = nil
+        print("🎨 COMMIT: Cleared activeGradientDelta (snapshot updated)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
