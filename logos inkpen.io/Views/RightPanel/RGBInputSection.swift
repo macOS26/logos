@@ -387,17 +387,35 @@ struct RGBInputSection: View {
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBRedLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
+            // Update selected objects by applying the complete color
+            var affectedLayers = Set<Int>()
+            for objectID in selectedObjectIDs {
+                if let object = snapshot.objects[objectID] {
+                    affectedLayers.insert(object.layerIndex)
+
+                    // Update the object's fill or stroke color
+                    var shape = object.shape
+
+                    if activeColorTarget == .fill {
+                        if shape.fillStyle == nil {
+                            shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
+                        } else {
+                            shape.fillStyle?.color = finalColor
+                        }
+                    } else {
+                        if shape.strokeStyle == nil {
+                            shape.strokeStyle = StrokeStyle(color: finalColor, width: 1.0, opacity: defaultStrokeOpacity)
+                        } else {
+                            shape.strokeStyle?.color = finalColor
+                        }
+                    }
+
+                    // Create new VectorObject with updated shape
+                    let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
+            onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
@@ -427,17 +445,35 @@ struct RGBInputSection: View {
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBGreenLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
+            // Update selected objects by applying the complete color
+            var affectedLayers = Set<Int>()
+            for objectID in selectedObjectIDs {
+                if let object = snapshot.objects[objectID] {
+                    affectedLayers.insert(object.layerIndex)
+
+                    // Update the object's fill or stroke color
+                    var shape = object.shape
+
+                    if activeColorTarget == .fill {
+                        if shape.fillStyle == nil {
+                            shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
+                        } else {
+                            shape.fillStyle?.color = finalColor
+                        }
+                    } else {
+                        if shape.strokeStyle == nil {
+                            shape.strokeStyle = StrokeStyle(color: finalColor, width: 1.0, opacity: defaultStrokeOpacity)
+                        } else {
+                            shape.strokeStyle?.color = finalColor
+                        }
+                    }
+
+                    // Create new VectorObject with updated shape
+                    let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
+            onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
@@ -467,17 +503,35 @@ struct RGBInputSection: View {
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBBlueLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
+            // Update selected objects by applying the complete color
+            var affectedLayers = Set<Int>()
+            for objectID in selectedObjectIDs {
+                if let object = snapshot.objects[objectID] {
+                    affectedLayers.insert(object.layerIndex)
+
+                    // Update the object's fill or stroke color
+                    var shape = object.shape
+
+                    if activeColorTarget == .fill {
+                        if shape.fillStyle == nil {
+                            shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
+                        } else {
+                            shape.fillStyle?.color = finalColor
+                        }
+                    } else {
+                        if shape.strokeStyle == nil {
+                            shape.strokeStyle = StrokeStyle(color: finalColor, width: 1.0, opacity: defaultStrokeOpacity)
+                        } else {
+                            shape.strokeStyle?.color = finalColor
+                        }
+                    }
+
+                    // Create new VectorObject with updated shape
+                    let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
+            onTriggerLayerUpdates(affectedLayers)
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
