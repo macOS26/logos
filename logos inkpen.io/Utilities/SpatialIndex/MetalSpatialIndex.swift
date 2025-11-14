@@ -273,6 +273,14 @@ class MetalSpatialIndex {
         commandBuffer.waitUntilCompleted()
     }
 
+    /// Rebuild spatial index for specific layers only (partial rebuild for performance)
+    func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
+        // For now, Metal spatial index does full rebuild
+        // Partial rebuild would require tracking per-layer GPU buffers
+        // Full rebuild is still fast on GPU, so use that for now
+        rebuild(from: snapshot)
+    }
+
     /// Get candidate objects at a specific point (GPU query)
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
         guard let gridCellCountsBuffer = gridCellCountsBuffer,
