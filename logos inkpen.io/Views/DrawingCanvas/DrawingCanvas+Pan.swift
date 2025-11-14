@@ -22,10 +22,8 @@ extension DrawingCanvas {
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
-        canvasOffset = CGPoint(
-            x: initialCanvasOffset.x + cursorDelta.x,
-            y: initialCanvasOffset.y + cursorDelta.y
-        )
 
+        // Update live delta for GPU-only pan preview (no layer redraws)
+        livePanDelta = cursorDelta
     }
 }
