@@ -35,10 +35,11 @@ struct GradientStopColorPicker: View {
             GlassCloseButton(action: onDismiss)
         }
         .frame(width: 300, height: 480)
-        .onChange(of: currentColor) { _, newColor in
-            // Update gradient stop via onColorChanged
-            // This gets called when sharedColor updates (from RGB sliders)
-            onColorChanged(newColor)
+        .onChange(of: colorDeltaColor) { _, newColor in
+            // During RGB slider drag: update activeGradientDelta for live preview
+            if let newColor = newColor {
+                onColorChanged(newColor)  // Calls updateStopColor -> sets activeGradientDelta
+            }
         }
     }
 
