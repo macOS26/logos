@@ -82,10 +82,18 @@ struct LayerCanvasView: View, Equatable {
 
     // Equatable implementation to prevent unnecessary redraws
     static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
-        lhs.objects == rhs.objects &&
+        // Only redraw if selection changed AND this layer contains selected objects
+        let lhsObjectIDs = Set(lhs.objects.map { $0.id })
+        let rhsObjectIDs = Set(rhs.objects.map { $0.id })
+        let lhsHasSelection = !lhs.selectedObjectIDs.isDisjoint(with: lhsObjectIDs)
+        let rhsHasSelection = !rhs.selectedObjectIDs.isDisjoint(with: rhsObjectIDs)
+        let selectionChanged = lhsHasSelection != rhsHasSelection ||
+                               (lhsHasSelection && lhs.selectedObjectIDs != rhs.selectedObjectIDs)
+
+        return lhs.objects == rhs.objects &&
         lhs.zoomLevel == rhs.zoomLevel &&
         lhs.canvasOffset == rhs.canvasOffset &&
-        lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
+        !selectionChanged &&
         lhs.viewMode == rhs.viewMode &&
         lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
         lhs.liveScaleTransform == rhs.liveScaleTransform &&
