@@ -48,8 +48,9 @@ struct DrawingCanvas: View {
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
 
-    // Spatial index for O(1) hit testing
-    @State internal var spatialIndex = SpatialIndex()
+    // Spatial index for O(1) hit testing (GPU-accelerated with Metal)
+    @State internal var metalSpatialIndex: MetalSpatialIndex? = MetalSpatialIndex()
+    @State internal var spatialIndex = SpatialIndex()  // CPU fallback
     @State internal var isDraggingDirectSelectedShapes = false
     @State internal var bezierPath: VectorPath?
     @State internal var bezierPoints: [VectorPoint] = []
@@ -196,7 +197,11 @@ struct DrawingCanvas: View {
                     // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
                     cachedObjectCount = document.snapshot.objects.count
-                    spatialIndex.rebuild(from: document.snapshot)
+                    if let metalIndex = metalSpatialIndex {
+                        metalIndex.rebuild(from: document.snapshot)
+                    } else {
+                        spatialIndex.rebuild(from: document.snapshot)
+                    }
                     rebuildLockedObjectsCache()
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
@@ -215,7 +220,12 @@ struct DrawingCanvas: View {
 
                     if !changedLayerIDs.isEmpty {
                         // print("🔷 Spatial index: rebuilding \(changedLayerIDs.count) layer(s)")
-                        spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
+                        // Metal spatial index doesn't support partial rebuild yet, so full rebuild
+                        if let metalIndex = metalSpatialIndex {
+                            metalIndex.rebuild(from: document.snapshot)
+                        } else {
+                            spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
+                        }
                         rebuildLockedObjectsCache()
                     }
                 }
@@ -223,7 +233,11 @@ struct DrawingCanvas: View {
                     // Rebuild spatial index when objects are added/removed
                     if newCount != cachedObjectCount {
                         cachedObjectCount = newCount
-                        spatialIndex.rebuild(from: document.snapshot)
+                        if let metalIndex = metalSpatialIndex {
+                            metalIndex.rebuild(from: document.snapshot)
+                        } else {
+                            spatialIndex.rebuild(from: document.snapshot)
+                        }
                         rebuildLockedObjectsCache()
                     }
                 }
