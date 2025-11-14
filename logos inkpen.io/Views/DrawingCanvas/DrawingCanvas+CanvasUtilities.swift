@@ -6,10 +6,6 @@ extension DrawingCanvas {
         initialZoomLevel = zoomLevel
 
         // Build spatial index for O(1) hit testing (GPU-accelerated)
-        if let metalIndex = metalSpatialIndex {
-            metalIndex.rebuild(from: document.snapshot)
-        } else {
-            spatialIndex.rebuild(from: document.snapshot)
-        }
+        spatialIndex.rebuild(from: document.snapshot)
     }
 }

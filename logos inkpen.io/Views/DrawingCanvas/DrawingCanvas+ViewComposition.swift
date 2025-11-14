@@ -178,13 +178,14 @@ extension DrawingCanvas {
             cornerRadiusEditTool(geometry: geometry)
         }
 
-        // DEBUG: Show spatial index bounds
-        if appState.showSpatialIndexBounds {
-            let cachedBounds = spatialIndex.getAllCachedBounds()
-            ForEach(Array(cachedBounds.keys), id: \.self) { objectID in
-                if let bounds = cachedBounds[objectID] {
+        // DEBUG: Show spatial index bounds (disabled for Metal spatial index)
+        // Metal spatial index stores bounds on GPU, not accessible for debug visualization
+        if false && appState.showSpatialIndexBounds {
+            // let cachedBounds = spatialIndex.getAllCachedBounds()
+            ForEach([], id: \.self) { (objectID: UUID) in
+                if true {
                     Path { path in
-                        path.addRect(bounds)
+                        // path.addRect(bounds)
                     }
                     .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / zoomLevel, dash: [10 / zoomLevel, 5 / zoomLevel]))
                     // .scaleEffect(zoomLevel, anchor: .topLeading)
