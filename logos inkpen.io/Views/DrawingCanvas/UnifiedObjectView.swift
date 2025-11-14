@@ -90,7 +90,40 @@ struct LayerCanvasView: View, Equatable {
         let selectionChanged = lhsHasSelection != rhsHasSelection ||
                                (lhsHasSelection && lhs.selectedObjectIDs != rhs.selectedObjectIDs)
 
+        // Debug: Check each property to find what changed
+        var changed: [String] = []
+        if lhs.objects != rhs.objects { changed.append("objects") }
+        if lhs.objectsDict != rhs.objectsDict { changed.append("objectsDict") }
+        if lhs.zoomLevel != rhs.zoomLevel { changed.append("zoomLevel") }
+        if lhs.canvasOffset != rhs.canvasOffset { changed.append("canvasOffset") }
+        if selectionChanged { changed.append("selection") }
+        if lhs.viewMode != rhs.viewMode { changed.append("viewMode") }
+        if lhs.dragPreviewDelta != rhs.dragPreviewDelta { changed.append("dragPreviewDelta") }
+        if lhs.liveScaleTransform != rhs.liveScaleTransform { changed.append("liveScaleTransform") }
+        if lhs.dragPreviewTrigger != rhs.dragPreviewTrigger { changed.append("dragPreviewTrigger") }
+        if lhs.livePointPositions != rhs.livePointPositions { changed.append("livePointPositions") }
+        if lhs.liveHandlePositions != rhs.liveHandlePositions { changed.append("liveHandlePositions") }
+        if lhs.fillDeltaOpacity != rhs.fillDeltaOpacity { changed.append("fillDeltaOpacity") }
+        if lhs.strokeDeltaOpacity != rhs.strokeDeltaOpacity { changed.append("strokeDeltaOpacity") }
+        if lhs.strokeDeltaWidth != rhs.strokeDeltaWidth { changed.append("strokeDeltaWidth") }
+        if lhs.activeGradientDelta != rhs.activeGradientDelta { changed.append("activeGradientDelta") }
+        if lhs.activeColorTarget != rhs.activeColorTarget { changed.append("activeColorTarget") }
+        if lhs.fontSizeDelta != rhs.fontSizeDelta { changed.append("fontSizeDelta") }
+        if lhs.lineSpacingDelta != rhs.lineSpacingDelta { changed.append("lineSpacingDelta") }
+        if lhs.lineHeightDelta != rhs.lineHeightDelta { changed.append("lineHeightDelta") }
+        if lhs.letterSpacingDelta != rhs.letterSpacingDelta { changed.append("letterSpacingDelta") }
+        if lhs.imagePreviewQuality != rhs.imagePreviewQuality { changed.append("imagePreviewQuality") }
+        if lhs.imageTileSize != rhs.imageTileSize { changed.append("imageTileSize") }
+        if lhs.liveCornerRadii != rhs.liveCornerRadii { changed.append("liveCornerRadii") }
+        if lhs.selectedShapeIDForCornerRadius != rhs.selectedShapeIDForCornerRadius { changed.append("selectedShapeIDForCornerRadius") }
+
+        if !changed.isEmpty {
+            let layerInfo = lhs.objects.first.map { "Layer[\($0.layerIndex)]" } ?? "Empty"
+            print("⚠️ LayerCanvasView \(layerInfo) changed: \(changed.joined(separator: ", "))")
+        }
+
         return lhs.objects == rhs.objects &&
+        lhs.objectsDict == rhs.objectsDict &&
         lhs.zoomLevel == rhs.zoomLevel &&
         lhs.canvasOffset == rhs.canvasOffset &&
         !selectionChanged &&

@@ -247,6 +247,15 @@ extension DrawingCanvas {
             let layerObjectIDsSet = Set(layer.objectIDs)
             let selectedInThisLayer = document.viewState.selectedObjectIDs.intersection(layerObjectIDsSet)
 
+            // Only pass selectedShapeIDForCornerRadius if the shape is in this layer
+            let selectedRectShape = getSelectedRectangleShape()
+            let selectedShapeInThisLayer: UUID? = {
+                if let shapeID = selectedRectShape?.id, layerObjectIDsSet.contains(shapeID) {
+                    return shapeID
+                }
+                return nil
+            }()
+
             IsolatedLayerView(
                 objectIDs: layer.objectIDs,
                 document: document,
@@ -273,7 +282,7 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize,
                 liveCornerRadii: liveCornerRadii,
-                selectedShapeIDForCornerRadius: getSelectedRectangleShape()?.id
+                selectedShapeIDForCornerRadius: selectedShapeInThisLayer
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)
