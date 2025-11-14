@@ -50,7 +50,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View, Equatable {
+struct LayerCanvasView: View {
     let objects: [VectorObject]
     let document: VectorDocument  // Need this for cgImageCache and mask lookups
     let documentURL: URL?  // For resolving relative image paths
@@ -78,72 +78,6 @@ struct LayerCanvasView: View, Equatable {
     let selectedShapeIDForCornerRadius: UUID?
 
     var appState = AppState.shared
-
-    // Equatable implementation to prevent unnecessary redraws
-    static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
-        // Only redraw if selection changed AND this layer contains selected objects
-        let lhsObjectIDs = Set(lhs.objects.map { $0.id })
-        let rhsObjectIDs = Set(rhs.objects.map { $0.id })
-        let lhsHasSelection = !lhs.selectedObjectIDs.isDisjoint(with: lhsObjectIDs)
-        let rhsHasSelection = !rhs.selectedObjectIDs.isDisjoint(with: rhsObjectIDs)
-        let selectionChanged = lhsHasSelection != rhsHasSelection ||
-                               (lhsHasSelection && lhs.selectedObjectIDs != rhs.selectedObjectIDs)
-
-        // Debug: Check each property to find what changed
-        var changed: [String] = []
-        if lhs.objects != rhs.objects { changed.append("objects") }
-        if lhs.zoomLevel != rhs.zoomLevel { changed.append("zoomLevel") }
-        if lhs.canvasOffset != rhs.canvasOffset { changed.append("canvasOffset") }
-        if selectionChanged { changed.append("selection") }
-        if lhs.viewMode != rhs.viewMode { changed.append("viewMode") }
-        if lhs.dragPreviewDelta != rhs.dragPreviewDelta { changed.append("dragPreviewDelta") }
-        if lhs.liveScaleTransform != rhs.liveScaleTransform { changed.append("liveScaleTransform") }
-        if lhs.dragPreviewTrigger != rhs.dragPreviewTrigger { changed.append("dragPreviewTrigger") }
-        if lhs.livePointPositions != rhs.livePointPositions { changed.append("livePointPositions") }
-        if lhs.liveHandlePositions != rhs.liveHandlePositions { changed.append("liveHandlePositions") }
-        if lhs.fillDeltaOpacity != rhs.fillDeltaOpacity { changed.append("fillDeltaOpacity") }
-        if lhs.strokeDeltaOpacity != rhs.strokeDeltaOpacity { changed.append("strokeDeltaOpacity") }
-        if lhs.strokeDeltaWidth != rhs.strokeDeltaWidth { changed.append("strokeDeltaWidth") }
-        if lhs.activeGradientDelta != rhs.activeGradientDelta { changed.append("activeGradientDelta") }
-        if lhs.activeColorTarget != rhs.activeColorTarget { changed.append("activeColorTarget") }
-        if lhs.fontSizeDelta != rhs.fontSizeDelta { changed.append("fontSizeDelta") }
-        if lhs.lineSpacingDelta != rhs.lineSpacingDelta { changed.append("lineSpacingDelta") }
-        if lhs.lineHeightDelta != rhs.lineHeightDelta { changed.append("lineHeightDelta") }
-        if lhs.letterSpacingDelta != rhs.letterSpacingDelta { changed.append("letterSpacingDelta") }
-        if lhs.imagePreviewQuality != rhs.imagePreviewQuality { changed.append("imagePreviewQuality") }
-        if lhs.imageTileSize != rhs.imageTileSize { changed.append("imageTileSize") }
-        if lhs.liveCornerRadii != rhs.liveCornerRadii { changed.append("liveCornerRadii") }
-        if lhs.selectedShapeIDForCornerRadius != rhs.selectedShapeIDForCornerRadius { changed.append("selectedShapeIDForCornerRadius") }
-
-        if !changed.isEmpty {
-            let layerInfo = lhs.objects.first.map { "Layer[\($0.layerIndex)]" } ?? "Empty"
-            print("⚠️ LayerCanvasView \(layerInfo) changed: \(changed.joined(separator: ", "))")
-        }
-
-        return lhs.objects == rhs.objects &&
-        lhs.zoomLevel == rhs.zoomLevel &&
-        lhs.canvasOffset == rhs.canvasOffset &&
-        !selectionChanged &&
-        lhs.viewMode == rhs.viewMode &&
-        lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
-        lhs.liveScaleTransform == rhs.liveScaleTransform &&
-        lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
-        lhs.livePointPositions == rhs.livePointPositions &&
-        lhs.liveHandlePositions == rhs.liveHandlePositions &&
-        lhs.fillDeltaOpacity == rhs.fillDeltaOpacity &&
-        lhs.strokeDeltaOpacity == rhs.strokeDeltaOpacity &&
-        lhs.strokeDeltaWidth == rhs.strokeDeltaWidth &&
-        lhs.activeGradientDelta == rhs.activeGradientDelta &&
-        lhs.activeColorTarget == rhs.activeColorTarget &&
-        lhs.fontSizeDelta == rhs.fontSizeDelta &&
-        lhs.lineSpacingDelta == rhs.lineSpacingDelta &&
-        lhs.lineHeightDelta == rhs.lineHeightDelta &&
-        lhs.letterSpacingDelta == rhs.letterSpacingDelta &&
-        lhs.imagePreviewQuality == rhs.imagePreviewQuality &&
-        lhs.imageTileSize == rhs.imageTileSize &&
-        lhs.liveCornerRadii == rhs.liveCornerRadii &&
-        lhs.selectedShapeIDForCornerRadius == rhs.selectedShapeIDForCornerRadius
-    }
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -1404,7 +1338,6 @@ struct IsolatedLayerView: View {
                 liveCornerRadii: liveCornerRadii,
                 selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
             )
-            .equatable()
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in
