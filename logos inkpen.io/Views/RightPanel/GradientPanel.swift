@@ -396,8 +396,7 @@ struct GradientFillSection: View {
     private func commitGradientChangeWithUndo() {
         guard let newGradient = currentGradient else { return }
 
-        // print("🎨 COMMIT START: activeGradientDelta = \(activeGradientDelta != nil ? "SET" : "nil")")
-        // print("🎨 COMMIT START: currentGradient stops = \(newGradient.stops.map { $0.color })")
+        print("🎨 COMMIT: currentGradient stops = \(newGradient.stops.map { $0.color })")
 
         // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
@@ -411,6 +410,15 @@ struct GradientFillSection: View {
                     newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
                 } else {
                     newOpacities[objectID] = obj.shape.strokeStyle?.opacity ?? 1.0
+                }
+
+                // Debug: print what's currently in snapshot
+                if activeColorTarget == .fill {
+                    if let fillGradient = obj.shape.fillStyle?.gradient {
+                        print("🎨 COMMIT: Snapshot BEFORE has gradient stops = \(fillGradient.stops.map { $0.color })")
+                    } else {
+                        print("🎨 COMMIT: Snapshot BEFORE has NO gradient")
+                    }
                 }
             }
         }
@@ -427,8 +435,32 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
+        print("🎨 COMMIT: Command executed, checking snapshot...")
+        for objectID in selectedObjectIDs {
+            if let obj = document.snapshot.objects[objectID] {
+                if activeColorTarget == .fill {
+                    if let fillGradient = obj.shape.fillStyle?.gradient {
+                        print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
+                    } else {
+                        print("🎨 COMMIT: Snapshot AFTER has NO gradient!")
+                    }
+                }
+            }
+        }
+
         // Clear activeGradientDelta after command executes so canvas uses snapshot
+        print("🎨 COMMIT: Clearing activeGradientDelta")
         activeGradientDelta = nil
+
+        // Trigger layer updates again to force redraw without delta
+        var affectedLayers = Set<Int>()
+        for objectID in selectedObjectIDs {
+            if let obj = document.snapshot.objects[objectID] {
+                affectedLayers.insert(obj.layerIndex)
+            }
+        }
+        print("🎨 COMMIT: Triggering layer updates after clearing delta for layers: \(affectedLayers)")
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
