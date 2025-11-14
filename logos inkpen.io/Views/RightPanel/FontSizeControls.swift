@@ -192,7 +192,7 @@ struct FontSizeControls: View {
                         // During drag: ONLY update letterSpacingDelta for live preview
                         letterSpacingDelta = Double(rounded)
                     }
-                ), in: -10...20, onEditingChanged: { editing in
+                ), in: -5...30, onEditingChanged: { editing in
                     isDraggingLetterSpacing = editing
                     if !editing {
                         // Drag ended: clear delta and commit actual change
