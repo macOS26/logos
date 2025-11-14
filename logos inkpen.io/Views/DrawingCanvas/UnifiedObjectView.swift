@@ -50,7 +50,7 @@ struct CanvasBackgroundView: View {
     }
 }
 
-struct LayerCanvasView: View {
+struct LayerCanvasView: View, Equatable {
     let objects: [VectorObject]
     let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
     let document: VectorDocument  // Need this for cgImageCache!
@@ -79,6 +79,33 @@ struct LayerCanvasView: View {
     let selectedShapeIDForCornerRadius: UUID?
 
     var appState = AppState.shared
+
+    // Equatable implementation to prevent unnecessary redraws
+    static func == (lhs: LayerCanvasView, rhs: LayerCanvasView) -> Bool {
+        lhs.objects == rhs.objects &&
+        lhs.zoomLevel == rhs.zoomLevel &&
+        lhs.canvasOffset == rhs.canvasOffset &&
+        lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
+        lhs.viewMode == rhs.viewMode &&
+        lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
+        lhs.liveScaleTransform == rhs.liveScaleTransform &&
+        lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+        lhs.livePointPositions == rhs.livePointPositions &&
+        lhs.liveHandlePositions == rhs.liveHandlePositions &&
+        lhs.fillDeltaOpacity == rhs.fillDeltaOpacity &&
+        lhs.strokeDeltaOpacity == rhs.strokeDeltaOpacity &&
+        lhs.strokeDeltaWidth == rhs.strokeDeltaWidth &&
+        lhs.activeGradientDelta == rhs.activeGradientDelta &&
+        lhs.activeColorTarget == rhs.activeColorTarget &&
+        lhs.fontSizeDelta == rhs.fontSizeDelta &&
+        lhs.lineSpacingDelta == rhs.lineSpacingDelta &&
+        lhs.lineHeightDelta == rhs.lineHeightDelta &&
+        lhs.letterSpacingDelta == rhs.letterSpacingDelta &&
+        lhs.imagePreviewQuality == rhs.imagePreviewQuality &&
+        lhs.imageTileSize == rhs.imageTileSize &&
+        lhs.liveCornerRadii == rhs.liveCornerRadii &&
+        lhs.selectedShapeIDForCornerRadius == rhs.selectedShapeIDForCornerRadius
+    }
 
     // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
     private var visibleObjects: [VectorObject] {
@@ -1334,6 +1361,7 @@ struct IsolatedLayerView: View {
                 liveCornerRadii: liveCornerRadii,
                 selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
             )
+            .equatable()
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in
