@@ -286,7 +286,7 @@ extension DrawingCanvas {
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)
-            .id(isActiveLayer ? "\(layer.id)-\(currentDragDelta)" : "\(layer.id)")  // Only active layer uses drag delta in ID
+            .id(layer.id)  // Use stable layer ID - drag handled by Equatable
             .allowsHitTesting(isActiveLayer)
         }
     }
