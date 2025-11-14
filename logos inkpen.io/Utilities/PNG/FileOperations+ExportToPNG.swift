@@ -481,6 +481,7 @@ private struct PNGExportView: View {
                     IsolatedLayerView(
                         objectIDs: layer.objectIDs,
                         document: document,
+                        layerUpdateTrigger: 0,
                         zoomLevel: scale,
                         canvasOffset: .zero,
                         selectedObjectIDs: [],

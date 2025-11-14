@@ -1246,6 +1246,7 @@ struct LayerCanvasView: View {
 struct IsolatedLayerView: View {
     let objectIDs: [UUID]  // Changed from objects array
     let document: VectorDocument
+    let layerUpdateTrigger: UInt
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -1335,6 +1336,7 @@ struct IsolatedLayerView: View {
 
     var body: some View {
         // let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+        let _ = layerUpdateTrigger  // Force redraw when layer trigger changes
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(

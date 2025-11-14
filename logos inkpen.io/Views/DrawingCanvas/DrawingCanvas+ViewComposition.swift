@@ -259,6 +259,7 @@ extension DrawingCanvas {
             IsolatedLayerView(
                 objectIDs: layer.objectIDs,
                 document: document,
+                layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id, default: 0],
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedInThisLayer,
