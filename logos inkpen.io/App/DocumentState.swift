@@ -915,6 +915,12 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
+    func pasteInFront() {
+        guard let document = document else { return }
+        ClipboardManager.shared.pasteInFront(to: document)
+        updateAllStates()
+    }
+
     func selectAll() {
         document?.selectAll()
         updateAllStates()

@@ -207,6 +207,12 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("v", modifiers: [.command, .shift])
                     .disabled(documentState?.canPaste != true)
 
+                    Button("Paste in Front") {
+                        documentState?.pasteInFront()
+                    }
+                    .keyboardShortcut("f", modifiers: [.command, .shift])
+                    .disabled(documentState?.canPaste != true)
+
                     Button("Delete") {
                         print("🗑️ Delete button pressed - documentState exists: \(documentState != nil), hasSelection: \(documentState?.hasSelection ?? false)")
                         documentState?.delete()
