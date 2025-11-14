@@ -12,6 +12,8 @@ struct GradientStopColorPicker: View {
 
     @State private var currentColor: VectorColor
     @State private var isDismissing = false
+    @State private var colorDeltaColor: VectorColor? = nil
+    @State private var colorDeltaOpacity: Double? = nil
 
     init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, stopColor: VectorColor, currentGradient: VectorGradient, activeColorTarget: ColorTarget, onColorChanged: @escaping (VectorColor) -> Void, onDismiss: @escaping () -> Void) {
         self.snapshot = snapshot
@@ -33,6 +35,12 @@ struct GradientStopColorPicker: View {
             GlassCloseButton(action: onDismiss)
         }
         .frame(width: 300, height: 480)
+        .onChange(of: colorDeltaColor) { _, newColor in
+            // Update gradient stop color live during RGB slider drag
+            if let newColor = newColor {
+                onColorChanged(newColor)
+            }
+        }
     }
 
     private var loadedContent: some View {
@@ -119,8 +127,8 @@ struct GradientStopColorPicker: View {
                         onSetActiveColor: { color in
                             document.setActiveColor(color)
                         },
-                        colorDeltaColor: .constant(nil), // No preview for gradient stops
-                        colorDeltaOpacity: .constant(nil), // No preview for gradient stops
+                        colorDeltaColor: $colorDeltaColor,
+                        colorDeltaOpacity: $colorDeltaOpacity,
                         sharedColor: $currentColor,
                         disableSetActiveColor: true,
                         onDismiss: onDismiss

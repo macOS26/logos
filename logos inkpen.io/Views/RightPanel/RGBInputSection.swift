@@ -312,33 +312,30 @@ struct RGBInputSection: View {
     private func onUpdateRed(_ value: Double) {
         redValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
-        if !disableSetActiveColor {
-            let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
-        }
+        // Always update colorDelta for live preview (works for both objects and gradient stops)
+        let previewColor = VectorColor.rgb(currentColor)
+        colorDeltaColor = previewColor  // Updates canvas/toolbar/gradient preview
+
         // All other updates happen on drag end
     }
 
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
-        if !disableSetActiveColor {
-            let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
-        }
+        // Always update colorDelta for live preview (works for both objects and gradient stops)
+        let previewColor = VectorColor.rgb(currentColor)
+        colorDeltaColor = previewColor  // Updates canvas/toolbar/gradient preview
+
         // All other updates happen on drag end
     }
 
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
-        if !disableSetActiveColor {
-            let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
-        }
+        // Always update colorDelta for live preview (works for both objects and gradient stops)
+        let previewColor = VectorColor.rgb(currentColor)
+        colorDeltaColor = previewColor  // Updates canvas/toolbar/gradient preview
+
         // All other updates happen on drag end
     }
 
@@ -355,15 +352,18 @@ struct RGBInputSection: View {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults for toolbar display
-            if activeColorTarget == .fill {
-                defaultFillColor = finalColor
-            } else {
-                defaultStrokeColor = finalColor
-            }
+            // Only update document defaults if not disabled (gradient stops use disableSetActiveColor)
+            if !disableSetActiveColor {
+                // Update defaults for toolbar display
+                if activeColorTarget == .fill {
+                    defaultFillColor = finalColor
+                } else {
+                    defaultStrokeColor = finalColor
+                }
 
-            // Update active color (triggers document updates)
-            onSetActiveColor(finalColor)
+                // Update active color (triggers document updates)
+                onSetActiveColor(finalColor)
+            }
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = finalColor
@@ -383,15 +383,18 @@ struct RGBInputSection: View {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults for toolbar display
-            if activeColorTarget == .fill {
-                defaultFillColor = finalColor
-            } else {
-                defaultStrokeColor = finalColor
-            }
+            // Only update document defaults if not disabled (gradient stops use disableSetActiveColor)
+            if !disableSetActiveColor {
+                // Update defaults for toolbar display
+                if activeColorTarget == .fill {
+                    defaultFillColor = finalColor
+                } else {
+                    defaultStrokeColor = finalColor
+                }
 
-            // Update active color (triggers document updates)
-            onSetActiveColor(finalColor)
+                // Update active color (triggers document updates)
+                onSetActiveColor(finalColor)
+            }
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = finalColor
@@ -411,15 +414,18 @@ struct RGBInputSection: View {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults for toolbar display
-            if activeColorTarget == .fill {
-                defaultFillColor = finalColor
-            } else {
-                defaultStrokeColor = finalColor
-            }
+            // Only update document defaults if not disabled (gradient stops use disableSetActiveColor)
+            if !disableSetActiveColor {
+                // Update defaults for toolbar display
+                if activeColorTarget == .fill {
+                    defaultFillColor = finalColor
+                } else {
+                    defaultStrokeColor = finalColor
+                }
 
-            // Update active color (triggers document updates)
-            onSetActiveColor(finalColor)
+                // Update active color (triggers document updates)
+                onSetActiveColor(finalColor)
+            }
 
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = finalColor
