@@ -315,14 +315,7 @@ struct RGBInputSection: View {
         // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
-
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
-            if activeColorTarget == .fill {
-                defaultFillColor = previewColor
-            } else {
-                defaultStrokeColor = previewColor
-            }
+            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
         }
         // All other updates happen on drag end
     }
@@ -333,14 +326,7 @@ struct RGBInputSection: View {
         // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
-
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
-            if activeColorTarget == .fill {
-                defaultFillColor = previewColor
-            } else {
-                defaultStrokeColor = previewColor
-            }
+            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
         }
         // All other updates happen on drag end
     }
@@ -351,14 +337,7 @@ struct RGBInputSection: View {
         // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
-
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
-            if activeColorTarget == .fill {
-                defaultFillColor = previewColor
-            } else {
-                defaultStrokeColor = previewColor
-            }
+            colorDeltaColor = previewColor  // Updates both canvas AND toolbar (via ColorSwatchGrid)
         }
         // All other updates happen on drag end
     }
@@ -369,38 +348,25 @@ struct RGBInputSection: View {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            // print("HELLO")
-            // Clear colorDelta and actually update objects
+            // Drag ended - commit changes
+            let finalColor = VectorColor.rgb(currentColor)
+
+            // Clear deltas
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorRed(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
+            // Update defaults for toolbar display
+            if activeColorTarget == .fill {
+                defaultFillColor = finalColor
+            } else {
+                defaultStrokeColor = finalColor
+            }
 
-            // Update active color (toolbar display)
-            let finalColor = VectorColor.rgb(currentColor)
+            // Update active color (triggers document updates)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBRedLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
-
             // Update sharedColor to sync with other color sections (HSB, etc.)
-            sharedColor = VectorColor.rgb(currentColor)
+            sharedColor = finalColor
         }
     }
 
@@ -410,37 +376,25 @@ struct RGBInputSection: View {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            // Clear colorDelta and actually update objects
+            // Drag ended - commit changes
+            let finalColor = VectorColor.rgb(currentColor)
+
+            // Clear deltas
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorGreen(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
+            // Update defaults for toolbar display
+            if activeColorTarget == .fill {
+                defaultFillColor = finalColor
+            } else {
+                defaultStrokeColor = finalColor
+            }
 
-            // Update active color (toolbar display)
-            let finalColor = VectorColor.rgb(currentColor)
+            // Update active color (triggers document updates)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBGreenLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
-
             // Update sharedColor to sync with other color sections (HSB, etc.)
-            sharedColor = VectorColor.rgb(currentColor)
+            sharedColor = finalColor
         }
     }
 
@@ -450,37 +404,25 @@ struct RGBInputSection: View {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            // Clear colorDelta and actually update objects
+            // Drag ended - commit changes
+            let finalColor = VectorColor.rgb(currentColor)
+
+            // Clear deltas
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorBlue(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
+            // Update defaults for toolbar display
+            if activeColorTarget == .fill {
+                defaultFillColor = finalColor
+            } else {
+                defaultStrokeColor = finalColor
+            }
 
-            // Update active color (toolbar display)
-            let finalColor = VectorColor.rgb(currentColor)
+            // Update active color (triggers document updates)
             onSetActiveColor(finalColor)
 
-            // Update selected objects
-            // TODO: Re-enable when RGB methods are available
-            // let affectedLayers = PaintSelectionOperations.updateRGBBlueLive(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     snapshot: &snapshot,
-            //     selectedObjectIDs: selectedObjectIDs,
-            //     defaultFillOpacity: defaultFillOpacity,
-            //     defaultStrokeOpacity: defaultStrokeOpacity
-            // )
-            // onTriggerLayerUpdates(affectedLayers)
-
             // Update sharedColor to sync with other color sections (HSB, etc.)
-            sharedColor = VectorColor.rgb(currentColor)
+            sharedColor = finalColor
         }
     }
 }
