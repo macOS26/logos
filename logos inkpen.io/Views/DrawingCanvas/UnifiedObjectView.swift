@@ -50,12 +50,90 @@ struct CanvasBackgroundView: View {
     }
 }
 
+/// Parent view that applies offset and zoom to ALL child layers at once
+/// This prevents each layer from redrawing during pan/zoom operations
+struct MasterViewLayer: View {
+    let layers: [LayerRenderData]
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+
+    var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("🎨 MasterViewLayer: rendering with zoom=\(zoomLevel), offset=\(canvasOffset)")
+
+        ZStack(alignment: .topLeading) {
+            // Render each layer WITHOUT applying offset/zoom internally
+            ForEach(layers) { layerData in
+                LayerCanvasView(
+                    objects: layerData.objects,
+                    document: layerData.document,
+                    documentURL: layerData.documentURL,
+                    selectedObjectIDs: layerData.selectedObjectIDs,
+                    viewMode: layerData.viewMode,
+                    dragPreviewDelta: layerData.dragPreviewDelta,
+                    liveScaleTransform: layerData.liveScaleTransform,
+                    dragPreviewTrigger: layerData.dragPreviewTrigger,
+                    livePointPositions: layerData.livePointPositions,
+                    liveHandlePositions: layerData.liveHandlePositions,
+                    fillDeltaOpacity: layerData.fillDeltaOpacity,
+                    strokeDeltaOpacity: layerData.strokeDeltaOpacity,
+                    strokeDeltaWidth: layerData.strokeDeltaWidth,
+                    activeGradientDelta: layerData.activeGradientDelta,
+                    activeColorTarget: layerData.activeColorTarget,
+                    fontSizeDelta: layerData.fontSizeDelta,
+                    lineSpacingDelta: layerData.lineSpacingDelta,
+                    lineHeightDelta: layerData.lineHeightDelta,
+                    letterSpacingDelta: layerData.letterSpacingDelta,
+                    imagePreviewQuality: layerData.imagePreviewQuality,
+                    imageTileSize: layerData.imageTileSize,
+                    liveCornerRadii: layerData.liveCornerRadii,
+                    selectedShapeIDForCornerRadius: layerData.selectedShapeIDForCornerRadius,
+                    parentZoom: zoomLevel  // Pass for stroke width calculations only
+                )
+                .opacity(layerData.opacity)
+                .blendMode(layerData.blendMode)
+            }
+        }
+        .scaleEffect(zoomLevel, anchor: .topLeading)  // Apply zoom ONCE to all children
+        .offset(x: canvasOffset.x, y: canvasOffset.y)  // Apply offset ONCE to all children
+    }
+}
+
+struct LayerRenderData: Identifiable {
+    let layerID: UUID
+    let objects: [VectorObject]
+    let document: VectorDocument
+    let documentURL: URL?
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let dragPreviewDelta: CGPoint
+    let liveScaleTransform: CGAffineTransform
+    let dragPreviewTrigger: Bool
+    let livePointPositions: [PointID: CGPoint]
+    let liveHandlePositions: [HandleID: CGPoint]
+    let fillDeltaOpacity: Double?
+    let strokeDeltaOpacity: Double?
+    let strokeDeltaWidth: Double?
+    let activeGradientDelta: Binding<VectorGradient?>
+    let activeColorTarget: ColorTarget
+    let fontSizeDelta: Double?
+    let lineSpacingDelta: Double?
+    let lineHeightDelta: Double?
+    let letterSpacingDelta: Double?
+    let imagePreviewQuality: Double
+    let imageTileSize: Int
+    let liveCornerRadii: [Double]
+    let selectedShapeIDForCornerRadius: UUID?
+    let opacity: Double
+    let blendMode: SwiftUI.BlendMode
+
+    var id: UUID { layerID }
+}
+
 struct LayerCanvasView: View {
     let objects: [VectorObject]
     let document: VectorDocument  // Need this for cgImageCache and mask lookups
     let documentURL: URL?  // For resolving relative image paths
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
@@ -76,6 +154,7 @@ struct LayerCanvasView: View {
     let imageTileSize: Int
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
+    let parentZoom: Double  // For stroke width calculations in keyline mode
 
     var appState = AppState.shared
 
@@ -192,19 +271,9 @@ struct LayerCanvasView: View {
         let _ = Self._printChanges()
         let _ = print("📊 LayerCanvasView \(layerInfo): rendering \(objects.count) objects")
         Canvas { context, size in
-//            _ = objectUpdateTrigger
-//            _ = activeGradientDelta  // Force redraw when gradient changes
-//            _ = fillDeltaOpacity     // Force redraw when fill opacity changes
-//            _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
-//            _ = strokeDeltaWidth     // Force redraw when stroke width changes
-//            _ = fontSizeDelta        // Force redraw when font size changes
-//            _ = imagePreviewQuality  // Force redraw when image quality changes
-//            _ = imageTileSize        // Force redraw when tile size changes
-
-            // Apply base canvas transform (no drag delta)
+            // Parent MasterViewLayer handles offset and zoom
+            // We only apply identity transform here
             let baseTransform = CGAffineTransform.identity
-                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                .scaledBy(x: zoomLevel, y: zoomLevel)
 
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
@@ -473,41 +542,6 @@ struct LayerCanvasView: View {
         }
     }
 
-    // MARK: - Viewport Culling (O(1) operations)
-
-    private func calculateViewportBounds(size: CGSize) -> CGRect {
-        // Convert viewport to document space with padding for smooth scrolling
-        let padding: CGFloat = 200.0 // Extra padding to preload nearby objects
-        let minX = (-canvasOffset.x - padding) / zoomLevel
-        let minY = (-canvasOffset.y - padding) / zoomLevel
-        let maxX = (size.width - canvasOffset.x + padding) / zoomLevel
-        let maxY = (size.height - canvasOffset.y + padding) / zoomLevel
-
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-    }
-
-    private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
-        // Fast AABB intersection test (O(1))
-        return bounds.intersects(viewport)
-    }
-
-    private func isObjectInViewportSIMD(_ bounds: CGRect, viewport: CGRect) -> Bool {
-        // SIMD-accelerated AABB intersection test (O(1), vectorized)
-        // Pack bounds into SIMD vectors for parallel comparison
-        let objMin = SIMD2<Double>(bounds.minX, bounds.minY)
-        let objMax = SIMD2<Double>(bounds.maxX, bounds.maxY)
-        let vpMin = SIMD2<Double>(viewport.minX, viewport.minY)
-        let vpMax = SIMD2<Double>(viewport.maxX, viewport.maxY)
-
-        // Vectorized intersection test (2 comparisons in parallel)
-        // Check overlap: objMax >= vpMin AND objMin <= vpMax
-        let overlapMin = objMax .>= vpMin
-        let overlapMax = objMin .<= vpMax
-
-        // Combine results: all components must overlap (reduce with AND)
-        return all(overlapMin) && all(overlapMax)
-    }
-
     // MARK: - Optimized Shape Rendering
 
     private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
@@ -561,7 +595,7 @@ struct LayerCanvasView: View {
 
                 // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
                 if viewMode == .keyline {
-                    layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
+                    layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / parentZoom)
                 } else if let strokeStyle = shape.strokeStyle {
                     // Use delta values if available and shape is selected
                     let isSelected = selectedObjectIDs.contains(shape.id)
@@ -645,7 +679,7 @@ struct LayerCanvasView: View {
             // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
             // Stroke width stays constant regardless of scale transform
             if viewMode == .keyline {
-                context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
+                context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / parentZoom)
             } else if let strokeStyle = shape.strokeStyle {
                 // Use delta values if available and shape is selected
                 let isSelected = selectedObjectIDs.contains(shape.id)
@@ -1245,6 +1279,7 @@ struct IsolatedLayerView: View {
     let imageTileSize: Int
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
+    let parentZoomLevel: Double  // For stroke width calculations
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1315,8 +1350,6 @@ struct IsolatedLayerView: View {
                 objects: objects,
                 document: document,
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
-                zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,
@@ -1336,8 +1369,11 @@ struct IsolatedLayerView: View {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize,
                 liveCornerRadii: liveCornerRadii,
-                selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
+                selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius,
+                parentZoom: parentZoomLevel
             )
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in

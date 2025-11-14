@@ -196,9 +196,23 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
+    private func renderLayer(
+        layerIndex: Int,
+        layer: Layer,
+        geometry: GeometryProxy,
+        fontSizeDelta: Double?,
+        lineSpacingDelta: Double?,
+        lineHeightDelta: Double?,
+        letterSpacingDelta: Double?,
+        imagePreviewQuality: Double,
+        imageTileSize: Int,
+        parentZoomLevel: Double,
+        applyTransforms: Bool
+    ) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
         let layerBlendMode = layer.blendMode
+        let effectiveZoom = applyTransforms ? parentZoomLevel : 1.0
+        let effectiveOffset: CGPoint = applyTransforms ? canvasOffset : .zero
 
         if layer.name == "Pasteboard" {
             PasteboardBackgroundView(
@@ -210,8 +224,8 @@ extension DrawingCanvas {
                     x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
-                zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset  // Canvas context needs absolute position
+                zoomLevel: effectiveZoom,
+                canvasOffset: effectiveOffset
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -220,8 +234,8 @@ extension DrawingCanvas {
                 CanvasBackgroundView(
                     canvasSize: document.settings.sizeInPoints,
                     backgroundColor: document.settings.backgroundColor.color,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset  // Canvas context needs absolute position
+                    zoomLevel: effectiveZoom,
+                    canvasOffset: effectiveOffset
                 )
 
                 if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
@@ -229,8 +243,8 @@ extension DrawingCanvas {
                         gridSpacing: document.settings.gridSpacing,
                         canvasSize: document.settings.sizeInPoints,
                         unit: document.settings.unit,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset  // Canvas context needs absolute position
+                        zoomLevel: parentZoomLevel,  // Grid needs parent zoom for line width
+                        canvasOffset: effectiveOffset
                     )
                     .allowsHitTesting(false)
                 }
@@ -259,8 +273,8 @@ extension DrawingCanvas {
             IsolatedLayerView(
                 objectIDs: layer.objectIDs,
                 document: document,
-                zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                zoomLevel: effectiveZoom,
+                canvasOffset: effectiveOffset,
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
@@ -282,10 +296,9 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize,
                 liveCornerRadii: liveCornerRadii,
-                selectedShapeIDForCornerRadius: selectedShapeInThisLayer
+                selectedShapeIDForCornerRadius: selectedShapeInThisLayer,
+                parentZoomLevel: parentZoomLevel  // Pass parent zoom for stroke width
             )
-            // .scaleEffect(liveZoomDelta, anchor: .topLeading)
-            // .offset(x: livePanDelta.x, y: livePanDelta.y)
             .id(layer.id)  // Use stable layer ID - drag handled by Equatable
             .allowsHitTesting(isActiveLayer)
         }
@@ -293,12 +306,29 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
-        // Render layers - canvasOffset handled per-layer for Canvas drawing contexts
-        ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
-            if layer.isVisible {
-                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+        // Apply zoom and offset at parent level ONCE instead of per-layer
+        // This prevents all layers from redrawing during pan/zoom
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
+                if layer.isVisible {
+                    renderLayer(
+                        layerIndex: layerIndex,
+                        layer: layer,
+                        geometry: geometry,
+                        fontSizeDelta: fontSizeDelta,
+                        lineSpacingDelta: lineSpacingDelta,
+                        lineHeightDelta: lineHeightDelta,
+                        letterSpacingDelta: letterSpacingDelta,
+                        imagePreviewQuality: imagePreviewQuality,
+                        imageTileSize: imageTileSize,
+                        parentZoomLevel: zoomLevel,  // Pass for stroke width calc
+                        applyTransforms: false  // Don't apply in children
+                    )
+                }
             }
         }
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
     @ViewBuilder
