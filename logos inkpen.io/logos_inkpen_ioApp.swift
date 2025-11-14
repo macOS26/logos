@@ -1194,6 +1194,76 @@ class ClipboardManager {
             Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }
     }
+
+    func pasteInFront(to document: VectorDocument) {
+        guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
+
+        do {
+            let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
+
+            guard let layerIndex = document.selectedLayerIndex else { return }
+
+            if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
+                Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
+                return
+            }
+
+            if layerIndex < document.snapshot.layers.count {
+                let layerName = document.snapshot.layers[layerIndex].name
+                if layerName == "Canvas" || layerName == "Pasteboard" {
+                    Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
+                    return
+                }
+            }
+
+            var objectsToAdd: [VectorObject] = []
+            var newObjectIDs: Set<UUID> = []
+
+            for shape in clipboardData.shapes {
+                let newShape = regenerateUUIDs(for: shape)
+                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
+                objectsToAdd.append(unifiedObject)
+                newObjectIDs.insert(newShape.id)
+            }
+
+            for text in clipboardData.texts {
+                var newText = text
+                newText.id = UUID()
+                newText.layerIndex = layerIndex
+                let textShape = VectorShape.from(newText)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+                objectsToAdd.append(unifiedObject)
+                newObjectIDs.insert(newText.id)
+            }
+
+            if !objectsToAdd.isEmpty {
+                // Store current tool before executing command
+                let currentTool = document.viewState.currentTool
+
+                // Insert after the current selection, or at front if no selection
+                let position: AddObjectAtPositionCommand.InsertPosition
+                if !document.viewState.selectedObjectIDs.isEmpty {
+                    position = .afterSelection(document.viewState.selectedObjectIDs)
+                } else {
+                    position = .front
+                }
+
+                let command = AddObjectAtPositionCommand(objects: objectsToAdd, position: position)
+                document.commandManager.execute(command)
+
+                // If not already on a selection tool, switch to selection tool
+                if currentTool != .selection && currentTool != .directSelection {
+                    document.viewState.currentTool = .selection
+                }
+
+                // Set selection AFTER tool switch to ensure it's preserved
+                document.viewState.selectedObjectIDs = newObjectIDs
+            }
+
+        } catch {
+            Log.error("❌ Failed to paste in front: \(error)", category: .error)
+        }
+    }
 }
 
 struct ClipboardData: Codable {
