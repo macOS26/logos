@@ -448,19 +448,9 @@ struct GradientFillSection: View {
             }
         }
 
-        // Clear activeGradientDelta after command executes so canvas uses snapshot
-        print("🎨 COMMIT: Clearing activeGradientDelta")
-        activeGradientDelta = nil
-
-        // Trigger layer updates again to force redraw without delta
-        var affectedLayers = Set<Int>()
-        for objectID in selectedObjectIDs {
-            if let obj = document.snapshot.objects[objectID] {
-                affectedLayers.insert(obj.layerIndex)
-            }
-        }
-        print("🎨 COMMIT: Triggering layer updates after clearing delta for layers: \(affectedLayers)")
-        document.triggerLayerUpdates(for: affectedLayers)
+        // DON'T clear activeGradientDelta - snapshot now has the same gradient
+        // Clearing causes blank layer issue
+        print("🎨 COMMIT: Leaving activeGradientDelta set (snapshot matches)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {

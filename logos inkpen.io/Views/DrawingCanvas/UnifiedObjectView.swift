@@ -209,7 +209,9 @@ struct LayerCanvasView: View {
 
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
+            print("🎨 RENDER: visibleObjects.count = \(visibleObjects.count)")
             for object in visibleObjects {
+                print("🎨 RENDER: Rendering object \(object.id)")
                 let isSelected = selectedObjectIDs.contains(object.id)
 
                 // Apply selection transform (with drag delta) for selected objects
@@ -538,6 +540,7 @@ struct LayerCanvasView: View {
                 layerContext.clip(to: Path(maskPath))
 
                 // Render fill (O(1) for solid, O(n) for gradient where n = stops)
+                print("🎨 RENDER: Shape \(shape.id), viewMode=\(viewMode), hasFillStyle=\(shape.fillStyle != nil)")
                 if viewMode == .color, let fillStyle = shape.fillStyle {
                     // Use delta opacity if available and shape is selected
                     let effectiveFillOpacity = (fillDeltaOpacity != nil && selectedObjectIDs.contains(shape.id))
@@ -548,10 +551,12 @@ struct LayerCanvasView: View {
                     // Check for activeGradientDelta FIRST (for live preview during drag)
                     // ONLY apply gradient delta if activeColorTarget is .fill
                     if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
+                        print("🎨 RENDER: Using activeGradientDelta for shape \(shape.id)")
                         // Create a fillStyle with activeGradientDelta and opacity
                         let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if let gradient = fillStyle.gradient {
+                        print("🎨 RENDER: Using snapshot gradient for shape \(shape.id), stops = \(gradient.stops.map { $0.color })")
                         // Use gradient from snapshot
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
