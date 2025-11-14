@@ -492,6 +492,7 @@ private struct PNGExportView: View {
                         layerBlendMode: layer.blendMode,
                         livePointPositions: [:],
                         liveHandlePositions: [:],
+                        colorDeltaColor: nil,
                         fillDeltaOpacity: nil,
                         strokeDeltaOpacity: nil,
                         strokeDeltaWidth: nil,

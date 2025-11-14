@@ -63,6 +63,7 @@ struct LayerCanvasView: View {
     let dragPreviewTrigger: Bool
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
+    let colorDeltaColor: VectorColor?
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
@@ -1232,6 +1233,7 @@ struct IsolatedLayerView: View {
     let layerBlendMode: BlendMode
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
+    let colorDeltaColor: VectorColor?
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
@@ -1324,6 +1326,7 @@ struct IsolatedLayerView: View {
                 dragPreviewTrigger: dragPreviewTrigger,
                 livePointPositions: livePointPositions,
                 liveHandlePositions: liveHandlePositions,
+                colorDeltaColor: colorDeltaColor,
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,

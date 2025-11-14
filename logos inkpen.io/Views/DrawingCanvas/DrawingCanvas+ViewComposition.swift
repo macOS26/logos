@@ -270,6 +270,7 @@ extension DrawingCanvas {
                 layerBlendMode: layerBlendMode,
                 livePointPositions: livePointPositions,
                 liveHandlePositions: liveHandlePositions,
+                colorDeltaColor: colorDeltaColor,
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
