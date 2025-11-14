@@ -32,9 +32,6 @@ class MetalSpatialIndex {
     private var objectIDs: [UUID] = []
     private var objectIDToIndex: [UUID: UInt32] = [:]
 
-    // Track pending rebuild command buffer
-    private var pendingRebuildBuffer: MTLCommandBuffer?
-
     init?() {
         guard let metalDevice = MTLCreateSystemDefaultDevice() else {
             print("❌ Metal device not available")
@@ -273,22 +270,11 @@ class MetalSpatialIndex {
 
         computeEncoder.endEncoding()
         commandBuffer.commit()
-
-        // Store reference to pending buffer for queries to wait on
-        pendingRebuildBuffer = commandBuffer
-
-        // Don't waitUntilCompleted() here - allows main thread to continue
-        // Queries will wait for this buffer before reading results
+        commandBuffer.waitUntilCompleted()
     }
 
     /// Get candidate objects at a specific point (GPU query)
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
-        // Wait for any pending rebuild to complete before querying
-        if let pendingBuffer = pendingRebuildBuffer {
-            pendingBuffer.waitUntilCompleted()
-            pendingRebuildBuffer = nil
-        }
-
         guard let gridCellCountsBuffer = gridCellCountsBuffer,
               let gridCellObjectsBuffer = gridCellObjectsBuffer,
               let paramsBuffer = paramsBuffer else {
@@ -361,12 +347,6 @@ class MetalSpatialIndex {
 
     /// Get candidate objects in a rectangle (GPU query)
     func candidateObjectIDs(in rect: CGRect) -> Set<UUID> {
-        // Wait for any pending rebuild to complete before querying
-        if let pendingBuffer = pendingRebuildBuffer {
-            pendingBuffer.waitUntilCompleted()
-            pendingRebuildBuffer = nil
-        }
-
         guard let gridCellCountsBuffer = gridCellCountsBuffer,
               let gridCellObjectsBuffer = gridCellObjectsBuffer,
               let paramsBuffer = paramsBuffer else {
