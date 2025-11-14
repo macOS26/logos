@@ -60,8 +60,25 @@ extension DrawingCanvas {
                 if !shape.isRoundedRectangle {
                 }
 
+                // Track previous selection to trigger only affected layers
+                let previousSelection = document.viewState.selectedObjectIDs
+
                 document.viewState.selectedObjectIDs = [shape.id]
                 isCornerRadiusEditMode = true
+
+                // Trigger updates for affected layers only
+                var affectedLayers = Set<Int>()
+                // Add layers from previously selected objects
+                for objectID in previousSelection {
+                    if let object = document.snapshot.objects[objectID] {
+                        affectedLayers.insert(object.layerIndex)
+                    }
+                }
+                // Add layer from newly selected object
+                if let object = document.snapshot.objects[shape.id] {
+                    affectedLayers.insert(object.layerIndex)
+                }
+                document.triggerLayerUpdates(for: affectedLayers)
 
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
@@ -98,6 +115,9 @@ extension DrawingCanvas {
 
             let objectToSelect = hitObject
 
+            // Track previous selection to trigger only affected layers
+            let previousSelection = document.viewState.selectedObjectIDs
+
             if isShiftPressed {
                 document.viewState.selectedObjectIDs.insert(objectToSelect.id)
             } else if isCommandPressed {
@@ -109,6 +129,22 @@ extension DrawingCanvas {
             } else {
                 document.viewState.selectedObjectIDs = [objectToSelect.id]
             }
+
+            // Trigger updates for affected layers only
+            var affectedLayers = Set<Int>()
+            // Add layers from previously selected objects
+            for objectID in previousSelection {
+                if let object = document.snapshot.objects[objectID] {
+                    affectedLayers.insert(object.layerIndex)
+                }
+            }
+            // Add layers from newly selected objects
+            for objectID in document.viewState.selectedObjectIDs {
+                if let object = document.snapshot.objects[objectID] {
+                    affectedLayers.insert(object.layerIndex)
+                }
+            }
+            document.triggerLayerUpdates(for: affectedLayers)
 
             if case .text = objectToSelect.objectType {
                 document.viewState.transformOrigin = .topLeft
@@ -126,7 +162,19 @@ extension DrawingCanvas {
         } else {
             // Nothing was hit - deselect unless modifier keys pressed
             if !isShiftPressed && !isCommandPressed {
+                // Track previous selection to trigger only affected layers
+                let previousSelection = document.viewState.selectedObjectIDs
+
                 document.viewState.selectedObjectIDs = []
+
+                // Trigger updates for previously selected layers only
+                var affectedLayers = Set<Int>()
+                for objectID in previousSelection {
+                    if let object = document.snapshot.objects[objectID] {
+                        affectedLayers.insert(object.layerIndex)
+                    }
+                }
+                document.triggerLayerUpdates(for: affectedLayers)
 
                 // Clear local selection state
                 selectedPoints.removeAll()
