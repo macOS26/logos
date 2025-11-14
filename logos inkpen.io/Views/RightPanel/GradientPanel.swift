@@ -367,6 +367,9 @@ struct GradientFillSection: View {
         dragStartGradients.removeAll()
         dragStartOpacities.removeAll()
 
+        // Also clear activeGradientDelta at the start of editing
+        activeGradientDelta = nil
+
         let isStroke = activeColorTarget == .stroke
 
         for objectID in selectedObjectIDs {
@@ -399,6 +402,29 @@ struct GradientFillSection: View {
         // Check if gradient actually changed - if not, skip commit
         if dragStartGradients.isEmpty {
             print("🎨 COMMIT: Skipping - no gradient changes captured")
+            activeGradientDelta = nil
+            return
+        }
+
+        // Check if gradient actually changed by comparing with dragStartGradients
+        var hasChanges = false
+        for (objectID, oldGradient) in dragStartGradients {
+            if let old = oldGradient {
+                // Compare stops only (most common change)
+                if old.stops != newGradient.stops {
+                    hasChanges = true
+                    break
+                }
+            } else {
+                // Old gradient was nil, so adding a new gradient is a change
+                hasChanges = true
+                break
+            }
+        }
+
+        if !hasChanges {
+            print("🎨 COMMIT: Skipping - gradient did not change")
+            activeGradientDelta = nil
             return
         }
 
