@@ -6,13 +6,14 @@ struct PasteboardBackgroundView: View {
     let pasteboardOrigin: CGPoint
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
 
     var body: some View {
         let _ = Self._printChanges()
         Canvas { context, size in
             let scaledRect = CGRect(
-                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
-                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y,
+                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x + livePanDelta.x,
+                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y + livePanDelta.y,
                 width: pasteboardSize.width * zoomLevel,
                 height: pasteboardSize.height * zoomLevel
             )
@@ -31,12 +32,13 @@ struct CanvasBackgroundView: View {
     let backgroundColor: Color
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
 
     var body: some View {
         Canvas { context, size in
             let scaledRect = CGRect(
-                x: canvasOffset.x,
-                y: canvasOffset.y,
+                x: canvasOffset.x + livePanDelta.x,
+                y: canvasOffset.y + livePanDelta.y,
                 width: canvasSize.width * zoomLevel,
                 height: canvasSize.height * zoomLevel
             )
@@ -56,6 +58,7 @@ struct LayerCanvasView: View {
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
@@ -201,9 +204,9 @@ struct LayerCanvasView: View {
 //            _ = imagePreviewQuality  // Force redraw when image quality changes
 //            _ = imageTileSize        // Force redraw when tile size changes
 
-            // Apply base canvas transform (no drag delta)
+            // Apply base canvas transform (includes live pan delta for smooth panning)
             let baseTransform = CGAffineTransform.identity
-                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+                .translatedBy(x: canvasOffset.x + livePanDelta.x, y: canvasOffset.y + livePanDelta.y)
                 .scaledBy(x: zoomLevel, y: zoomLevel)
 
             // Render objects in original stacking order
@@ -1223,6 +1226,7 @@ struct IsolatedLayerView: View {
     let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
@@ -1317,6 +1321,7 @@ struct IsolatedLayerView: View {
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
+                livePanDelta: livePanDelta,
                 selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,
