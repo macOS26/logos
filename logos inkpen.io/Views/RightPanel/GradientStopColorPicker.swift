@@ -31,15 +31,19 @@ struct GradientStopColorPicker: View {
         ZStack(alignment: .topTrailing) {
             loadedContent
                 .onChange(of: colorDeltaColor) { _, newColor in
-                    // During RGB slider drag: update activeGradientDelta for live preview
+                    // During RGB slider drag: only update local state for color picker UI preview
+                    // Don't call onColorChanged (which triggers full layer redraws)
                     if let newColor = newColor {
-                        currentColor = newColor  // Sync currentColor with RGB changes
-                        onColorChanged(newColor)  // Calls updateStopColor -> sets activeGradientDelta
+                        currentColor = newColor  // Update local preview only
                     }
                 }
 
             // X button always visible
-            GlassCloseButton(action: onDismiss)
+            GlassCloseButton(action: {
+                // Apply final color when closing
+                onColorChanged(currentColor)
+                onDismiss()
+            })
         }
         .frame(width: 300, height: 480)
     }
