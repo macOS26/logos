@@ -75,6 +75,8 @@ struct LayerCanvasView: View {
     let letterSpacingDelta: Double?
     let imagePreviewQuality: Double
     let imageTileSize: Int
+    let liveCornerRadii: [Double]
+    let selectedShapeIDForCornerRadius: UUID?
 
     var appState = AppState.shared
 
@@ -159,6 +161,29 @@ struct LayerCanvasView: View {
         return modifiedShape
     }
 
+    // Apply live corner radii to a shape for rendering preview
+    private func applyLiveCornerRadii(to shape: VectorShape) -> VectorShape {
+        // Only apply if this is the selected shape and we have live radii
+        guard !liveCornerRadii.isEmpty,
+              selectedShapeIDForCornerRadius == shape.id else {
+            return shape
+        }
+
+        var modifiedShape = shape
+        modifiedShape.cornerRadii = liveCornerRadii
+
+        // Rebuild the path with the new corner radii
+        let currentBounds = shape.path.cgPath.boundingBox
+        let newPath = createRoundedRectPathWithIndividualCorners(
+            rect: currentBounds,
+            cornerRadii: liveCornerRadii
+        )
+        modifiedShape.path = newPath
+        modifiedShape.updateBounds()
+
+        return modifiedShape
+    }
+
     var body: some View {
         let _ = Self._printChanges()
         Canvas { context, size in
@@ -230,7 +255,7 @@ struct LayerCanvasView: View {
                             // Render mask outline
                             context.transform = maskTransform
                             let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                            let liveMaskShape = applyLivePositions(to: maskShape)
+                            let liveMaskShape = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                             renderShape(liveMaskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
 
                             // Then render content shapes clipped by the mask
@@ -248,8 +273,8 @@ struct LayerCanvasView: View {
 
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                                let liveContentShape = applyLivePositions(to: contentShape)
-                                let liveMaskForClip = applyLivePositions(to: maskShape)
+                                let liveContentShape = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
+                                let liveMaskForClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
 
                                 // Render with separate mask and content transforms
                                 context.drawLayer { layerContext in
@@ -280,7 +305,7 @@ struct LayerCanvasView: View {
                                     context.transform = parentTransform  // Preserve parent's drag delta
                                 }
                                 let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                                let liveMaskShapeNoClip = applyLivePositions(to: maskShape)
+                                let liveMaskShapeNoClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                                 renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
                             for contentShape in contentShapes {
@@ -393,7 +418,7 @@ struct LayerCanvasView: View {
                             return maskObject.shape
                         }()
 
-                        let liveChildShape = applyLivePositions(to: childShape)
+                        let liveChildShape = applyLiveCornerRadii(to: applyLivePositions(to: childShape))
 
                         if VectorText.from(liveChildShape) != nil {
                             renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
@@ -413,7 +438,7 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
-                    let liveShape = applyLivePositions(to: shape)
+                    let liveShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     renderShape(liveShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
 
                 case .image(let shape):
@@ -424,7 +449,7 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
-                    let liveImageShape = applyLivePositions(to: shape)
+                    let liveImageShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     renderImage(liveImageShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape, canvasSize: size)
 
                 case .text(let shape):
@@ -435,7 +460,7 @@ struct LayerCanvasView: View {
                         }
                         return maskObject.shape
                     }()
-                    let liveTextShape = applyLivePositions(to: shape)
+                    let liveTextShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
                     renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: maskShape)
                 }
@@ -1213,6 +1238,8 @@ struct IsolatedLayerView: View {
     let letterSpacingDelta: Double?
     let imagePreviewQuality: Double
     let imageTileSize: Int
+    let liveCornerRadii: [Double]
+    let selectedShapeIDForCornerRadius: UUID?
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {
@@ -1303,7 +1330,9 @@ struct IsolatedLayerView: View {
                 lineHeightDelta: lineHeightDelta,
                 letterSpacingDelta: letterSpacingDelta,
                 imagePreviewQuality: imagePreviewQuality,
-                imageTileSize: imageTileSize
+                imageTileSize: imageTileSize,
+                liveCornerRadii: liveCornerRadii,
+                selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
             )
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)

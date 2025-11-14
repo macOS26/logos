@@ -270,7 +270,9 @@ extension DrawingCanvas {
                 lineHeightDelta: lineHeightDelta,
                 letterSpacingDelta: letterSpacingDelta,
                 imagePreviewQuality: imagePreviewQuality,
-                imageTileSize: imageTileSize
+                imageTileSize: imageTileSize,
+                liveCornerRadii: liveCornerRadii,
+                selectedShapeIDForCornerRadius: getSelectedRectangleShape()?.id
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)

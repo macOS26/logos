@@ -502,7 +502,9 @@ private struct PNGExportView: View {
                         lineHeightDelta: nil,
                         letterSpacingDelta: nil,
                         imagePreviewQuality: UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0,
-                        imageTileSize: UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
+                        imageTileSize: UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512,
+                        liveCornerRadii: [],
+                        selectedShapeIDForCornerRadius: nil
                     )
                 }
             }
