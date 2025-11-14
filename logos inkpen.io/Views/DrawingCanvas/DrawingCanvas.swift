@@ -217,9 +217,10 @@ struct DrawingCanvas: View {
                     }
 
                     if !changedLayerIDs.isEmpty {
-                        // print("🔷 Spatial index: rebuilding \(changedLayerIDs.count) layer(s)")
-                        // Metal spatial index uses full rebuild (GPU parallel processing is fast)
+                        let start = CFAbsoluteTimeGetCurrent()
                         spatialIndex.rebuild(from: document.snapshot)
+                        let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
+                        print("🔷 Spatial index rebuild: \(String(format: "%.1f", duration))ms for \(document.snapshot.objects.count) objects")
                         rebuildLockedObjectsCache()
                     }
                 }
