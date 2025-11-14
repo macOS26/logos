@@ -211,7 +211,7 @@ extension DrawingCanvas {
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
+                canvasOffset: .zero  // Applied at parent ZStack level
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -221,7 +221,7 @@ extension DrawingCanvas {
                     canvasSize: document.settings.sizeInPoints,
                     backgroundColor: document.settings.backgroundColor.color,
                     zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset
+                    canvasOffset: .zero  // Applied at parent ZStack level
                 )
 
                 if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
@@ -230,7 +230,7 @@ extension DrawingCanvas {
                         canvasSize: document.settings.sizeInPoints,
                         unit: document.settings.unit,
                         zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset
+                        canvasOffset: .zero  // Applied at parent ZStack level
                     )
                     .allowsHitTesting(false)
                 }
