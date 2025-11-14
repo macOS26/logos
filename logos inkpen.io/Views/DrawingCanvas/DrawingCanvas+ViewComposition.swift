@@ -211,7 +211,7 @@ extension DrawingCanvas {
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
                 zoomLevel: zoomLevel,
-                canvasOffset: .zero  // Applied at parent ZStack level
+                canvasOffset: canvasOffset  // Canvas context needs absolute position
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -221,7 +221,7 @@ extension DrawingCanvas {
                     canvasSize: document.settings.sizeInPoints,
                     backgroundColor: document.settings.backgroundColor.color,
                     zoomLevel: zoomLevel,
-                    canvasOffset: .zero  // Applied at parent ZStack level
+                    canvasOffset: canvasOffset  // Canvas context needs absolute position
                 )
 
                 if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
@@ -230,7 +230,7 @@ extension DrawingCanvas {
                         canvasSize: document.settings.sizeInPoints,
                         unit: document.settings.unit,
                         zoomLevel: zoomLevel,
-                        canvasOffset: .zero  // Applied at parent ZStack level
+                        canvasOffset: canvasOffset  // Canvas context needs absolute position
                     )
                     .allowsHitTesting(false)
                 }
@@ -293,15 +293,12 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
-        // Wrap all layers in a container that applies canvasOffset via transform
-        ZStack {
-            ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
-                if layer.isVisible {
-                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
-                }
+        // Render layers - canvasOffset handled per-layer for Canvas drawing contexts
+        ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
+            if layer.isVisible {
+                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
             }
         }
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
     @ViewBuilder
