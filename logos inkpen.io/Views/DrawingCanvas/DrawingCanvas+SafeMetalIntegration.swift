@@ -24,9 +24,9 @@ extension DrawingCanvas {
                 canvasOffset: canvasOffset
             )
         }
-        // Apply live zoom as GPU transform for 60fps performance
-        // (livePanDelta is baked into Canvas drawing to avoid clipping)
+        // Apply live pan/zoom as GPU transforms for 60fps performance
         .scaleEffect(liveZoomDelta)
+        .offset(x: livePanDelta.x, y: livePanDelta.y)
         .onAppear {
             setupCanvas()
             previousTool = document.viewState.currentTool

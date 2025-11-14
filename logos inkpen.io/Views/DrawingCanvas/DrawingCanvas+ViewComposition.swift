@@ -211,8 +211,7 @@ extension DrawingCanvas {
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
-                livePanDelta: livePanDelta
+                canvasOffset: canvasOffset  // Canvas context needs absolute position
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -222,8 +221,7 @@ extension DrawingCanvas {
                     canvasSize: document.settings.sizeInPoints,
                     backgroundColor: document.settings.backgroundColor.color,
                     zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    livePanDelta: livePanDelta
+                    canvasOffset: canvasOffset  // Canvas context needs absolute position
                 )
 
                 if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
@@ -263,7 +261,6 @@ extension DrawingCanvas {
                 document: document,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
-                livePanDelta: livePanDelta,
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
