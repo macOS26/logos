@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ColorSwatchGrid: View {
     @ObservedObject var document: VectorDocument
+    @Binding var colorDeltaColor: VectorColor?
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Environment(AppState.self) private var appState
@@ -18,6 +19,13 @@ struct ColorSwatchGrid: View {
     ]
 
     private var currentFillColor: VectorColor {
+        // Check for colorDeltaColor first (live RGB slider preview)
+        if let colorDelta = colorDeltaColor,
+           document.viewState.activeColorTarget == .fill,
+           !document.viewState.selectedObjectIDs.isEmpty {
+            return colorDelta
+        }
+
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
@@ -41,6 +49,13 @@ struct ColorSwatchGrid: View {
     }
 
     private var currentStrokeColor: VectorColor {
+        // Check for colorDeltaColor first (live RGB slider preview)
+        if let colorDelta = colorDeltaColor,
+           document.viewState.activeColorTarget == .stroke,
+           !document.viewState.selectedObjectIDs.isEmpty {
+            return colorDelta
+        }
+
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
