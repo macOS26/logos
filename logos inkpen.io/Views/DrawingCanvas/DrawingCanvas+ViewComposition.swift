@@ -260,7 +260,7 @@ extension DrawingCanvas {
                 objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: .zero,  // Applied at parent ZStack level
+                canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
