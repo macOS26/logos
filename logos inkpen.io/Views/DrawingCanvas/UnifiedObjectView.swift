@@ -1336,7 +1336,6 @@ struct IsolatedLayerView: View {
 
     var body: some View {
         // let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
-        let _ = layerUpdateTrigger  // Force redraw when layer trigger changes
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
@@ -1388,5 +1387,6 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .id(layerUpdateTrigger)  // Force redraw when layer trigger changes
     }
 }
