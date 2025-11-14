@@ -286,7 +286,8 @@ extension DrawingCanvas {
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)
-            .id(layer.id)  // Use stable layer ID - drag handled by Equatable
+            // Use combined ID with layer update trigger to force redraw only when this layer changes
+            .id("\(layer.id)-\(document.viewState.layerUpdateTriggers[layer.id] ?? 0)")
             .allowsHitTesting(isActiveLayer)
         }
     }
