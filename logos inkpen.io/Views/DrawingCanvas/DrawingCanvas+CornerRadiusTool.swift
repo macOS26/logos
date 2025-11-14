@@ -62,8 +62,8 @@ extension DrawingCanvas {
         }
         .stroke(Color.blue.opacity(0.8), lineWidth: 2.0 / zoomLevel)
         .transformEffect(shape.transform)
-        // .scaleEffect(zoomLevel, anchor: UnitPoint.topLeading)
-        // .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
 
     private func handleCornerRadiusCanvasDrag(
