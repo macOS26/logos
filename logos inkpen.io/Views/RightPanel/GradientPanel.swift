@@ -396,6 +396,12 @@ struct GradientFillSection: View {
     private func commitGradientChangeWithUndo() {
         guard let newGradient = currentGradient else { return }
 
+        // Check if gradient actually changed - if not, skip commit
+        if dragStartGradients.isEmpty {
+            print("🎨 COMMIT: Skipping - no gradient changes captured")
+            return
+        }
+
         print("🎨 COMMIT: currentGradient stops = \(newGradient.stops.map { $0.color })")
 
         // Collect new gradients and opacities BEFORE the command updates anything
@@ -448,10 +454,9 @@ struct GradientFillSection: View {
             }
         }
 
-        // NOW clear activeGradientDelta - snapshot has been updated with the gradient
-        // The rendering will use snapshot gradient instead
-        activeGradientDelta = nil
-        print("🎨 COMMIT: Cleared activeGradientDelta (snapshot now has gradient)")
+        // DON'T clear activeGradientDelta - snapshot now has the same gradient
+        // Clearing causes blank layer issue
+        print("🎨 COMMIT: Leaving activeGradientDelta set (snapshot matches)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
