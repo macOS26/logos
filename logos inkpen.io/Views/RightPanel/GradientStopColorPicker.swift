@@ -30,17 +30,18 @@ struct GradientStopColorPicker: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             loadedContent
+                .onChange(of: colorDeltaColor) { _, newColor in
+                    // During RGB slider drag: update activeGradientDelta for live preview
+                    if let newColor = newColor {
+                        currentColor = newColor  // Sync currentColor with RGB changes
+                        onColorChanged(newColor)  // Calls updateStopColor -> sets activeGradientDelta
+                    }
+                }
 
             // X button always visible
             GlassCloseButton(action: onDismiss)
         }
         .frame(width: 300, height: 480)
-        .onChange(of: colorDeltaColor) { _, newColor in
-            // During RGB slider drag: update activeGradientDelta for live preview
-            if let newColor = newColor {
-                onColorChanged(newColor)  // Calls updateStopColor -> sets activeGradientDelta
-            }
-        }
     }
 
     private var loadedContent: some View {
@@ -170,12 +171,8 @@ struct GradientStopColorPicker: View {
 
                 Spacer()
             }
-            .onChange(of: currentColor) { _, newColor in
-                // Update gradient stop in real-time as sliders change (but not when dismissing)
-                if !isDismissing {
-                    onColorChanged(newColor)
-                }
-            }
+            // Removed: onChange(of: currentColor) was causing double-calls
+            // RGB sliders update via colorDeltaColor onChange instead
             .onChange(of: stopColor) { _, newStopColor in
                 // Update local state when hovering to a new gradient stop
                 currentColor = newStopColor
