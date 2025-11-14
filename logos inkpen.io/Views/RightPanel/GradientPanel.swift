@@ -427,20 +427,8 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
-        // print("🎨 COMMIT END: Command executed")
-
-        // Check snapshot after command
-        // for objectID in selectedObjectIDs {
-        //     if let obj = document.snapshot.objects[objectID] {
-        //         if let fillGradient = obj.shape.fillStyle?.gradient {
-        //             print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
-        //         }
-        //     }
-        // }
-
-        // DON'T clear delta - snapshot is updated, delta will show same gradient anyway
-        // Clearing it causes a flash because SwiftUI renders before snapshot propagates
-        // print("🎨 COMMIT END: Leaving activeGradientDelta set (snapshot now matches)")
+        // Clear activeGradientDelta after command executes so canvas uses snapshot
+        activeGradientDelta = nil
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
