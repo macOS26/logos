@@ -52,8 +52,7 @@ struct CanvasBackgroundView: View {
 
 struct LayerCanvasView: View, Equatable {
     let objects: [VectorObject]
-    let objectsDict: [UUID: VectorObject]  // For looking up mask shapes
-    let document: VectorDocument  // Need this for cgImageCache!
+    let document: VectorDocument  // Need this for cgImageCache and mask lookups
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -93,7 +92,6 @@ struct LayerCanvasView: View, Equatable {
         // Debug: Check each property to find what changed
         var changed: [String] = []
         if lhs.objects != rhs.objects { changed.append("objects") }
-        if lhs.objectsDict != rhs.objectsDict { changed.append("objectsDict") }
         if lhs.zoomLevel != rhs.zoomLevel { changed.append("zoomLevel") }
         if lhs.canvasOffset != rhs.canvasOffset { changed.append("canvasOffset") }
         if selectionChanged { changed.append("selection") }
@@ -123,7 +121,6 @@ struct LayerCanvasView: View, Equatable {
         }
 
         return lhs.objects == rhs.objects &&
-        lhs.objectsDict == rhs.objectsDict &&
         lhs.zoomLevel == rhs.zoomLevel &&
         lhs.canvasOffset == rhs.canvasOffset &&
         !selectionChanged &&
@@ -486,7 +483,7 @@ struct LayerCanvasView: View, Equatable {
                         // Check if child itself is clipped by another object
                         let maskShape: VectorShape? = {
                             guard let maskID = childShape.clippedByShapeID,
-                                  let maskObject = objectsDict[maskID] else {
+                                  let maskObject = document.snapshot.objects[maskID] else {
                                 return nil
                             }
                             return maskObject.shape
@@ -507,7 +504,7 @@ struct LayerCanvasView: View, Equatable {
                     // Get mask shape if this object is clipped by another object
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -518,7 +515,7 @@ struct LayerCanvasView: View, Equatable {
                 case .image(let shape):
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -529,7 +526,7 @@ struct LayerCanvasView: View, Equatable {
                 case .text(let shape):
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
-                              let maskObject = objectsDict[maskID] else {
+                              let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
                         return maskObject.shape
@@ -1382,7 +1379,6 @@ struct IsolatedLayerView: View {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
                 objects: objects,
-                objectsDict: document.snapshot.objects,
                 document: document,
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
