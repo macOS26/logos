@@ -200,8 +200,13 @@ struct DrawingCanvas: View {
                     rebuildLockedObjectsCache()
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
-                    // Skip spatial index rebuild during live point drags for performance
+                    // Skip spatial index rebuild during any live drag for performance
+                    // Spatial index is only needed for hit testing, not during active transformations
                     guard !document.viewState.isLivePointDrag else { return }
+                    guard currentDragDelta == .zero else { return }  // Any object drag in progress
+                    guard !isDraggingDirectSelectedShapes else { return }
+                    guard !isDraggingPoint else { return }
+                    guard !isDraggingHandle else { return }
 
                     // Rebuild spatial index only for layers that changed (preferred granular approach)
                     var changedLayerIDs = Set<UUID>()
