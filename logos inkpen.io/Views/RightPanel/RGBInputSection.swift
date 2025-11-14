@@ -339,7 +339,7 @@ struct RGBInputSection: View {
         // All other updates happen on drag end
     }
 
-    private func onRedEditingChanged(_ isEditing: Bool) {
+    private func handleRGBEditingChanged(_ isEditing: Bool) {
         if isEditing {
             // Start of drag - set opacity for preview
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
@@ -368,67 +368,17 @@ struct RGBInputSection: View {
             // Update sharedColor to sync with other color sections (HSB, etc.)
             sharedColor = finalColor
         }
+    }
+
+    private func onRedEditingChanged(_ isEditing: Bool) {
+        handleRGBEditingChanged(isEditing)
     }
 
     private func onGreenEditingChanged(_ isEditing: Bool) {
-        if isEditing {
-            // Start of drag - set opacity for preview
-            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
-            colorDeltaOpacity = currentOpacity
-        } else {
-            // Drag ended - commit changes
-            let finalColor = VectorColor.rgb(currentColor)
-
-            // Clear deltas
-            colorDeltaColor = nil
-            colorDeltaOpacity = nil
-
-            // Only update document defaults if not disabled (gradient stops use disableSetActiveColor)
-            if !disableSetActiveColor {
-                // Update defaults for toolbar display
-                if activeColorTarget == .fill {
-                    defaultFillColor = finalColor
-                } else {
-                    defaultStrokeColor = finalColor
-                }
-
-                // Update active color (triggers document updates)
-                onSetActiveColor(finalColor)
-            }
-
-            // Update sharedColor to sync with other color sections (HSB, etc.)
-            sharedColor = finalColor
-        }
+        handleRGBEditingChanged(isEditing)
     }
 
     private func onBlueEditingChanged(_ isEditing: Bool) {
-        if isEditing {
-            // Start of drag - set opacity for preview
-            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
-            colorDeltaOpacity = currentOpacity
-        } else {
-            // Drag ended - commit changes
-            let finalColor = VectorColor.rgb(currentColor)
-
-            // Clear deltas
-            colorDeltaColor = nil
-            colorDeltaOpacity = nil
-
-            // Only update document defaults if not disabled (gradient stops use disableSetActiveColor)
-            if !disableSetActiveColor {
-                // Update defaults for toolbar display
-                if activeColorTarget == .fill {
-                    defaultFillColor = finalColor
-                } else {
-                    defaultStrokeColor = finalColor
-                }
-
-                // Update active color (triggers document updates)
-                onSetActiveColor(finalColor)
-            }
-
-            // Update sharedColor to sync with other color sections (HSB, etc.)
-            sharedColor = finalColor
-        }
+        handleRGBEditingChanged(isEditing)
     }
 }
