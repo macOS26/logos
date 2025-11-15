@@ -85,6 +85,9 @@ class MetalSpatialIndex {
 
     /// Rebuild the entire spatial index from document snapshot
     func rebuild(from snapshot: DocumentSnapshot) {
+        // Get the setting for including strokes in bounds
+        let includeStrokesInBounds = ApplicationSettings.shared.boundingBoxIncludesStrokes
+
         // Collect all visible objects and their bounds
         var boundsData: [(UUID, CGRect)] = []
         var minX: CGFloat = .infinity
@@ -128,7 +131,14 @@ class MetalSpatialIndex {
                     case .group(let groupShape), .clipGroup(let groupShape):
                         for childShape in groupShape.groupedShapes {
                             guard childShape.isVisible else { continue }
-                            let childBounds = childShape.bounds.applying(childShape.transform)
+                            var childBounds = childShape.bounds.applying(childShape.transform)
+
+                            // Expand child bounds by stroke width if setting is enabled
+                            if includeStrokesInBounds, let strokeStyle = childShape.strokeStyle {
+                                let strokeExpansion = strokeStyle.width / 2.0
+                                childBounds = childBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
+                            }
+
                             boundsData.append((childShape.id, childBounds))
                             minX = min(minX, childBounds.minX)
                             minY = min(minY, childBounds.minY)
@@ -140,7 +150,7 @@ class MetalSpatialIndex {
                     }
                 } else {
                     // Regular objects
-                    let bounds: CGRect
+                    var bounds: CGRect
                     switch object.objectType {
                     case .text(let shape):
                         bounds = CGRect(
@@ -151,6 +161,12 @@ class MetalSpatialIndex {
                         )
                     case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
                         bounds = shape.bounds.applying(shape.transform)
+
+                        // Expand bounds by stroke width if setting is enabled
+                        if includeStrokesInBounds, let strokeStyle = shape.strokeStyle {
+                            let strokeExpansion = strokeStyle.width / 2.0
+                            bounds = bounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
+                        }
                     case .group, .clipGroup:
                         continue
                     }
