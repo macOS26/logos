@@ -422,15 +422,8 @@ extension DrawingCanvas {
         bezierPoints.append(newPoint)
         activeBezierPointIndex = bezierPoints.count - 1
 
-        let previousPointIndex = bezierPoints.count - 2
-
-        if previousPointIndex >= 0,
-           let previousHandles = bezierHandles[previousPointIndex],
-           let previousControl2 = previousHandles.control2 {
-            bezierPath?.addElement(.curve(to: newPoint, control1: previousControl2, control2: newPoint))
-        } else {
-            bezierPath?.addElement(.line(to: newPoint))
-        }
+        // Rebuild the entire path from bezierPoints to ensure consistency with preview
+        updatePathWithHandles()
 
         updateActiveBezierShapeInDocument(isLiveDrag: true)
     }
@@ -546,7 +539,7 @@ extension DrawingCanvas {
                 let newPoint = VectorPoint(startLocation)
                 bezierPoints.append(newPoint)
                 activeBezierPointIndex = bezierPoints.count - 1
-                bezierPath?.addElement(.line(to: newPoint))
+                // Don't add element directly, will rebuild path later
             } else {
                 activeBezierPointIndex = bezierPoints.count - 1
             }
