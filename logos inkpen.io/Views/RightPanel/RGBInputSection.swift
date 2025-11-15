@@ -312,6 +312,9 @@ struct RGBInputSection: View {
     private func onUpdateRed(_ value: Double) {
         redValue = value
 
+        // Always update sharedColor for gradient stops
+        sharedColor = VectorColor.rgb(currentColor)
+
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor  // Set delta for live preview rendering
@@ -335,6 +338,9 @@ struct RGBInputSection: View {
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
 
+        // Always update sharedColor for gradient stops
+        sharedColor = VectorColor.rgb(currentColor)
+
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor  // Set delta for live preview rendering
@@ -357,6 +363,9 @@ struct RGBInputSection: View {
 
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
+
+        // Always update sharedColor for gradient stops
+        sharedColor = VectorColor.rgb(currentColor)
 
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
