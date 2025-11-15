@@ -118,10 +118,27 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        var pointsToProcess = brushRawPoints
-        if brushRawPoints.count == 2 {
-            let startPoint = brushRawPoints[0]
-            let endPoint = brushRawPoints[1]
+        // Apply deduplication to preview points for smoother rendering
+        var dedupedPoints: [BrushPoint] = []
+        let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
+
+        for point in brushRawPoints {
+            if let lastPoint = dedupedPoints.last {
+                let distance = hypot(point.location.x - lastPoint.location.x,
+                                   point.location.y - lastPoint.location.y)
+                if distance < dupThreshold {
+                    continue
+                }
+            }
+            dedupedPoints.append(point)
+        }
+
+        var pointsToProcess = dedupedPoints
+
+        // Handle straight lines with interpolation
+        if dedupedPoints.count == 2 {
+            let startPoint = dedupedPoints[0]
+            let endPoint = dedupedPoints[1]
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
             let dx = endPoint.location.x - startPoint.location.x
@@ -151,12 +168,13 @@ extension DrawingCanvas {
             pointsToProcess = interpolatedPoints
         }
 
-        let rawPointLocations = pointsToProcess.map { $0.location }
+        let dedupedLocations = pointsToProcess.map { $0.location }
 
-        if rawPointLocations.count >= 2 {
-            let newPath = generatePreviewVariableWidthPath(
-                centerPoints: rawPointLocations,
-                recentRawPoints: pointsToProcess,
+        if dedupedLocations.count >= 2 {
+            // Use the same smooth path generation as the final version
+            let newPath = generateSmoothVariableWidthPath(
+                centerPoints: dedupedLocations,
+                rawPoints: pointsToProcess,
                 thickness: ApplicationSettings.shared.currentBrushThickness,
                 pressureSensitivity: 0.5,
                 taper: 0.5
@@ -164,7 +182,7 @@ extension DrawingCanvas {
             return newPath
         }
 
-        return VectorPath(elements: [.move(to: VectorPoint(rawPointLocations[0]))])
+        return VectorPath(elements: [.move(to: VectorPoint(dedupedLocations[0]))])
     }
 
 
