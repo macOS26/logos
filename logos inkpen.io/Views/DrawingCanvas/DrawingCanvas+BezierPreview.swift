@@ -34,8 +34,8 @@ extension DrawingCanvas {
                 path.closeSubpath()
             }
             .fill(document.defaultFillColor.color.opacity(0.3))
-            // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
@@ -110,8 +110,8 @@ extension DrawingCanvas {
                 path.closeSubpath()
             }
             .fill(document.defaultFillColor.color.opacity(0.15))
-            // .scaleEffect(zoomLevel, anchor: .topLeading)
-            // .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
@@ -151,8 +151,8 @@ extension DrawingCanvas {
                         lineCap: .round,
                         dash: [4, 2]
                     ))
-                    // .scaleEffect(zoomLevel, anchor: .topLeading)
-                    // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
 
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
@@ -165,8 +165,8 @@ extension DrawingCanvas {
                         lineCap: .round,
                         dash: [4, 2]
                     ))
-                    // .scaleEffect(zoomLevel, anchor: .topLeading)
-                    // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
             }
 
@@ -205,8 +205,8 @@ extension DrawingCanvas {
                     }
                 }
                 .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
-                // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
             } else {
                 Path { path in
                     path.move(to: lastPointLocation)
@@ -227,8 +227,8 @@ extension DrawingCanvas {
                     }
                 }
                 .stroke(Color.blue.opacity(0.8), style: SwiftUI.StrokeStyle(lineWidth: rubberBandWidth, lineCap: .round, dash: [4, 2]))
-                // .scaleEffect(zoomLevel, anchor: .topLeading)
-                // .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
 
             }
         }
