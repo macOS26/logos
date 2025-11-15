@@ -29,9 +29,6 @@ class ApplicationSettings: ObservableObject {
     @Published var brushCoincidentPointPasses: Int = UserDefaults.standard.object(forKey: "brushCoincidentPointPasses") as? Int ?? 1 {
         didSet { UserDefaults.standard.set(brushCoincidentPointPasses, forKey: "brushCoincidentPointPasses") }
     }
-    @Published var useMetalAcceleration: Bool = UserDefaults.standard.object(forKey: "useMetalAcceleration") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(useMetalAcceleration, forKey: "useMetalAcceleration") }
-    }
 
     // MARK: - Advanced Smoothing
     @Published var advancedSmoothingEnabled: Bool = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false {

@@ -1,17 +1,5 @@
 import MetalKit
 
-// Extension to make Result easier to use
-extension Result {
-    var success: Success? {
-        switch self {
-        case .success(let value):
-            return value
-        case .failure:
-            return nil
-        }
-    }
-}
-
 class MetalComputeEngine {
 
     let device: MTLDevice
@@ -1476,8 +1464,9 @@ class MetalComputeEngine {
         var tol = tolerance
         computeEncoder.setBytes(&tol, length: MemoryLayout<Float>.stride, index: 6)
 
-        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
-        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        // Run as single thread to ensure sequential processing (matches CPU logic)
+        let threadsPerGroup = MTLSize(width: 1, height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: 1, height: 1, depth: 1)
 
         computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
         computeEncoder.endEncoding()

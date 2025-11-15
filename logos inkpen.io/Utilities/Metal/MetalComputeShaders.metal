@@ -300,44 +300,47 @@ kernel void calculate_point_distance(
     distances[index] = sqrt(dx * dx + dy * dy);
 }
 
-// Kernel for removing coincident (duplicate/very close) points using SIMD
-kernel void remove_coincident_points(
+// Kernel for marking which points to keep (first pass)
+kernel void mark_points_to_keep(
     device const float2* inputPoints [[buffer(0)]],
-    device const float* pressures [[buffer(1)]],  // Optional pressure values
-    device float2* outputPoints [[buffer(2)]],
-    device float* outputPressures [[buffer(3)]], // Optional output pressures
-    device atomic_uint* outputCount [[buffer(4)]],
-    constant uint& inputCount [[buffer(5)]],
-    constant float& tolerance [[buffer(6)]],
+    device bool* keepFlags [[buffer(1)]],
+    constant uint& inputCount [[buffer(2)]],
+    constant float& tolerance [[buffer(3)]],
     uint index [[thread_position_in_grid]]
 ) {
     if (index >= inputCount) return;
 
-    float2 currentPoint = inputPoints[index];
-
-    // Check if this point is different enough from previous point
-    bool shouldKeep = true;
-    if (index > 0) {
-        float2 prevPoint = inputPoints[index - 1];
-        float2 diff = currentPoint - prevPoint;
-        float distance = length(diff);  // SIMD length function
-
-        if (distance < tolerance) {
-            shouldKeep = false;
-        }
-    }
-
     // Always keep first and last points
     if (index == 0 || index == inputCount - 1) {
-        shouldKeep = true;
+        keepFlags[index] = true;
+        return;
     }
 
-    if (shouldKeep) {
-        uint outputIndex = atomic_fetch_add_explicit(outputCount, 1, memory_order_relaxed);
-        outputPoints[outputIndex] = currentPoint;
-        if (pressures != nullptr && outputPressures != nullptr) {
-            outputPressures[outputIndex] = pressures[index];
-        }
+    float2 currentPoint = inputPoints[index];
+    float2 prevPoint = inputPoints[index - 1];
+    float2 diff = currentPoint - prevPoint;
+    float distance = length(diff);  // SIMD length function
+
+    keepFlags[index] = (distance >= tolerance);
+}
+
+// Kernel for compacting points (second pass - sequential)
+kernel void compact_points(
+    device const float2* inputPoints [[buffer(0)]],
+    device const float* inputPressures [[buffer(1)]],
+    device const bool* keepFlags [[buffer(2)]],
+    device float2* outputPoints [[buffer(3)]],
+    device float* outputPressures [[buffer(4)]],
+    device const uint* scanResults [[buffer(5)]],  // Prefix sum of keepFlags
+    uint index [[thread_position_in_grid]]
+) {
+    if (!keepFlags[index]) return;
+
+    uint outputIndex = scanResults[index] - 1;  // Prefix sum gives position
+    outputPoints[outputIndex] = inputPoints[index];
+
+    if (inputPressures != nullptr && outputPressures != nullptr) {
+        outputPressures[outputIndex] = inputPressures[index];
     }
 }
 
@@ -457,6 +460,53 @@ kernel void mark_coincident_points(
     // Use SIMD distance function
     float dist = distance(current, prev);
     keepFlags[index] = (dist >= tolerance);
+}
+
+// Sequential kernel for removing coincident points - must run with single thread
+kernel void remove_coincident_points(
+    device const float2* inputPoints [[buffer(0)]],
+    device const float* inputPressures [[buffer(1)]],  // Can be null
+    device float2* outputPoints [[buffer(2)]],
+    device float* outputPressures [[buffer(3)]],  // Can be null
+    device uint* outputCount [[buffer(4)]],
+    constant uint& inputCount [[buffer(5)]],
+    constant float& tolerance [[buffer(6)]],
+    uint index [[thread_position_in_grid]]
+) {
+    // This kernel must be run with a single thread to match CPU behavior
+    if (index != 0) return;
+
+    if (inputCount == 0) {
+        *outputCount = 0;
+        return;
+    }
+
+    // Always keep the first point
+    outputPoints[0] = inputPoints[0];
+    if (inputPressures && outputPressures) {
+        outputPressures[0] = inputPressures[0];
+    }
+
+    uint outCount = 1;
+    float2 lastKeptPoint = inputPoints[0];
+
+    // Process each point sequentially, comparing with last KEPT point
+    for (uint i = 1; i < inputCount; i++) {
+        float2 current = inputPoints[i];
+        float dist = distance(current, lastKeptPoint);
+
+        // Keep point if it's far enough from the last kept point
+        if (dist >= tolerance) {
+            outputPoints[outCount] = current;
+            if (inputPressures && outputPressures) {
+                outputPressures[outCount] = inputPressures[i];
+            }
+            lastKeptPoint = current;
+            outCount++;
+        }
+    }
+
+    *outputCount = outCount;
 }
 
 kernel void calculate_square_roots(

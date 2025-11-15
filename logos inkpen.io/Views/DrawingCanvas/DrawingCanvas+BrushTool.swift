@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 extension DrawingCanvas {
 
@@ -32,14 +33,8 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         brushPath = VectorPath(elements: [.move(to: startPoint)])
 
-        let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
-            color: getCurrentStrokeColor(),
-            width: getCurrentStrokeWidth(),
-            lineCap: document.strokeDefaults.lineCap,
-            lineJoin: document.strokeDefaults.lineJoin,
-            miterLimit: document.strokeDefaults.miterLimit,
-            opacity: getCurrentStrokeOpacity()
-        )
+        // Brush strokes should never have a stroke outline - they ARE the stroke
+        let strokeStyle: StrokeStyle? = nil
         let fillStyle = FillStyle(
             color: getCurrentFillColor(),
             opacity: getCurrentFillOpacity()
@@ -118,50 +113,20 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // Use Metal GPU acceleration for point deduplication if available
+        // Apply deduplication to preview points for smoother rendering
+        // Keep using CPU for live preview to avoid Metal overhead
         var dedupedPoints: [BrushPoint] = []
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
-        // Try Metal GPU acceleration for large point counts
-        if ApplicationSettings.shared.useMetalAcceleration && brushRawPoints.count > 50 {
-            let points = brushRawPoints.map { $0.location }
-            let pressures = brushRawPoints.map { Float($0.pressure) }
-
-            if let result = MetalComputeEngine.shared.removeCoincidentPointsGPU(
-                points,
-                pressures: pressures,
-                tolerance: Float(dupThreshold)
-            ).success {
-                let (cleanedPoints, cleanedPressures) = result
-                dedupedPoints = zip(cleanedPoints, cleanedPressures ?? pressures).map {
-                    BrushPoint(location: $0.0, pressure: Double($0.1))
-                }
-                Log.info("🎨 Metal GPU: Reduced \(brushRawPoints.count) points to \(dedupedPoints.count)", category: .general)
-            } else {
-                // Fallback to CPU
-                for point in brushRawPoints {
-                    if let lastPoint = dedupedPoints.last {
-                        let distance = hypot(point.location.x - lastPoint.location.x,
-                                           point.location.y - lastPoint.location.y)
-                        if distance < dupThreshold {
-                            continue
-                        }
-                    }
-                    dedupedPoints.append(point)
+        for point in brushRawPoints {
+            if let lastPoint = dedupedPoints.last {
+                let distance = hypot(point.location.x - lastPoint.location.x,
+                                   point.location.y - lastPoint.location.y)
+                if distance < dupThreshold {
+                    continue
                 }
             }
-        } else {
-            // Use CPU for small point counts (overhead not worth it)
-            for point in brushRawPoints {
-                if let lastPoint = dedupedPoints.last {
-                    let distance = hypot(point.location.x - lastPoint.location.x,
-                                       point.location.y - lastPoint.location.y)
-                    if distance < dupThreshold {
-                        continue
-                    }
-                }
-                dedupedPoints.append(point)
-            }
+            dedupedPoints.append(point)
         }
 
         var pointsToProcess = dedupedPoints
@@ -241,11 +206,7 @@ extension DrawingCanvas {
         var finalShape = VectorShape(
             name: "Brush Stroke",
             path: brushStrokePath,
-            strokeStyle: ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
-                color: getCurrentStrokeColor(),
-                width: getCurrentStrokeWidth(),
-                opacity: getCurrentStrokeOpacity()
-            ),
+            strokeStyle: nil,  // Brush strokes are fill-only, never stroked
             fillStyle: FillStyle(
                 color: getCurrentFillColor(),
                 opacity: getCurrentFillOpacity()
@@ -263,13 +224,8 @@ extension DrawingCanvas {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
             }
 
-            let passes = ApplicationSettings.shared.brushCoincidentPointPasses
-            if passes > 0 {
-                // For now, just use CPU path operations since extracting points from CGPath is complex
-                for _ in 0..<passes {
-                    finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.1)
-                }
-            }
+            // Skip CPU coincident point removal - not needed with current processing
+            // Metal or CPU deduplication already happened in finalizeFromPreview
         }
 
         document.addShapeToFront(finalShape)
@@ -284,15 +240,62 @@ extension DrawingCanvas {
         var dedupedPoints: [BrushPoint] = []
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
-        for point in brushRawPoints {
-            if let lastPoint = dedupedPoints.last {
-                let distance = hypot(point.location.x - lastPoint.location.x,
-                                   point.location.y - lastPoint.location.y)
-                if distance < dupThreshold {
-                    continue
+        // Use Metal GPU for coincident point removal
+        var usedMetal = false
+        if brushRawPoints.count > 10 {  // Only use Metal for larger paths where it's beneficial
+            print("🚀 FINAL: Using Metal GPU to simplify \(brushRawPoints.count) points")
+
+            // Convert to Metal-ready format (Metal functions handle SIMD internally)
+            let pressures = brushRawPoints.map { Float($0.pressure) }
+
+            let result = MetalComputeEngine.shared.removeCoincidentPointsGPU(
+                brushRawPoints.map { $0.location },
+                pressures: pressures,
+                tolerance: Float(dupThreshold)
+            )
+
+            switch result {
+            case .success(let (cleanedPoints, cleanedPressures)):
+                if let pressures = cleanedPressures {
+                    dedupedPoints = zip(cleanedPoints, pressures).map {
+                        BrushPoint(location: $0.0, pressure: Double($0.1))
+                    }
+                    print("✅ Metal GPU simplified: \(brushRawPoints.count) → \(dedupedPoints.count) points")
+                } else {
+                    dedupedPoints = cleanedPoints.map {
+                        BrushPoint(location: $0, pressure: 1.0)
+                    }
+                }
+                usedMetal = true  // Mark that we successfully used Metal
+            case .failure(let error):
+                print("⚠️ Metal failed: \(error), using CPU fallback")
+                usedMetal = false  // Metal failed, will use CPU
+                // CPU fallback
+                for point in brushRawPoints {
+                    if let lastPoint = dedupedPoints.last {
+                        let distance = hypot(point.location.x - lastPoint.location.x,
+                                           point.location.y - lastPoint.location.y)
+                        if distance < dupThreshold {
+                            continue
+                        }
+                    }
+                    dedupedPoints.append(point)
                 }
             }
-            dedupedPoints.append(point)
+        }
+
+        // Only use CPU if Metal wasn't used
+        if !usedMetal {
+            for point in brushRawPoints {
+                if let lastPoint = dedupedPoints.last {
+                    let distance = hypot(point.location.x - lastPoint.location.x,
+                                       point.location.y - lastPoint.location.y)
+                    if distance < dupThreshold {
+                        continue
+                    }
+                }
+                dedupedPoints.append(point)
+            }
         }
 
         let dedupedLocations = dedupedPoints.map { $0.location }
@@ -320,14 +323,8 @@ extension DrawingCanvas {
             finalPath = preview
         }
 
-        let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
-            color: getCurrentStrokeColor(),
-            width: getCurrentStrokeWidth(),
-            lineCap: document.strokeDefaults.lineCap,
-            lineJoin: document.strokeDefaults.lineJoin,
-            miterLimit: document.strokeDefaults.miterLimit,
-            opacity: getCurrentStrokeOpacity()
-        )
+        // Brush strokes should never have a stroke outline - they ARE the stroke
+        let strokeStyle: StrokeStyle? = nil
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
 
         if ApplicationSettings.shared.brushRemoveOverlap {
@@ -342,13 +339,9 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
 
-            let passes = ApplicationSettings.shared.brushCoincidentPointPasses
-            if passes > 0 {
-                // For now, just use CPU path operations since extracting points from CGPath is complex
-                for _ in 0..<passes {
-                    finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.1)
-                }
-            }
+            // Skip CPU coincident point removal if Metal already handled it
+            // This prevents the duplicate processing that was causing artifacts
+            // Metal has already done the simplification
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
@@ -566,31 +559,32 @@ extension DrawingCanvas {
 
 
     private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath) -> VectorPath {
+        // Create a path that traces the outline: down left side, across bottom, up right side, across top
+        // But we need to connect the paths properly without an explicit close
         var elements: [PathElement] = []
 
+        // Add the left edge (going from start to end)
         elements.append(contentsOf: leftEdgePath.elements)
 
-        if let lastLeftPoint = leftEdgePath.elements.last {
-            switch lastLeftPoint {
-            case .move(_), .line(_), .curve(_, _, _), .quadCurve(_, _):
-                if let firstRightElement = rightEdgePath.elements.first {
-                    switch firstRightElement {
-                    case .move(let rightPoint), .line(let rightPoint), .curve(let rightPoint, _, _), .quadCurve(let rightPoint, _):
-                        elements.append(.line(to: rightPoint))
-                    case .close:
-                        break
-                    }
+        // Connect to the right edge (already reversed, so goes from end back to start)
+        // Skip the first move command to make it continuous
+        var isFirst = true
+        for element in rightEdgePath.elements {
+            if isFirst {
+                isFirst = false
+                switch element {
+                case .move(_):
+                    // Skip the move - we're already positioned at the end of left edge
+                    continue
+                default:
+                    break
                 }
-            case .close:
-                break
             }
+            elements.append(element)
         }
 
-        let rightElements = rightEdgePath.elements.dropFirst()
-        elements.append(contentsOf: rightElements)
-
-        elements.append(.close)
-
+        // DON'T add .close - the fill rule will handle it
+        // The path naturally forms a closed shape without the explicit close line
         return VectorPath(elements: elements)
     }
 
