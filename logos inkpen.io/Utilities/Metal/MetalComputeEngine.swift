@@ -1,5 +1,17 @@
 import MetalKit
 
+// Extension to make Result easier to use
+extension Result {
+    var success: Success? {
+        switch self {
+        case .success(let value):
+            return value
+        case .failure:
+            return nil
+        }
+    }
+}
+
 class MetalComputeEngine {
 
     let device: MTLDevice

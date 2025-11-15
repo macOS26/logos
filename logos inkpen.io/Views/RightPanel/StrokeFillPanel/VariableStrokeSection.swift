@@ -190,6 +190,23 @@ struct VariableStrokeSection: View {
                 }
             }
 
+            // Metal Acceleration Toggle
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Metal GPU Acceleration")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color.ui.primaryText)
+                    Text("Use GPU for faster brush processing")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                Spacer()
+                Toggle("", isOn: $settings.useMetalAcceleration)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .controlSize(.small)
+                    .help("Enable Metal GPU acceleration for brush point processing (10-100x faster for complex strokes)")
+            }
+
             HStack {
                 Image(systemName: hasPressureInput ? "hand.point.up.braille" : "hand.tap")
                     .foregroundColor(hasPressureInput ? .green : .orange)

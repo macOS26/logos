@@ -118,19 +118,50 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // Apply deduplication to preview points for smoother rendering
+        // Use Metal GPU acceleration for point deduplication if available
         var dedupedPoints: [BrushPoint] = []
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
-        for point in brushRawPoints {
-            if let lastPoint = dedupedPoints.last {
-                let distance = hypot(point.location.x - lastPoint.location.x,
-                                   point.location.y - lastPoint.location.y)
-                if distance < dupThreshold {
-                    continue
+        // Try Metal GPU acceleration for large point counts
+        if ApplicationSettings.shared.useMetalAcceleration && brushRawPoints.count > 50 {
+            let points = brushRawPoints.map { $0.location }
+            let pressures = brushRawPoints.map { Float($0.pressure) }
+
+            if let result = MetalComputeEngine.shared.removeCoincidentPointsGPU(
+                points,
+                pressures: pressures,
+                tolerance: Float(dupThreshold)
+            ).success {
+                let (cleanedPoints, cleanedPressures) = result
+                dedupedPoints = zip(cleanedPoints, cleanedPressures ?? pressures).map {
+                    BrushPoint(location: $0.0, pressure: Double($0.1))
+                }
+                Log.info("🎨 Metal GPU: Reduced \(brushRawPoints.count) points to \(dedupedPoints.count)", category: .general)
+            } else {
+                // Fallback to CPU
+                for point in brushRawPoints {
+                    if let lastPoint = dedupedPoints.last {
+                        let distance = hypot(point.location.x - lastPoint.location.x,
+                                           point.location.y - lastPoint.location.y)
+                        if distance < dupThreshold {
+                            continue
+                        }
+                    }
+                    dedupedPoints.append(point)
                 }
             }
-            dedupedPoints.append(point)
+        } else {
+            // Use CPU for small point counts (overhead not worth it)
+            for point in brushRawPoints {
+                if let lastPoint = dedupedPoints.last {
+                    let distance = hypot(point.location.x - lastPoint.location.x,
+                                       point.location.y - lastPoint.location.y)
+                    if distance < dupThreshold {
+                        continue
+                    }
+                }
+                dedupedPoints.append(point)
+            }
         }
 
         var pointsToProcess = dedupedPoints
@@ -234,6 +265,7 @@ extension DrawingCanvas {
 
             let passes = ApplicationSettings.shared.brushCoincidentPointPasses
             if passes > 0 {
+                // For now, just use CPU path operations since extracting points from CGPath is complex
                 for _ in 0..<passes {
                     finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.1)
                 }
@@ -312,6 +344,7 @@ extension DrawingCanvas {
 
             let passes = ApplicationSettings.shared.brushCoincidentPointPasses
             if passes > 0 {
+                // For now, just use CPU path operations since extracting points from CGPath is complex
                 for _ in 0..<passes {
                     finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.1)
                 }
