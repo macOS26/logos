@@ -234,6 +234,10 @@ struct DrawingCanvas: View {
                         rebuildLockedObjectsCache()
                     }
                 }
+                .onChange(of: ApplicationSettings.shared.boundingBoxIncludesStrokes) { _, _ in
+                    // Rebuild spatial index when stroke bounds setting changes
+                    spatialIndex.rebuild(from: document.snapshot)
+                }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshVisibleHandles"))) { _ in
                     // Refresh visible handles after anchor type conversion
                     if document.viewState.currentTool == .directSelection {
