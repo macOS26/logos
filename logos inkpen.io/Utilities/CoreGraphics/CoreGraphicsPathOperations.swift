@@ -2,17 +2,6 @@ import SwiftUI
 
 class CoreGraphicsPathOperations {
 
-    // Metal-accelerated boolean engine (singleton for efficiency)
-    private static let metalBooleanEngine: MetalPathBooleanEngine? = {
-        if let engine = MetalPathBooleanEngine() {
-            print("✅ Metal path boolean engine initialized")
-            return engine
-        } else {
-            print("⚠️ Metal path boolean engine not available, using CPU fallback")
-            return nil
-        }
-    }()
-
     private static func isFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite &&
                rect.size.width.isFinite && rect.size.height.isFinite
@@ -43,21 +32,7 @@ class CoreGraphicsPathOperations {
             return nil
         }
 
-        // Try Metal-accelerated union first
-        if let metalEngine = metalBooleanEngine {
-            let startTime = CFAbsoluteTimeGetCurrent()
-            if let metalResult = metalEngine.union(pathA, pathB) {
-                let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-                print(String(format: "🚀 Metal: Union completed in %.2fms", elapsed))
-                return metalResult
-            }
-        }
-
-        // Fallback to CPU
-        let startTime = CFAbsoluteTimeGetCurrent()
         let result = pathA.union(pathB, using: fillRule)
-        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-        print(String(format: "🐢 CPU: Union completed in %.2fms", elapsed))
         return result.isEmpty ? nil : result
     }
 
