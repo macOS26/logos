@@ -38,79 +38,90 @@ extension DrawingCanvas {
 
         rubberBandPreview(geometry: geometry)
 
+        // Brush preview using Canvas
         if let preview = brushPreviewPath {
-            if appState.brushPreviewStyle == .fill {
-                Path { path in
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
+
+                let path = Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
-                .fill(document.defaultFillColor.color)
-                .opacity(document.defaultFillOpacity)
-                            .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-            } else {
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
+
+                if appState.brushPreviewStyle == .fill {
+                    context.fill(
+                        path,
+                        with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity))
+                    )
+                } else {
+                    context.stroke(
+                        path,
+                        with: .color(Color.blue),
+                        lineWidth: max(1.0, 1.0 / zoomLevel)
+                    )
                 }
-                .stroke(Color.blue, lineWidth: max(1.0, 1.0 / zoomLevel))
-                            .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
             }
         }
 
+        // Freehand preview using Canvas
         if let preview = freehandPreviewPath {
-            Path { path in
-                addPathElements(preview.elements, to: &path)
-            }
-            .stroke(document.defaultStrokeColor.color,
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
+
+                let path = Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+
+                context.stroke(
+                    path,
+                    with: .color(document.defaultStrokeColor.color.opacity(document.defaultStrokeOpacity)),
                     style: SwiftUI.StrokeStyle(
                         lineWidth: document.defaultStrokeWidth,
                         lineCap: .round,
                         lineJoin: .round
                     )
-            )
-            .opacity(document.defaultStrokeOpacity)
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                )
+            }
         }
 
+        // Marker preview using Canvas
         if let preview = markerPreviewPath {
             let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let showStroke = !ApplicationSettings.shared.markerApplyNoStroke
+            let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
 
-            if showStroke {
-                let baseStrokeWidth = getCurrentStrokeWidth()
-                let strokeWidth = (document.strokeDefaults.placement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
-                let lineCap: CGLineCap = .round
-                let lineJoin: CGLineJoin = .round
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                Path { path in
+                let path = Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
-                .fill(markerFillColor.color)
-                .opacity(ApplicationSettings.shared.currentMarkerOpacity)
-                .overlay(
-                    Path { path in
-                        addPathElements(preview.elements, to: &path)
-                    }
-                    .stroke(markerStrokeColor.color, style: SwiftUI.StrokeStyle(
-                        lineWidth: strokeWidth,
-                        lineCap: lineCap,
-                        lineJoin: lineJoin,
-                        miterLimit: document.strokeDefaults.miterLimit
-                    ))
-                    .opacity(ApplicationSettings.shared.currentMarkerOpacity)
+
+                // Fill the path
+                context.fill(
+                    path,
+                    with: .color(markerFillColor.color.opacity(markerOpacity))
                 )
-                            .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-            } else {
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
+
+                // Add stroke if needed
+                if showStroke {
+                    let baseStrokeWidth = getCurrentStrokeWidth()
+                    let strokeWidth = (document.strokeDefaults.placement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
+
+                    context.stroke(
+                        path,
+                        with: .color(markerStrokeColor.color.opacity(markerOpacity)),
+                        style: SwiftUI.StrokeStyle(
+                            lineWidth: strokeWidth,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            miterLimit: document.strokeDefaults.miterLimit
+                        )
+                    )
                 }
-                .fill(markerFillColor.color)
-                .opacity(ApplicationSettings.shared.currentMarkerOpacity)
-                            .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
             }
         }
 
