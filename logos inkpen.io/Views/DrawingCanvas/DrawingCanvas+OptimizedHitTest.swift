@@ -110,6 +110,7 @@ extension DrawingCanvas {
     private func metalHitTest(at point: CGPoint, testFunction: (VectorObject, CGPoint) -> Bool) -> VectorObject? {
         // Get candidates from GPU spatial index
         let candidates = spatialIndex.candidateObjectIDs(at: point)
+        print("🔍 Hit test at \(point) found \(candidates.count) candidates")
 
         // Iterate layers from top to bottom (reversed)
         for layer in document.snapshot.layers.reversed() {
@@ -120,9 +121,14 @@ extension DrawingCanvas {
                 // Check if this object is a candidate
                 guard candidates.contains(objectID) else { continue }
 
-                guard let object = document.snapshot.objects[objectID] else { continue }
+                guard let object = document.snapshot.objects[objectID] else {
+                    print("  ❌ Object not found for ID: \(objectID)")
+                    continue
+                }
 
-                if testFunction(object, point) {
+                let testResult = testFunction(object, point)
+                print("  🎯 Testing object \(objectID): testResult=\(testResult)")
+                if testResult {
                     return object
                 }
             }

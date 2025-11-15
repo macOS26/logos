@@ -78,7 +78,7 @@ struct DocumentBasedMainView: View {
                             .contentShape(Rectangle())
                             .background(Color.clear)
                             .zIndex(1)
-                            .allowsHitTesting(true)
+                            //.allowsHitTesting(true)
                             .onChange(of: geometry.size) { _, newSize in
                                 viewportSize = newSize
                             }
@@ -93,7 +93,7 @@ struct DocumentBasedMainView: View {
                             canvasOffset: canvasOffset
                         )
                         .zIndex(50)
-                        .allowsHitTesting(true)
+                        //.allowsHitTesting(true)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300)
@@ -101,7 +101,7 @@ struct DocumentBasedMainView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500)
                 .contentShape(Rectangle())
-                .allowsHitTesting(true)
+               // .allowsHitTesting(true)
 
                 RightPanel(
                     snapshot: document.snapshot,

@@ -84,7 +84,7 @@ struct MainView: View {
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)
                             .zIndex(1)
-                            .allowsHitTesting(true)
+                           // .allowsHitTesting(true)
 
                         RulersView(document: document, geometry: geometry, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
                             .zIndex(50)
@@ -96,7 +96,7 @@ struct MainView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500)
                 .contentShape(Rectangle())
-                .allowsHitTesting(true)
+                //.allowsHitTesting(true)
 
                 RightPanel(
                     snapshot: document.snapshot,

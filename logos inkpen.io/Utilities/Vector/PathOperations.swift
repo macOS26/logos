@@ -15,6 +15,7 @@ case exclude = "Exclude"
     case dieline = "Dieline"
     case kick = "Kick"
     case separate = "Separate"
+    case combine = "Combine"
 
     var iconName: String {
         switch self {
@@ -29,6 +30,7 @@ case exclude = "Exclude"
         case .dieline: return "line.3.crossed.swirl.circle"
         case .kick: return "minus.circle.fill"
         case .separate: return "square.split.2x1"
+        case .combine: return "square.on.square"
         }
     }
 
@@ -36,7 +38,7 @@ case exclude = "Exclude"
         switch self {
         case .union, .minusFront, .intersect, .exclude:
             return true
-        case .mosaic, .cut, .merge, .crop, .dieline, .kick, .separate:
+        case .mosaic, .cut, .merge, .crop, .dieline, .kick, .separate, .combine:
             return false
         }
     }
@@ -54,6 +56,7 @@ case exclude = "Exclude"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .kick: return "Back shape cuts holes in front shape"
         case .separate: return "Separates compound paths into individual components (CoreGraphics)"
+        case .combine: return "Combines all selected shapes into one, ignoring colors"
         }
     }
 }
@@ -358,6 +361,8 @@ class ProfessionalPathOperations {
             return paths.count >= 1
         case .separate:
             return !paths.isEmpty
+        case .combine:
+            return paths.count >= 2  // Combines any number of shapes >= 2
         }
     }
 

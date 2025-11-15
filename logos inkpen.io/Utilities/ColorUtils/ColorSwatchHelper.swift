@@ -86,7 +86,7 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
             }
         }
     }
-    .allowsHitTesting(true)
+   // .allowsHitTesting(true)
 }
 
 struct GradientSwatchNSView: NSViewRepresentable {

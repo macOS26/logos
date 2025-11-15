@@ -228,7 +228,7 @@ struct TransformBoxHandles: View {
                         .fill(Color.clear)
                         .frame(width: scaledHitAreaSize, height: scaledHitAreaSize)
                         .contentShape(Circle())
-                        .allowsHitTesting(true)
+                        //.allowsHitTesting(true)
 
                     Circle()
                         .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))

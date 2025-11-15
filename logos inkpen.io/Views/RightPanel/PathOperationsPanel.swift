@@ -56,7 +56,7 @@ struct PathOperationsPanel: View {
                     .padding(.horizontal, 16)
 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
-                                            ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick], id: \.self) { operation in
+                                            ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick, .combine], id: \.self) { operation in
                         PathfinderOperationButton(
                             operation: operation,
                             isEnabled: canPerformOperation(operation)
@@ -478,6 +478,24 @@ struct PathOperationsPanel: View {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
+
+        case .combine:
+            // Union all selected objects regardless of color
+            if let unionPath = ProfessionalPathOperations.union(paths) {
+                guard let topmostShape = selectedShapes.last else {
+                    Log.error("❌ COMBINE: No topmost shape found", category: .general)
+                    return
+                }
+                let combinedShape = VectorShape(
+                    name: "Combined Shape",
+                    path: VectorPath(cgPath: unionPath),
+                    strokeStyle: topmostShape.strokeStyle,
+                    fillStyle: topmostShape.fillStyle,
+                    transform: .identity,
+                    opacity: topmostShape.opacity
+                )
+                resultShapes = [combinedShape]
+            }
         }
 
         guard !resultShapes.isEmpty else {

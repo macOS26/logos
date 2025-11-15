@@ -87,6 +87,7 @@ class MetalSpatialIndex {
     func rebuild(from snapshot: DocumentSnapshot) {
         // Get the setting for including strokes in bounds
         let includeStrokesInBounds = ApplicationSettings.shared.boundingBoxIncludesStrokes
+        print("🔄 Rebuilding spatial index with includeStrokesInBounds=\(includeStrokesInBounds)")
 
         // Collect all visible objects and their bounds
         var boundsData: [(UUID, CGRect)] = []
@@ -165,7 +166,9 @@ class MetalSpatialIndex {
                         // Expand bounds by stroke width if setting is enabled
                         if includeStrokesInBounds, let strokeStyle = shape.strokeStyle {
                             let strokeExpansion = strokeStyle.width / 2.0
+                            let originalBounds = bounds
                             bounds = bounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
+                            print("🎯 Expanded bounds for stroke: original=\(originalBounds), expanded=\(bounds), strokeWidth=\(strokeStyle.width)")
                         }
                     case .group, .clipGroup:
                         continue

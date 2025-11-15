@@ -207,6 +207,8 @@ extension DrawingCanvas {
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
+        print("    🔎 performShapeHitTest at \(location), shape bounds=\(shape.bounds), transform=\(shape.transform)")
+
         if shape.typography != nil {
             let textBounds = CGRect(
                 x: shape.transform.tx,
@@ -229,10 +231,12 @@ extension DrawingCanvas {
             let baseTolerance: CGFloat = 8.0
             let tolerance = max(2.0, baseTolerance / zoomLevel)
             let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+            print("    🔑 Option pressed path hit test: isHit=\(isHit)")
             return isHit
         } else {
             let isImageShape = ImageContentRegistry.containsImage(shape, in: document)
             let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
+            print("    📍 isStrokeOnly=\(isStrokeOnly), hasStroke=\(shape.strokeStyle != nil)")
 
             if isImageShape {
                 let transformedBounds = shape.bounds.applying(shape.transform)
@@ -251,13 +255,25 @@ extension DrawingCanvas {
                 return isHit
             } else {
                 let transformedBounds = shape.bounds.applying(shape.transform)
+                print("    📐 Checking transformed bounds: \(transformedBounds), contains=\(transformedBounds.contains(location))")
 
                 if transformedBounds.contains(location) {
                     return true
                 } else {
+                    // For stroked shapes, we need to account for stroke width in the tolerance
+                    // The stroke width is already in canvas coordinates, so we don't divide by zoom
                     let baseTolerance: CGFloat = 4.0
-                    let tolerance = max(1.0, baseTolerance / zoomLevel)
+                    var tolerance = max(1.0, baseTolerance / zoomLevel)
+
+                    // If shape has stroke, expand tolerance to include half the stroke width
+                    if let strokeStyle = shape.strokeStyle {
+                        // Stroke width is in canvas coords, so add it directly
+                        tolerance = max(tolerance, (strokeStyle.width / 2.0) + baseTolerance / 2 )
+                    }
+
+                    print("    🎪 Falling back to PathOperations.hitTest with tolerance=\(tolerance)")
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+                    print("    🎪 PathOperations.hitTest result: \(isHit)")
                     return isHit
                 }
             }

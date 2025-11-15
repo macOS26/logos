@@ -299,6 +299,24 @@ extension VectorDocument {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
+
+        case .combine:
+            // Union all selected objects regardless of color
+            if let unionPath = ProfessionalPathOperations.union(paths) {
+                guard let topmostShape = selectedShapes.last else {
+                    Log.error("❌ COMBINE: No topmost shape found", category: .general)
+                    return false
+                }
+                let combinedShape = VectorShape(
+                    name: "Combined Shape",
+                    path: VectorPath(cgPath: unionPath),
+                    strokeStyle: topmostShape.strokeStyle,
+                    fillStyle: topmostShape.fillStyle,
+                    transform: .identity,
+                    opacity: topmostShape.opacity
+                )
+                resultShapes = [combinedShape]
+            }
         }
 
         guard !resultShapes.isEmpty else {

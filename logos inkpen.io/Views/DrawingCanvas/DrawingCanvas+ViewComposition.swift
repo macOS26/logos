@@ -442,7 +442,7 @@ extension DrawingCanvas {
                             },
                 hasPressureSupport: .constant(PressureManager.shared.hasRealPressureInput)
             )
-            .allowsHitTesting(true)
+            //.allowsHitTesting(true)
             .background(Color.clear)
         }
     }
