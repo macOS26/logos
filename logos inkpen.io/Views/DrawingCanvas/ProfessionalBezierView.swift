@@ -59,24 +59,7 @@ struct ProfessionalBezierView: View {
                     }
                 }
 
-                // Draw blue preview line that accounts for stroke placement
-                // If stroke placement is outside, the actual shape will appear offset
-                // So we need to show the preview where the shape will actually render
-                let strokeWidth = document.defaultStrokeWidth
-                let strokePlacement = document.strokeDefaults.placement
-
-                // Calculate offset based on stroke placement
-                if strokePlacement == .outside && strokeWidth > 0 {
-                    // For outside stroke, the fill will appear offset by half the stroke width
-                    // We need to show the preview where the actual shape will be
-                    context.stroke(pathToDraw, with: .color(.blue), lineWidth: 1.0 / zoom)
-
-                    // Also show a dashed line where the fill edge will be
-                    context.stroke(pathToDraw, with: .color(.blue.opacity(0.5)),
-                                 style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoom, dash: [5.0 / zoom, 3.0 / zoom]))
-                } else {
-                    context.stroke(pathToDraw, with: .color(.blue), lineWidth: 1.0 / zoom)
-                }
+                context.stroke(pathToDraw, with: .color(.blue), lineWidth: 1.0 / zoom)
             }
 
             // Draw control handles AFTER path (so they appear on top)
