@@ -293,11 +293,170 @@ kernel void calculate_point_distance(
 ) {
     Point2D p1 = point1[index];
     Point2D p2 = point2[index];
-    
+
     float dx = p1.x - p2.x;
     float dy = p1.y - p2.y;
-    
+
     distances[index] = sqrt(dx * dx + dy * dy);
+}
+
+// Kernel for removing coincident (duplicate/very close) points using SIMD
+kernel void remove_coincident_points(
+    device const float2* inputPoints [[buffer(0)]],
+    device const float* pressures [[buffer(1)]],  // Optional pressure values
+    device float2* outputPoints [[buffer(2)]],
+    device float* outputPressures [[buffer(3)]], // Optional output pressures
+    device atomic_uint* outputCount [[buffer(4)]],
+    constant uint& inputCount [[buffer(5)]],
+    constant float& tolerance [[buffer(6)]],
+    uint index [[thread_position_in_grid]]
+) {
+    if (index >= inputCount) return;
+
+    float2 currentPoint = inputPoints[index];
+
+    // Check if this point is different enough from previous point
+    bool shouldKeep = true;
+    if (index > 0) {
+        float2 prevPoint = inputPoints[index - 1];
+        float2 diff = currentPoint - prevPoint;
+        float distance = length(diff);  // SIMD length function
+
+        if (distance < tolerance) {
+            shouldKeep = false;
+        }
+    }
+
+    // Always keep first and last points
+    if (index == 0 || index == inputCount - 1) {
+        shouldKeep = true;
+    }
+
+    if (shouldKeep) {
+        uint outputIndex = atomic_fetch_add_explicit(outputCount, 1, memory_order_relaxed);
+        outputPoints[outputIndex] = currentPoint;
+        if (pressures != nullptr && outputPressures != nullptr) {
+            outputPressures[outputIndex] = pressures[index];
+        }
+    }
+}
+
+// Batch smoothing kernel for brush strokes using Catmull-Rom splines with SIMD
+kernel void smooth_brush_stroke(
+    device const float2* inputPoints [[buffer(0)]],
+    device const float* inputPressures [[buffer(1)]],
+    device float2* outputPoints [[buffer(2)]],
+    device float* outputPressures [[buffer(3)]],
+    constant uint& inputCount [[buffer(4)]],
+    constant float& smoothingFactor [[buffer(5)]],
+    constant uint& subdivisions [[buffer(6)]],
+    uint index [[thread_position_in_grid]]
+) {
+    uint segmentIndex = index / subdivisions;
+    uint subdivIndex = index % subdivisions;
+
+    if (segmentIndex >= inputCount - 1) return;
+
+    // Get four control points for Catmull-Rom spline using SIMD float2
+    float2 p0, p1, p2, p3;
+    float pressure0, pressure1, pressure2, pressure3;
+
+    // Handle edge cases for control points
+    if (segmentIndex == 0) {
+        p0 = inputPoints[0];
+        pressure0 = inputPressures ? inputPressures[0] : 1.0;
+    } else {
+        p0 = inputPoints[segmentIndex - 1];
+        pressure0 = inputPressures ? inputPressures[segmentIndex - 1] : 1.0;
+    }
+
+    p1 = inputPoints[segmentIndex];
+    p2 = inputPoints[segmentIndex + 1];
+    pressure1 = inputPressures ? inputPressures[segmentIndex] : 1.0;
+    pressure2 = inputPressures ? inputPressures[segmentIndex + 1] : 1.0;
+
+    if (segmentIndex >= inputCount - 2) {
+        p3 = inputPoints[inputCount - 1];
+        pressure3 = inputPressures ? inputPressures[inputCount - 1] : 1.0;
+    } else {
+        p3 = inputPoints[segmentIndex + 2];
+        pressure3 = inputPressures ? inputPressures[segmentIndex + 2] : 1.0;
+    }
+
+    // Calculate t parameter for this subdivision
+    float t = float(subdivIndex) / float(subdivisions);
+    float t2 = t * t;
+    float t3 = t2 * t;
+
+    // Catmull-Rom spline calculation using SIMD operations
+    float2 result = 0.5 * ((2.0 * p1) +
+                           (-p0 + p2) * t +
+                           (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
+                           (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3);
+
+    // Interpolate pressure
+    float pressure = mix(pressure1, pressure2, t);  // SIMD mix function
+
+    // Apply smoothing factor
+    float2 original = mix(p1, p2, t);  // Linear interpolation using SIMD
+    result = mix(original, result, smoothingFactor);  // Blend using SIMD
+
+    outputPoints[index] = result;
+    if (outputPressures != nullptr) {
+        outputPressures[index] = pressure;
+    }
+}
+
+// Optimized Douglas-Peucker simplification using SIMD
+kernel void douglas_peucker_distances(
+    device const float2* points [[buffer(0)]],
+    constant float2& lineStart [[buffer(1)]],
+    constant float2& lineEnd [[buffer(2)]],
+    device float* distances [[buffer(3)]],
+    device uint* maxIndex [[buffer(4)]],
+    constant uint& pointCount [[buffer(5)]],
+    uint index [[thread_position_in_grid]]
+) {
+    if (index >= pointCount) return;
+
+    float2 point = points[index];
+    float2 lineVec = lineEnd - lineStart;
+    float lineLength = length(lineVec);
+
+    if (lineLength < 0.0001) {
+        distances[index] = distance(point, lineStart);
+    } else {
+        // Perpendicular distance using cross product
+        float2 pointVec = point - lineStart;
+        float crossProduct = abs(lineVec.x * pointVec.y - lineVec.y * pointVec.x);
+        distances[index] = crossProduct / lineLength;
+    }
+
+    atomic_fetch_max_explicit((device atomic_uint*)maxIndex, index, memory_order_relaxed);
+}
+
+// Fast batch coincident point detection using SIMD
+kernel void mark_coincident_points(
+    device const float2* points [[buffer(0)]],
+    device bool* keepFlags [[buffer(1)]],
+    constant uint& pointCount [[buffer(2)]],
+    constant float& tolerance [[buffer(3)]],
+    uint index [[thread_position_in_grid]]
+) {
+    if (index >= pointCount) return;
+
+    // Always keep first and last points
+    if (index == 0 || index == pointCount - 1) {
+        keepFlags[index] = true;
+        return;
+    }
+
+    float2 current = points[index];
+    float2 prev = points[index - 1];
+
+    // Use SIMD distance function
+    float dist = distance(current, prev);
+    keepFlags[index] = (dist >= tolerance);
 }
 
 kernel void calculate_square_roots(

@@ -37,6 +37,10 @@ class MetalComputeEngine {
     private var pathHitTestPipeline: MTLComputePipelineState?
     private var findNearestSnapPointPipeline: MTLComputePipelineState?
 
+    // Brush optimization pipelines
+    private var removeCoincidentPointsPipeline: MTLComputePipelineState?
+    private var smoothBrushStrokePipeline: MTLComputePipelineState?
+
     static let shared: MetalComputeEngine = {
         do {
             return try MetalComputeEngine()
@@ -149,6 +153,14 @@ class MetalComputeEngine {
         }
         if let function = library.makeFunction(name: "find_nearest_snap_point") {
             findNearestSnapPointPipeline = try device.makeComputePipelineState(function: function)
+        }
+
+        // Brush optimization pipelines
+        if let function = library.makeFunction(name: "remove_coincident_points") {
+            removeCoincidentPointsPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "smooth_brush_stroke") {
+            smoothBrushStrokePipeline = try device.makeComputePipelineState(function: function)
         }
     }
 
@@ -1399,6 +1411,167 @@ class MetalComputeEngine {
         }
 
         return (index: index, objectID: objectIDs[index], point: snapPoints[index])
+    }
+
+    // MARK: - Brush Optimization with SIMD
+
+    /// Remove coincident points from a brush stroke using GPU acceleration
+    func removeCoincidentPointsGPU(_ points: [CGPoint], pressures: [Float]? = nil, tolerance: Float = 1.0) -> Result<([CGPoint], [Float]?), MetalError> {
+        guard !points.isEmpty else {
+            return .success(([], nil))
+        }
+
+        guard let pipeline = removeCoincidentPointsPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+
+        let pointCount = points.count
+        let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
+
+        // Create buffers
+        guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+              let outputCountBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
+
+        // Initialize output count to 0
+        outputCountBuffer.contents().assumingMemoryBound(to: UInt32.self).pointee = 0
+
+        var pressureInputBuffer: MTLBuffer?
+        var pressureOutputBuffer: MTLBuffer?
+
+        if let pressures = pressures {
+            pressureInputBuffer = device.makeBuffer(bytes: pressures, length: pressures.count * MemoryLayout<Float>.stride, options: .storageModeShared)
+            pressureOutputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        }
+
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(pressureInputBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(pressureOutputBuffer, offset: 0, index: 3)
+        computeEncoder.setBuffer(outputCountBuffer, offset: 0, index: 4)
+
+        var count = UInt32(pointCount)
+        computeEncoder.setBytes(&count, length: MemoryLayout<UInt32>.stride, index: 5)
+
+        var tol = tolerance
+        computeEncoder.setBytes(&tol, length: MemoryLayout<Float>.stride, index: 6)
+
+        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        // Read results
+        let outputCount = Int(outputCountBuffer.contents().assumingMemoryBound(to: UInt32.self).pointee)
+        let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
+
+        var resultPoints: [CGPoint] = []
+        for i in 0..<outputCount {
+            let simdPoint = resultPointer[i]
+            resultPoints.append(CGPoint(x: CGFloat(simdPoint.x), y: CGFloat(simdPoint.y)))
+        }
+
+        var resultPressures: [Float]?
+        if let pressureOutput = pressureOutputBuffer {
+            let pressurePointer = pressureOutput.contents().assumingMemoryBound(to: Float.self)
+            resultPressures = Array(UnsafeBufferPointer(start: pressurePointer, count: outputCount))
+        }
+
+        return .success((resultPoints, resultPressures))
+    }
+
+    /// Smooth brush stroke using Catmull-Rom splines with GPU acceleration
+    func smoothBrushStrokeGPU(_ points: [CGPoint], pressures: [Float]? = nil, smoothingFactor: Float = 0.7, subdivisions: Int = 4) -> Result<([CGPoint], [Float]?), MetalError> {
+        guard points.count >= 2 else {
+            return .success((points, pressures))
+        }
+
+        guard let pipeline = smoothBrushStrokePipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+
+        let inputCount = points.count
+        let outputCount = (inputCount - 1) * subdivisions + 1
+        let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
+
+        // Create buffers
+        guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: inputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
+
+        var pressureInputBuffer: MTLBuffer?
+        var pressureOutputBuffer: MTLBuffer?
+
+        if let pressures = pressures {
+            pressureInputBuffer = device.makeBuffer(bytes: pressures, length: pressures.count * MemoryLayout<Float>.stride, options: .storageModeShared)
+            pressureOutputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        }
+
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(pressureInputBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(pressureOutputBuffer, offset: 0, index: 3)
+
+        var count = UInt32(inputCount)
+        var smooth = smoothingFactor
+        var subdiv = UInt32(subdivisions)
+
+        computeEncoder.setBytes(&count, length: MemoryLayout<UInt32>.stride, index: 4)
+        computeEncoder.setBytes(&smooth, length: MemoryLayout<Float>.stride, index: 5)
+        computeEncoder.setBytes(&subdiv, length: MemoryLayout<UInt32>.stride, index: 6)
+
+        let totalThreads = (inputCount - 1) * subdivisions
+        let threadsPerGroup = MTLSize(width: min(totalThreads, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (totalThreads + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        // Read results
+        let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
+        var resultPoints: [CGPoint] = []
+
+        // Copy first point
+        resultPoints.append(points[0])
+
+        // Copy subdivided points
+        for i in 0..<totalThreads {
+            let simdPoint = resultPointer[i]
+            resultPoints.append(CGPoint(x: CGFloat(simdPoint.x), y: CGFloat(simdPoint.y)))
+        }
+
+        // Add last point
+        resultPoints.append(points.last!)
+
+        var resultPressures: [Float]?
+        if let pressureOutput = pressureOutputBuffer {
+            let pressurePointer = pressureOutput.contents().assumingMemoryBound(to: Float.self)
+            resultPressures = Array(UnsafeBufferPointer(start: pressurePointer, count: outputCount))
+        }
+
+        return .success((resultPoints, resultPressures))
     }
 }
 
