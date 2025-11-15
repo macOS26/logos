@@ -20,6 +20,8 @@ struct DrawingCanvas: View {
     @Binding var fillDeltaOpacity: Double?
     @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
+    @Binding var colorDeltaColor: VectorColor?
+    @Binding var colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var fontSizeDelta: Double?
     @Binding var lineSpacingDelta: Double?

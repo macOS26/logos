@@ -273,6 +273,8 @@ extension DrawingCanvas {
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
+                colorDeltaColor: colorDeltaColor,
+                colorDeltaOpacity: colorDeltaOpacity,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: document.viewState.activeColorTarget,
                 fontSizeDelta: fontSizeDelta,

@@ -66,6 +66,8 @@ struct LayerCanvasView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
+    let colorDeltaColor: VectorColor?
+    let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
     let fontSizeDelta: Double?
@@ -555,7 +557,11 @@ struct LayerCanvasView: View {
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
-                        layerContext.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
+                        // Check for colorDeltaColor for live preview during drag
+                        let effectiveFillColor = (colorDeltaColor != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill)
+                            ? colorDeltaColor!
+                            : fillStyle.color
+                        layerContext.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)))
                     }
                 }
 
@@ -599,9 +605,13 @@ struct LayerCanvasView: View {
                             )
                             renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
+                            // Check for colorDeltaColor for live preview during drag
+                            let effectiveStrokeColor = (colorDeltaColor != nil && isSelected && activeColorTarget == .stroke)
+                                ? colorDeltaColor!
+                                : strokeStyle.color
                             layerContext.stroke(
                                 Path(cgPath),
-                                with: .color(strokeStyle.color.color.opacity(effectiveStrokeOpacity)),
+                                with: .color(effectiveStrokeColor.color.opacity(effectiveStrokeOpacity)),
                                 style: SwiftUI.StrokeStyle(
                                     lineWidth: effectiveStrokeWidth,
                                     lineCap: strokeStyle.lineCap.cgLineCap,
@@ -638,7 +648,11 @@ struct LayerCanvasView: View {
                     let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if fillStyle.color != .clear {
-                    context.fill(Path(cgPath), with: .color(fillStyle.color.color.opacity(effectiveFillOpacity)))
+                    // Check for colorDeltaColor for live preview during drag
+                    let effectiveFillColor = (colorDeltaColor != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill)
+                        ? colorDeltaColor!
+                        : fillStyle.color
+                    context.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)))
                 }
             }
 
@@ -670,9 +684,13 @@ struct LayerCanvasView: View {
                         effectiveStrokeStyle.width = effectiveStrokeWidth
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if strokeStyle.color != .clear {
+                        // Check for colorDeltaColor for live preview during drag
+                        let effectiveStrokeColor = (colorDeltaColor != nil && isSelected && activeColorTarget == .stroke)
+                            ? colorDeltaColor!
+                            : strokeStyle.color
                         context.stroke(
                             Path(cgPath),
-                            with: .color(strokeStyle.color.color.opacity(effectiveStrokeOpacity)),
+                            with: .color(effectiveStrokeColor.color.opacity(effectiveStrokeOpacity)),
                             style: SwiftUI.StrokeStyle(
                                 lineWidth: effectiveStrokeWidth,
                                 lineCap: strokeStyle.lineCap.cgLineCap,
@@ -1235,6 +1253,8 @@ struct IsolatedLayerView: View {
     let fillDeltaOpacity: Double?
     let strokeDeltaOpacity: Double?
     let strokeDeltaWidth: Double?
+    let colorDeltaColor: VectorColor?
+    let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
     let fontSizeDelta: Double?
@@ -1327,6 +1347,8 @@ struct IsolatedLayerView: View {
                 fillDeltaOpacity: fillDeltaOpacity,
                 strokeDeltaOpacity: strokeDeltaOpacity,
                 strokeDeltaWidth: strokeDeltaWidth,
+                colorDeltaColor: colorDeltaColor,
+                colorDeltaOpacity: colorDeltaOpacity,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: activeColorTarget,
                 fontSizeDelta: fontSizeDelta,

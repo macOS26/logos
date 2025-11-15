@@ -16,8 +16,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "553"
             endingLineNumber = "553"
-            landmarkName = "BrushPreviewStyleModifier"
-            landmarkType = "14">
+            landmarkName = "draggedObjectPreview(geometry:dragDelta:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

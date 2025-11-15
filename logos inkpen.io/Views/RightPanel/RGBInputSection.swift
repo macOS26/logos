@@ -312,55 +312,70 @@ struct RGBInputSection: View {
     private func onUpdateRed(_ value: Double) {
         redValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+            colorDeltaColor = previewColor  // Set delta for live preview rendering
 
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            // Also set opacity delta if not already set
+            if colorDeltaOpacity == nil {
+                let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+                colorDeltaOpacity = currentOpacity
+            }
+
+            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // All other updates happen on drag end
+        // Actual snapshot updates happen on drag end in onRedEditingChanged
     }
 
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+            colorDeltaColor = previewColor  // Set delta for live preview rendering
 
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            // Also set opacity delta if not already set
+            if colorDeltaOpacity == nil {
+                let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+                colorDeltaOpacity = currentOpacity
+            }
+
+            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // All other updates happen on drag end
+        // Actual snapshot updates happen on drag end in onGreenEditingChanged
     }
 
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
 
-        // ONLY update colorDelta for live preview - NO other updates during drag!
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Direct binding update for live canvas preview
+            colorDeltaColor = previewColor  // Set delta for live preview rendering
 
-            // Update defaultFillColor/defaultStrokeColor for live toolbar preview
+            // Also set opacity delta if not already set
+            if colorDeltaOpacity == nil {
+                let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+                colorDeltaOpacity = currentOpacity
+            }
+
+            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // All other updates happen on drag end
+        // Actual snapshot updates happen on drag end in onBlueEditingChanged
     }
 
     private func onRedEditingChanged(_ isEditing: Bool) {
