@@ -201,7 +201,20 @@ class MetalSpatialIndex {
 
         // Build object ID mapping
         objectIDs = boundsData.map { $0.0 }
-        objectIDToIndex = Dictionary(uniqueKeysWithValues: objectIDs.enumerated().map { ($1, UInt32($0)) })
+
+        // Handle potential duplicate IDs safely
+        var idToIndex: [UUID: UInt32] = [:]
+        var duplicateCount = 0
+        for (index, id) in objectIDs.enumerated() {
+            if idToIndex[id] != nil {
+                duplicateCount += 1
+            }
+            idToIndex[id] = UInt32(index)  // Last occurrence wins for duplicates
+        }
+        if duplicateCount > 0 {
+            print("⚠️ MetalSpatialIndex: Found \(duplicateCount) duplicate object IDs")
+        }
+        objectIDToIndex = idToIndex
 
         // Create GPU buffers
         let objectCount = boundsData.count
