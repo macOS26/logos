@@ -324,18 +324,14 @@ extension VectorDocument {
             return false
         }
 
-        removeSelectedShapes()
-
-        for resultShape in resultShapes {
-            addShape(resultShape)
-            viewState.selectedObjectIDs.insert(resultShape.id)
-        }
-
+        // Don't call removeSelectedShapes() - let GroupCommand handle it
+        // Build new shapes dictionary
         var newShapes: [UUID: VectorShape] = [:]
         for shape in resultShapes {
             newShapes[shape.id] = shape
         }
 
+        // Create command with old and new shapes
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,

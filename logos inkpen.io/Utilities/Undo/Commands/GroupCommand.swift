@@ -54,7 +54,12 @@ class GroupCommand: BaseCommand {
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
             ?? document.snapshot.layers[layerIndex].objectIDs.count
 
-        // Remove from layer.objectIDs only (children stay in snapshot.objects for direct selection)
+        // Remove old objects from snapshot.objects (for pathfinder operations like combine/union)
+        for objectID in removedObjectIDs {
+            document.snapshot.objects.removeValue(forKey: objectID)
+        }
+
+        // Remove from layer.objectIDs
         document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
 
         // print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
@@ -139,6 +144,15 @@ class GroupCommand: BaseCommand {
 
         // Remove group from layer.objectIDs
         document.snapshot.layers[layerIndex].objectIDs.removeAll { addedObjectIDs.contains($0) }
+
+        // Restore removed shapes back to snapshot.objects (for combine/union operations)
+        for (objectID, shape) in removedShapes {
+            let restoredObject = VectorObject(
+                shape: shape,
+                layerIndex: layerIndex
+            )
+            document.snapshot.objects[objectID] = restoredObject
+        }
 
         // Restore child objects to layer.objectIDs (they never left snapshot.objects)
         for (offset, objectID) in removedObjectIDs.enumerated() {
