@@ -36,7 +36,7 @@ class CoreGraphicsPathOperations {
         return result.isEmpty ? nil : result
     }
 
-    private static func unionMultiplePaths(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> CGPath? {
+    static func unionMultiplePaths(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> CGPath? {
         let validPaths = paths.filter { !$0.isEmpty }
         guard !validPaths.isEmpty else { return nil }
         guard validPaths.count > 1 else { return validPaths.first }

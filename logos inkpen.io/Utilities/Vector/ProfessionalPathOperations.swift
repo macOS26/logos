@@ -3,17 +3,8 @@ import SwiftUI
 extension ProfessionalPathOperations {
 
     static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
-        guard paths.count == 2 else { return nil }
-
-        let validPaths = paths.filter { !$0.isEmpty }
-        guard validPaths.count == 2 else { return nil }
-
-        if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
-            return coreGraphicsResult
-        } else {
-            Log.error("❌ PROFESSIONAL UNION: CoreGraphics operation failed", category: .error)
-            return nil
-        }
+        // Use the existing unionMultiplePaths that handles any number of paths
+        return CoreGraphicsPathOperations.unionMultiplePaths(paths, using: .winding)
     }
 
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
