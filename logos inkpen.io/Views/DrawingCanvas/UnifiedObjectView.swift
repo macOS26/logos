@@ -1265,6 +1265,7 @@ struct IsolatedLayerView: View {
     let imageTileSize: Int
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
+    let layerUpdateTrigger: UInt
 
     // Compute objects fresh from snapshot on every render
     private var objects: [VectorObject] {

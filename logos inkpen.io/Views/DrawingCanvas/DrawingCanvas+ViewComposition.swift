@@ -284,13 +284,14 @@ extension DrawingCanvas {
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize,
                 liveCornerRadii: liveCornerRadii,
-                selectedShapeIDForCornerRadius: selectedShapeInThisLayer
+                selectedShapeIDForCornerRadius: selectedShapeInThisLayer,
+                layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id] ?? 0
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)
-            // Use combined ID with layer update trigger to force redraw only when this layer changes
-            .id("\(layer.id)-\(document.viewState.layerUpdateTriggers[layer.id] ?? 0)")
-            .allowsHitTesting(isActiveLayer)
+            // Use only layer.id for view identity - trigger passed as parameter will cause redraw
+            .id(layer.id)
+           // .allowsHitTesting(isActiveLayer)
         }
     }
 
