@@ -250,25 +250,25 @@ kernel void calculate_curvature(
     }
 }
 
+// Optimized Chaikin smoothing using SIMD float2
 kernel void chaikin_smoothing(
-    device const Point2D* inputPoints [[buffer(0)]],
-    device Point2D* outputPoints [[buffer(1)]],
+    device const float2* inputPoints [[buffer(0)]],
+    device float2* outputPoints [[buffer(1)]],
     constant uint& inputCount [[buffer(2)]],
     constant float& ratio [[buffer(3)]],
     uint index [[thread_position_in_grid]]
 ) {
     if (index >= inputCount - 1) return;
-    
-    Point2D p1 = inputPoints[index];
-    Point2D p2 = inputPoints[index + 1];
-    
-    Point2D q1, q2;
-    q1.x = p1.x + ratio * (p2.x - p1.x);
-    q1.y = p1.y + ratio * (p2.y - p1.y);
-    
-    q2.x = p1.x + (1.0 - ratio) * (p2.x - p1.x);
-    q2.y = p1.y + (1.0 - ratio) * (p2.y - p1.y);
-    
+
+    // Use SIMD float2 for efficient vector operations
+    float2 p1 = inputPoints[index];
+    float2 p2 = inputPoints[index + 1];
+
+    // SIMD vector math - single instruction for both x and y
+    float2 diff = p2 - p1;
+    float2 q1 = p1 + ratio * diff;
+    float2 q2 = p1 + (1.0 - ratio) * diff;
+
     uint outputBase = index * 2 + 1;
     if (outputBase < (inputCount - 1) * 2 + 1) {
         outputPoints[outputBase] = q1;
@@ -276,7 +276,44 @@ kernel void chaikin_smoothing(
             outputPoints[outputBase + 1] = q2;
         }
     }
-    
+
+    // Handle endpoints
+    if (index == 0) {
+        outputPoints[0] = inputPoints[0];
+    }
+    if (index == inputCount - 2) {
+        outputPoints[(inputCount - 1) * 2] = inputPoints[inputCount - 1];
+    }
+}
+
+// Keep old version for compatibility if needed
+kernel void chaikin_smoothing_legacy(
+    device const Point2D* inputPoints [[buffer(0)]],
+    device Point2D* outputPoints [[buffer(1)]],
+    constant uint& inputCount [[buffer(2)]],
+    constant float& ratio [[buffer(3)]],
+    uint index [[thread_position_in_grid]]
+) {
+    if (index >= inputCount - 1) return;
+
+    Point2D p1 = inputPoints[index];
+    Point2D p2 = inputPoints[index + 1];
+
+    Point2D q1, q2;
+    q1.x = p1.x + ratio * (p2.x - p1.x);
+    q1.y = p1.y + ratio * (p2.y - p1.y);
+
+    q2.x = p1.x + (1.0 - ratio) * (p2.x - p1.x);
+    q2.y = p1.y + (1.0 - ratio) * (p2.y - p1.y);
+
+    uint outputBase = index * 2 + 1;
+    if (outputBase < (inputCount - 1) * 2 + 1) {
+        outputPoints[outputBase] = q1;
+        if (outputBase + 1 < (inputCount - 1) * 2 + 1) {
+            outputPoints[outputBase + 1] = q2;
+        }
+    }
+
     if (index == 0) {
         outputPoints[0] = inputPoints[0];
     }
