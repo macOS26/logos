@@ -462,7 +462,7 @@ kernel void mark_coincident_points(
     keepFlags[index] = (dist >= tolerance);
 }
 
-// Sequential kernel for removing coincident points - must run with single thread
+// Optimized kernel using SIMD operations and loop unrolling
 kernel void remove_coincident_points(
     device const float2* inputPoints [[buffer(0)]],
     device const float* inputPressures [[buffer(1)]],  // Can be null
@@ -473,7 +473,7 @@ kernel void remove_coincident_points(
     constant float& tolerance [[buffer(6)]],
     uint index [[thread_position_in_grid]]
 ) {
-    // This kernel must be run with a single thread to match CPU behavior
+    // Still single-threaded for correctness, but optimized with SIMD
     if (index != 0) return;
 
     if (inputCount == 0) {
@@ -489,14 +489,82 @@ kernel void remove_coincident_points(
 
     uint outCount = 1;
     float2 lastKeptPoint = inputPoints[0];
+    float toleranceSq = tolerance * tolerance;  // Use squared distance to avoid sqrt
 
-    // Process each point sequentially, comparing with last KEPT point
-    for (uint i = 1; i < inputCount; i++) {
+    // Process points with unrolled loop for better performance
+    uint i = 1;
+    uint endMinus3 = inputCount > 4 ? inputCount - 3 : 1;
+
+    // Process 4 points at a time when possible
+    while (i < endMinus3) {
+        // Load 4 points at once for better memory access
+        float2 p1 = inputPoints[i];
+        float2 p2 = inputPoints[i + 1];
+        float2 p3 = inputPoints[i + 2];
+        float2 p4 = inputPoints[i + 3];
+
+        // Check first point
+        float2 diff1 = p1 - lastKeptPoint;
+        float distSq1 = dot(diff1, diff1);  // SIMD dot product
+
+        if (distSq1 >= toleranceSq) {
+            outputPoints[outCount] = p1;
+            if (inputPressures && outputPressures) {
+                outputPressures[outCount] = inputPressures[i];
+            }
+            lastKeptPoint = p1;
+            outCount++;
+        }
+
+        // Check second point
+        float2 diff2 = p2 - lastKeptPoint;
+        float distSq2 = dot(diff2, diff2);
+
+        if (distSq2 >= toleranceSq) {
+            outputPoints[outCount] = p2;
+            if (inputPressures && outputPressures) {
+                outputPressures[outCount] = inputPressures[i + 1];
+            }
+            lastKeptPoint = p2;
+            outCount++;
+        }
+
+        // Check third point
+        float2 diff3 = p3 - lastKeptPoint;
+        float distSq3 = dot(diff3, diff3);
+
+        if (distSq3 >= toleranceSq) {
+            outputPoints[outCount] = p3;
+            if (inputPressures && outputPressures) {
+                outputPressures[outCount] = inputPressures[i + 2];
+            }
+            lastKeptPoint = p3;
+            outCount++;
+        }
+
+        // Check fourth point
+        float2 diff4 = p4 - lastKeptPoint;
+        float distSq4 = dot(diff4, diff4);
+
+        if (distSq4 >= toleranceSq) {
+            outputPoints[outCount] = p4;
+            if (inputPressures && outputPressures) {
+                outputPressures[outCount] = inputPressures[i + 3];
+            }
+            lastKeptPoint = p4;
+            outCount++;
+        }
+
+        i += 4;
+    }
+
+    // Handle remaining points
+    while (i < inputCount) {
         float2 current = inputPoints[i];
-        float dist = distance(current, lastKeptPoint);
+        float2 diff = current - lastKeptPoint;
+        float distSq = dot(diff, diff);
 
-        // Keep point if it's far enough from the last kept point
-        if (dist >= tolerance) {
+        if (distSq >= toleranceSq) {
             outputPoints[outCount] = current;
             if (inputPressures && outputPressures) {
                 outputPressures[outCount] = inputPressures[i];
@@ -504,6 +572,7 @@ kernel void remove_coincident_points(
             lastKeptPoint = current;
             outCount++;
         }
+        i++;
     }
 
     *outputCount = outCount;
