@@ -645,10 +645,10 @@ class MetalComputeEngine {
 
         let inputCount = points.count
         let outputCount = (inputCount - 1) * 2 + 1
-        let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
 
-        guard let inputBuffer = device.makeBuffer(bytes: metalPoints, length: inputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
-              let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+        guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: inputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
         var inputCountInt = UInt32(inputCount)
@@ -670,7 +670,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: outputCount)
+        let resultPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: outputCount)
         var results: [CGPoint] = []
         for i in 0..<outputCount {
             let point = resultPointer[i]
