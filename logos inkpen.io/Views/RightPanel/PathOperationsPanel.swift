@@ -503,18 +503,37 @@ struct PathOperationsPanel: View {
             return
         }
 
+        // Get the layer index from first selected shape
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first,
+              let firstObject = document.snapshot.objects[firstSelectedID],
+              firstObject.layerIndex >= 0 && firstObject.layerIndex < document.snapshot.layers.count else {
+            Log.error("❌ Could not determine layer for pathfinder operation", category: .error)
+            return
+        }
+        let layerIndex = firstObject.layerIndex
+
         document.removeSelectedObjects()
 
         var newShapes: [UUID: VectorShape] = [:]
+        var newObjectIDs: [UUID] = []
 
         for resultShape in resultShapes {
             document.addShape(resultShape)
             document.selectShape(resultShape.id)
-            objectIDs.append(resultShape.id)
+            newObjectIDs.append(resultShape.id)
             newShapes[resultShape.id] = resultShape
         }
 
-        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        let command = GroupCommand(
+            operation: .group,
+            layerIndex: layerIndex,
+            removedObjectIDs: Array(oldShapes.keys),
+            removedShapes: oldShapes,
+            addedObjectIDs: newObjectIDs,
+            addedShapes: newShapes,
+            oldSelectedObjectIDs: Set(oldShapes.keys),
+            newSelectedObjectIDs: Set(newShapes.keys)
+        )
         document.commandManager.execute(command)
     }
 
