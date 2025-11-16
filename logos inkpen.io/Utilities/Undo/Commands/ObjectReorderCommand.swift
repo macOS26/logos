@@ -41,7 +41,7 @@ class ObjectReorderCommand: BaseCommand {
                   let obj = document.snapshot.objects[objectID] else { return affectedLayers }
 
             // Remove from source layer
-            document.snapshot.layers[sourceLayer].objectIDs.removeAll { $0 == objectID }
+            document.removeFromLayer(layerIndex: sourceLayer, objectID: objectID)
 
             // Update layerIndex by creating new object
             let updatedObj = VectorObject(id: obj.id, layerIndex: targetLayer, objectType: obj.objectType)
@@ -49,7 +49,7 @@ class ObjectReorderCommand: BaseCommand {
 
             // Add to target layer
             let insertIndex = min(targetIndex, document.snapshot.layers[targetLayer].objectIDs.count)
-            document.snapshot.layers[targetLayer].objectIDs.insert(objectID, at: insertIndex)
+            document.insertIntoLayer(layerIndex: targetLayer, objectID: objectID, at: insertIndex)
 
             affectedLayers.insert(oldLayerIndex)
             affectedLayers.insert(newLayerIndex)
@@ -78,9 +78,9 @@ class ObjectReorderCommand: BaseCommand {
             guard let obj = document.snapshot.objects[sourceID],
                   obj.layerIndex >= 0 && obj.layerIndex < document.snapshot.layers.count else { return affectedLayers }
 
-            document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == sourceID }
+            document.removeFromLayer(layerIndex: obj.layerIndex, objectID: sourceID)
             let insertIndex = min(targetIndex, document.snapshot.layers[obj.layerIndex].objectIDs.count)
-            document.snapshot.layers[obj.layerIndex].objectIDs.insert(sourceID, at: insertIndex)
+            document.insertIntoLayer(layerIndex: obj.layerIndex, objectID: sourceID, at: insertIndex)
             affectedLayers.insert(obj.layerIndex)
 
         case .bringToFront(let objectID, let oldIndex, let newIndex, let layerIndex):
@@ -89,9 +89,9 @@ class ObjectReorderCommand: BaseCommand {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count,
                   document.snapshot.objects[objectID] != nil else { return affectedLayers }
 
-            document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == objectID }
+            document.removeFromLayer(layerIndex: layerIndex, objectID: objectID)
             let insertIndex = min(targetIndex, document.snapshot.layers[layerIndex].objectIDs.count)
-            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertIndex)
+            document.insertIntoLayer(layerIndex: layerIndex, objectID: objectID, at: insertIndex)
             affectedLayers.insert(layerIndex)
 
         case .sendToBack(let objectID, let oldIndex, let newIndex, let layerIndex):
@@ -100,9 +100,9 @@ class ObjectReorderCommand: BaseCommand {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count,
                   document.snapshot.objects[objectID] != nil else { return affectedLayers }
 
-            document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == objectID }
+            document.removeFromLayer(layerIndex: layerIndex, objectID: objectID)
             let insertIndex = min(targetIndex, document.snapshot.layers[layerIndex].objectIDs.count)
-            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertIndex)
+            document.insertIntoLayer(layerIndex: layerIndex, objectID: objectID, at: insertIndex)
             affectedLayers.insert(layerIndex)
         }
 
