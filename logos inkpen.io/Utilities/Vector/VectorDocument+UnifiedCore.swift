@@ -170,9 +170,10 @@ extension VectorDocument {
         // Update snapshot ONLY
         snapshot.objects[shape.id] = newVectorObject
         if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
-            snapshot.layers[layerIndex].objectIDs.append(shape.id)
+            appendToLayer(layerIndex: layerIndex, objectID: shape.id)
+        } else {
+            triggerLayerUpdate(for: layerIndex)
         }
-        triggerLayerUpdate(for: layerIndex)
     }
 
     func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
@@ -194,13 +195,14 @@ extension VectorDocument {
         }
 
         if let insertIndex = insertIndex {
-            snapshot.layers[layerIndex].objectIDs.insert(shape.id, at: insertIndex)
+            insertIntoLayer(layerIndex: layerIndex, objectID: shape.id, at: insertIndex)
         } else {
             if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
-                snapshot.layers[layerIndex].objectIDs.append(shape.id)
+                appendToLayer(layerIndex: layerIndex, objectID: shape.id)
+            } else {
+                triggerLayerUpdate(for: layerIndex)
             }
         }
-        triggerLayerUpdate(for: layerIndex)
     }
 
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
@@ -215,9 +217,10 @@ extension VectorDocument {
         // Update snapshot ONLY
         snapshot.objects[textShape.id] = newVectorObject
         if !snapshot.layers[layerIndex].objectIDs.contains(textShape.id) {
-            snapshot.layers[layerIndex].objectIDs.append(textShape.id)
+            appendToLayer(layerIndex: layerIndex, objectID: textShape.id)
+        } else {
+            triggerLayerUpdate(for: layerIndex)
         }
-        triggerLayerUpdate(for: layerIndex)
     }
 
     // MARK: - Parent Group Cache Maintenance
