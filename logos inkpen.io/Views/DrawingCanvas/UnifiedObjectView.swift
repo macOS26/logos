@@ -1089,11 +1089,12 @@ struct LayerCanvasView: View {
                     cgContext.setAlpha(CGFloat(effectiveFillOpacity))
                     cgContext.fillPath()
 
-                    // Create stroke style for placement
+                    // Draw stroke using PathOperations for placement support
+                    let strokePlacement: StrokePlacement = .center  // TODO: Add to typography
                     let strokeStyle = StrokeStyle(
                         color: vectorText.typography.strokeColor,
                         width: effectiveStrokeWidth,
-                        placement: .center,  // Text always uses center for now
+                        placement: strokePlacement,
                         dashPattern: [],
                         lineCap: .butt,
                         lineJoin: vectorText.typography.strokeLineJoin.cgLineJoin,
@@ -1102,13 +1103,25 @@ struct LayerCanvasView: View {
                         blendMode: .normal
                     )
 
-                    // Outline the stroke using PathOperations
-                    if let outlinedStroke = PathOperations.outlineStroke(path: textPath, strokeStyle: strokeStyle) {
-                        cgContext.addPath(outlinedStroke)
+                    if strokePlacement == .center {
+                        // Center stroke - just stroke the path directly
+                        cgContext.addPath(textPath)
                         let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
-                        cgContext.setFillColor(strokeColor.cgColor)
+                        cgContext.setStrokeColor(strokeColor.cgColor)
+                        cgContext.setLineWidth(effectiveStrokeWidth)
+                        cgContext.setLineJoin(vectorText.typography.strokeLineJoin.cgLineJoin)
+                        cgContext.setLineCap(.butt)
                         cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
-                        cgContext.fillPath()
+                        cgContext.strokePath()
+                    } else {
+                        // Inside/Outside stroke - outline the stroke and fill it
+                        if let outlinedStroke = PathOperations.outlineStroke(path: textPath, strokeStyle: strokeStyle) {
+                            cgContext.addPath(outlinedStroke)
+                            let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
+                            cgContext.setFillColor(strokeColor.cgColor)
+                            cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
+                            cgContext.fillPath()
+                        }
                     }
 
                     cgContext.restoreGState()
