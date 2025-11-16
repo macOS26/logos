@@ -527,24 +527,11 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if let textObject = document.findText(by: textID) {
-
-            // Calculate and set cursor position FIRST, before triggering view updates
-            if location != .zero {
-                let cursorPosition = calculateCursorPosition(in: textObject, at: location)
-                document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
-            }
-
-            // NOW set isEditing, which triggers view sync with correct cursor position
+            // Don't pre-set cursor position - let NSTextView handle it natively based on click
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
-
             document.viewState.selectedObjectIDs = [textID]
-
         } else {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
-    }
-
-    private func calculateCursorPosition(in _: VectorText, at _: CGPoint) -> Int {
-        return 0
     }
 }
