@@ -160,7 +160,7 @@ extension DrawingCanvas {
                 )
                 liveHandlePositions[handleID] = newPosition
 
-                // Auto-link if geometrically smooth (within 1° of 180°)
+                // Auto-link if geometrically smooth (within 5° of 180°)
                 // Cusp points won't pass this check because they have 90° or other angles
                 if !isOptionPressed && isPointSmooth(handleID: handleID) {
                     updateLiveLinkedHandle(handleID: handleID, newPosition: newPosition)
@@ -260,7 +260,7 @@ extension DrawingCanvas {
 
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-        return dot < -0.9998  // cos(179°) ≈ -0.9998
+        return dot < -0.9962  // cos(175°) ≈ -0.9962
     }
 
     private func isPointSmooth(handleID: HandleID) -> Bool {
@@ -339,8 +339,9 @@ extension DrawingCanvas {
         // Calculate dot product (should be -1 for 180 degrees)
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-        // Consider smooth only if very close to 180 degrees (within 1 degree)
-        return dot < -0.9998  // cos(179°) ≈ -0.9998
+        // Consider smooth if within 5 degrees of 180 degrees
+        // This is a more reasonable threshold for detecting smooth points
+        return dot < -0.9962  // cos(175°) ≈ -0.9962
     }
 
     private func updateLiveHandlesForMovedPoint(pointID: PointID, delta: CGPoint) {

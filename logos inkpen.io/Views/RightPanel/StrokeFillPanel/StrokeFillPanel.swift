@@ -182,8 +182,8 @@ struct StrokeFillPanel: View {
 
             let dot = norm1.x * norm2.x + norm1.y * norm2.y
 
-            // Smooth only if very close to 180° (within 1 degree)
-            return dot < -0.9998 ? .smooth : .cusp
+            // Smooth if within 5 degrees of 180°
+            return dot < -0.9962 ? .smooth : .cusp
         }
 
         // One handle only (or both collapsed) = corner
