@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PreferencesView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\._openURL) private var openURL
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
     @AppStorage("imageTileSize") var tileSize: Int = 512
