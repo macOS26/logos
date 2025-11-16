@@ -25,13 +25,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "[AFPreferences _languageCodeWithFallback:]"
         ])
 
-        let enabled = UserDefaults.standard.bool(forKey: "enableSystemMetalHUD")
-        if enabled {
-            setenv("MTL_HUD_ENABLED", "1", 1)
-        } else {
-            unsetenv("MTL_HUD_ENABLED")
-        }
-
         setupGlobalErrorHandling()
 
         setupFallbackTimer()
