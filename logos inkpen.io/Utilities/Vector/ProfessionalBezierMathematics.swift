@@ -168,14 +168,18 @@ case independent = "Independent"
         return VectorPoint(simd: result)
     }
 
+    // SIMD-optimized quadratic Bezier evaluation
     static func evaluateQuadraticBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
         let t2 = t * t
-        let x = u2 * p0.x + 2 * u * t * p1.x + t2 * p2.x
-        let y = u2 * p0.y + 2 * u * t * p1.y + t2 * p2.y
 
-        return VectorPoint(x, y)
+        // SIMD vector operations
+        let result = u2 * p0.simdPoint +
+                     2 * u * t * p1.simdPoint +
+                     t2 * p2.simdPoint
+
+        return VectorPoint(simd: result)
     }
 
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
