@@ -77,13 +77,6 @@ extension VectorDocument {
         }
     }
 
-    func syncEncodableStorage() {
-        _encodableSettings = settings
-        _encodableCurrentTool = viewState.currentTool
-        _encodableViewMode = viewState.viewMode
-        // zoomLevel and canvasOffset are no longer saved - managed as @State in view
-    }
-
     var currentSwatches: [VectorColor] {
         switch settings.colorMode {
         case .rgb:

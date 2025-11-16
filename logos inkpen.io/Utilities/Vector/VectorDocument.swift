@@ -82,21 +82,7 @@ final class VectorDocument: ObservableObject, Codable {
 
     var originalHandlePositions: [String: VectorPoint] = [:]
 
-    internal var _encodableSettings: DocumentSettings
-    internal var _encodableCurrentTool: DrawingTool
-    internal var _encodableViewMode: ViewMode
-    internal var _encodableZoomLevel: Double
-    internal var _encodableCanvasOffset: CGPoint
-    internal var _encodableUnifiedObjects: [VectorObject]
-    
     init(settings: DocumentSettings = DocumentSettings()) {
-        self._encodableSettings = settings
-        self._encodableCurrentTool = .selection
-        self._encodableViewMode = .color
-        self._encodableZoomLevel = 1.0
-        self._encodableCanvasOffset = .zero
-        self._encodableUnifiedObjects = []
-        
         self.settings = settings
         
         self.documentColorDefaults = ColorDefaults()
