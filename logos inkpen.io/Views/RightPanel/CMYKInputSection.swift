@@ -6,7 +6,6 @@ struct CMYKInputSection: View {
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Binding var colorDeltaColor: VectorColor?
-    @Environment(AppState.self) private var appState
     let onSetActiveColor: (VectorColor) -> Void
     let onAddColorSwatch: (VectorColor) -> Void
     let onColorSelected: ((VectorColor) -> Void)?
