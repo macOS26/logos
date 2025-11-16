@@ -74,26 +74,38 @@ extension VectorDocument {
 
         snapshot.layers.insert(movingLayer, at: adjustedTargetIndex)
 
-        // Update layer indices in snapshot.objects
-        for (objectID, object) in snapshot.objects {
-            let currentLayerIndex = object.layerIndex
-            var newLayerIndex = currentLayerIndex
+        // Update layer indices in snapshot.objects - only check affected layers
+        let affectedRange: ClosedRange<Int>
+        if sourceIndex < adjustedTargetIndex {
+            affectedRange = sourceIndex...adjustedTargetIndex
+        } else {
+            affectedRange = adjustedTargetIndex...sourceIndex
+        }
 
-            if currentLayerIndex == sourceIndex {
-                newLayerIndex = adjustedTargetIndex
-            } else if sourceIndex < adjustedTargetIndex {
-                if currentLayerIndex > sourceIndex && currentLayerIndex <= adjustedTargetIndex {
-                    newLayerIndex = currentLayerIndex - 1
-                }
-            } else if sourceIndex > adjustedTargetIndex {
-                if currentLayerIndex >= adjustedTargetIndex && currentLayerIndex < sourceIndex {
-                    newLayerIndex = currentLayerIndex + 1
-                }
-            }
+        // Only process objects in affected layers
+        for layerIdx in affectedRange {
+            guard layerIdx < snapshot.layers.count else { continue }
+            for objectID in snapshot.layers[layerIdx].objectIDs {
+                guard let object = snapshot.objects[objectID] else { continue }
+                let currentLayerIndex = object.layerIndex
+                var newLayerIndex = currentLayerIndex
 
-            if newLayerIndex != currentLayerIndex {
-                let updatedObject = VectorObject(id: object.id, layerIndex: newLayerIndex, objectType: object.objectType)
-                snapshot.objects[objectID] = updatedObject
+                if currentLayerIndex == sourceIndex {
+                    newLayerIndex = adjustedTargetIndex
+                } else if sourceIndex < adjustedTargetIndex {
+                    if currentLayerIndex > sourceIndex && currentLayerIndex <= adjustedTargetIndex {
+                        newLayerIndex = currentLayerIndex - 1
+                    }
+                } else if sourceIndex > adjustedTargetIndex {
+                    if currentLayerIndex >= adjustedTargetIndex && currentLayerIndex < sourceIndex {
+                        newLayerIndex = currentLayerIndex + 1
+                    }
+                }
+
+                if newLayerIndex != currentLayerIndex {
+                    let updatedObject = VectorObject(id: object.id, layerIndex: newLayerIndex, objectType: object.objectType)
+                    snapshot.objects[objectID] = updatedObject
+                }
             }
         }
 
