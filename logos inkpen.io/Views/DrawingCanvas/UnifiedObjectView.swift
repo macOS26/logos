@@ -1118,30 +1118,34 @@ struct LayerCanvasView: View {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
-    private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> NSImage? {
+    private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         // 1. Try bookmark data first (security-scoped access)
         if let bookmarkData = bookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
-                if let image = NSImage(contentsOf: url) {
-                    return image
+                if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+                   let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                    return cgImage
                 }
             }
         }
 
         // 2. Try absolute path
-        if let image = NSImage(contentsOfFile: linkedPath) {
-            return image
+        let absoluteURL = URL(fileURLWithPath: linkedPath)
+        if let imageSource = CGImageSourceCreateWithURL(absoluteURL as CFURL, nil),
+           let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+            return cgImage
         }
 
         // 3. Try relative to document
         if let docURL = documentURL {
             let docDir = docURL.deletingLastPathComponent()
             let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let image = NSImage(contentsOf: relativeURL) {
-                return image
+            if let imageSource = CGImageSourceCreateWithURL(relativeURL as CFURL, nil),
+               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                return cgImage
             }
         }
 
@@ -1150,8 +1154,9 @@ struct LayerCanvasView: View {
             let docDir = docURL.deletingLastPathComponent()
             let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
             let sameDir = docDir.appendingPathComponent(filename)
-            if let image = NSImage(contentsOf: sameDir) {
-                return image
+            if let imageSource = CGImageSourceCreateWithURL(sameDir as CFURL, nil),
+               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                return cgImage
             }
         }
 
@@ -1179,35 +1184,29 @@ struct LayerCanvasView: View {
         }
 
         // Check cache FIRST - if CGImage is cached, use it (NO disk I/O!)
-        // Cache key includes quality so changing quality re-renders
-        let cacheKey = "\(shape.id.uuidString)-q\(imagePreviewQuality)"
-
         let image: CGImage
-        if let cachedImage = document.cgImageCache[cacheKey] {
+        if let cachedImage = document.imageStorage[shape.id] {
             image = cachedImage
         } else {
             // CACHE MISS - load from disk ONCE and cache it
-
-            let nsImage: NSImage?
-            if let imageData = shape.embeddedImageData {
-                nsImage = NSImage(data: imageData)
-            } else if let linkedPath = shape.linkedImagePath {
-                nsImage = resolveLinkedImage(
-                    linkedPath: linkedPath,
-                    documentURL: documentURL,
-                    bookmarkData: shape.linkedImageBookmarkData,
-                    shapeID: shape.id
-                )
+            let sourceCGImage: CGImage?
+            if let imageData = shape.embeddedImageData,
+               let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                sourceCGImage = cgImage
+            } else if let linkedPath = shape.linkedImagePath,
+                      let resolvedImage = resolveLinkedImage(
+                          linkedPath: linkedPath,
+                          documentURL: documentURL,
+                          bookmarkData: shape.linkedImageBookmarkData,
+                          shapeID: shape.id
+                      ) {
+                sourceCGImage = resolvedImage
             } else {
                 return
             }
 
-            guard let sourceNSImage = nsImage else {
-                return
-            }
-
-            var rect = CGRect(origin: .zero, size: sourceNSImage.size)
-            guard let cgImage = sourceNSImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+            guard let cgImage = sourceCGImage else {
                 return
             }
 
@@ -1248,14 +1247,8 @@ struct LayerCanvasView: View {
                 finalImage = cgImage
             }
 
-            // Cache the downsampled image with quality in key
-            document.cgImageCache[cacheKey] = finalImage
-
-            // Verify it was written
-            if document.cgImageCache[cacheKey] != nil {
-            } else {
-            }
-
+            // Cache the image (with quality applied)
+            document.imageStorage[shape.id] = finalImage
             image = finalImage
         }
 
