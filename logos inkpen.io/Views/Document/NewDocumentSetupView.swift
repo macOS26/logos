@@ -395,7 +395,7 @@ struct NewDocumentSetupView: View {
             image.lockFocus()
 
             NSColor.windowBackgroundColor.setFill()
-            NSRect(origin: .zero, size: previewSize).fill()
+            CGRect(origin: .zero, size: previewSize).fill()
 
             let aspectRatio = setupData.width / setupData.height
             let maxSize: CGFloat = 240
