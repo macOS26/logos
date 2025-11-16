@@ -113,11 +113,11 @@ struct GradientFillSection: View {
                 originX: $localOriginX,
                 originY: $localOriginY,
                 updateOriginX: { newX in
-                    localOriginX = newX
+                    // Only update gradient delta, NOT local state during drag
                     updateGradientOrigin(x: newX, y: nil)
                 },
                 updateOriginY: { newY in
-                    localOriginY = newY
+                    // Only update gradient delta, NOT local state during drag
                     updateGradientOrigin(x: nil, y: newY)
                 },
                 onEditingChanged: { isEditing in
@@ -125,7 +125,8 @@ struct GradientFillSection: View {
                         // Drag started - capture old gradient state
                         captureOldGradientState()
                     } else {
-                        // Drag ended - commit with undo
+                        // Drag ended - sync local state and commit with undo
+                        syncLocalOriginFromGradient()
                         commitGradientChangeWithUndo()
                     }
                 }
@@ -291,6 +292,24 @@ struct GradientFillSection: View {
         }
     }
 
+    private func syncLocalOriginFromGradient() {
+        // Clear live state
+        document.viewState.liveGradientOriginX = nil
+        document.viewState.liveGradientOriginY = nil
+
+        // Sync local state from currentGradient
+        if let gradient = currentGradient {
+            switch gradient {
+            case .linear(let linear):
+                localOriginX = linear.originPoint.x
+                localOriginY = linear.originPoint.y
+            case .radial(let radial):
+                localOriginX = radial.originPoint.x
+                localOriginY = radial.originPoint.y
+            }
+        }
+    }
+
     private func updateGradientAngle(_ newAngle: Double) {
         guard let gradient = currentGradient else { return }
 
@@ -325,18 +344,24 @@ struct GradientFillSection: View {
         case .linear(var linear):
             if let newX = x {
                 linear.originPoint.x = newX
+                document.viewState.liveGradientOriginX = newX
             }
             if let newY = y {
                 linear.originPoint.y = newY
+                document.viewState.liveGradientOriginY = newY
             }
             currentGradient = .linear(linear)
             activeGradientDelta = currentGradient
         case .radial(var radial):
             if let newX = x {
                 radial.originPoint.x = newX
+                radial.focalPoint = CGPoint(x: newX, y: radial.originPoint.y)
+                document.viewState.liveGradientOriginX = newX
             }
             if let newY = y {
                 radial.originPoint.y = newY
+                radial.focalPoint = CGPoint(x: radial.originPoint.x, y: newY)
+                document.viewState.liveGradientOriginY = newY
             }
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
