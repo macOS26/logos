@@ -53,8 +53,7 @@ class ObjectArrangementCommand: BaseCommand {
                 layerObjectIDs.insert(id, at: insertIndex)
             }
 
-            document.snapshot.layers[layerIndex].objectIDs = layerObjectIDs
-            document.triggerLayerUpdate(for: layerIndex)
+            document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: layerObjectIDs)
         }
     }
 }
