@@ -1,40 +1,67 @@
 import SwiftUI
-import Foundation
 
 extension DrawingCanvas {
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
+        // Shape tool preview using Canvas
         if let currentPath = currentPath {
-            Path { path in
-                addPathElements(currentPath.elements, to: &path)
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
+
+                let path = Path { path in
+                    addPathElements(currentPath.elements, to: &path)
+                }
+
+                context.stroke(
+                    path,
+                    with: .color(Color.blue),
+                    lineWidth: 1.0 / zoomLevel
+                )
             }
-            .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
             drawingDimensionsOverlay(for: currentPath)
         }
 
+        // Bounding box preview using Canvas
         if let boundingBoxPath = tempBoundingBoxPath {
-            Path { path in
-                addPathElements(boundingBoxPath.elements, to: &path)
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
+
+                let path = Path { path in
+                    addPathElements(boundingBoxPath.elements, to: &path)
+                }
+
+                context.stroke(
+                    path,
+                    with: .color(Color.red),
+                    style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [5, 5])
+                )
             }
-            .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [5, 5]))
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
+        // Polygon/Star bounding box using Canvas
         if let currentPath = currentPath,
            (document.viewState.currentTool == .polygon || document.viewState.currentTool == .pentagon ||
             document.viewState.currentTool == .hexagon || document.viewState.currentTool == .heptagon ||
             document.viewState.currentTool == .octagon || document.viewState.currentTool == .nonagon ||
             document.viewState.currentTool == .star) {
             let actualBounds = currentPath.cgPath.boundingBoxOfPath
-            Path { path in
-                path.addRect(actualBounds)
+
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
+
+                let path = Path { path in
+                    path.addRect(actualBounds)
+                }
+
+                context.stroke(
+                    path,
+                    with: .color(Color.blue.opacity(0.3)),
+                    style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4 / zoomLevel, 2 / zoomLevel])
+                )
             }
-            .stroke(Color.blue.opacity(0.3), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4 / zoomLevel, 2 / zoomLevel]))
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
 
         rubberBandPreview(geometry: geometry)
@@ -50,63 +77,10 @@ extension DrawingCanvas {
                 }
 
                 if appState.brushPreviewStyle == .fill {
-                    // Check if there's an active gradient
-                    if let gradient = activeGradientDelta {
-                        // Create SwiftUI gradient from VectorGradient
-                        let gradientStops = gradient.stops.map { stop in
-                            Gradient.Stop(color: stop.color.color, location: stop.position)
-                        }
-
-                        let bounds = preview.cgPath.boundingBox
-
-                        switch gradient {
-                        case .radial(let radialGradient):
-                            // Radial gradient
-                            let center = CGPoint(
-                                x: bounds.origin.x + bounds.width * radialGradient.originPoint.x,
-                                y: bounds.origin.y + bounds.height * radialGradient.originPoint.y
-                            )
-                            context.fill(
-                                path,
-                                with: .radialGradient(
-                                    Gradient(stops: gradientStops),
-                                    center: center,
-                                    startRadius: 0,
-                                    endRadius: max(bounds.width, bounds.height) / 2
-                                )
-                            )
-                        case .linear(let linearGradient):
-                            // Linear gradient
-                            let angle = Angle(degrees: linearGradient.storedAngle)
-                            let centerX = bounds.origin.x + bounds.width * 0.5
-                            let centerY = bounds.origin.y + bounds.height * 0.5
-                            let radius = max(bounds.width, bounds.height) / 2
-
-                            let startPoint = CGPoint(
-                                x: centerX - Foundation.cos(angle.radians) * radius,
-                                y: centerY - Foundation.sin(angle.radians) * radius
-                            )
-                            let endPoint = CGPoint(
-                                x: centerX + Foundation.cos(angle.radians) * radius,
-                                y: centerY + Foundation.sin(angle.radians) * radius
-                            )
-
-                            context.fill(
-                                path,
-                                with: .linearGradient(
-                                    Gradient(stops: gradientStops),
-                                    startPoint: startPoint,
-                                    endPoint: endPoint
-                                )
-                            )
-                        }
-                    } else {
-                        // Fallback to flat color
-                        context.fill(
-                            path,
-                            with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity))
-                        )
-                    }
+                    context.fill(
+                        path,
+                        with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity))
+                    )
                 } else {
                     context.stroke(
                         path,
@@ -127,78 +101,15 @@ extension DrawingCanvas {
                     addPathElements(preview.elements, to: &path)
                 }
 
-                // Check if there's an active gradient for stroke
-                if let gradient = activeGradientDelta {
-                    // Create SwiftUI gradient from VectorGradient
-                    let gradientStops = gradient.stops.map { stop in
-                        Gradient.Stop(color: stop.color.color.opacity(document.defaultStrokeOpacity), location: stop.position)
-                    }
-
-                    let bounds = preview.cgPath.boundingBox
-
-                    switch gradient {
-                    case .radial(let radialGradient):
-                        // Radial gradient stroke
-                        let center = CGPoint(
-                            x: bounds.origin.x + bounds.width * radialGradient.originPoint.x,
-                            y: bounds.origin.y + bounds.height * radialGradient.originPoint.y
-                        )
-                        context.stroke(
-                            path,
-                            with: .radialGradient(
-                                Gradient(stops: gradientStops),
-                                center: center,
-                                startRadius: 0,
-                                endRadius: max(bounds.width, bounds.height) / 2
-                            ),
-                            style: SwiftUI.StrokeStyle(
-                                lineWidth: document.defaultStrokeWidth,
-                                lineCap: .round,
-                                lineJoin: .round
-                            )
-                        )
-                    case .linear(let linearGradient):
-                        // Linear gradient stroke
-                        let angle = Angle(degrees: linearGradient.storedAngle)
-                        let centerX = bounds.origin.x + bounds.width * 0.5
-                        let centerY = bounds.origin.y + bounds.height * 0.5
-                        let radius = max(bounds.width, bounds.height) / 2
-
-                        let startPoint = CGPoint(
-                            x: centerX - Foundation.cos(angle.radians) * radius,
-                            y: centerY - Foundation.sin(angle.radians) * radius
-                        )
-                        let endPoint = CGPoint(
-                            x: centerX + Foundation.cos(angle.radians) * radius,
-                            y: centerY + Foundation.sin(angle.radians) * radius
-                        )
-
-                        context.stroke(
-                            path,
-                            with: .linearGradient(
-                                Gradient(stops: gradientStops),
-                                startPoint: startPoint,
-                                endPoint: endPoint
-                            ),
-                            style: SwiftUI.StrokeStyle(
-                                lineWidth: document.defaultStrokeWidth,
-                                lineCap: .round,
-                                lineJoin: .round
-                            )
-                        )
-                    }
-                } else {
-                    // Fallback to flat color
-                    context.stroke(
-                        path,
-                        with: .color(document.defaultStrokeColor.color.opacity(document.defaultStrokeOpacity)),
-                        style: SwiftUI.StrokeStyle(
-                            lineWidth: document.defaultStrokeWidth,
-                            lineCap: .round,
-                            lineJoin: .round
-                        )
+                context.stroke(
+                    path,
+                    with: .color(document.defaultStrokeColor.color.opacity(document.defaultStrokeOpacity)),
+                    style: SwiftUI.StrokeStyle(
+                        lineWidth: document.defaultStrokeWidth,
+                        lineCap: .round,
+                        lineJoin: .round
                     )
-                }
+                )
             }
         }
 
