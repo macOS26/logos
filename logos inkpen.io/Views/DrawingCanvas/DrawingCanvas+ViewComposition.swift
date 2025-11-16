@@ -413,17 +413,6 @@ extension DrawingCanvas {
             canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
 
             pressureSensitiveOverlay(geometry: geometry)
-
-			if appState.showInAppPerformanceHUD {
-				VStack {
-					HStack {
-						Spacer()
-						hudOverlay
-							.offset(x: appState.inAppHUDOffsetX, y: appState.inAppHUDOffsetY)
-					}
-					Spacer()
-				}
-			}
         }
         .onAppear {
             setupCanvas()
@@ -568,18 +557,6 @@ extension DrawingCanvas {
         default:
             break
         }
-    }
-
-    private var hudOverlay: some View {
-        let monitor = OptimizedPerformanceMonitor.shared
-        return LightweightPerformanceOverlay(monitor: monitor)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        AppState.shared.inAppHUDOffsetX = value.translation.width + AppState.shared.inAppHUDOffsetX
-                        AppState.shared.inAppHUDOffsetY = value.translation.height + AppState.shared.inAppHUDOffsetY
-                    }
-            )
     }
 
 }
