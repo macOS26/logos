@@ -58,8 +58,6 @@ struct LayersPanel: View {
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
 
-    @State private var showColorPicker: Bool = false
-    @State private var rowHeights: [CGFloat] = []
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
 
@@ -73,17 +71,9 @@ struct LayersPanel: View {
         return document.snapshot.layers.count > 2 ? 2 : nil
     }
 
-    // Computed property for overlays - no need for @State
+    // Enable overlays when there are visible rows
     private var overlaysEnabled: Bool {
-        let expectedRowCount = visibleRows.count
-        guard expectedRowCount > 0 else { return false }
-        guard !rowHeights.isEmpty else { return false }
-
-        let minHeight = rowHeights.min() ?? kLayerRowHeight
-        let maxHeight = rowHeights.max() ?? kLayerRowHeight
-        let allHeightsSame = (maxHeight - minHeight) <= 0.1
-
-        return allHeightsSame && rowHeights.count == expectedRowCount
+        return !visibleRows.isEmpty
     }
 
     private enum RowType: Hashable {
