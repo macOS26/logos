@@ -100,12 +100,14 @@ struct StrokePropertiesSection: View {
                     }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in
-                        HStack {
-                            Image(systemName: placement.iconName)
-                            Text(placement.rawValue)
+                        // Only show center placement for text, all placements for shapes
+                        if !isTextSelected || placement == .center {
+                            HStack {
+                                Image(systemName: placement.iconName)
+                                Text(placement.rawValue)
+                            }
+                            .tag(placement)
                         }
-                        .tag(placement)
-                        .disabled(isTextSelected && (placement == .inside || placement == .outside))
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
