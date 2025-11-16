@@ -9,6 +9,7 @@ struct StrokePropertiesSection: View {
     let strokeLineCap: CGLineCap
     let strokeMiterLimit: Double
     let strokeScaleWithTransform: Bool
+    let isTextSelected: Bool
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
@@ -104,6 +105,7 @@ struct StrokePropertiesSection: View {
                             Text(placement.rawValue)
                         }
                         .tag(placement)
+                        .disabled(isTextSelected && (placement == .inside || placement == .outside))
                     }
                 }
                 .pickerStyle(MenuPickerStyle())

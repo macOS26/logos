@@ -803,6 +803,16 @@ struct StrokeFillPanel: View {
         return strokeDefaults.placement
     }
 
+    private var isTextSelected: Bool {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            if case .text = newVectorObject.objectType {
+                return true
+            }
+        }
+        return false
+    }
+
     private var fillOpacity: Double {
         if let firstSelectedObjectID = selectedObjectIDs.first,
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
@@ -1048,6 +1058,7 @@ struct StrokeFillPanel: View {
                         strokeLineCap: strokeLineCap,
                         strokeMiterLimit: strokeMiterLimitState,
                         strokeScaleWithTransform: strokeScaleWithTransform,
+                        isTextSelected: isTextSelected,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             strokeDeltaWidth = value  // SET the delta for live preview!

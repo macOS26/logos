@@ -73,7 +73,7 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor: VectorColor,
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
-        strokeLineJoin: LineJoin = .round,
+        strokeLineJoin: LineJoin = .miter,
         fillColor: VectorColor,
         fillOpacity: Double = 1.0
     ) {
@@ -157,7 +157,7 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor = try container.decode(VectorColor.self, forKey: .strokeColor)
         strokeWidth = try container.decode(Double.self, forKey: .strokeWidth)
         strokeOpacity = try container.decode(Double.self, forKey: .strokeOpacity)
-        strokeLineJoin = try container.decodeIfPresent(LineJoin.self, forKey: .strokeLineJoin) ?? .round
+        strokeLineJoin = try container.decodeIfPresent(LineJoin.self, forKey: .strokeLineJoin) ?? .miter
         fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
         fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
     }
