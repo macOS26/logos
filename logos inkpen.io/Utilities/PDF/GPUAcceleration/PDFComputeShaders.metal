@@ -127,6 +127,7 @@ struct CubicCurve {
     float2 p3;
 };
 
+// SIMD optimized: Compute Bernstein basis coefficients with float4
 kernel void evaluateCubicBezier(
     device const CubicCurve *curve [[buffer(0)]],
     device const float *tValues [[buffer(1)]],
@@ -140,10 +141,19 @@ kernel void evaluateCubicBezier(
     float t2 = t * t;
     float t3 = t2 * t;
 
-    float2 point = oneMinusT3 * curve->p0 +
-                   3.0 * oneMinusT2 * t * curve->p1 +
-                   3.0 * oneMinusT * t2 * curve->p2 +
-                   t3 * curve->p3;
+    // SIMD: Compute all Bernstein basis coefficients at once
+    float4 basis = float4(
+        oneMinusT3,
+        3.0 * oneMinusT2 * t,
+        3.0 * oneMinusT * t2,
+        t3
+    );
+
+    // Blend control points using basis functions
+    float2 point = basis.x * curve->p0 +
+                   basis.y * curve->p1 +
+                   basis.z * curve->p2 +
+                   basis.w * curve->p3;
 
     outputPoints[index] = point;
 }
