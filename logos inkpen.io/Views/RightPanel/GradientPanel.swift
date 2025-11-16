@@ -293,21 +293,30 @@ struct GradientFillSection: View {
     }
 
     private func syncLocalOriginFromGradient() {
+        // Apply live state to currentGradient before clearing
+        if let liveX = document.viewState.liveGradientOriginX,
+           let liveY = document.viewState.liveGradientOriginY,
+           let gradient = currentGradient {
+            switch gradient {
+            case .linear(var linear):
+                linear.originPoint.x = liveX
+                linear.originPoint.y = liveY
+                currentGradient = .linear(linear)
+                localOriginX = liveX
+                localOriginY = liveY
+            case .radial(var radial):
+                radial.originPoint.x = liveX
+                radial.originPoint.y = liveY
+                radial.focalPoint = CGPoint(x: liveX, y: liveY)
+                currentGradient = .radial(radial)
+                localOriginX = liveX
+                localOriginY = liveY
+            }
+        }
+
         // Clear live state
         document.viewState.liveGradientOriginX = nil
         document.viewState.liveGradientOriginY = nil
-
-        // Sync local state from currentGradient
-        if let gradient = currentGradient {
-            switch gradient {
-            case .linear(let linear):
-                localOriginX = linear.originPoint.x
-                localOriginY = linear.originPoint.y
-            case .radial(let radial):
-                localOriginX = radial.originPoint.x
-                localOriginY = radial.originPoint.y
-            }
-        }
     }
 
     private func updateGradientAngle(_ newAngle: Double) {
@@ -338,33 +347,13 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOrigin(x: Double?, y: Double?) {
-        guard let gradient = currentGradient else { return }
-
-        switch gradient {
-        case .linear(var linear):
-            if let newX = x {
-                linear.originPoint.x = newX
-                document.viewState.liveGradientOriginX = newX
-            }
-            if let newY = y {
-                linear.originPoint.y = newY
-                document.viewState.liveGradientOriginY = newY
-            }
-            currentGradient = .linear(linear)
-            activeGradientDelta = currentGradient
-        case .radial(var radial):
-            if let newX = x {
-                radial.originPoint.x = newX
-                radial.focalPoint = CGPoint(x: newX, y: radial.originPoint.y)
-                document.viewState.liveGradientOriginX = newX
-            }
-            if let newY = y {
-                radial.originPoint.y = newY
-                radial.focalPoint = CGPoint(x: radial.originPoint.x, y: newY)
-                document.viewState.liveGradientOriginY = newY
-            }
-            currentGradient = .radial(radial)
-            activeGradientDelta = currentGradient
+        // ONLY update live state - do NOT update currentGradient or activeGradientDelta during drag
+        // This prevents @State/@Binding updates that trigger view re-renders
+        if let newX = x {
+            document.viewState.liveGradientOriginX = newX
+        }
+        if let newY = y {
+            document.viewState.liveGradientOriginY = newY
         }
     }
 
