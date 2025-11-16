@@ -461,7 +461,7 @@ struct LayerCanvasView: View {
                     }()
                     let liveTextShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     // For text, pass liveScaleTransform so it can reflow (don't transform)
-                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: maskShape)
+                    renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, strokeDeltaOpacity: strokeDeltaOpacity, strokeDeltaWidth: strokeDeltaWidth, textContentDelta: textContentDelta, maskShape: maskShape)
                 }
             }
         }
@@ -858,7 +858,7 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, textContentDelta: (id: UUID, content: String)? = nil, maskShape: VectorShape? = nil) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, strokeDeltaOpacity: Double? = nil, strokeDeltaWidth: Double? = nil, textContentDelta: (id: UUID, content: String)? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
         guard let vectorText = VectorText.from(shape) else { return }
 
@@ -1081,12 +1081,19 @@ struct LayerCanvasView: View {
                     cgContext.setAlpha(CGFloat(effectiveFillOpacity))
                     cgContext.fillPath()
 
-                    // Then draw stroke
+                    // Then draw stroke with deltas if selected
+                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                        ? strokeDeltaWidth!
+                        : vectorText.typography.strokeWidth
+                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                        ? strokeDeltaOpacity!
+                        : vectorText.typography.strokeOpacity
+
                     cgContext.addPath(textPath)
                     let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
                     cgContext.setStrokeColor(strokeColor.cgColor)
-                    cgContext.setLineWidth(vectorText.typography.strokeWidth)
-                    cgContext.setAlpha(CGFloat(vectorText.typography.strokeOpacity))
+                    cgContext.setLineWidth(effectiveStrokeWidth)
+                    cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
                     cgContext.strokePath()
 
                     cgContext.restoreGState()
