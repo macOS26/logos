@@ -98,9 +98,14 @@ extension FileOperations {
 
             // Image data is already embedded in shape - will be hydrated when needed
             if let imageData = importedShape.embeddedImageData {
-                if NSImage(data: imageData) == nil {
-                    Log.error("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data", category: .error)
-                    Log.error("❌ Could not create NSImage from embedded data for '\(importedShape.name)'", category: .error)
+                // Validate image data using CGImageSource (cross-platform)
+                if let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+                   CGImageSourceCreateImageAtIndex(imageSource, 0, nil) == nil {
+                    Log.error("PDF IMPORT: ❌ Failed to create CGImage from \(imageData.count) bytes of data", category: .error)
+                    Log.error("❌ Could not create CGImage from embedded data for '\(importedShape.name)'", category: .error)
+                } else if CGImageSourceCreateWithData(imageData as CFData, nil) == nil {
+                    Log.error("PDF IMPORT: ❌ Failed to create image source from \(imageData.count) bytes of data", category: .error)
+                    Log.error("❌ Could not create image from embedded data for '\(importedShape.name)'", category: .error)
                 }
             }
 
