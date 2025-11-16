@@ -154,7 +154,6 @@ final class VectorDocument: ObservableObject, Codable {
         )
 
         setupViewStateForwarding()
-        syncEncodableStorage()
     }
 
     required init(from decoder: Decoder) throws {
@@ -162,13 +161,6 @@ final class VectorDocument: ObservableObject, Codable {
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
         let decodedSnapshot = try container.decode(DocumentSnapshot.self, forKey: .snapshot)
 
-        _encodableSettings = decodedSettings
-        _encodableCurrentTool = .selection
-        _encodableViewMode = .color
-        _encodableZoomLevel = 1.0
-        _encodableCanvasOffset = .zero
-        _encodableUnifiedObjects = []
-        
         settings = decodedSettings
         snapshot = decodedSnapshot
         layerIndex = snapshot.layers.count
