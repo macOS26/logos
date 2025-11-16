@@ -8,7 +8,7 @@ final class VectorDocument: ObservableObject, Codable {
     // MARK: - Legacy Structure (to be migrated)
     // View-only state (doesn't trigger document saves)
     var viewState: DocumentViewState = DocumentViewState()
-    @Published var settings: DocumentSettings
+    @Published var settings: DocumentSettings = DocumentSettings()
     var layerIndex: Int = 0  // DEPRECATED - tracks active layer for operations
     var selectedLayerIndex: Int?
     
