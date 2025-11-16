@@ -71,6 +71,12 @@ extension VectorDocument {
         }
     }
 
+    func updateTextStrokeLineJoin(id: UUID, lineJoin: CGLineJoin) {
+        updateShapeByID(id) { shape in
+            shape.typography?.strokeLineJoin = LineJoin(lineJoin)
+        }
+    }
+
     func translateTextInUnified(id: UUID, delta: CGPoint) {
         updateShapeByID(id) { shape in
             shape.transform.tx += delta.x

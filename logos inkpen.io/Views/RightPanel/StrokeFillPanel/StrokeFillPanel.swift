@@ -847,8 +847,8 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = selectedObjectIDs.first,
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
-            case .text:
-                return strokeDefaults.lineJoin
+            case .text(let shape):
+                return shape.typography?.strokeLineJoin.cgLineJoin ?? strokeDefaults.lineJoin
             case .shape(let shape),
                  .image(let shape),
                  .warp(let shape),

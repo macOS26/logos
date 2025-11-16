@@ -313,8 +313,9 @@ enum PaintSelectionOperations {
                     case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                         oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
                         newLineJoins[shapeID] = lineJoin
-                    case .text:
-                        continue
+                    case .text(let shape):
+                        oldLineJoins[shapeID] = shape.typography?.strokeLineJoin.cgLineJoin ?? .round
+                        newLineJoins[shapeID] = lineJoin
                     }
                 }
             }
@@ -329,7 +330,14 @@ enum PaintSelectionOperations {
             }
 
             for shapeID in activeShapeIDs {
-                document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
+                if let obj = document.snapshot.objects[shapeID] {
+                    switch obj.objectType {
+                    case .text:
+                        document.updateTextStrokeLineJoin(id: shapeID, lineJoin: lineJoin)
+                    default:
+                        document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
+                    }
+                }
             }
         }
     }
