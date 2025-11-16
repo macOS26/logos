@@ -324,10 +324,22 @@ class ProfessionalTextViewModel: ObservableObject {
             let unionedPath = linePath.union(linePath, using: .winding)
             let vectorPath = convertCGPathToVectorPath(unionedPath.isEmpty ? linePath : unionedPath)
             let lineName = "Line \(lineIndex + 1)"
+
+            // Preserve stroke properties from text
+            let strokeStyle: StrokeStyle? = textObject.typography.hasStroke ? StrokeStyle(
+                color: textObject.typography.strokeColor,
+                width: textObject.typography.strokeWidth,
+                dashPattern: [],
+                lineCap: .round,
+                lineJoin: textObject.typography.strokeLineJoin.cgLineJoin,
+                miterLimit: 4.0,
+                opacity: textObject.typography.strokeOpacity
+            ) : nil
+
             let outlineShape = VectorShape(
                 name: lineName,
                 path: vectorPath,
-                strokeStyle: nil,
+                strokeStyle: strokeStyle,
                 fillStyle: FillStyle(
                     color: textObject.typography.fillColor,
                     opacity: textObject.typography.fillOpacity
