@@ -1,6 +1,12 @@
 import SwiftUI
 import AppKit
 
+// MARK: - iPad TODO
+// This file uses NSPopover and NSRectEdge which are macOS-only.
+// For iPad support, replace with:
+// - SwiftUI .popover() modifier, or
+// - UIPopoverPresentationController with UIPopoverArrowDirection
+
 /// A popover manager that reuses a single NSPopover instance and smoothly repositions it when the anchor changes
 class SlidingPopoverManager: NSObject, NSPopoverDelegate {
     private var popover: NSPopover?
