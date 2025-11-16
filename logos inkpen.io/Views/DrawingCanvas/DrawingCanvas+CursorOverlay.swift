@@ -109,29 +109,23 @@ private final class CursorOverlayNSView: NSView {
     }
 
     private func installEventMonitors() {
-        let cursorUpdateMonitor = NSEvent.addLocalMonitorForEvents(matching: [.cursorUpdate]) { [weak self] event in
+        let cursorMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.cursorUpdate, .mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
+        ) { [weak self] event in
             guard let self = self else { return event }
             guard self.window === event.window else { return event }
+
             let p = self.convert(event.locationInWindow, from: nil)
             let shouldForce = self.isHovering && self.bounds.contains(p) && self.shouldForceCustomCursor()
+
             if shouldForce {
                 self.applyForcedCursor()
-                return nil
+                // Consume .cursorUpdate events, pass through mouse events
+                return event.type == .cursorUpdate ? nil : event
             }
             return event
         }
-        eventMonitors.append(cursorUpdateMonitor as Any)
-
-        let mouseMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]) { [weak self] event in
-            guard let self = self else { return event }
-            guard self.window === event.window else { return event }
-            let p = self.convert(event.locationInWindow, from: nil)
-            if self.isHovering && self.bounds.contains(p) && self.shouldForceCustomCursor() {
-                self.applyForcedCursor()
-            }
-            return event
-        }
-        eventMonitors.append(mouseMoveMonitor as Any)
+        eventMonitors.append(cursorMonitor as Any)
     }
 
     private func removeEventMonitors() {
