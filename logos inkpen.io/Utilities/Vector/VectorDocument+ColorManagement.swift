@@ -264,9 +264,6 @@ extension VectorDocument {
         return nil
     }
 
-    func updateColorSwatchesForMode() {
-    }
-
     static func createDefaultRGBSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
         let rgbColors: [VectorColor] = [

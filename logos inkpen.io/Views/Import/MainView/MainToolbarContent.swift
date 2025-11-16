@@ -6,7 +6,6 @@ struct MainToolbarContent: ToolbarContent {
     let appState: AppState
     @Binding var currentDocumentURL: URL?
     @Binding var showingDocumentSettings: Bool
-    @Binding var showingColorPicker: Bool
     @Binding var showingImportDialog: Bool
     @Binding var importResult: VectorImportResult?
     @Binding var showingImportProgress: Bool

@@ -75,8 +75,6 @@ class AppState {
     }
 
     var gradientEditingState: GradientEditingState? = nil
-    var showingGradientHUD = false
-    var gradientHUDData: GradientHUDData? = nil
 
     private var _persistentGradientHUD: PersistentGradientHUDManager?
     var persistentGradientHUD: PersistentGradientHUDManager {

@@ -48,7 +48,6 @@ struct GradientStopColorPicker: View {
                             let oldMode = document.settings.colorMode
                             document.settings.colorMode = newMode
                             currentColor = convertColorToMode(currentColor, from: oldMode, to: newMode)
-                            document.updateColorSwatchesForMode()
                         }
                     )) {
                         ForEach(ColorMode.allCases, id: \.self) { mode in
