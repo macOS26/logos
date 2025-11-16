@@ -1,10 +1,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
-
-struct Point2D {
-    float x, y;
-};
+// Use native SIMD types for better performance
+typedef float2 Point2D;
 
 struct PolygonParams {
     float radius;
@@ -26,15 +24,15 @@ kernel void calculate_distances(
     Point2D point = points[index];
     Point2D start = lineStart[0];
     Point2D end = lineEnd[0];
-    
-    float lineLength = sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y));
-    
+
+    float lineLength = distance(end, start);
+
     if (lineLength < 0.0001) {
-        float dx = point.x - start.x;
-        float dy = point.y - start.y;
-        distances[index] = sqrt(dx * dx + dy * dy);
+        distances[index] = distance(point, start);
     } else {
-        float area = abs((end.x - start.x) * (point.y - start.y) - (end.y - start.y) * (point.x - start.x));
+        float2 lineVec = end - start;
+        float2 pointVec = point - start;
+        float area = abs(lineVec.x * pointVec.y - lineVec.y * pointVec.x);
         distances[index] = area / lineLength;
     }
     
@@ -701,9 +699,9 @@ kernel void path_intersection_calculation(
     Point2D p1 = path1Points[path1Index];
     Point2D p2 = path2Points[path2Index];
 
-    float distance = sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+    float dist = distance(p1, p2);
 
-    if (distance < 0.001) {
+    if (dist < 0.001) {
         atomic_fetch_add_explicit((device atomic_uint*)intersectionCount, 1, memory_order_relaxed);
         uint currentCount = atomic_fetch_add_explicit((device atomic_uint*)intersectionCount, 0, memory_order_relaxed);
         if (currentCount < 1000) {
