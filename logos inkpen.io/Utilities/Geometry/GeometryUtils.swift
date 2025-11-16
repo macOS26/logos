@@ -70,6 +70,36 @@ extension CGRect {
     }
 }
 
+// MARK: - SIMD2 Extensions for CGSize
+
+extension CGSize {
+    /// Convert CGSize to SIMD2 for batch processing (width, height)
+    @inline(__always)
+    var simd: SIMD2<Double> {
+        SIMD2(Double(width), Double(height))
+    }
+
+    /// Create CGSize from SIMD2 (width, height)
+    @inline(__always)
+    init(simd: SIMD2<Double>) {
+        self.init(width: CGFloat(simd.x), height: CGFloat(simd.y))
+    }
+
+    /// Fast area calculation using SIMD
+    @inline(__always)
+    var areaSIMD: CGFloat {
+        let s = self.simd
+        return CGFloat(s.x * s.y)
+    }
+
+    /// Fast aspect ratio using SIMD
+    @inline(__always)
+    var aspectRatioSIMD: CGFloat {
+        let s = self.simd
+        return s.y > 0 ? CGFloat(s.x / s.y) : 0
+    }
+}
+
 /// Batch rect operations using SIMD
 struct SIMDRectOps {
     /// Compute union bounds of multiple rects using SIMD
