@@ -56,6 +56,8 @@ struct ProfessionalTextCanvas: View {
         // Read font directly from document, not viewModel!
         let fontFamily = textObject.typography.fontFamily
         let fontVariant = textObject.typography.fontVariant
+        // Include fill color so view updates when it changes
+        let fillColor = textObject.typography.fillColor
 
         return TextViewRepresentable(
             viewModel: viewModel,
@@ -66,6 +68,7 @@ struct ProfessionalTextCanvas: View {
             lineSpacing: lineSpacing,
             fontFamily: fontFamily,
             fontVariant: fontVariant,
+            fillColor: fillColor,
             fontManager: document.fontManager,
             textContentDelta: $textContentDelta
         )
@@ -124,6 +127,7 @@ struct ProfessionalTextCanvas: View {
         let lineSpacing: CGFloat
         let fontFamily: String
         let fontVariant: String?
+        let fillColor: VectorColor  // Track color changes
         let fontManager: FontManager
         @Binding var textContentDelta: (id: UUID, content: String)?
 
@@ -265,10 +269,18 @@ struct ProfessionalTextCanvas: View {
         }
 
         private func applyStyle(to textView: NSTextView) {
-            let cursorColor: NSColor = if viewMode == .keyline {
-                NSColor.black
+            let cursorColor: NSColor
+            if viewMode == .keyline {
+                cursorColor = NSColor.black
             } else {
-                NSColor(viewModel.textObject.typography.fillColor.color)
+                // Use fill color but with full opacity for cursor visibility
+                let fillCGColor = fillColor.cgColor
+                if let components = fillCGColor.components, components.count >= 3 {
+                    cursorColor = NSColor(red: components[0], green: components[1], blue: components[2], alpha: 1.0)
+                } else {
+                    // Fallback to the original color with its opacity if we can't extract components
+                    cursorColor = NSColor(cgColor: fillCGColor) ?? NSColor.black
+                }
             }
             textView.insertionPointColor = cursorColor
 
@@ -323,9 +335,12 @@ struct ProfessionalTextCanvas: View {
             var isRestoringSelection: Bool = false
             weak var textView: DisabledContextMenuTextView?
             var updateTimer: Timer?
+            var originalText: String?  // Store original text for undo
 
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
+                // Store the initial text content for undo
+                self.originalText = parent.viewModel.text
             }
 
             func textDidChange(_ notification: Notification) {
@@ -349,9 +364,25 @@ struct ProfessionalTextCanvas: View {
                     self.updateTimer?.invalidate()
 
                     // Set new timer to commit after 500ms of no typing
-                    self.updateTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-                        // Commit the change to document (like onEditingChanged: false for sliders)
-                        self.parent.viewModel.document.updateTextContent(textObjectId, content: newText)
+                    self.updateTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                        guard let self = self else { return }
+
+                        // Create undo command if text actually changed
+                        if let originalText = self.originalText, originalText != newText {
+                            let command = TextContentCommand(
+                                textID: textObjectId,
+                                oldContent: originalText,
+                                newContent: newText
+                            )
+                            self.parent.viewModel.document.executeCommand(command)
+
+                            // Update original text for next potential change
+                            self.originalText = newText
+                        } else {
+                            // Just update without undo if no real change
+                            self.parent.viewModel.document.updateTextContent(textObjectId, content: newText)
+                        }
+
                         // Clear delta after committing
                         self.parent.textContentDelta = nil
                     }
@@ -408,8 +439,25 @@ struct ProfessionalTextCanvas: View {
                     guard let self = self else { return }
                     // Clear delta first
                     self.parent.textContentDelta = nil
-                    // Then commit the final text
-                    self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
+
+                    // Create undo command if text actually changed
+                    if let originalText = self.originalText, originalText != finalText {
+                        let command = TextContentCommand(
+                            textID: textObjectId,
+                            oldContent: originalText,
+                            newContent: finalText,
+                            oldBounds: nil,  // TODO: Store old bounds if needed
+                            newBounds: textFrame
+                        )
+                        self.parent.viewModel.document.executeCommand(command)
+
+                        // Reset original text for next edit session
+                        self.originalText = finalText
+                    } else {
+                        // Just update without undo if no real change
+                        self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
+                    }
+
                     self.parent.viewModel.updateDocumentTextBounds(textFrame)
                     self.parent.isUpdatingFromTyping = false
                 }

@@ -125,7 +125,10 @@
       "Bash(python3:*)",
       "Bash(cat:*)",
       "WebFetch(domain:stackoverflow.com)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(while read file)",
+      "Bash(do basename \"$file\" .swift)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
