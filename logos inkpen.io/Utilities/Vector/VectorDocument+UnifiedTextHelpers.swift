@@ -77,6 +77,12 @@ extension VectorDocument {
         }
     }
 
+    func updateTextStrokePlacement(id: UUID, placement: StrokePlacement) {
+        updateShapeByID(id) { shape in
+            shape.typography?.strokePlacement = placement
+        }
+    }
+
     func translateTextInUnified(id: UUID, delta: CGPoint) {
         updateShapeByID(id) { shape in
             shape.transform.tx += delta.x

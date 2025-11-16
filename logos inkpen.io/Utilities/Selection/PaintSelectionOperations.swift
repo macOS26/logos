@@ -278,8 +278,9 @@ enum PaintSelectionOperations {
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
                     newPlacements[shapeID] = placement
-                case .text:
-                    continue
+                case .text(let shape):
+                    oldPlacements[shapeID] = shape.typography?.strokePlacement ?? .center
+                    newPlacements[shapeID] = placement
                 }
             }
         }
@@ -294,7 +295,14 @@ enum PaintSelectionOperations {
         }
 
         for shapeID in activeShapeIDs {
-            document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
+            if let obj = document.snapshot.objects[shapeID] {
+                switch obj.objectType {
+                case .text:
+                    document.updateTextStrokePlacement(id: shapeID, placement: placement)
+                default:
+                    document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
+                }
+            }
         }
     }
 

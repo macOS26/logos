@@ -1090,7 +1090,7 @@ struct LayerCanvasView: View {
                     cgContext.fillPath()
 
                     // Draw stroke using PathOperations for placement support
-                    let strokePlacement: StrokePlacement = .center  // TODO: Add to typography
+                    let strokePlacement = vectorText.typography.strokePlacement
                     let strokeStyle = StrokeStyle(
                         color: vectorText.typography.strokeColor,
                         width: effectiveStrokeWidth,

@@ -58,6 +58,7 @@ struct TypographyProperties: Codable, Hashable {
     var strokeWidth: Double
     var strokeOpacity: Double
     var strokeLineJoin: LineJoin
+    var strokePlacement: StrokePlacement
     var fillColor: VectorColor
     var fillOpacity: Double
 
@@ -73,7 +74,8 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor: VectorColor,
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
-        strokeLineJoin: LineJoin = .round,
+        strokeLineJoin: LineJoin = .miter,
+        strokePlacement: StrokePlacement = .center,
         fillColor: VectorColor,
         fillOpacity: Double = 1.0
     ) {
@@ -89,6 +91,7 @@ struct TypographyProperties: Codable, Hashable {
         self.strokeWidth = strokeWidth
         self.strokeOpacity = strokeOpacity
         self.strokeLineJoin = strokeLineJoin
+        self.strokePlacement = strokePlacement
         self.fillColor = fillColor
         self.fillOpacity = fillOpacity
     }
@@ -140,7 +143,7 @@ struct TypographyProperties: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
         case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth
-        case strokeOpacity, strokeLineJoin, fillColor, fillOpacity
+        case strokeOpacity, strokeLineJoin, strokePlacement, fillColor, fillOpacity
         case fontWeight, fontStyle
     }
 
@@ -157,7 +160,8 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor = try container.decode(VectorColor.self, forKey: .strokeColor)
         strokeWidth = try container.decode(Double.self, forKey: .strokeWidth)
         strokeOpacity = try container.decode(Double.self, forKey: .strokeOpacity)
-        strokeLineJoin = try container.decodeIfPresent(LineJoin.self, forKey: .strokeLineJoin) ?? .round
+        strokeLineJoin = try container.decodeIfPresent(LineJoin.self, forKey: .strokeLineJoin) ?? .miter
+        strokePlacement = try container.decodeIfPresent(StrokePlacement.self, forKey: .strokePlacement) ?? .center
         fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
         fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
     }
@@ -176,6 +180,7 @@ struct TypographyProperties: Codable, Hashable {
         try container.encode(strokeWidth, forKey: .strokeWidth)
         try container.encode(strokeOpacity, forKey: .strokeOpacity)
         try container.encode(strokeLineJoin, forKey: .strokeLineJoin)
+        try container.encode(strokePlacement, forKey: .strokePlacement)
         try container.encode(fillColor, forKey: .fillColor)
         try container.encode(fillOpacity, forKey: .fillOpacity)
     }
