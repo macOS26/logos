@@ -1070,6 +1070,14 @@ struct LayerCanvasView: View {
                         positions.deallocate()
                     }
 
+                    // Apply deltas if selected
+                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                        ? strokeDeltaWidth!
+                        : vectorText.typography.strokeWidth
+                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                        ? strokeDeltaOpacity!
+                        : vectorText.typography.strokeOpacity
+
                     // Draw the path with fill and stroke
                     cgContext.saveGState()
                     cgContext.translateBy(x: lineX, y: lineY)
@@ -1081,21 +1089,27 @@ struct LayerCanvasView: View {
                     cgContext.setAlpha(CGFloat(effectiveFillOpacity))
                     cgContext.fillPath()
 
-                    // Then draw stroke with deltas if selected
-                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
-                        ? strokeDeltaWidth!
-                        : vectorText.typography.strokeWidth
-                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
-                        ? strokeDeltaOpacity!
-                        : vectorText.typography.strokeOpacity
+                    // Create stroke style for placement
+                    let strokeStyle = StrokeStyle(
+                        color: vectorText.typography.strokeColor,
+                        width: effectiveStrokeWidth,
+                        placement: .center,  // Text always uses center for now
+                        dashPattern: [],
+                        lineCap: .butt,
+                        lineJoin: vectorText.typography.strokeLineJoin.cgLineJoin,
+                        miterLimit: 10.0,
+                        opacity: effectiveStrokeOpacity,
+                        blendMode: .normal
+                    )
 
-                    cgContext.addPath(textPath)
-                    let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
-                    cgContext.setStrokeColor(strokeColor.cgColor)
-                    cgContext.setLineWidth(effectiveStrokeWidth)
-                    cgContext.setLineJoin(vectorText.typography.strokeLineJoin.cgLineJoin)
-                    cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
-                    cgContext.strokePath()
+                    // Outline the stroke using PathOperations
+                    if let outlinedStroke = PathOperations.outlineStroke(path: textPath, strokeStyle: strokeStyle) {
+                        cgContext.addPath(outlinedStroke)
+                        let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
+                        cgContext.setFillColor(strokeColor.cgColor)
+                        cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
+                        cgContext.fillPath()
+                    }
 
                     cgContext.restoreGState()
                 } else {
