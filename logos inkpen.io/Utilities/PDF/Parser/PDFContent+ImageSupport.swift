@@ -210,37 +210,14 @@ extension PDFCommandParser {
                     let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
                     try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
 
-                    let bitmapRep = NSBitmapImageRep(
-                        bitmapDataPlanes: nil,
-                        pixelsWide: width,
-                        pixelsHigh: height,
-                        bitsPerSample: 8,
-                        samplesPerPixel: 4,
-                        hasAlpha: true,
-                        isPlanar: false,
-                        colorSpaceName: .deviceRGB,
-                        bitmapFormat: hasSMask ? [.alphaNonpremultiplied] : [],
-                        bytesPerRow: width * 4,
-                        bitsPerPixel: 32
-                    )
+                    // Create PNG using Core Graphics (cross-platform)
+                    if let pngData = createPNGData(from: rgbaData as Data, width: width, height: height, hasAlpha: hasSMask) {
+                        imageShape.embeddedImageData = pngData
 
-                    if let bitmapRep = bitmapRep {
-                        let bitmapData = bitmapRep.bitmapData!
-                        rgbaData.getBytes(bitmapData, length: width * height * 4)
-
-                        let nsImage = NSImage(size: NSSize(width: width, height: height))
-                        nsImage.addRepresentation(bitmapRep)
-
-                        if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
-                            imageShape.embeddedImageData = pngData
-
-                            let pngDebugPath = "/Users/toddbruss/Documents/pdf_final_image_\(name).png"
-                            try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
-                        } else {
-                            imageShape.embeddedImageData = rgbaData as Data
-                        }
+                        let pngDebugPath = "/Users/toddbruss/Documents/pdf_final_image_\(name).png"
+                        try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
                     } else {
-                        imageShape.embeddedImageData = nsData as Data
+                        imageShape.embeddedImageData = rgbaData as Data
                     }
                 }
             } else if bytesPerPixel == 4 {
@@ -257,12 +234,20 @@ extension PDFCommandParser {
                     bitmapInfo: bitmapInfo.rawValue
                 ) {
                     if let cgImage = context.makeImage() {
-                        let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: width, height: height))
-
-                        if let tiffData = nsImage.tiffRepresentation,
-                           let bitmap = NSBitmapImageRep(data: tiffData),
-                           let pngData = bitmap.representation(using: .png, properties: [:]) {
-                            imageShape.embeddedImageData = pngData
+                        // Create PNG using CGImageDestination (cross-platform)
+                        let pngData = NSMutableData()
+                        if let destination = CGImageDestinationCreateWithData(
+                            pngData as CFMutableData,
+                            "public.png" as CFString,
+                            1,
+                            nil
+                        ) {
+                            CGImageDestinationAddImage(destination, cgImage, nil)
+                            if CGImageDestinationFinalize(destination) {
+                                imageShape.embeddedImageData = pngData as Data
+                            } else {
+                                imageShape.embeddedImageData = nsData as Data
+                            }
                         } else {
                             imageShape.embeddedImageData = nsData as Data
                         }
@@ -273,7 +258,9 @@ extension PDFCommandParser {
                     imageShape.embeddedImageData = nsData as Data
                 }
             } else {
-                if NSImage(data: nsData as Data) != nil {
+                // Validate image data using CGImageSource (cross-platform)
+                if let imageSource = CGImageSourceCreateWithData(nsData as CFData, nil),
+                   CGImageSourceCreateImageAtIndex(imageSource, 0, nil) != nil {
                     imageShape.embeddedImageData = nsData as Data
                 } else {
                     imageShape.embeddedImageData = nsData as Data
