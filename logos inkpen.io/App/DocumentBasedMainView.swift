@@ -145,7 +145,6 @@ struct DocumentBasedMainView: View {
                 appState: appState,
                 currentDocumentURL: $currentDocumentURL,
                 showingDocumentSettings: $showingDocumentSettings,
-                showingColorPicker: $showingColorPicker,
                 showingImportDialog: $showingImportDialog,
                 importResult: $importResult,
                 showingImportProgress: $showingImportProgress,
@@ -341,5 +340,77 @@ struct DocumentBasedMainView: View {
             alert.alertStyle = report.overallPassed ? .informational : .warning
             alert.runModal()
         }
+    }
+
+    private func calculateInitialZoom() {
+        let documentBounds = document.documentBounds
+
+        guard let window = NSApplication.shared.mainWindow else {
+            document.requestZoom(to: 0.0, mode: .fitToPage)
+            return
+        }
+
+        let windowSize = window.frame.size
+        let rulerOffset: CGFloat = document.gridSettings.showRulers ? 20 : 0
+        let availableWidth = windowSize.width - 48 - 280 - rulerOffset
+        let availableHeight = windowSize.height - 24 - rulerOffset
+        let scaleX = availableWidth / documentBounds.width
+        let scaleY = availableHeight / documentBounds.height
+        let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))
+
+        zoomLevel = fitZoom
+
+        let visibleCenter = CGPoint(
+            x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
+            y: (availableHeight + rulerOffset) / 2.0 + rulerOffset
+        )
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
+        )
+        canvasOffset = CGPoint(
+            x: visibleCenter.x - (documentCenter.x * fitZoom),
+            y: visibleCenter.y - (documentCenter.y * fitZoom)
+        )
+    }
+
+    private func handleZoomIn() {
+        let oldZoom = zoomLevel
+        let newZoom = min(zoomLevel * 1.25, 50.0)
+
+        let viewportCenterX = viewportSize.width / 2
+        let viewportCenterY = viewportSize.height / 2
+
+        let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
+        let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
+
+        zoomLevel = newZoom
+
+        canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
+        canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
+    }
+
+    private func handleZoomOut() {
+        let oldZoom = zoomLevel
+        let newZoom = max(zoomLevel / 1.25, 0.01)
+
+        let viewportCenterX = viewportSize.width / 2
+        let viewportCenterY = viewportSize.height / 2
+
+        let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
+        let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
+
+        zoomLevel = newZoom
+
+        canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
+        canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
+    }
+
+    private func handleFitToPage() {
+        calculateInitialZoom()
+    }
+
+    private func handleActualSize() {
+        zoomLevel = 1.0
     }
 }
