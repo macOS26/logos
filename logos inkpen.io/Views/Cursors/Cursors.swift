@@ -1,8 +1,9 @@
 import SwiftUI
 
 // MARK: - macOS-Only Cursor Definitions
-// This file uses NSCursor, NSImage, and NSBezierPath which are macOS-only.
-// For iPad support, cursors are handled differently (iOS doesn't support custom cursors the same way).
+// This file uses NSCursor and NSImage which are macOS-only.
+// Uses CGPath and CGContext for drawing (cross-platform APIs).
+// For iPad support, cursors are handled differently (iOS doesn't support custom cursors).
 // This file will not be compiled for iOS/iPadOS targets.
 
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
