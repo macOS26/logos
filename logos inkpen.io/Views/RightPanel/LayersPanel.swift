@@ -1,6 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
-import Combine
 
 extension Color {
     static let layerColorPalette: [(name: String, color: Color)] = [
@@ -137,8 +135,8 @@ struct LayersPanel: View {
 
     var body: some View {
         // Subscribe to changes - SwiftUI will automatically recompute when these change
-        let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
-        let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
+        //let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
+        // let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -181,8 +179,7 @@ struct LayersPanel: View {
             .help("Add New Layer")
         }
         .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.vertical, 8)
     }
     
     private func layerControlsSection(for layerIndex: Int) -> some View {
