@@ -91,7 +91,6 @@ struct LayersPanel: View {
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
 
-    @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     @State private var showColorPicker: Bool = false
     @State private var overlaysEnabled: Bool = true
