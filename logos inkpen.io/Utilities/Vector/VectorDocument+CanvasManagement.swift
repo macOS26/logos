@@ -40,18 +40,10 @@ extension VectorDocument {
             blendMode: .normal,
             color: .green
         ))
-
-        debugLayerOrder()
-    }
-
-    func debugLayerOrder() {
     }
 
     var documentBounds: CGRect {
         return CGRect(origin: .zero, size: settings.sizeInPoints)
-    }
-
-    func debugCurrentState() {
     }
 
     func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
