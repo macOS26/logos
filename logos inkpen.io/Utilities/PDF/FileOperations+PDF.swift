@@ -815,10 +815,8 @@ extension FileOperations {
         var locations: [CGFloat] = []
 
         for stop in stops {
-            let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
-            let rgb = color.usingColorSpace(.deviceRGB) ?? color
-            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-            rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
+            let rgba = stop.color.cgColor.rgbaComponents
+            let (r, g, b, a) = (rgba.r, rgba.g, rgba.b, rgba.a)
 
             let k = 1.0 - max(r, g, b)
             let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
@@ -851,10 +849,8 @@ extension FileOperations {
         var locations: [CGFloat] = []
 
         for stop in stops {
-            let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
-            let rgb = color.usingColorSpace(.deviceRGB) ?? color
-            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-            rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
+            let rgba = stop.color.cgColor.rgbaComponents
+            let (r, g, b, a) = (rgba.r, rgba.g, rgba.b, rgba.a)
 
             let k = 1.0 - max(r, g, b)
             let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
@@ -878,7 +874,7 @@ extension FileOperations {
         }
     }
 
-    private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> NSColor {
+    private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> CGColor {
         var lowerStop = stops.first!
         var upperStop = stops.last!
 
@@ -892,23 +888,23 @@ extension FileOperations {
 
         if t <= stops.first!.position {
             let cgColor = stops.first!.color.cgColor
-            return NSColor(cgColor: cgColor)!.withAlphaComponent(CGFloat(stops.first!.opacity * opacity))
+            return cgColor.withAlpha(CGFloat(stops.first!.opacity * opacity))
         }
         if t >= stops.last!.position {
             let cgColor = stops.last!.color.cgColor
-            return NSColor(cgColor: cgColor)!.withAlphaComponent(CGFloat(stops.last!.opacity * opacity))
+            return cgColor.withAlpha(CGFloat(stops.last!.opacity * opacity))
         }
 
         let range = upperStop.position - lowerStop.position
         let factor = range > 0 ? (t - lowerStop.position) / range : 0
-        let color1 = NSColor(cgColor: lowerStop.color.cgColor)!
-        let color2 = NSColor(cgColor: upperStop.color.cgColor)!
-        let r = color1.redComponent * (1 - factor) + color2.redComponent * factor
-        let g = color1.greenComponent * (1 - factor) + color2.greenComponent * factor
-        let b = color1.blueComponent * (1 - factor) + color2.blueComponent * factor
+        let rgba1 = lowerStop.color.cgColor.rgbaComponents
+        let rgba2 = upperStop.color.cgColor.rgbaComponents
+        let r = rgba1.r * (1 - factor) + rgba2.r * factor
+        let g = rgba1.g * (1 - factor) + rgba2.g * factor
+        let b = rgba1.b * (1 - factor) + rgba2.b * factor
         let a = (lowerStop.opacity * (1 - factor) + upperStop.opacity * factor) * opacity
 
-        return NSColor(red: r, green: g, blue: b, alpha: CGFloat(a))
+        return CGColor(red: r, green: g, blue: b, alpha: CGFloat(a))
     }
 
     private static func colorFromVectorColor(_ color: VectorColor, opacity: Double) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
