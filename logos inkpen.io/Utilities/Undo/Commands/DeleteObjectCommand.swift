@@ -26,9 +26,12 @@ class DeleteObjectCommand: BaseCommand {
             document.snapshot.objects.removeValue(forKey: id)
         }
 
-        // Remove object IDs from layers
-        for i in 0..<document.snapshot.layers.count {
-            document.snapshot.layers[i].objectIDs.removeAll { idsToRemove.contains($0) }
+        // Remove object IDs from their specific layers only
+        for obj in objects {
+            let layerIndex = obj.layerIndex
+            if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
+                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == obj.id }
+            }
         }
 
         // Also remove from viewState selection
