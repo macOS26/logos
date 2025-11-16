@@ -40,6 +40,19 @@ class DisabledContextMenuTextView: NSTextView {
     override func mouseDown(with event: NSEvent) {
         if allowsInteraction {
             super.mouseDown(with: event)
+
+            // Fix insertion point at end of text
+            if event.clickCount >= 1, let textStorage = textStorage {
+                let point = convert(event.locationInWindow, from: nil)
+                if let layoutManager = layoutManager, let textContainer = textContainer {
+                    let charIndex = layoutManager.characterIndex(for: point, in: textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
+
+                    // If click is near/past the end, place cursor at the very end
+                    if charIndex >= textStorage.length - 1 {
+                        setSelectedRange(NSRange(location: textStorage.length, length: 0))
+                    }
+                }
+            }
         }
     }
 
