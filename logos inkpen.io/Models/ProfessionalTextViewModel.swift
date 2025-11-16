@@ -329,6 +329,7 @@ class ProfessionalTextViewModel: ObservableObject {
             let strokeStyle: StrokeStyle? = textObject.typography.hasStroke ? StrokeStyle(
                 color: textObject.typography.strokeColor,
                 width: textObject.typography.strokeWidth,
+                placement: .center,
                 dashPattern: [],
                 lineCap: .round,
                 lineJoin: textObject.typography.strokeLineJoin.cgLineJoin,
