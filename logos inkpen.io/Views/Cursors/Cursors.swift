@@ -64,29 +64,41 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
     let centerY = floor(imgSize.height / 2) + 0.5
     let image = NSImage(size: imgSize)
     image.lockFocus()
-    NSGraphicsContext.current?.saveGraphicsState()
-    let halo = NSShadow()
-    halo.shadowBlurRadius = 2
-    halo.shadowColor = CGColor.white.platformColor
-    halo.shadowOffset = .zero
-    halo.set()
-    CGColor.black.platformColor.setStroke()
-    let pathShadow = NSBezierPath()
-    pathShadow.lineWidth = 1
+
+    guard let context = NSGraphicsContext.current?.cgContext else {
+        image.unlockFocus()
+        return .crosshair
+    }
+
+    // Draw shadow pass using CGPath
+    context.saveGState()
+    context.setShadow(offset: .zero, blur: 2.0, color: CGColor.white)
+    context.setStrokeColor(CGColor.black)
+    context.setLineWidth(1.0)
+
+    let pathShadow = CGMutablePath()
     pathShadow.move(to: CGPoint(x: 0, y: centerY))
-    pathShadow.line(to: CGPoint(x: imgSize.width, y: centerY))
+    pathShadow.addLine(to: CGPoint(x: imgSize.width, y: centerY))
     pathShadow.move(to: CGPoint(x: centerX, y: 0))
-    pathShadow.line(to: CGPoint(x: centerX, y: imgSize.height))
-    pathShadow.stroke()
-    NSGraphicsContext.current?.restoreGraphicsState()
-    CGColor.black.platformColor.setStroke()
-    let path = NSBezierPath()
-    path.lineWidth = 1
+    pathShadow.addLine(to: CGPoint(x: centerX, y: imgSize.height))
+
+    context.addPath(pathShadow)
+    context.strokePath()
+    context.restoreGState()
+
+    // Draw main pass using CGPath
+    context.setStrokeColor(CGColor.black)
+    context.setLineWidth(1.0)
+
+    let path = CGMutablePath()
     path.move(to: CGPoint(x: 0, y: centerY))
-    path.line(to: CGPoint(x: imgSize.width, y: centerY))
+    path.addLine(to: CGPoint(x: imgSize.width, y: centerY))
     path.move(to: CGPoint(x: centerX, y: 0))
-    path.line(to: CGPoint(x: centerX, y: imgSize.height))
-    path.stroke()
+    path.addLine(to: CGPoint(x: centerX, y: imgSize.height))
+
+    context.addPath(path)
+    context.strokePath()
+
     image.unlockFocus()
     let hotspot = CGPoint(x: centerX + hotspotAdjustX, y: centerY + hotspotAdjustY)
     return NSCursor(image: image, hotSpot: hotspot)

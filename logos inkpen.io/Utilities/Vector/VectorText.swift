@@ -620,32 +620,6 @@ class FontManager: ObservableObject {
 
 }
 
-extension NSBezierPath {
-    convenience init(cgPath: CGPath) {
-        self.init()
-
-        cgPath.applyWithBlock { elementPointer in
-            let element = elementPointer.pointee
-            let points = element.points
-
-            switch element.type {
-            case .moveToPoint:
-                self.move(to: points[0])
-            case .addLineToPoint:
-                self.line(to: points[0])
-            case .addQuadCurveToPoint:
-                self.curve(to: points[1], controlPoint1: points[0], controlPoint2: points[0])
-            case .addCurveToPoint:
-                self.curve(to: points[2], controlPoint1: points[0], controlPoint2: points[1])
-            case .closeSubpath:
-                self.close()
-            @unknown default:
-                break
-            }
-        }
-    }
-}
-
 extension VectorText {
     func toVectorShape() -> VectorShape {
         let fillStyle = FillStyle(
