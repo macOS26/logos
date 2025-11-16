@@ -11,31 +11,38 @@ extension DrawingCanvas {
             let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
             let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
 
-            Path { path in
-                addPathElements(currentBezierPath.elements, to: &path)
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                let lastPoint = bezierPoints[lastPointIndex]
-                let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+                let fillPath = Path { path in
+                    addPathElements(currentBezierPath.elements, to: &path)
 
-                if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
-                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
-                    path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
-                } else if let lastControl2 = lastPointHandles?.control2 {
-                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                    path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
-                } else if let firstControl1 = firstPointHandles?.control1 {
-                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
-                    path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
-                } else {
-                    path.addLine(to: firstPointLocation)
+                    let lastPoint = bezierPoints[lastPointIndex]
+                    let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+
+                    if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
+                    } else if let lastControl2 = lastPointHandles?.control2 {
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
+                    } else if let firstControl1 = firstPointHandles?.control1 {
+                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                        path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
+                    } else {
+                        path.addLine(to: firstPointLocation)
+                    }
+
+                    path.closeSubpath()
                 }
 
-                path.closeSubpath()
+                context.fill(
+                    fillPath,
+                    with: .color(document.defaultFillColor.color.opacity(0.3))
+                )
             }
-            .fill(document.defaultFillColor.color.opacity(0.3))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
@@ -54,64 +61,71 @@ extension DrawingCanvas {
                 constrainToAngle(from: lastPointLocation, to: rawCanvasMouseLocation) :
                 rawCanvasMouseLocation
 
-            Path { path in
-                // Build path EXACTLY like ProfessionalBezierView does
-                path.move(to: firstPointLocation)
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                for i in 1..<bezierPoints.count {
-                    let currentPoint = bezierPoints[i]
-                    let previousPoint = bezierPoints[i - 1]
-                    let previousHandles = liveBezierHandles[i - 1] ?? bezierHandles[i - 1]
-                    let currentHandles = liveBezierHandles[i] ?? bezierHandles[i]
-                    let hasOutgoingHandle = previousHandles?.control2 != nil
-                    let hasIncomingHandle = currentHandles?.control1 != nil
+                let fillPath = Path { path in
+                    // Build path EXACTLY like ProfessionalBezierView does
+                    path.move(to: firstPointLocation)
 
-                    if hasOutgoingHandle || hasIncomingHandle {
-                        let control1 = previousHandles?.control2 ?? VectorPoint(previousPoint.x, previousPoint.y)
-                        let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
+                    for i in 1..<bezierPoints.count {
+                        let currentPoint = bezierPoints[i]
+                        let previousPoint = bezierPoints[i - 1]
+                        let previousHandles = liveBezierHandles[i - 1] ?? bezierHandles[i - 1]
+                        let currentHandles = liveBezierHandles[i] ?? bezierHandles[i]
+                        let hasOutgoingHandle = previousHandles?.control2 != nil
+                        let hasIncomingHandle = currentHandles?.control1 != nil
+
+                        if hasOutgoingHandle || hasIncomingHandle {
+                            let control1 = previousHandles?.control2 ?? VectorPoint(previousPoint.x, previousPoint.y)
+                            let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
+                            path.addCurve(
+                                to: CGPoint(x: currentPoint.x, y: currentPoint.y),
+                                control1: CGPoint(x: control1.x, y: control1.y),
+                                control2: CGPoint(x: control2.x, y: control2.y)
+                            )
+                        } else {
+                            path.addLine(to: CGPoint(x: currentPoint.x, y: currentPoint.y))
+                        }
+                    }
+
+                    // Add segment from last point to mouse
+                    let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                    if let lastPointHandles = lastPointHandles,
+                       let lastControl2 = lastPointHandles.control2 {
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         path.addCurve(
-                            to: CGPoint(x: currentPoint.x, y: currentPoint.y),
-                            control1: CGPoint(x: control1.x, y: control1.y),
-                            control2: CGPoint(x: control2.x, y: control2.y)
+                            to: canvasMouseLocation,
+                            control1: lastControl2Location,
+                            control2: canvasMouseLocation
                         )
                     } else {
-                        path.addLine(to: CGPoint(x: currentPoint.x, y: currentPoint.y))
+                        path.addLine(to: canvasMouseLocation)
                     }
+
+                    // Add segment from mouse back to first point
+                    let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
+                    if let firstPointHandles = firstPointHandles,
+                       let firstControl1 = firstPointHandles.control1 {
+                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                        path.addCurve(
+                            to: firstPointLocation,
+                            control1: canvasMouseLocation,
+                            control2: firstControl1Location
+                        )
+                    } else {
+                        path.addLine(to: firstPointLocation)
+                    }
+
+                    path.closeSubpath()
                 }
 
-                // Add segment from last point to mouse
-                let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
-                if let lastPointHandles = lastPointHandles,
-                   let lastControl2 = lastPointHandles.control2 {
-                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                    path.addCurve(
-                        to: canvasMouseLocation,
-                        control1: lastControl2Location,
-                        control2: canvasMouseLocation
-                    )
-                } else {
-                    path.addLine(to: canvasMouseLocation)
-                }
-
-                // Add segment from mouse back to first point
-                let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
-                if let firstPointHandles = firstPointHandles,
-                   let firstControl1 = firstPointHandles.control1 {
-                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
-                    path.addCurve(
-                        to: firstPointLocation,
-                        control1: canvasMouseLocation,
-                        control2: firstControl1Location
-                    )
-                } else {
-                    path.addLine(to: firstPointLocation)
-                }
-
-                path.closeSubpath()
+                context.fill(
+                    fillPath,
+                    with: .color(document.defaultFillColor.color.opacity(0.15))
+                )
             }
-            .fill(document.defaultFillColor.color.opacity(0.15))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
     }
 
