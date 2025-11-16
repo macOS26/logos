@@ -46,12 +46,9 @@ extension DrawingCanvas {
         var elementIndices: [Int] = []
 
         for (elementIndex, element) in shape.path.elements.enumerated() {
-            switch element {
-            case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                points.append(CGPoint(x: to.x, y: to.y))
+            if let point = element.endpointCGPoint {
+                points.append(point)
                 elementIndices.append(elementIndex)
-            case .close:
-                continue
             }
         }
 
@@ -99,8 +96,8 @@ extension DrawingCanvas {
             case .curve(let to, _, let control2):
                 let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                 if !handle2Collapsed {
-                    handlePoints.append(CGPoint(x: control2.x, y: control2.y))
-                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                    handlePoints.append(control2.cgPoint)
+                    anchorPoints.append(to.cgPoint)
                     handleMetadata.append((elementIndex: elementIndex, handleType: .control2))
                 }
 
@@ -108,8 +105,8 @@ extension DrawingCanvas {
                    case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                     let handle1Collapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
                     if !handle1Collapsed {
-                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
-                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                        handlePoints.append(nextControl1.cgPoint)
+                        anchorPoints.append(to.cgPoint)
                         handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
                     }
                 }
@@ -117,8 +114,8 @@ extension DrawingCanvas {
             case .quadCurve(let to, let control):
                 let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
                 if !quadHandleCollapsed {
-                    handlePoints.append(CGPoint(x: control.x, y: control.y))
-                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                    handlePoints.append(control.cgPoint)
+                    anchorPoints.append(to.cgPoint)
                     handleMetadata.append((elementIndex: elementIndex, handleType: .control1))
                 }
 
@@ -127,8 +124,8 @@ extension DrawingCanvas {
                    case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                     let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
                     if !outgoingHandleCollapsed {
-                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
-                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                        handlePoints.append(nextControl1.cgPoint)
+                        anchorPoints.append(to.cgPoint)
                         handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
                     }
                 }
@@ -263,28 +260,14 @@ extension DrawingCanvas {
         if handleID.handleType == .control1 {
             pointIndex = handleID.elementIndex - 1
             if pointIndex >= 0 && pointIndex < shape.path.elements.count {
-                switch shape.path.elements[pointIndex] {
-                case .move(let to), .line(let to):
-                    anchorPoint = CGPoint(x: to.x, y: to.y)
-                case .curve(let to, _, _), .quadCurve(let to, _):
-                    anchorPoint = CGPoint(x: to.x, y: to.y)
-                case .close:
-                    anchorPoint = nil
-                }
+                anchorPoint = shape.path.elements[pointIndex].endpointCGPoint
             } else {
                 return
             }
         } else if handleID.handleType == .control2 {
             pointIndex = handleID.elementIndex
             if pointIndex < shape.path.elements.count {
-                switch shape.path.elements[pointIndex] {
-                case .curve(let to, _, _):
-                    anchorPoint = CGPoint(x: to.x, y: to.y)
-                case .quadCurve(let to, _):
-                    anchorPoint = CGPoint(x: to.x, y: to.y)
-                default:
-                    anchorPoint = nil
-                }
+                anchorPoint = shape.path.elements[pointIndex].endpointCGPoint
             } else {
                 return
             }
@@ -298,17 +281,7 @@ extension DrawingCanvas {
         for (index, element) in shape.path.elements.enumerated() {
             if index == pointIndex { continue }
 
-            let elementPoint: CGPoint?
-            switch element {
-            case .move(let to), .line(let to):
-                elementPoint = CGPoint(x: to.x, y: to.y)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                elementPoint = CGPoint(x: to.x, y: to.y)
-            case .close:
-                elementPoint = nil
-            }
-
-            if let point = elementPoint {
+            if let point = element.endpointCGPoint {
                 let distance = sqrt(pow(anchor.x - point.x, 2) + pow(anchor.y - point.y, 2))
                 if distance <= tolerance {
 
