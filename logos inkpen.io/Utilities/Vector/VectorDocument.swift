@@ -63,12 +63,8 @@ final class VectorDocument: ObservableObject, Codable {
     }()
 
     // Per-document image storage (isolated from other documents)
-    internal var imageStorage: [UUID: NSImage] = [:]
+    internal var imageStorage: [UUID: CGImage] = [:]
     internal var baseDirectoryURL: URL? = nil
-
-    // CGImage cache: final rendered images ready to draw (load from disk ONCE, cache per quality)
-    // Key: "UUID-qQUALITY" (e.g., "UUID-q0.5")
-    internal var cgImageCache: [String: CGImage] = [:]
 
     // Track hash of last drawn CGImage per shape - if same hash, skip cgContext.draw() call
     internal var lastDrawnImageHash: [UUID: Int] = [:]
@@ -337,5 +333,15 @@ final class VectorDocument: ObservableObject, Codable {
             // Trigger layer update
             triggerLayerUpdate(for: parentGroup.layerIndex)
         }
+    }
+
+    // MARK: - Image Management
+
+    /// Regenerates all cached images from source data when quality/tile settings change
+    func regenerateAllImages() {
+        imageStorage.removeAll()
+        lastDrawnImageHash.removeAll()
+        objectWillChange.send()
+        print("🗑️ Cleared image cache - will regenerate from source on next render")
     }
 }
