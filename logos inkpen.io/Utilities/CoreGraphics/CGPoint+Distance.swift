@@ -38,15 +38,13 @@ extension CGPoint {
 
     // MARK: - Distance
 
-    /// Calculate distance to another point using optimized hypot
+    /// SIMD-optimized distance using simd_length
     func distance(to other: CGPoint) -> CGFloat {
-        hypot(x - other.x, y - other.y)
+        CGFloat(simd_length(simd - other.simd))
     }
 
-    /// Calculate squared distance (faster, no sqrt)
+    /// SIMD-optimized squared distance using simd_length_squared
     func distanceSquared(to other: CGPoint) -> CGFloat {
-        let dx = x - other.x
-        let dy = y - other.y
-        return dx * dx + dy * dy
+        CGFloat(simd_length_squared(simd - other.simd))
     }
 }
