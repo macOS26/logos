@@ -53,7 +53,7 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
             .stroke(Color.red, lineWidth: 3)
             .frame(width: width, height: height)
         } else if case .gradient(let gradient) = color {
-            GradientSwatchNSView(gradient: gradient, size: width)
+            GradientSwatchCanvas(gradient: gradient, size: width)
                 .frame(width: width, height: height)
                 .overlay(
                     Group {
@@ -89,76 +89,48 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
    // .allowsHitTesting(true)
 }
 
-struct GradientSwatchNSView: NSViewRepresentable {
+struct GradientSwatchCanvas: View {
     let gradient: VectorGradient
     let size: CGFloat
 
-    func makeNSView(context: Context) -> GradientSwatchNSViewClass {
-        return GradientSwatchNSViewClass(gradient: gradient, size: size)
-    }
+    var body: some View {
+        Canvas { context, canvasSize in
+            context.withCGContext { cgContext in
+                cgContext.saveGState()
 
-    func updateNSView(_ nsView: GradientSwatchNSViewClass, context: Context) {
-        nsView.gradient = gradient
-        nsView.size = size
-        nsView.needsDisplay = true
-    }
-}
+                let pathBounds = CGRect(x: 0, y: 0, width: size, height: size)
+                let path = CGPath(rect: pathBounds, transform: nil)
+                let colors = gradient.stops.map { stop -> CGColor in
+                    if case .clear = stop.color {
+                        return stop.color.cgColor
+                    } else {
+                        return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+                    }
+                }
+                let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+                guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+                    cgContext.restoreGState()
+                    return
+                }
 
-class GradientSwatchNSViewClass: NSView {
-    var gradient: VectorGradient
-    var size: CGFloat
+                cgContext.addPath(path)
+                cgContext.clip()
 
-    init(gradient: VectorGradient, size: CGFloat) {
-        self.gradient = gradient
-        self.size = size
-        super.init(frame: CGRect(x: 0, y: 0, width: size, height: size))
-        self.wantsLayer = true
-        self.layer?.backgroundColor = NSColor.clear.cgColor
-    }
+                switch gradient {
+                case .linear(_):
+                    let startPoint = CGPoint(x: 0, y: size / 2)
+                    let endPoint = CGPoint(x: size, y: size / 2)
+                    cgContext.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+                case .radial(_):
+                    let center = CGPoint(x: size / 2, y: size / 2)
+                    let radius = size / 2
+                    cgContext.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
+                }
 
-    override var isFlipped: Bool {
-        return true
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
-
-        context.saveGState()
-
-        let pathBounds = CGRect(x: 0, y: 0, width: size, height: size)
-        let path = CGPath(rect: pathBounds, transform: nil)
-        let colors = gradient.stops.map { stop -> CGColor in
-            if case .clear = stop.color {
-                return stop.color.cgColor
-            } else {
-                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+                cgContext.restoreGState()
             }
         }
-        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
-        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
-            context.restoreGState()
-            return
-        }
-
-        context.addPath(path)
-        context.clip()
-
-        switch gradient {
-        case .linear(_):
-            let startPoint = CGPoint(x: 0, y: size / 2)
-            let endPoint = CGPoint(x: size, y: size / 2)
-            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
-
-        case .radial(_):
-            let center = CGPoint(x: size / 2, y: size / 2)
-            let radius = size / 2
-            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
-        }
-
-        context.restoreGState()
+        .frame(width: size, height: size)
     }
 }

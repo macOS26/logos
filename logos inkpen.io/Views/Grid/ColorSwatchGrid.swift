@@ -146,7 +146,7 @@ struct ColorSwatchGrid: View {
                                 .frame(width: 22, height: 22)
                                 .clipped()
 
-                            GradientSwatchNSView(gradient: gradient, size: 22)
+                            GradientSwatchCanvas(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
                             if document.viewState.activeColorTarget == .stroke {
@@ -212,7 +212,7 @@ struct ColorSwatchGrid: View {
                                 .frame(width: 22, height: 22)
                                 .clipped()
 
-                            GradientSwatchNSView(gradient: gradient, size: 22)
+                            GradientSwatchCanvas(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
                             if document.viewState.activeColorTarget == .fill {
@@ -275,7 +275,7 @@ struct ColorSwatchGrid: View {
                                     .frame(width: 10, height: 10)
                                 }
                             } else if case .gradient(let gradient) = color {
-                                GradientSwatchNSView(gradient: gradient, size: 10)
+                                GradientSwatchCanvas(gradient: gradient, size: 10)
                                     .frame(width: 10, height: 10)
                                     .border(Color.gray, width: 0.5)
                             } else {
