@@ -390,12 +390,32 @@ struct NewDocumentSetupView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             let previewSize = CGSize(width: 280, height: 280)
-            let image = NSImage(size: previewSize)
+            let scale: CGFloat = 2.0 // Retina resolution
+            let pixelWidth = Int(previewSize.width * scale)
+            let pixelHeight = Int(previewSize.height * scale)
 
-            image.lockFocus()
+            // Create CGContext for drawing (cross-platform)
+            guard let context = CGContext(
+                data: nil,
+                width: pixelWidth,
+                height: pixelHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: pixelWidth * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else {
+                DispatchQueue.main.async {
+                    self.isGeneratingPreview = false
+                }
+                return
+            }
 
-            NSColor.windowBackgroundColor.setFill()
-            CGRect(origin: .zero, size: previewSize).fill()
+            // Scale context for retina
+            context.scaleBy(x: scale, y: scale)
+
+            // Fill background
+            context.setFillColor(CGColor(gray: 0.95, alpha: 1.0))
+            context.fill(CGRect(origin: .zero, size: previewSize))
 
             let aspectRatio = setupData.width / setupData.height
             let maxSize: CGFloat = 240
@@ -417,12 +437,16 @@ struct NewDocumentSetupView: View {
                 height: docHeight
             )
 
-            NSColor.white.setFill()
-            docRect.fill()
+            // Draw white document rect
+            context.setFillColor(CGColor(gray: 1.0, alpha: 1.0))
+            context.fill(docRect)
 
-            NSColor.gray.setStroke()
-            NSBezierPath(rect: docRect).stroke()
+            // Draw gray border
+            context.setStrokeColor(CGColor(gray: 0.5, alpha: 1.0))
+            context.setLineWidth(1.0)
+            context.stroke(docRect)
 
+            // Draw text
             let infoText = "\(Int(setupData.width))×\(Int(setupData.height))"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 12, weight: .medium),
@@ -437,13 +461,25 @@ struct NewDocumentSetupView: View {
                 height: textSize.height
             )
 
-            infoText.draw(in: textRect, withAttributes: attributes)
+            // Use NSAttributedString for text rendering (works on both platforms with AppKit/UIKit)
+            let attrString = NSAttributedString(string: infoText, attributes: attributes)
+            context.saveGState()
+            context.translateBy(x: 0, y: previewSize.height)
+            context.scaleBy(x: 1.0, y: -1.0)
+            attrString.draw(in: textRect)
+            context.restoreGState()
 
-            image.unlockFocus()
-
-            DispatchQueue.main.async {
-                self.documentPreview = image
-                self.isGeneratingPreview = false
+            // Convert to NSImage
+            if let cgImage = context.makeImage() {
+                let image = NSImage(cgImage: cgImage, size: previewSize)
+                DispatchQueue.main.async {
+                    self.documentPreview = image
+                    self.isGeneratingPreview = false
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.isGeneratingPreview = false
+                }
             }
         }
     }
