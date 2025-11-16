@@ -219,13 +219,15 @@ class MetalSpatialIndex {
         // Create GPU buffers
         let objectCount = boundsData.count
 
-        // ObjectBounds buffer
+        // ObjectBounds buffer - SIMD optimized with float4
         var objectBoundsArray: [ObjectBounds] = boundsData.enumerated().map { index, data in
             ObjectBounds(
-                minX: Float(data.1.minX),
-                minY: Float(data.1.minY),
-                maxX: Float(data.1.maxX),
-                maxY: Float(data.1.maxY),
+                bounds: SIMD4<Float>(
+                    Float(data.1.minX),
+                    Float(data.1.minY),
+                    Float(data.1.maxX),
+                    Float(data.1.maxY)
+                ),
                 objectIndex: UInt32(index)
             )
         }
@@ -473,11 +475,9 @@ class MetalSpatialIndex {
 
 // MARK: - Metal Structures (match shader definitions)
 
+// SIMD optimized: matches Metal shader ObjectBounds struct
 private struct ObjectBounds {
-    let minX: Float
-    let minY: Float
-    let maxX: Float
-    let maxY: Float
+    let bounds: SIMD4<Float>  // (minX, minY, maxX, maxY)
     let objectIndex: UInt32
 }
 
