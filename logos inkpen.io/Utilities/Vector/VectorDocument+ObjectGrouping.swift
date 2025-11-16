@@ -154,8 +154,8 @@ extension VectorDocument {
         for objectID in viewState.selectedObjectIDs {
             // print("🟡 UNGROUP: Processing objectID=\(objectID)")
 
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
+            if let vectorObject = findObject(by: objectID) {
+                switch vectorObject.objectType {
                 case .group(let shape), .clipGroup(let shape):
                     // print("🟡 UNGROUP: Found group, isGroupContainer=\(shape.isGroupContainer), groupedShapes.count=\(shape.groupedShapes.count)")
 

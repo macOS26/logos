@@ -16,8 +16,8 @@ extension VectorDocument {
         }
 
         for objectID in viewState.selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
+            if let vectorObject = findObject(by: objectID) {
+                switch vectorObject.objectType {
                 case .shape(var shape),
                      .image(var shape),
                      .warp(var shape),

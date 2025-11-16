@@ -144,7 +144,7 @@ extension VectorDocument {
         }
 
         let objectType = VectorObject.determineType(for: shape)
-        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
+        let vectorObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
 
         // Remove existing if it exists
         if let existingObject = snapshot.objects[shape.id] {
@@ -153,7 +153,7 @@ extension VectorDocument {
         }
 
         // Add to snapshot ONLY
-        snapshot.objects[shape.id] = unifiedObject
+        snapshot.objects[shape.id] = vectorObject
         if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
             appendToLayer(layerIndex: layerIndex, objectID: shape.id)
         } else {
