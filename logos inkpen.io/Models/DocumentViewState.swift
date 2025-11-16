@@ -48,6 +48,10 @@ class DocumentViewState: ObservableObject {
     @Published var liveGradientOriginX: Double? = nil
     @Published var liveGradientOriginY: Double? = nil
 
+    // MARK: - Text Live Preview State (for typing without spatial index rebuilds)
+    @Published var liveTextContent: [UUID: String] = [:]  // Live text during editing
+    var isEditingText: Set<UUID> = []  // Track which texts are being edited
+
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {

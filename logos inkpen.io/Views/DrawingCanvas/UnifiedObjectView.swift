@@ -868,7 +868,14 @@ struct LayerCanvasView: View {
 
     private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
-        guard let vectorText = VectorText.from(shape) else { return }
+        guard var vectorText = VectorText.from(shape) else { return }
+
+        // Use live preview text if this text is being edited
+        if document.viewState.isEditingText.contains(shape.id),
+           let liveContent = document.viewState.liveTextContent[shape.id] {
+            vectorText.content = liveContent
+        }
+
         guard !vectorText.content.isEmpty else { return }
 
         // Drag delta is now applied at canvas level, not per-object

@@ -97,6 +97,20 @@ extension VectorDocument {
 
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
         // print("🔴 setTextEditingInUnified: id=\(id), isEditing=\(isEditing)")
+        if isEditing {
+            // Starting editing - initialize live preview with current content
+            if let object = snapshot.objects[id],
+               case .text(let shape) = object.objectType,
+               let vectorText = VectorText.from(shape) {
+                viewState.liveTextContent[id] = vectorText.content
+                viewState.isEditingText.insert(id)
+            }
+        } else {
+            // Ending editing - clear live preview state
+            viewState.liveTextContent.removeValue(forKey: id)
+            viewState.isEditingText.remove(id)
+        }
+
         updateShapeByID(id) { shape in
             // print("🔴 setTextEditingInUnified: inside update block, setting shape.isEditing=\(isEditing)")
             shape.isEditing = isEditing

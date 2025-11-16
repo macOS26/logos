@@ -100,10 +100,21 @@ struct ProfessionalTextCanvas: View {
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
         guard viewModel.isEditing && keyPress.key == .escape else { return .ignored }
 
-        viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
+        let textID = viewModel.textObject.id
+
+        // Get final text from live preview or viewModel
+        let finalText = document.viewState.liveTextContent[textID] ?? viewModel.text
+
+        // Commit to document.snapshot
+        viewModel.document.updateTextContent(textID, content: finalText)
         viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+
+        // Clear live preview state
+        document.viewState.liveTextContent.removeValue(forKey: textID)
+        document.viewState.isEditingText.remove(textID)
+
         viewModel.stopEditing()
-        document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
+        document.setTextEditingInUnified(id: textID, isEditing: false)
         NSApp.keyWindow?.makeFirstResponder(nil)
 
         return .handled
@@ -332,9 +343,20 @@ struct ProfessionalTextCanvas: View {
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
+                    let textID = self.parent.viewModel.textObject.id
                     self.parent.viewModel.text = newText
                     self.parent.viewModel.updateLastTypingTime()
-                    self.parent.viewModel.document.updateTextContent(self.parent.viewModel.textObject.id, content: newText)
+
+                    // Store in live preview state instead of updating document.snapshot
+                    self.parent.viewModel.document.viewState.liveTextContent[textID] = newText
+                    self.parent.viewModel.document.viewState.isEditingText.insert(textID)
+
+                    // Trigger layer update WITHOUT modifying snapshot (avoids spatial index rebuild)
+                    if let object = self.parent.viewModel.document.snapshot.objects[textID] {
+                        let layerIndex = object.layerIndex
+                        self.parent.viewModel.document.triggerLayerUpdate(for: layerIndex)
+                    }
+
                     // Disable -1 workaround after first typing
                     self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround = false
                 }
@@ -375,14 +397,23 @@ struct ProfessionalTextCanvas: View {
             }
 
             func textDidEndEditing(_ notification: Notification) {
-                let finalText = parent.viewModel.text
-                let textFrame = parent.viewModel.textBoxFrame
                 let textObjectId = parent.viewModel.textObject.id
+                let textFrame = parent.viewModel.textBoxFrame
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
+
+                    // Get the final text from live preview or viewModel
+                    let finalText = self.parent.viewModel.document.viewState.liveTextContent[textObjectId] ?? self.parent.viewModel.text
+
+                    // Now commit to document.snapshot (this will trigger spatial index rebuild, but only once)
                     self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
                     self.parent.viewModel.updateDocumentTextBounds(textFrame)
+
+                    // Clear the live preview state
+                    self.parent.viewModel.document.viewState.liveTextContent.removeValue(forKey: textObjectId)
+                    self.parent.viewModel.document.viewState.isEditingText.remove(textObjectId)
+
                     self.parent.isUpdatingFromTyping = false
                 }
             }
