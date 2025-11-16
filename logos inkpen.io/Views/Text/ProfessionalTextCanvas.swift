@@ -139,18 +139,18 @@ struct ProfessionalTextCanvas: View {
             textView.isEditable = true
             textView.isSelectable = true
             textView.backgroundColor = CGColor.clear.platformColor
-            textView.textContainerInset = NSSize(width: 0, height: 0)
+            textView.textContainerInset = CGSize(width: 0, height: 0)
             textView.textContainer?.lineFragmentPadding = 0
             textView.textContainer?.widthTracksTextView = false
             textView.textContainer?.heightTracksTextView = false
             textView.isVerticallyResizable = false
             textView.isHorizontallyResizable = false
             textView.autoresizingMask = []
-            textView.textContainer?.containerSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+            textView.textContainer?.containerSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
             textView.textContainer?.lineBreakMode = .byWordWrapping
             textView.frame = CGRect(x: 0, y: 0, width: width, height: height)
-            textView.maxSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
-            textView.minSize = NSSize(width: width, height: 50)
+            textView.maxSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+            textView.minSize = CGSize(width: width, height: 50)
             textView.allowsUndo = true
             textView.usesFindPanel = true
             textView.isAutomaticQuoteSubstitutionEnabled = false
@@ -247,10 +247,10 @@ struct ProfessionalTextCanvas: View {
             let currentWidth = nsView.textContainer?.containerSize.width ?? 0
 
             if abs(currentWidth - width) > 1.0 {
-                nsView.textContainer?.containerSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+                nsView.textContainer?.containerSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
                 nsView.frame = CGRect(x: 0, y: 0, width: width, height: height)
-                nsView.maxSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
-                nsView.minSize = NSSize(width: width, height: 50)
+                nsView.maxSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+                nsView.minSize = CGSize(width: width, height: 50)
                 nsView.textContainer.flatMap { nsView.layoutManager?.ensureLayout(for: $0) }
             }
 

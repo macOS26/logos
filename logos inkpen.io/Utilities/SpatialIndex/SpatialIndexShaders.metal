@@ -8,12 +8,10 @@ struct GridCell {
 };
 
 // Represents an object's bounds for spatial indexing
+// SIMD optimized: float4 for better memory alignment and vectorization
 struct ObjectBounds {
-    float minX;
-    float minY;
-    float maxX;
-    float maxY;
-    uint objectIndex;  // Index into objectIDs array
+    float4 bounds;         // (minX, minY, maxX, maxY)
+    uint objectIndex;      // Index into objectIDs array
 };
 
 // Spatial grid parameters
@@ -37,19 +35,25 @@ kernel void build_spatial_index(
 ) {
     if (objectIdx >= params.totalObjects) return;
 
-    ObjectBounds bounds = objectBounds[objectIdx];
+    ObjectBounds obj = objectBounds[objectIdx];
 
-    // Calculate grid cells this object overlaps
-    int minCellX = int(floor(bounds.minX / params.gridSize));
-    int maxCellX = int(floor(bounds.maxX / params.gridSize));
-    int minCellY = int(floor(bounds.minY / params.gridSize));
-    int maxCellY = int(floor(bounds.maxY / params.gridSize));
+    // SIMD optimized: Calculate grid cells this object overlaps using vectorized operations
+    // obj.bounds.xy = (minX, minY), obj.bounds.zw = (maxX, maxY)
+    float2 minCell = floor(obj.bounds.xy / params.gridSize);
+    float2 maxCell = floor(obj.bounds.zw / params.gridSize);
+    int2 minCellXY = int2(minCell);
+    int2 maxCellXY = int2(maxCell);
 
-    // Clamp to grid bounds
-    minCellX = max(minCellX, params.gridMinX);
-    maxCellX = min(maxCellX, params.gridMaxX);
-    minCellY = max(minCellY, params.gridMinY);
-    maxCellY = min(maxCellY, params.gridMaxY);
+    // SIMD clamp to grid bounds
+    int2 gridMin = int2(params.gridMinX, params.gridMinY);
+    int2 gridMax = int2(params.gridMaxX, params.gridMaxY);
+    minCellXY = max(minCellXY, gridMin);
+    maxCellXY = min(maxCellXY, gridMax);
+
+    int minCellX = minCellXY.x;
+    int maxCellX = maxCellXY.x;
+    int minCellY = minCellXY.y;
+    int maxCellY = maxCellXY.y;
 
     int gridWidth = params.gridMaxX - params.gridMinX + 1;
 
@@ -71,7 +75,7 @@ kernel void build_spatial_index(
             // Store object index if there's room
             if (slotIndex < params.maxObjectsPerCell) {
                 uint flatIndex = cellIndex * params.maxObjectsPerCell + slotIndex;
-                gridCellObjects[flatIndex] = bounds.objectIndex;
+                gridCellObjects[flatIndex] = obj.objectIndex;
             }
         }
     }
@@ -89,21 +93,21 @@ kernel void query_point(
 ) {
     if (threadIdx > 0) return;  // Single thread for point query
 
-    // Calculate which cell contains the query point
-    int cellX = int(floor(queryPoint.x / params.gridSize));
-    int cellY = int(floor(queryPoint.y / params.gridSize));
+    // SIMD optimized: Calculate which cell contains the query point
+    float2 cellFloat = floor(queryPoint / params.gridSize);
+    int2 cell = int2(cellFloat);
 
     // Check if cell is within grid bounds
-    if (cellX < params.gridMinX || cellX > params.gridMaxX ||
-        cellY < params.gridMinY || cellY > params.gridMaxY) {
+    int2 gridMin = int2(params.gridMinX, params.gridMinY);
+    int2 gridMax = int2(params.gridMaxX, params.gridMaxY);
+    if (any(cell < gridMin) || any(cell > gridMax)) {
         return;
     }
 
     // Calculate linear cell index
     int gridWidth = params.gridMaxX - params.gridMinX + 1;
-    int relX = cellX - params.gridMinX;
-    int relY = cellY - params.gridMinY;
-    uint cellIndex = relY * gridWidth + relX;
+    int2 relCell = cell - gridMin;
+    uint cellIndex = relCell.y * gridWidth + relCell.x;
 
     // Read how many objects are in this cell
     uint objectCount = atomic_load_explicit(
@@ -137,17 +141,23 @@ kernel void query_rect(
     constant SpatialGridParams& params [[buffer(5)]],
     uint2 cellCoord [[thread_position_in_grid]]
 ) {
-    // Calculate grid cells the query rect overlaps
-    int minCellX = int(floor(queryRect.x / params.gridSize));
-    int maxCellX = int(floor(queryRect.z / params.gridSize));
-    int minCellY = int(floor(queryRect.y / params.gridSize));
-    int maxCellY = int(floor(queryRect.w / params.gridSize));
+    // SIMD optimized: Calculate grid cells the query rect overlaps
+    // queryRect: (minX, minY, maxX, maxY)
+    float2 minCell = floor(queryRect.xy / params.gridSize);
+    float2 maxCell = floor(queryRect.zw / params.gridSize);
+    int2 minCellXY = int2(minCell);
+    int2 maxCellXY = int2(maxCell);
 
-    // Clamp to grid bounds
-    minCellX = max(minCellX, params.gridMinX);
-    maxCellX = min(maxCellX, params.gridMaxX);
-    minCellY = max(minCellY, params.gridMinY);
-    maxCellY = min(maxCellY, params.gridMaxY);
+    // SIMD clamp to grid bounds
+    int2 gridMin = int2(params.gridMinX, params.gridMinY);
+    int2 gridMax = int2(params.gridMaxX, params.gridMaxY);
+    minCellXY = max(minCellXY, gridMin);
+    maxCellXY = min(maxCellXY, gridMax);
+
+    int minCellX = minCellXY.x;
+    int maxCellX = maxCellXY.x;
+    int minCellY = minCellXY.y;
+    int maxCellY = maxCellXY.y;
 
     // Each thread handles one cell in the query region
     int cellX = minCellX + int(cellCoord.x);

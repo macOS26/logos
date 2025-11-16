@@ -15,7 +15,7 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
     let padding: CGFloat = 10
     let symbolSize = blackSymbol.size
     let destRect = CGRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
-    let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
+    let newSize = CGSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
     let composed = NSImage(size: newSize)
     composed.lockFocus()
     NSGraphicsContext.current?.saveGraphicsState()
@@ -59,7 +59,7 @@ let HandClosedCursor: NSCursor = {
 }()
 
 private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0, hotspotAdjustY: CGFloat = -1) -> NSCursor {
-    let imgSize = NSSize(width: size, height: size)
+    let imgSize = CGSize(width: size, height: size)
     let centerX = floor(imgSize.width / 2) + 0.5
     let centerY = floor(imgSize.height / 2) + 0.5
     let image = NSImage(size: imgSize)
