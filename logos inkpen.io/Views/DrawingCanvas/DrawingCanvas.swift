@@ -137,7 +137,6 @@ struct DrawingCanvas: View {
         document.viewState.selectedHandles = selectedHandles
 
         if !selectedObjectIDs.isEmpty {
-            document.viewState.selectedObjectIDs = Set(selectedObjectIDs)
             document.viewState.selectedObjectIDs = selectedObjectIDs
         } else if document.viewState.currentTool == .directSelection ||
                   document.viewState.currentTool == .convertAnchorPoint ||
