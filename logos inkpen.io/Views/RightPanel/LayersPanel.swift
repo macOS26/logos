@@ -92,11 +92,9 @@ struct LayersPanel: View {
     @Binding var processedObjectsDuringDrag: Set<UUID>
 
     @State private var showColorPicker: Bool = false
-    @State private var overlaysEnabled: Bool = true
     @State private var rowHeights: [CGFloat] = []
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
-    @State private var computedSelectedIndex: Int? = nil
 
     // Get selected layer index from settings.selectedLayerId
     // Defaults to first editable layer (index 2, "Layer 1") if no layer is selected
@@ -108,14 +106,17 @@ struct LayersPanel: View {
         return document.snapshot.layers.count > 2 ? 2 : nil
     }
 
-    private func updateSelectedIndex() {
-        let newIndex = selectedIndex
-        if computedSelectedIndex != newIndex {
-            computedSelectedIndex = newIndex
-            if let index = newIndex, index < document.snapshot.layers.count {
-                layerOpacityState = document.snapshot.layers[index].opacity
-            }
-        }
+    // Computed property for overlays - no need for @State
+    private var overlaysEnabled: Bool {
+        let expectedRowCount = visibleRows.count
+        guard expectedRowCount > 0 else { return false }
+        guard !rowHeights.isEmpty else { return false }
+
+        let minHeight = rowHeights.min() ?? kLayerRowHeight
+        let maxHeight = rowHeights.max() ?? kLayerRowHeight
+        let allHeightsSame = (maxHeight - minHeight) <= 0.1
+
+        return allHeightsSame && rowHeights.count == expectedRowCount
     }
 
     private enum RowType: Hashable {
@@ -165,40 +166,16 @@ struct LayersPanel: View {
         return rows
     }
 
-    private func validateOverlays() {
-        let expectedRowCount = visibleRows.count
-        let heightTolerance: CGFloat = 0.1
-
-        var allHeightsSame = true
-        let overlayRowCount = expectedRowCount
-
-        if !rowHeights.isEmpty {
-            let minHeight = rowHeights.min() ?? kLayerRowHeight
-            let maxHeight = rowHeights.max() ?? kLayerRowHeight
-            allHeightsSame = (maxHeight - minHeight) <= heightTolerance
-        }
-
-        let canDisplayOverlays = expectedRowCount > 0 && allHeightsSame && overlayRowCount == expectedRowCount
-
-        DispatchQueue.main.async {
-            if self.overlaysEnabled != canDisplayOverlays {
-                self.overlaysEnabled = canDisplayOverlays
-            }
-        }
-    }
-
     var body: some View {
-        // Subscribe to layer changes to update selectedIndex
-        let _ = document.snapshot.layers.count // Trigger view update when layers change
+        // Subscribe to changes - SwiftUI will automatically recompute when these change
         let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
-        let _ = document.settings.selectedLayerId // Subscribe to selected layer changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
 
-            if let index = computedSelectedIndex {
+            if let index = selectedIndex {
                 layerControlsSection(for: index)
                     .frame(maxWidth: .infinity)
                 Divider().padding(.horizontal, 6.5)
@@ -207,31 +184,15 @@ struct LayersPanel: View {
             layersScrollContent
             Spacer()
         }
-        .background(
-            KeyEventHandlerView(document: document, selectedLayerIndex: $selectedLayerIndex)
-        )
+        .onChange(of: selectedIndex) { _, newIndex in
+            if let index = newIndex, index < document.snapshot.layers.count {
+                layerOpacityState = document.snapshot.layers[index].opacity
+            }
+        }
         .onAppear {
-            validateOverlays()
-            updateSelectedIndex()
-        }
-        .onChange(of: document.snapshot.layers.map { $0.id }) { _, _ in
-            validateOverlays()
-            updateSelectedIndex()
-        }
-        .onChange(of: document.snapshot.layers.count) { _, _ in
-            updateSelectedIndex()
-        }
-        .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            validateOverlays()
-        }
-        .onChange(of: document.settings.layerExpansionState) { _, _ in
-            validateOverlays()
-        }
-        .onChange(of: document.settings.groupExpansionState) { _, _ in
-            validateOverlays()
-        }
-        .onChange(of: document.settings.selectedLayerId) { _, _ in
-            updateSelectedIndex()
+            if let index = selectedIndex, index < document.snapshot.layers.count {
+                layerOpacityState = document.snapshot.layers[index].opacity
+            }
         }
     }
 
@@ -361,7 +322,7 @@ struct LayersPanel: View {
                             .id(layer.id) // Stable identity for efficient updates
                     }
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.snapshot.layers.map { $0.id })
+                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.changeNotifier.layerChangeToken)
                 .padding(.horizontal, 4)
 
                 if overlaysEnabled {
@@ -642,163 +603,6 @@ extension ColorSwatchButton where Content == AnyView {
                     .padding(.horizontal, -3)
                     .frame(width: 14, height: 16)
             )
-        }
-    }
-}
-
-struct KeyEventHandlerView: NSViewRepresentable {
-    @ObservedObject var document: VectorDocument
-    @Binding var selectedLayerIndex: Int?
-
-    func makeNSView(context: Context) -> NSView {
-        let view = KeyEventHandlingNSView()
-        view.document = document
-        view.selectedLayerIndex = $selectedLayerIndex
-        DispatchQueue.main.async {
-            view.window?.makeFirstResponder(view)
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        if let view = nsView as? KeyEventHandlingNSView {
-            view.selectedLayerIndex = $selectedLayerIndex
-        }
-    }
-
-    class KeyEventHandlingNSView: NSView {
-        var document: VectorDocument?
-        var selectedLayerIndex: Binding<Int?>?
-
-        override var acceptsFirstResponder: Bool { true }
-
-        override func keyDown(with event: NSEvent) {
-            guard let document = document else {
-                super.keyDown(with: event)
-                return
-            }
-
-            let modifiers = event.modifierFlags
-
-            if modifiers.contains(.command) && !modifiers.contains(.option) {
-if event.keyCode == 126 {
-                    selectPreviousLayer(document: document)
-                    return
-} else if event.keyCode == 125 {
-                    selectNextLayer(document: document)
-                    return
-                }
-            }
-
-            if modifiers.contains(.option) && !modifiers.contains(.command) {
-if event.keyCode == 126 {
-                    moveSelectedLayerUp(document: document)
-                    return
-} else if event.keyCode == 125 {
-                    moveSelectedLayerDown(document: document)
-                    return
-                }
-            }
-
-            super.keyDown(with: event)
-        }
-
-        private func selectNextLayer(document: VectorDocument) {
-            DispatchQueue.main.async {
-                if !document.viewState.selectedObjectIDs.isEmpty {
-                    self.selectNextObject(document: document)
-                } else {
-                    guard let currentIndex = self.selectedLayerIndex?.wrappedValue else {
-                        if document.snapshot.layers.count > 2 {
-                            self.selectedLayerIndex?.wrappedValue = 2
-                        }
-                        return
-                    }
-
-                    if currentIndex < document.snapshot.layers.count - 1 {
-                        self.selectedLayerIndex?.wrappedValue = currentIndex + 1
-                    }
-                }
-            }
-        }
-
-        private func selectPreviousLayer(document: VectorDocument) {
-            DispatchQueue.main.async {
-                if !document.viewState.selectedObjectIDs.isEmpty {
-                    self.selectPreviousObject(document: document)
-                } else {
-                    guard let currentIndex = self.selectedLayerIndex?.wrappedValue else {
-                        if document.snapshot.layers.count > 2 {
-                            self.selectedLayerIndex?.wrappedValue = document.snapshot.layers.count - 1
-                        }
-                        return
-                    }
-
-                    if currentIndex > 2 {
-                        self.selectedLayerIndex?.wrappedValue = currentIndex - 1
-                    }
-                }
-            }
-        }
-
-        private func selectNextObject(document: VectorDocument) {
-            guard let currentLayerIndex = self.selectedLayerIndex?.wrappedValue,
-                  currentLayerIndex < document.snapshot.layers.count,
-                  let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
-            let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
-            let layerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
-
-            if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
-                if currentIndex < layerObjects.count - 1 {
-                    let nextObject = layerObjects[currentIndex + 1]
-                    document.viewState.selectedObjectIDs = [nextObject.id]
-                }
-            }
-        }
-
-        private func selectPreviousObject(document: VectorDocument) {
-            guard let currentLayerIndex = self.selectedLayerIndex?.wrappedValue,
-                  currentLayerIndex < document.snapshot.layers.count,
-                  let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
-            let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
-            let layerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
-
-            if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
-                if currentIndex > 0 {
-                    let prevObject = layerObjects[currentIndex - 1]
-                    document.viewState.selectedObjectIDs = [prevObject.id]
-                }
-            }
-        }
-
-        private func moveSelectedLayerUp(document: VectorDocument) {
-            DispatchQueue.main.async {
-                guard let currentIndex = self.selectedLayerIndex?.wrappedValue else { return }
-
-                if currentIndex <= 1 { return }
-
-                if currentIndex < document.snapshot.layers.count - 1 {
-                    let targetIndex = currentIndex + 1
-                    document.reorderLayer(sourceLayerId: document.snapshot.layers[currentIndex].id,
-                                          targetLayerId: document.snapshot.layers[targetIndex].id)
-                    self.selectedLayerIndex?.wrappedValue = targetIndex
-                }
-            }
-        }
-
-        private func moveSelectedLayerDown(document: VectorDocument) {
-            DispatchQueue.main.async {
-                guard let currentIndex = self.selectedLayerIndex?.wrappedValue else { return }
-
-                if currentIndex <= 1 { return }
-
-                if currentIndex > 2 {
-                    let targetIndex = currentIndex - 1
-                    document.reorderLayer(sourceLayerId: document.snapshot.layers[currentIndex].id,
-                                          targetLayerId: document.snapshot.layers[targetIndex].id)
-                    self.selectedLayerIndex?.wrappedValue = targetIndex
-                }
-            }
         }
     }
 }
