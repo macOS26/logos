@@ -613,37 +613,4 @@ extension DrawingCanvas {
         }
 
     }
-
-    // COMMENTED OUT - No longer needed since we use snapshot.objects directly
-    // private func syncUnifiedObjectsAfterMovement() {
-    //
-    //     for i in document.unifiedObjects.indices {
-    //         let unifiedObject = document.unifiedObjects[i]
-    //
-    //         guard document.viewState.selectedObjectIDs.contains(unifiedObject.id) else { continue }
-    //
-    //         switch unifiedObject.objectType {
-    //         case .text(let oldShape):
-    //             if let updatedText = document.findText(by: oldShape.id) {
-    //                 let updatedShape = VectorShape.from(updatedText)
-    //                 document.unifiedObjects[i] = VectorObject(
-    //                     shape: updatedShape,
-    //                     layerIndex: unifiedObject.layerIndex,
-    //                 )
-    //             }
-    //         case .shape(let oldShape),
-    //              .warp(let oldShape),
-    //              .group(let oldShape),
-    //              .clipGroup(let oldShape),
-    //              .clipMask(let oldShape):
-    //             if let updatedShape = document.findShape(by: oldShape.id) {
-    //                 document.unifiedObjects[i] = VectorObject(
-    //                     shape: updatedShape,
-    //                     layerIndex: unifiedObject.layerIndex,
-    //                 )
-    //             }
-    //         }
-    //     }
-    //
-    // }
 }
