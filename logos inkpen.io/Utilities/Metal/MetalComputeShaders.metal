@@ -69,6 +69,7 @@ kernel void calculate_bezier_curves(
     curvePoints[index] = result;
 }
 
+// SIMD optimized: Use float3x3 matrix multiplication
 kernel void transform_points(
     device const Point2D* inputPoints [[buffer(0)]],
     device Point2D* outputPoints [[buffer(1)]],
@@ -77,17 +78,20 @@ kernel void transform_points(
     uint index [[thread_position_in_grid]]
 ) {
     if (index >= pointCount) return;
-    
+
     Point2D point = inputPoints[index];
-    
-    float a = transformMatrix[0], b = transformMatrix[1], tx = transformMatrix[2];
-    float c = transformMatrix[3], d = transformMatrix[4], ty = transformMatrix[5];
-    
-    Point2D result;
-    result.x = a * point.x + b * point.y + tx;
-    result.y = c * point.x + d * point.y + ty;
-    
-    outputPoints[index] = result;
+
+    // SIMD matrix transform: Build 3x3 affine matrix and multiply
+    float3x3 transform = float3x3(
+        float3(transformMatrix[0], transformMatrix[3], 0.0),  // column 0
+        float3(transformMatrix[1], transformMatrix[4], 0.0),  // column 1
+        float3(transformMatrix[2], transformMatrix[5], 1.0)   // column 2 (translation)
+    );
+
+    float3 homogeneous = float3(point.x, point.y, 1.0);
+    float3 transformed = transform * homogeneous;
+
+    outputPoints[index] = Point2D(transformed.x, transformed.y);
 }
 
 kernel void point_in_polygon(
@@ -307,6 +311,7 @@ kernel void chaikin_smoothing_legacy(
     }
 }
 
+// SIMD optimized: Use native distance() function
 kernel void calculate_point_distance(
     device const Point2D* point1 [[buffer(0)]],
     device const Point2D* point2 [[buffer(1)]],
@@ -316,10 +321,8 @@ kernel void calculate_point_distance(
     Point2D p1 = point1[index];
     Point2D p2 = point2[index];
 
-    float dx = p1.x - p2.x;
-    float dy = p1.y - p2.y;
-
-    distances[index] = sqrt(dx * dx + dy * dy);
+    // SIMD distance function - single instruction
+    distances[index] = distance(p1, p2);
 }
 
 // Kernel for marking which points to keep (first pass)
