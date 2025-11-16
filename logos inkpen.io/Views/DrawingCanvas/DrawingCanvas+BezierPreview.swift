@@ -130,6 +130,7 @@ extension DrawingCanvas {
 
             if isShiftPressed && bezierPoints.count >= 1 {
                 if let snapPoint = findBestIntersectionPoint(from: lastPointLocation, toward: rawCanvasMouseLocation) {
+                    // Snap point indicator circle
                     Circle()
                         .fill(Color.purple.opacity(0.3))
                         .frame(width: 16 / zoomLevel, height: 16 / zoomLevel)
@@ -142,31 +143,46 @@ extension DrawingCanvas {
                             y: snapPoint.y * zoomLevel + canvasOffset.y
                         )
 
-                    Path { path in
-                        path.move(to: lastPointLocation)
-                        path.addLine(to: snapPoint)
-                    }
-                    .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
-                        lineWidth: 1 / zoomLevel,
-                        lineCap: .round,
-                        dash: [4, 2]
-                    ))
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    // Snap lines using Canvas
+                    Canvas { context, size in
+                        context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                        context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                    let firstPoint = bezierPoints[0]
-                    let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                    Path { path in
-                        path.move(to: snapPoint)
-                        path.addLine(to: firstPointLocation)
+                        // Line from last point to snap point
+                        let path1 = Path { path in
+                            path.move(to: lastPointLocation)
+                            path.addLine(to: snapPoint)
+                        }
+
+                        context.stroke(
+                            path1,
+                            with: .color(Color.purple.opacity(0.5)),
+                            style: SwiftUI.StrokeStyle(
+                                lineWidth: 1 / zoomLevel,
+                                lineCap: .round,
+                                dash: [4, 2]
+                            )
+                        )
+
+                        // Line from snap point to first point
+                        let firstPoint = bezierPoints[0]
+                        let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+
+                        let path2 = Path { path in
+                            path.move(to: snapPoint)
+                            path.addLine(to: firstPointLocation)
+                        }
+
+                        context.stroke(
+                            path2,
+                            with: .color(Color.purple.opacity(0.5)),
+                            style: SwiftUI.StrokeStyle(
+                                lineWidth: 1 / zoomLevel,
+                                lineCap: .round,
+                                dash: [4, 2]
+                            )
+                        )
                     }
-                    .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
-                        lineWidth: 1 / zoomLevel,
-                        lineCap: .round,
-                        dash: [4, 2]
-                    ))
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
             }
 
@@ -181,55 +197,67 @@ extension DrawingCanvas {
                 fillClosePreview(geometry: geometry)
             }
 
-            if showClosePathHint && bezierPoints.count >= 3 {
-                let firstPoint = bezierPoints[0]
-                let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
-                let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
+            // Rubber band curves using Canvas
+            Canvas { context, size in
+                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                Path { path in
-                    path.move(to: lastPointLocation)
+                if showClosePathHint && bezierPoints.count >= 3 {
+                    // Close path hint curve
+                    let firstPoint = bezierPoints[0]
+                    let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+                    let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                    let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
 
-                    if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
-                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
-                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
-                    } else if let lastControl2 = lastPointHandles?.control2 {
-                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
-                    } else if let firstControl1 = firstPointHandles?.control1 {
-                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
-                        path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
-                    } else {
-                        path.addLine(to: firstPointLocation)
+                    let closePath = Path { path in
+                        path.move(to: lastPointLocation)
+
+                        if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
+                            let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                            let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                            path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
+                        } else if let lastControl2 = lastPointHandles?.control2 {
+                            let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                            path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
+                        } else if let firstControl1 = firstPointHandles?.control1 {
+                            let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                            path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
+                        } else {
+                            path.addLine(to: firstPointLocation)
+                        }
                     }
-                }
-                .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-            } else {
-                Path { path in
-                    path.move(to: lastPointLocation)
 
-                    let lastPointHandlesForRubber = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
-                    if let lastPointHandles = lastPointHandlesForRubber,
-                       let lastControl2 = lastPointHandles.control2 {
-                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                    context.stroke(
+                        closePath,
+                        with: .color(Color.green),
+                        style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
+                    )
+                } else {
+                    // Regular rubber band curve
+                    let rubberPath = Path { path in
+                        path.move(to: lastPointLocation)
 
-                        path.addCurve(
-                            to: canvasMouseLocation,
-                            control1: lastControl2Location,
-                            control2: canvasMouseLocation
-                        )
+                        let lastPointHandlesForRubber = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
+                        if let lastPointHandles = lastPointHandlesForRubber,
+                           let lastControl2 = lastPointHandles.control2 {
+                            let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
 
-                    } else {
-                        path.addLine(to: canvasMouseLocation)
+                            path.addCurve(
+                                to: canvasMouseLocation,
+                                control1: lastControl2Location,
+                                control2: canvasMouseLocation
+                            )
+                        } else {
+                            path.addLine(to: canvasMouseLocation)
+                        }
                     }
-                }
-                .stroke(Color.blue.opacity(0.8), style: SwiftUI.StrokeStyle(lineWidth: rubberBandWidth, lineCap: .round, dash: [4, 2]))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
 
+                    context.stroke(
+                        rubberPath,
+                        with: .color(Color.blue.opacity(0.8)),
+                        style: SwiftUI.StrokeStyle(lineWidth: rubberBandWidth, lineCap: .round, dash: [4, 2])
+                    )
+                }
             }
         }
     }
