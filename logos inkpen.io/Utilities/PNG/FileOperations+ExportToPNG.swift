@@ -321,8 +321,9 @@ extension FileOperations {
         }
 
         if let imageData = shape.embeddedImageData {
-            if let nsImage = NSImage(data: imageData),
-               let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            // Create CGImage directly from data (cross-platform)
+            if let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                 let bounds = shape.bounds
 
                 context.saveGState()
