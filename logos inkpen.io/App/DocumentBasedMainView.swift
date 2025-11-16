@@ -41,6 +41,8 @@ struct DocumentBasedMainView: View {
     @State var zoomLevel: Double = 1.0
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
+    @State var popoverStopID: UUID? = nil
+    @State var popoverStopFrame: CGRect? = nil
 
 
     var body: some View {
@@ -122,7 +124,9 @@ struct DocumentBasedMainView: View {
                     letterSpacingDelta: $letterSpacingDelta,
                     selectedLayerIndex: $selectedLayerIndex,
                     processedLayersDuringDrag: $processedLayersDuringDrag,
-                    processedObjectsDuringDrag: $processedObjectsDuringDrag
+                    processedObjectsDuringDrag: $processedObjectsDuringDrag,
+                    popoverStopID: $popoverStopID,
+                    popoverStopFrame: $popoverStopFrame
                 )
                 .frame(width: 280)
                 .frame(minWidth: 280)
@@ -135,6 +139,29 @@ struct DocumentBasedMainView: View {
             //     // Sync viewState colors from document defaults on appear
             StatusBar(zoomLevel: zoomLevel, document: document)
         }
+        .overlay(
+            Group {
+                if let stopID = popoverStopID,
+                   let frame = popoverStopFrame,
+                   let gradient = getSelectedShapeGradient(),
+                   let stop = gradient.stops.first(where: { $0.id == stopID }) {
+                    CustomGradientPopover(
+                        anchorFrame: frame,
+                        stop: stop,
+                        gradient: gradient,
+                        document: document,
+                        activeColorTarget: document.viewState.activeColorTarget,
+                        onColorChanged: { color in
+                            updateGradientStopColor(stopID: stopID, color: color)
+                        },
+                        onDismiss: {
+                            popoverStopID = nil
+                        }
+                    )
+                    .zIndex(1000)
+                }
+            }
+        )
         .frame(minHeight: 524)
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
@@ -410,5 +437,80 @@ struct DocumentBasedMainView: View {
 
     private func handleActualSize() {
         zoomLevel = 1.0
+    }
+
+    private func getSelectedShapeGradient() -> VectorGradient? {
+        guard let firstID = document.viewState.selectedObjectIDs.first,
+              let object = document.snapshot.objects[firstID],
+              case .shape(let shape) = object.objectType else {
+            return nil
+        }
+
+        switch document.viewState.activeColorTarget {
+        case .fill:
+            if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
+                return gradient
+            }
+        case .stroke:
+            if let strokeStyle = shape.strokeStyle, case .gradient(let gradient) = strokeStyle.color {
+                return gradient
+            }
+        }
+        return nil
+    }
+
+    private func updateGradientStopColor(stopID: UUID, color: VectorColor) {
+        // Update the gradient stop color in the document
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID],
+                  case .shape(var shape) = object.objectType else { continue }
+
+            var gradient: VectorGradient?
+            var currentOpacity: Double = 1.0
+
+            switch document.viewState.activeColorTarget {
+            case .fill:
+                if let fillStyle = shape.fillStyle, case .gradient(let g) = fillStyle.color {
+                    gradient = g
+                    currentOpacity = fillStyle.opacity
+                }
+            case .stroke:
+                if let strokeStyle = shape.strokeStyle, case .gradient(let g) = strokeStyle.color {
+                    gradient = g
+                    currentOpacity = strokeStyle.opacity
+                }
+            }
+
+            guard var g = gradient else { continue }
+
+            // Update stop color
+            switch g {
+            case .linear(var linear):
+                if let index = linear.stops.firstIndex(where: { $0.id == stopID }) {
+                    linear.stops[index].color = color
+                    g = .linear(linear)
+                }
+            case .radial(var radial):
+                if let index = radial.stops.firstIndex(where: { $0.id == stopID }) {
+                    radial.stops[index].color = color
+                    g = .radial(radial)
+                }
+            }
+
+            // Apply back to shape
+            switch document.viewState.activeColorTarget {
+            case .fill:
+                shape.fillStyle = FillStyle(gradient: g, opacity: currentOpacity)
+            case .stroke:
+                shape.strokeStyle = StrokeStyle(gradient: g, width: shape.strokeStyle?.width ?? 1.0, opacity: currentOpacity)
+            }
+
+            let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex, objectType: .shape(shape))
+            document.snapshot.objects[objectID] = updatedObject
+        }
+
+        document.triggerLayerUpdates(for: Set(document.viewState.selectedObjectIDs.compactMap { id in
+            document.snapshot.objects[id]?.layerIndex
+        }))
     }
 }
