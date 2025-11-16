@@ -4,12 +4,15 @@ import simd
 
 struct GeometryUtils {
 
+    // SIMD-optimized angle constraint using simd_length
     static func constrainToAngle(from reference: CGPoint, to target: CGPoint, constraintAngles: [Double]) -> CGPoint {
-        let dx = target.x - reference.x
-        let dy = target.y - reference.y
-        let distance = sqrt(dx * dx + dy * dy)
+        let delta = SIMD2<Double>(Double(target.x - reference.x), Double(target.y - reference.y))
+        let distance = simd_length(delta)
 
         guard distance > 0.001 else { return target }
+
+        let dx = delta.x
+        let dy = delta.y
 
         let angle = atan2(dy, dx)
         var angleDegrees = angle * 180.0 / .pi
@@ -102,31 +105,33 @@ extension CGSize {
 
 /// Batch rect operations using SIMD
 struct SIMDRectOps {
-    /// Compute union bounds of multiple rects using SIMD
+    /// SIMD-optimized union bounds using simd_min/simd_max
     @inline(__always)
     static func unionBounds(_ rects: [CGRect]) -> CGRect {
         guard !rects.isEmpty else { return .zero }
         guard rects.count > 1 else { return rects[0] }
 
-        var minX = CGFloat.infinity
-        var minY = CGFloat.infinity
-        var maxX = -CGFloat.infinity
-        var maxY = -CGFloat.infinity
+        // Initialize with first rect bounds
+        let first = rects[0].simd
+        var minVec = SIMD2<Double>(first.x, first.y)
+        var maxVec = SIMD2<Double>(first.x + first.z, first.y + first.w)
 
-        for rect in rects {
+        // SIMD min/max operations for remaining rects
+        for rect in rects.dropFirst() {
             let simd = rect.simd
-            let rectMinX = simd.x
-            let rectMinY = simd.y
-            let rectMaxX = simd.x + simd.z
-            let rectMaxY = simd.y + simd.w
+            let rectMin = SIMD2<Double>(simd.x, simd.y)
+            let rectMax = SIMD2<Double>(simd.x + simd.z, simd.y + simd.w)
 
-            minX = min(minX, CGFloat(rectMinX))
-            minY = min(minY, CGFloat(rectMinY))
-            maxX = max(maxX, CGFloat(rectMaxX))
-            maxY = max(maxY, CGFloat(rectMaxY))
+            minVec = simd_min(minVec, rectMin)
+            maxVec = simd_max(maxVec, rectMax)
         }
 
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        return CGRect(
+            x: CGFloat(minVec.x),
+            y: CGFloat(minVec.y),
+            width: CGFloat(maxVec.x - minVec.x),
+            height: CGFloat(maxVec.y - minVec.y)
+        )
     }
 
     /// Filter rects that intersect viewport using SIMD
