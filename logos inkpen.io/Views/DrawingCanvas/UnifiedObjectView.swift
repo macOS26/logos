@@ -1064,12 +1064,11 @@ struct LayerCanvasView: View {
                         if let font = attributes[kCTFontAttributeName] as! CTFont? {
                             for i in 0..<glyphCount {
                                 if let glyphPath = CTFontCreatePathForGlyph(font, glyphs[i], nil) {
-                                    // Transform includes line position and text matrix
-                                    var transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
-                                    transform = transform.concatenating(CGAffineTransform(translationX: lineX, y: lineY))
-                                    transform = transform.concatenating(textMatrix)
-
                                     if needsCompleteTextPath {
+                                        // Build transform in same order as rendering: glyph pos + line pos + text matrix
+                                        var transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
+                                        transform = transform.concatenating(CGAffineTransform(translationX: lineX, y: lineY))
+                                        transform = transform.concatenating(textMatrix)
                                         completeTextPath?.addPath(glyphPath, transform: transform)
                                     }
                                 }
