@@ -82,11 +82,35 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
-    // Pre-filter visible objects OUTSIDE Canvas body (O(n) once per objects change)
-    private var visibleObjects: [VectorObject] {
-        objects.filter { object in
+    // Calculate viewport rectangle in document coordinates for culling
+    private func viewportRect(canvasSize: CGSize) -> CGRect {
+        // Convert visible canvas area to document coordinates
+        // Viewport in screen coords: (0, 0, canvasSize.width, canvasSize.height)
+        // Transform to document coords: (screenX - offset) / zoom
+        let docX = -canvasOffset.x / zoomLevel
+        let docY = -canvasOffset.y / zoomLevel
+        let docWidth = canvasSize.width / zoomLevel
+        let docHeight = canvasSize.height / zoomLevel
+
+        return CGRect(x: docX, y: docY, width: docWidth, height: docHeight)
+    }
+
+    // Pre-filter visible objects with viewport culling (O(n) once per objects change)
+    // Filters out objects that are:
+    // 1. Hidden (isVisible == false)
+    // 2. Outside the viewport bounds (performance optimization)
+    private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
+        let viewport = viewportRect(canvasSize: canvasSize)
+
+        return objects.filter { object in
+            // Skip hidden objects
             guard object.isVisible else { return false }
-            return true
+
+            // Get object bounds
+            let objectBounds = object.shape.bounds
+
+            // Use SIMD for fast intersection test
+            return objectBounds.intersectsSIMD(viewport)
         }
     }
 
@@ -193,8 +217,11 @@ struct LayerCanvasView: View {
 
     var body: some View {
         //let _ = Self._printChanges()
-        let _ = print("📊 LayerCanvasView \(layerInfo): rendering \(objects.count) objects")
         Canvas { context, size in
+            // Viewport culling: only render objects in visible area
+            let visibleObjects = culledObjects(canvasSize: size)
+            let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
+
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
