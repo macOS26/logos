@@ -83,7 +83,7 @@ extension VectorDocument {
             shape.transform.ty += delta.y
 
             if let textPos = shape.textPosition {
-                shape.textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
+                shape.textPosition = textPos.adding(delta)
             }
         }
     }
