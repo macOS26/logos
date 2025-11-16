@@ -1235,9 +1235,6 @@ class DocumentState: ObservableObject {
                     // Trigger layer update for the layer containing this object
                     document.triggerLayerUpdate(for: existingObject.layerIndex)
                     print("✅ Layer \(existingObject.layerIndex) update triggered")
-
-                    // Mark document as dirty so it saves
-                    self.window?.isDocumentEdited = true
                 }
 
                 // Remove from prompted set so it can be prompted again if still missing
