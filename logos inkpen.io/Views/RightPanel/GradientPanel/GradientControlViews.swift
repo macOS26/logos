@@ -158,16 +158,28 @@ struct GradientAngleControlView: View {
 struct GradientOriginControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
-    @Binding var originX: Double
-    @Binding var originY: Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
     var body: some View {
-        if currentGradient != nil {
-            // Use live state if available, otherwise use local state
-            let effectiveOriginX = document.viewState.liveGradientOriginX ?? originX
-            let effectiveOriginY = document.viewState.liveGradientOriginY ?? originY
+        if let gradient = currentGradient {
+            let originX: Double = {
+                switch gradient {
+                case .linear(let linear):
+                    return linear.originPoint.x
+                case .radial(let radial):
+                    return radial.originPoint.x
+                }
+            }()
+
+            let originY: Double = {
+                switch gradient {
+                case .linear(let linear):
+                    return linear.originPoint.y
+                case .radial(let radial):
+                    return radial.originPoint.y
+                }
+            }()
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Origin Point")
@@ -175,8 +187,8 @@ struct GradientOriginControlView: View {
 
                 HStack(spacing: 8) {
                     GradientSliderControl(
-                        label: "X: \(formatNumberForDisplay(effectiveOriginX))",
-                        value: effectiveOriginX,
+                        label: "X: \(formatNumberForDisplay(originX))",
+                        value: originX,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginX,
@@ -184,8 +196,8 @@ struct GradientOriginControlView: View {
                     )
 
                     GradientSliderControl(
-                        label: "Y: \(formatNumberForDisplay(effectiveOriginY))",
-                        value: effectiveOriginY,
+                        label: "Y: \(formatNumberForDisplay(originY))",
+                        value: originY,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginY,

@@ -39,8 +39,6 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
-    @State private var localOriginX: Double = 0.5
-    @State private var localOriginY: Double = 0.5
     @State private var dragStartGradient: VectorGradient? = nil
     @State private var dragStartOpacities: [UUID: Double] = [:]
     @State private var dragStartGradients: [UUID: VectorGradient?] = [:]
@@ -60,19 +58,13 @@ struct GradientFillSection: View {
         if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget.wrappedValue) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
-            case .linear(let linear):
+            case .linear:
                 _gradientType = State(initialValue: .linear)
-                _localOriginX = State(initialValue: linear.originPoint.x)
-                _localOriginY = State(initialValue: linear.originPoint.y)
-            case .radial(let radial):
+            case .radial:
                 _gradientType = State(initialValue: .radial)
-                _localOriginX = State(initialValue: radial.originPoint.x)
-                _localOriginY = State(initialValue: radial.originPoint.y)
             }
         } else {
             _currentGradient = State(initialValue: Self.createDefaultGradient(type: .linear))
-            _localOriginX = State(initialValue: 0.5)
-            _localOriginY = State(initialValue: 0.5)
         }
     }
 
@@ -110,14 +102,10 @@ struct GradientFillSection: View {
             GradientOriginControlView(
                 currentGradient: currentGradient,
                 document: document,
-                originX: $localOriginX,
-                originY: $localOriginY,
                 updateOriginX: { newX in
-                    // Only update gradient delta, NOT local state during drag
                     updateGradientOrigin(x: newX, y: nil)
                 },
                 updateOriginY: { newY in
-                    // Only update gradient delta, NOT local state during drag
                     updateGradientOrigin(x: nil, y: newY)
                 },
                 onEditingChanged: { isEditing in
@@ -125,8 +113,7 @@ struct GradientFillSection: View {
                         // Drag started - capture old gradient state
                         captureOldGradientState()
                     } else {
-                        // Drag ended - sync local state and commit with undo
-                        syncLocalOriginFromGradient()
+                        // Drag ended - commit with undo
                         commitGradientChangeWithUndo()
                     }
                 }
@@ -205,18 +192,6 @@ struct GradientFillSection: View {
         .onChange(of: activeColorTarget) { _, _ in
             updateSelectedGradient()
         }
-        .onChange(of: document.viewState.liveGradientOriginX) { _, newValue in
-            if newValue == nil {
-                // Drag ended, sync from document gradient
-                syncLocalStateFromDocument()
-            }
-        }
-        .onChange(of: document.viewState.liveGradientOriginY) { _, newValue in
-            if newValue == nil {
-                // Drag ended, sync from document gradient
-                syncLocalStateFromDocument()
-            }
-        }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
             // Sync gradient state from document when snapshot changes (e.g., after undo)
             updateSelectedGradient()
@@ -243,81 +218,17 @@ struct GradientFillSection: View {
         if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
             currentGradient = selectedGradient
             switch selectedGradient {
-            case .linear(let linear):
+            case .linear:
                 gradientType = .linear
-                localOriginX = linear.originPoint.x
-                localOriginY = linear.originPoint.y
-            case .radial(let radial):
+            case .radial:
                 gradientType = .radial
-                localOriginX = radial.originPoint.x
-                localOriginY = radial.originPoint.y
             }
             gradientId = UUID()
-            // Clear live state when switching to different gradient
-            document.viewState.liveGradientOriginX = nil
-            document.viewState.liveGradientOriginY = nil
             // Clear delta so canvas uses snapshot gradient
             activeGradientDelta = nil
         }
     }
 
-    private func updateSelectedGradientDisplay() {
-
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
-            currentGradient = selectedGradient
-            switch selectedGradient {
-            case .linear(let linear):
-                gradientType = .linear
-                localOriginX = linear.originPoint.x
-                localOriginY = linear.originPoint.y
-            case .radial(let radial):
-                gradientType = .radial
-                localOriginX = radial.originPoint.x
-                localOriginY = radial.originPoint.y
-            }
-        }
-    }
-
-    private func syncLocalStateFromDocument() {
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
-            currentGradient = selectedGradient
-            switch selectedGradient {
-            case .linear(let linear):
-                localOriginX = linear.originPoint.x
-                localOriginY = linear.originPoint.y
-            case .radial(let radial):
-                localOriginX = radial.originPoint.x
-                localOriginY = radial.originPoint.y
-            }
-        }
-    }
-
-    private func syncLocalOriginFromGradient() {
-        // Apply live state to currentGradient before clearing
-        if let liveX = document.viewState.liveGradientOriginX,
-           let liveY = document.viewState.liveGradientOriginY,
-           let gradient = currentGradient {
-            switch gradient {
-            case .linear(var linear):
-                linear.originPoint.x = liveX
-                linear.originPoint.y = liveY
-                currentGradient = .linear(linear)
-                localOriginX = liveX
-                localOriginY = liveY
-            case .radial(var radial):
-                radial.originPoint.x = liveX
-                radial.originPoint.y = liveY
-                radial.focalPoint = CGPoint(x: liveX, y: liveY)
-                currentGradient = .radial(radial)
-                localOriginX = liveX
-                localOriginY = liveY
-            }
-        }
-
-        // Clear live state
-        document.viewState.liveGradientOriginX = nil
-        document.viewState.liveGradientOriginY = nil
-    }
 
     private func updateGradientAngle(_ newAngle: Double) {
         guard let gradient = currentGradient else { return }
@@ -347,13 +258,27 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOrigin(x: Double?, y: Double?) {
-        // ONLY update live state - do NOT update currentGradient or activeGradientDelta during drag
-        // This prevents @State/@Binding updates that trigger view re-renders
-        if let newX = x {
-            document.viewState.liveGradientOriginX = newX
-        }
-        if let newY = y {
-            document.viewState.liveGradientOriginY = newY
+        guard let gradient = currentGradient else { return }
+
+        switch gradient {
+        case .linear(var linear):
+            if let newX = x {
+                linear.originPoint.x = newX
+            }
+            if let newY = y {
+                linear.originPoint.y = newY
+            }
+            currentGradient = .linear(linear)
+            activeGradientDelta = currentGradient
+        case .radial(var radial):
+            if let newX = x {
+                radial.originPoint.x = newX
+            }
+            if let newY = y {
+                radial.originPoint.y = newY
+            }
+            currentGradient = .radial(radial)
+            activeGradientDelta = currentGradient
         }
     }
 
