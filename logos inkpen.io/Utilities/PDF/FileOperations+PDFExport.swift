@@ -253,10 +253,15 @@ extension FileOperations {
             return
         }
 
-        if let doc = document, let image = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
-            if let tiffRep = image.tiffRepresentation {
-                try renderImageToPDF(shape: shape, imageData: tiffRep, context: context)
-                return
+        if let doc = document, let cgImage = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
+            // Convert CGImage to PNG data
+            let mutableData = NSMutableData()
+            if let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) {
+                CGImageDestinationAddImage(destination, cgImage, nil)
+                if CGImageDestinationFinalize(destination) {
+                    try renderImageToPDF(shape: shape, imageData: mutableData as Data, context: context)
+                    return
+                }
             }
         }
 
