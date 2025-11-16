@@ -313,6 +313,52 @@ struct LayersPanel: View {
         .padding(.vertical, 8)
     }
     
+    private func dragOverlay(
+        xPosition: CGFloat,
+        isDragging: WritableKeyPath<DocumentViewState, Bool>,
+        toggle: @escaping (RowType) -> Void
+    ) -> some View {
+        ZStack {
+            ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
+                let rowY = CGFloat(rowIndex) * kLayerRowHeight
+                let iconCenterY = rowY + (kLayerRowHeight / 2)
+
+                Color.red.opacity(0.0000000)
+                    .dragTarget()
+                    .position(x: xPosition, y: iconCenterY)
+            }
+        }
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    if !document.viewState[keyPath: isDragging] {
+                        document.viewState[keyPath: isDragging] = true
+                        processedLayersDuringDrag.removeAll()
+                        processedObjectsDuringDrag.removeAll()
+
+                        let startY = value.startLocation.y
+                        let rowIndex = Int(startY / kLayerRowHeight)
+
+                        if rowIndex >= 0 && rowIndex < visibleRows.count {
+                            toggle(visibleRows[rowIndex])
+                        }
+                    }
+
+                    let currentY = value.location.y
+                    let rowIndex = Int(currentY / kLayerRowHeight)
+
+                    if rowIndex >= 0 && rowIndex < visibleRows.count {
+                        toggle(visibleRows[rowIndex])
+                    }
+                }
+                .onEnded { _ in
+                    document.viewState[keyPath: isDragging] = false
+                    processedLayersDuringDrag.removeAll()
+                    processedObjectsDuringDrag.removeAll()
+                }
+        )
+    }
+
     private var layersScrollContent: some View {
         return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
@@ -332,88 +378,12 @@ struct LayersPanel: View {
                     let eyeIconX = rowPadding + (iconSize / 2)
                     let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
 
-                    ZStack {
-                    ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
-                        let rowY = CGFloat(rowIndex) * kLayerRowHeight
-                        let iconCenterY = rowY + (kLayerRowHeight / 2)
+                    dragOverlay(xPosition: eyeIconX, isDragging: \.isDraggingVisibility, toggle: toggleVisibility)
+                        .padding(.horizontal, 4)
 
-                        Color.red.opacity(0.0000000)
-                            .dragTarget()
-                            .position(x: eyeIconX, y: iconCenterY)
-                    }
-                }
-                .highPriorityGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if !document.viewState.isDraggingVisibility {
-                                document.viewState.isDraggingVisibility = true
-                                processedLayersDuringDrag.removeAll()
-                                processedObjectsDuringDrag.removeAll()
-
-                                let startY = value.startLocation.y
-                                let rowIndex = Int(startY / kLayerRowHeight)
-
-                                if rowIndex >= 0 && rowIndex < visibleRows.count {
-                                    toggleVisibility(for: visibleRows[rowIndex])
-                                }
-                            }
-
-                            let currentY = value.location.y
-                            let rowIndex = Int(currentY / kLayerRowHeight)
-
-                            if rowIndex >= 0 && rowIndex < visibleRows.count {
-                                toggleVisibility(for: visibleRows[rowIndex])
-                            }
-                        }
-                        .onEnded { _ in
-                            document.viewState.isDraggingVisibility = false
-                            processedLayersDuringDrag.removeAll()
-                            processedObjectsDuringDrag.removeAll()
-                        }
-                )
-                .padding(.horizontal, 4)
-                
-                ZStack {
-                    ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
-                        let rowY = CGFloat(rowIndex) * kLayerRowHeight
-                        let iconCenterY = rowY + (kLayerRowHeight / 2)
-
-                        Color.red.opacity(0.0000000)
-                            .dragTarget()
-                            .position(x: lockIconX, y: iconCenterY)
-                    }
-                }
-                .highPriorityGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if !document.viewState.isDraggingLock {
-                                document.viewState.isDraggingLock = true
-                                processedLayersDuringDrag.removeAll()
-                                processedObjectsDuringDrag.removeAll()
-
-                                let startY = value.startLocation.y
-                                let rowIndex = Int(startY / kLayerRowHeight)
-
-                                if rowIndex >= 0 && rowIndex < visibleRows.count {
-                                    toggleLock(for: visibleRows[rowIndex])
-                                }
-                            }
-
-                            let currentY = value.location.y
-                            let rowIndex = Int(currentY / kLayerRowHeight)
-
-                            if rowIndex >= 0 && rowIndex < visibleRows.count {
-                                toggleLock(for: visibleRows[rowIndex])
-                            }
-                        }
-                        .onEnded { _ in
-                            document.viewState.isDraggingLock = false
-                            processedLayersDuringDrag.removeAll()
-                            processedObjectsDuringDrag.removeAll()
-                        }
-                )
-                .padding(.horizontal, 4)
-                .zIndex(200)
+                    dragOverlay(xPosition: lockIconX, isDragging: \.isDraggingLock, toggle: toggleLock)
+                        .padding(.horizontal, 4)
+                        .zIndex(200)
                 }
             }
         }
