@@ -140,7 +140,7 @@ class ObjectReorderCommand: BaseCommand {
                 layerObjectIDs.insert(id, at: insertIndex)
             }
 
-            document.snapshot.layers[layerIndex].objectIDs = layerObjectIDs
+            document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: layerObjectIDs)
         }
     }
 }
