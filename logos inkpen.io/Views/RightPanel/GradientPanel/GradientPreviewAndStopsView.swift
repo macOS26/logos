@@ -16,6 +16,7 @@ struct GradientPreviewAndStopsView: View {
     let updateOriginY: (Double, Bool) -> Void
     let updateOriginXOptimized: (Double, Bool, Bool) -> Void
     let updateOriginYOptimized: (Double, Bool, Bool) -> Void
+    let updateOriginXY: (Double, Double) -> Void
     let onOriginEditingChanged: (Bool) -> Void
     let addColorStop: () -> Void
     let updateStopPosition: (UUID, Double) -> Void
@@ -332,19 +333,11 @@ struct GradientPreviewAndStopsView: View {
                             finalY = max(0.0, min(1.0, (value.location.y - padding) / squareSize))
                         }
 
-                        document.viewState.liveGradientOriginX = finalX
-                        document.viewState.liveGradientOriginY = finalY
-
-                        // Update delta only - don't update snapshot during drag
-                        updateOriginXOptimized(finalX, true, true)
-                        updateOriginYOptimized(finalY, true, true)
+                        // Single update for both X and Y - fast like angle slider
+                        updateOriginXY(finalX, finalY)
                     }
                     .onEnded { value in
                         isDragging = false
-
-                        // Clear live state
-                        document.viewState.liveGradientOriginX = nil
-                        document.viewState.liveGradientOriginY = nil
 
                         // Notify that drag ended - this will commit with undo
                         onOriginEditingChanged(false)

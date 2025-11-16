@@ -153,6 +153,7 @@ struct GradientFillSection: View {
                 updateOriginY: { _, _ in },  // Deprecated - using delta pattern
                 updateOriginXOptimized: { newX, _, _ in updateGradientOrigin(x: newX, y: nil) },
                 updateOriginYOptimized: { newY, _, _ in updateGradientOrigin(x: nil, y: newY) },
+                updateOriginXY: { newX, newY in updateGradientOrigin(x: newX, y: newY) },
                 onOriginEditingChanged: { isEditing in
                     if isEditing {
                         captureOldGradientState()
