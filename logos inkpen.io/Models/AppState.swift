@@ -74,8 +74,6 @@ class AppState {
         }
     }
 
-    var gradientEditingState: GradientEditingState? = nil
-
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
     var pendingNewDocument: VectorDocument? = nil

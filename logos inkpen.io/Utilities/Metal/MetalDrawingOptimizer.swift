@@ -24,11 +24,7 @@ class MetalDrawingOptimizer {
     }
 
     func optimizeRealTimeDrawing(enabled: Bool) {
-        if enabled && isMetalAvailable {
-            OptimizedPerformanceMonitor.shared.renderingMode = "Metal GPU Optimized"
-        } else {
-            OptimizedPerformanceMonitor.shared.renderingMode = "CPU Optimized"
-        }
+        // Optimization logic removed
     }
 
     private func metalAcceleratedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
@@ -95,7 +91,7 @@ class MetalDrawingOptimizer {
     }
 
     func trackDrawingStart() {
-        OptimizedPerformanceMonitor.shared.metalCommandStart()
+        // Tracking removed
     }
 
     func optimizePointCollection(_ points: inout [CGPoint], maxPoints: Int = 500) {

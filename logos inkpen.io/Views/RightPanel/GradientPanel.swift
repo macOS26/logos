@@ -223,15 +223,11 @@ struct GradientFillSection: View {
     }
 
     private func turnOffEditingState() {
-        appState.gradientEditingState = nil
         editingGradientStopId = nil
 
         DispatchQueue.main.async {
             if self.editingGradientStopId != nil {
                 self.editingGradientStopId = nil
-            }
-            if appState.gradientEditingState != nil {
-                appState.gradientEditingState = nil
             }
         }
     }

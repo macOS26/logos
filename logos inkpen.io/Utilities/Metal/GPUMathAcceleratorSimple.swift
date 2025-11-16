@@ -16,10 +16,6 @@ class GPUMathAcceleratorSimple {
     }
 
     func douglasPeuckerSimplifyGPUReady(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
-        if isMetalAvailable {
-            OptimizedPerformanceMonitor.shared.renderingMode = "GPU Ready"
-        }
-
         return douglasPeuckerOptimized(points: points, tolerance: Float(tolerance))
     }
 
