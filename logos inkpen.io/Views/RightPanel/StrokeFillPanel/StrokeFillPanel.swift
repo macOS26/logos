@@ -321,37 +321,37 @@ struct StrokeFillPanel: View {
     }
 
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
-        // print("🟢 applyAnchorTypeToSelection: Called with type \(type)")
-        // print("🟢 selectedPoints count: \(selectedPoints.count)")
-        // print("🟢 selectedPoints: \(selectedPoints)")
+
+
+
 
         guard !selectedPoints.isEmpty else {
-            // print("❌ No points selected - returning early")
+
             return
         }
 
         var layersToUpdate = Set<Int>()
 
         for pointID in selectedPoints {
-            // print("🔹 Processing pointID: \(pointID)")
+
 
             guard var object = snapshot.objects[pointID.shapeID],
                   case .shape(var shape) = object.objectType,
                   pointID.elementIndex < shape.path.elements.count else {
-                // print("❌ Failed to get object/shape or elementIndex out of bounds")
+
                 continue
             }
 
-            // print("🔹 Shape ID: \(shape.id), geometricType: \(shape.geometricType?.rawValue ?? "nil"), isRoundedRectangle: \(shape.isRoundedRectangle)")
+
 
             let elementIndex = pointID.elementIndex
             var elements = shape.path.elements
 
-            // print("🔹 Element \(elementIndex): \(elements[elementIndex])")
-            // print("📋 BEFORE conversion - All elements:")
-            // for (idx, el) in elements.enumerated() {
-            //     print("   [\(idx)]: \(el)")
-            // }
+
+
+
+
+
 
             // Get anchor position
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
@@ -361,7 +361,7 @@ struct StrokeFillPanel: View {
             // control1 = outgoing from PREVIOUS anchor, so collapse it AT the previous anchor
             // control2 = incoming to THIS anchor, so collapse it AT this anchor
             if case .line = elements[elementIndex] {
-                // print("🔶 Converting LINE element to CURVE element at index \(elementIndex)")
+
 
                 // Get previous point position (where control1 should be collapsed)
                 var prevPoint = anchorPos
@@ -378,35 +378,35 @@ struct StrokeFillPanel: View {
                 // - control1 collapsed at PREVIOUS anchor (not this anchor!)
                 // - control2 collapsed at THIS anchor
                 elements[elementIndex] = .curve(to: anchorPos, control1: prevPoint, control2: anchorPos)
-                // print("   control1 set to previous point: \(prevPoint)")
-                // print("   control2 set to anchor: \(anchorPos)")
+
+
             }
 
-            // print("📋 AFTER line-to-curve conversion - All elements:")
-            // for (idx, el) in elements.enumerated() {
-            //     print("   [\(idx)]: \(el)")
-            // }
+
+
+
+
 
             // Modify the element and next element based on type
             switch type {
             case .corner:
-                // print("🟦 CORNER conversion starting")
+
                 // Collapse handles to anchor (corner = no visible handles)
                 // Collapse incoming handle (control2 of current element)
                 if case .curve(_, let control1, _) = elements[elementIndex] {
                     elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: anchorPos)
-                    // print("   Updated element[\(elementIndex)] - collapsed control2")
+
                 }
                 // Collapse outgoing handle (control1 of next element)
                 if elementIndex + 1 < elements.count {
                     if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                         elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: control2)
-                        // print("   Updated element[\(elementIndex + 1)] - collapsed control1")
+
                     }
                 }
 
             case .cusp:
-                // print("🟧 CUSP conversion starting")
+
                 // Create handles at 90° angle from each other, pointing OUTWARD from corner
                 let handleLength: Double = 40.0
 
@@ -490,7 +490,7 @@ struct StrokeFillPanel: View {
                             // Top-left corner: handles LEFT and UP (swapped to fix twist)
                             incomingAngle = .pi  // LEFT
                             outgoingAngle = 270 * .pi / 180  // UP
-                            // print("   RECTANGLE CORNER: Top-left (special case for element \(elementIndex)) - LEFT and UP (fixed twist)")
+
                         }
                     }
                 }
@@ -499,8 +499,8 @@ struct StrokeFillPanel: View {
                     let angleToPrev = atan2(prev.y - anchorPosCG.y, prev.x - anchorPosCG.x)
                     let angleToNext = atan2(next.y - anchorPosCG.y, next.x - anchorPosCG.x)
 
-                    // print("   angleToPrev: \(angleToPrev * 180 / .pi)° (toward prev point)")
-                    // print("   angleToNext: \(angleToNext * 180 / .pi)° (toward next point)")
+
+
 
                     // For rectangles, simply determine corner and set handles outward
                     // Top-right: prev=180° (from left), next=90° (to down)
@@ -508,32 +508,32 @@ struct StrokeFillPanel: View {
                         // Handles: UP and RIGHT
                         incomingAngle = 270 * .pi / 180  // UP (-90° or 270°)
                         outgoingAngle = 0  // RIGHT
-                        // print("   RECTANGLE CORNER: Top-right - UP and RIGHT")
+
                     }
                     // Bottom-right: prev=-90° (from up), next=180° (to left)
                     else if abs(angleToPrev + .pi/2) < 0.1 && abs(angleToNext - .pi) < 0.1 {
                         // Handles: RIGHT and DOWN (swapped to fix twist)
                         incomingAngle = 0  // RIGHT
                         outgoingAngle = 90 * .pi / 180  // DOWN
-                        // print("   RECTANGLE CORNER: Bottom-right - RIGHT and DOWN (fixed twist)")
+
                     }
                     // Bottom-left: prev=0° (from right), next=-90° (to up)
                     else if abs(angleToPrev) < 0.1 && abs(angleToNext + .pi/2) < 0.1 {
                         // Handles: DOWN and LEFT
                         incomingAngle = 90 * .pi / 180  // DOWN
                         outgoingAngle = .pi  // LEFT
-                        // print("   RECTANGLE CORNER: Bottom-left - DOWN and LEFT")
+
                     }
                     // Top-left: prev=90° (from down), next=-180° or 180° (to right)
                     else if abs(angleToPrev - .pi/2) < 0.1 && (abs(angleToNext - .pi) < 0.1 || abs(angleToNext + .pi) < 0.1) {
                         // Handles: UP and LEFT
                         incomingAngle = 270 * .pi / 180  // UP
                         outgoingAngle = .pi  // LEFT
-                        // print("   RECTANGLE CORNER: Top-left - UP and LEFT")
+
                     }
                     else {
                         // Non-rectangle shape - use bisector method
-                        // print("   Using bisector method for non-rectangle")
+
                         var avgAngle = (angleToPrev + angleToNext) / 2.0
                         var diff = angleToNext - angleToPrev
                         if diff > .pi { diff -= 2.0 * .pi }
@@ -548,9 +548,9 @@ struct StrokeFillPanel: View {
                     }
                 }
 
-                // print("   bisectorAngle: \(bisectorAngle * 180 / .pi)°")
-                // print("   incomingAngle: \(incomingAngle * 180 / .pi)°")
-                // print("   outgoingAngle: \(outgoingAngle * 180 / .pi)°")
+
+
+
 
                 // Create new control points
                 // control2 = incoming handle TO this anchor (extends in direction of angle)
@@ -563,8 +563,8 @@ struct StrokeFillPanel: View {
                 if case .curve(_, let control1, _) = elements[elementIndex] {
                     // Keep control1 as-is (it belongs to PREVIOUS anchor)
                     elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: newControl2)
-                    // print("   Updated element[\(elementIndex)] control2 (incoming to THIS anchor)")
-                    // print("     control2 (incoming): \(newControl2)")
+
+
                 } else if elementIndex == 0, case .move(_) = elements[elementIndex] {
                     // Special case: For element 0 (.move), we need to update the LAST element's control2
                     // if it's a curve that goes back to the first point
@@ -573,8 +573,8 @@ struct StrokeFillPanel: View {
                         if case .curve(let to, let control1, _) = elements[lastIndex] {
                             // Update the last element's control2 (incoming to element 0)
                             elements[lastIndex] = .curve(to: to, control1: control1, control2: newControl2)
-                            // print("   Updated element[\(lastIndex)] control2 (incoming to element 0)")
-                            // print("     control2 (incoming): \(newControl2)")
+
+
                         }
                     }
                 }
@@ -589,13 +589,13 @@ struct StrokeFillPanel: View {
                     if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                         // Update next element's control1 (outgoing from THIS anchor)
                         elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
-                        // print("   Updated element[\(elementIndex + 1)] control1 (outgoing from THIS anchor)")
-                        // print("     control1 (outgoing): \(newControl1)")
+
+
                     } else if case .line(let to) = elements[elementIndex + 1] {
                         // Convert next line to curve with outgoing handle
                         elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: to)
-                        // print("   Converted element[\(elementIndex + 1)] from line to curve with control1")
-                        // print("     control1 (outgoing): \(newControl1)")
+
+
                     } else if case .close = elements[elementIndex + 1] {
                         // Replace .close with .curve that goes back to first point
                         // Get first point from element 0
@@ -603,14 +603,14 @@ struct StrokeFillPanel: View {
                             // Remove the .close and add a .curve back to start
                             elements.remove(at: elementIndex + 1)
                             elements.append(.curve(to: firstPoint, control1: newControl1, control2: firstPoint))
-                            // print("   Replaced .close with .curve back to first point")
-                            // print("     control1 (outgoing): \(newControl1)")
+
+
                         }
                     }
                 }
 
             case .smooth:
-                // print("🟩 SMOOTH conversion starting")
+
                 // Make handles collinear (180° aligned through anchor)
                 var incomingHandle: CGPoint?
                 var outgoingHandle: CGPoint?
@@ -672,18 +672,18 @@ struct StrokeFillPanel: View {
             // Store the explicit anchor type (except for .auto which uses geometry)
             if type != .auto {
                 shape.anchorTypes[elementIndex] = type
-                // print("✅ StrokeFillPanel: Stored anchor type \(type) for element \(elementIndex) in shape \(pointID.shapeID)")
+
             } else {
-                // print("🔷 StrokeFillPanel: Removed stored anchor type for element \(elementIndex) (set to AUTO)")
+
             }
 
             // Log all stored anchor types for this shape
-            // print("📋 StrokeFillPanel: All anchor types for shape: \(shape.anchorTypes)")
 
-            // print("📋 FINAL - All elements after conversion:")
-            // for (idx, el) in elements.enumerated() {
-            //     print("   [\(idx)]: \(el)")
-            // }
+
+
+
+
+
 
             // Update the shape
             shape.path = VectorPath(elements: elements)
