@@ -1093,6 +1093,7 @@ struct LayerCanvasView: View {
                     let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
                     cgContext.setStrokeColor(strokeColor.cgColor)
                     cgContext.setLineWidth(effectiveStrokeWidth)
+                    cgContext.setLineJoin(vectorText.typography.strokeLineJoin.cgLineJoin)
                     cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
                     cgContext.strokePath()
 

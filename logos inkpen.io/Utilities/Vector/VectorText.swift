@@ -57,6 +57,7 @@ struct TypographyProperties: Codable, Hashable {
     var strokeColor: VectorColor
     var strokeWidth: Double
     var strokeOpacity: Double
+    var strokeLineJoin: LineJoin
     var fillColor: VectorColor
     var fillOpacity: Double
 
@@ -72,6 +73,7 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor: VectorColor,
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
+        strokeLineJoin: LineJoin = .round,
         fillColor: VectorColor,
         fillOpacity: Double = 1.0
     ) {
@@ -86,6 +88,7 @@ struct TypographyProperties: Codable, Hashable {
         self.strokeColor = strokeColor
         self.strokeWidth = strokeWidth
         self.strokeOpacity = strokeOpacity
+        self.strokeLineJoin = strokeLineJoin
         self.fillColor = fillColor
         self.fillOpacity = fillOpacity
     }
@@ -137,7 +140,7 @@ struct TypographyProperties: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
         case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth
-        case strokeOpacity, fillColor, fillOpacity
+        case strokeOpacity, strokeLineJoin, fillColor, fillOpacity
         case fontWeight, fontStyle
     }
 
@@ -154,6 +157,7 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor = try container.decode(VectorColor.self, forKey: .strokeColor)
         strokeWidth = try container.decode(Double.self, forKey: .strokeWidth)
         strokeOpacity = try container.decode(Double.self, forKey: .strokeOpacity)
+        strokeLineJoin = try container.decodeIfPresent(LineJoin.self, forKey: .strokeLineJoin) ?? .round
         fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
         fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
     }
@@ -171,6 +175,7 @@ struct TypographyProperties: Codable, Hashable {
         try container.encode(strokeColor, forKey: .strokeColor)
         try container.encode(strokeWidth, forKey: .strokeWidth)
         try container.encode(strokeOpacity, forKey: .strokeOpacity)
+        try container.encode(strokeLineJoin, forKey: .strokeLineJoin)
         try container.encode(fillColor, forKey: .fillColor)
         try container.encode(fillOpacity, forKey: .fillOpacity)
     }
