@@ -8,39 +8,39 @@ struct DocumentBasedMainView: View {
     @Environment(AppState.self) private var appState
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
-    @State private var showingDocumentSettings = false
-    @State private var showingColorPicker = false
-    @State private var currentDocumentURL: URL? = nil
-    @State private var showingImportDialog = false
-    @State private var importResult: VectorImportResult?
-    @State private var showingImportProgress = false
-    @State private var showingSVGTestHarness = false
-    @State private var showingPressureCalibration = false
-    @State private var hasInitializedTool = false
-    @State private var layerPreviewOpacities: [UUID: Double] = [:]
-    @State private var liveDragOffset: CGPoint = .zero
-    @State private var liveScaleDimensions: CGSize = .zero
-    @State private var liveScaleTransform: CGAffineTransform = .identity
-    @State private var livePointPositions: [PointID: CGPoint] = [:]
-    @State private var liveHandlePositions: [HandleID: CGPoint] = [:]
-    @State private var colorDeltaColor: VectorColor? = nil
-    @State private var colorDeltaOpacity: Double? = nil
-    @State private var colorDeltaBlendMode: BlendMode? = nil
-    @State private var fillDeltaOpacity: Double? = nil
-    @State private var strokeDeltaOpacity: Double? = nil
-    @State private var strokeDeltaWidth: Double? = nil
-    @State private var activeGradientDelta: VectorGradient? = nil
-    @State private var fontSizeDelta: Double? = nil
-    @State private var lineSpacingDelta: Double? = nil
-    @State private var lineHeightDelta: Double? = nil
-    @State private var letterSpacingDelta: Double? = nil
-    @State private var textContentDelta: (id: UUID, content: String)? = nil
-    @State private var selectedLayerIndex: Int? = nil
-    @State private var processedLayersDuringDrag: Set<Int> = []
-    @State private var processedObjectsDuringDrag: Set<UUID> = []
-    @State private var zoomLevel: Double = 1.0
-    @State private var canvasOffset: CGPoint = .zero
-    @State private var viewportSize: CGSize = .zero
+    @State var showingDocumentSettings = false
+    @State var showingColorPicker = false
+    @State var currentDocumentURL: URL? = nil
+    @State var showingImportDialog = false
+    @State var importResult: VectorImportResult?
+    @State var showingImportProgress = false
+    @State var showingSVGTestHarness = false
+    @State var showingPressureCalibration = false
+    @State var hasInitializedTool = false
+    @State var layerPreviewOpacities: [UUID: Double] = [:]
+    @State var liveDragOffset: CGPoint = .zero
+    @State var liveScaleDimensions: CGSize = .zero
+    @State var liveScaleTransform: CGAffineTransform = .identity
+    @State var livePointPositions: [PointID: CGPoint] = [:]
+    @State var liveHandlePositions: [HandleID: CGPoint] = [:]
+    @State var colorDeltaColor: VectorColor? = nil
+    @State var colorDeltaOpacity: Double? = nil
+    @State var colorDeltaBlendMode: BlendMode? = nil
+    @State var fillDeltaOpacity: Double? = nil
+    @State var strokeDeltaOpacity: Double? = nil
+    @State var strokeDeltaWidth: Double? = nil
+    @State var activeGradientDelta: VectorGradient? = nil
+    @State var fontSizeDelta: Double? = nil
+    @State var lineSpacingDelta: Double? = nil
+    @State var lineHeightDelta: Double? = nil
+    @State var letterSpacingDelta: Double? = nil
+    @State var textContentDelta: (id: UUID, content: String)? = nil
+    @State var selectedLayerIndex: Int? = nil
+    @State var processedLayersDuringDrag: Set<Int> = []
+    @State var processedObjectsDuringDrag: Set<UUID> = []
+    @State var zoomLevel: Double = 1.0
+    @State var canvasOffset: CGPoint = .zero
+    @State var viewportSize: CGSize = .zero
 
 
     var body: some View {
