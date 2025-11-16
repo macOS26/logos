@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
     weak var window: NSWindow?
-    private var windowObserver: NSObjectProtocol?
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
@@ -36,25 +35,6 @@ class DocumentState: ObservableObject {
 
         startPasteboardMonitoring()
 
-        // Track when this becomes focused
-        windowObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeKeyNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self = self, let doc = self.document else { return }
-
-            // Only set if THIS document's window became key
-            if let notificationWindow = notification.object as? NSWindow,
-               notificationWindow == NSApp.keyWindow,
-               notificationWindow == self.window {
-                // print("🔵 Window '\(notificationWindow.title)' became key - setting active document")
-                DrawingCanvasRegistry.shared.setActiveDocument(doc)
-            } else {
-                // print("🟡 Window notification but not matching (window: \(self.window != nil ? "set" : "nil"))")
-            }
-        }
-
         // Listen for missing linked images
         missingImageObserver = NotificationCenter.default.addObserver(
             forName: Notification.Name("MissingLinkedImage"),
@@ -75,9 +55,6 @@ class DocumentState: ObservableObject {
     }
 
     deinit {
-        if let observer = windowObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
         if let observer = missingImageObserver {
             NotificationCenter.default.removeObserver(observer)
         }
