@@ -181,16 +181,6 @@ class AppState {
         }
     }
 
-	var showInAppPerformanceHUD: Bool = true {
-		didSet { UserDefaults.standard.set(showInAppPerformanceHUD, forKey: "showInAppPerformanceHUD") }
-	}
-	var inAppHUDOffsetX: CGFloat = 24 {
-		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetX), forKey: "inAppHUDOffsetX") }
-	}
-	var inAppHUDOffsetY: CGFloat = 12 {
-		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetY), forKey: "inAppHUDOffsetY") }
-	}
-
     private init() {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
@@ -208,10 +198,6 @@ class AppState {
             self.brushPreviewStyle = style
         }
         self.brushPreviewIsFinal = UserDefaults.standard.object(forKey: "brushPreviewIsFinal") as? Bool ?? false
-
-		self.showInAppPerformanceHUD = UserDefaults.standard.object(forKey: "showInAppPerformanceHUD") as? Bool ?? true
-		self.inAppHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetX") as? Double ?? 24)
-		self.inAppHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetY") as? Double ?? 12)
 
         self.enableVerboseLogging = UserDefaults.standard.object(forKey: "enableVerboseLogging") as? Bool ?? false
         self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
