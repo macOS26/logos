@@ -235,15 +235,15 @@ extension VectorDocument {
     }
 
     func selectShape(_ shapeID: UUID) {
-        if let unifiedObject = findObject(by: shapeID) {
-            viewState.selectedObjectIDs = [unifiedObject.id]
+        if let vectorObject = findObject(by: shapeID) {
+            viewState.selectedObjectIDs = [vectorObject.id]
             
         }
     }
 
     func addToSelection(_ shapeID: UUID) {
-        if let unifiedObject = findObject(by: shapeID) {
-            viewState.selectedObjectIDs.insert(unifiedObject.id)
+        if let vectorObject = findObject(by: shapeID) {
+            viewState.selectedObjectIDs.insert(vectorObject.id)
             
         }
     }
