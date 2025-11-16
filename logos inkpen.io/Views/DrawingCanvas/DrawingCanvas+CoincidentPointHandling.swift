@@ -287,7 +287,8 @@ extension DrawingCanvas {
             break
         }
     }
-
+    
+    @discardableResult
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
 
         // print("🟡 handleCoincidentSmoothPoints: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")

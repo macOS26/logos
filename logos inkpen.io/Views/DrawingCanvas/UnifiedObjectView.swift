@@ -8,7 +8,7 @@ struct PasteboardBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
-        let _ = Self._printChanges()
+        //let _ = Self._printChanges()
         Canvas { context, size in
             let scaledRect = CGRect(
                 x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
@@ -192,7 +192,7 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        let _ = Self._printChanges()
+        //let _ = Self._printChanges()
         let _ = print("📊 LayerCanvasView \(layerInfo): rendering \(objects.count) objects")
         Canvas { context, size in
             // Apply base canvas transform (no drag delta)

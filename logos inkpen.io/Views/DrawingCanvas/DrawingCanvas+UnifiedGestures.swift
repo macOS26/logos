@@ -356,8 +356,8 @@ extension DrawingCanvas {
                 break
             }
         }
-
-        guard let _ = tappedObject, let tappedShape = tappedShape else {
+        // let _ = tappedObject, 
+        guard let tappedShape else {
             return
         }
 

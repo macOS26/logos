@@ -709,7 +709,7 @@ extension DrawingCanvas {
             }
 
             // Handle coincident points for smooth tangency
-            let _ = handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
+            handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
         }
 
         // Update shape once with all changes
@@ -744,7 +744,7 @@ extension DrawingCanvas {
         }
 
         // Handle coincident points for smooth tangency
-        let _ = handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
+        handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: handleID, newDraggedPosition: newPosition)
 
         // DON'T call updateLinkedHandle - we already calculated linked positions during drag
 
