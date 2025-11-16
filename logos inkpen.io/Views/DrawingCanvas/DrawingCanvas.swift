@@ -170,7 +170,6 @@ struct DrawingCanvas: View {
     @State internal var currentMousePosition: CGPoint = .zero
     @State internal var liveCornerRadii: [Double] = []
     @State internal var originalCornerRadii: [Double] = []
-    @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointTolerance: Double = 0.1
     @State internal var isEditingText = false
     @State internal var editingTextID: UUID? = nil
