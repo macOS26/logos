@@ -39,6 +39,7 @@ kernel void calculate_distances(
     atomic_fetch_max_explicit((device atomic_uint*)maxIndex, index, memory_order_relaxed);
 }
 
+// SIMD optimized: Quadratic Bezier evaluation with vector operations
 kernel void calculate_bezier_curves(
     device const Point2D* controlPoints [[buffer(0)]],
     device Point2D* curvePoints [[buffer(1)]],
@@ -48,24 +49,25 @@ kernel void calculate_bezier_curves(
 ) {
     uint curveIndex = index / pointsPerCurve;
     uint pointIndex = index % pointsPerCurve;
-    
+
     if (curveIndex >= curveCount) return;
-    
+
     uint baseIndex = curveIndex * 3;
     Point2D p0 = controlPoints[baseIndex];
     Point2D p1 = controlPoints[baseIndex + 1];
     Point2D p2 = controlPoints[baseIndex + 2];
-    
+
     float t = float(pointIndex) / float(pointsPerCurve - 1);
-    
+
     float oneMinusT = 1.0 - t;
     float oneMinusTSquared = oneMinusT * oneMinusT;
     float tSquared = t * t;
-    
-    Point2D result;
-    result.x = oneMinusTSquared * p0.x + 2.0 * oneMinusT * t * p1.x + tSquared * p2.x;
-    result.y = oneMinusTSquared * p0.y + 2.0 * oneMinusT * t * p1.y + tSquared * p2.y;
-    
+
+    // SIMD: Compute result with vectorized operations
+    Point2D result = oneMinusTSquared * p0 +
+                     2.0 * oneMinusT * t * p1 +
+                     tSquared * p2;
+
     curvePoints[index] = result;
 }
 
@@ -120,6 +122,7 @@ kernel void point_in_polygon(
     results[index] = inside ? 1 : 0;
 }
 
+// SIMD optimized: Use native mix() function for path interpolation
 kernel void render_path_points(
     device const Point2D* pathPoints [[buffer(0)]],
     device Point2D* interpolatedPoints [[buffer(1)]],
@@ -129,18 +132,16 @@ kernel void render_path_points(
 ) {
     uint segmentIndex = index / interpolationFactor;
     uint interpolationIndex = index % interpolationFactor;
-    
+
     if (segmentIndex >= pathPointCount - 1) return;
-    
+
     Point2D start = pathPoints[segmentIndex];
     Point2D end = pathPoints[segmentIndex + 1];
-    
+
     float t = float(interpolationIndex) / float(interpolationFactor - 1);
-    Point2D result;
-    result.x = start.x + t * (end.x - start.x);
-    result.y = start.y + t * (end.y - start.y);
-    
-    interpolatedPoints[index] = result;
+
+    // SIMD mix function - single instruction
+    interpolatedPoints[index] = mix(start, end, t);
 }
 
 kernel void calculate_vector_distances(
@@ -171,6 +172,7 @@ kernel void normalize_vectors(
     }
 }
 
+// SIMD optimized: Use native mix() function for linear interpolation
 kernel void lerp_vectors(
     device const Point2D* startPoints [[buffer(0)]],
     device const Point2D* endPoints [[buffer(1)]],
@@ -180,9 +182,9 @@ kernel void lerp_vectors(
 ) {
     Point2D start = startPoints[index];
     Point2D end = endPoints[index];
-    
-    interpolatedPoints[index].x = start.x + t * (end.x - start.x);
-    interpolatedPoints[index].y = start.y + t * (end.y - start.y);
+
+    // SIMD mix function - single instruction for both x and y
+    interpolatedPoints[index] = mix(start, end, t);
 }
 
 kernel void calculate_linked_handles(
