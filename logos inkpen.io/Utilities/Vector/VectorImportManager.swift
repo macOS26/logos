@@ -212,7 +212,8 @@ class VectorImportManager {
     }
 
     private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
-        guard let nsImage = NSImage(contentsOf: url) else {
+        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             return VectorImportResult(
                 success: false,
                 shapes: [],
@@ -221,7 +222,8 @@ class VectorImportManager {
                 warnings: []
             )
         }
-        let size = nsImage.size
+
+        let size = CGSize(width: cgImage.width, height: cgImage.height)
         var rectShape = VectorShape(
             name: "[IMG] \(url.lastPathComponent)",
             path: VectorPath(elements: [
@@ -241,11 +243,13 @@ class VectorImportManager {
         let shouldEmbed = ApplicationSettings.shared.embedImagesByDefault
 
         if shouldEmbed {
-            // Embed the image data
-            if let tiffData = nsImage.tiffRepresentation,
-               let bitmapRep = NSBitmapImageRep(data: tiffData),
-               let pngData = bitmapRep.representation(using: .png, properties: [:]) {
-                rectShape.embeddedImageData = pngData
+            // Embed the image data as PNG
+            let mutableData = NSMutableData()
+            if let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) {
+                CGImageDestinationAddImage(destination, cgImage, nil)
+                if CGImageDestinationFinalize(destination) {
+                    rectShape.embeddedImageData = mutableData as Data
+                }
             }
         } else {
             // Link to the image file
