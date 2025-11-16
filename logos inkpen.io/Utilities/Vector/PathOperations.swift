@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-import Combine
 
 enum PathfinderOperation: String, CaseIterable, Codable {
     case union = "Union"
