@@ -128,12 +128,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
-            // Prevent cursor jump when double-clicking already-selected text
-            // If new position is exactly -1 from current, it's likely a race condition - ignore it
-            let positionDelta = textObject.cursorPosition - self.userInitiatedCursorPosition
-            if positionDelta != -1 {
-                self.userInitiatedCursorPosition = textObject.cursorPosition
-            }
+            self.userInitiatedCursorPosition = textObject.cursorPosition
         }
 
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
@@ -535,13 +530,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
             // Calculate and set cursor position FIRST, before triggering view updates
             if location != .zero {
-                var cursorPosition = calculateCursorPosition(in: textObject, at: location)
-
-                // ONLY add +1 when double-clicking from Arrow tool
-                if isDoubleClickFromArrow {
-                    cursorPosition = min(cursorPosition + 1, textObject.content.count)
-                }
-
+                let cursorPosition = calculateCursorPosition(in: textObject, at: location)
                 document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
             }
 

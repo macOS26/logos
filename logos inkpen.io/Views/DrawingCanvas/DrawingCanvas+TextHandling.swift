@@ -161,16 +161,7 @@ extension DrawingCanvas {
             // print("🔵 startEditingText: found text object, content='\(textObject.content)'")
 
             // Calculate cursor position FIRST, before triggering any view updates
-            var cursorPosition = calculateCursorPosition(in: textObject, at: location)
-
-            // ONLY add +1 when double-clicking from Arrow tool
-            if isDoubleClickFromArrow {
-                cursorPosition = min(cursorPosition + 1, textObject.content.count)
-                // Enable cursor -1 workaround for Arrow->Font double-click transition
-                document.viewState.shouldApplyCursorWorkaround = true
-            } else {
-                document.viewState.shouldApplyCursorWorkaround = false
-            }
+            let cursorPosition = calculateCursorPosition(in: textObject, at: location)
 
             currentCursorPosition = cursorPosition
             currentSelectionRange = NSRange(location: cursorPosition, length: 0)

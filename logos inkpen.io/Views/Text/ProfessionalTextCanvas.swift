@@ -386,9 +386,6 @@ struct ProfessionalTextCanvas: View {
                         // Clear delta after committing
                         self.parent.textContentDelta = nil
                     }
-
-                    // Disable -1 workaround after first typing
-                    self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround = false
                 }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -401,27 +398,14 @@ struct ProfessionalTextCanvas: View {
                 let selectedRange = textView.selectedRange()
 
                 // Update typing attributes to include kern at current cursor position
-                if textView.string.count > 0, selectedRange.location > 0 {
-                    let location = min(selectedRange.location - 1, textView.string.count - 1)
-                    if let attrs = textView.textStorage?.attributes(at: location, effectiveRange: nil) {
+                if textView.string.count > 0, selectedRange.location < textView.string.count {
+                    if let attrs = textView.textStorage?.attributes(at: selectedRange.location, effectiveRange: nil) {
                         textView.typingAttributes = attrs
                     }
                 }
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    let oldPosition = self.parent.viewModel.userInitiatedCursorPosition
-                    let newPosition = selectedRange.location
-
-                    // Only apply -1 workaround when transitioning from Arrow to Font tool via double-click
-                    if self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround && newPosition == oldPosition - 1 {
-                        self.isRestoringSelection = true
-                        textView.setSelectedRange(NSRange(location: oldPosition, length: 0))
-                        self.isRestoringSelection = false
-                        self.parent.viewModel.document.viewState.shouldApplyCursorWorkaround = false
-                        return
-                    }
-
                     self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
                 }
             }

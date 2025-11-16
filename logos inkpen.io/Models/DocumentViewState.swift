@@ -38,7 +38,6 @@ class DocumentViewState: ObservableObject {
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     @Published var hasPressureInput: Bool = false
-    @Published var shouldApplyCursorWorkaround: Bool = false  // True when entering edit mode via Arrow->Font double-click
 
     // MARK: - Drag State
     @Published var isDraggingVisibility: Bool = false
