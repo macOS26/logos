@@ -335,19 +335,16 @@ extension FileOperations {
             }
             context.restoreGState()
             return
-        } else if let doc = document, let image = ImageContentRegistry.image(for: shape.id, in: doc) {
-            var rect: NSRect = .zero
-            if let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
-                let bounds = shape.bounds
+        } else if let doc = document, let cgImage = ImageContentRegistry.image(for: shape.id, in: doc) {
+            let bounds = shape.bounds
 
-                context.saveGState()
-                context.translateBy(x: bounds.minX, y: bounds.maxY)
-                context.scaleBy(x: 1.0, y: -1.0)
+            context.saveGState()
+            context.translateBy(x: bounds.minX, y: bounds.maxY)
+            context.scaleBy(x: 1.0, y: -1.0)
 
-                context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
+            context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
 
-                context.restoreGState()
-            }
+            context.restoreGState()
             context.restoreGState()
             return
         }
