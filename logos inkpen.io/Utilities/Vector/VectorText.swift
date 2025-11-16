@@ -45,62 +45,6 @@ enum TextAlignment: String, CaseIterable, Codable {
     }
 }
 
-@available(*, deprecated, message: "Use fontVariant instead - weight is encoded in variant name")
-enum FontWeight: String, CaseIterable, Codable {
-    case thin = "Thin"
-    case ultraLight = "UltraLight"
-    case light = "Light"
-    case regular = "Regular"
-    case medium = "Medium"
-    case semibold = "Semibold"
-    case bold = "Bold"
-    case heavy = "Heavy"
-    case black = "Black"
-
-    var systemWeight: Font.Weight {
-        switch self {
-        case .thin: return .thin
-        case .ultraLight: return .ultraLight
-        case .light: return .light
-        case .regular: return .regular
-        case .medium: return .medium
-        case .semibold: return .semibold
-        case .bold: return .bold
-        case .heavy: return .heavy
-        case .black: return .black
-        }
-    }
-
-    var nsWeight: NSFont.Weight {
-        switch self {
-        case .thin: return .thin
-        case .ultraLight: return .ultraLight
-        case .light: return .light
-        case .regular: return .regular
-        case .medium: return .medium
-        case .semibold: return .semibold
-        case .bold: return .bold
-        case .heavy: return .heavy
-        case .black: return .black
-        }
-    }
-}
-
-@available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
-enum FontStyle: String, CaseIterable, Codable {
-    case normal = "Normal"
-    case italic = "Italic"
-    case oblique = "Oblique"
-
-    var iconName: String {
-        switch self {
-        case .normal: return "textformat"
-        case .italic: return "italic"
-        case .oblique: return "textformat.size"
-        }
-    }
-}
-
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
     var fontVariant: String?
