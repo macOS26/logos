@@ -223,12 +223,26 @@ extension DrawingCanvas {
         let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
-        // Update live state for immediate UI feedback
+        // Update live state for visual feedback
         document.viewState.liveGradientOriginX = relativeX
         document.viewState.liveGradientOriginY = relativeY
 
-        // Apply live update to shape (like Grade panel does)
-        updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
+        // Update gradient directly - single operation like panel sliders
+        let newGradient: VectorGradient
+        switch gradient {
+        case .linear(var linear):
+            linear.originPoint.x = relativeX
+            linear.originPoint.y = relativeY
+            newGradient = .linear(linear)
+        case .radial(var radial):
+            radial.originPoint.x = relativeX
+            radial.originPoint.y = relativeY
+            radial.focalPoint = CGPoint(x: relativeX, y: relativeY)
+            newGradient = .radial(radial)
+        }
+
+        // Set delta for live preview - don't update snapshot during drag
+        activeGradientDelta = newGradient
     }
 
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
