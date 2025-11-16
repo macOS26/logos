@@ -1,12 +1,13 @@
 import SwiftUI
 import AppKit
+import ImageIO
 
 enum ImageContentRegistry {
-    static func register(image: NSImage, for shapeID: UUID, in document: VectorDocument) {
+    static func register(image: CGImage, for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage[shapeID] = image
     }
 
-    static func image(for shapeID: UUID, in document: VectorDocument) -> NSImage? {
+    static func image(for shapeID: UUID, in document: VectorDocument) -> CGImage? {
         return document.imageStorage[shapeID]
     }
 
@@ -15,23 +16,26 @@ enum ImageContentRegistry {
     }
 
     @discardableResult
-    static func hydrateImageIfAvailable(for shape: VectorShape, in document: VectorDocument) -> NSImage? {
+    static func hydrateImageIfAvailable(for shape: VectorShape, in document: VectorDocument) -> CGImage? {
         if let existing = document.imageStorage[shape.id] {
             return existing
         }
 
-        var loadedImage: NSImage? = nil
+        var loadedCGImage: CGImage? = nil
 
-        if let data = shape.embeddedImageData, let image = NSImage(data: data) {
-            loadedImage = image
+        if let data = shape.embeddedImageData,
+           let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
+           let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+            loadedCGImage = cgImage
         }
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
-                if let image = NSImage(contentsOf: url) {
-                    loadedImage = image
+                if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+                   let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                    loadedCGImage = cgImage
                 }
             }
         } else if let path = shape.linkedImagePath {
@@ -49,16 +53,19 @@ enum ImageContentRegistry {
                 }
             }
 
-            if let finalURL = url, let image = NSImage(contentsOf: finalURL) {
-                loadedImage = image
+            if let finalURL = url,
+               let imageSource = CGImageSourceCreateWithURL(finalURL as CFURL, nil),
+               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                loadedCGImage = cgImage
             }
         }
 
-        if let image = loadedImage {
-            document.imageStorage[shape.id] = image
+        if let cgImage = loadedCGImage {
+            document.imageStorage[shape.id] = cgImage
+            return cgImage
         }
 
-        return loadedImage
+        return nil
     }
 
     static func setBaseDirectory(_ url: URL?, for document: VectorDocument) {
