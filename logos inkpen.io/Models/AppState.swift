@@ -181,17 +181,6 @@ class AppState {
         }
     }
 
-    var enableSystemMetalHUD: Bool = false {
-        didSet {
-            UserDefaults.standard.set(enableSystemMetalHUD, forKey: "enableSystemMetalHUD")
-            if enableSystemMetalHUD {
-                setenv("MTL_HUD_ENABLED", "1", 1)
-            } else {
-                setenv("MTL_HUD_ENABLED", "0", 1)
-            }
-        }
-    }
-
 	var showInAppPerformanceHUD: Bool = true {
 		didSet { UserDefaults.standard.set(showInAppPerformanceHUD, forKey: "showInAppPerformanceHUD") }
 	}
@@ -201,19 +190,6 @@ class AppState {
 	var inAppHUDOffsetY: CGFloat = 12 {
 		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetY), forKey: "inAppHUDOffsetY") }
 	}
-
-    var metalHUDOffsetX: CGFloat = 0 {
-        didSet { UserDefaults.standard.set(Double(metalHUDOffsetX), forKey: "metalHUDOffsetX") }
-    }
-    var metalHUDOffsetY: CGFloat = 24 {
-        didSet { UserDefaults.standard.set(Double(metalHUDOffsetY), forKey: "metalHUDOffsetY") }
-    }
-    var metalHUDWidth: CGFloat = 420 {
-        didSet { UserDefaults.standard.set(Double(metalHUDWidth), forKey: "metalHUDWidth") }
-    }
-    var metalHUDHeight: CGFloat = 280 {
-        didSet { UserDefaults.standard.set(Double(metalHUDHeight), forKey: "metalHUDHeight") }
-    }
 
     private init() {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
@@ -233,14 +209,9 @@ class AppState {
         }
         self.brushPreviewIsFinal = UserDefaults.standard.object(forKey: "brushPreviewIsFinal") as? Bool ?? false
 
-        self.enableSystemMetalHUD = UserDefaults.standard.object(forKey: "enableSystemMetalHUD") as? Bool ?? false
 		self.showInAppPerformanceHUD = UserDefaults.standard.object(forKey: "showInAppPerformanceHUD") as? Bool ?? true
 		self.inAppHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetX") as? Double ?? 24)
 		self.inAppHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetY") as? Double ?? 12)
-        self.metalHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "metalHUDOffsetX") as? Double ?? 0)
-        self.metalHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "metalHUDOffsetY") as? Double ?? 24)
-        self.metalHUDWidth = CGFloat(UserDefaults.standard.object(forKey: "metalHUDWidth") as? Double ?? 420)
-        self.metalHUDHeight = CGFloat(UserDefaults.standard.object(forKey: "metalHUDHeight") as? Double ?? 280)
 
         self.enableVerboseLogging = UserDefaults.standard.object(forKey: "enableVerboseLogging") as? Bool ?? false
         self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
