@@ -591,7 +591,7 @@ extension FileOperations {
             .font: nsFont,
             .paragraphStyle: paragraphStyle,
             .kern: vectorText.typography.letterSpacing,
-            .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
+            .foregroundColor: vectorText.typography.fillColor.cgColor.platformColor
         ]
 
         let glyphRange = layoutManager.glyphRange(for: textContainer)
