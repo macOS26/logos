@@ -3,8 +3,8 @@ import SwiftUI
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
-    let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
-    let blackConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.black])
+    let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [CGColor.white.platformColor])
+    let blackConfig = NSImage.SymbolConfiguration(paletteColors: [CGColor.black.platformColor])
     let whiteSymbol = (base.withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? base)
     let blackSymbol = (base.withSymbolConfiguration(baseConfig.applying(blackConfig)) ?? base)
     let padding: CGFloat = 10
@@ -16,7 +16,7 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
     NSGraphicsContext.current?.saveGraphicsState()
     let halo = NSShadow()
     halo.shadowBlurRadius = 2
-    halo.shadowColor = NSColor.white
+    halo.shadowColor = CGColor.white.platformColor
     halo.shadowOffset = .zero
     halo.set()
     whiteSymbol.draw(in: destRect)
@@ -62,10 +62,10 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
     NSGraphicsContext.current?.saveGraphicsState()
     let halo = NSShadow()
     halo.shadowBlurRadius = 2
-    halo.shadowColor = NSColor.white
+    halo.shadowColor = CGColor.white.platformColor
     halo.shadowOffset = .zero
     halo.set()
-    NSColor.black.setStroke()
+    CGColor.black.platformColor.setStroke()
     let pathShadow = NSBezierPath()
     pathShadow.lineWidth = 1
     pathShadow.move(to: CGPoint(x: 0, y: centerY))
@@ -74,7 +74,7 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
     pathShadow.line(to: CGPoint(x: centerX, y: imgSize.height))
     pathShadow.stroke()
     NSGraphicsContext.current?.restoreGraphicsState()
-    NSColor.black.setStroke()
+    CGColor.black.platformColor.setStroke()
     let path = NSBezierPath()
     path.lineWidth = 1
     path.move(to: CGPoint(x: 0, y: centerY))
