@@ -857,8 +857,8 @@ class SVGExporter {
         var defs = ""
         var processedGradients = Set<Int>()
 
-        for unifiedObject in document.snapshot.objects.values {
-            if case .shape(let shape) = unifiedObject.objectType {
+        for vectorObject in document.snapshot.objects.values {
+            if case .shape(let shape) = vectorObject.objectType {
                 if let fillStyle = shape.fillStyle,
                    case .gradient(let gradient) = fillStyle.color {
                     let hash = gradient.hashValue
@@ -886,8 +886,8 @@ class SVGExporter {
         var defs = ""
         var processedClipPaths = Set<UUID>()
 
-        for unifiedObject in document.snapshot.objects.values {
-            if case .shape(let clipShape) = unifiedObject.objectType {
+        for vectorObject in document.snapshot.objects.values {
+            if case .shape(let clipShape) = vectorObject.objectType {
                 if clipShape.isClippingPath && !processedClipPaths.contains(clipShape.id) {
                     processedClipPaths.insert(clipShape.id)
 

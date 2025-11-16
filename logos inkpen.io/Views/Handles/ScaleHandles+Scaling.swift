@@ -61,8 +61,8 @@ extension ScaleHandles {
             oldShapes[shape.id] = oldShape
         }
 
-        if let unifiedObject = document.findObject(by: shape.id),
-        let layerIndex = unifiedObject.layerIndex < document.snapshot.layers.count ? unifiedObject.layerIndex : nil {
+        if let vectorObject = document.findObject(by: shape.id),
+        let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
            var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {

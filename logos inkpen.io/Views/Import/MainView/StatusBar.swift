@@ -100,8 +100,8 @@ struct StatusBar: View {
     private func getSelectionBounds() -> CGRect? {
         var combinedBounds: CGRect?
 
-        for unifiedObject in document.snapshot.objects.values {
-            switch unifiedObject.objectType {
+        for vectorObject in document.snapshot.objects.values {
+            switch vectorObject.objectType {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let shapeBounds = shape.bounds.applying(shape.transform)
@@ -116,8 +116,8 @@ struct StatusBar: View {
             }
         }
 
-        for unifiedObject in document.snapshot.objects.values {
-            if case .text(let shape) = unifiedObject.objectType,
+        for vectorObject in document.snapshot.objects.values {
+            if case .text(let shape) = vectorObject.objectType,
                document.viewState.selectedObjectIDs.contains(shape.id),
                let textObj = VectorText.from(shape) {
                 let textBounds = CGRect(

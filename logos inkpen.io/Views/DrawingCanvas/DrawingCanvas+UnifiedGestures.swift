@@ -237,8 +237,8 @@ extension DrawingCanvas {
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDrawing && !document.isHandleScalingActive {
             for objectID in document.viewState.selectedObjectIDs {
-                if let unifiedObject = document.findObject(by: objectID),
-                   case .shape(let shape) = unifiedObject.objectType {
+                if let vectorObject = document.findObject(by: objectID),
+                   case .shape(let shape) = vectorObject.objectType {
                     if shape.name != "Canvas Background" && shape.name != "Pasteboard Background" {
                     }
                 }

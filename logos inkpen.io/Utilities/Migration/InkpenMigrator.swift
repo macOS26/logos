@@ -25,7 +25,7 @@ struct InkpenMigrator {
         var currentTool: String?
         var layers: [Legacy1_0Layer]
         var settings: Legacy1_0Settings
-        var unifiedObjects: [Legacy1_0Object]
+        var vectorObjects: [Legacy1_0Object]
         var viewMode: String?
         var zoomLevel: Double?
     }
@@ -157,7 +157,7 @@ struct InkpenMigrator {
         }
 
         // Sort objects by orderID to get correct Z-order
-        let sortedObjects = legacy.unifiedObjects.sorted { obj1, obj2 in
+        let sortedObjects = legacy.vectorObjects.sorted { obj1, obj2 in
             let order1 = obj1.orderID ?? 0
             let order2 = obj2.orderID ?? 0
             return order1 < order2

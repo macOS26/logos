@@ -21,7 +21,7 @@ class TextTypographyCommand: BaseCommand {
     }
 
     private func applyTypography(_ typography: TypographyProperties?, to document: VectorDocument) {
-        // Use updateShapeByID to update both snapshot.objects AND unifiedObjects
+        // Use updateShapeByID to update both snapshot.objects AND vectorObjects
         document.updateShapeByID(textID) { shape in
             shape.typography = typography
         }

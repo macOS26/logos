@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 
 /// Lightweight notification system for document changes
-/// Avoids copying unifiedObjects array - only sends change signals
+/// Avoids copying vectorObjects array - only sends change signals
 final class DocumentChangeNotifier: ObservableObject {
 
     // MARK: - Change Types

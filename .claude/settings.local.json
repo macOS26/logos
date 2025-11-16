@@ -128,7 +128,9 @@
       "Bash(rm:*)",
       "Bash(while read file)",
       "Bash(do basename \"$file\" .swift)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(for:*)",
+      "Bash(do perl -i -pe 's/unifiedObject/vectorObject/g' \"$file\")"
     ],
     "deny": [],
     "ask": []

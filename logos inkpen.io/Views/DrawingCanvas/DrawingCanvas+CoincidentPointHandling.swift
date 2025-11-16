@@ -104,8 +104,8 @@ extension DrawingCanvas {
     func findClosedPathEndpoints(for pointID: PointID) -> Set<PointID> {
         var endpointPairs: Set<PointID> = []
 
-        if let unifiedObject = document.findObject(by: pointID.shapeID),
-           case .shape(let shape) = unifiedObject.objectType {
+        if let vectorObject = document.findObject(by: pointID.shapeID),
+           case .shape(let shape) = vectorObject.objectType {
 
                 let hasCloseElement = shape.path.elements.contains { element in
                     if case .close = element { return true }

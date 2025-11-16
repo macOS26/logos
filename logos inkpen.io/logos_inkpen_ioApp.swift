@@ -1032,8 +1032,8 @@ class ClipboardManager {
         var textToCopy: [VectorText] = []
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
+            if let vectorObject = document.findObject(by: objectID) {
+                switch vectorObject.objectType {
                 case .text(let shape):
                     if let textContent = shape.textContent {
                         let originalText = document.findText(by: objectID)
@@ -1048,7 +1048,7 @@ class ClipboardManager {
                             isVisible: shape.isVisible,
                             isLocked: shape.isLocked,
                             isEditing: false,
-                                layerIndex: unifiedObject.layerIndex,
+                                layerIndex: vectorObject.layerIndex,
                                 cursorPosition: 0,
                                 areaSize: originalAreaSize
                             )
@@ -1103,8 +1103,8 @@ class ClipboardManager {
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
-                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
             }
 
@@ -1113,8 +1113,8 @@ class ClipboardManager {
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
             }
 
@@ -1165,8 +1165,8 @@ class ClipboardManager {
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
-                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
             }
 
@@ -1175,8 +1175,8 @@ class ClipboardManager {
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
             }
 
@@ -1227,8 +1227,8 @@ class ClipboardManager {
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
-                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
             }
 
@@ -1237,8 +1237,8 @@ class ClipboardManager {
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(unifiedObject)
+                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
             }
 
