@@ -32,55 +32,24 @@ extension Color {
     ]
 }
 
-struct LayerLabelStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
-    }
-}
-
-struct LayerControlLabelStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
-            .frame(width: 50, alignment: .leading)
-    }
-}
-
-struct LayerPercentageStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
-            .frame(width: 35, alignment: .trailing)
-    }
-}
-
-struct DragTargetStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .frame(width: 20, height: 20)
-            .contentShape(Rectangle())
-    }
-}
+// Layer panel style constants
+private let kLayerTextStyle: Font = .system(size: 11)
+private let kLayerControlLabelWidth: CGFloat = 50
+private let kLayerPercentageWidth: CGFloat = 35
 
 extension View {
-    func layerLabel() -> some View {
-        modifier(LayerLabelStyle())
-    }
-
-    func layerControlLabel() -> some View {
-        modifier(LayerControlLabelStyle())
-    }
-
-    func layerPercentage() -> some View {
-        modifier(LayerPercentageStyle())
-    }
-
-    func dragTarget() -> some View {
-        modifier(DragTargetStyle())
+    @ViewBuilder
+    func layerText(width: CGFloat? = nil, alignment: Alignment = .leading) -> some View {
+        if let width = width {
+            self
+                .font(kLayerTextStyle)
+                .foregroundColor(.secondary)
+                .frame(width: width, alignment: alignment)
+        } else {
+            self
+                .font(kLayerTextStyle)
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -220,7 +189,7 @@ struct LayersPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text("Opacity")
-                    .layerControlLabel()
+                    .layerText(width: kLayerControlLabelWidth)
 
                 ZStack {
                     Capsule()
@@ -261,12 +230,12 @@ struct LayersPanel: View {
                 .frame(maxWidth: .infinity)
 
                 Text("\(Int(layerOpacityState * 100))%")
-                    .layerPercentage()
+                    .layerText(width: kLayerPercentageWidth, alignment: .trailing)
             }
             
             HStack(spacing: 8) {
                 Text("Blend")
-                    .layerControlLabel()
+                    .layerText(width: kLayerControlLabelWidth)
                 
                 Picker("", selection: Binding(
                     get: { document.snapshot.layers[layerIndex].blendMode },
@@ -304,7 +273,7 @@ struct LayersPanel: View {
                 )
                 .offset(x:12)
                 Text("Color")
-                    .layerControlLabel()
+                    .layerText(width: kLayerControlLabelWidth)
                     .multilineTextAlignment(.trailing)
                     .offset(x:20)
             }
@@ -324,7 +293,8 @@ struct LayersPanel: View {
                 let iconCenterY = rowY + (kLayerRowHeight / 2)
 
                 Color.red.opacity(0.0000000)
-                    .dragTarget()
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
                     .position(x: xPosition, y: iconCenterY)
             }
         }
@@ -547,7 +517,7 @@ struct ColorSwatchButton<Content: View>: View {
                                 .padding(.horizontal, -3)
                                 .frame(width: 14, height: 16)
                             Text(colorOption.name)
-                                .layerLabel()
+                                .layerText()
                         }
                         .offset(x: 1)
                         .frame(maxWidth: .infinity, alignment: .leading)
