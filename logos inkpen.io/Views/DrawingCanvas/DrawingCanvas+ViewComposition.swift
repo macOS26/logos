@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 extension DrawingCanvas {
     @ViewBuilder
@@ -49,10 +50,63 @@ extension DrawingCanvas {
                 }
 
                 if appState.brushPreviewStyle == .fill {
-                    context.fill(
-                        path,
-                        with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity))
-                    )
+                    // Check if there's an active gradient
+                    if let gradient = activeGradientDelta {
+                        // Create SwiftUI gradient from VectorGradient
+                        let gradientStops = gradient.stops.map { stop in
+                            Gradient.Stop(color: stop.color.color, location: stop.position)
+                        }
+
+                        let bounds = preview.cgPath.boundingBox
+
+                        switch gradient {
+                        case .radial(let radialGradient):
+                            // Radial gradient
+                            let center = CGPoint(
+                                x: bounds.origin.x + bounds.width * radialGradient.originPoint.x,
+                                y: bounds.origin.y + bounds.height * radialGradient.originPoint.y
+                            )
+                            context.fill(
+                                path,
+                                with: .radialGradient(
+                                    Gradient(stops: gradientStops),
+                                    center: center,
+                                    startRadius: 0,
+                                    endRadius: max(bounds.width, bounds.height) / 2
+                                )
+                            )
+                        case .linear(let linearGradient):
+                            // Linear gradient
+                            let angle = Angle(degrees: linearGradient.storedAngle)
+                            let centerX = bounds.origin.x + bounds.width * 0.5
+                            let centerY = bounds.origin.y + bounds.height * 0.5
+                            let radius = max(bounds.width, bounds.height) / 2
+
+                            let startPoint = CGPoint(
+                                x: centerX - Foundation.cos(angle.radians) * radius,
+                                y: centerY - Foundation.sin(angle.radians) * radius
+                            )
+                            let endPoint = CGPoint(
+                                x: centerX + Foundation.cos(angle.radians) * radius,
+                                y: centerY + Foundation.sin(angle.radians) * radius
+                            )
+
+                            context.fill(
+                                path,
+                                with: .linearGradient(
+                                    Gradient(stops: gradientStops),
+                                    startPoint: startPoint,
+                                    endPoint: endPoint
+                                )
+                            )
+                        }
+                    } else {
+                        // Fallback to flat color
+                        context.fill(
+                            path,
+                            with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity))
+                        )
+                    }
                 } else {
                     context.stroke(
                         path,
@@ -73,15 +127,78 @@ extension DrawingCanvas {
                     addPathElements(preview.elements, to: &path)
                 }
 
-                context.stroke(
-                    path,
-                    with: .color(document.defaultStrokeColor.color.opacity(document.defaultStrokeOpacity)),
-                    style: SwiftUI.StrokeStyle(
-                        lineWidth: document.defaultStrokeWidth,
-                        lineCap: .round,
-                        lineJoin: .round
+                // Check if there's an active gradient for stroke
+                if let gradient = activeGradientDelta {
+                    // Create SwiftUI gradient from VectorGradient
+                    let gradientStops = gradient.stops.map { stop in
+                        Gradient.Stop(color: stop.color.color.opacity(document.defaultStrokeOpacity), location: stop.position)
+                    }
+
+                    let bounds = preview.cgPath.boundingBox
+
+                    switch gradient {
+                    case .radial(let radialGradient):
+                        // Radial gradient stroke
+                        let center = CGPoint(
+                            x: bounds.origin.x + bounds.width * radialGradient.originPoint.x,
+                            y: bounds.origin.y + bounds.height * radialGradient.originPoint.y
+                        )
+                        context.stroke(
+                            path,
+                            with: .radialGradient(
+                                Gradient(stops: gradientStops),
+                                center: center,
+                                startRadius: 0,
+                                endRadius: max(bounds.width, bounds.height) / 2
+                            ),
+                            style: SwiftUI.StrokeStyle(
+                                lineWidth: document.defaultStrokeWidth,
+                                lineCap: .round,
+                                lineJoin: .round
+                            )
+                        )
+                    case .linear(let linearGradient):
+                        // Linear gradient stroke
+                        let angle = Angle(degrees: linearGradient.storedAngle)
+                        let centerX = bounds.origin.x + bounds.width * 0.5
+                        let centerY = bounds.origin.y + bounds.height * 0.5
+                        let radius = max(bounds.width, bounds.height) / 2
+
+                        let startPoint = CGPoint(
+                            x: centerX - Foundation.cos(angle.radians) * radius,
+                            y: centerY - Foundation.sin(angle.radians) * radius
+                        )
+                        let endPoint = CGPoint(
+                            x: centerX + Foundation.cos(angle.radians) * radius,
+                            y: centerY + Foundation.sin(angle.radians) * radius
+                        )
+
+                        context.stroke(
+                            path,
+                            with: .linearGradient(
+                                Gradient(stops: gradientStops),
+                                startPoint: startPoint,
+                                endPoint: endPoint
+                            ),
+                            style: SwiftUI.StrokeStyle(
+                                lineWidth: document.defaultStrokeWidth,
+                                lineCap: .round,
+                                lineJoin: .round
+                            )
+                        )
+                    }
+                } else {
+                    // Fallback to flat color
+                    context.stroke(
+                        path,
+                        with: .color(document.defaultStrokeColor.color.opacity(document.defaultStrokeOpacity)),
+                        style: SwiftUI.StrokeStyle(
+                            lineWidth: document.defaultStrokeWidth,
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
                     )
-                )
+                }
             }
         }
 
