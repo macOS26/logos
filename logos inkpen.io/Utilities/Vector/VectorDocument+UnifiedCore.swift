@@ -147,20 +147,18 @@ extension VectorDocument {
         let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
 
         // Remove existing if it exists
-        if snapshot.objects[shape.id] != nil {
-            // Remove from old layer
-            for i in 0..<snapshot.layers.count {
-                snapshot.layers[i].objectIDs.removeAll { $0 == shape.id }
-            }
+        if let existingObject = snapshot.objects[shape.id] {
+            // Remove from old layer only (O(1) lookup instead of O(n) loop)
+            removeFromLayer(layerIndex: existingObject.layerIndex, objectID: shape.id)
         }
 
         // Add to snapshot ONLY
         snapshot.objects[shape.id] = unifiedObject
         if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
-            snapshot.layers[layerIndex].objectIDs.append(shape.id)
+            appendToLayer(layerIndex: layerIndex, objectID: shape.id)
+        } else {
+            triggerLayerUpdate(for: layerIndex)
         }
-
-        triggerLayerUpdate(for: layerIndex)
     }
 
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
