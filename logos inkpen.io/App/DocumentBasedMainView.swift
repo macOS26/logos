@@ -9,7 +9,6 @@ struct DocumentBasedMainView: View {
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
     @State private var showingDocumentSettings = false
-    @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil
     @State private var showingImportDialog = false
     @State private var importResult: VectorImportResult?
