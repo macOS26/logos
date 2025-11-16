@@ -1101,14 +1101,14 @@ extension DrawingCanvas {
                 ]
 
                 for handle in handles {
-                    let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
+                    let distance = location.distance(to: handle)
                     if distance <= totalTolerance {
                         return true
                     }
                 }
 
                 let center = shape.calculateCentroid()
-                let centerDistance = sqrt(pow(location.x - center.x, 2) + pow(location.y - center.y, 2))
+                let centerDistance = location.distance(to: center)
                 if centerDistance <= totalTolerance {
                     return true
                 }

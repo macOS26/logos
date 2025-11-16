@@ -23,7 +23,7 @@ extension DrawingCanvas {
     }
 
     internal func distance(_ p1: CGPoint, _ p2: CGPoint) -> Double {
-        return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2))
+        return p1.distance(to: p2)
     }
 
     private func findNearestSnapPoint(to point: CGPoint) -> CGPoint? {

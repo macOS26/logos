@@ -1534,7 +1534,7 @@ extension DrawingCanvas {
 
         if lengthSquared == 0 {
             // Start and end are the same point
-            let dist = sqrt(pow(point.x - start.x, 2) + pow(point.y - start.y, 2))
+            let dist = point.distance(to: start)
             return dist <= tolerance
         }
 

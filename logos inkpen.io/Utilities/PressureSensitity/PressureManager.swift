@@ -100,7 +100,7 @@ class PressureManager: ObservableObject {
             return 1.0
         }
 
-        let distance = sqrt(pow(location.x - lastLoc.x, 2) + pow(location.y - lastLoc.y, 2))
+        let distance = location.distance(to: lastLoc)
         let timeInterval = timestamp.timeIntervalSince(lastTime)
 
         guard timeInterval > 0 else { return currentPressure }

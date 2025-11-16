@@ -114,7 +114,7 @@ extension DrawingCanvas {
 
         currentLocation = applySnapping(to: currentLocation)
 
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        let dragDistance = value.location.distance(to: value.startLocation)
         let baseThreshold: Double = 8.0
         let zoomLevel = zoomLevel
         let zoomAwareThreshold = max(2.0, baseThreshold / zoomLevel)

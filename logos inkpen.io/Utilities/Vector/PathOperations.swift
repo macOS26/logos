@@ -615,7 +615,7 @@ class PathOperations {
                 guard !pathPoint.x.isNaN && !pathPoint.y.isNaN && !pathPoint.x.isInfinite && !pathPoint.y.isInfinite else {
                     return
                 }
-                let distance = sqrt(pow(point.x - pathPoint.x, 2) + pow(point.y - pathPoint.y, 2))
+                let distance = point.distance(to: pathPoint)
                 if distance <= tolerance {
                     isNear = true
                 }
@@ -624,7 +624,7 @@ class PathOperations {
                 guard !pathPoint.x.isNaN && !pathPoint.y.isNaN && !pathPoint.x.isInfinite && !pathPoint.y.isInfinite else {
                     return
                 }
-                let distance = sqrt(pow(point.x - pathPoint.x, 2) + pow(point.y - pathPoint.y, 2))
+                let distance = point.distance(to: pathPoint)
                 if distance <= tolerance {
                     isNear = true
                 }

@@ -116,7 +116,7 @@ struct CurveSmoothing {
             var tension = baseTension
             if adaptiveTension {
                 let curvature = calculateCurvature(p0: p0, p1: p1, p2: p2)
-                let distance = sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2))
+                let distance = p2.distance(to: p1)
 
                 tension = baseTension * (1.0 - curvature * 0.5) * min(2.0, distance / 50.0)
                 tension = max(0.1, min(0.8, tension))
@@ -210,9 +210,9 @@ struct CurveSmoothing {
     }
 
     private static func calculateCentripetalControls(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tension: Double) -> (CGPoint, CGPoint) {
-        let d1 = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-        let d2 = sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2))
-        let d3 = sqrt(pow(p3.x - p2.x, 2) + pow(p3.y - p2.y, 2))
+        let d1 = p1.distance(to: p0)
+        let d2 = p2.distance(to: p1)
+        let d3 = p3.distance(to: p2)
         let d1Safe = max(d1, 0.001)
         let d2Safe = max(d2, 0.001)
         let d3Safe = max(d3, 0.001)

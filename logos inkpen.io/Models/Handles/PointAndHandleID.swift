@@ -48,7 +48,7 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
                 if pointID == targetPointID { continue }
 
                 if let checkPoint = element.endpointCGPoint {
-                    let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
+                    let distance = targetPoint.distance(to: checkPoint)
                     if distance <= tolerance {
                         coincidentPoints.insert(pointID)
                     }

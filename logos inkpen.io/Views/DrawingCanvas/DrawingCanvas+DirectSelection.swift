@@ -282,7 +282,7 @@ extension DrawingCanvas {
             if index == pointIndex { continue }
 
             if let point = element.endpointCGPoint {
-                let distance = sqrt(pow(anchor.x - point.x, 2) + pow(anchor.y - point.y, 2))
+                let distance = anchor.distance(to: point)
                 if distance <= tolerance {
 
                     if case .curve(_, _, let control2) = element {

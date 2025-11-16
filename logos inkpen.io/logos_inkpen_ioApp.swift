@@ -58,11 +58,6 @@ struct logos_inken_ioApp: App {
                         dismissWindow: { id in dismissWindow(id: id) }
                     )
                 }
-                .background(WindowAccessor { window in
-                    if let window = window {
-                        window.setFrameAutosaveName("InkpenDocumentWindow")
-                    }
-                })
         }
         .defaultSize(width: 1400, height: 900)
         .windowResizability(.contentSize)

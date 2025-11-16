@@ -365,7 +365,7 @@ extension DrawingCanvas {
                 var closestPressure = 1.0
 
                 for rawPoint in recentRawPoints {
-                    let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
+                    let distance = point.distance(to: rawPoint.location)
                     if distance < closestDistance {
                         closestDistance = distance
                         closestPressure = rawPoint.pressure

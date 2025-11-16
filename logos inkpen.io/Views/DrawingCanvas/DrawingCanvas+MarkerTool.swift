@@ -100,7 +100,7 @@ extension DrawingCanvas {
         guard markerRawPoints.count > 1,
               let lastPointData = markerRawPoints.last else { return 1.0 }
         let lastPoint = lastPointData.location
-        let distance = sqrt(pow(location.x - lastPoint.x, 2) + pow(location.y - lastPoint.y, 2))
+        let distance = location.distance(to: lastPoint)
         let maxSpeed: Double = 100.0
         let normalizedSpeed = min(distance / maxSpeed, 1.0)
         let basePressure = 1.0 - (normalizedSpeed * 0.5)
@@ -455,7 +455,7 @@ extension DrawingCanvas {
         var closestPressure2: Double = 1.0
 
         for rawPoint in rawPoints {
-            let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
+            let distance = point.distance(to: rawPoint.location)
 
             if distance < closestDistance1 {
                 closestDistance2 = closestDistance1
@@ -633,7 +633,7 @@ extension DrawingCanvas {
                 elements.append(.line(to: VectorPoint(p1)))
             } else {
                 let tension: Double = 0.25
-                let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
+                let distance = p1.distance(to: p0)
                 let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let controlLength = distance * tension
@@ -835,7 +835,7 @@ extension DrawingCanvas {
             case .line(let to):
                 let currentPos = to.cgPoint
                 if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    let distance = currentPos.distance(to: last)
                     if distance > tolerance {
                         cleanedElements.append(element)
                         lastPosition = currentPos
@@ -848,7 +848,7 @@ extension DrawingCanvas {
             case .curve(let to, _, _):
                 let currentPos = to.cgPoint
                 if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    let distance = currentPos.distance(to: last)
                     if distance > tolerance {
                         cleanedElements.append(element)
                         lastPosition = currentPos
@@ -861,7 +861,7 @@ extension DrawingCanvas {
             case .quadCurve(let to, _):
                 let currentPos = to.cgPoint
                 if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    let distance = currentPos.distance(to: last)
                     if distance > tolerance {
                         cleanedElements.append(element)
                         lastPosition = currentPos

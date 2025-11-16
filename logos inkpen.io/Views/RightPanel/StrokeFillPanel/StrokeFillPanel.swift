@@ -132,7 +132,7 @@ struct StrokeFillPanel: View {
         case .curve(let to, _, let control2):
             let anchor = to.cgPoint
             let control = control2.cgPoint
-            let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
+            let dist = anchor.distance(to: control)
             if dist > 0.5 {
                 incomingControl = control
             }
@@ -150,7 +150,7 @@ struct StrokeFillPanel: View {
             if case .curve(_, let control1, _) = elements[pointID.elementIndex + 1] {
                 if let anchor = anchorPoint {
                     let control = control1.cgPoint
-                    let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
+                    let dist = anchor.distance(to: control)
                     if dist > 0.5 {
                         outgoingControl = control
                     }
@@ -239,8 +239,8 @@ struct StrokeFillPanel: View {
         }
 
         // Check if handles are collapsed
-        let dist1 = sqrt(pow(h1.x - firstPoint.x, 2) + pow(h1.y - firstPoint.y, 2))
-        let dist2 = sqrt(pow(h2.x - firstPoint.x, 2) + pow(h2.y - firstPoint.y, 2))
+        let dist1 = h1.distance(to: firstPoint)
+        let dist2 = h2.distance(to: firstPoint)
 
         if dist1 < 0.5 && dist2 < 0.5 {
             return .corner

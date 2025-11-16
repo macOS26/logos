@@ -42,7 +42,7 @@ extension DrawingCanvas {
                     }
 
                     if let checkPoint = elementPoint {
-                        let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
+                        let distance = targetPoint.distance(to: checkPoint)
                         if distance <= tolerance {
                             coincidentPoints.insert(pointID)
                         }
@@ -135,7 +135,7 @@ extension DrawingCanvas {
 
                     if let moveIndex = moveToIndex, let lastIndex = lastPointIndex,
                        let firstPoint = moveToPoint, let endPoint = lastPoint {
-                        let distance = sqrt(pow(firstPoint.x - endPoint.x, 2) + pow(firstPoint.y - endPoint.y, 2))
+                        let distance = firstPoint.distance(to: endPoint)
                         let tolerance = 0.1
 
                         if distance <= tolerance {
@@ -459,7 +459,7 @@ extension DrawingCanvas {
             }
 
             if let point = elementPoint {
-                let distance = sqrt(pow(anchorPosition.x - point.x, 2) + pow(anchorPosition.y - point.y, 2))
+                let distance = anchorPosition.distance(to: point)
                 if distance <= tolerance {
                     coincidentIndices.append(index)
                 }

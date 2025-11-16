@@ -284,7 +284,7 @@ struct GradientPreviewAndStopsView: View {
     private func findSnapPoint(for location: CGPoint, squareSize: CGFloat, padding: CGFloat, snapRadius: CGFloat) -> (x: CGFloat, y: CGFloat)? {
         for point in snapPoints {
             let pointPos = CGPoint(x: point.x * squareSize + padding, y: point.y * squareSize + padding)
-            let snapDistance = sqrt(pow(location.x - pointPos.x, 2) + pow(location.y - pointPos.y, 2))
+            let snapDistance = location.distance(to: pointPos)
             if snapDistance <= snapRadius {
                 return point
             }

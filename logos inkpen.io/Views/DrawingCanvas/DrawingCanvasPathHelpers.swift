@@ -75,7 +75,7 @@ enum DrawingCanvasPathHelpers {
                 elements.append(.line(to: VectorPoint(p1)))
             } else {
                 let tension: Double = 0.25
-                let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
+                let distance = p1.distance(to: p0)
                 let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let controlLength = distance * tension

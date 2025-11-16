@@ -768,7 +768,7 @@ extension DrawingCanvas {
             ]
 
             for (_, handle) in handles.enumerated() {
-                let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
+                let distance = location.distance(to: handle)
                 if distance <= totalTolerance {
                     return true
                 }

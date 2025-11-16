@@ -84,7 +84,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
             centerY = (startPoint.y + endPoint.y) / 2.0
         }
 
-        let currentLength = sqrt(pow(endPoint.x - startPoint.x, 2) + pow(endPoint.y - startPoint.y, 2))
+        let currentLength = endPoint.distance(to: startPoint)
         let halfLength = currentLength > 0 ? currentLength / 2.0 : (units == .objectBoundingBox ? 0.25 : 50.0)
         let deltaX = cos(radians) * halfLength
         let deltaY = sin(radians) * halfLength
