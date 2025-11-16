@@ -76,22 +76,6 @@ class AppState {
 
     var gradientEditingState: GradientEditingState? = nil
 
-    private var _persistentGradientHUD: PersistentGradientHUDManager?
-    var persistentGradientHUD: PersistentGradientHUDManager {
-        if _persistentGradientHUD == nil {
-            _persistentGradientHUD = PersistentGradientHUDManager(appState: self)
-        }
-        return _persistentGradientHUD!
-    }
-
-    private var _persistentInkHUD: PersistentInkHUDManager?
-    var persistentInkHUD: PersistentInkHUDManager {
-        if _persistentInkHUD == nil {
-            _persistentInkHUD = PersistentInkHUDManager(appState: self)
-        }
-        return _persistentInkHUD!
-    }
-
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
     var pendingNewDocument: VectorDocument? = nil
@@ -239,22 +223,6 @@ class AppState {
         }
 
         self.dismissWindowAction = { id in
-            if id.contains("gradient-hud") {
-                self.persistentGradientHUD.stopEditing()
-
-                NSApplication.shared.windows.forEach { window in
-                    if window.title.contains("Select Gradient Color") && window.isVisible {
-                        window.orderOut(nil)
-                    }
-                }
-            } else if id.contains("ink-hud") {
-                self.persistentInkHUD.hide()
-                NSApplication.shared.windows.forEach { window in
-                    if window.title.contains("Ink Color Mixer") && window.isVisible {
-                        window.orderOut(nil)
-                    }
-                }
-            }
             dismissWindow(id)
         }
     }
