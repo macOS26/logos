@@ -73,11 +73,11 @@ extension DrawingCanvas {
                 let originalPosition: CGPoint
                 switch elements[pointID.elementIndex] {
                 case .move(let to), .line(let to):
-                    originalPosition = CGPoint(x: to.x, y: to.y)
+                    originalPosition = to.cgPoint
                 case .curve(let to, _, _):
-                    originalPosition = CGPoint(x: to.x, y: to.y)
+                    originalPosition = to.cgPoint
                 case .quadCurve(let to, _):
-                    originalPosition = CGPoint(x: to.x, y: to.y)
+                    originalPosition = to.cgPoint
                 case .close:
                     return
                 }

@@ -207,19 +207,19 @@ struct ShearHandles: View {
             for element in shape.path.elements {
                 switch element {
                 case .move(let to):
-                    let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                    let p = to.cgPoint.applying(newTransform)
                     path.move(to: p)
                 case .line(let to):
-                    let p = CGPoint(x: to.x, y: to.y).applying(newTransform)
+                    let p = to.cgPoint.applying(newTransform)
                     path.addLine(to: p)
                 case .curve(let to, let control1, let control2):
-                    let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
-                    let tc1 = CGPoint(x: control1.x, y: control1.y).applying(newTransform)
-                    let tc2 = CGPoint(x: control2.x, y: control2.y).applying(newTransform)
+                    let tp = to.cgPoint.applying(newTransform)
+                    let tc1 = control1.cgPoint.applying(newTransform)
+                    let tc2 = control2.cgPoint.applying(newTransform)
                     path.addCurve(to: tp, control1: tc1, control2: tc2)
                 case .quadCurve(let to, let control):
-                    let tp = CGPoint(x: to.x, y: to.y).applying(newTransform)
-                    let tc = CGPoint(x: control.x, y: control.y).applying(newTransform)
+                    let tp = to.cgPoint.applying(newTransform)
+                    let tc = control.cgPoint.applying(newTransform)
                     path.addQuadCurve(to: tp, control: tc)
                 case .close:
                     path.closeSubpath()
@@ -518,17 +518,17 @@ struct ShearHandles: View {
         for element in shape.path.elements {
             switch element {
             case .move(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
 
             case .line(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
 
             case .curve(let to, let control1, let control2):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
-                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
-                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
+                let transformedTo = to.cgPoint.applying(currentTransform)
+                let transformedControl1 = control1.cgPoint.applying(currentTransform)
+                let transformedControl2 = control2.cgPoint.applying(currentTransform)
                 transformedElements.append(.curve(
                     to: VectorPoint(transformedTo),
                     control1: VectorPoint(transformedControl1),
@@ -536,8 +536,8 @@ struct ShearHandles: View {
                 ))
 
             case .quadCurve(let to, let control):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
-                let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
+                let transformedTo = to.cgPoint.applying(currentTransform)
+                let transformedControl = control.cgPoint.applying(currentTransform)
                 transformedElements.append(.quadCurve(
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl),

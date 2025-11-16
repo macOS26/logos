@@ -50,17 +50,17 @@ extension DrawingCanvas {
             // Split curve into two curves
             let t = findParametricValueOnCurve(
                 start: CGPoint(x: startPoint.x, y: startPoint.y),
-                control1: CGPoint(x: control1.x, y: control1.y),
-                control2: CGPoint(x: control2.x, y: control2.y),
-                end: CGPoint(x: to.x, y: to.y),
+                control1: control1.cgPoint,
+                control2: control2.cgPoint,
+                end: to.cgPoint,
                 targetPoint: location
             )
 
             let splitResult = splitCubicBezierAt(
                 p0: CGPoint(x: startPoint.x, y: startPoint.y),
-                p1: CGPoint(x: control1.x, y: control1.y),
-                p2: CGPoint(x: control2.x, y: control2.y),
-                p3: CGPoint(x: to.x, y: to.y),
+                p1: control1.cgPoint,
+                p2: control2.cgPoint,
+                p3: to.cgPoint,
                 t: t
             )
 
@@ -82,7 +82,7 @@ extension DrawingCanvas {
         case .line(let to):
             // Split line into two lines
             let start = CGPoint(x: startPoint.x, y: startPoint.y)
-            let end = CGPoint(x: to.x, y: to.y)
+            let end = to.cgPoint
 
             // Find closest point on line to click location
             let t = closestPointOnLineSegment(point: location, start: start, end: end)
@@ -216,7 +216,7 @@ extension DrawingCanvas {
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
                 case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                    let rawPointLocation = CGPoint(x: to.x, y: to.y)
+                    let rawPointLocation = to.cgPoint
                     let pointLocation = rawPointLocation.applying(shape.transform)
 
                     if distance(location, pointLocation) <= tolerance {
@@ -245,7 +245,7 @@ extension DrawingCanvas {
                     case .line(let to):
                         if let prev = previousPoint {
                             let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
-                            let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+                            let end = to.cgPoint.applying(shape.transform)
 
                             if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
                                 return (shape.id, elementIndex)
@@ -255,9 +255,9 @@ extension DrawingCanvas {
                     case .curve(let to, let control1, let control2):
                         if let prev = previousPoint {
                             let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
-                            let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
-                            let c2 = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
-                            let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+                            let c1 = control1.cgPoint.applying(shape.transform)
+                            let c2 = control2.cgPoint.applying(shape.transform)
+                            let end = to.cgPoint.applying(shape.transform)
 
                             if isPointNearBezierCurve(point: location, p0: start, p1: c1, p2: c2, p3: end, tolerance: tolerance) {
                                 return (shape.id, elementIndex)

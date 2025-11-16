@@ -41,7 +41,7 @@ extension DrawingCanvas {
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
                     case .curve(let to, _, _), .move(let to), .line(let to), .quadCurve(let to, _):
-                        let anchorPointLocation = CGPoint(x: to.x, y: to.y)
+                        let anchorPointLocation = to.cgPoint
                         if distance(location, anchorPointLocation) <= tolerance {
                             clickedAnchorPoint = to
                             clickedElementIndex = elementIndex
@@ -110,7 +110,7 @@ extension DrawingCanvas {
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
                     case .curve(let to, let control1, let control2):
-                        let control1HandleLocation = CGPoint(x: control1.x, y: control1.y)
+                        let control1HandleLocation = control1.cgPoint
                         if distance(location, control1HandleLocation) <= tolerance {
                             let currentAnchorPoint: VectorPoint
                             if elementIndex > 0 {
@@ -131,7 +131,7 @@ extension DrawingCanvas {
                             }
                         }
 
-                        let control2HandleLocation = CGPoint(x: control2.x, y: control2.y)
+                        let control2HandleLocation = control2.cgPoint
                         if distance(location, control2HandleLocation) <= tolerance {
                             let handleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                             if !handleCollapsed {

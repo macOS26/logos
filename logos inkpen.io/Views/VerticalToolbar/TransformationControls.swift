@@ -357,21 +357,21 @@ struct TransformationControls: View {
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
-                                let pt = CGPoint(x: to.x, y: to.y)
+                                let pt = to.cgPoint
                                 let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                           newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                           scaleX: scaleX, scaleY: scaleY)
                                 transformedElements.append(.move(to: VectorPoint(newPt)))
                             case .line(let to):
-                                let pt = CGPoint(x: to.x, y: to.y)
+                                let pt = to.cgPoint
                                 let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                           newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                           scaleX: scaleX, scaleY: scaleY)
                                 transformedElements.append(.line(to: VectorPoint(newPt)))
                             case .curve(let to, let control1, let control2):
-                                let toPt = CGPoint(x: to.x, y: to.y)
-                                let c1Pt = CGPoint(x: control1.x, y: control1.y)
-                                let c2Pt = CGPoint(x: control2.x, y: control2.y)
+                                let toPt = to.cgPoint
+                                let c1Pt = control1.cgPoint
+                                let c2Pt = control2.cgPoint
                                 let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                           newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                           scaleX: scaleX, scaleY: scaleY)
@@ -385,8 +385,8 @@ struct TransformationControls: View {
                                                                  control1: VectorPoint(newC1),
                                                                  control2: VectorPoint(newC2)))
                             case .quadCurve(let to, let control):
-                                let toPt = CGPoint(x: to.x, y: to.y)
-                                let cPt = CGPoint(x: control.x, y: control.y)
+                                let toPt = to.cgPoint
+                                let cPt = control.cgPoint
                                 let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                           newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                           scaleX: scaleX, scaleY: scaleY)
@@ -429,21 +429,21 @@ struct TransformationControls: View {
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            let pt = CGPoint(x: to.x, y: to.y)
+                            let pt = to.cgPoint
                             let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                       newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                       scaleX: scaleX, scaleY: scaleY)
                             transformedElements.append(.move(to: VectorPoint(newPt)))
                         case .line(let to):
-                            let pt = CGPoint(x: to.x, y: to.y)
+                            let pt = to.cgPoint
                             let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                       newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                       scaleX: scaleX, scaleY: scaleY)
                             transformedElements.append(.line(to: VectorPoint(newPt)))
                         case .curve(let to, let control1, let control2):
-                            let toPt = CGPoint(x: to.x, y: to.y)
-                            let c1Pt = CGPoint(x: control1.x, y: control1.y)
-                            let c2Pt = CGPoint(x: control2.x, y: control2.y)
+                            let toPt = to.cgPoint
+                            let c1Pt = control1.cgPoint
+                            let c2Pt = control2.cgPoint
                             let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                       newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                       scaleX: scaleX, scaleY: scaleY)
@@ -457,8 +457,8 @@ struct TransformationControls: View {
                                                              control1: VectorPoint(newC1),
                                                              control2: VectorPoint(newC2)))
                         case .quadCurve(let to, let control):
-                            let toPt = CGPoint(x: to.x, y: to.y)
-                            let cPt = CGPoint(x: control.x, y: control.y)
+                            let toPt = to.cgPoint
+                            let cPt = control.cgPoint
                             let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                       newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                       scaleX: scaleX, scaleY: scaleY)

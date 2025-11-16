@@ -307,7 +307,7 @@ extension DrawingCanvas {
         } else if handleID.handleType == .control1 {
             // This is outgoing handle from anchor
             guard case .curve(_, let control1, _) = element else { return false }
-            handle2 = CGPoint(x: control1.x, y: control1.y)
+            handle2 = control1.cgPoint
 
             // Get anchor and opposite handle (incoming to this anchor)
             let prevIndex = handleID.elementIndex - 1
@@ -915,7 +915,7 @@ extension DrawingCanvas {
                 case .curve(let to, let control1, let control2):
                     if let prev = previousPoint {
                         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
-                        let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
+                        let c1 = control1.cgPoint.applying(shape.transform)
                         let c2 = control2.cgPoint.applying(shape.transform)
                         let end = to.cgPoint.applying(shape.transform)
 
@@ -964,7 +964,7 @@ extension DrawingCanvas {
         guard let prev = previousPoint else { return 0.5 }
 
         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
-        let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
+        let c1 = control1.cgPoint.applying(shape.transform)
         let c2 = control2.cgPoint.applying(shape.transform)
         let end = to.cgPoint.applying(shape.transform)
 

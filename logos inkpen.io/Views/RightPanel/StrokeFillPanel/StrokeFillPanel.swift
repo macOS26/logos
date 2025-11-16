@@ -130,15 +130,15 @@ struct StrokeFillPanel: View {
 
         switch element {
         case .curve(let to, _, let control2):
-            let anchor = CGPoint(x: to.x, y: to.y)
-            let control = CGPoint(x: control2.x, y: control2.y)
+            let anchor = to.cgPoint
+            let control = control2.cgPoint
             let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
             if dist > 0.5 {
                 incomingControl = control
             }
             anchorPoint = anchor
         case .move(let to), .line(let to):
-            anchorPoint = CGPoint(x: to.x, y: to.y)
+            anchorPoint = to.cgPoint
         default:
             break
         }
@@ -149,7 +149,7 @@ struct StrokeFillPanel: View {
         if pointID.elementIndex + 1 < elements.count {
             if case .curve(_, let control1, _) = elements[pointID.elementIndex + 1] {
                 if let anchor = anchorPoint {
-                    let control = CGPoint(x: control1.x, y: control1.y)
+                    let control = control1.cgPoint
                     let dist = sqrt(pow(anchor.x - control.x, 2) + pow(anchor.y - control.y, 2))
                     if dist > 0.5 {
                         outgoingControl = control
@@ -420,7 +420,7 @@ struct StrokeFillPanel: View {
                 if elementIndex > 0 {
                     switch elements[elementIndex - 1] {
                     case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        prevPos = CGPoint(x: to.x, y: to.y)
+                        prevPos = to.cgPoint
                     case .close:
                         break
                     }
@@ -432,16 +432,16 @@ struct StrokeFillPanel: View {
                         case .curve(_, _, _):
                             // For closing curve, the previous position is where it comes from
                             if lastIndex > 0, case .line(let to) = elements[lastIndex - 1] {
-                                prevPos = CGPoint(x: to.x, y: to.y)
+                                prevPos = to.cgPoint
                             } else if lastIndex > 0, case .curve(let to, _, _) = elements[lastIndex - 1] {
-                                prevPos = CGPoint(x: to.x, y: to.y)
+                                prevPos = to.cgPoint
                             }
                         case .close:
                             // For .close, look at the element before it
                             if lastIndex > 0 {
                                 switch elements[lastIndex - 1] {
                                 case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                                    prevPos = CGPoint(x: to.x, y: to.y)
+                                    prevPos = to.cgPoint
                                 default:
                                     break
                                 }
@@ -455,7 +455,7 @@ struct StrokeFillPanel: View {
                 if elementIndex + 1 < elements.count {
                     switch elements[elementIndex + 1] {
                     case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        nextPos = CGPoint(x: to.x, y: to.y)
+                        nextPos = to.cgPoint
                     case .close:
                         if case .move(let firstTo) = elements[0] {
                             nextPos = CGPoint(x: firstTo.x, y: firstTo.y)
@@ -468,7 +468,7 @@ struct StrokeFillPanel: View {
                     if elements.count > 1 {
                         switch elements[1] {
                         case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                            nextPos = CGPoint(x: to.x, y: to.y)
+                            nextPos = to.cgPoint
                         default:
                             break
                         }
@@ -617,13 +617,13 @@ struct StrokeFillPanel: View {
 
                 // Get incoming handle (control2 from this element)
                 if case .curve(_, _, let control2) = elements[elementIndex] {
-                    incomingHandle = CGPoint(x: control2.x, y: control2.y)
+                    incomingHandle = control2.cgPoint
                 }
 
                 // Get outgoing handle (control1 from next element) - only if it's a curve
                 if elementIndex + 1 < elements.count,
                    case .curve(_, let control1, _) = elements[elementIndex + 1] {
-                    outgoingHandle = CGPoint(x: control1.x, y: control1.y)
+                    outgoingHandle = control1.cgPoint
                 }
                 // If next is a line, we don't have an outgoing handle to align
 
@@ -705,7 +705,7 @@ struct StrokeFillPanel: View {
     private func getAnchorPosition(from element: PathElement) -> CGPoint? {
         switch element {
         case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-            return CGPoint(x: to.x, y: to.y)
+            return to.cgPoint
         case .close:
             return nil
         }

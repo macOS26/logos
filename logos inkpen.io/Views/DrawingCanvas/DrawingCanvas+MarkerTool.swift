@@ -830,10 +830,10 @@ extension DrawingCanvas {
             switch element {
             case .move(let to):
                 cleanedElements.append(element)
-                lastPosition = CGPoint(x: to.x, y: to.y)
+                lastPosition = to.cgPoint
 
             case .line(let to):
-                let currentPos = CGPoint(x: to.x, y: to.y)
+                let currentPos = to.cgPoint
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
                     if distance > tolerance {
@@ -846,7 +846,7 @@ extension DrawingCanvas {
                 }
 
             case .curve(let to, _, _):
-                let currentPos = CGPoint(x: to.x, y: to.y)
+                let currentPos = to.cgPoint
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
                     if distance > tolerance {
@@ -859,7 +859,7 @@ extension DrawingCanvas {
                 }
 
             case .quadCurve(let to, _):
-                let currentPos = CGPoint(x: to.x, y: to.y)
+                let currentPos = to.cgPoint
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
                     if distance > tolerance {
@@ -887,9 +887,9 @@ extension DrawingCanvas {
         for element in elements {
             switch element {
             case .move(let to), .line(let to):
-                points.append(CGPoint(x: to.x, y: to.y))
+                points.append(to.cgPoint)
             case .curve(let to, _, _), .quadCurve(let to, _):
-                points.append(CGPoint(x: to.x, y: to.y))
+                points.append(to.cgPoint)
             case .close:
                 break
             }

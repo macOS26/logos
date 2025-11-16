@@ -25,7 +25,7 @@ struct logos_inken_ioApp: App {
         }
 
         // Initialize shared app event monitor (one local monitor for entire app)
-        _ = AppEventMonitor.shared
+        AppEventMonitor.shared
     }
 
     fileprivate func doNotRestoreThis(_ window: NSWindow) {

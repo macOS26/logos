@@ -466,17 +466,17 @@ struct EnvelopeHandles: View {
         for element in elements {
             switch element {
             case .move(let to):
-                let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
+                let warpedPoint = warpPoint(to.cgPoint)
                 warpedElements.append(.move(to: VectorPoint(warpedPoint)))
 
             case .line(let to):
-                let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
+                let warpedPoint = warpPoint(to.cgPoint)
                 warpedElements.append(.line(to: VectorPoint(warpedPoint)))
 
             case .curve(let to, let control1, let control2):
-                let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
-                let warpedControl1 = warpPoint(CGPoint(x: control1.x, y: control1.y))
-                let warpedControl2 = warpPoint(CGPoint(x: control2.x, y: control2.y))
+                let warpedTo = warpPoint(to.cgPoint)
+                let warpedControl1 = warpPoint(control1.cgPoint)
+                let warpedControl2 = warpPoint(control2.cgPoint)
                 warpedElements.append(.curve(
                     to: VectorPoint(warpedTo),
                     control1: VectorPoint(warpedControl1),
@@ -484,8 +484,8 @@ struct EnvelopeHandles: View {
                 ))
 
             case .quadCurve(let to, let control):
-                let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
-                let warpedControl = warpPoint(CGPoint(x: control.x, y: control.y))
+                let warpedTo = warpPoint(to.cgPoint)
+                let warpedControl = warpPoint(control.cgPoint)
                 warpedElements.append(.quadCurve(
                     to: VectorPoint(warpedTo),
                     control: VectorPoint(warpedControl),

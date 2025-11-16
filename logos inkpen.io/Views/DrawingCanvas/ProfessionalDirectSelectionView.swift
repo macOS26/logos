@@ -146,14 +146,14 @@ struct ProfessionalDirectSelectionView: View {
             switch element {
             case .move(let to):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                let point = livePointPositions[pointID] ?? to.cgPoint
                 outlinePath.move(to: point)
                 lastPoint = point
                 firstPoint = point
 
             case .line(let to):
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                let point = livePointPositions[pointID] ?? to.cgPoint
                 outlinePath.addLine(to: point)
 
                 // If this is the dragged segment, also build it separately for orange overlay
@@ -172,7 +172,7 @@ struct ProfessionalDirectSelectionView: View {
                 let handleID1 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
                 let handleID2 = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
 
-                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
+                let point = livePointPositions[pointID] ?? to.cgPoint
                 let control1 = liveHandlePositions[handleID1] ?? CGPoint(x: c1.x, y: c1.y)
                 let control2 = liveHandlePositions[handleID2] ?? CGPoint(x: c2.x, y: c2.y)
 
@@ -193,8 +193,8 @@ struct ProfessionalDirectSelectionView: View {
                 let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
 
-                let point = livePointPositions[pointID] ?? CGPoint(x: to.x, y: to.y)
-                let controlPoint = liveHandlePositions[handleID] ?? CGPoint(x: control.x, y: control.y)
+                let point = livePointPositions[pointID] ?? to.cgPoint
+                let controlPoint = liveHandlePositions[handleID] ?? control.cgPoint
 
                 outlinePath.addQuadCurve(to: point, control: controlPoint)
 
@@ -272,7 +272,7 @@ struct ProfessionalDirectSelectionView: View {
         switch element {
         case .curve(let to, let c1, let c2):
             if handleID.handleType == .control2 {
-                anchorPoint = CGPoint(x: to.x, y: to.y)
+                anchorPoint = to.cgPoint
                 anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
                 handlePoint = CGPoint(x: c2.x, y: c2.y)
             } else if handleID.handleType == .control1, handleID.elementIndex > 0 {
@@ -282,9 +282,9 @@ struct ProfessionalDirectSelectionView: View {
                 handlePoint = CGPoint(x: c1.x, y: c1.y)
             }
         case .quadCurve(let to, let control):
-            anchorPoint = CGPoint(x: to.x, y: to.y)
+            anchorPoint = to.cgPoint
             anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
-            handlePoint = CGPoint(x: control.x, y: control.y)
+            handlePoint = control.cgPoint
         default:
             break
         }

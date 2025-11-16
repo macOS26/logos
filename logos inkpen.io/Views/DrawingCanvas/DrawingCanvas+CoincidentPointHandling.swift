@@ -34,9 +34,9 @@ extension DrawingCanvas {
                     let elementPoint: CGPoint?
                     switch element {
                     case .move(let to), .line(let to):
-                        elementPoint = CGPoint(x: to.x, y: to.y)
+                        elementPoint = to.cgPoint
                     case .curve(let to, _, _), .quadCurve(let to, _):
-                        elementPoint = CGPoint(x: to.x, y: to.y)
+                        elementPoint = to.cgPoint
                     case .close:
                         elementPoint = nil
                     }
@@ -265,7 +265,7 @@ extension DrawingCanvas {
 
         switch elements[elementIndex] {
         case .curve(let to, let control1, let control2):
-            let anchorPoint = CGPoint(x: to.x, y: to.y)
+            let anchorPoint = to.cgPoint
             let newControl2 = VectorPoint(control2.x + delta.x, control2.y + delta.y)
             elements[elementIndex] = .curve(to: to, control1: control1, control2: newControl2)
 
@@ -337,7 +337,7 @@ extension DrawingCanvas {
             if prevIndex >= 0 {
                 switch elements[prevIndex] {
                 case .curve(let to, _, _), .line(let to), .quadCurve(let to, _), .move(let to):
-                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                    anchorPoint = to.cgPoint
                     draggedPointID = PointID(shapeID: draggedHandleID.shapeID, pathIndex: 0, elementIndex: prevIndex)
                 default:
                     return false
@@ -348,7 +348,7 @@ extension DrawingCanvas {
         } else if draggedHandleID.handleType == .control2 {
             switch elements[draggedHandleID.elementIndex] {
             case .curve(let to, _, _):
-                anchorPoint = CGPoint(x: to.x, y: to.y)
+                anchorPoint = to.cgPoint
                 draggedPointID = PointID(shapeID: draggedHandleID.shapeID, pathIndex: 0, elementIndex: draggedHandleID.elementIndex)
             default:
                 return false
@@ -376,7 +376,7 @@ extension DrawingCanvas {
                     let oppositeHandle = calculateLinkedHandle(
                         anchorPoint: anchor,
                         draggedHandle: newDraggedPosition,
-                        originalOppositeHandle: CGPoint(x: control2.x, y: control2.y)
+                        originalOppositeHandle: control2.cgPoint
                     )
 
                     elements[coincidentIndex] = .curve(
@@ -400,7 +400,7 @@ extension DrawingCanvas {
                         let oppositeHandle = calculateLinkedHandle(
                             anchorPoint: anchor,
                             draggedHandle: newDraggedPosition,
-                            originalOppositeHandle: CGPoint(x: control1.x, y: control1.y)
+                            originalOppositeHandle: control1.cgPoint
                         )
 
                         elements[nextIndex] = .curve(
@@ -451,9 +451,9 @@ extension DrawingCanvas {
             let elementPoint: CGPoint?
             switch element {
             case .move(let to), .line(let to):
-                elementPoint = CGPoint(x: to.x, y: to.y)
+                elementPoint = to.cgPoint
             case .curve(let to, _, _), .quadCurve(let to, _):
-                elementPoint = CGPoint(x: to.x, y: to.y)
+                elementPoint = to.cgPoint
             case .close:
                 elementPoint = nil
             }

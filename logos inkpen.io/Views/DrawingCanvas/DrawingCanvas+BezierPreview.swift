@@ -82,8 +82,8 @@ extension DrawingCanvas {
                             let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
                             path.addCurve(
                                 to: CGPoint(x: currentPoint.x, y: currentPoint.y),
-                                control1: CGPoint(x: control1.x, y: control1.y),
-                                control2: CGPoint(x: control2.x, y: control2.y)
+                                control1: control1.cgPoint,
+                                control2: control2.cgPoint
                             )
                         } else {
                             path.addLine(to: CGPoint(x: currentPoint.x, y: currentPoint.y))

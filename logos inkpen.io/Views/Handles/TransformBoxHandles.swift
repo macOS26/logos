@@ -101,15 +101,15 @@ struct TransformBoxHandles: View {
                                     for element in objShape.path.elements {
                                         switch element {
                                         case .move(let to):
-                                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let p = to.cgPoint.applying(combinedTransform)
                                             let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                             path.move(to: screenP)
                                         case .line(let to):
-                                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let p = to.cgPoint.applying(combinedTransform)
                                             let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                             path.addLine(to: screenP)
                                         case .curve(let to, let c1, let c2):
-                                            let tp = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let tp = to.cgPoint.applying(combinedTransform)
                                             let tc1 = CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)
                                             let tc2 = CGPoint(x: c2.x, y: c2.y).applying(combinedTransform)
                                             let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
@@ -117,7 +117,7 @@ struct TransformBoxHandles: View {
                                             let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
                                             path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                                         case .quadCurve(let to, let c):
-                                            let tp = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                            let tp = to.cgPoint.applying(combinedTransform)
                                             let tc = CGPoint(x: c.x, y: c.y).applying(combinedTransform)
                                             let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                                             let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
@@ -136,15 +136,15 @@ struct TransformBoxHandles: View {
                             for element in groupedShape.path.elements {
                                 switch element {
                                 case .move(let to):
-                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let p = to.cgPoint.applying(previewTransform)
                                     let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                     path.move(to: screenP)
                                 case .line(let to):
-                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let p = to.cgPoint.applying(previewTransform)
                                     let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                     path.addLine(to: screenP)
                                 case .curve(let to, let c1, let c2):
-                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let tp = to.cgPoint.applying(previewTransform)
                                     let tc1 = CGPoint(x: c1.x, y: c1.y).applying(previewTransform)
                                     let tc2 = CGPoint(x: c2.x, y: c2.y).applying(previewTransform)
                                     let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
@@ -152,7 +152,7 @@ struct TransformBoxHandles: View {
                                     let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
                                     path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                                 case .quadCurve(let to, let c):
-                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let tp = to.cgPoint.applying(previewTransform)
                                     let tc = CGPoint(x: c.x, y: c.y).applying(previewTransform)
                                     let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                                     let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
@@ -181,15 +181,15 @@ struct TransformBoxHandles: View {
                         for element in shape.path.elements {
                             switch element {
                             case .move(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let p = to.cgPoint.applying(shape.transform).applying(previewTransform)
                                 let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                 path.move(to: screenP)
                             case .line(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let p = to.cgPoint.applying(shape.transform).applying(previewTransform)
                                 let screenP = CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y)
                                 path.addLine(to: screenP)
                             case .curve(let to, let c1, let c2):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let tp = to.cgPoint.applying(shape.transform).applying(previewTransform)
                                 let tc1 = CGPoint(x: c1.x, y: c1.y).applying(shape.transform).applying(previewTransform)
                                 let tc2 = CGPoint(x: c2.x, y: c2.y).applying(shape.transform).applying(previewTransform)
                                 let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
@@ -197,7 +197,7 @@ struct TransformBoxHandles: View {
                                 let screenC2 = CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y)
                                 path.addCurve(to: screenTo, control1: screenC1, control2: screenC2)
                             case .quadCurve(let to, let c):
-                                let tp = CGPoint(x: to.x, y: to.y).applying(shape.transform).applying(previewTransform)
+                                let tp = to.cgPoint.applying(shape.transform).applying(previewTransform)
                                 let tc = CGPoint(x: c.x, y: c.y).applying(shape.transform).applying(previewTransform)
                                 let screenTo = CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y)
                                 let screenC = CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y)
@@ -573,18 +573,18 @@ struct TransformBoxHandles: View {
                 for element in groupedShape.path.elements {
                     switch element {
                     case .move(let to):
-                        transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        transformedElements.append(.move(to: VectorPoint(to.cgPoint.applying(t))))
                     case .line(let to):
-                        transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        transformedElements.append(.line(to: VectorPoint(to.cgPoint.applying(t))))
                     case .curve(let to, let c1, let c2):
                         transformedElements.append(.curve(
-                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                            to: VectorPoint(to.cgPoint.applying(t)),
                             control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
                             control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t)),
                         ))
                     case .quadCurve(let to, let c):
                         transformedElements.append(.quadCurve(
-                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                            to: VectorPoint(to.cgPoint.applying(t)),
                             control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t)),
                         ))
                     case .close:
@@ -610,18 +610,18 @@ struct TransformBoxHandles: View {
             for element in targetShape.path.elements {
                 switch element {
                 case .move(let to):
-                    transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                    transformedElements.append(.move(to: VectorPoint(to.cgPoint.applying(t))))
                 case .line(let to):
-                    transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                    transformedElements.append(.line(to: VectorPoint(to.cgPoint.applying(t))))
                 case .curve(let to, let c1, let c2):
                     transformedElements.append(.curve(
-                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        to: VectorPoint(to.cgPoint.applying(t)),
                         control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
                         control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t)),
                     ))
                 case .quadCurve(let to, let c):
                     transformedElements.append(.quadCurve(
-                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        to: VectorPoint(to.cgPoint.applying(t)),
                         control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t)),
                     ))
                 case .close:
@@ -694,20 +694,20 @@ struct TransformBoxHandles: View {
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                let p = to.cgPoint.applying(combinedTransform)
                                 transformedElements.append(.move(to: VectorPoint(p)))
                             case .line(let to):
-                                let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                                let p = to.cgPoint.applying(combinedTransform)
                                 transformedElements.append(.line(to: VectorPoint(p)))
                             case .curve(let to, let c1, let c2):
                                 transformedElements.append(.curve(
-                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                    to: VectorPoint(to.cgPoint.applying(combinedTransform)),
                                     control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)),
                                     control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(combinedTransform)),
                                 ))
                             case .quadCurve(let to, let c):
                                 transformedElements.append(.quadCurve(
-                                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                    to: VectorPoint(to.cgPoint.applying(combinedTransform)),
                                     control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(combinedTransform)),
                                 ))
                             case .close:
@@ -729,20 +729,20 @@ struct TransformBoxHandles: View {
                     for element in oldShape.path.elements {
                         switch element {
                         case .move(let to):
-                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                            let p = to.cgPoint.applying(combinedTransform)
                             transformedElements.append(.move(to: VectorPoint(p)))
                         case .line(let to):
-                            let p = CGPoint(x: to.x, y: to.y).applying(combinedTransform)
+                            let p = to.cgPoint.applying(combinedTransform)
                             transformedElements.append(.line(to: VectorPoint(p)))
                         case .curve(let to, let c1, let c2):
                             transformedElements.append(.curve(
-                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                to: VectorPoint(to.cgPoint.applying(combinedTransform)),
                                 control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(combinedTransform)),
                                 control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(combinedTransform)),
                             ))
                         case .quadCurve(let to, let c):
                             transformedElements.append(.quadCurve(
-                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(combinedTransform)),
+                                to: VectorPoint(to.cgPoint.applying(combinedTransform)),
                                 control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(combinedTransform)),
                             ))
                         case .close:
