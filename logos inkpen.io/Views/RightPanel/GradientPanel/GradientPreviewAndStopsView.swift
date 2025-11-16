@@ -26,10 +26,11 @@ struct GradientPreviewAndStopsView: View {
     let applyGradientToSelectedShapesOptimized: (Bool) -> Void
     let activateGradientStop: (UUID, VectorColor) -> Void
     let onStopEditingChanged: (Bool) -> Void
-    @Binding var popoverStopID: UUID?
-    @Binding var popoverStopFrame: CGRect?
 
+    @State private var popoverStopID: UUID? = nil
     @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
+    @State private var popoverManager = SlidingPopoverManager()
+    @State private var anchorViews: [UUID: NSView] = [:]
     @FocusState private var focusedStopID: UUID?
     @State private var isEditingOpacity: Bool = false
     @Environment(AppState.self) private var appState
@@ -213,6 +214,63 @@ struct GradientPreviewAndStopsView: View {
     @State private var isDragging = false
     @State private var dragTranslation: CGSize = .zero
 
+    @State private var isColorPickerOpen = false
+    @State private var isColorPickerDismissing = false
+
+    /// Shows the popover for a specific gradient stop
+    private func showPopoverForStop(_ stop: GradientStop) {
+        guard let anchorView = anchorViews[stop.id], let gradient = currentGradient else { return }
+
+        // Notify parent: editing started (only once when first opening)
+        if !isColorPickerOpen {
+            onStopEditingChanged(true)
+            isColorPickerOpen = true
+        }
+
+        let popoverContent = GradientStopColorPicker(
+            snapshot: document.snapshot,
+            selectedObjectIDs: document.viewState.selectedObjectIDs,
+            document: document,
+            stopColor: stop.color,
+            currentGradient: gradient,
+            activeColorTarget: activeColorTarget,
+            onColorChanged: { color in
+                guard !isColorPickerDismissing else { return }
+                activateGradientStop(stop.id, color)
+            },
+            onDismiss: {
+                // Notify parent: editing ended (will commit with undo)
+                onStopEditingChanged(false)
+                isColorPickerOpen = false
+                popoverManager.dismiss()
+                popoverStopID = nil
+            }
+        )
+        .frame(width: 300, height: 480)
+        .environment(appState)
+
+        popoverManager.show(
+            content: popoverContent,
+            anchorView: anchorView,
+            edge: .leading,
+            onDismiss: {
+                // Called when popover is dismissed by clicking outside
+                guard !isColorPickerDismissing else { return }
+                isColorPickerDismissing = true
+
+                onStopEditingChanged(false)
+                isColorPickerOpen = false
+                popoverStopID = nil
+
+                // Reset flag after a delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isColorPickerDismissing = false
+                }
+            }
+        )
+        popoverStopID = stop.id
+    }
+
     private let snapPoints: [(x: CGFloat, y: CGFloat)] = [
         (0, 0), (0.5, 0), (1, 0),
         (0, 0.5), (0.5, 0.5), (1, 0.5),
@@ -334,44 +392,26 @@ struct GradientPreviewAndStopsView: View {
                                 Button(action: {
                                     if popoverStopID == stop.id {
                                         // Close if clicking the same stop
+                                        popoverManager.dismiss()
                                         popoverStopID = nil
-                                        onStopEditingChanged(false)
                                     } else {
-                                        // Open popover for this stop
-                                        popoverStopID = stop.id
-                                        onStopEditingChanged(true)
+                                        // Open or slide to this stop
+                                        showPopoverForStop(stop)
                                     }
                                 }) {
                                     renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                                 }
                                 .buttonStyle(BorderlessButtonStyle())
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .stroke(Color.blue, lineWidth: popoverStopID == stop.id ? 2 : 0)
-                                )
                                 .onHover { hovering in
-                                    // If popover is open, switch to this stop on hover
-                                    if hovering && popoverStopID != nil && popoverStopID != stop.id {
-                                        popoverStopID = stop.id
+                                    // If popover is open, slide to this stop on hover
+                                    if hovering && popoverManager.isShown && popoverStopID != stop.id {
+                                        showPopoverForStop(stop)
                                     }
                                 }
                                 .background(
-                                    GeometryReader { geo in
-                                        Color.clear.onAppear {
-                                            if popoverStopID == stop.id {
-                                                popoverStopFrame = geo.frame(in: .global)
-                                            }
-                                        }
-                                        .onChange(of: popoverStopID) { _, newID in
-                                            if newID == stop.id {
-                                                popoverStopFrame = geo.frame(in: .global)
-                                            }
-                                        }
-                                        .onChange(of: geo.frame(in: .global)) { _, newFrame in
-                                            if popoverStopID == stop.id {
-                                                popoverStopFrame = newFrame
-                                            }
-                                        }
+                                    // Capture the anchor view for this stop
+                                    PopoverAnchorView { view in
+                                        anchorViews[stop.id] = view
                                     }
                                 )
                             }
@@ -453,64 +493,5 @@ struct GradientPreviewAndStopsView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Custom Gradient Popover
-
-struct CustomGradientPopover: View {
-    let anchorFrame: CGRect
-    let stop: GradientStop
-    let gradient: VectorGradient
-    let document: VectorDocument
-    let activeColorTarget: ColorTarget
-    let onColorChanged: (VectorColor) -> Void
-    let onDismiss: () -> Void
-    @Environment(AppState.self) private var appState
-
-    var body: some View {
-        HStack(spacing: 0) {
-            // Arrow pointing left at the anchor
-            Triangle()
-                .fill(Color(NSColor.controlBackgroundColor))
-                .frame(width: 12, height: 24)
-                .rotationEffect(.degrees(-90))
-                .shadow(color: Color.black.opacity(0.2), radius: 2, x: -1, y: 0)
-                .offset(x: 1)
-
-            // Popover content
-            GradientStopColorPicker(
-                snapshot: document.snapshot,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                document: document,
-                stopColor: stop.color,
-                currentGradient: gradient,
-                activeColorTarget: activeColorTarget,
-                onColorChanged: onColorChanged,
-                onDismiss: onDismiss
-            )
-            .frame(width: 300, height: 480)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 2)
-        }
-        .offset(
-            x: anchorFrame.minX - 320,
-            y: anchorFrame.midY - 240
-        )
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: anchorFrame)
-        .environment(appState)
-    }
-}
-
-// Triangle shape for arrow
-struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }

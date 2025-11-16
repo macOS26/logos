@@ -19,8 +19,6 @@ struct RightPanel: View {
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
-    @Binding var popoverStopID: UUID?
-    @Binding var popoverStopFrame: CGRect?
     @Environment(AppState.self) private var appState
 
     var body: some View {
@@ -122,9 +120,7 @@ struct RightPanel: View {
                         activeColorTarget: Binding(
                             get: { viewState.activeColorTarget },
                             set: { viewState.activeColorTarget = $0 }
-                        ),
-                        popoverStopID: $popoverStopID,
-                        popoverStopFrame: $popoverStopFrame
+                        )
                     )
                 case .color:
                     ColorPanel(

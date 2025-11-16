@@ -8,8 +8,6 @@ struct GradientPanel: View {
     let document: VectorDocument
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var activeColorTarget: ColorTarget
-    @Binding var popoverStopID: UUID?
-    @Binding var popoverStopFrame: CGRect?
 
     var body: some View {
         ScrollView {
@@ -19,9 +17,7 @@ struct GradientPanel: View {
                     selectedObjectIDs: selectedObjectIDs,
                     document: document,
                     activeGradientDelta: $activeGradientDelta,
-                    activeColorTarget: $activeColorTarget,
-                    popoverStopID: $popoverStopID,
-                    popoverStopFrame: $popoverStopFrame
+                    activeColorTarget: $activeColorTarget
                 )
                 Spacer()
             }
@@ -35,8 +31,6 @@ struct GradientFillSection: View {
     let document: VectorDocument
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var activeColorTarget: ColorTarget
-    @Binding var popoverStopID: UUID?
-    @Binding var popoverStopFrame: CGRect?
     @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
@@ -54,14 +48,12 @@ struct GradientFillSection: View {
         case radial = "Radial"
     }
 
-    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, activeGradientDelta: Binding<VectorGradient?>, activeColorTarget: Binding<ColorTarget>, popoverStopID: Binding<UUID?>, popoverStopFrame: Binding<CGRect?>) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, activeGradientDelta: Binding<VectorGradient?>, activeColorTarget: Binding<ColorTarget>) {
         self.snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
         self.document = document
         self._activeGradientDelta = activeGradientDelta
         self._activeColorTarget = activeColorTarget
-        self._popoverStopID = popoverStopID
-        self._popoverStopFrame = popoverStopFrame
 
         if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget.wrappedValue) {
             _currentGradient = State(initialValue: selectedGradient)
@@ -182,9 +174,7 @@ struct GradientFillSection: View {
                     } else {
                         commitGradientChangeWithUndo()
                     }
-                },
-                popoverStopID: $popoverStopID,
-                popoverStopFrame: $popoverStopFrame
+                }
             )
 
             GradientApplyButtonView(
