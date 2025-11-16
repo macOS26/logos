@@ -277,12 +277,3 @@ struct GradientEditingState {
         self.onColorSelected = onColorSelected
     }
 }
-
-struct GradientHUDData {
-    let document: VectorDocument
-    let editingGradientStopId: UUID?
-    let editingGradientStopColor: VectorColor
-    let currentGradient: VectorGradient?
-    let updateStopColor: (UUID, VectorColor) -> Void
-    let turnOffEditingState: () -> Void
-}
