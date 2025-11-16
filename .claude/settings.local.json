@@ -130,7 +130,8 @@
       "Bash(do basename \"$file\" .swift)",
       "Bash(done)",
       "Bash(for:*)",
-      "Bash(do perl -i -pe 's/unifiedObject/vectorObject/g' \"$file\")"
+      "Bash(do perl -i -pe 's/unifiedObject/vectorObject/g' \"$file\")",
+      "Bash(sort:*)"
     ],
     "deny": [],
     "ask": []

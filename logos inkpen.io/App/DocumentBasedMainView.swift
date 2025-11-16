@@ -288,13 +288,11 @@ struct DocumentBasedMainView: View {
         document.snapshot.layers = importedDoc.snapshot.layers
         document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
-
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
         document.gridSettings = importedDoc.gridSettings
-
         calculateInitialZoom()
     }
 

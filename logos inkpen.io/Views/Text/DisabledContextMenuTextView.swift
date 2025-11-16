@@ -3,7 +3,6 @@ import AppKit
 class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
-    var pendingClickLocation: CGPoint?
 
     // Force cursor redraw when insertionPointColor changes
     override var insertionPointColor: NSColor? {
@@ -46,18 +45,7 @@ class DisabledContextMenuTextView: NSTextView {
 
     override func becomeFirstResponder() -> Bool {
         if allowsInteraction {
-            let result = super.becomeFirstResponder()
-
-            // If we have a pending click location, position cursor there
-            if let clickLocation = pendingClickLocation, let layoutManager = layoutManager, let textContainer = textContainer {
-                layoutManager.ensureLayout(for: textContainer)
-                let characterIndex = layoutManager.characterIndex(for: clickLocation, in: textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
-                let validIndex = max(0, min(string.count, characterIndex))
-                setSelectedRange(NSRange(location: validIndex, length: 0))
-                pendingClickLocation = nil
-            }
-
-            return result
+            return super.becomeFirstResponder()
         }
         return false
     }
