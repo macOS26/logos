@@ -628,7 +628,7 @@ extension FileOperations {
 
             let bandWidth = max(bounds.width, bounds.height) * 2
             let bandRect = CGRect(x: bandStart, y: -bandWidth/2, width: bandEnd - bandStart, height: bandWidth)
-            context.setFillColor(color.cgColor)
+            context.setFillColor(color)
             context.fill(bandRect)
 
             context.restoreGState()
@@ -659,7 +659,7 @@ extension FileOperations {
 
             context.saveGState()
 
-            context.setFillColor(color.cgColor)
+            context.setFillColor(color)
             context.addEllipse(in: CGRect(x: center.x - outerRadius, y: center.y - outerRadius,
                                          width: outerRadius * 2, height: outerRadius * 2))
 
@@ -714,7 +714,7 @@ extension FileOperations {
                 let t = (projection + 1.0) / 2.0
                 let color = interpolateGradientColor(at: t, stops: stops, opacity: opacity)
 
-                context.setFillColor(color.cgColor)
+                context.setFillColor(color)
                 context.fill(CGRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0))
             }
         }
@@ -773,7 +773,7 @@ extension FileOperations {
                 path.closeSubpath()
 
                 context.addPath(path)
-                context.setFillColor(color.cgColor)
+                context.setFillColor(color)
                 context.fillPath()
 
                 context.restoreGState()

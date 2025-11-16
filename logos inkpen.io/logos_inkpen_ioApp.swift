@@ -25,13 +25,7 @@ struct logos_inken_ioApp: App {
         }
 
         // Initialize shared app event monitor (one local monitor for entire app)
-        AppEventMonitor.shared
-    }
-
-    fileprivate func doNotRestoreThis(_ window: NSWindow) {
-        window.isRestorable = false
-        window.restorationClass = nil
-        window.tabbingMode = .disallowed
+        _ = AppEventMonitor.shared
     }
 
     private func windowTitle(for fileURL: URL?) -> String {
@@ -884,12 +878,6 @@ struct logos_inken_ioApp: App {
                 }
             )
             .environment(appState)
-            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
-                if let window = notification.object as? NSWindow,
-                   window.title == "Document Setup" {
-                    doNotRestoreThis(window)
-                }
-            }
         }
         .defaultSize(width: 900, height: 700)
         .windowResizability(.contentMinSize)

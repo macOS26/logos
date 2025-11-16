@@ -9,7 +9,7 @@ struct CTLineTextConverter {
     /// Converts text to CGPath using CTLine (same as Canvas rendering)
     static func convertTextToPaths(
         text: String,
-        font: NSFont,
+        font: PlatformFont,
         textBoxFrame: CGRect,
         alignment: NSTextAlignment,
         lineSpacing: CGFloat,
@@ -94,7 +94,7 @@ struct CTLineTextConverter {
             guard glyphCount > 0 else { continue }
 
             let attributes = CTRunGetAttributes(run) as! [NSAttributedString.Key: Any]
-            guard let font = attributes[.font] as? NSFont else { continue }
+            guard let font = attributes[.font] as? PlatformFont else { continue }
             let ctFont = font as CTFont
 
             var glyphs = [CGGlyph](repeating: 0, count: glyphCount)

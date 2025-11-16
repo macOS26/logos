@@ -93,7 +93,7 @@ struct TypographyProperties: Codable, Hashable {
         self.fillOpacity = fillOpacity
     }
 
-    var nsFont: NSFont {
+    var nsFont: PlatformFont {
         if let variant = fontVariant {
             let fontManager = NSFontManager.shared
             let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
@@ -102,14 +102,14 @@ struct TypographyProperties: Codable, Hashable {
                 if let postScriptName = member[0] as? String,
                    let displayName = member[1] as? String,
                    displayName == variant {
-                    if let font = NSFont(name: postScriptName, size: fontSize) {
+                    if let font = PlatformFont(name: postScriptName, size: fontSize) {
                         return font
                     }
                 }
             }
         }
 
-        return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+        return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
     }
 
     var swiftUIFont: Font {
@@ -556,7 +556,7 @@ class FontManager: ObservableObject {
                     lowercasedName.contains(keyword)
                 }
 
-                if !shouldExclude, !seenNames.contains(displayName), NSFont(name: postScriptName, size: 12) != nil {
+                if !shouldExclude, !seenNames.contains(displayName), PlatformFont(name: postScriptName, size: 12) != nil {
                     variants.append((
                         name: displayName,
                         weight: weightNumber.intValue,

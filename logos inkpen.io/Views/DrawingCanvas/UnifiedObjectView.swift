@@ -220,7 +220,7 @@ struct LayerCanvasView: View {
         Canvas { context, size in
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
-            let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
+            //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
@@ -963,8 +963,8 @@ struct LayerCanvasView: View {
                 effectiveLetterSpacing = vectorText.typography.letterSpacing
             }
 
-            // Create NSFont with effective size
-            let nsFont: NSFont = {
+            // Create PlatformFont with effective size
+            let nsFont: PlatformFont = {
                 if let variant = vectorText.typography.fontVariant {
                     let fontManager = NSFontManager.shared
                     let members = fontManager.availableMembers(ofFontFamily: vectorText.typography.fontFamily) ?? []
@@ -973,14 +973,14 @@ struct LayerCanvasView: View {
                         if let postScriptName = member[0] as? String,
                            let displayName = member[1] as? String,
                            displayName == variant {
-                            if let font = NSFont(name: postScriptName, size: effectiveFontSize) {
+                            if let font = PlatformFont(name: postScriptName, size: effectiveFontSize) {
                                 return font
                             }
                         }
                     }
                 }
 
-                return NSFont(name: vectorText.typography.fontFamily, size: effectiveFontSize) ?? NSFont.systemFont(ofSize: effectiveFontSize)
+                return PlatformFont(name: vectorText.typography.fontFamily, size: effectiveFontSize) ?? PlatformFont.systemFont(ofSize: effectiveFontSize)
             }()
 
             // Build paragraph style once (O(1))

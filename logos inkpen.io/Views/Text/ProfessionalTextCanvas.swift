@@ -159,14 +159,14 @@ struct ProfessionalTextCanvas: View {
             textView.menu = nil
             textView.delegate = context.coordinator
             // Use SAME font logic as CTLine rendering
-            let liveFont: NSFont = {
+            let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
-                   let font = NSFont(name: postScriptName, size: fontSize) {
+                   let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
 
-                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+                return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
             }()
             textView.font = liveFont
             textView.textColor = CGColor.clear.platformColor  // DEBUG: Change to .systemPink to see NSTextView
@@ -216,16 +216,16 @@ struct ProfessionalTextCanvas: View {
             }
 
 
-            // Always apply font (comparing NSFont objects doesn't work reliably)
+            // Always apply font (comparing PlatformFont objects doesn't work reliably)
             // Use SAME font logic as CTLine rendering
-            let liveFont: NSFont = {
+            let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
-                   let font = NSFont(name: postScriptName, size: fontSize) {
+                   let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
 
-                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+                return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
             }()
             nsView.font = liveFont
             if nsView.string.count > 0 {
@@ -288,14 +288,14 @@ struct ProfessionalTextCanvas: View {
             textView.defaultParagraphStyle = paragraphStyle
 
             // Use SAME font logic as CTLine rendering
-            let liveFont: NSFont = {
+            let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
-                   let font = NSFont(name: postScriptName, size: fontSize) {
+                   let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
 
-                return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+                return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
             }()
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,

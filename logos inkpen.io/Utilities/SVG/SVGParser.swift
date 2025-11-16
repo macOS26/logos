@@ -23,7 +23,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal lazy var sharedLayoutManager = NSLayoutManager()
     internal lazy var sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
 
-    internal var fontCache: [String: NSFont] = [:]
+    internal var fontCache: [String: PlatformFont] = [:]
 
     internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
     internal var isInMultiLineText: Bool = false

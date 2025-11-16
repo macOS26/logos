@@ -2,18 +2,18 @@ import SwiftUI
 
 extension SVGParser {
 
-    internal func getCachedFont(family: String, size: Double) -> NSFont {
+    internal func getCachedFont(family: String, size: Double) -> PlatformFont {
         let cacheKey = "\(family)-\(size)"
         if let cached = fontCache[cacheKey] {
             return cached
         }
 
-        let nsFont = NSFont(name: family, size: size) ?? NSFont.systemFont(ofSize: size)
+        let nsFont = PlatformFont(name: family, size: size) ?? PlatformFont.systemFont(ofSize: size)
         fontCache[cacheKey] = nsFont
         return nsFont
     }
 
-    internal func calculateTextWidth(for text: String, font: NSFont, alignment: TextAlignment) -> CGFloat {
+    internal func calculateTextWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = alignment.nsTextAlignment
 
@@ -32,7 +32,7 @@ extension SVGParser {
         return ceil(boundingRect.width)
     }
 
-    internal func calculateMaxLineWidth(for text: String, font: NSFont, alignment: TextAlignment) -> CGFloat {
+    internal func calculateMaxLineWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let lines = text.components(separatedBy: "\n")
         var maxWidth: CGFloat = 0
 

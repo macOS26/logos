@@ -449,7 +449,7 @@ struct NewDocumentSetupView: View {
             // Draw text
             let infoText = "\(Int(setupData.width))×\(Int(setupData.height))"
             let attributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 12, weight: .medium),
+                .font: PlatformFont.systemFont(ofSize: 12, weight: .medium),
                 .foregroundColor: NSColor.gray
             ]
 

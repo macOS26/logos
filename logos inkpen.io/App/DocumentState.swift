@@ -289,7 +289,7 @@ class DocumentState: ObservableObject {
 
         let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
         textModeLabel.frame = CGRect(x: 40, y: 165, width: 300, height: 20)
-        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        textModeLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
@@ -304,7 +304,7 @@ class DocumentState: ObservableObject {
 
         let colorSpaceLabel = NSTextField(labelWithString: "Color Space:")
         colorSpaceLabel.frame = CGRect(x: 20, y: 85, width: 300, height: 20)
-        colorSpaceLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        colorSpaceLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(colorSpaceLabel)
 
         let displayP3Radio = NSButton(radioButtonWithTitle: "Display P3 (wide gamut)", target: nil, action: nil)
@@ -449,7 +449,7 @@ class DocumentState: ObservableObject {
 
         let textModeLabel = NSTextField(labelWithString: "PDF Text Rendering Mode:")
         textModeLabel.frame = CGRect(x: 40, y: 165, width: 300, height: 20)
-        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        textModeLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
@@ -564,7 +564,7 @@ class DocumentState: ObservableObject {
 
         let iconSizesLabel = NSTextField(labelWithString: "Sizes: 1024×1024, 512×512, 256×256, 128×128, 64×64, 32×32, 16×16 px")
         iconSizesLabel.frame = CGRect(x: 40, y: 75, width: 300, height: 20)
-        iconSizesLabel.font = NSFont.systemFont(ofSize: 10)
+        iconSizesLabel.font = PlatformFont.systemFont(ofSize: 10)
         iconSizesLabel.textColor = NSColor.secondaryLabelColor
         iconSizesLabel.isHidden = true
         accessoryView.addSubview(iconSizesLabel)
@@ -770,7 +770,7 @@ class DocumentState: ObservableObject {
 
         let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
         textModeLabel.frame = CGRect(x: 40, y: 95, width: 300, height: 20)
-        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        textModeLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)

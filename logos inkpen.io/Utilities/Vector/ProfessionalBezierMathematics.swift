@@ -96,6 +96,7 @@ case independent = "Independent"
         }
     }
 
+    // SIMD-optimized de Casteljau algorithm using vector interpolation
     static func deCasteljauEvaluation(points: [VectorPoint], t: Double) -> VectorPoint {
         guard !points.isEmpty else { return VectorPoint(0, 0) }
         guard points.count > 1 else { return points[0] }
@@ -106,13 +107,11 @@ case independent = "Independent"
             var nextLevel: [VectorPoint] = []
 
             for i in 0..<(currentPoints.count - 1) {
-                let p0 = currentPoints[i]
-                let p1 = currentPoints[i + 1]
-                let interpolated = VectorPoint(
-                    (1.0 - t) * p0.x + t * p1.x,
-                    (1.0 - t) * p0.y + t * p1.y
-                )
-                nextLevel.append(interpolated)
+                let p0 = currentPoints[i].simdPoint
+                let p1 = currentPoints[i + 1].simdPoint
+                // SIMD mix for linear interpolation
+                let interpolated = simd_mix(p0, p1, SIMD2<Double>(repeating: t))
+                nextLevel.append(VectorPoint(simd: interpolated))
             }
 
             currentPoints = nextLevel
@@ -152,16 +151,21 @@ case independent = "Independent"
         return binomialLookup[n][k]
     }
 
+    // SIMD-optimized cubic Bezier evaluation
     static func evaluateCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
         let u3 = u2 * u
         let t2 = t * t
         let t3 = t2 * t
-        let x = u3 * p0.x + 3 * u2 * t * p1.x + 3 * u * t2 * p2.x + t3 * p3.x
-        let y = u3 * p0.y + 3 * u2 * t * p1.y + 3 * u * t2 * p2.y + t3 * p3.y
 
-        return VectorPoint(x, y)
+        // SIMD vector operations
+        let result = u3 * p0.simdPoint +
+                     3 * u2 * t * p1.simdPoint +
+                     3 * u * t2 * p2.simdPoint +
+                     t3 * p3.simdPoint
+
+        return VectorPoint(simd: result)
     }
 
     static func evaluateQuadraticBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, t: Double) -> VectorPoint {
