@@ -138,7 +138,7 @@ struct ProfessionalTextCanvas: View {
 
             textView.isEditable = true
             textView.isSelectable = true
-            textView.backgroundColor = NSColor.clear
+            textView.backgroundColor = CGColor.clear.platformColor
             textView.textContainerInset = NSSize(width: 0, height: 0)
             textView.textContainer?.lineFragmentPadding = 0
             textView.textContainer?.widthTracksTextView = false
@@ -169,7 +169,7 @@ struct ProfessionalTextCanvas: View {
                 return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
             }()
             textView.font = liveFont
-            textView.textColor = NSColor.clear  // DEBUG: Change to .systemPink to see NSTextView
+            textView.textColor = CGColor.clear.platformColor  // DEBUG: Change to .systemPink to see NSTextView
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
@@ -232,7 +232,7 @@ struct ProfessionalTextCanvas: View {
                 let range = NSRange(location: 0, length: nsView.string.count)
                 nsView.textStorage?.beginEditing()
                 nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
-                nsView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)  // DEBUG: Change to .systemPink
+                nsView.textStorage?.addAttribute(.foregroundColor, value: CGColor.clear.platformColor, range: range)  // DEBUG: Change to .systemPink
                 nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 nsView.textStorage?.endEditing()
 
@@ -264,17 +264,18 @@ struct ProfessionalTextCanvas: View {
         }
 
         private func applyStyle(to textView: NSTextView) {
-            let cursorColor: NSColor
+            let cursorColor: PlatformColor
             if viewMode == .keyline {
-                cursorColor = NSColor.black
+                cursorColor = CGColor.black.platformColor
             } else {
                 // Use fill color but with full opacity for cursor visibility
                 let fillCGColor = fillColor.cgColor
                 if let components = fillCGColor.components, components.count >= 3 {
-                    cursorColor = NSColor(red: components[0], green: components[1], blue: components[2], alpha: 1.0)
+                    let colorWithOpacity = CGColor(red: components[0], green: components[1], blue: components[2], alpha: 1.0)
+                    cursorColor = colorWithOpacity.platformColor
                 } else {
                     // Fallback to the original color with its opacity if we can't extract components
-                    cursorColor = NSColor(cgColor: fillCGColor) ?? NSColor.black
+                    cursorColor = fillCGColor.platformColor
                 }
             }
             textView.insertionPointColor = cursorColor

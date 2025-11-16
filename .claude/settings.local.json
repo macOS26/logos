@@ -148,7 +148,8 @@
       "Bash(\"Views/RightPanel/StrokeFillPanel/StrokeFillPanel.swift\" )",
       "Bash(\"Views/VerticalToolbar/TransformationControls.swift\")",
       "Bash(do)",
-      "Bash([ -f \"$file\" ])"
+      "Bash([ -f \"$file\" ])",
+      "Bash(xcrun xcodebuild:*)"
     ],
     "deny": [],
     "ask": []
