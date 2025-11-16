@@ -1012,6 +1012,17 @@ struct LayerCanvasView: View {
             let glyphRange = layoutManager.glyphRange(for: textContainer)
             let textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
+            // Check if we need to build complete text path for inside/outside strokes
+            let hasStroke = vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0
+            let strokePlacement = vectorText.typography.strokePlacement
+            let needsCompleteTextPath = hasStroke && strokePlacement != .center
+
+            // Build complete text path if needed (for inside/outside strokes)
+            var completeTextPath: CGMutablePath?
+            if needsCompleteTextPath {
+                completeTextPath = CGMutablePath()
+            }
+
             // Enumerate and draw lines (O(k) where k = number of lines)
             layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
                 let lineString = (effectiveContent as NSString).substring(with: lineRange)
@@ -1037,16 +1048,9 @@ struct LayerCanvasView: View {
                 }
                 let lineY = textPosition.y + lineRect.origin.y + glyphLocation.y
 
-                // Draw line
-                cgContext.saveGState()
-                cgContext.textMatrix = textMatrix
-                cgContext.textPosition = CGPoint(x: lineX, y: lineY)
-
-                // Check if text has stroke
-                if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
-                    // Get glyphs and positions from CTLine to build path
+                // Build glyphs if we need them for stroke or complete path
+                if hasStroke || needsCompleteTextPath {
                     let glyphRuns = CTLineGetGlyphRuns(line) as! [CTRun]
-                    let textPath = CGMutablePath()
 
                     for run in glyphRuns {
                         let glyphCount = CTRunGetGlyphCount(run)
@@ -1060,8 +1064,14 @@ struct LayerCanvasView: View {
                         if let font = attributes[kCTFontAttributeName] as! CTFont? {
                             for i in 0..<glyphCount {
                                 if let glyphPath = CTFontCreatePathForGlyph(font, glyphs[i], nil) {
-                                    let transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
-                                    textPath.addPath(glyphPath, transform: transform)
+                                    // Transform includes line position and text matrix
+                                    var transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
+                                    transform = transform.concatenating(CGAffineTransform(translationX: lineX, y: lineY))
+                                    transform = transform.concatenating(textMatrix)
+
+                                    if needsCompleteTextPath {
+                                        completeTextPath?.addPath(glyphPath, transform: transform)
+                                    }
                                 }
                             }
                         }
@@ -1069,42 +1079,59 @@ struct LayerCanvasView: View {
                         glyphs.deallocate()
                         positions.deallocate()
                     }
+                }
 
-                    // Apply deltas if selected
-                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
-                        ? strokeDeltaWidth!
-                        : vectorText.typography.strokeWidth
-                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
-                        ? strokeDeltaOpacity!
-                        : vectorText.typography.strokeOpacity
-
-                    // Draw the path with fill and stroke
+                // For center stroke or no stroke, draw line directly
+                if !needsCompleteTextPath {
                     cgContext.saveGState()
-                    cgContext.translateBy(x: lineX, y: lineY)
-                    cgContext.concatenate(textMatrix)
+                    cgContext.textMatrix = textMatrix
+                    cgContext.textPosition = CGPoint(x: lineX, y: lineY)
 
-                    // Draw fill first
-                    cgContext.addPath(textPath)
-                    cgContext.setFillColor(textColor.cgColor)
-                    cgContext.setAlpha(CGFloat(effectiveFillOpacity))
-                    cgContext.fillPath()
+                    if hasStroke && strokePlacement == .center {
+                        // Center stroke - use glyph paths
+                        let glyphRuns = CTLineGetGlyphRuns(line) as! [CTRun]
+                        let textPath = CGMutablePath()
 
-                    // Draw stroke using PathOperations for placement support
-                    let strokePlacement = vectorText.typography.strokePlacement
-                    let strokeStyle = StrokeStyle(
-                        color: vectorText.typography.strokeColor,
-                        width: effectiveStrokeWidth,
-                        placement: strokePlacement,
-                        dashPattern: [],
-                        lineCap: .butt,
-                        lineJoin: vectorText.typography.strokeLineJoin.cgLineJoin,
-                        miterLimit: 10.0,
-                        opacity: effectiveStrokeOpacity,
-                        blendMode: .normal
-                    )
+                        for run in glyphRuns {
+                            let glyphCount = CTRunGetGlyphCount(run)
+                            let glyphs = UnsafeMutablePointer<CGGlyph>.allocate(capacity: glyphCount)
+                            let positions = UnsafeMutablePointer<CGPoint>.allocate(capacity: glyphCount)
 
-                    if strokePlacement == .center {
-                        // Center stroke - just stroke the path directly
+                            CTRunGetGlyphs(run, CFRangeMake(0, glyphCount), glyphs)
+                            CTRunGetPositions(run, CFRangeMake(0, glyphCount), positions)
+
+                            let attributes = CTRunGetAttributes(run) as NSDictionary
+                            if let font = attributes[kCTFontAttributeName] as! CTFont? {
+                                for i in 0..<glyphCount {
+                                    if let glyphPath = CTFontCreatePathForGlyph(font, glyphs[i], nil) {
+                                        let transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
+                                        textPath.addPath(glyphPath, transform: transform)
+                                    }
+                                }
+                            }
+
+                            glyphs.deallocate()
+                            positions.deallocate()
+                        }
+
+                        let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                            ? strokeDeltaWidth!
+                            : vectorText.typography.strokeWidth
+                        let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                            ? strokeDeltaOpacity!
+                            : vectorText.typography.strokeOpacity
+
+                        cgContext.saveGState()
+                        cgContext.translateBy(x: lineX, y: lineY)
+                        cgContext.concatenate(textMatrix)
+
+                        // Draw fill
+                        cgContext.addPath(textPath)
+                        cgContext.setFillColor(textColor.cgColor)
+                        cgContext.setAlpha(CGFloat(effectiveFillOpacity))
+                        cgContext.fillPath()
+
+                        // Draw center stroke
                         cgContext.addPath(textPath)
                         let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
                         cgContext.setStrokeColor(strokeColor.cgColor)
@@ -1113,24 +1140,53 @@ struct LayerCanvasView: View {
                         cgContext.setLineCap(.butt)
                         cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
                         cgContext.strokePath()
+
+                        cgContext.restoreGState()
                     } else {
-                        // Inside/Outside stroke - outline the stroke and fill it
-                        if let outlinedStroke = PathOperations.outlineStroke(path: textPath, strokeStyle: strokeStyle) {
-                            cgContext.addPath(outlinedStroke)
-                            let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
-                            cgContext.setFillColor(strokeColor.cgColor)
-                            cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
-                            cgContext.fillPath()
-                        }
+                        // No stroke - just draw normally
+                        CTLineDraw(line, cgContext)
                     }
 
                     cgContext.restoreGState()
-                } else {
-                    // No stroke - just draw normally
-                    CTLineDraw(line, cgContext)
                 }
+            }
 
-                cgContext.restoreGState()
+            // Render complete text path with inside/outside stroke (ONCE for all text)
+            if needsCompleteTextPath, let textPath = completeTextPath {
+                let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
+                    ? strokeDeltaWidth!
+                    : vectorText.typography.strokeWidth
+                let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
+                    ? strokeDeltaOpacity!
+                    : vectorText.typography.strokeOpacity
+
+                // Draw fill first
+                cgContext.addPath(textPath)
+                cgContext.setFillColor(textColor.cgColor)
+                cgContext.setAlpha(CGFloat(effectiveFillOpacity))
+                cgContext.fillPath()
+
+                // Create stroke style and outline it
+                let strokeStyle = StrokeStyle(
+                    color: vectorText.typography.strokeColor,
+                    width: effectiveStrokeWidth,
+                    placement: strokePlacement,
+                    dashPattern: [],
+                    lineCap: .butt,
+                    lineJoin: vectorText.typography.strokeLineJoin.cgLineJoin,
+                    miterLimit: 10.0,
+                    opacity: effectiveStrokeOpacity,
+                    blendMode: .normal
+                )
+
+                // Outline the stroke ONCE for the complete text
+                if let outlinedStroke = PathOperations.outlineStroke(path: textPath, strokeStyle: strokeStyle) {
+                    cgContext.addPath(outlinedStroke)
+                    let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
+                    cgContext.setFillColor(strokeColor.cgColor)
+                    cgContext.setAlpha(CGFloat(effectiveStrokeOpacity))
+                    cgContext.fillPath()
+                }
             }
 
             cgContext.restoreGState()
