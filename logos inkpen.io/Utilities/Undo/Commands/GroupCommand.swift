@@ -60,7 +60,8 @@ class GroupCommand: BaseCommand {
         }
 
         // Remove from layer.objectIDs
-        document.snapshot.layers[layerIndex].objectIDs.removeAll { removedObjectIDs.contains($0) }
+        var updatedObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+        updatedObjectIDs.removeAll { removedObjectIDs.contains($0) }
 
         // print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
@@ -89,7 +90,7 @@ class GroupCommand: BaseCommand {
                 }
             }
 
-            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
+            updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
 
             // Log group contents
             // if shape.isGroup || shape.isClippingGroup {
@@ -105,6 +106,9 @@ class GroupCommand: BaseCommand {
                 document.updateParentCacheForGroup(objectID, childIDs: childIDs)
             }
         }
+
+        // Apply all objectID changes at once with automatic trigger
+        document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: updatedObjectIDs)
 
         // print("🟣 GroupCommand.execute: FINAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
@@ -143,7 +147,8 @@ class GroupCommand: BaseCommand {
         }
 
         // Remove group from layer.objectIDs
-        document.snapshot.layers[layerIndex].objectIDs.removeAll { addedObjectIDs.contains($0) }
+        var updatedObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+        updatedObjectIDs.removeAll { addedObjectIDs.contains($0) }
 
         // Restore removed shapes back to snapshot.objects (for combine/union operations)
         for (objectID, shape) in removedShapes {
@@ -156,9 +161,12 @@ class GroupCommand: BaseCommand {
 
         // Restore child objects to layer.objectIDs (they never left snapshot.objects)
         for (offset, objectID) in removedObjectIDs.enumerated() {
-            document.snapshot.layers[layerIndex].objectIDs.insert(objectID, at: insertionIndex + offset)
+            updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
             // print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
+
+        // Apply all objectID changes at once with automatic trigger
+        document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: updatedObjectIDs)
 
         // Restore parent cache when undoing ungroup (recreate the group cache)
         if operation == .ungroup {
