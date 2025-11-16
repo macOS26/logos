@@ -895,11 +895,6 @@ struct logos_inken_ioApp: App {
                     doNotRestoreThis(window)
                 }
             }
-            .background(WindowAccessor { window in
-                if let window {
-                    doNotRestoreThis(window)
-                }
-            })
         }
         .defaultSize(width: 900, height: 700)
         .windowResizability(.contentMinSize)
