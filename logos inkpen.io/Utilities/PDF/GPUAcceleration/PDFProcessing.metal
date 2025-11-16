@@ -87,9 +87,7 @@ kernel void find_nearest_point(
     float2 point = points[gid];
     float2 tap = *tapLocation;
 
-    float dx = point.x - tap.x;
-    float dy = point.y - tap.y;
-    float dist = sqrt(dx * dx + dy * dy);
+    float dist = distance(point, tap);
 
     distances[gid] = dist;
     validIndices[gid] = (dist <= *selectionRadius) ? gid : UINT_MAX;
@@ -135,9 +133,7 @@ kernel void find_points_in_radius(
 {
     float2 point = points[gid];
     float2 tap = *tapLocation;
-    float dx = point.x - tap.x;
-    float dy = point.y - tap.y;
-    float dist = sqrt(dx * dx + dy * dy);
+    float dist = distance(point, tap);
 
     if (dist <= *selectionRadius) {
         uint index = atomic_fetch_add_explicit(matchCount, 1, memory_order_relaxed);
@@ -162,7 +158,7 @@ kernel void find_nearest_handle(
     float2 tap = *tapLocation;
 
     float2 handleToAnchor = handle - anchor;
-    float handleLength = sqrt(handleToAnchor.x * handleToAnchor.x + handleToAnchor.y * handleToAnchor.y);
+    float handleLength = length(handleToAnchor);
 
     if (handleLength < 0.1) {
         distances[gid] = INFINITY;
@@ -170,9 +166,7 @@ kernel void find_nearest_handle(
         return;
     }
 
-    float dx = handle.x - tap.x;
-    float dy = handle.y - tap.y;
-    float dist = sqrt(dx * dx + dy * dy);
+    float dist = distance(handle, tap);
 
     distances[gid] = dist;
     validIndices[gid] = (dist <= *handleRadius) ? gid : UINT_MAX;
