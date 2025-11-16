@@ -121,8 +121,8 @@ extension VectorDocument {
 
         var combinedBounds: CGRect?
         for objectID in viewState.selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
+            if let vectorObject = findObject(by: objectID) {
+                switch vectorObject.objectType {
                 case .group(let shape):
                     let shapeBounds = shape.groupBounds
                     if let existing = combinedBounds {
