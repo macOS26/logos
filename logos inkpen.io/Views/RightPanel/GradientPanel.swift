@@ -197,6 +197,12 @@ struct GradientFillSection: View {
             // Sync gradient state from document when snapshot changes (e.g., after undo)
             updateSelectedGradient()
         }
+        .onChange(of: activeGradientDelta) { _, newDelta in
+            // Two-way binding: when canvas updates delta, sync to panel
+            if let newGradient = newDelta {
+                currentGradient = newGradient
+            }
+        }
     }
 
     private func turnOffEditingState() {
