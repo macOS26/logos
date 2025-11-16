@@ -4,7 +4,6 @@ struct ColorSwatchGrid: View {
     @ObservedObject var document: VectorDocument
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
-    @Environment(AppState.self) private var appState
     @State private var showingColorPicker = false
     @State private var showingCustomColorPopover = false
 
