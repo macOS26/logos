@@ -584,35 +584,6 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
     }
 }
 
-struct GuidelinesView: View {
-    @ObservedObject var document: VectorDocument
-    let geometry: GeometryProxy
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    @State private var horizontalGuidelines: [Double] = []
-    @State private var verticalGuidelines: [Double] = []
-
-    var body: some View {
-        ZStack {
-            ForEach(horizontalGuidelines, id: \.self) { y in
-                Rectangle()
-                    .fill(Color.cyan)
-                    .frame(height: 1)
-                    .position(x: geometry.size.width / 2, y: y * zoomLevel + canvasOffset.y)
-                    .opacity(0.7)
-            }
-
-            ForEach(verticalGuidelines, id: \.self) { x in
-                Rectangle()
-                    .fill(Color.cyan)
-                    .frame(width: 1)
-                    .position(x: x * zoomLevel + canvasOffset.x, y: geometry.size.height / 2)
-                    .opacity(0.7)
-            }
-        }
-    }
-}
-
 extension VectorDocument {
     func snapToGrid(_ point: CGPoint) -> CGPoint {
         guard gridSettings.snapToGrid else { return point }
