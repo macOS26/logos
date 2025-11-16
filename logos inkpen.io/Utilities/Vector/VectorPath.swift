@@ -121,6 +121,21 @@ enum PathElement: Codable, Hashable {
     case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint)
     case quadCurve(to: VectorPoint, control: VectorPoint)
     case close
+
+    /// Returns the endpoint of this path element, or nil for .close
+    var endpoint: VectorPoint? {
+        switch self {
+        case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+            return to
+        case .close:
+            return nil
+        }
+    }
+
+    /// Returns the endpoint as a CGPoint, or nil for .close
+    var endpointCGPoint: CGPoint? {
+        endpoint?.cgPoint
+    }
 }
 
 struct VectorPath: Codable, Hashable, Identifiable {
