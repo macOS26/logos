@@ -339,7 +339,14 @@ struct EnvelopeHandles: View {
         }
 
         if shape.path.elements.count <= 4 || shape.isGroup {
-            let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
+            // Calculate bounding box corners
+            let bounds = shape.path.cgPath.boundingBoxOfPath
+            let newOriginalCorners = [
+                CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
+                CGPoint(x: bounds.maxX, y: bounds.minY), // Top-right
+                CGPoint(x: bounds.maxX, y: bounds.maxY), // Bottom-right
+                CGPoint(x: bounds.minX, y: bounds.maxY)  // Bottom-left
+            ]
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
 

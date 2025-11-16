@@ -235,7 +235,7 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
-    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
+    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, textContentDelta: Binding<(id: UUID, content: String)?>, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?, imagePreviewQuality: Double, imageTileSize: Int) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
         let layerBlendMode = layer.blendMode
 
@@ -316,6 +316,7 @@ extension DrawingCanvas {
                 colorDeltaOpacity: colorDeltaOpacity,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: document.viewState.activeColorTarget,
+                textContentDelta: $textContentDelta,
                 fontSizeDelta: fontSizeDelta,
                 lineSpacingDelta: lineSpacingDelta,
                 lineHeightDelta: lineHeightDelta,
@@ -339,7 +340,7 @@ extension DrawingCanvas {
         // Render layers with background fills for special layers
         ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
             if layer.isVisible {
-                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+                renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, textContentDelta: $textContentDelta, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
             }
         }
     }

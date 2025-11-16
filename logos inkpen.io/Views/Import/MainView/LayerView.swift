@@ -74,7 +74,8 @@ struct LayerView: View {
                                 canvasOffset: canvasOffset,
                                 dragPreviewDelta: dragPreviewDelta,
                                 dragPreviewTrigger: dragPreviewTrigger,
-                                viewMode: viewMode
+                                viewMode: viewMode,
+                                textContentDelta: .constant(nil)
                             )
                             .allowsHitTesting(document.viewState.currentTool == .font)
                         }

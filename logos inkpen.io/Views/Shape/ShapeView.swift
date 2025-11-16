@@ -255,26 +255,9 @@ struct ShapeView: View {
         let actualFillOpacity = previewFillOpacity ?? fillStyle.opacity
 
         switch fillStyle.color {
-        case .gradient(let vectorGradient):
-            // Apply live gradient origin if dragging AND shape is selected
-            let effectiveGradient: VectorGradient = {
-                if isSelected, let liveX = liveGradientOriginX, let liveY = liveGradientOriginY {
-                    switch vectorGradient {
-                    case .linear(var linear):
-                        linear.originPoint.x = liveX
-                        linear.originPoint.y = liveY
-                        return .linear(linear)
-                    case .radial(var radial):
-                        radial.originPoint.x = liveX
-                        radial.originPoint.y = liveY
-                        radial.focalPoint = CGPoint(x: liveX, y: liveY)
-                        return .radial(radial)
-                    }
-                }
-                return vectorGradient
-            }()
-            GradientFillView(gradient: effectiveGradient, path: path.cgPath)
-                .opacity(actualFillOpacity)
+        case .gradient(_):
+            // Legacy NSView gradient rendering removed - use Canvas with CGContext instead
+            EmptyView()
 
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule.cgPathFillRule == .evenOdd))
@@ -285,8 +268,9 @@ struct ShapeView: View {
     @ViewBuilder
     private func renderStrokeColor(strokeStyle: StrokeStyle, path: Path, swiftUIStyle: SwiftUI.StrokeStyle, shape: VectorShape) -> some View {
         switch strokeStyle.color {
-        case .gradient(let vectorGradient):
-            GradientStrokeView(gradient: vectorGradient, path: path.cgPath, strokeStyle: strokeStyle)
+        case .gradient(_):
+            // Legacy NSView gradient rendering removed - use Canvas with CGContext instead
+            EmptyView()
 
         default:
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)

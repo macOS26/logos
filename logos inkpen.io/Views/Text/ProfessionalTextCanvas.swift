@@ -14,8 +14,9 @@ struct ProfessionalTextCanvas: View {
     let lineHeightDelta: Double?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
+    @Binding var textContentDelta: (id: UUID, content: String)?
 
-    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil) {
+    init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, textContentDelta: Binding<(id: UUID, content: String)?>) {
         self.document = document
         self.textObjectID = textObjectID
         self.zoomLevel = zoomLevel
@@ -27,6 +28,7 @@ struct ProfessionalTextCanvas: View {
         self.lineHeightDelta = lineHeightDelta
         self.fontSizeDelta = fontSizeDelta
         self.lineSpacingDelta = lineSpacingDelta
+        self._textContentDelta = textContentDelta
 
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
@@ -64,7 +66,8 @@ struct ProfessionalTextCanvas: View {
             lineSpacing: lineSpacing,
             fontFamily: fontFamily,
             fontVariant: fontVariant,
-            fontManager: document.fontManager
+            fontManager: document.fontManager,
+            textContentDelta: $textContentDelta
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
@@ -100,21 +103,10 @@ struct ProfessionalTextCanvas: View {
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
         guard viewModel.isEditing && keyPress.key == .escape else { return .ignored }
 
-        let textID = viewModel.textObject.id
-
-        // Get final text from live preview or viewModel
-        let finalText = document.viewState.liveTextContent[textID] ?? viewModel.text
-
-        // Commit to document.snapshot
-        viewModel.document.updateTextContent(textID, content: finalText)
+        viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
         viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-
-        // Clear live preview state
-        document.viewState.liveTextContent.removeValue(forKey: textID)
-        document.viewState.isEditingText.remove(textID)
-
         viewModel.stopEditing()
-        document.setTextEditingInUnified(id: textID, isEditing: false)
+        document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
         NSApp.keyWindow?.makeFirstResponder(nil)
 
         return .handled
@@ -133,6 +125,7 @@ struct ProfessionalTextCanvas: View {
         let fontFamily: String
         let fontVariant: String?
         let fontManager: FontManager
+        @Binding var textContentDelta: (id: UUID, content: String)?
 
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -329,6 +322,7 @@ struct ProfessionalTextCanvas: View {
             var lastUpdateTime: Date = Date()
             var isRestoringSelection: Bool = false
             weak var textView: DisabledContextMenuTextView?
+            var updateTimer: Timer?
 
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
@@ -341,20 +335,25 @@ struct ProfessionalTextCanvas: View {
 
                 parent.isUpdatingFromTyping = true
 
+                let textObjectId = parent.viewModel.textObject.id
+
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    let textID = self.parent.viewModel.textObject.id
                     self.parent.viewModel.text = newText
                     self.parent.viewModel.updateLastTypingTime()
 
-                    // Store in live preview state instead of updating document.snapshot
-                    self.parent.viewModel.document.viewState.liveTextContent[textID] = newText
-                    self.parent.viewModel.document.viewState.isEditingText.insert(textID)
+                    // Update delta immediately for live preview (like fontSizeDelta)
+                    self.parent.textContentDelta = (textObjectId, newText)
 
-                    // Trigger layer update WITHOUT modifying snapshot (avoids spatial index rebuild)
-                    if let object = self.parent.viewModel.document.snapshot.objects[textID] {
-                        let layerIndex = object.layerIndex
-                        self.parent.viewModel.document.triggerLayerUpdate(for: layerIndex)
+                    // Cancel existing timer
+                    self.updateTimer?.invalidate()
+
+                    // Set new timer to commit after 500ms of no typing
+                    self.updateTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                        // Commit the change to document (like onEditingChanged: false for sliders)
+                        self.parent.viewModel.document.updateTextContent(textObjectId, content: newText)
+                        // Clear delta after committing
+                        self.parent.textContentDelta = nil
                     }
 
                     // Disable -1 workaround after first typing
@@ -397,23 +396,21 @@ struct ProfessionalTextCanvas: View {
             }
 
             func textDidEndEditing(_ notification: Notification) {
-                let textObjectId = parent.viewModel.textObject.id
+                let finalText = parent.viewModel.text
                 let textFrame = parent.viewModel.textBoxFrame
+                let textObjectId = parent.viewModel.textObject.id
+
+                // Cancel any pending timer
+                updateTimer?.invalidate()
+                updateTimer = nil
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-
-                    // Get the final text from live preview or viewModel
-                    let finalText = self.parent.viewModel.document.viewState.liveTextContent[textObjectId] ?? self.parent.viewModel.text
-
-                    // Now commit to document.snapshot (this will trigger spatial index rebuild, but only once)
+                    // Clear delta first
+                    self.parent.textContentDelta = nil
+                    // Then commit the final text
                     self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
                     self.parent.viewModel.updateDocumentTextBounds(textFrame)
-
-                    // Clear the live preview state
-                    self.parent.viewModel.document.viewState.liveTextContent.removeValue(forKey: textObjectId)
-                    self.parent.viewModel.document.viewState.isEditingText.remove(textObjectId)
-
                     self.parent.isUpdatingFromTyping = false
                 }
             }

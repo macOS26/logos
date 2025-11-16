@@ -27,6 +27,7 @@ struct DrawingCanvas: View {
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
     @Binding var letterSpacingDelta: Double?
+    @Binding var textContentDelta: (id: UUID, content: String)?
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
     @Environment(AppState.self) internal var appState

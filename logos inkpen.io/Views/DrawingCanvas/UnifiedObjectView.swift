@@ -70,6 +70,7 @@ struct LayerCanvasView: View {
     let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
+    @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
@@ -294,7 +295,7 @@ struct LayerCanvasView: View {
                                     layerContext.transform = contentTransform
 
                                     if VectorText.from(liveContentShape) != nil {
-                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
+                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
                                     } else if hasImageData(liveContentShape) {
                                         renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
                                     } else {
@@ -380,7 +381,7 @@ struct LayerCanvasView: View {
                                 layerContext.transform = contentTransform
 
                                 if VectorText.from(liveContentColorMode) != nil {
-                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, maskShape: nil)
+                                    renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
                                 } else if hasImageData(liveContentColorMode) {
                                     renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
                                 } else {
@@ -866,17 +867,19 @@ struct LayerCanvasView: View {
 
     // MARK: - Optimized Text Rendering
 
-    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, maskShape: VectorShape? = nil) {
+    private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, textContentDelta: (id: UUID, content: String)? = nil, maskShape: VectorShape? = nil) {
         // Fast validation (O(1))
-        guard var vectorText = VectorText.from(shape) else { return }
+        guard let vectorText = VectorText.from(shape) else { return }
 
-        // Use live preview text if this text is being edited
-        if document.viewState.isEditingText.contains(shape.id),
-           let liveContent = document.viewState.liveTextContent[shape.id] {
-            vectorText.content = liveContent
+        // Use delta content if available and matching this shape
+        let effectiveContent: String
+        if let delta = textContentDelta, delta.id == shape.id && !delta.content.isEmpty {
+            effectiveContent = delta.content
+        } else if !vectorText.content.isEmpty {
+            effectiveContent = vectorText.content
+        } else {
+            return
         }
-
-        guard !vectorText.content.isEmpty else { return }
 
         // Drag delta is now applied at canvas level, not per-object
 
@@ -979,7 +982,7 @@ struct LayerCanvasView: View {
             ]
 
             // Create layout system once (O(n) where n = text length)
-            let attributedString = NSAttributedString(string: vectorText.content, attributes: commonAttributes)
+            let attributedString = NSAttributedString(string: effectiveContent, attributes: commonAttributes)
             let textStorage = NSTextStorage(attributedString: attributedString)
             let layoutManager = NSLayoutManager()
             textStorage.addLayoutManager(layoutManager)
@@ -1007,7 +1010,7 @@ struct LayerCanvasView: View {
             layoutManager.addTextContainer(textContainer)
 
             // Layout glyphs once (O(n))
-            let textRange = NSRange(location: 0, length: vectorText.content.count)
+            let textRange = NSRange(location: 0, length: effectiveContent.count)
             layoutManager.ensureGlyphs(forGlyphRange: textRange)
             layoutManager.ensureLayout(for: textContainer)
 
@@ -1020,7 +1023,7 @@ struct LayerCanvasView: View {
 
             // Enumerate and draw lines (O(k) where k = number of lines)
             layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
-                let lineString = (vectorText.content as NSString).substring(with: lineRange)
+                let lineString = (effectiveContent as NSString).substring(with: lineRange)
                 let lineAttribString = NSAttributedString(string: lineString, attributes: renderAttributes)
                 var line = CTLineCreateWithAttributedString(lineAttribString)
 
@@ -1264,6 +1267,7 @@ struct IsolatedLayerView: View {
     let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
+    @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
@@ -1359,6 +1363,7 @@ struct IsolatedLayerView: View {
                 colorDeltaOpacity: colorDeltaOpacity,
                 activeGradientDelta: $activeGradientDelta,
                 activeColorTarget: activeColorTarget,
+                textContentDelta: $textContentDelta,
                 fontSizeDelta: fontSizeDelta,
                 lineSpacingDelta: lineSpacingDelta,
                 lineHeightDelta: lineHeightDelta,
@@ -1382,7 +1387,8 @@ struct IsolatedLayerView: View {
                     letterSpacingDelta: letterSpacingDelta,
                     lineHeightDelta: lineHeightDelta,
                     fontSizeDelta: fontSizeDelta,
-                    lineSpacingDelta: lineSpacingDelta
+                    lineSpacingDelta: lineSpacingDelta,
+                    textContentDelta: $textContentDelta
                 )
                 .allowsHitTesting(document.viewState.currentTool == .font)
             }
