@@ -869,6 +869,3 @@ extension ProfessionalPathOperations {
         }
     }
 }
-
-extension ProfessionalPathOperations {
-}
