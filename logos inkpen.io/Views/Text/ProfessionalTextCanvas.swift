@@ -190,6 +190,11 @@ struct ProfessionalTextCanvas: View {
 
             context.coordinator.textView = textView
 
+            // Set pending click location if we have one
+            if let clickLocation = viewModel.clickLocation {
+                textView.pendingClickLocation = clickLocation
+            }
+
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
             }

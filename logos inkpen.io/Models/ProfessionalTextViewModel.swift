@@ -13,6 +13,7 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100)
     @Published var userInitiatedCursorPosition: Int = 0
     @Published var textObject: VectorText
+    @Published var clickLocation: CGPoint?  // Store click location for cursor positioning
     let document: VectorDocument
     var linePaths: [CGPath] = []
 
@@ -527,7 +528,15 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if let textObject = document.findText(by: textID) {
-            // Don't pre-set cursor position - let NSTextView handle it natively based on click
+            // Store click location (relative to text position) for cursor positioning
+            if location != .zero {
+                let relativeLocation = CGPoint(
+                    x: location.x - textObject.position.x,
+                    y: location.y - textObject.position.y
+                )
+                self.clickLocation = relativeLocation
+            }
+
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
             document.viewState.selectedObjectIDs = [textID]
         } else {
