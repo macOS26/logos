@@ -25,7 +25,7 @@ class DisabledContextMenuTextView: NSTextView {
         return false
     }
 
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_ dirtyRect: CGRect) {
         let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
         super.draw(extendedRect)
     }
@@ -50,7 +50,7 @@ class DisabledContextMenuTextView: NSTextView {
         return false
     }
 
-    override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
+    override func drawInsertionPoint(in rect: CGRect, color: NSColor, turnedOn flag: Bool) {
         let cursorColor = shouldShowCursor ? color : NSColor.clear
         var thickerRect = rect
         thickerRect.size.width = 1.0
