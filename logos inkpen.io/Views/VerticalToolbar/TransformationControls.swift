@@ -77,7 +77,6 @@ struct TransformationControls: View {
     @State private var widthValue: String = ""
     @State private var heightValue: String = ""
     @State private var aspectRatio: CGFloat = 1.0
-    @State private var updateTrigger: Bool = false
 
     private var transformOriginBinding: Binding<TransformOrigin> {
         Binding(
