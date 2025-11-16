@@ -148,10 +148,7 @@ kernel void calculate_vector_distances(
     Point2D p1 = points1[index];
     Point2D p2 = points2[index];
     
-    float dx = p1.x - p2.x;
-    float dy = p1.y - p2.y;
-    
-    distances[index] = sqrt(dx * dx + dy * dy);
+    distances[index] = distance(p1, p2);
 }
 
 kernel void normalize_vectors(
@@ -160,15 +157,13 @@ kernel void normalize_vectors(
     uint index [[thread_position_in_grid]]
 ) {
     Point2D vector = inputVectors[index];
-    
-    float length = sqrt(vector.x * vector.x + vector.y * vector.y);
-    
-    if (length > 0.0001) {
-        normalizedVectors[index].x = vector.x / length;
-        normalizedVectors[index].y = vector.y / length;
+
+    float len = length(vector);
+
+    if (len > 0.0001) {
+        normalizedVectors[index] = normalize(vector);
     } else {
-        normalizedVectors[index].x = 0.0;
-        normalizedVectors[index].y = 0.0;
+        normalizedVectors[index] = float2(0.0);
     }
 }
 
@@ -196,22 +191,16 @@ kernel void calculate_linked_handles(
     Point2D anchor = anchorPoints[index];
     Point2D draggedHandle = draggedHandles[index];
     Point2D originalOppositeHandle = originalOppositeHandles[index];
-    
-    float draggedVectorX = draggedHandle.x - anchor.x;
-    float draggedVectorY = draggedHandle.y - anchor.y;
-    
-    float originalVectorX = originalOppositeHandle.x - anchor.x;
-    float originalVectorY = originalOppositeHandle.y - anchor.y;
-    float originalLength = sqrt(originalVectorX * originalVectorX + originalVectorY * originalVectorY);
-    
-    float draggedLength = sqrt(draggedVectorX * draggedVectorX + draggedVectorY * draggedVectorY);
-    
-    if (draggedLength > 0.1) {
-        float normalizedDraggedX = draggedVectorX / draggedLength;
-        float normalizedDraggedY = draggedVectorY / draggedLength;
-        
-        linkedHandles[index].x = anchor.x - normalizedDraggedX * originalLength;
-        linkedHandles[index].y = anchor.y - normalizedDraggedY * originalLength;
+
+    float2 draggedVec = draggedHandle - anchor;
+    float2 originalVec = originalOppositeHandle - anchor;
+
+    float originalLen = length(originalVec);
+    float draggedLen = length(draggedVec);
+
+    if (draggedLen > 0.1) {
+        float2 normalizedDragged = normalize(draggedVec);
+        linkedHandles[index] = anchor - normalizedDragged * originalLen;
     } else {
         linkedHandles[index] = originalOppositeHandle;
     }
@@ -231,18 +220,16 @@ kernel void calculate_curvature(
     Point2D prev = points[index - 1];
     Point2D current = points[index];
     Point2D next = points[index + 1];
-    
-    float dx1 = current.x - prev.x;
-    float dy1 = current.y - prev.y;
-    float dx2 = next.x - current.x;
-    float dy2 = next.y - current.y;
-    
-    float crossProduct = dx1 * dy2 - dy1 * dx2;
-    float length1 = sqrt(dx1 * dx1 + dy1 * dy1);
-    float length2 = sqrt(dx2 * dx2 + dy2 * dy2);
-    
-    if (length1 > 0.0001 && length2 > 0.0001) {
-        curvatures[index] = crossProduct / (length1 * length2);
+
+    float2 vec1 = current - prev;
+    float2 vec2 = next - current;
+
+    float crossProduct = vec1.x * vec2.y - vec1.y * vec2.x;
+    float len1 = length(vec1);
+    float len2 = length(vec2);
+
+    if (len1 > 0.0001 && len2 > 0.0001) {
+        curvatures[index] = crossProduct / (len1 * len2);
     } else {
         curvatures[index] = 0.0;
     }

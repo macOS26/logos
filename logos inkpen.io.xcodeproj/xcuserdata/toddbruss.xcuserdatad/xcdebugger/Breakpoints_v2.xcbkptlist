@@ -7,17 +7,103 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "FA641A96-2059-4B0A-B435-3C0A96D42AC5"
+            uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+ViewComposition.swift"
+            filePath = "logos inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "553"
-            endingLineNumber = "553"
-            landmarkName = "DrawingCanvas"
-            landmarkType = "21">
+            startingLineNumber = "3"
+            endingLineNumber = "3"
+            landmarkName = "GradientCommand"
+            landmarkType = "3">
+            <Locations>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - 2cb92ce404084beb"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.__allocating_init() -&gt; logos_inkpen_io.GradientCommand"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - 73049bbdc8421c13"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.init() -&gt; logos_inkpen_io.GradientCommand"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - e9998bd551ecc9a0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.__ivar_destroyer"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - 6e6b243838704023"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.deinit"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - 26fceedbd89f4633"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.__isolated_deallocating_deinit"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "9DD0FC59-02FB-49A2-B599-C188B65B597E - 64ffc81b010451f6"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "logos_inkpen_io.GradientCommand.__deallocating_deinit"
+                  moduleName = "logos inkpen.io.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/toddbruss/Documents/GitHub/logos/logos%20inkpen.io/Utilities/Undo/Commands/GradientCommand.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
