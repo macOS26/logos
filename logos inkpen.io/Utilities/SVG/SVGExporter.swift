@@ -782,7 +782,7 @@ class SVGExporter {
         }
     }
 
-    private func exportImageShape(_ shape: VectorShape, image: NSImage, dpiScale: CGFloat) -> String {
+    private func exportImageShape(_ shape: VectorShape, image: CGImage, dpiScale: CGFloat) -> String {
         let transformedBounds: CGRect
         if shape.transform != .identity {
             transformedBounds = shape.bounds.applying(shape.transform)
@@ -799,12 +799,16 @@ class SVGExporter {
         if let embeddedData = shape.embeddedImageData {
             href = "data:image/png;base64,\(embeddedData.base64EncodedString())"
         } else {
-            guard let tiff = image.tiffRepresentation,
-                  let bitmap = NSBitmapImageRep(data: tiff),
-                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            // Convert CGImage to PNG data
+            let mutableData = NSMutableData()
+            guard let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) else {
                 return ""
             }
-            let base64 = pngData.base64EncodedString()
+            CGImageDestinationAddImage(destination, image, nil)
+            guard CGImageDestinationFinalize(destination) else {
+                return ""
+            }
+            let base64 = mutableData.base64EncodedString()
             href = "data:image/png;base64,\(base64)"
         }
 
