@@ -330,7 +330,9 @@ class ProfessionalTextViewModel: ObservableObject {
         let targetLayerIndex = document.selectedLayerIndex ?? 2
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
-            let vectorPath = convertCGPathToVectorPath(linePath)
+            // Union the path with itself to preserve curves properly
+            let unionedPath = linePath.union(linePath, using: .winding)
+            let vectorPath = convertCGPathToVectorPath(unionedPath.isEmpty ? linePath : unionedPath)
             let lineName = "Line \(lineIndex + 1)"
             let outlineShape = VectorShape(
                 name: lineName,
