@@ -1,5 +1,6 @@
 import Foundation
 import CoreGraphics
+import SwiftUI
 
 #if canImport(AppKit)
 import AppKit
@@ -8,6 +9,16 @@ typealias PlatformColor = NSColor
 import UIKit
 typealias PlatformColor = UIColor
 #endif
+
+extension Color {
+    static var platformControlBackground: Color {
+        #if canImport(AppKit)
+        return Color(NSColor.controlBackgroundColor)
+        #elseif canImport(UIKit)
+        return Color(UIColor.systemBackground)
+        #endif
+    }
+}
 
 extension CGColor {
     /// Converts CGColor to platform-specific color (NSColor on macOS, UIColor on iOS/iPadOS)

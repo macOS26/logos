@@ -95,7 +95,7 @@ struct PressureCalibrationView: View {
 
             ZStack {
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.platformControlBackground)
                     .border(Color.gray.opacity(0.3), width: 1)
 
                 Path { path in
@@ -168,7 +168,7 @@ struct PressureCalibrationView: View {
         }
         .frame(width: 280)
         .padding(12)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
@@ -185,7 +185,7 @@ struct PressureCalibrationView: View {
 
             ZStack {
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.platformControlBackground)
                     .border(Color.gray.opacity(0.3), width: 1)
 
                 VStack {
@@ -256,7 +256,7 @@ struct PressureCalibrationView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(12)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
@@ -442,7 +442,7 @@ struct PressureCalibrationView: View {
                 .monospaced()
         }
         .padding(12)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
@@ -490,7 +490,7 @@ struct PressureCalibrationView: View {
             }
         }
         .padding(12)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
@@ -555,7 +555,7 @@ struct PressureCalibrationView: View {
         }
         .frame(width: 280)
         .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
@@ -586,13 +586,13 @@ struct PressureCalibrationView: View {
             }
             .frame(height: 80)
             .padding(8)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color.platformControlBackground)
             .border(Color.gray.opacity(0.3), width: 1)
             .cornerRadius(4)
         }
         .frame(width: 280)
         .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
 
