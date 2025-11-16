@@ -1094,25 +1094,25 @@ class DocumentState: ObservableObject {
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 guard document.viewState.selectedObjectIDs.contains(shape.id) else { continue }
-                var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id, in: document)
-                if nsImage == nil, let path = shape.linkedImagePath {
+                var cgImage: CGImage? = ImageContentRegistry.image(for: shape.id, in: document)
+                if cgImage == nil, let path = shape.linkedImagePath {
                     let url = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
-                    nsImage = NSImage(contentsOf: url)
-                    if let img = nsImage { ImageContentRegistry.register(image: img, for: shape.id, in: document) }
+                    if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+                       let img = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                        cgImage = img
+                        ImageContentRegistry.register(image: img, for: shape.id, in: document)
+                    }
                 }
-                guard let image = nsImage else { continue }
-                var embedded: Data? = nil
-                if let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
-                    embedded = rep.representation(using: .png, properties: [:])
-                    if embedded == nil { embedded = tiff }
-                }
-                if embedded == nil, let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                    let rep = NSBitmapImageRep(cgImage: cg)
-                    embedded = rep.representation(using: .png, properties: [:])
-                }
-                guard let data = embedded else { continue }
+                guard let image = cgImage else { continue }
+
+                // Convert CGImage to PNG data
+                let mutableData = NSMutableData()
+                guard let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) else { continue }
+                CGImageDestinationAddImage(destination, image, nil)
+                guard CGImageDestinationFinalize(destination) else { continue }
+
                 document.updateEntireShapeInUnified(id: shape.id) { updatedShape in
-                    updatedShape.embeddedImageData = data
+                    updatedShape.embeddedImageData = mutableData as Data
                 }
             }
         }
