@@ -100,8 +100,8 @@ extension VectorDocument {
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in viewState.selectedObjectIDs {
-            if let unifiedObject = snapshot.objects[ objectID] {
-                switch unifiedObject.objectType {
+            if let vectorObject = snapshot.objects[ objectID] {
+                switch vectorObject.objectType {
                 case .text(let shape):
                     switch viewState.activeColorTarget {
                     case .fill:
@@ -198,8 +198,8 @@ extension VectorDocument {
         }
 
         for objectID in viewState.selectedObjectIDs {
-            if let unifiedObject = snapshot.objects[ objectID] {
-                switch unifiedObject.objectType {
+            if let vectorObject = snapshot.objects[ objectID] {
+                switch vectorObject.objectType {
                 case .group(let groupShape):
                     for childShape in groupShape.groupedShapes {
                         if let childObject = snapshot.objects[ childShape.id] {
@@ -239,8 +239,8 @@ extension VectorDocument {
     func getSelectedObjectColor() -> VectorColor? {
         guard let firstSelectedID = viewState.selectedObjectIDs.first else { return nil }
 
-        if let unifiedObject = snapshot.objects[ firstSelectedID] {
-            switch unifiedObject.objectType {
+        if let vectorObject = snapshot.objects[ firstSelectedID] {
+            switch vectorObject.objectType {
             case .text(let shape):
                 if viewState.activeColorTarget == .stroke {
                     return shape.typography?.strokeColor
