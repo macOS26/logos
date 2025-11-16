@@ -168,11 +168,14 @@ extension VectorDocument {
             snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
             selectedLayerIndex = currentIndex + 1
 
-            // Update layerIndex in snapshot.objects
-            for (objectID, object) in snapshot.objects {
-                if object.layerIndex > currentIndex {
-                    let updatedObject = VectorObject(id: object.id, layerIndex: object.layerIndex + 1, objectType: object.objectType)
-                    snapshot.objects[objectID] = updatedObject
+            // Update layerIndex in snapshot.objects - only process affected layers
+            // Note: After insert, indices shift so we process from currentIndex + 2
+            for layerIdx in (currentIndex + 2)..<snapshot.layers.count {
+                for objectID in snapshot.layers[layerIdx].objectIDs {
+                    if let object = snapshot.objects[objectID] {
+                        let updatedObject = VectorObject(id: object.id, layerIndex: layerIdx, objectType: object.objectType)
+                        snapshot.objects[objectID] = updatedObject
+                    }
                 }
             }
         } else {
