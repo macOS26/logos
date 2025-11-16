@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 class TextTypographyCommand: BaseCommand {
     private let textID: UUID

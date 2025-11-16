@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 class AddObjectCommand: BaseCommand {
     private let objects: [VectorObject]

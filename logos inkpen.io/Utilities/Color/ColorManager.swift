@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 final class ColorManager {
 	static let shared = ColorManager()

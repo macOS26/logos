@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 class ChangeColorCommand: BaseCommand {
     enum ColorTarget {

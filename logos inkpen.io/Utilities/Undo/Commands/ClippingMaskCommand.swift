@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 class ClippingMaskCommand: BaseCommand {
     enum Operation {

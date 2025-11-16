@@ -1,6 +1,5 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import Combine
 
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
