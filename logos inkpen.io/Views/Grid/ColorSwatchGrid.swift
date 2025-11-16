@@ -5,8 +5,6 @@ struct ColorSwatchGrid: View {
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Environment(AppState.self) private var appState
-    @State private var selectedFillColor: VectorColor = .white
-    @State private var selectedStrokeColor: VectorColor = .black
     @State private var showingColorPicker = false
     @State private var showingCustomColorPopover = false
 
@@ -256,13 +254,7 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        if document.viewState.activeColorTarget == .stroke {
-                            selectedStrokeColor = color
-                            document.setActiveColor(color)
-                        } else {
-                            selectedFillColor = color
-                            document.setActiveColor(color)
-                        }
+                        document.setActiveColor(color)
                     } label: {
                         ZStack {
                             if case .clear = color {
@@ -353,7 +345,7 @@ struct ColorSwatchGrid: View {
             onColorSelected: { color in
                 document.setActiveColor(color)
             },
-            initialColor: (document.viewState.activeColorTarget == .stroke) ? selectedStrokeColor : selectedFillColor,
+            initialColor: (document.viewState.activeColorTarget == .stroke) ? document.documentColorDefaults.strokeColor : document.documentColorDefaults.fillColor,
             onDismiss: {
                 showingCustomColorPopover = false
             }
