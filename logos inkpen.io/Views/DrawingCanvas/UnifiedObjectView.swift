@@ -195,7 +195,6 @@ struct LayerCanvasView: View {
         let _ = Self._printChanges()
         let _ = print("📊 LayerCanvasView \(layerInfo): rendering \(objects.count) objects")
         Canvas { context, size in
-//            _ = objectUpdateTrigger
 //            _ = activeGradientDelta  // Force redraw when gradient changes
 //            _ = fillDeltaOpacity     // Force redraw when fill opacity changes
 //            _ = strokeDeltaOpacity   // Force redraw when stroke opacity changes
