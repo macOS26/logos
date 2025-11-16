@@ -1290,6 +1290,17 @@ struct LayerCanvasView: View {
 
         // ALWAYS draw - Canvas clears every frame, we MUST redraw
 
+        // Calculate viewport for tile culling (same as vector object culling)
+        let viewport = viewportRect(canvasSize: canvasSize)
+
+        // Calculate tiles with viewport culling
+        let tiles = calculateVisibleImageTiles(
+            imageBounds: renderBounds,
+            imageSize: CGSize(width: image.width, height: image.height),
+            viewport: viewport,
+            tileSize: imageTileSize
+        )
+
         // Draw using CGContext
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -1304,18 +1315,71 @@ struct LayerCanvasView: View {
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // Flip coordinate system for image rendering
-            cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
-            cgContext.scaleBy(x: 1.0, y: -1.0)
+            // Draw only visible tiles
+            for tile in tiles {
+                cgContext.saveGState()
 
-            // Set rendering quality
-            cgContext.interpolationQuality = .medium
+                // Flip coordinate system for this tile
+                cgContext.translateBy(x: tile.destRect.minX, y: tile.destRect.maxY)
+                cgContext.scaleBy(x: 1.0, y: -1.0)
 
-            // Draw the image
-            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
+                // Set rendering quality
+                cgContext.interpolationQuality = .medium
+
+                // Crop source image to tile region
+                if let tileImage = image.cropping(to: tile.sourceRect) {
+                    cgContext.draw(tileImage, in: CGRect(origin: .zero, size: tile.destRect.size))
+                }
+
+                cgContext.restoreGState()
+            }
 
             cgContext.restoreGState()
         }
+    }
+
+    // Calculate visible image tiles using viewport culling (same approach as vector objects)
+    private func calculateVisibleImageTiles(
+        imageBounds: CGRect,
+        imageSize: CGSize,
+        viewport: CGRect,
+        tileSize: Int
+    ) -> [(sourceRect: CGRect, destRect: CGRect)] {
+        // Calculate scale from image pixels to canvas coordinates
+        let scaleX = imageBounds.width / imageSize.width
+        let scaleY = imageBounds.height / imageSize.height
+
+        // Calculate total number of tiles
+        let numCols = Int(ceil(imageSize.width / CGFloat(tileSize)))
+        let numRows = Int(ceil(imageSize.height / CGFloat(tileSize)))
+
+        var visibleTiles: [(CGRect, CGRect)] = []
+
+        // Iterate through all tiles and cull using viewport intersection (same as vector objects)
+        for row in 0..<numRows {
+            for col in 0..<numCols {
+                // Source rect in image pixel coordinates
+                let tileX = CGFloat(col * tileSize)
+                let tileY = CGFloat(row * tileSize)
+                let tileW = min(CGFloat(tileSize), imageSize.width - tileX)
+                let tileH = min(CGFloat(tileSize), imageSize.height - tileY)
+                let sourceRect = CGRect(x: tileX, y: tileY, width: tileW, height: tileH)
+
+                // Destination rect in canvas coordinates
+                let destX = imageBounds.minX + (tileX * scaleX)
+                let destY = imageBounds.minY + (tileY * scaleY)
+                let destW = tileW * scaleX
+                let destH = tileH * scaleY
+                let destRect = CGRect(x: destX, y: destY, width: destW, height: destH)
+
+                // Use SIMD intersection test (same as vector object culling!)
+                if destRect.intersectsSIMD(viewport) {
+                    visibleTiles.append((sourceRect, destRect))
+                }
+            }
+        }
+
+        return visibleTiles
     }
 
 }
