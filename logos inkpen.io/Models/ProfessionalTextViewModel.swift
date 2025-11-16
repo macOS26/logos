@@ -11,7 +11,6 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var textAlignment: NSTextAlignment = .center
     @Published var isEditing: Bool = false
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100)
-    @Published var userInitiatedCursorPosition: Int = 0
     @Published var textObject: VectorText
     let document: VectorDocument
     var linePaths: [CGPath] = []
@@ -125,10 +124,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
         if !self.isEditing {
             self.isEditing = textObject.isEditing
-        }
-
-        if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
-            self.userInitiatedCursorPosition = textObject.cursorPosition
         }
 
         self.textAlignment = textObject.typography.alignment.nsTextAlignment

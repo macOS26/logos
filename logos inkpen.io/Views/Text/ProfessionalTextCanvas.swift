@@ -398,11 +398,6 @@ struct ProfessionalTextCanvas: View {
                         textView.typingAttributes = attrs
                     }
                 }
-
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
-                }
             }
 
             func textDidEndEditing(_ notification: Notification) {
