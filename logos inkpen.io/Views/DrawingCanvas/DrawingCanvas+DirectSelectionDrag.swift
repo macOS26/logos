@@ -295,14 +295,14 @@ extension DrawingCanvas {
         if handleID.handleType == .control2 {
             // This is incoming handle to anchor
             guard case .curve(let to, _, let control2) = element else { return false }
-            anchorPoint = CGPoint(x: to.x, y: to.y)
-            handle1 = CGPoint(x: control2.x, y: control2.y)
+            anchorPoint = to.cgPoint
+            handle1 = control2.cgPoint
 
             // Get opposite handle (outgoing from this anchor)
             let nextIndex = handleID.elementIndex + 1
             if nextIndex < elements.count,
                case .curve(_, let nextControl1, _) = elements[nextIndex] {
-                handle2 = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                handle2 = nextControl1.cgPoint
             }
         } else if handleID.handleType == .control1 {
             // This is outgoing handle from anchor
@@ -412,14 +412,14 @@ extension DrawingCanvas {
 
         if handleID.handleType == .control2 {
             guard case .curve(let to, _, _) = element else { return }
-            anchorPoint = CGPoint(x: to.x, y: to.y)
+            anchorPoint = to.cgPoint
             anchorPointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: handleID.elementIndex)
 
             let nextIndex = handleID.elementIndex + 1
             if nextIndex < elements.count,
                case .curve(_, let nextControl1, _) = elements[nextIndex] {
                 oppositeHandleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: nextIndex, handleType: .control1)
-                oppositeOriginalPosition = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                oppositeOriginalPosition = nextControl1.cgPoint
             }
         } else if handleID.handleType == .control1 {
             let prevIndex = handleID.elementIndex - 1
@@ -635,11 +635,11 @@ extension DrawingCanvas {
             // Get original position
             switch elements[pointID.elementIndex] {
             case .move(let to), .line(let to):
-                originalPosition = CGPoint(x: to.x, y: to.y)
+                originalPosition = to.cgPoint
             case .curve(let to, _, _):
-                originalPosition = CGPoint(x: to.x, y: to.y)
+                originalPosition = to.cgPoint
             case .quadCurve(let to, _):
-                originalPosition = CGPoint(x: to.x, y: to.y)
+                originalPosition = to.cgPoint
             case .close:
                 continue
             }
@@ -905,7 +905,7 @@ extension DrawingCanvas {
                     // Check if clicking on line segment
                     if let prev = previousPoint {
                         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
-                        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+                        let end = to.cgPoint.applying(shape.transform)
 
                         if isPointNearLineSegment(point: location, start: start, end: end, tolerance: tolerance) {
                             return (shape.id, elementIndex)
@@ -916,8 +916,8 @@ extension DrawingCanvas {
                     if let prev = previousPoint {
                         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
                         let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
-                        let c2 = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
-                        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+                        let c2 = control2.cgPoint.applying(shape.transform)
+                        let end = to.cgPoint.applying(shape.transform)
 
                         if isPointNearBezierCurve(point: location, p0: start, p1: c1, p2: c2, p3: end, tolerance: tolerance) {
                             return (shape.id, elementIndex)
@@ -965,8 +965,8 @@ extension DrawingCanvas {
 
         let start = CGPoint(x: prev.x, y: prev.y).applying(shape.transform)
         let c1 = CGPoint(x: control1.x, y: control1.y).applying(shape.transform)
-        let c2 = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
-        let end = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+        let c2 = control2.cgPoint.applying(shape.transform)
+        let end = to.cgPoint.applying(shape.transform)
 
         var bestT: Double = 0.5
         var bestDistance: Double = Double.infinity
