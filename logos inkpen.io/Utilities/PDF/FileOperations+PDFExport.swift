@@ -306,13 +306,10 @@ extension FileOperations {
 
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
 
-        guard let nsImage = NSImage(data: imageData) else {
-            Log.error("Failed to create NSImage from embedded data", category: .error)
-            return
-        }
-
-        guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            Log.error("Failed to get CGImage from NSImage", category: .error)
+        // Create CGImage directly from data (cross-platform)
+        guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+            Log.error("Failed to create CGImage from embedded data", category: .error)
             return
         }
 
