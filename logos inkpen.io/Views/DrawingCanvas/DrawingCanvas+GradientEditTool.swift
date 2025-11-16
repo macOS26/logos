@@ -6,6 +6,7 @@ struct GradientCenterPointCanvasView: View {
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let activeGradientDelta: VectorGradient?
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
@@ -24,9 +25,10 @@ struct GradientCenterPointCanvasView: View {
 
             context.transform = baseTransform
 
-            // Use live state if dragging, otherwise get from document
-            let originX = document.viewState.liveGradientOriginX ?? getGradientOriginX(selectedGradient)
-            let originY = document.viewState.liveGradientOriginY ?? getGradientOriginY(selectedGradient)
+            // Use delta if dragging (same pattern as angle slider)
+            let gradientToDisplay = activeGradientDelta ?? selectedGradient
+            let originX = getGradientOriginX(gradientToDisplay)
+            let originY = getGradientOriginY(gradientToDisplay)
 
             let shapeBounds = selectedShape.bounds
             let centerX = shapeBounds.minX + shapeBounds.width * originX
@@ -137,6 +139,7 @@ extension DrawingCanvas {
                 geometry: geometry,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
+                activeGradientDelta: activeGradientDelta,
                 onDragChanged: { value in
                     if let selectedShape = getSelectedShapeWithGradient(),
                        let selectedGradient = getSelectedShapeGradient(document: document) {
@@ -223,11 +226,7 @@ extension DrawingCanvas {
         let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
-        // Update live state for visual feedback
-        document.viewState.liveGradientOriginX = relativeX
-        document.viewState.liveGradientOriginY = relativeY
-
-        // Update gradient directly - single operation like panel sliders
+        // Update gradient directly - same pattern as fast angle/origin sliders
         let newGradient: VectorGradient
         switch gradient {
         case .linear(var linear):
@@ -241,7 +240,7 @@ extension DrawingCanvas {
             newGradient = .radial(radial)
         }
 
-        // Set delta for live preview - don't update snapshot during drag
+        // Set delta for immediate visual feedback - that's it!
         activeGradientDelta = newGradient
     }
 
@@ -250,8 +249,6 @@ extension DrawingCanvas {
         guard let finalGradient = activeGradientDelta,
               let startGradient = dragStartGradient,
               let fillStyle = document.findShape(by: shape.id)?.fillStyle else {
-            document.viewState.liveGradientOriginX = nil
-            document.viewState.liveGradientOriginY = nil
             activeGradientDelta = nil
             dragStartGradient = nil
             return
@@ -268,9 +265,7 @@ extension DrawingCanvas {
         )
         document.commandManager.execute(command)
 
-        // Clear live state and delta AFTER command executes
-        document.viewState.liveGradientOriginX = nil
-        document.viewState.liveGradientOriginY = nil
+        // Clear delta AFTER command executes
         activeGradientDelta = nil
         dragStartGradient = nil
     }
