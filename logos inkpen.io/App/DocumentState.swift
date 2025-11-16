@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
-    weak var window: NSWindow?
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
@@ -1084,7 +1083,7 @@ class DocumentState: ObservableObject {
 
                 // Convert CGImage to PNG data
                 let mutableData = NSMutableData()
-                guard let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) else { continue }
+                guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) else { continue }
                 CGImageDestinationAddImage(destination, image, nil)
                 guard CGImageDestinationFinalize(destination) else { continue }
 

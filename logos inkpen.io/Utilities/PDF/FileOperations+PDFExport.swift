@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension FileOperations {
 
@@ -256,7 +257,7 @@ extension FileOperations {
         if let doc = document, let cgImage = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
             // Convert CGImage to PNG data
             let mutableData = NSMutableData()
-            if let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) {
+            if let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) {
                 CGImageDestinationAddImage(destination, cgImage, nil)
                 if CGImageDestinationFinalize(destination) {
                     try renderImageToPDF(shape: shape, imageData: mutableData as Data, context: context)

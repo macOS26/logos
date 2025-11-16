@@ -242,11 +242,6 @@ struct DocumentBasedMainView: View {
             PressureCalibrationView()
                 .frame(width: 1200, height: 800)
         }
-        .background(WindowAccessor { window in
-            if let window = window {
-                documentState.window = window
-            }
-        })
         .onAppear {
             if !hasInitializedTool {
                 document.viewState.currentTool = appState.defaultTool

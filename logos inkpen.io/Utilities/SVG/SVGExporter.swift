@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 class SVGExporter {
 
@@ -801,7 +802,7 @@ class SVGExporter {
         } else {
             // Convert CGImage to PNG data
             let mutableData = NSMutableData()
-            guard let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) else {
+            guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) else {
                 return ""
             }
             CGImageDestinationAddImage(destination, image, nil)

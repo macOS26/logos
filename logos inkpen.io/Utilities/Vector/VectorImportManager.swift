@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 class VectorImportManager {
 
@@ -245,7 +246,7 @@ class VectorImportManager {
         if shouldEmbed {
             // Embed the image data as PNG
             let mutableData = NSMutableData()
-            if let destination = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, nil) {
+            if let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) {
                 CGImageDestinationAddImage(destination, cgImage, nil)
                 if CGImageDestinationFinalize(destination) {
                     rectShape.embeddedImageData = mutableData as Data
