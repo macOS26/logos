@@ -69,6 +69,9 @@ final class VectorDocument: ObservableObject, Codable {
     // Track hash of last drawn CGImage per shape - if same hash, skip cgContext.draw() call
     internal var lastDrawnImageHash: [UUID: Int] = [:]
 
+    // R-Tree spatial index for O(log n) viewport queries
+    internal var spatialIndex: RTreeIndex = RTreeIndex()
+
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
