@@ -181,52 +181,30 @@ extension DrawingCanvas {
     }
 
     internal func finishBezierPath() {
-        guard activeBezierShape != nil,
-              let finalPath = bezierPath else {
+        guard let activeBezierShape = activeBezierShape else {
             cancelBezierDrawing()
             return
         }
 
         if bezierPoints.count < 2 {
+            ensureIncompletePathHasProperColors(shape: activeBezierShape)
             cancelBezierDrawing()
             currentShapeId = nil
             return
         }
 
-        // Create a new shape with new UUID (don't try to update old one)
-        let strokeStyle = StrokeStyle(
-            color: document.defaultStrokeColor,
-            width: document.defaultStrokeWidth,
-            placement: document.strokeDefaults.placement,
-            dashPattern: [],
-            lineCap: document.strokeDefaults.lineCap,
-            lineJoin: document.strokeDefaults.lineJoin,
-            miterLimit: document.strokeDefaults.miterLimit,
-            opacity: document.defaultStrokeOpacity
-        )
+        // Update the path one final time with all points and handles
+        updatePathWithHandles()
+        updateActiveBezierShapeInDocument()
 
-        let fillStyle = FillStyle(
-            color: document.defaultFillColor,
-            opacity: document.defaultFillOpacity
-        )
-
-        var newShape = VectorShape(
-            name: "Bezier Path",
-            path: finalPath,
-            strokeStyle: strokeStyle,
-            fillStyle: fillStyle
-        )
-        newShape.updateBounds()
-
-        // Add to the same layer as the original shape if continuing, otherwise use selected layer
-        if let layerIndex = originalContinuedPathLayerIndex {
-            let previousSelectedLayer = document.selectedLayerIndex
-            document.selectedLayerIndex = layerIndex
-            document.addShape(newShape)
-            document.selectedLayerIndex = previousSelectedLayer
-            originalContinuedPathLayerIndex = nil
+        // Re-add the shape to the document (it was removed when we started editing)
+        // or apply final colors if it's already there
+        if document.snapshot.objects[activeBezierShape.id] == nil {
+            // Shape was removed for editing, re-add it
+            document.addShape(activeBezierShape)
         } else {
-            document.addShape(newShape)
+            // Shape is in document, just update colors
+            applyFinalColorsToPath(shape: activeBezierShape)
         }
 
         cancelBezierDrawing()
@@ -464,12 +442,14 @@ extension DrawingCanvas {
                 if previousPoint != nil {
                     var prevHandleInfo = handles[currentIndex] ?? BezierHandleInfo()
                     prevHandleInfo.control2 = cp1
+                    prevHandleInfo.hasHandles = true
                     handles[currentIndex] = prevHandleInfo
                 }
 
                 // Store handle for current point's control1
                 var currentHandleInfo = handles[currentIndex + 1] ?? BezierHandleInfo()
                 currentHandleInfo.control1 = cp2
+                currentHandleInfo.hasHandles = true
                 handles[currentIndex + 1] = currentHandleInfo
 
                 previousPoint = point
@@ -524,11 +504,6 @@ extension DrawingCanvas {
         activeBezierPointIndex = points.count - 1  // Continue from the end
         activeBezierShape = shape
         currentShapeId = shape.id
-
-        // Store the original layer index for re-adding later
-        if let object = document.snapshot.objects[shape.id] {
-            originalContinuedPathLayerIndex = object.layerIndex
-        }
 
         // Remove the shape from the document while editing (will be re-added on finish)
         document.removeShapeFromUnifiedSystem(id: shape.id)
