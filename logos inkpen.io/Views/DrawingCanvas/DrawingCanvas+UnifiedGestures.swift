@@ -138,8 +138,8 @@ extension DrawingCanvas {
             var scaleChange = exp(-deltaY / sensitivity)
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
             let continuousZoom = max(0.75, min(640.0, zoomToolInitialZoomLevel * scaleChange))
-            // Zoom towards the point where user clicked (mimics pinch to zoom)
-            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: zoomToolDragStartPoint, geometry: geometry, isLive: true)
+            // Zoom towards current cursor position (where magnifying glass is)
+            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.location, geometry: geometry, isLive: true)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
