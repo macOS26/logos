@@ -504,7 +504,7 @@ private struct PNGExportView: View {
                         letterSpacingDelta: nil,
                         imagePreviewQuality: UserDefaults.standard.object(forKey: "imagePreviewQuality") as? Double ?? 1.0,
                         imageTileSize: UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512,
-                        imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(UserDefaults.standard.object(forKey: "imageInterpolationQuality") as? Int ?? 0)) ?? .default,
+                        imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(UserDefaults.standard.object(forKey: "imageInterpolationQuality") as? Int ?? 1)) ?? .none,
                         liveCornerRadii: [],
                         selectedShapeIDForCornerRadius: nil,
                         layerUpdateTrigger: 0

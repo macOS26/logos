@@ -5,7 +5,7 @@ struct PreferencesView: View {
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
     @AppStorage("imageTileSize") var tileSize: Int = 512
-    @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 0 // 0=default, 1=none, 2=low, 3=high, 4=medium
+    @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1 // 0=default, 1=none, 2=low, 3=high, 4=medium
     @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {

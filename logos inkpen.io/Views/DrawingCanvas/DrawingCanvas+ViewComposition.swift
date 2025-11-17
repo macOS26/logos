@@ -411,7 +411,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .default)
+            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .none)
 
             pressureSensitiveOverlay(geometry: geometry)
         }

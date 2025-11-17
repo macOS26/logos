@@ -73,7 +73,7 @@ extension FileOperations {
         pdfContext.setShouldAntialias(true)
         pdfContext.setAllowsAntialiasing(true)
 
-        pdfContext.interpolationQuality = CGInterpolationQuality(rawValue: Int32(UserDefaults.standard.object(forKey: "imageInterpolationQuality") as? Int ?? 0)) ?? .default
+        pdfContext.interpolationQuality = CGInterpolationQuality(rawValue: Int32(UserDefaults.standard.object(forKey: "imageInterpolationQuality") as? Int ?? 1)) ?? .none
 
         pdfContext.translateBy(x: 0, y: documentSize.height)
         pdfContext.scaleBy(x: 1.0, y: -1.0)
