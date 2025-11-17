@@ -274,11 +274,13 @@ struct DocumentBasedMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
             // When ANY window becomes key, update all DocumentStates
             let allStates = DocumentStateRegistry.shared.table.allObjects
+            print("🪟 Window became key. Clearing focus on \(allStates.count) states")
             for state in allStates {
                 state.isFocused = false
             }
             // Mark only this document as focused
             documentState.isFocused = true
+            print("🎯 Set isFocused=true for document \(ObjectIdentifier(document))")
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             // Mark as not focused when window loses focus

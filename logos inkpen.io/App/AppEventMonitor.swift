@@ -23,8 +23,11 @@ final class AppEventMonitor {
             let allDocumentStates = DocumentStateRegistry.shared.table.allObjects
             guard let focusedDocState = allDocumentStates.first(where: { $0.isFocused }),
                   let activeDoc = focusedDocState.document else {
+                print("⚠️ No focused DocumentState found. States: \(allDocumentStates.count), focused: \(allDocumentStates.map { $0.isFocused })")
                 return event
             }
+
+            print("🔑 Handling key event for document \(ObjectIdentifier(activeDoc))")
 
             // Handle the event using the active document
             return self.handleKeyEvent(event, activeDoc: activeDoc)
