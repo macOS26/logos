@@ -11,11 +11,20 @@ struct PasteboardBackgroundView: View {
     var body: some View {
         //let _ = Self._printChanges()
         Canvas { context, size in
+            // SIMD optimization for transform calculations
+            let originVec = SIMD2<Float>(Float(pasteboardOrigin.x), Float(pasteboardOrigin.y))
+            let sizeVec = SIMD2<Float>(Float(pasteboardSize.width), Float(pasteboardSize.height))
+            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let zoom = Float(zoomLevel)
+
+            let scaledOrigin = originVec * zoom + offsetVec
+            let scaledSize = sizeVec * zoom
+
             let scaledRect = CGRect(
-                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
-                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y,
-                width: pasteboardSize.width * zoomLevel,
-                height: pasteboardSize.height * zoomLevel
+                x: CGFloat(scaledOrigin.x),
+                y: CGFloat(scaledOrigin.y),
+                width: CGFloat(scaledSize.x),
+                height: CGFloat(scaledSize.y)
             )
 
             context.fill(
@@ -35,11 +44,18 @@ struct CanvasBackgroundView: View {
 
     var body: some View {
         Canvas { context, size in
+            // SIMD optimization for transform calculations
+            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
+            let zoom = Float(zoomLevel)
+
+            let scaledSize = sizeVec * zoom
+
             let scaledRect = CGRect(
-                x: canvasOffset.x,
-                y: canvasOffset.y,
-                width: canvasSize.width * zoomLevel,
-                height: canvasSize.height * zoomLevel
+                x: CGFloat(offsetVec.x),
+                y: CGFloat(offsetVec.y),
+                width: CGFloat(scaledSize.x),
+                height: CGFloat(scaledSize.y)
             )
 
             context.fill(
@@ -87,15 +103,21 @@ struct LayerCanvasView: View {
 
     // Calculate viewport rectangle in document coordinates for culling
     private func viewportRect(canvasSize: CGSize) -> CGRect {
-        // Convert visible canvas area to document coordinates
-        // Viewport in screen coords: (0, 0, canvasSize.width, canvasSize.height)
-        // Transform to document coords: (screenX - offset) / zoom
-        let docX = -canvasOffset.x / zoomLevel
-        let docY = -canvasOffset.y / zoomLevel
-        let docWidth = canvasSize.width / zoomLevel
-        let docHeight = canvasSize.height / zoomLevel
+        // SIMD optimization for viewport transform calculations
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
+        let zoom = Float(zoomLevel)
 
-        return CGRect(x: docX, y: docY, width: docWidth, height: docHeight)
+        // Transform to document coords: (screenX - offset) / zoom
+        let docOrigin = -offsetVec / zoom
+        let docSize = sizeVec / zoom
+
+        return CGRect(
+            x: CGFloat(docOrigin.x),
+            y: CGFloat(docOrigin.y),
+            width: CGFloat(docSize.x),
+            height: CGFloat(docSize.y)
+        )
     }
 
     // Pre-filter visible objects with viewport culling (O(n) once per objects change)
@@ -230,17 +252,22 @@ struct LayerCanvasView: View {
     var body: some View {
         //let _ = Self._printChanges()
         Canvas { context, size in
+            // SIMD optimization: Convert transform values once for entire render pass
+            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let zoom = Float(zoomLevel)
+            let dragDelta = SIMD2<Float>(Float(dragPreviewDelta.x), Float(dragPreviewDelta.y))
+
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
             //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objectIDs.count) → \(visibleObjects.count) objects")
-            
+
             // Cheap SwiftUI layer update
             _ = layerUpdateTrigger
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
-                .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
-                .scaledBy(x: zoomLevel, y: zoomLevel)
+                .translatedBy(x: CGFloat(offsetVec.x), y: CGFloat(offsetVec.y))
+                .scaledBy(x: CGFloat(zoom), y: CGFloat(zoom))
 
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
@@ -254,7 +281,7 @@ struct LayerCanvasView: View {
 
                 if isSelected && dragPreviewDelta != .zero {
                     context.transform = baseTransform
-                        .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                        .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                 } else {
                     context.transform = baseTransform
                 }
@@ -288,7 +315,7 @@ struct LayerCanvasView: View {
                             // Check if mask is individually selected
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                             let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
-                                baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
                                 parentTransform
                             }
@@ -307,7 +334,7 @@ struct LayerCanvasView: View {
 
                                 // Determine content transform (independent of mask)
                                 let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
-                                    baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                    baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
                                     parentTransform
                                 }
@@ -341,7 +368,7 @@ struct LayerCanvasView: View {
                             if maskShape.isVisible {
                                 let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                                 if isMaskSelected && dragPreviewDelta != .zero {
-                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                    context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
                                     context.transform = parentTransform  // Preserve parent's drag delta
                                 }
@@ -355,7 +382,7 @@ struct LayerCanvasView: View {
                                 let isChildText = contentShape.typography != nil
 
                                 if isChildSelected && dragPreviewDelta != .zero {
-                                    context.transform = baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                    context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
                                     context.transform = parentTransform  // Preserve parent's drag delta
                                 }
@@ -379,7 +406,7 @@ struct LayerCanvasView: View {
                         // Determine mask transform (only moves if mask itself is selected)
                         let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                         let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
-                            baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                            baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                         } else {
                             parentTransform
                         }
@@ -393,7 +420,7 @@ struct LayerCanvasView: View {
 
                             // Determine content transform (independent of mask)
                             let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
-                                baseTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
                                 parentTransform
                             }
@@ -442,7 +469,7 @@ struct LayerCanvasView: View {
                         // Apply drag preview to individual child if it's selected
                         if isChildSelected && dragPreviewDelta != .zero {
                             context.transform = baseTransform
-                                .translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                                .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                         } else {
                             context.transform = parentTransform  // Preserve parent's drag delta
                         }
