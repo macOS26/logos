@@ -1,6 +1,6 @@
 import SwiftUI
-import SwiftUI
 import Combine
+import simd
 
 struct RotateHandles: View {
     @ObservedObject var document: VectorDocument
@@ -580,11 +580,9 @@ struct RotateHandles: View {
     private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 
-        // SIMD-optimized scale extraction: length = sqrt(a² + c²)
-        let scaleXVec = SIMD2<Double>(Double(transform.a), Double(transform.c))
-        let scaleYVec = SIMD2<Double>(Double(transform.b), Double(transform.d))
-        let scaleX = CGFloat(sqrt(scaleXVec.x * scaleXVec.x + scaleXVec.y * scaleXVec.y))
-        let scaleY = CGFloat(sqrt(scaleYVec.x * scaleYVec.x + scaleYVec.y * scaleYVec.y))
+        // SIMD-optimized scale extraction
+        let scaleX = simd_length(SIMD2(Double(transform.a), Double(transform.c)))
+        let scaleY = simd_length(SIMD2(Double(transform.b), Double(transform.d)))
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 
