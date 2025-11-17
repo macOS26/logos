@@ -6,9 +6,9 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
-
-        for object in selectedObjects {
+        // Iterate UUIDs directly - O(1) lookup per object
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             if object.layerIndex < document.snapshot.layers.count {
                 let layer = document.snapshot.layers[object.layerIndex]
                 if layer.isLocked {
@@ -33,7 +33,8 @@ extension DrawingCanvas {
 
         // Calculate combined bounding box in DOCUMENT coordinates (with transforms applied)
         var combinedBounds: CGRect?
-        for object in selectedObjects {
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             switch object.objectType {
             case .text:
                 break
@@ -57,7 +58,8 @@ extension DrawingCanvas {
 
         initialObjectPositions.removeAll()
 
-        for object in selectedObjects {
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             switch object.objectType {
             case .text(let shape):
                 if let textObject = document.findText(by: shape.id) {
@@ -93,23 +95,9 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
-
-        // Log selected objects during drag
-        // for obj in selectedObjects {
-        //     let typeName = switch obj.objectType {
-        //         case .shape: "SHAPE"
-        //         case .text: "TEXT"
-        //         case .image: "IMAGE"
-        //         case .group: "GROUP"
-        //         case .clipGroup: "CLIPGROUP"
-        //         case .clipMask: "CLIPMASK"
-        //         case .warp: "WARP"
-        //     }
-        //     print("🟠 DRAGGING: \(typeName) id=\(obj.id)")
-        // }
-
-        for object in selectedObjects {
+        // Iterate UUIDs directly - no temp array
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             if object.layerIndex < document.snapshot.layers.count {
                 let layer = document.snapshot.layers[object.layerIndex]
                 if layer.isLocked {
@@ -167,7 +155,8 @@ extension DrawingCanvas {
             }
         }
 
-        for object in selectedObjects {
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             if case .shape(let shape) = object.objectType {
                 if shape.isClippingPath {
                 }
@@ -221,9 +210,10 @@ extension DrawingCanvas {
 
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
-            let selectedObjects = document.viewState.selectedObjectIDs.compactMap { document.snapshot.objects[$0] }
 
-            for object in selectedObjects {
+            // First pass: collect old shapes for undo
+            for objectID in document.viewState.selectedObjectIDs {
+                guard let object = document.snapshot.objects[objectID] else { continue }
                 if case .shape(let shape) = object.objectType {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
@@ -241,8 +231,9 @@ extension DrawingCanvas {
                 }
             }
 
-            // print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
-            for object in selectedObjects {
+            // Second pass: apply drag delta
+            for objectID in document.viewState.selectedObjectIDs {
+                guard let object = document.snapshot.objects[objectID] else { continue }
                 switch object.objectType {
                 case .text(let shape):
                     // print("🟣 DRAG FINISH: Text object \(shape.id)")
