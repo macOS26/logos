@@ -1408,8 +1408,7 @@ struct IsolatedLayerView: View {
     }
 
     var body: some View {
-        // let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
-        let _ = layerUpdateTrigger  // Track trigger to force redraw
+        let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
@@ -1443,6 +1442,7 @@ struct IsolatedLayerView: View {
                 liveCornerRadii: liveCornerRadii,
                 selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
             )
+            .id(layerUpdateTrigger)
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in
