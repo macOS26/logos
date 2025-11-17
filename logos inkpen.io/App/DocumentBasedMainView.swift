@@ -251,7 +251,14 @@ struct DocumentBasedMainView: View {
             }
 
             documentState.setDocument(document)
-            AppEventMonitor.shared.setActiveDocument(document)
+
+            // Set as active document if this view's window is key
+            DispatchQueue.main.async {
+                if let window = self.viewWindow, window.isKeyWindow {
+                    AppEventMonitor.shared.setActiveDocument(document)
+                    print("🟢 onAppear: Set active document \(ObjectIdentifier(document))")
+                }
+            }
 
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
