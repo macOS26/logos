@@ -1345,9 +1345,18 @@ struct LayerCanvasView: View {
         viewport: CGRect,
         tileSize: Int
     ) -> [(sourceRect: CGRect, destRect: CGRect)] {
-        // Calculate scale from image pixels to canvas coordinates
-        let scaleX = imageBounds.width / imageSize.width
-        let scaleY = imageBounds.height / imageSize.height
+        // SIMD scale vector (x, y scale)
+        let scale = SIMD2<Double>(
+            imageBounds.width / imageSize.width,
+            imageBounds.height / imageSize.height
+        )
+
+        // SIMD offset vector (imageBounds origin)
+        let offset = SIMD2<Double>(imageBounds.minX, imageBounds.minY)
+
+        // SIMD image size and tile size
+        let imgSize = SIMD2<Double>(imageSize.width, imageSize.height)
+        let tileSizeVec = SIMD2<Double>(repeating: Double(tileSize))
 
         // Calculate total number of tiles
         let numCols = Int(ceil(imageSize.width / CGFloat(tileSize)))
@@ -1355,22 +1364,38 @@ struct LayerCanvasView: View {
 
         var visibleTiles: [(CGRect, CGRect)] = []
 
-        // Iterate through all tiles and cull using viewport intersection (same as vector objects)
+        // Iterate through all tiles and cull using viewport intersection
         for row in 0..<numRows {
             for col in 0..<numCols {
+                // SIMD tile origin in image pixel coordinates
+                let tileOrigin = SIMD2<Double>(Double(col * tileSize), Double(row * tileSize))
+
+                // SIMD tile size with clamping (min operation vectorized)
+                let remaining = imgSize - tileOrigin
+                let tileSize2D = SIMD2(
+                    min(tileSizeVec.x, remaining.x),
+                    min(tileSizeVec.y, remaining.y)
+                )
+
                 // Source rect in image pixel coordinates
-                let tileX = CGFloat(col * tileSize)
-                let tileY = CGFloat(row * tileSize)
-                let tileW = min(CGFloat(tileSize), imageSize.width - tileX)
-                let tileH = min(CGFloat(tileSize), imageSize.height - tileY)
-                let sourceRect = CGRect(x: tileX, y: tileY, width: tileW, height: tileH)
+                let sourceRect = CGRect(
+                    x: tileOrigin.x,
+                    y: tileOrigin.y,
+                    width: tileSize2D.x,
+                    height: tileSize2D.y
+                )
+
+                // SIMD destination calculation: offset + (tileOrigin * scale)
+                let destOrigin = offset + (tileOrigin * scale)
+                let destSize = tileSize2D * scale
 
                 // Destination rect in canvas coordinates
-                let destX = imageBounds.minX + (tileX * scaleX)
-                let destY = imageBounds.minY + (tileY * scaleY)
-                let destW = tileW * scaleX
-                let destH = tileH * scaleY
-                let destRect = CGRect(x: destX, y: destY, width: destW, height: destH)
+                let destRect = CGRect(
+                    x: destOrigin.x,
+                    y: destOrigin.y,
+                    width: destSize.x,
+                    height: destSize.y
+                )
 
                 // Use SIMD intersection test (same as vector object culling!)
                 if destRect.intersectsSIMD(viewport) {
