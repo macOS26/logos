@@ -42,23 +42,24 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Asymmetric zoom: IN faster, OUT slower
-        let adjustedValue: CGFloat
-        if value > 1.0 {
-            // Zooming IN - logarithmic: 1.0x at 100%, scales to 2.0x at 1600%+
-            let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
-            adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        // Zoom sensitivity: 1.0x at 100%, scales to 2.0x at 1600%, stays 2.0x above
+        let sensitivity: CGFloat
+        if initialZoomLevel <= 1.0 {
+            sensitivity = 1.0
+        } else if initialZoomLevel >= 16.0 {
+            sensitivity = 2.0
         } else {
-            // Zooming OUT - 2x slower (0.5x)
-            adjustedValue = 1.0 + (value - 1.0) * 0.5
+            // Linear interpolation from 1.0 to 2.0 between 100% (1.0) and 1600% (16.0)
+            sensitivity = 1.0 + (initialZoomLevel - 1.0) / 15.0
         }
+        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry, isLive: true)
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
         } else {
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry, isLive: true)
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry)
         }
     }
 
@@ -71,16 +72,17 @@ extension DrawingCanvas {
             return
         }
 
-        // Asymmetric zoom: IN faster, OUT slower
-        let adjustedValue: CGFloat
-        if value > 1.0 {
-            // Zooming IN - logarithmic: 1.0x at 100%, scales to 2.0x at 1600%+
-            let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
-            adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        // Zoom sensitivity: 1.0x at 100%, scales to 2.0x at 1600%, stays 2.0x above
+        let sensitivity: CGFloat
+        if initialZoomLevel <= 1.0 {
+            sensitivity = 1.0
+        } else if initialZoomLevel >= 16.0 {
+            sensitivity = 2.0
         } else {
-            // Zooming OUT - 2x slower (0.5x)
-            adjustedValue = 1.0 + (value - 1.0) * 0.5
+            // Linear interpolation from 1.0 to 2.0 between 100% (1.0) and 1600% (16.0)
+            sensitivity = 1.0 + (initialZoomLevel - 1.0) / 15.0
         }
+        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
