@@ -205,88 +205,92 @@ extension DrawingCanvas {
                 initialObjectPositions.removeAll()
                 initialObjectTransforms.removeAll()
                 selectionDragStart = CGPoint.zero
+                currentDragDelta = .zero
+                liveDragOffset = .zero
+                cachedSelectionBoundsForDrag = nil
+                document.activeLayerIndexDuringDrag = nil
+                layerPreviewOpacities.removeAll()
             }
 
-            var oldShapes: [UUID: VectorShape] = [:]
-            var affectedObjectIDs: Set<UUID> = []
+            // KEEP currentDragDelta active - transform box uses it to show at dragged position
+            // Defer ALL snapshot updates to async - transform box renders immediately with drag offset
+            DispatchQueue.main.async { [weak document] in
+                guard let document = document else { return }
 
-            // First pass: collect old shapes for undo
-            for objectID in document.viewState.selectedObjectIDs {
-                guard let object = document.snapshot.objects[objectID] else { continue }
-                if case .shape(let shape) = object.objectType {
-                    oldShapes[object.id] = shape
-                    affectedObjectIDs.insert(object.id)
+                var oldShapes: [UUID: VectorShape] = [:]
+                var affectedObjectIDs: Set<UUID> = []
 
-                    // Use O(1) cache lookup for clipped objects
-                    if shape.isClippingPath, let clippedIDs = document.snapshot.clippedObjectsCache[shape.id] {
-                        for clippedID in clippedIDs {
-                            if let clippedObj = document.snapshot.objects[clippedID] {
-                                let clippedShape = clippedObj.shape
-                                oldShapes[clippedID] = clippedShape
-                                affectedObjectIDs.insert(clippedID)
+                // First pass: collect old shapes for undo
+                for objectID in document.viewState.selectedObjectIDs {
+                    guard let object = document.snapshot.objects[objectID] else { continue }
+                    if case .shape(let shape) = object.objectType {
+                        oldShapes[object.id] = shape
+                        affectedObjectIDs.insert(object.id)
+
+                        // Use O(1) cache lookup for clipped objects
+                        if shape.isClippingPath, let clippedIDs = document.snapshot.clippedObjectsCache[shape.id] {
+                            for clippedID in clippedIDs {
+                                if let clippedObj = document.snapshot.objects[clippedID] {
+                                    let clippedShape = clippedObj.shape
+                                    oldShapes[clippedID] = clippedShape
+                                    affectedObjectIDs.insert(clippedID)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // Second pass: apply drag delta SYNCHRONOUSLY (update snapshot immediately)
-            for objectID in document.viewState.selectedObjectIDs {
-                guard let object = document.snapshot.objects[objectID] else { continue }
-                switch object.objectType {
-                case .text(let shape):
-                    document.translateTextInUnified(id: shape.id, delta: finalDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
-                }
-            }
-
-            var newShapes: [UUID: VectorShape] = [:]
-            for objectID in affectedObjectIDs {
-                if let object = document.snapshot.objects[objectID] {
+                // Second pass: apply drag delta
+                for objectID in document.viewState.selectedObjectIDs {
+                    guard let object = document.snapshot.objects[objectID] else { continue }
                     switch object.objectType {
                     case .text(let shape):
-                        if let updatedObject = document.snapshot.objects[shape.id],
-                           case .text(let updatedShape) = updatedObject.objectType {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
-                        }
+                        document.translateTextInUnified(id: shape.id, delta: finalDelta)
+                        affectedObjectIDs.insert(object.id)
+                        oldShapes[object.id] = shape
                     case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        if let updatedShape = document.findShape(by: shape.id) {
-                            newShapes[objectID] = updatedShape
-                        } else {
-                            newShapes[objectID] = shape
+                        self.applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
+                        affectedObjectIDs.insert(object.id)
+                        oldShapes[object.id] = shape
+                    }
+                }
+
+                var newShapes: [UUID: VectorShape] = [:]
+                for objectID in affectedObjectIDs {
+                    if let object = document.snapshot.objects[objectID] {
+                        switch object.objectType {
+                        case .text(let shape):
+                            if let updatedObject = document.snapshot.objects[shape.id],
+                               case .text(let updatedShape) = updatedObject.objectType {
+                                newShapes[objectID] = updatedShape
+                            } else {
+                                newShapes[objectID] = shape
+                            }
+                        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                            if let updatedShape = document.findShape(by: shape.id) {
+                                newShapes[objectID] = updatedShape
+                            } else {
+                                newShapes[objectID] = shape
+                            }
                         }
                     }
                 }
-            }
 
-            // NOW clear drag state - snapshot is updated, transform box will show at correct position
-            currentDragDelta = .zero
-            liveDragOffset = .zero
-            cachedSelectionBoundsForDrag = nil
-            document.currentDragOffset = .zero
-            document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
-            layerPreviewOpacities.removeAll()
-
-            // Defer ONLY the undo command to async (expensive)
-            if !oldShapes.isEmpty && !newShapes.isEmpty {
-                let command = ShapeModificationCommand(
-                    objectIDs: Array(affectedObjectIDs),
-                    oldShapes: oldShapes,
-                    newShapes: newShapes
-                )
-                DispatchQueue.main.async {
+                if !oldShapes.isEmpty && !newShapes.isEmpty {
+                    let command = ShapeModificationCommand(
+                        objectIDs: Array(affectedObjectIDs),
+                        oldShapes: oldShapes,
+                        newShapes: newShapes
+                    )
                     document.executeCommand(command)
-                    document.updateTransformPanelValues()
                 }
+
+                document.updateTransformPanelValues()
+
+                // Clear drag state AFTER all updates complete
+                document.currentDragOffset = .zero
+                document.dragPreviewCoordinates = .zero
+                document.cachedSelectionBounds = nil
             }
 
         } else {
