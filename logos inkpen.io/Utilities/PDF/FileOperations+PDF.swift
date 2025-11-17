@@ -816,7 +816,7 @@ extension FileOperations {
 
         for stop in stops {
             let rgba = stop.color.cgColor.rgbaComponents
-            let (r, g, b, a) = (rgba.r, rgba.g, rgba.b, rgba.a)
+            let (r, g, b, _) = (rgba.r, rgba.g, rgba.b, rgba.a)
 
             let k = 1.0 - max(r, g, b)
             let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
@@ -850,7 +850,7 @@ extension FileOperations {
 
         for stop in stops {
             let rgba = stop.color.cgColor.rgbaComponents
-            let (r, g, b, a) = (rgba.r, rgba.g, rgba.b, rgba.a)
+            let (r, g, b, _) = (rgba.r, rgba.g, rgba.b, rgba.a)
 
             let k = 1.0 - max(r, g, b)
             let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
