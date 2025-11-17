@@ -1148,28 +1148,18 @@ struct LayerCanvasView: View {
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         // ONLY use bookmark data (security-scoped access required)
         guard let bookmarkData = bookmarkData else {
-            // No bookmark - notify missing image
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: Notification.Name("MissingLinkedImage"),
-                    object: nil,
-                    userInfo: ["shapeID": shapeID, "path": linkedPath]
-                )
-            }
+            print("❌ No bookmark data for image: \(linkedPath)")
             return nil
         }
 
         var isStale = false
         guard let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) else {
-            // Bookmark failed - notify missing image
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: Notification.Name("MissingLinkedImage"),
-                    object: nil,
-                    userInfo: ["shapeID": shapeID, "path": linkedPath]
-                )
-            }
+            print("❌ Failed to resolve bookmark for: \(linkedPath)")
             return nil
+        }
+
+        if isStale {
+            print("⚠️ Bookmark is stale for: \(url.path)")
         }
 
         let started = url.startAccessingSecurityScopedResource()
@@ -1177,14 +1167,7 @@ struct LayerCanvasView: View {
 
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
-            // Image file not found at bookmark URL
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: Notification.Name("MissingLinkedImage"),
-                    object: nil,
-                    userInfo: ["shapeID": shapeID, "path": linkedPath]
-                )
-            }
+            print("❌ Failed to load image from bookmark URL: \(url.path)")
             return nil
         }
 

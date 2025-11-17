@@ -28,18 +28,29 @@ enum ImageContentRegistry {
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
+            print("✅ Loaded embedded image for shape: \(shape.id)")
         }
         // ONLY use bookmark for linked images - no fallback file access
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                if isStale {
+                    print("⚠️ [Registry] Bookmark is stale for: \(url.path)")
+                }
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
                    let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                     loadedCGImage = cgImage
+                    print("✅ [Registry] Loaded linked image via bookmark: \(url.path)")
+                } else {
+                    print("❌ [Registry] Failed to create CGImage from: \(url.path)")
                 }
+            } else {
+                print("❌ [Registry] Failed to resolve bookmark for shape: \(shape.id)")
             }
+        } else if shape.linkedImagePath != nil {
+            print("❌ [Registry] Shape has linkedImagePath but NO bookmark: \(shape.linkedImagePath!)")
         }
 
         if let cgImage = loadedCGImage {
