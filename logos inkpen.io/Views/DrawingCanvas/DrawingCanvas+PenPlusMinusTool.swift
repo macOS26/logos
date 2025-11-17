@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import simd
 
 extension DrawingCanvas {
 
@@ -345,33 +346,33 @@ extension DrawingCanvas {
     }
 
     private func isPointNearLineSegment(point: CGPoint, start: CGPoint, end: CGPoint, tolerance: Double) -> Bool {
-        let A = point.x - start.x
-        let B = point.y - start.y
-        let C = end.x - start.x
-        let D = end.y - start.y
-        let dot = A * C + B * D
-        let lenSq = C * C + D * D
+        // SIMD-optimized perpendicular distance calculation
+        let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
+        let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
+        let endVec = SIMD2<Double>(Double(end.x), Double(end.y))
+
+        let toPoint = pointVec - startVec
+        let lineVec = endVec - startVec
+
+        let dot = simd_dot(toPoint, lineVec)
+        let lenSq = simd_length_squared(lineVec)
 
         if lenSq == 0 {
-            return sqrt(A * A + B * B) <= tolerance
+            return simd_length(toPoint) <= tolerance
         }
 
         let param = dot / lenSq
-        let xx, yy: Double
+        let closestVec: SIMD2<Double>
         if param < 0 {
-            xx = start.x
-            yy = start.y
+            closestVec = startVec
         } else if param > 1 {
-            xx = end.x
-            yy = end.y
+            closestVec = endVec
         } else {
-            xx = start.x + param * C
-            yy = start.y + param * D
+            closestVec = startVec + lineVec * param
         }
 
-        let dx = point.x - xx
-        let dy = point.y - yy
-        return sqrt(dx * dx + dy * dy) <= tolerance
+        let distance = simd_length(pointVec - closestVec)
+        return distance <= tolerance
     }
 
     private func isPointNearBezierCurve(point: CGPoint, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tolerance: Double) -> Bool {
