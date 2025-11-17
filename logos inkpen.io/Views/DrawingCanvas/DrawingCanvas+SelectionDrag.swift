@@ -197,16 +197,8 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // IMMEDIATELY clear drag state to show transform box
+            // Capture final state
             let finalDelta = currentDragDelta
-            currentDragDelta = .zero
-            liveDragOffset = .zero
-            cachedSelectionBoundsForDrag = nil
-            document.currentDragOffset = .zero
-            document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
-            layerPreviewOpacities.removeAll()
 
             // Clear remaining drag state immediately
             defer {
@@ -215,7 +207,7 @@ extension DrawingCanvas {
                 selectionDragStart = CGPoint.zero
             }
 
-            // Defer expensive snapshot updates to next frame - transform box shows immediately
+            // Update snapshot FIRST, then clear drag delta to show transform box
             DispatchQueue.main.async { [weak document] in
                 guard let document = document else { return }
 
@@ -293,6 +285,16 @@ extension DrawingCanvas {
 
                 document.updateTransformPanelValues()
                 // Note: Layer triggers handled by ShapeModificationCommand
+
+                // AFTER snapshot updates, clear drag state to show transform box at final position
+                self.currentDragDelta = .zero
+                self.liveDragOffset = .zero
+                self.cachedSelectionBoundsForDrag = nil
+                document.currentDragOffset = .zero
+                document.dragPreviewCoordinates = .zero
+                document.cachedSelectionBounds = nil
+                document.activeLayerIndexDuringDrag = nil
+                self.layerPreviewOpacities.removeAll()
             }
 
         } else {
