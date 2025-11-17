@@ -10,39 +10,20 @@ extension VectorDocument {
         // print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
 
         var removedShapes: [UUID: VectorShape] = [:]
-        var objectsToRemove: [VectorObject] = []
 
+        // Extract shapes directly from snapshot using UUIDs - O(1) per lookup
         for objectID in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[objectID] {
-                objectsToRemove.append(obj)
-            }
-        }
-
-        // print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
-        // for (index, obj) in objectsToRemove.enumerated() {
-        //     let typeName: String
-        //     switch obj.objectType {
-        //     case .text: typeName = "TEXT"
-        //     case .shape: typeName = "SHAPE"
-        //     case .image: typeName = "IMAGE"
-        //     case .warp: typeName = "WARP"
-        //     case .group: typeName = "GROUP"
-        //     case .clipGroup: typeName = "CLIPGROUP"
-        //     case .clipMask: typeName = "CLIPMASK"
-        //     }
-        //     print("🔴 GROUP: objectsToRemove[\(index)] = \(typeName) id=\(obj.id)")
-        // }
-
-        for obj in objectsToRemove {
-            switch obj.objectType {
-            case .text(let shape),
-                 .shape(let shape),
-                 .image(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                removedShapes[obj.id] = shape
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .image(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    removedShapes[obj.id] = shape
+                }
             }
         }
 
