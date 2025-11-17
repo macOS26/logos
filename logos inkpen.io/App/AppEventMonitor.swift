@@ -7,6 +7,7 @@ final class AppEventMonitor {
     private var keyEventMonitor: Any?
     private let lock = NSLock()
     private(set) var activeDocument: VectorDocument?
+    private var isSpacebarPressed = false
 
     private init() {
         setupKeyEventMonitoring()
@@ -67,8 +68,9 @@ final class AppEventMonitor {
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
-            // Ignore key repeats - only activate on initial press
-            if !event.isARepeat && activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+            // Only activate on first press, ignore repeats
+            if !isSpacebarPressed && activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+                isSpacebarPressed = true
                 previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .hand
                 activeDoc.viewState.currentTool = .hand
@@ -79,6 +81,7 @@ final class AppEventMonitor {
         if event.type == .keyUp,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
+            isSpacebarPressed = false
             if let previous = previousTool, temporaryTool == .hand {
                 activeDoc.viewState.currentTool = previous
                 temporaryTool = nil
