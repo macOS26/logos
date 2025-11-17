@@ -2,14 +2,30 @@ import Foundation
 import Combine
 
 class DeleteObjectCommand: BaseCommand {
-    private let objectsToRestore: [UUID: VectorObject]  // Store by UUID for O(1) lookup
+    private let objectsToRestore: [UUID: VectorObject]  // Backup - objects will be removed from snapshot
 
-    init(objects: [VectorObject]) {
+    init(objectIDs: [UUID], document: VectorDocument) {
+        // Snapshot objects before deletion - minimal backup
+        var dict: [UUID: VectorObject] = [:]
+        for uuid in objectIDs {
+            if let obj = document.snapshot.objects[uuid] {
+                dict[uuid] = obj
+            }
+        }
+        self.objectsToRestore = dict
+    }
+
+    // Legacy init for compatibility - avoid if possible
+    private init(objectsDict: [UUID: VectorObject]) {
+        self.objectsToRestore = objectsDict
+    }
+
+    convenience init(objects: [VectorObject]) {
         var dict: [UUID: VectorObject] = [:]
         for obj in objects {
             dict[obj.id] = obj
         }
-        self.objectsToRestore = dict
+        self.init(objectsDict: dict)
     }
 
     convenience init(object: VectorObject) {

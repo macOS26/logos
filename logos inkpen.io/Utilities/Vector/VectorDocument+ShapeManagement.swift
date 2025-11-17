@@ -46,11 +46,9 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        // Collect objects for deletion - O(n) where n = selected objects
-        let objectsToRemove = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
-
-        if !objectsToRemove.isEmpty {
-            let command = DeleteObjectCommand(objects: objectsToRemove)
+        // Pass UUIDs only - command will snapshot from document.snapshot.objects
+        if !viewState.selectedObjectIDs.isEmpty {
+            let command = DeleteObjectCommand(objectIDs: Array(viewState.selectedObjectIDs), document: self)
             executeCommand(command)
         }
 
@@ -74,11 +72,11 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        // Collect candidate objects - O(n) where n = selected objects
-        let candidateObjects = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
+        // Filter UUIDs directly - no temporary VectorObject array
+        let objectIDsToDelete = viewState.selectedObjectIDs.filter { uuid in
+            guard let object = snapshot.objects[uuid] else { return false }
 
-        // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
-        let objectsToDelete = candidateObjects.filter { object in
+            // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
             // Skip objects on locked layers
             if object.layerIndex < snapshot.layers.count && snapshot.layers[object.layerIndex].isLocked {
                 return false
@@ -107,13 +105,14 @@ extension VectorDocument {
             return true
         }
 
-        if candidateObjects.count != objectsToDelete.count {
-            let blockedCount = candidateObjects.count - objectsToDelete.count
+        let candidateCount = viewState.selectedObjectIDs.count
+        if candidateCount != objectIDsToDelete.count {
+            let blockedCount = candidateCount - objectIDsToDelete.count
             Log.error("🚫 PROTECTION: Blocked deletion of \(blockedCount) protected object(s)", category: .error)
         }
 
-        if !objectsToDelete.isEmpty {
-            let command = DeleteObjectCommand(objects: objectsToDelete)
+        if !objectIDsToDelete.isEmpty {
+            let command = DeleteObjectCommand(objectIDs: Array(objectIDsToDelete), document: self)
             executeCommand(command)
         }
 
