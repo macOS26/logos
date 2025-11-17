@@ -64,7 +64,8 @@ struct GradientFillSection: View {
                 _gradientType = State(initialValue: .radial)
             }
         } else {
-            _currentGradient = State(initialValue: Self.createDefaultGradient(type: .linear))
+            // Don't create default gradient - let it be nil until user explicitly adds one
+            _currentGradient = State(initialValue: nil)
         }
     }
 
