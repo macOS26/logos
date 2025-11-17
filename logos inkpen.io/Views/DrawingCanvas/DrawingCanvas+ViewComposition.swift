@@ -271,7 +271,7 @@ extension DrawingCanvas {
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
                 zoomLevel: zoomLevel,
-                canvasOffset: effectiveCanvasOffset
+                canvasOffset: canvasOffset, livePanDelta: livePanDelta
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -280,7 +280,7 @@ extension DrawingCanvas {
                 canvasSize: document.settings.sizeInPoints,
                 backgroundColor: document.settings.backgroundColor.color,
                 zoomLevel: zoomLevel,
-                canvasOffset: effectiveCanvasOffset
+                canvasOffset: canvasOffset, livePanDelta: livePanDelta
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -327,7 +327,7 @@ extension DrawingCanvas {
                 objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: effectiveCanvasOffset,
+                canvasOffset: canvasOffset, livePanDelta: livePanDelta,
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,

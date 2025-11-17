@@ -7,6 +7,7 @@ struct PasteboardBackgroundView: View {
     let pasteboardOrigin: CGPoint
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
 
     var body: some View {
         //let _ = Self._printChanges()
@@ -14,7 +15,8 @@ struct PasteboardBackgroundView: View {
             // SIMD optimization for transform calculations
             let originVec = SIMD2<Float>(Float(pasteboardOrigin.x), Float(pasteboardOrigin.y))
             let sizeVec = SIMD2<Float>(Float(pasteboardSize.width), Float(pasteboardSize.height))
-            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let effectiveOffset = CGPoint(x: canvasOffset.x + livePanDelta.x, y: canvasOffset.y + livePanDelta.y)
+            let offsetVec = SIMD2<Float>(Float(effectiveOffset.x), Float(effectiveOffset.y))
             let zoom = Float(zoomLevel)
 
             let scaledOrigin = originVec * zoom + offsetVec
@@ -41,11 +43,13 @@ struct CanvasBackgroundView: View {
     let backgroundColor: Color
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
 
     var body: some View {
         Canvas { context, size in
             // SIMD optimization for transform calculations
-            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let effectiveOffset = CGPoint(x: canvasOffset.x + livePanDelta.x, y: canvasOffset.y + livePanDelta.y)
+            let offsetVec = SIMD2<Float>(Float(effectiveOffset.x), Float(effectiveOffset.y))
             let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
             let zoom = Float(zoomLevel)
 
@@ -72,7 +76,8 @@ struct LayerCanvasView: View {
     let document: VectorDocument  // Need this for cgImageCache and mask lookups
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
-    let canvasOffset: CGPoint
+    let canvasOffset: CGPoint  // Base offset for culling
+    let livePanDelta: CGPoint  // Live pan delta for rendering
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
@@ -101,6 +106,11 @@ struct LayerCanvasView: View {
     let layerUpdateTrigger: UInt?
 
     var appState = AppState.shared
+
+    // Effective offset for rendering (includes live pan delta)
+    private var effectiveCanvasOffset: CGPoint {
+        CGPoint(x: canvasOffset.x + livePanDelta.x, y: canvasOffset.y + livePanDelta.y)
+    }
 
     // Calculate viewport rectangle in document coordinates for culling
     private func viewportRect(canvasSize: CGSize) -> CGRect {
@@ -254,7 +264,8 @@ struct LayerCanvasView: View {
         //let _ = Self._printChanges()
         Canvas { context, size in
             // SIMD optimization: Convert transform values once for entire render pass
-            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+            let effectiveOffset = effectiveCanvasOffset
+            let offsetVec = SIMD2<Float>(Float(effectiveOffset.x), Float(effectiveOffset.y))
             let zoom = Float(zoomLevel)
             // Combine drag delta and nudge offset
             let dragDelta = SIMD2<Float>(
@@ -1360,6 +1371,7 @@ struct IsolatedLayerView: View {
     let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let livePanDelta: CGPoint
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
@@ -1455,6 +1467,7 @@ struct IsolatedLayerView: View {
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
+                livePanDelta: livePanDelta,
                 selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,

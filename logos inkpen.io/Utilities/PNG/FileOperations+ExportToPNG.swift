@@ -460,14 +460,16 @@ private struct PNGExportView: View {
                         y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                     ),
                     zoomLevel: scale,
-                    canvasOffset: .zero
+                    canvasOffset: .zero,
+                    livePanDelta: .zero
                 )
 
                 CanvasBackgroundView(
                     canvasSize: document.settings.sizeInPoints,
                     backgroundColor: document.settings.backgroundColor.color,
                     zoomLevel: scale,
-                    canvasOffset: .zero
+                    canvasOffset: .zero,
+                    livePanDelta: .zero
                 )
             }
 
@@ -481,6 +483,7 @@ private struct PNGExportView: View {
                         document: document,
                         zoomLevel: scale,
                         canvasOffset: .zero,
+                        livePanDelta: .zero,
                         selectedObjectIDs: [],
                         viewMode: .color,
                         dragPreviewDelta: .zero,
