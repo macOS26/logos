@@ -713,6 +713,24 @@ struct GradientFillSection: View {
             }
         }
 
+        // Check if gradient actually changed - if not, don't create undo command
+        var hasChanges = false
+        for objectID in selectedObjectIDs {
+            if let oldGradient = oldGradients[objectID] {
+                // Object had gradient - check if it changed
+                if oldGradient != newGradient {
+                    hasChanges = true
+                    break
+                }
+            } else {
+                // Object didn't have gradient - adding one is a change
+                hasChanges = true
+                break
+            }
+        }
+
+        guard hasChanges else { return }
+
         applyGradientToSelectedShapesOptimized(isLiveDrag: false)
 
         // Create undo command
