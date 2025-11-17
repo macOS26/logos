@@ -61,7 +61,9 @@ class TextManagementCommand: BaseCommand {
             for (uuid, obj) in addedObjects {
                 document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
+                    if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(uuid) {
+                        document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
+                    }
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
