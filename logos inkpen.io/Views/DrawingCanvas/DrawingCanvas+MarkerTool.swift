@@ -665,15 +665,19 @@ extension DrawingCanvas {
     }
 
     private func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
-        let dx1 = p1.x - p0.x
-        let dy1 = p1.y - p0.y
-        let dx2 = p2.x - p1.x
-        let dy2 = p2.y - p1.y
-        let avgDx = (dx1 + dx2) / 2
-        let avgDy = (dy1 + dy2) / 2
-        let length = sqrt(avgDx * avgDx + avgDy * avgDy)
+        // SIMD-optimized direction calculation
+        let p0Vec = SIMD2<Double>(Double(p0.x), Double(p0.y))
+        let p1Vec = SIMD2<Double>(Double(p1.x), Double(p1.y))
+        let p2Vec = SIMD2<Double>(Double(p2.x), Double(p2.y))
+
+        let d1 = p1Vec - p0Vec
+        let d2 = p2Vec - p1Vec
+        let avgDir = (d1 + d2) / 2.0
+        let length = simd_length(avgDir)
+
         if length > 0 {
-            return CGPoint(x: avgDx / length, y: avgDy / length)
+            let normalized = simd_normalize(avgDir)
+            return CGPoint(x: normalized.x, y: normalized.y)
         } else {
             return CGPoint(x: 1, y: 0)
         }
