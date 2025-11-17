@@ -1,10 +1,14 @@
 import Foundation
 
 class AddObjectCommand: BaseCommand {
-    private let objects: [VectorObject]
+    private let objectsToAdd: [UUID: VectorObject]  // Store by UUID for O(1) lookup
 
     init(objects: [VectorObject]) {
-        self.objects = objects
+        var dict: [UUID: VectorObject] = [:]
+        for obj in objects {
+            dict[obj.id] = obj
+        }
+        self.objectsToAdd = dict
     }
 
     convenience init(object: VectorObject) {
@@ -14,12 +18,12 @@ class AddObjectCommand: BaseCommand {
     override func execute(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
 
-        for obj in objects {
+        for (uuid, obj) in objectsToAdd {
             let layerIndex = obj.layerIndex
             if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
-                document.snapshot.objects[obj.id] = obj
-                if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
-                    document.snapshot.layers[layerIndex].objectIDs.append(obj.id)
+                document.snapshot.objects[uuid] = obj
+                if !document.snapshot.layers[layerIndex].objectIDs.contains(uuid) {
+                    document.snapshot.layers[layerIndex].objectIDs.append(uuid)
                 }
                 affectedLayers.insert(layerIndex)
             }
@@ -31,11 +35,11 @@ class AddObjectCommand: BaseCommand {
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
 
-        for obj in objects {
-            document.snapshot.objects.removeValue(forKey: obj.id)
+        for (uuid, obj) in objectsToAdd {
+            document.snapshot.objects.removeValue(forKey: uuid)
             let layerIndex = obj.layerIndex
             if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
-                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == obj.id }
+                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == uuid }
                 affectedLayers.insert(layerIndex)
             }
         }
