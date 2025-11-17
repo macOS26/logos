@@ -23,14 +23,12 @@ struct ProfessionalBezierMathematics {
         }
 
         static func smoothPoint(at location: VectorPoint, handleLength: Double, angle: Double) -> BezierPoint {
-            let handleVector = VectorPoint(
-                cos(angle) * handleLength,
-                sin(angle) * handleLength
-            )
+            // SIMD-optimized trig and vector operations
+            let handleVector = SIMD2<Double>(cos(angle), sin(angle)) * handleLength
             return BezierPoint(
                 point: location,
-                incomingHandle: VectorPoint(location.x - handleVector.x, location.y - handleVector.y),
-                outgoingHandle: VectorPoint(location.x + handleVector.x, location.y + handleVector.y),
+                incomingHandle: VectorPoint(simd: location.simdPoint - handleVector),
+                outgoingHandle: VectorPoint(simd: location.simdPoint + handleVector),
                 pointType: .smoothCurve,
                 handleConstraint: .symmetric
             )
@@ -185,25 +183,32 @@ case independent = "Independent"
 
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-        let dx = 3 * (u * u * (p1.x - p0.x) + 2 * u * t * (p2.x - p1.x) + t * t * (p3.x - p2.x))
-        let dy = 3 * (u * u * (p1.y - p0.y) + 2 * u * t * (p2.y - p1.y) + t * t * (p3.y - p2.y))
-
-        return VectorPoint(dx, dy)
+        // SIMD-optimized derivative calculation
+        let term1 = u * u * (p1.simdPoint - p0.simdPoint)
+        let term2 = 2.0 * u * t * (p2.simdPoint - p1.simdPoint)
+        let term3 = t * t * (p3.simdPoint - p2.simdPoint)
+        let result = 3.0 * (term1 + term2 + term3)
+        return VectorPoint(simd: result)
     }
 
     static func cubicBezierSecondDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-        let dx = 6 * (u * (p2.x - 2 * p1.x + p0.x) + t * (p3.x - 2 * p2.x + p1.x))
-        let dy = 6 * (u * (p2.y - 2 * p1.y + p0.y) + t * (p3.y - 2 * p2.y + p1.y))
-
-        return VectorPoint(dx, dy)
+        // SIMD-optimized second derivative calculation
+        let term1 = u * (p2.simdPoint - 2.0 * p1.simdPoint + p0.simdPoint)
+        let term2 = t * (p3.simdPoint - 2.0 * p2.simdPoint + p1.simdPoint)
+        let result = 6.0 * (term1 + term2)
+        return VectorPoint(simd: result)
     }
 
     static func calculateCurvature(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> Double {
         let firstDeriv = cubicBezierFirstDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
         let secondDeriv = cubicBezierSecondDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
+
+        // SIMD-optimized cross product (2D cross product is z-component of 3D cross)
         let crossProduct = firstDeriv.x * secondDeriv.y - firstDeriv.y * secondDeriv.x
-        let speedSquared = firstDeriv.x * firstDeriv.x + firstDeriv.y * firstDeriv.y
+
+        // SIMD-optimized length calculation
+        let speedSquared = simd_length_squared(firstDeriv.simdPoint)
         let speed = sqrt(speedSquared)
 
         guard speed > 1e-10 else { return 0.0 }
@@ -230,14 +235,15 @@ case independent = "Independent"
         var outgoingHandle: VectorPoint?
 
         if let prev = previousPoint, let next = nextPoint {
-            let direction = VectorPoint(next.x - prev.x, next.y - prev.y)
-            let directionLength = sqrt(direction.x * direction.x + direction.y * direction.y)
+            // SIMD-optimized vector operations
+            let direction = next.simdPoint - prev.simdPoint
+            let directionLength = simd_length(direction)
 
             guard directionLength > 1e-10 else { return (nil, nil) }
 
-            let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
-            let prevDistance = sqrt((currentPoint.x - prev.x) * (currentPoint.x - prev.x) + (currentPoint.y - prev.y) * (currentPoint.y - prev.y))
-            let nextDistance = sqrt((next.x - currentPoint.x) * (next.x - currentPoint.x) + (next.y - currentPoint.y) * (next.y - currentPoint.y))
+            let normalizedDirection = simd_normalize(direction)
+            let prevDistance = simd_length(currentPoint.simdPoint - prev.simdPoint)
+            let nextDistance = simd_length(next.simdPoint - currentPoint.simdPoint)
             let avgDistance = (prevDistance + nextDistance) / 2.0
             let baseTension = tension
             let distanceMultiplier = min(avgDistance / 50.0, 2.0)
@@ -245,42 +251,31 @@ case independent = "Independent"
             let incomingLength = prevDistance * dynamicTension
             let outgoingLength = nextDistance * dynamicTension
 
-            incomingHandle = VectorPoint(
-                currentPoint.x - normalizedDirection.x * incomingLength,
-                currentPoint.y - normalizedDirection.y * incomingLength
-            )
-
-            outgoingHandle = VectorPoint(
-                currentPoint.x + normalizedDirection.x * outgoingLength,
-                currentPoint.y + normalizedDirection.y * outgoingLength
-            )
+            incomingHandle = VectorPoint(simd: currentPoint.simdPoint - normalizedDirection * incomingLength)
+            outgoingHandle = VectorPoint(simd: currentPoint.simdPoint + normalizedDirection * outgoingLength)
         } else if let prev = previousPoint {
-            let direction = VectorPoint(currentPoint.x - prev.x, currentPoint.y - prev.y)
-            let directionLength = sqrt(direction.x * direction.x + direction.y * direction.y)
+            // SIMD-optimized vector operations
+            let direction = currentPoint.simdPoint - prev.simdPoint
+            let directionLength = simd_length(direction)
 
             if directionLength > 1e-10 {
                 let distanceMultiplier = min(directionLength / 50.0, 2.0)
                 let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
                 let handleLength = directionLength * dynamicTension
-                let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
-                outgoingHandle = VectorPoint(
-                    currentPoint.x + normalizedDirection.x * handleLength,
-                    currentPoint.y + normalizedDirection.y * handleLength
-                )
+                let normalizedDirection = simd_normalize(direction)
+                outgoingHandle = VectorPoint(simd: currentPoint.simdPoint + normalizedDirection * handleLength)
             }
         } else if let next = nextPoint {
-            let direction = VectorPoint(next.x - currentPoint.x, next.y - currentPoint.y)
-            let directionLength = sqrt(direction.x * direction.x + direction.y * direction.y)
+            // SIMD-optimized vector operations
+            let direction = next.simdPoint - currentPoint.simdPoint
+            let directionLength = simd_length(direction)
 
             if directionLength > 1e-10 {
                 let distanceMultiplier = min(directionLength / 50.0, 2.0)
                 let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
                 let handleLength = directionLength * dynamicTension
-                let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
-                incomingHandle = VectorPoint(
-                    currentPoint.x - normalizedDirection.x * handleLength,
-                    currentPoint.y - normalizedDirection.y * handleLength
-                )
+                let normalizedDirection = simd_normalize(direction)
+                incomingHandle = VectorPoint(simd: currentPoint.simdPoint - normalizedDirection * handleLength)
             }
         }
 
@@ -301,20 +296,23 @@ case independent = "Independent"
 
         let p2 = curve1[2], p3 = curve1[3]
         let q0 = curve2[0], q1 = curve2[1]
-        let positionDiff = sqrt((p3.x - q0.x) * (p3.x - q0.x) + (p3.y - q0.y) * (p3.y - q0.y))
+
+        // SIMD-optimized position difference
+        let positionDiff = simd_length(p3.simdPoint - q0.simdPoint)
         guard positionDiff < tolerance else { return .none }
 
-        let curve1EndTangent = VectorPoint(p3.x - p2.x, p3.y - p2.y)
-        let curve2StartTangent = VectorPoint(q1.x - q0.x, q1.y - q0.y)
-        let tangent1Length = sqrt(curve1EndTangent.x * curve1EndTangent.x + curve1EndTangent.y * curve1EndTangent.y)
-        let tangent2Length = sqrt(curve2StartTangent.x * curve2StartTangent.x + curve2StartTangent.y * curve2StartTangent.y)
+        // SIMD-optimized tangent calculations
+        let curve1EndTangent = p3.simdPoint - p2.simdPoint
+        let curve2StartTangent = q1.simdPoint - q0.simdPoint
+        let tangent1Length = simd_length(curve1EndTangent)
+        let tangent2Length = simd_length(curve2StartTangent)
 
         guard tangent1Length > tolerance && tangent2Length > tolerance else { return .c0 }
 
-        let normalizedTangent1 = VectorPoint(curve1EndTangent.x / tangent1Length, curve1EndTangent.y / tangent1Length)
-        let normalizedTangent2 = VectorPoint(curve2StartTangent.x / tangent2Length, curve2StartTangent.y / tangent2Length)
-        let tangentDiff = sqrt((normalizedTangent1.x - normalizedTangent2.x) * (normalizedTangent1.x - normalizedTangent2.x) +
-                              (normalizedTangent1.y - normalizedTangent2.y) * (normalizedTangent1.y - normalizedTangent2.y))
+        // SIMD-optimized normalization
+        let normalizedTangent1 = simd_normalize(curve1EndTangent)
+        let normalizedTangent2 = simd_normalize(curve2StartTangent)
+        let tangentDiff = simd_length(normalizedTangent1 - normalizedTangent2)
 
         guard tangentDiff < tolerance else { return .c0 }
 
@@ -348,7 +346,8 @@ case independent = "Independent"
             let t2 = Double(i + 1) * dt
             let point1 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t1)
             let point2 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t2)
-            let segmentLength = sqrt((point2.x - point1.x) * (point2.x - point1.x) + (point2.y - point1.y) * (point2.y - point1.y))
+            // SIMD-optimized distance calculation
+            let segmentLength = simd_length(point2.simdPoint - point1.simdPoint)
             totalLength += segmentLength
         }
 
@@ -358,10 +357,9 @@ case independent = "Independent"
 
 extension VectorPoint {
     static func lerp(_ a: VectorPoint, _ b: VectorPoint, _ t: Double) -> VectorPoint {
-        return VectorPoint(
-            a.x + t * (b.x - a.x),
-            a.y + t * (b.y - a.y)
-        )
+        // SIMD-optimized linear interpolation
+        let result = simd_mix(a.simdPoint, b.simdPoint, SIMD2<Double>(repeating: t))
+        return VectorPoint(simd: result)
     }
 
     static func lerpBatch(_ startPoints: [VectorPoint], _ endPoints: [VectorPoint], _ t: Double) -> [VectorPoint] {
@@ -382,9 +380,8 @@ extension VectorPoint {
     }
 
     func distance(to other: VectorPoint) -> Double {
-        let dx = self.x - other.x
-        let dy = self.y - other.y
-        return sqrt(dx * dx + dy * dy)
+        // SIMD-optimized distance calculation
+        return simd_length(self.simdPoint - other.simdPoint)
     }
 
     static func distancesBatch(from sourcePoints: [VectorPoint], to targetPoints: [VectorPoint]) -> [Double] {
@@ -409,9 +406,10 @@ extension VectorPoint {
     }
 
     var normalized: VectorPoint {
-        let length = sqrt(x * x + y * y)
+        // SIMD-optimized normalization
+        let length = simd_length(simdPoint)
         guard length > 1e-10 else { return VectorPoint(0, 0) }
-        return VectorPoint(x / length, y / length)
+        return VectorPoint(simd: simd_normalize(simdPoint))
     }
 
     static func normalizeBatch(_ vectors: [VectorPoint]) -> [VectorPoint] {
@@ -430,42 +428,30 @@ extension VectorPoint {
 struct ProfessionalBezierFactory {
 
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
-        let direction = VectorPoint(endPoint.x - startPoint.x, endPoint.y - startPoint.y)
-        let control1 = VectorPoint(
-            startPoint.x + direction.x * tension,
-            startPoint.y + direction.y * tension
-        )
-
-        let control2 = VectorPoint(
-            endPoint.x - direction.x * tension,
-            endPoint.y - direction.y * tension
-        )
+        // SIMD-optimized direction calculation
+        let direction = endPoint.simdPoint - startPoint.simdPoint
+        let control1 = VectorPoint(simd: startPoint.simdPoint + direction * tension)
+        let control2 = VectorPoint(simd: endPoint.simdPoint - direction * tension)
 
         return [startPoint, control1, control2, endPoint]
     }
 
     static func createCircularArc(center: VectorPoint, radius: Double, startAngle: Double, endAngle: Double) -> [VectorPoint] {
         let kappa = 0.5522847498307935
-        let startPoint = VectorPoint(
-            center.x + radius * cos(startAngle),
-            center.y + radius * sin(startAngle)
-        )
 
-        let endPoint = VectorPoint(
-            center.x + radius * cos(endAngle),
-            center.y + radius * sin(endAngle)
-        )
+        // SIMD-optimized trig and vector operations
+        let startVec = SIMD2<Double>(cos(startAngle), sin(startAngle)) * radius
+        let startPoint = VectorPoint(simd: center.simdPoint + startVec)
+
+        let endVec = SIMD2<Double>(cos(endAngle), sin(endAngle)) * radius
+        let endPoint = VectorPoint(simd: center.simdPoint + endVec)
 
         let handleLength = radius * kappa
-        let control1 = VectorPoint(
-            startPoint.x + handleLength * cos(startAngle + .pi / 2),
-            startPoint.y + handleLength * sin(startAngle + .pi / 2)
-        )
+        let control1Vec = SIMD2<Double>(cos(startAngle + .pi / 2), sin(startAngle + .pi / 2)) * handleLength
+        let control1 = VectorPoint(simd: startPoint.simdPoint + control1Vec)
 
-        let control2 = VectorPoint(
-            endPoint.x + handleLength * cos(endAngle - .pi / 2),
-            endPoint.y + handleLength * sin(endAngle - .pi / 2)
-        )
+        let control2Vec = SIMD2<Double>(cos(endAngle - .pi / 2), sin(endAngle - .pi / 2)) * handleLength
+        let control2 = VectorPoint(simd: endPoint.simdPoint + control2Vec)
 
         return [startPoint, control1, control2, endPoint]
     }
