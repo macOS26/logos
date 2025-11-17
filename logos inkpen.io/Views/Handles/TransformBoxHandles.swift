@@ -55,10 +55,11 @@ struct TransformBoxHandles: View {
                     ? transformedBounds.applying(previewTransform)
                     : transformedBounds
 
-                // Convert bounds to screen coordinates and apply dragPreviewDelta
+                // Convert bounds to screen coordinates
+                // dragPreviewDelta is applied in canvas space, so scale it by zoom
                 let screenRect = CGRect(
-                    x: displayBounds.origin.x * zoom + offset.x + dragPreviewDelta.x,
-                    y: displayBounds.origin.y * zoom + offset.y + dragPreviewDelta.y,
+                    x: displayBounds.origin.x * zoom + offset.x + (dragPreviewDelta.x * zoom),
+                    y: displayBounds.origin.y * zoom + offset.y + (dragPreviewDelta.y * zoom),
                     width: displayBounds.width * zoom,
                     height: displayBounds.height * zoom
                 )
@@ -240,11 +241,11 @@ struct TransformBoxHandles: View {
             .position(
                 (shape.typography != nil || containsTextBoxInGroup()) ?
                 CGPoint(
-                    x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x + dragPreviewDelta.x,
-                    y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y + dragPreviewDelta.y
+                    x: (displayBounds.midX + (pt.x - displayBounds.midX)) * zoomLevel + canvasOffset.x + (dragPreviewDelta.x * zoomLevel),
+                    y: (displayBounds.midY + (pt.y - displayBounds.midY)) * zoomLevel + canvasOffset.y + (dragPreviewDelta.y * zoomLevel)
                 )
                 :
-                CGPoint(x: pt.x * zoomLevel + canvasOffset.x + dragPreviewDelta.x, y: pt.y * zoomLevel + canvasOffset.y + dragPreviewDelta.y)
+                CGPoint(x: pt.x * zoomLevel + canvasOffset.x + (dragPreviewDelta.x * zoomLevel), y: pt.y * zoomLevel + canvasOffset.y + (dragPreviewDelta.y * zoomLevel))
             )
             .onTapGesture {
                 setAnchorPoint(forHandle: index)
