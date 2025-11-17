@@ -6,7 +6,7 @@ class TextManagementCommand: BaseCommand {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
         case removeText(textIDs: [UUID], removedObjects: [UUID: VectorObject])
         case duplicateText(originalIDs: [UUID], duplicatedObjects: [UUID: VectorObject])
-        case convertToOutlines(removedTextIDs: [UUID], removedObjects: [UUID: VectorObject], addedShapeIDs: [UUID], addedObjects: [UUID: VectorObject])
+        case convertToOutlines(removedTextIDs: [UUID], removedObjects: [UUID: VectorObject], removedPositions: [UUID: Int], addedShapeIDs: [UUID], addedObjects: [UUID: VectorObject])
     }
 
     private let operation: Operation
@@ -49,7 +49,7 @@ class TextManagementCommand: BaseCommand {
             }
             document.viewState.selectedObjectIDs = newSelection
 
-        case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
+        case .convertToOutlines(let removedTextIDs, _, _, _, let addedObjects):
             for textID in removedTextIDs {
                 if let obj = document.snapshot.objects[textID] {
                     document.snapshot.objects.removeValue(forKey: textID)
@@ -93,7 +93,7 @@ class TextManagementCommand: BaseCommand {
             }
             document.viewState.selectedObjectIDs = oldSelection
 
-        case .convertToOutlines(_, let removedObjects, let addedShapeIDs, _):
+        case .convertToOutlines(_, let removedObjects, let removedPositions, let addedShapeIDs, _):
             for shapeID in addedShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {
                     document.snapshot.objects.removeValue(forKey: shapeID)
@@ -102,7 +102,12 @@ class TextManagementCommand: BaseCommand {
             }
             for (uuid, obj) in removedObjects {
                 document.snapshot.objects[uuid] = obj
-                document.appendToLayer(layerIndex: obj.layerIndex, objectID: uuid)
+                if let originalPosition = removedPositions[uuid],
+                   obj.layerIndex < document.snapshot.layers.count {
+                    document.insertIntoLayer(layerIndex: obj.layerIndex, objectID: uuid, at: originalPosition)
+                } else {
+                    document.appendToLayer(layerIndex: obj.layerIndex, objectID: uuid)
+                }
             }
             document.viewState.selectedObjectIDs = oldSelection
         }
