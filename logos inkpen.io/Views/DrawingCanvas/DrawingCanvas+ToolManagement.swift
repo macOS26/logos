@@ -128,6 +128,11 @@ extension DrawingCanvas {
             }
         }
 
+        else if newTool == .bezierPen {
+            // Preserve selectedPoints when switching to bezier pen (for path continuation)
+            // Don't clear selectedPoints, selectedHandles, or selectedObjectIDs
+        }
+
         // Maintain selection when switching to font tool
         else if newTool == .font {
             // print("🟡 Switching to .font, keeping selection unchanged")
