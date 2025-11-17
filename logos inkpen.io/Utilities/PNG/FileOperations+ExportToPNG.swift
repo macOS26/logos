@@ -484,6 +484,7 @@ private struct PNGExportView: View {
                         selectedObjectIDs: [],
                         viewMode: .color,
                         dragPreviewDelta: .zero,
+                        liveNudgeOffset: .zero,
                         dragPreviewTrigger: false,
                         liveScaleTransform: .identity,
                         layerOpacity: layer.opacity,

@@ -76,6 +76,7 @@ struct LayerCanvasView: View {
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
+    let liveNudgeOffset: CGVector
     let liveScaleTransform: CGAffineTransform
     let dragPreviewTrigger: Bool
     let livePointPositions: [PointID: CGPoint]
@@ -255,7 +256,11 @@ struct LayerCanvasView: View {
             // SIMD optimization: Convert transform values once for entire render pass
             let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
             let zoom = Float(zoomLevel)
-            let dragDelta = SIMD2<Float>(Float(dragPreviewDelta.x), Float(dragPreviewDelta.y))
+            // Combine drag delta and nudge offset
+            let dragDelta = SIMD2<Float>(
+                Float(dragPreviewDelta.x + liveNudgeOffset.dx),
+                Float(dragPreviewDelta.y + liveNudgeOffset.dy)
+            )
 
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
@@ -274,12 +279,13 @@ struct LayerCanvasView: View {
             for object in visibleObjects {
                 let isSelected = selectedObjectIDs.contains(object.id)
 
-                // Apply selection transform (with drag delta) for selected objects
+                // Apply selection transform (with drag delta + nudge offset) for selected objects
                 // For liveScaleTransform, we apply it to the path geometry directly (not context)
                 // to keep stroke width constant while scaling the shape
                 let isTextObject = if case .text = object.objectType { true } else { false }
+                let hasLiveOffset = dragPreviewDelta != .zero || liveNudgeOffset != .zero
 
-                if isSelected && dragPreviewDelta != .zero {
+                if isSelected && hasLiveOffset {
                     context.transform = baseTransform
                         .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                 } else {
@@ -1357,6 +1363,7 @@ struct IsolatedLayerView: View {
     let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
+    let liveNudgeOffset: CGVector
     let dragPreviewTrigger: Bool
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
@@ -1451,6 +1458,7 @@ struct IsolatedLayerView: View {
                 selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta,
+                liveNudgeOffset: liveNudgeOffset,
                 liveScaleTransform: liveScaleTransform,
                 dragPreviewTrigger: dragPreviewTrigger,
                 livePointPositions: livePointPositions,

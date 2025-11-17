@@ -330,6 +330,7 @@ extension DrawingCanvas {
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
+                liveNudgeOffset: isActiveLayer ? document.viewState.liveNudgeOffset : .zero,
                 dragPreviewTrigger: dragPreviewUpdateTrigger,
                 liveScaleTransform: liveScaleTransform,
                 layerOpacity: layerOpacity,
