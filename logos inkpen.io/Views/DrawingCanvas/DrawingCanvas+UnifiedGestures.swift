@@ -138,7 +138,9 @@ extension DrawingCanvas {
             var scaleChange = exp(-deltaY / sensitivity)
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
-            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry, isLive: true)
+            // Zoom from center of viewport
+            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: viewCenter, geometry: geometry, isLive: true)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
