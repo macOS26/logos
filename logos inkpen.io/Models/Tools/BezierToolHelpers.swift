@@ -385,7 +385,119 @@ extension DrawingCanvas {
     }
 
     private func continueExistingPath(from pointPosition: VectorPoint) {
+        // Get the selected point to find which shape and which endpoint
+        guard let selectedPointID = selectedPoints.first,
+              let shape = getShapeForPoint(selectedPointID) else {
+            // Fallback to old behavior if we can't find the shape
+            createNewPathFromPoint(pointPosition)
+            return
+        }
 
+        // Check if path is closed
+        let isClosed = shape.path.elements.contains { element in
+            if case .close = element { return true }
+            return false
+        }
+
+        if isClosed {
+            // Can't continue a closed path
+            createNewPathFromPoint(pointPosition)
+            return
+        }
+
+        // Extract all points from the path
+        var points: [VectorPoint] = []
+        var handles: [Int: BezierHandleInfo] = [:]
+        var currentIndex = 0
+        var previousPoint: VectorPoint?
+
+        for element in shape.path.elements {
+            switch element {
+            case .move(to: let point):
+                points.append(point)
+                previousPoint = point
+                currentIndex = 0
+
+            case .line(to: let point):
+                points.append(point)
+                previousPoint = point
+                currentIndex += 1
+
+            case .curve(to: let point, control1: let cp1, control2: let cp2):
+                points.append(point)
+
+                // Store handle for previous point's control2
+                if previousPoint != nil {
+                    var prevHandleInfo = handles[currentIndex] ?? BezierHandleInfo()
+                    prevHandleInfo.control2 = cp1
+                    handles[currentIndex] = prevHandleInfo
+                }
+
+                // Store handle for current point's control1
+                var currentHandleInfo = handles[currentIndex + 1] ?? BezierHandleInfo()
+                currentHandleInfo.control1 = cp2
+                handles[currentIndex + 1] = currentHandleInfo
+
+                previousPoint = point
+                currentIndex += 1
+
+            case .quadCurve(to: let point, control: _):
+                // Convert quadratic to cubic for editing
+                points.append(point)
+                // Note: proper quad->cubic conversion would be more complex
+                previousPoint = point
+                currentIndex += 1
+
+            case .close:
+                break
+            }
+        }
+
+        // Determine if selected point is start (index 0) or end (last index)
+        let isStartPoint = selectedPointID.elementIndex == 0
+        let isEndPoint = selectedPointID.elementIndex == points.count - 1
+
+        if !isStartPoint && !isEndPoint {
+            // Selected point is in the middle, can't continue
+            createNewPathFromPoint(pointPosition)
+            return
+        }
+
+        // If continuing from start, reverse the arrays
+        if isStartPoint {
+            points.reverse()
+
+            // Rebuild handles with reversed indices
+            var reversedHandles: [Int: BezierHandleInfo] = [:]
+            for (index, handleInfo) in handles {
+                let newIndex = points.count - 1 - index
+                var newHandleInfo = BezierHandleInfo()
+                // Swap control1 and control2 when reversing
+                newHandleInfo.control1 = handleInfo.control2
+                newHandleInfo.control2 = handleInfo.control1
+                reversedHandles[newIndex] = newHandleInfo
+            }
+            handles = reversedHandles
+        }
+
+        // Load the existing path into editing state
+        bezierPoints = points
+        bezierHandles = handles
+        liveBezierHandles.removeAll()
+        originalBezierHandles.removeAll()
+        bezierPath = shape.path
+        isBezierDrawing = true
+        activeBezierPointIndex = points.count - 1  // Continue from the end
+        activeBezierShape = shape
+        currentShapeId = shape.id
+
+        // Remove the shape from the document while editing (will be re-added on finish)
+        document.removeShapeFromUnifiedSystem(id: shape.id)
+
+        selectedPoints.removeAll()
+    }
+
+    private func createNewPathFromPoint(_ pointPosition: VectorPoint) {
         let newPath = VectorPath(elements: [.move(to: pointPosition)])
         bezierPath = newPath
         bezierPoints = [pointPosition]
