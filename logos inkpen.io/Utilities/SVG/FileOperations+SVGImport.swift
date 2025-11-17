@@ -76,6 +76,10 @@ extension FileOperations {
             if let inkpenDocument = try? decoder.decode(VectorDocument.self, from: inkpenData) {
                 // Log version for migration tracking
                 Log.fileOperation("📦 Opened inkpen document from SVG, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
+
+                // Remove legacy background objects
+                FileOperations.removeLegacyBackgroundObjects(from: inkpenDocument)
+
                 return inkpenDocument
             }
 
