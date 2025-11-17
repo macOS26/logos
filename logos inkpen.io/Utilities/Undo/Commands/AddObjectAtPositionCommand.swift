@@ -3,7 +3,7 @@ import Combine
 
 /// Command to add objects at a specific position in the layer's objectIDs array
 class AddObjectAtPositionCommand: BaseCommand {
-    private let objects: [VectorObject]
+    private let objectsToAdd: [UUID: VectorObject]  // Store by UUID for O(1) lookup
     private let insertPosition: InsertPosition
 
     enum InsertPosition {
@@ -13,7 +13,11 @@ class AddObjectAtPositionCommand: BaseCommand {
     }
 
     init(objects: [VectorObject], position: InsertPosition = .back) {
-        self.objects = objects
+        var dict: [UUID: VectorObject] = [:]
+        for obj in objects {
+            dict[obj.id] = obj
+        }
+        self.objectsToAdd = dict
         self.insertPosition = position
     }
 
@@ -21,9 +25,9 @@ class AddObjectAtPositionCommand: BaseCommand {
         var affectedLayers = Set<Int>()
 
         // Group objects by layer
-        var objectsByLayer: [Int: [VectorObject]] = [:]
-        for obj in objects {
-            objectsByLayer[obj.layerIndex, default: []].append(obj)
+        var objectsByLayer: [Int: [(UUID, VectorObject)]] = [:]
+        for (uuid, obj) in objectsToAdd {
+            objectsByLayer[obj.layerIndex, default: []].append((uuid, obj))
         }
 
         // Process each layer
@@ -31,8 +35,8 @@ class AddObjectAtPositionCommand: BaseCommand {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
 
             // Add objects to snapshot.objects dictionary
-            for obj in layerObjects {
-                document.snapshot.objects[obj.id] = obj
+            for (uuid, obj) in layerObjects {
+                document.snapshot.objects[uuid] = obj
             }
 
             // Determine insertion index
@@ -58,10 +62,10 @@ class AddObjectAtPositionCommand: BaseCommand {
             }
 
             // Insert the object IDs at the determined position
-            for obj in layerObjects.reversed() {
-                if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
+            for (uuid, _) in layerObjects.reversed() {
+                if !document.snapshot.layers[layerIndex].objectIDs.contains(uuid) {
                     let safeIndex = min(insertIndex, document.snapshot.layers[layerIndex].objectIDs.count)
-                    document.snapshot.layers[layerIndex].objectIDs.insert(obj.id, at: safeIndex)
+                    document.snapshot.layers[layerIndex].objectIDs.insert(uuid, at: safeIndex)
                 }
             }
 
@@ -74,11 +78,11 @@ class AddObjectAtPositionCommand: BaseCommand {
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
 
-        for obj in objects {
-            document.snapshot.objects.removeValue(forKey: obj.id)
+        for (uuid, obj) in objectsToAdd {
+            document.snapshot.objects.removeValue(forKey: uuid)
             let layerIndex = obj.layerIndex
             if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
-                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == obj.id }
+                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == uuid }
                 affectedLayers.insert(layerIndex)
             }
         }
