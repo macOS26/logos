@@ -47,6 +47,9 @@ class DocumentViewState: ObservableObject {
     @Published var liveGradientOriginX: Double? = nil
     @Published var liveGradientOriginY: Double? = nil
 
+    // MARK: - Nudge Live State
+    @Published var liveNudgeOffset: CGVector = .zero
+
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
