@@ -198,18 +198,15 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) && isNudging {
-                // Save final offset and clear live state FIRST to show transform box immediately
-                let finalOffset = accumulatedNudgeOffset
+                // Commit the accumulated offset
+                if accumulatedNudgeOffset != .zero {
+                    activeDoc.nudgeSelectedObjects(by: accumulatedNudgeOffset)
+                }
 
-                // Reset state BEFORE updating document
+                // Reset state
                 accumulatedNudgeOffset = .zero
                 activeDoc.viewState.liveNudgeOffset = .zero
                 isNudging = false
-
-                // Now commit the offset (transform box will show at final position)
-                if finalOffset != .zero {
-                    activeDoc.nudgeSelectedObjects(by: finalOffset)
-                }
 
                 return nil
             }

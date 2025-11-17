@@ -8,7 +8,6 @@ struct TransformBoxHandles: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let liveNudgeOffset: CGVector
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
@@ -55,20 +54,12 @@ struct TransformBoxHandles: View {
                     ? transformedBounds.applying(previewTransform)
                     : transformedBounds
 
-                // Apply live nudge offset to bounds
-                let nudgedBounds = CGRect(
-                    x: displayBounds.origin.x + liveNudgeOffset.dx,
-                    y: displayBounds.origin.y + liveNudgeOffset.dy,
-                    width: displayBounds.width,
-                    height: displayBounds.height
-                )
-
                 // Convert bounds to screen coordinates
                 let screenRect = CGRect(
-                    x: nudgedBounds.origin.x * zoom + offset.x,
-                    y: nudgedBounds.origin.y * zoom + offset.y,
-                    width: nudgedBounds.width * zoom,
-                    height: nudgedBounds.height * zoom
+                    x: displayBounds.origin.x * zoom + offset.x,
+                    y: displayBounds.origin.y * zoom + offset.y,
+                    width: displayBounds.width * zoom,
+                    height: displayBounds.height * zoom
                 )
 
                 let path = Path(screenRect)
