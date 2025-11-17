@@ -8,6 +8,7 @@ struct DocumentBasedMainView: View {
     @Environment(AppState.self) private var appState
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
+    @Binding var imageInterpolationQuality: Int
     @State var showingDocumentSettings = false
     @State var showingColorPicker = false
     @State var currentDocumentURL: URL? = nil
@@ -74,7 +75,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document, zoomLevel: $zoomLevel, canvasOffset: $canvasOffset, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, colorDeltaColor: $colorDeltaColor, colorDeltaOpacity: $colorDeltaOpacity, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta, textContentDelta: $textContentDelta, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize)
+                        DrawingCanvas(document: document, zoomLevel: $zoomLevel, canvasOffset: $canvasOffset, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, colorDeltaColor: $colorDeltaColor, colorDeltaOpacity: $colorDeltaOpacity, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta, textContentDelta: $textContentDelta, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)

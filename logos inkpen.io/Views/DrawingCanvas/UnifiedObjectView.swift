@@ -77,6 +77,7 @@ struct LayerCanvasView: View {
     let letterSpacingDelta: Double?
     let imagePreviewQuality: Double
     let imageTileSize: Int
+    let imageInterpolationQuality: CGInterpolationQuality
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
 
@@ -1264,7 +1265,7 @@ struct LayerCanvasView: View {
                     image = finalImage
                     return
                 }
-                downsampleContext.interpolationQuality = .high
+                downsampleContext.interpolationQuality = imageInterpolationQuality
                 downsampleContext.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
                 finalImage = downsampleContext.makeImage() ?? cgImage
             } else {
@@ -1306,7 +1307,7 @@ struct LayerCanvasView: View {
             cgContext.scaleBy(x: 1.0, y: -1.0)
 
             // Set rendering quality
-            cgContext.interpolationQuality = .medium
+            cgContext.interpolationQuality = imageInterpolationQuality
 
             // Draw the image
             cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
@@ -1345,6 +1346,7 @@ struct IsolatedLayerView: View {
     let letterSpacingDelta: Double?
     let imagePreviewQuality: Double
     let imageTileSize: Int
+    let imageInterpolationQuality: CGInterpolationQuality
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt
@@ -1436,6 +1438,7 @@ struct IsolatedLayerView: View {
                 letterSpacingDelta: letterSpacingDelta,
                 imagePreviewQuality: imagePreviewQuality,
                 imageTileSize: imageTileSize,
+                imageInterpolationQuality: imageInterpolationQuality,
                 liveCornerRadii: liveCornerRadii,
                 selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
             )

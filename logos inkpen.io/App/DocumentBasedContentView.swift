@@ -6,9 +6,10 @@ struct DocumentBasedContentView: View {
     @State private var hasHydratedImages = false
     @AppStorage("imagePreviewQuality") var imagePreviewQuality: Double = 1.0
     @AppStorage("imageTileSize") var imageTileSize: Int = 512
+    @AppStorage("imageInterpolationQuality") var imageInterpolationQuality: Int = 0
 
     var body: some View {
-        DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize)
+        DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
             .onAppear {
                 // Hydrate linked images on first appear
                 if !hasHydratedImages, let fileURL = fileURL {

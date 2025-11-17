@@ -11,7 +11,7 @@ extension DrawingCanvas {
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
 
-            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize)
+            canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .default)
 
             canvasOverlays(geometry: geometry)
 

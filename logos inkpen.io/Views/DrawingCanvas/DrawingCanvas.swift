@@ -30,6 +30,7 @@ struct DrawingCanvas: View {
     @Binding var textContentDelta: (id: UUID, content: String)?
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
+    @Binding var imageInterpolationQuality: Int
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
