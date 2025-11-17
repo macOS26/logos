@@ -1159,9 +1159,14 @@ struct LayerCanvasView: View {
             }
         }
 
-        // 2. Try absolute path
+        // 2. Try absolute path (skip if in protected directory without security scope)
         let absoluteURL = URL(fileURLWithPath: linkedPath)
-        if let imageSource = CGImageSourceCreateWithURL(absoluteURL as CFURL, nil),
+        let protectedPaths = ["/Users/", "/Desktop/", "/Documents/", "/Downloads/"]
+        let isProtected = protectedPaths.contains { linkedPath.contains($0) }
+
+        // Only try absolute path if not in protected location (prevents spam errors)
+        if !isProtected,
+           let imageSource = CGImageSourceCreateWithURL(absoluteURL as CFURL, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             return cgImage
         }
