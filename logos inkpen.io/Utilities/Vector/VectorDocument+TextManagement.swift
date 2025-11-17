@@ -49,12 +49,12 @@ extension VectorDocument {
 
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
-        var removedObjects: [VectorObject] = []
+        var removedObjects: [UUID: VectorObject] = [:]
 
         for objectID in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[objectID],
                case .text = obj.objectType {
-                removedObjects.append(obj)
+                removedObjects[objectID] = obj
             }
         }
 
@@ -74,7 +74,7 @@ extension VectorDocument {
 
         let oldSelection = viewState.selectedObjectIDs
         var newTextIDs: Set<UUID> = []
-        var duplicatedObjects: [VectorObject] = []
+        var duplicatedObjects: [UUID: VectorObject] = [:]
 
         for textID in viewState.selectedObjectIDs {
             if let originalText = findText(by: textID),
@@ -89,7 +89,7 @@ extension VectorDocument {
                 let shape = VectorShape.from(duplicateText)
                 let layerIndex = obj.layerIndex
                 let newObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape))
-                duplicatedObjects.append(newObject)
+                duplicatedObjects[shape.id] = newObject
                 newTextIDs.insert(duplicateText.id)
             }
         }
@@ -131,7 +131,12 @@ extension VectorDocument {
         // Save old state for undo
         let oldSelection = viewState.selectedObjectIDs
         let removedTextIDs = Array(viewState.selectedObjectIDs)
-        let removedTextObjects = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
+        var removedTextObjects: [UUID: VectorObject] = [:]
+        for uuid in viewState.selectedObjectIDs {
+            if let obj = snapshot.objects[uuid] {
+                removedTextObjects[uuid] = obj
+            }
+        }
 
         var newShapeIDs: Set<UUID> = []
         let shapesBefore = snapshot.objects.values.compactMap { obj -> UUID? in
@@ -173,7 +178,12 @@ extension VectorDocument {
 
         if !newShapeIDs.isEmpty {
             // Capture new shape objects for undo
-            let addedShapeObjects = newShapeIDs.compactMap { snapshot.objects[$0] }
+            var addedShapeObjects: [UUID: VectorObject] = [:]
+            for uuid in newShapeIDs {
+                if let obj = snapshot.objects[uuid] {
+                    addedShapeObjects[uuid] = obj
+                }
+            }
 
             // Remove text objects from snapshot
             for textID in removedTextIDs {

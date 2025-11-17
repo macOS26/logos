@@ -4,9 +4,9 @@ import Combine
 class TextManagementCommand: BaseCommand {
     enum Operation {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
-        case removeText(textIDs: [UUID], removedObjects: [VectorObject])
-        case duplicateText(originalIDs: [UUID], duplicatedObjects: [VectorObject])
-        case convertToOutlines(removedTextIDs: [UUID], removedObjects: [VectorObject], addedShapeIDs: [UUID], addedObjects: [VectorObject])
+        case removeText(textIDs: [UUID], removedObjects: [UUID: VectorObject])
+        case duplicateText(originalIDs: [UUID], duplicatedObjects: [UUID: VectorObject])
+        case convertToOutlines(removedTextIDs: [UUID], removedObjects: [UUID: VectorObject], addedShapeIDs: [UUID], addedObjects: [UUID: VectorObject])
     }
 
     private let operation: Operation
@@ -41,10 +41,10 @@ class TextManagementCommand: BaseCommand {
             document.viewState.selectedObjectIDs = newSelection
 
         case .duplicateText(_, let duplicatedObjects):
-            for obj in duplicatedObjects {
-                document.snapshot.objects[obj.id] = obj
+            for (uuid, obj) in duplicatedObjects {
+                document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
@@ -58,10 +58,10 @@ class TextManagementCommand: BaseCommand {
                     }
                 }
             }
-            for obj in addedObjects {
-                document.snapshot.objects[obj.id] = obj
+            for (uuid, obj) in addedObjects {
+                document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
@@ -80,21 +80,19 @@ class TextManagementCommand: BaseCommand {
             document.viewState.selectedObjectIDs = oldSelection
 
         case .removeText(_, let removedObjects):
-            for obj in removedObjects {
-                document.snapshot.objects[obj.id] = obj
+            for (uuid, obj) in removedObjects {
+                document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
 
         case .duplicateText(_, let duplicatedObjects):
-            for obj in duplicatedObjects {
-                if let layerIdx = document.snapshot.objects[obj.id]?.layerIndex {
-                    document.snapshot.objects.removeValue(forKey: obj.id)
-                    if layerIdx < document.snapshot.layers.count {
-                        document.snapshot.layers[layerIdx].objectIDs.removeAll { $0 == obj.id }
-                    }
+            for (uuid, obj) in duplicatedObjects {
+                document.snapshot.objects.removeValue(forKey: uuid)
+                if obj.layerIndex < document.snapshot.layers.count {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == uuid }
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
@@ -108,10 +106,10 @@ class TextManagementCommand: BaseCommand {
                     }
                 }
             }
-            for obj in removedObjects {
-                document.snapshot.objects[obj.id] = obj
+            for (uuid, obj) in removedObjects {
+                document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
