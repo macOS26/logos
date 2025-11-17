@@ -48,14 +48,14 @@ struct SelectionHandlesView: View {
                                  .text(let shape):
                                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                                 if !isBackgroundShape {
-                                    if document.viewState.currentTool == .warp && dragPreviewDelta == .zero {
+                                    if document.viewState.currentTool == .warp {
                                         EnvelopeHandles(
                                             document: document,
                                             shape: shape,
                                             zoomLevel: zoomLevel,
                                             canvasOffset: canvasOffset
                                         )
-                                    } else if shape.isWarpObject && dragPreviewDelta == .zero {
+                                    } else if shape.isWarpObject {
                                         PersistentWarpMarquee(
                                             document: document,
                                             shape: shape,
@@ -69,12 +69,13 @@ struct SelectionHandlesView: View {
                                                                  .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                                                  .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                                        if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                                        if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
                                             TransformBoxHandles(
                                                 document: document,
                                                 shape: shape,
                                                 zoomLevel: zoomLevel,
                                                 canvasOffset: canvasOffset,
+                                                dragPreviewDelta: dragPreviewDelta,
                                                 isShiftPressed: isShiftPressed,
                                                 transformOrigin: document.viewState.transformOrigin,
                                                 strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -123,14 +124,14 @@ struct SelectionHandlesView: View {
     private func renderHandlesForShape(_ shape: VectorShape) -> some View {
         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
         if !isBackgroundShape {
-            if document.viewState.currentTool == .warp && dragPreviewDelta == .zero {
+            if document.viewState.currentTool == .warp {
                 EnvelopeHandles(
                     document: document,
                     shape: shape,
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset
                 )
-            } else if shape.isWarpObject && dragPreviewDelta == .zero {
+            } else if shape.isWarpObject {
                 PersistentWarpMarquee(
                     document: document,
                     shape: shape,
@@ -144,12 +145,13 @@ struct SelectionHandlesView: View {
                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
                     TransformBoxHandles(
                         document: document,
                         shape: shape,
                         zoomLevel: zoomLevel,
                         canvasOffset: canvasOffset,
+                        dragPreviewDelta: dragPreviewDelta,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.viewState.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -243,13 +245,14 @@ struct SelectionHandlesView: View {
                                      .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                      .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-            if (document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool) && dragPreviewDelta == .zero {
+            if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
                 // Render TransformBoxHandles for the combined selection
                 TransformBoxHandles(
                     document: document,
                     shape: createCombinedShape(from: bounds),
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset,
+                    dragPreviewDelta: dragPreviewDelta,
                     isShiftPressed: isShiftPressed,
                     transformOrigin: document.viewState.transformOrigin,
                     strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
