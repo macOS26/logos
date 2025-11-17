@@ -55,10 +55,10 @@ extension DrawingCanvas {
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry, isLive: true)
         } else {
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry, isLive: true)
         }
     }
 
