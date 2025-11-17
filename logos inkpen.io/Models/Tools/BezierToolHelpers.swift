@@ -218,7 +218,16 @@ extension DrawingCanvas {
         )
         newShape.updateBounds()
 
-        document.addShape(newShape)
+        // Add to the same layer as the original shape if continuing, otherwise use selected layer
+        if let layerIndex = originalContinuedPathLayerIndex {
+            let previousSelectedLayer = document.selectedLayerIndex
+            document.selectedLayerIndex = layerIndex
+            document.addShape(newShape)
+            document.selectedLayerIndex = previousSelectedLayer
+            originalContinuedPathLayerIndex = nil
+        } else {
+            document.addShape(newShape)
+        }
 
         cancelBezierDrawing()
     }
@@ -515,6 +524,11 @@ extension DrawingCanvas {
         activeBezierPointIndex = points.count - 1  // Continue from the end
         activeBezierShape = shape
         currentShapeId = shape.id
+
+        // Store the original layer index for re-adding later
+        if let object = document.snapshot.objects[shape.id] {
+            originalContinuedPathLayerIndex = object.layerIndex
+        }
 
         // Remove the shape from the document while editing (will be re-added on finish)
         document.removeShapeFromUnifiedSystem(id: shape.id)

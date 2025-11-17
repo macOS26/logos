@@ -74,6 +74,7 @@ struct DrawingCanvas: View {
     @State internal var currentSnapPoint: CGPoint? = nil
     @State internal var currentShapeId: UUID? = nil
     @State internal var activeBezierShape: VectorShape? = nil
+    @State internal var originalContinuedPathLayerIndex: Int? = nil
 
     @State internal var freehandPath: VectorPath?
     @State internal var freehandRawPoints: [CGPoint] = []
