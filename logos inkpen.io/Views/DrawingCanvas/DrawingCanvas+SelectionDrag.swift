@@ -8,7 +8,7 @@ extension DrawingCanvas {
 
         // Hide transform box when drag starts (if preference enabled)
         if ApplicationSettings.shared.hideTransformBoxDuringDrag {
-            transformBoxOpacity = 0.5
+            transformBoxOpacity = 0.000001
         }
 
         // Iterate UUIDs directly - O(1) lookup per object

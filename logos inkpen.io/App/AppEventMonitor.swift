@@ -65,12 +65,8 @@ final class AppEventMonitor {
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
-            // If already pressed, this is a repeat - swallow it completely
-            if isSpacebarPressed {
-                return nil
-            }
-            // Only activate on first press
-            if activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+            // Only activate on first press, ignore repeats
+            if !isSpacebarPressed && activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
                 isSpacebarPressed = true
                 previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .hand

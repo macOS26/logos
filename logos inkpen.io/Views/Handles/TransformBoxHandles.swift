@@ -54,7 +54,9 @@ struct TransformBoxHandles: View {
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
-
+                
+                _ = finalOpacity
+                
                 // Apply preview transform to bounds if scaling
                 let displayBounds = (isScaling && !previewTransform.isIdentity)
                     ? transformedBounds.applying(previewTransform)
