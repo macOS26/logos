@@ -52,13 +52,31 @@ extension DrawingCanvas {
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let newZoomLevel = CGFloat(currentZoom * adjustedValue)
-        let clampedZoom = max(0.75, min(640.0, newZoomLevel))
+
+        // Allow elastic overshoot beyond limits (like Safari)
+        let minZoom: CGFloat = 0.75
+        let maxZoom: CGFloat = 640.0
+        let elasticZoom: CGFloat
+
+        if newZoomLevel < minZoom {
+            // Elastic resistance when zooming out past minimum
+            let overshoot = minZoom - newZoomLevel
+            let dampenedOvershoot = overshoot * 0.2 // 20% of the overshoot
+            elasticZoom = minZoom - dampenedOvershoot
+        } else if newZoomLevel > maxZoom {
+            // Elastic resistance when zooming in past maximum
+            let overshoot = newZoomLevel - maxZoom
+            let dampenedOvershoot = overshoot * 0.2 // 20% of the overshoot
+            elasticZoom = maxZoom + dampenedOvershoot
+        } else {
+            elasticZoom = newZoomLevel
+        }
 
         if currentMousePosition != .zero {
-            handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: currentMousePosition, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: elasticZoom, focalPoint: currentMousePosition, geometry: geometry)
         } else {
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-            handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: viewCenter, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: elasticZoom, focalPoint: viewCenter, geometry: geometry)
         }
     }
 
@@ -79,13 +97,20 @@ extension DrawingCanvas {
         // Apply 1.5x speed multiplier directly to gesture
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
-        let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))
+        let unclamped = CGFloat(currentZoom * adjustedValue)
+        let finalZoomLevel = max(0.75, min(640.0, unclamped))
 
-        if currentMousePosition != .zero {
-            handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
+        // Spring back to clamped value if we went past limits
+        let focalPoint = currentMousePosition != .zero ? currentMousePosition : CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+
+        if unclamped != finalZoomLevel {
+            // We were outside bounds, spring back with animation
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: focalPoint, geometry: geometry)
+            }
         } else {
-            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-            handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: viewCenter, geometry: geometry)
+            // Normal case, no spring needed
+            handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: focalPoint, geometry: geometry)
         }
 
         initialZoomLevel = finalZoomLevel
