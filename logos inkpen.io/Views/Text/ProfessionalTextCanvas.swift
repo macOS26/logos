@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import simd
 
 struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
@@ -59,6 +60,12 @@ struct ProfessionalTextCanvas: View {
         // Include fill color so view updates when it changes
         let fillColor = textObject.typography.fillColor
 
+        // SIMD optimization for transform calculations
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let zoom = Float(zoomLevel)
+        let dragDelta = SIMD2<Float>(Float(dragPreviewDelta.x), Float(dragPreviewDelta.y))
+        let scaledDrag = dragDelta * zoom
+
         return TextViewRepresentable(
             viewModel: viewModel,
             viewMode: viewMode,
@@ -74,10 +81,10 @@ struct ProfessionalTextCanvas: View {
         )
         .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .position(x: position.x + bounds.width / 2, y: position.y + bounds.height / 2)
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
-        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * zoomLevel : 0,
-                y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
+        .scaleEffect(CGFloat(zoom), anchor: .topLeading)
+        .offset(x: CGFloat(offsetVec.x), y: CGFloat(offsetVec.y))
+        .offset(x: shouldApplyDragPreview() ? CGFloat(scaledDrag.x) : 0,
+                y: shouldApplyDragPreview() ? CGFloat(scaledDrag.y) : 0)
         //.id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
     }
