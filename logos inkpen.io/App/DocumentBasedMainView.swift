@@ -250,9 +250,7 @@ struct DocumentBasedMainView: View {
             }
 
             documentState.setDocument(document)
-
-            // Set as active document immediately on appear
-            DrawingCanvasRegistry.shared.setActiveDocument(document)
+            documentState.isFocused = true
 
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
@@ -277,8 +275,12 @@ struct DocumentBasedMainView: View {
             // Update active document when this window becomes key (focused)
             if let window = notification.object as? NSWindow,
                window == NSApp.keyWindow {
-                DrawingCanvasRegistry.shared.setActiveDocument(document)
+                documentState.isFocused = true
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
+            // Mark as not focused when window loses focus
+            documentState.isFocused = false
         }
         .onDisappear {
             documentState.cleanup()
