@@ -43,19 +43,14 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Natural exponential zoom - feels more natural than linear
-        // Use SIMD vector for performance (vectorized operations)
-        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value - 1.0))
+        // Apple HIG: Use 1:1 magnification gesture - value is already natural
+        // SIMD optimization for performance on Apple Silicon
+        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
-        let delta = zoomData.y
+        let gestureValue = zoomData.y
 
-        // Exponential sensitivity: pow(2, delta * scale) gives natural feel
-        // Scale factor depends on current zoom level for context-aware speed
-        let scale: Float = currentZoom < 16.0 ? 0.3 : 0.5  // Slower at low zoom, faster at high zoom
-        let exponent = delta * scale
-        let multiplier = pow(2.0, exponent)
-
-        let newZoomLevel = CGFloat(currentZoom * multiplier)
+        // Direct 1:1 mapping - no dampening (Apple standard)
+        let newZoomLevel = CGFloat(currentZoom * gestureValue)
         let clampedZoom = max(0.5, min(640.0, newZoomLevel))
 
         if currentMousePosition != .zero {
@@ -75,17 +70,14 @@ extension DrawingCanvas {
             return
         }
 
-        // Natural exponential zoom using SIMD for performance
-        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value - 1.0))
+        // Apple HIG: Use 1:1 magnification gesture - value is already natural
+        // SIMD optimization for performance on Apple Silicon
+        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
-        let delta = zoomData.y
+        let gestureValue = zoomData.y
 
-        // Exponential sensitivity with context-aware scaling
-        let scale: Float = currentZoom < 16.0 ? 0.3 : 0.5
-        let exponent = delta * scale
-        let multiplier = pow(2.0, exponent)
-
-        let finalZoomLevel = max(0.5, min(640.0, CGFloat(currentZoom * multiplier)))
+        // Direct 1:1 mapping - no dampening (Apple standard)
+        let finalZoomLevel = max(0.5, min(640.0, CGFloat(currentZoom * gestureValue)))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
