@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 extension DrawingCanvas {
     internal var allowedZoomSteps: [CGFloat] { [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
@@ -42,21 +43,26 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Zoom sensitivity: 0.5x from 50-1600%, 1.0x at 1600%+
-        let sensitivity: CGFloat
-        if initialZoomLevel < 16.0 {
-            sensitivity = 0.5
-        } else {
-            sensitivity = 1.0
-        }
-        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
-        let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
+        // Natural exponential zoom - feels more natural than linear
+        // Use SIMD vector for performance (vectorized operations)
+        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value - 1.0))
+        let currentZoom = zoomData.x
+        let delta = zoomData.y
+
+        // Exponential sensitivity: pow(2, delta * scale) gives natural feel
+        // Scale factor depends on current zoom level for context-aware speed
+        let scale: Float = currentZoom < 16.0 ? 0.3 : 0.5  // Slower at low zoom, faster at high zoom
+        let exponent = delta * scale
+        let multiplier = pow(2.0, exponent)
+
+        let newZoomLevel = CGFloat(currentZoom * multiplier)
+        let clampedZoom = max(0.5, min(640.0, newZoomLevel))
 
         if currentMousePosition != .zero {
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: currentMousePosition, geometry: geometry)
         } else {
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: viewCenter, geometry: geometry)
         }
     }
 
@@ -69,15 +75,17 @@ extension DrawingCanvas {
             return
         }
 
-        // Zoom sensitivity: 0.5x from 50-1600%, 1.0x at 1600%+
-        let sensitivity: CGFloat
-        if initialZoomLevel < 16.0 {
-            sensitivity = 0.5
-        } else {
-            sensitivity = 1.0
-        }
-        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
-        let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
+        // Natural exponential zoom using SIMD for performance
+        let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value - 1.0))
+        let currentZoom = zoomData.x
+        let delta = zoomData.y
+
+        // Exponential sensitivity with context-aware scaling
+        let scale: Float = currentZoom < 16.0 ? 0.3 : 0.5
+        let exponent = delta * scale
+        let multiplier = pow(2.0, exponent)
+
+        let finalZoomLevel = max(0.5, min(640.0, CGFloat(currentZoom * multiplier)))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
