@@ -6,10 +6,6 @@ struct logos_inken_ioApp: App {
     @FocusedObject var documentState: DocumentState? {
         didSet {
             print("📋 documentState changed: \(documentState != nil ? "EXISTS" : "NIL"), hasSelection: \(documentState?.hasSelection ?? false)")
-            // Update AppEventMonitor with the focused document
-            if let doc = documentState?.document {
-                AppEventMonitor.shared.setActiveDocument(doc)
-            }
         }
     }
     private var appState = AppState.shared

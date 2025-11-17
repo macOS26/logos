@@ -42,6 +42,7 @@ struct DocumentBasedMainView: View {
     @State var zoomLevel: Double = 1.0
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
+    @State private var viewWindow: NSWindow? = nil
 
 
     var body: some View {
@@ -271,6 +272,17 @@ struct DocumentBasedMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ActualSize"))) { _ in
             handleActualSize()
         }
+        .background(HostingWindowFinder(callback: { window in
+            self.viewWindow = window
+        }))
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+            // Update active document ONLY when THIS view's window becomes key
+            guard let window = notification.object as? NSWindow,
+                  let viewWindow = viewWindow,
+                  window === viewWindow else { return }
+            print("🪟 Window became key for document \(ObjectIdentifier(document))")
+            AppEventMonitor.shared.setActiveDocument(document)
+        }
         .onDisappear {
             documentState.cleanup()
         }
@@ -405,4 +417,19 @@ struct DocumentBasedMainView: View {
     private func handleActualSize() {
         zoomLevel = 1.0
     }
+}
+
+// Helper to get the NSWindow for this view
+struct HostingWindowFinder: NSViewRepresentable {
+    var callback: (NSWindow?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { [weak view] in
+            self.callback(view?.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
