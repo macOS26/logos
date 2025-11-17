@@ -67,7 +67,8 @@ final class AppEventMonitor {
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
-            if activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+            // Ignore key repeats - only activate on initial press
+            if !event.isARepeat && activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
                 previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .hand
                 activeDoc.viewState.currentTool = .hand
