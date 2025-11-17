@@ -180,6 +180,7 @@ struct DrawingCanvas: View {
     @State internal var foundPointOrHandle = false
     @State internal var sharedOriginalShape: VectorShape?
     @State internal var hasPerformedInitialFitToPage = false
+    @State internal var hasSpatialIndexInitialized = false
     @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
 
     var body: some View {
@@ -199,8 +200,11 @@ struct DrawingCanvas: View {
                     cachedObjectCount = document.snapshot.objects.count
                     spatialIndex.rebuild(from: document.snapshot)
                     rebuildLockedObjectsCache()
+                    hasSpatialIndexInitialized = true
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
+                    // Skip rebuild during initial load
+                    guard hasSpatialIndexInitialized else { return }
                     // Skip spatial index rebuild during live point/handle drags for performance
                     // Spatial index is only needed for hit testing, not during active point editing
                     guard !document.viewState.isLivePointDrag else { return }
@@ -226,6 +230,8 @@ struct DrawingCanvas: View {
                     }
                 }
                 .onChange(of: document.snapshot.objects.count) { _, newCount in
+                    // Skip rebuild during initial load
+                    guard hasSpatialIndexInitialized else { return }
                     // Rebuild spatial index when objects are added/removed
                     if newCount != cachedObjectCount {
                         cachedObjectCount = newCount
@@ -234,6 +240,8 @@ struct DrawingCanvas: View {
                     }
                 }
                 .onChange(of: ApplicationSettings.shared.boundingBoxIncludesStrokes) { _, _ in
+                    // Skip rebuild during initial load
+                    guard hasSpatialIndexInitialized else { return }
                     // Rebuild spatial index when stroke bounds setting changes
                     spatialIndex.rebuild(from: document.snapshot)
                 }
