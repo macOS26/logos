@@ -1,4 +1,5 @@
 import MetalKit
+import simd
 
 class GPUMathAcceleratorSimple {
 
@@ -69,11 +70,13 @@ class GPUMathAcceleratorSimple {
     }
 
     private func perpendicularDistanceOptimized(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Float {
-        let A = Float(lineEnd.y - lineStart.y)
-        let B = Float(lineStart.x - lineEnd.x)
-        let C = Float(lineEnd.x * lineStart.y - lineStart.x * lineEnd.y)
-        let numerator = abs(A * Float(point.x) + B * Float(point.y) + C)
-        let denominator = sqrt(A * A + B * B)
+        // SIMD-optimized perpendicular distance
+        let lineVec = SIMD2<Float>(Float(lineEnd.x - lineStart.x), Float(lineEnd.y - lineStart.y))
+        let normal = SIMD2<Float>(lineVec.y, -lineVec.x)  // perpendicular
+        let pointVec = SIMD2<Float>(Float(point.x - lineStart.x), Float(point.y - lineStart.y))
+
+        let numerator = abs(simd_dot(normal, pointVec))
+        let denominator = simd_length(normal)
 
         return numerator / denominator
     }
