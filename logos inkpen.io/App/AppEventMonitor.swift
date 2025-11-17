@@ -21,15 +21,20 @@ final class AppEventMonitor {
 
     private func setupKeyEventMonitoring() {
         // LOCAL monitor - only monitors events in our app, not system-wide
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] (event: NSEvent) -> NSEvent? in
+            guard let self = self else { return event }
 
             guard let keyWindow = NSApp.keyWindow,
                   keyWindow == event.window else {
                 return event
             }
 
-            // Get the active document
-            guard let activeDoc = self.activeDocument else {
+            // Get the active document (read fresh from property each time)
+            self.lock.lock()
+            let activeDoc = self.activeDocument
+            self.lock.unlock()
+
+            guard let activeDoc = activeDoc else {
                 print("⚠️ No active document in AppEventMonitor")
                 return event
             }
