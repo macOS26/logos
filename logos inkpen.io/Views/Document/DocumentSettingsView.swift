@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct SettingsSectionIconStyle: ViewModifier {
     func body(content: Content) -> some View {
@@ -351,10 +352,9 @@ struct DocumentSettingsView: View {
                         Text("Show Grid")
                             .settingsToggleLabel()
 
-                        StylusToggleButton(isOn: $document.settings.showGrid) { newValue in
-                            document.gridSettings.showGrid = newValue
+                        StylusToggleButton(isOn: $document.gridSettings.showGrid) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "showGrid")
-                            document.onSettingsChanged()
+                            document.objectWillChange.send()
                         }
                     }
 
