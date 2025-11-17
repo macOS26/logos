@@ -133,6 +133,14 @@ struct DrawingCanvas: View {
     @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
     @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
 
+    // Computed property for effective canvas offset (includes live pan delta during drag)
+    internal var effectiveCanvasOffset: CGPoint {
+        CGPoint(
+            x: canvasOffset.x + livePanDelta.x,
+            y: canvasOffset.y + livePanDelta.y
+        )
+    }
+
     internal func syncDirectSelectionWithDocument() {
         document.viewState.selectedObjectIDs = selectedObjectIDs
         document.viewState.selectedPoints = selectedPoints

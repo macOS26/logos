@@ -6,7 +6,7 @@ extension DrawingCanvas {
         // Shape tool preview using Canvas
         if let currentPath = currentPath {
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -25,7 +25,7 @@ extension DrawingCanvas {
         // Bounding box preview using Canvas
         if let boundingBoxPath = tempBoundingBoxPath {
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -49,7 +49,7 @@ extension DrawingCanvas {
             let actualBounds = currentPath.cgPath.boundingBoxOfPath
 
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -69,7 +69,7 @@ extension DrawingCanvas {
         // Brush preview using Canvas
         if let preview = brushPreviewPath {
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -94,7 +94,7 @@ extension DrawingCanvas {
         // Freehand preview using Canvas
         if let preview = freehandPreviewPath {
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -121,7 +121,7 @@ extension DrawingCanvas {
             let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
 
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let path = Path { path in
@@ -157,7 +157,7 @@ extension DrawingCanvas {
             ProfessionalBezierView(
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                canvasOffset: effectiveCanvasOffset,
                 bezierPoints: bezierPoints,
                 bezierHandles: bezierHandles,
                 liveBezierHandles: liveBezierHandles,
@@ -176,7 +176,7 @@ extension DrawingCanvas {
                 document: document,
                 geometry: geometry,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                canvasOffset: effectiveCanvasOffset,
                 isShiftPressed: self.isShiftPressed,
                 isOptionPressed: self.isOptionPressed,
                 isCommandPressed: self.isCommandPressed,
@@ -192,7 +192,7 @@ extension DrawingCanvas {
             ProfessionalDirectSelectionView(
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                canvasOffset: effectiveCanvasOffset,
                 selectedPoints: selectedPoints,
                 selectedHandles: selectedHandles,
                 visibleHandles: visibleHandles,
@@ -241,7 +241,7 @@ extension DrawingCanvas {
                 canvasSize: document.settings.sizeInPoints,
                 unit: document.settings.unit,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
+                canvasOffset: effectiveCanvasOffset
             )
             .allowsHitTesting(false)
             .clipShape(
@@ -271,7 +271,7 @@ extension DrawingCanvas {
                     y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
                 ),
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
+                canvasOffset: effectiveCanvasOffset
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -280,7 +280,7 @@ extension DrawingCanvas {
                 canvasSize: document.settings.sizeInPoints,
                 backgroundColor: document.settings.backgroundColor.color,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
+                canvasOffset: effectiveCanvasOffset
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
@@ -292,7 +292,7 @@ extension DrawingCanvas {
                     canvasSize: document.settings.sizeInPoints,
                     unit: document.settings.unit,
                     zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset
+                    canvasOffset: effectiveCanvasOffset
                 )
                 .allowsHitTesting(false)
                 .clipShape(
@@ -327,7 +327,7 @@ extension DrawingCanvas {
                 objectIDs: layer.objectIDs,
                 document: document,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset,
+                canvasOffset: effectiveCanvasOffset,
                 selectedObjectIDs: selectedInThisLayer,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
