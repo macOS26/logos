@@ -350,7 +350,7 @@ struct DocumentBasedMainView: View {
         let availableHeight = windowSize.height - 24 - rulerOffset
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
-        let fitZoom = max(0.5, min(160.0, min(scaleX, scaleY)))
+        let fitZoom = max(0.5, min(640.0, min(scaleX, scaleY)))
 
         zoomLevel = fitZoom
 
@@ -370,7 +370,7 @@ struct DocumentBasedMainView: View {
 
     private func handleZoomIn() {
         let oldZoom = zoomLevel
-        let newZoom = min(zoomLevel * 1.25, 160.0)
+        let newZoom = min(zoomLevel * 1.25, 640.0)
 
         let viewportCenterX = viewportSize.width / 2
         let viewportCenterY = viewportSize.height / 2
