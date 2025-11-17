@@ -132,9 +132,14 @@ extension VectorDocument {
         let oldSelection = viewState.selectedObjectIDs
         let removedTextIDs = Array(viewState.selectedObjectIDs)
         var removedTextObjects: [UUID: VectorObject] = [:]
+        var removedPositions: [UUID: Int] = [:]
         for uuid in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[uuid] {
                 removedTextObjects[uuid] = obj
+                // Store original position in layer
+                if let position = snapshot.layers[obj.layerIndex].objectIDs.firstIndex(of: uuid) {
+                    removedPositions[uuid] = position
+                }
             }
         }
 
@@ -199,6 +204,7 @@ extension VectorDocument {
                 operation: .convertToOutlines(
                     removedTextIDs: removedTextIDs,
                     removedObjects: removedTextObjects,
+                    removedPositions: removedPositions,
                     addedShapeIDs: Array(newShapeIDs),
                     addedObjects: addedShapeObjects
                 ),
