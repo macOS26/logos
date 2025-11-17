@@ -183,6 +183,8 @@ struct DrawingCanvas: View {
     @State internal var hasPerformedInitialFitToPage = false
     @State internal var hasSpatialIndexInitialized = false
     @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
+    @State internal var immediateTransformBoxBounds: CGRect? = nil
+    @State internal var immediateTransformBoxDelta: CGPoint = .zero
 
     var body: some View {
         GeometryReader { geometry in

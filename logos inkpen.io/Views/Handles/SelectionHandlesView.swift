@@ -12,6 +12,8 @@ struct SelectionHandlesView: View {
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
     let liveNudgeOffset: CGVector
+    let immediateTransformBoxBounds: CGRect?
+    let immediateTransformBoxDelta: CGPoint
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
 
@@ -22,6 +24,34 @@ struct SelectionHandlesView: View {
 
     var body: some View {
         ZStack {
+            // Show immediate transform box from cached bounds + delta (appears FIRST after drag ends)
+            if let bounds = immediateTransformBoxBounds {
+                Canvas { context, size in
+                    let zoom = zoomLevel
+                    let offset = canvasOffset
+
+                    // Apply delta to cached bounds
+                    let finalBounds = CGRect(
+                        x: bounds.origin.x + immediateTransformBoxDelta.x,
+                        y: bounds.origin.y + immediateTransformBoxDelta.y,
+                        width: bounds.width,
+                        height: bounds.height
+                    )
+
+                    // Convert to screen coordinates
+                    let screenRect = CGRect(
+                        x: finalBounds.origin.x * zoom + offset.x,
+                        y: finalBounds.origin.y * zoom + offset.y,
+                        width: finalBounds.width * zoom,
+                        height: finalBounds.height * zoom
+                    )
+
+                    let path = Path(screenRect)
+                    context.stroke(path, with: .color(Color.black.opacity(0.5)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
+                }
+                .allowsHitTesting(false)
+            }
+
             // Only render if there are selected objects
             if !document.viewState.selectedObjectIDs.isEmpty {
                 // For multi-selection, show ONE combined bounding box

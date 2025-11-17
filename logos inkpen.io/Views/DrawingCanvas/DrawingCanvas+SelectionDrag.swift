@@ -197,8 +197,14 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // IMMEDIATELY clear drag state to show transform box
+            // Cache the bounds and delta to show transform box IMMEDIATELY
             let finalDelta = currentDragDelta
+            if let bounds = cachedSelectionBoundsForDrag {
+                immediateTransformBoxBounds = bounds
+                immediateTransformBoxDelta = finalDelta
+            }
+
+            // IMMEDIATELY clear drag state to show transform box
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
@@ -287,6 +293,12 @@ extension DrawingCanvas {
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
+
+            // Clear cached transform box after document updates
+            DispatchQueue.main.async {
+                immediateTransformBoxBounds = nil
+                immediateTransformBoxDelta = .zero
+            }
 
         } else {
             liveDragOffset = .zero
