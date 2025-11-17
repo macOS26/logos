@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import simd
 
 extension DrawingCanvas {
 
@@ -106,8 +107,11 @@ extension DrawingCanvas {
     internal func applyTransformToCornerRadii(shape: inout VectorShape) {
         guard !shape.transform.isIdentity else { return }
 
-        let scaleX = sqrt(shape.transform.a * shape.transform.a + shape.transform.c * shape.transform.c)
-        let scaleY = sqrt(shape.transform.b * shape.transform.b + shape.transform.d * shape.transform.d)
+        // SIMD-optimized transform scale calculation
+        let colX = SIMD2<Double>(Double(shape.transform.a), Double(shape.transform.c))
+        let colY = SIMD2<Double>(Double(shape.transform.b), Double(shape.transform.d))
+        let scaleX = simd_length(colX)
+        let scaleY = simd_length(colY)
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 
