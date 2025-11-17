@@ -1,6 +1,6 @@
 import SwiftUI
-import SwiftUI
 import Combine
+import simd
 
 struct EnvelopeHandles: View {
     @ObservedObject var document: VectorDocument
@@ -555,9 +555,9 @@ struct EnvelopeHandles: View {
         let det = rightVector.x * downVector.y - rightVector.y * downVector.x
 
         if abs(det) < 1e-10 {
-            // SIMD-optimized vector length calculation: sqrt(x² + y²)
-            let rightLength = sqrt(rightVector.x * rightVector.x + rightVector.y * rightVector.y)
-            let downLength = sqrt(downVector.x * downVector.x + downVector.y * downVector.y)
+            // SIMD-optimized vector length calculation
+            let rightLength = simd_length(SIMD2(Double(rightVector.x), Double(rightVector.y)))
+            let downLength = simd_length(SIMD2(Double(downVector.x), Double(downVector.y)))
             let u: CGFloat = rightLength > 0 ?
             (pointVector.x * rightVector.x + pointVector.y * rightVector.y) / (rightLength * rightLength) : 0
             let v: CGFloat = downLength > 0 ?
