@@ -36,11 +36,8 @@ final class AppEventMonitor {
             self.lock.unlock()
 
             guard let activeDoc = activeDoc else {
-                print("⚠️ No active document in AppEventMonitor")
                 return event
             }
-
-            print("🔑 Handling key event for document \(ObjectIdentifier(activeDoc))")
 
             // Handle the event using the active document
             return self.handleKeyEvent(event, activeDoc: activeDoc)
