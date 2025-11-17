@@ -21,8 +21,11 @@ final class AppEventMonitor {
 
             // Get the active document from registry
             guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else {
+                print("⚠️ AppEventMonitor: No active document in registry")
                 return event
             }
+
+            print("🔑 AppEventMonitor: Handling key event for document \(ObjectIdentifier(activeDoc))")
 
             // Handle the event using the active document
             return self.handleKeyEvent(event, activeDoc: activeDoc)
