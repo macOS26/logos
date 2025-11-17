@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 struct ProfessionalBezierMathematics {
 
@@ -109,8 +110,8 @@ case independent = "Independent"
             for i in 0..<(currentPoints.count - 1) {
                 let p0 = currentPoints[i].simdPoint
                 let p1 = currentPoints[i + 1].simdPoint
-                // SIMD linear interpolation: p0 + (p1 - p0) * t
-                let interpolated = p0 + (p1 - p0) * t
+                // SIMD mix for linear interpolation
+                let interpolated = simd_mix(p0, p1, SIMD2<Double>(repeating: t))
                 nextLevel.append(VectorPoint(simd: interpolated))
             }
 
