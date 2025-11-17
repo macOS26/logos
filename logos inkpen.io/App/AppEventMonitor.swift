@@ -5,9 +5,18 @@ import AppKit
 final class AppEventMonitor {
     static let shared = AppEventMonitor()
     private var keyEventMonitor: Any?
+    private let lock = NSLock()
+    private(set) var activeDocument: VectorDocument?
 
     private init() {
         setupKeyEventMonitoring()
+    }
+
+    func setActiveDocument(_ document: VectorDocument) {
+        lock.lock()
+        defer { lock.unlock() }
+        activeDocument = document
+        print("🎯 AppEventMonitor: activeDocument set to \(ObjectIdentifier(document))")
     }
 
     private func setupKeyEventMonitoring() {
@@ -19,11 +28,9 @@ final class AppEventMonitor {
                 return event
             }
 
-            // Get the document from the focused window's DocumentState
-            let allDocumentStates = DocumentStateRegistry.shared.table.allObjects
-            guard let focusedDocState = allDocumentStates.first(where: { $0.isFocused }),
-                  let activeDoc = focusedDocState.document else {
-                print("⚠️ No focused DocumentState found. States: \(allDocumentStates.count), focused: \(allDocumentStates.map { $0.isFocused })")
+            // Get the active document
+            guard let activeDoc = self.activeDocument else {
+                print("⚠️ No active document in AppEventMonitor")
                 return event
             }
 

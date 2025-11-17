@@ -250,7 +250,7 @@ struct DocumentBasedMainView: View {
             }
 
             documentState.setDocument(document)
-            documentState.isFocused = true
+            AppEventMonitor.shared.setActiveDocument(document)
 
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
@@ -272,15 +272,12 @@ struct DocumentBasedMainView: View {
             handleActualSize()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
-            // When ANY window becomes key, update all DocumentStates
-            let allStates = DocumentStateRegistry.shared.table.allObjects
-            print("🪟 Window became key. Clearing focus on \(allStates.count) states")
-            for state in allStates {
-                state.isFocused = false
+            // Update active document when this window becomes key
+            if let window = notification.object as? NSWindow,
+               window == NSApp.keyWindow {
+                AppEventMonitor.shared.setActiveDocument(document)
+                print("🪟 Window became key for document \(ObjectIdentifier(document))")
             }
-            // Mark only this document as focused
-            documentState.isFocused = true
-            print("🎯 Set isFocused=true for document \(ObjectIdentifier(document))")
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             // Mark as not focused when window loses focus
