@@ -1,6 +1,7 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
-
+#endif
 import MetalKit
 
 extension DrawingCanvas {
@@ -16,6 +17,7 @@ extension DrawingCanvas {
 
             pressureSensitiveOverlay(geometry: geometry)
 
+            #if os(macOS)
             CanvasCursorOverlayView(
                 isHovering: isCanvasHovering,
                 currentTool: document.viewState.currentTool,
@@ -23,6 +25,7 @@ extension DrawingCanvas {
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset
             )
+            #endif
         }
         // Apply live pan/zoom as GPU transforms for 60fps performance
         .scaleEffect(liveZoomDelta)
@@ -36,6 +39,7 @@ extension DrawingCanvas {
         }
         .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
+            #if os(macOS)
             if isCanvasHovering {
                 if newTool == .hand {
                     HandOpenCursor.set()
@@ -51,9 +55,11 @@ extension DrawingCanvas {
                     NSCursor.arrow.set()
                 }
             }
+            #endif
         }
         .onHover { isHovering in
             isCanvasHovering = isHovering
+            #if os(macOS)
             if isHovering {
                 if document.viewState.currentTool == .hand {
                     HandOpenCursor.set()
@@ -69,15 +75,19 @@ extension DrawingCanvas {
             } else {
                 NSCursor.arrow.set()
             }
+            #endif
         }
         .onContinuousHover { phase in
             handleHover(phase: phase, geometry: geometry)
+            #if os(macOS)
             if isCanvasHovering && document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
+            #endif
         }
         .onTapGesture { location in
             handleUnifiedTap(at: location, geometry: geometry)
+            #if os(macOS)
             let pointInView = location
             let insideCanvas = pointInView.x >= 0 && pointInView.y >= 0 &&
                 pointInView.x <= geometry.size.width && pointInView.y <= geometry.size.height
@@ -113,6 +123,7 @@ extension DrawingCanvas {
                     }
                 }
             }
+            #endif
         }
         .onTapGesture { location in
             handleUnifiedTap(at: location, geometry: geometry)
@@ -142,6 +153,7 @@ extension DrawingCanvas {
             }
         }
         .onChange(of: zoomLevel) { _, _ in
+            #if os(macOS)
             if isCanvasHovering {
                 switch document.viewState.currentTool {
                 case .hand:
@@ -174,8 +186,10 @@ extension DrawingCanvas {
                     }
                 }
             }
+            #endif
         }
         .onChange(of: canvasOffset) { _, _ in
+            #if os(macOS)
             if isCanvasHovering {
                 switch document.viewState.currentTool {
                 case .hand:
@@ -192,6 +206,7 @@ extension DrawingCanvas {
                     break
                 }
             }
+            #endif
         }
         .contextMenu {
             directSelectionContextMenu

@@ -423,7 +423,9 @@ extension DrawingCanvas {
         currentSelectionRange = NSRange(location: 0, length: 0)
 
         isTextEditingMode = false
+        #if os(macOS)
         NSCursor.arrow.set()
+        #endif
 
         if let window = NSApp.keyWindow {
             window.makeFirstResponder(nil)
@@ -448,7 +450,9 @@ extension DrawingCanvas {
         currentSelectionRange = NSRange(location: 0, length: 0)
 
         isTextEditingMode = false
+        #if os(macOS)
         NSCursor.arrow.set()
+        #endif
 
         if let window = NSApp.keyWindow {
             window.makeFirstResponder(nil)

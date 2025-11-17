@@ -13,7 +13,9 @@ extension DrawingCanvas {
             startEditingText(textID: textID, at: canvasLocation)
 
             isTextEditingMode = true
+            #if os(macOS)
             NSCursor.iBeam.set()
+            #endif
         }
     }
 
@@ -83,7 +85,9 @@ extension DrawingCanvas {
             }
 
         case .zoom:
+            #if os(macOS)
             MagnifyingGlassCursor.set()
+            #endif
             let focalPoint = location
             let currentZoom = CGFloat(zoomLevel)
             let targetZoom: CGFloat
@@ -93,6 +97,7 @@ extension DrawingCanvas {
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
+            #if os(macOS)
             if isCanvasHovering && document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
@@ -101,6 +106,7 @@ extension DrawingCanvas {
                     MagnifyingGlassCursor.set()
                 }
             }
+            #endif
 
         case .eyedropper:
             startEyedropperColorPick()
@@ -124,7 +130,9 @@ extension DrawingCanvas {
                 zoomToolInitialZoomLevel = zoomLevel
                 isActivelyZooming = true
             }
+            #if os(macOS)
             MagnifyingGlassCursor.set()
+            #endif
             let deltaY = value.location.y - zoomToolDragStartPoint.y
             let sensitivity: CGFloat = 300.0
             var scaleChange = exp(-deltaY / sensitivity)
@@ -285,11 +293,13 @@ extension DrawingCanvas {
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
 
+        #if os(macOS)
         if isCanvasHovering && document.viewState.currentTool == .hand {
             NSCursor.openHand.set()
         } else {
             NSCursor.arrow.set()
         }
+        #endif
     }
 
     private func resetShapeDrawingState() {

@@ -72,10 +72,12 @@ extension DrawingCanvas {
 
         initialZoomLevel = finalZoomLevel
 
+        #if os(macOS)
         if isCanvasHovering && document.viewState.currentTool == .zoom {
             MagnifyingGlassCursor.set()
             DispatchQueue.main.async { if isCanvasHovering && document.viewState.currentTool == .zoom { MagnifyingGlassCursor.set() } }
         }
+        #endif
     }
 
     internal func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
@@ -101,6 +103,7 @@ extension DrawingCanvas {
 
         document.clearZoomRequest()
 
+        #if os(macOS)
         if isCanvasHovering {
             switch document.viewState.currentTool {
             case .hand:
@@ -129,5 +132,6 @@ extension DrawingCanvas {
                 }
             }
         }
+        #endif
     }
 }

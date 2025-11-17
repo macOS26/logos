@@ -1,4 +1,6 @@
 import SwiftUI
+
+#if os(macOS)
 import AppKit
 
 struct CanvasCursorOverlayView: View {
@@ -191,3 +193,5 @@ private final class CursorOverlayNSView: NSView {
         cursorLockUntil = .distantPast
     }
 }
+
+#endif // os(macOS)

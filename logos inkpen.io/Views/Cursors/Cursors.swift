@@ -1,5 +1,8 @@
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+
 // MARK: - macOS-Only Cursor Definitions
 // This file uses NSCursor and NSImage which are macOS-only.
 // Uses CGPath and CGContext for drawing (cross-platform APIs).
@@ -106,6 +109,10 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
 }
 
 let CrosshairCursor: NSCursor = makeCrosshairCursor()
+
+#endif // os(macOS)
+
+// MARK: - Cross-platform utilities (iOS & macOS)
 
 struct HashableCGPoint: Hashable, Equatable {
     let point: CGPoint

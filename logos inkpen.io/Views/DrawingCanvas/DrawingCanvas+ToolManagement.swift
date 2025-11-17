@@ -68,7 +68,9 @@ extension DrawingCanvas {
         }
 
         isTextEditingMode = false
+        #if os(macOS)
         NSCursor.arrow.set()
+        #endif
 
         if let window = NSApp.keyWindow {
             window.makeFirstResponder(nil)

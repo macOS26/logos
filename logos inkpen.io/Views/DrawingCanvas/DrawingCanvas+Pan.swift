@@ -11,7 +11,9 @@ extension DrawingCanvas {
             handToolDragStart = value.startLocation
             isPanGestureActive = true
 
+            #if os(macOS)
             HandClosedCursor.set()
+            #endif
         }
 
         let cursorDelta = CGPoint(
@@ -19,9 +21,11 @@ extension DrawingCanvas {
             y: value.location.y - handToolDragStart.y
         )
 
+        #if os(macOS)
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
+        #endif
         canvasOffset = CGPoint(
             x: initialCanvasOffset.x + cursorDelta.x,
             y: initialCanvasOffset.y + cursorDelta.y

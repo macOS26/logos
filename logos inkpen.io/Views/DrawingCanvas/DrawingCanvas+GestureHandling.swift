@@ -7,6 +7,7 @@ extension DrawingCanvas {
         if case .active(let location) = phase {
             currentMouseLocation = location
             currentMousePosition = location
+            #if os(macOS)
             if isTextEditingMode {
                 NSCursor.iBeam.set()
             } else if document.viewState.currentTool == .hand {
@@ -19,6 +20,7 @@ extension DrawingCanvas {
             } else if document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
+            #endif
 
             if isBezierDrawing && document.viewState.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
@@ -53,9 +55,11 @@ extension DrawingCanvas {
         } else {
             currentMouseLocation = nil
             showClosePathHint = false
+            #if os(macOS)
             if !isCanvasHovering {
                 NSCursor.arrow.set()
             }
+            #endif
 
         }
     }
