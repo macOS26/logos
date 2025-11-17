@@ -49,6 +49,11 @@ final class AppEventMonitor {
     private var temporaryTool: DrawingTool?
     private var previousTool: DrawingTool?
 
+    // Nudge state tracking
+    private var accumulatedNudgeOffset: CGVector = .zero
+    private var lastNudgeTime: Date = Date.distantPast
+    private var isNudging: Bool = false
+
     private func handleKeyEvent(_ event: NSEvent, activeDoc: VectorDocument) -> NSEvent? {
 
         // Don't intercept events when editing text
@@ -117,7 +122,7 @@ final class AppEventMonitor {
             return nil
         }
 
-        // Arrow keys
+        // Arrow keys - keyDown accumulates offset
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers {
             let arrowUp = "\u{F700}"
@@ -151,6 +156,14 @@ final class AppEventMonitor {
                     }
 
                     if let direction = nudgeDirection {
+                        // Reset if new nudge session (> 0.5s since last nudge)
+                        let now = Date()
+                        if now.timeIntervalSince(lastNudgeTime) > 0.5 {
+                            accumulatedNudgeOffset = .zero
+                            isNudging = false
+                        }
+                        lastNudgeTime = now
+
                         // Convert grid spacing from document units to points
                         let gridSpacingInPoints = activeDoc.settings.gridSpacing * activeDoc.settings.unit.pointsPerUnit
 
@@ -161,10 +174,41 @@ final class AppEventMonitor {
                             dx: direction.dx * gridSpacingInPoints * multiplier,
                             dy: direction.dy * gridSpacingInPoints * multiplier
                         )
-                        activeDoc.nudgeSelectedObjects(by: nudgeAmount)
+
+                        // Accumulate offset
+                        accumulatedNudgeOffset.dx += nudgeAmount.dx
+                        accumulatedNudgeOffset.dy += nudgeAmount.dy
+                        isNudging = true
+
+                        // Apply live offset to viewState
+                        activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
+
                         return nil
                     }
                 }
+            }
+        }
+
+        // Arrow keys - keyUp commits the accumulated offset
+        if event.type == .keyUp,
+           let characters = event.charactersIgnoringModifiers {
+            let arrowUp = "\u{F700}"
+            let arrowDown = "\u{F701}"
+            let arrowLeft = "\u{F702}"
+            let arrowRight = "\u{F703}"
+
+            if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) && isNudging {
+                // Commit the accumulated offset
+                if accumulatedNudgeOffset != .zero {
+                    activeDoc.nudgeSelectedObjects(by: accumulatedNudgeOffset)
+                }
+
+                // Reset state
+                accumulatedNudgeOffset = .zero
+                activeDoc.viewState.liveNudgeOffset = .zero
+                isNudging = false
+
+                return nil
             }
         }
 
