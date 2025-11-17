@@ -1071,13 +1071,8 @@ class DocumentState: ObservableObject {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 guard document.viewState.selectedObjectIDs.contains(shape.id) else { continue }
                 var cgImage: CGImage? = ImageContentRegistry.image(for: shape.id, in: document)
-                if cgImage == nil, let path = shape.linkedImagePath {
-                    let url = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
-                    if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
-                       let img = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                        cgImage = img
-                        ImageContentRegistry.register(image: img, for: shape.id, in: document)
-                    }
+                if cgImage == nil {
+                    cgImage = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
                 guard let image = cgImage else { continue }
 
