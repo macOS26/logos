@@ -116,7 +116,8 @@ struct DocumentSettingsView: View {
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
                 }
-                .padding(24)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
