@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 extension DrawingCanvas {
 
@@ -12,17 +13,15 @@ extension DrawingCanvas {
     }
 
     private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
-        let preciseOffsetX = Double(canvasOffset.x)
-        let preciseOffsetY = Double(canvasOffset.y)
-        let preciseZoom = Double(zoomLevel)
+        // SIMD optimization for batch coordinate transformation
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let zoom = Float(zoomLevel)
 
         return points.map { point in
-            let preciseScreenX = Double(point.x)
-            let preciseScreenY = Double(point.y)
-            let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
-            let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
+            let screenVec = SIMD2<Float>(Float(point.x), Float(point.y))
+            let canvasVec = (screenVec - offsetVec) / zoom
 
-            return CGPoint(x: canvasX, y: canvasY)
+            return CGPoint(x: CGFloat(canvasVec.x), y: CGFloat(canvasVec.y))
         }
     }
 
@@ -35,17 +34,15 @@ extension DrawingCanvas {
     }
 
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        let preciseOffsetX = Double(canvasOffset.x)
-        let preciseOffsetY = Double(canvasOffset.y)
-        let preciseZoom = Double(zoomLevel)
+        // SIMD optimization for batch coordinate transformation
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let zoom = Float(zoomLevel)
 
         return points.map { point in
-            let preciseCanvasX = Double(point.x)
-            let preciseCanvasY = Double(point.y)
-            let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
-            let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
+            let canvasVec = SIMD2<Float>(Float(point.x), Float(point.y))
+            let screenVec = canvasVec * zoom + offsetVec
 
-            return CGPoint(x: screenX, y: screenY)
+            return CGPoint(x: CGFloat(screenVec.x), y: CGFloat(screenVec.y))
         }
     }
 
@@ -148,29 +145,25 @@ extension DrawingCanvas {
 
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
 
-        let preciseOldZoom = Double(oldZoomLevel)
-        let preciseNewZoom = Double(newZoomLevel)
-        let preciseFocalX = Double(focalPoint.x)
-        let preciseFocalY = Double(focalPoint.y)
-        let preciseOffsetX = Double(canvasOffset.x)
-        let preciseOffsetY = Double(canvasOffset.y)
-        let canvasPointAtFocus = CGPoint(
-            x: (preciseFocalX - preciseOffsetX) / preciseOldZoom,
-            y: (preciseFocalY - preciseOffsetY) / preciseOldZoom
-        )
+        // SIMD optimization for zoom focal point calculation
+        let focalVec = SIMD2<Float>(Float(focalPoint.x), Float(focalPoint.y))
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let oldZoom = Float(oldZoomLevel)
+        let newZoom = Float(newZoomLevel)
 
-        let newOffset = CGPoint(
-            x: preciseFocalX - (Double(canvasPointAtFocus.x) * preciseNewZoom),
-            y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
-        )
+        // Calculate canvas point at focal point: (focal - offset) / oldZoom
+        let canvasPointAtFocus = (focalVec - offsetVec) / oldZoom
+
+        // Calculate new offset: focal - (canvasPoint * newZoom)
+        let newOffsetVec = focalVec - (canvasPointAtFocus * newZoom)
+
+        let newOffset = CGPoint(x: CGFloat(newOffsetVec.x), y: CGFloat(newOffsetVec.y))
 
         if isLive {
             // During active gesture - update deltas only (GPU transform, no Canvas re-render)
             liveZoomDelta = newZoomLevel / zoomLevel
-            livePanDelta = CGPoint(
-                x: newOffset.x - canvasOffset.x,
-                y: newOffset.y - canvasOffset.y
-            )
+            let panDeltaVec = newOffsetVec - offsetVec
+            livePanDelta = CGPoint(x: CGFloat(panDeltaVec.x), y: CGFloat(panDeltaVec.y))
         } else {
             // After gesture end - bake deltas into real values
             zoomLevel = newZoomLevel

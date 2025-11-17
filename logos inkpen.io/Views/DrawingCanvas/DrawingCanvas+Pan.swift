@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import simd
 
 fileprivate let enableHandToolLogging = false
 
@@ -16,20 +17,20 @@ extension DrawingCanvas {
             #endif
         }
 
-        let cursorDelta = CGPoint(
-            x: value.location.x - handToolDragStart.x,
-            y: value.location.y - handToolDragStart.y
-        )
+        // SIMD optimization for pan delta calculation
+        let currentLoc = SIMD2<Float>(Float(value.location.x), Float(value.location.y))
+        let startLoc = SIMD2<Float>(Float(handToolDragStart.x), Float(handToolDragStart.y))
+        let initialOffset = SIMD2<Float>(Float(initialCanvasOffset.x), Float(initialCanvasOffset.y))
+
+        let delta = currentLoc - startLoc
+        let newOffset = initialOffset + delta
 
         #if os(macOS)
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
         #endif
-        canvasOffset = CGPoint(
-            x: initialCanvasOffset.x + cursorDelta.x,
-            y: initialCanvasOffset.y + cursorDelta.y
-        )
+        canvasOffset = CGPoint(x: CGFloat(newOffset.x), y: CGFloat(newOffset.y))
 
     }
 }
