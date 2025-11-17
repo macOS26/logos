@@ -48,31 +48,31 @@ struct TransformBoxHandles: View {
         let shouldHideDuringDrag = settings.hideTransformBoxDuringDrag && dragPreviewDelta != .zero
 
         ZStack {
-            if !shouldHideDuringDrag {
-                // Render transform box outline using Canvas (like direct selection)
-                Canvas { context, size in
-                    let zoom = zoomLevel
-                    let offset = canvasOffset
+            // Render transform box outline using Canvas (like direct selection)
+            // Always render to keep it ready, but make invisible if hiding during drag
+            Canvas { context, size in
+                let zoom = zoomLevel
+                let offset = canvasOffset
 
-                    // Apply preview transform to bounds if scaling
-                    let displayBounds = (isScaling && !previewTransform.isIdentity)
-                        ? transformedBounds.applying(previewTransform)
-                        : transformedBounds
+                // Apply preview transform to bounds if scaling
+                let displayBounds = (isScaling && !previewTransform.isIdentity)
+                    ? transformedBounds.applying(previewTransform)
+                    : transformedBounds
 
-                    // Convert bounds to screen coordinates
-                    // dragPreviewDelta is applied in canvas space, so scale it by zoom
-                    let screenRect = CGRect(
-                        x: displayBounds.origin.x * zoom + offset.x + (dragPreviewDelta.x * zoom),
-                        y: displayBounds.origin.y * zoom + offset.y + (dragPreviewDelta.y * zoom),
-                        width: displayBounds.width * zoom,
-                        height: displayBounds.height * zoom
-                    )
+                // Convert bounds to screen coordinates
+                // dragPreviewDelta is applied in canvas space, so scale it by zoom
+                let screenRect = CGRect(
+                    x: displayBounds.origin.x * zoom + offset.x + (dragPreviewDelta.x * zoom),
+                    y: displayBounds.origin.y * zoom + offset.y + (dragPreviewDelta.y * zoom),
+                    width: displayBounds.width * zoom,
+                    height: displayBounds.height * zoom
+                )
 
-                    let path = Path(screenRect)
-                    context.stroke(path, with: .color(strokeColor), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
-                }
-                .allowsHitTesting(false)
+                let path = Path(screenRect)
+                context.stroke(path, with: .color(strokeColor), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
+            .allowsHitTesting(false)
+            .opacity(shouldHideDuringDrag ? 0 : 1)
 
             // Only show red preview lines if live preview is disabled
             if isScaling && !previewTransform.isIdentity && !settings.liveScalingPreview {
@@ -224,8 +224,8 @@ struct TransformBoxHandles: View {
                 ? transformedBounds.applying(previewTransform)
                 : transformedBounds
 
-            if !shouldHideDuringDrag {
-                ForEach(0..<9) { index in
+            // Always render handles to keep them ready, but make invisible if hiding during drag
+            ForEach(0..<9) { index in
                 let pt = handlePosition(index: index, in: displayBounds)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
                 let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
@@ -269,7 +269,7 @@ struct TransformBoxHandles: View {
                         endScaling()
                     }
             )
-                }
+            .opacity(shouldHideDuringDrag ? 0 : 1)
             }
         }
         .onAppear {
