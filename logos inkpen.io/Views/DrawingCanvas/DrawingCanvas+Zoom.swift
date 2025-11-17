@@ -59,14 +59,16 @@ extension DrawingCanvas {
         let elasticZoom: CGFloat
 
         if newZoomLevel < minZoom {
-            // Elastic resistance when zooming out past minimum
+            // Elastic resistance when zooming out past minimum (like Safari)
             let overshoot = minZoom - newZoomLevel
-            let dampenedOvershoot = overshoot * 0.2 // 20% of the overshoot
+            // Use a rubber-band formula: resistance increases with distance
+            let dampenedOvershoot = sqrt(overshoot) * 0.15
             elasticZoom = minZoom - dampenedOvershoot
         } else if newZoomLevel > maxZoom {
-            // Elastic resistance when zooming in past maximum
+            // Elastic resistance when zooming in past maximum (like Safari)
             let overshoot = newZoomLevel - maxZoom
-            let dampenedOvershoot = overshoot * 0.2 // 20% of the overshoot
+            // Use a rubber-band formula: resistance increases with distance
+            let dampenedOvershoot = sqrt(overshoot) * 0.5
             elasticZoom = maxZoom + dampenedOvershoot
         } else {
             elasticZoom = newZoomLevel
