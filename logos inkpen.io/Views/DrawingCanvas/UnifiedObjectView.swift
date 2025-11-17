@@ -1166,12 +1166,25 @@ struct LayerCanvasView: View {
         defer { if started { url.stopAccessingSecurityScopedResource() } }
 
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+              let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             print("❌ Failed to load image from bookmark URL: \(url.path)")
             return nil
         }
 
-        return cgImage
+        // Force image into memory to break file reference
+        let width = sourceCGImage.width
+        let height = sourceCGImage.height
+        let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = sourceCGImage.bitmapInfo
+
+        if let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+            context.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            if let memoryCGImage = context.makeImage() {
+                return memoryCGImage
+            }
+        }
+
+        return sourceCGImage
     }
 
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {

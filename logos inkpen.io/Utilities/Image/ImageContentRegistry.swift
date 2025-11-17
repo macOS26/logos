@@ -40,9 +40,27 @@ enum ImageContentRegistry {
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
-                   let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                    loadedCGImage = cgImage
-                    print("✅ [Registry] Loaded linked image via bookmark: \(url.path)")
+                   let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
+                    // Force image into memory to break file reference
+                    // This prevents Core Graphics from trying to access the file later without bookmark
+                    let width = sourceCGImage.width
+                    let height = sourceCGImage.height
+                    let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+                    let bitmapInfo = sourceCGImage.bitmapInfo
+
+                    if let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+                        context.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+                        if let memoryCGImage = context.makeImage() {
+                            loadedCGImage = memoryCGImage
+                            print("✅ [Registry] Loaded linked image via bookmark (forced to memory): \(url.path)")
+                        } else {
+                            loadedCGImage = sourceCGImage
+                            print("⚠️ [Registry] Using source image (failed to copy to memory): \(url.path)")
+                        }
+                    } else {
+                        loadedCGImage = sourceCGImage
+                        print("⚠️ [Registry] Using source image (no context): \(url.path)")
+                    }
                 } else {
                     print("❌ [Registry] Failed to create CGImage from: \(url.path)")
                 }
