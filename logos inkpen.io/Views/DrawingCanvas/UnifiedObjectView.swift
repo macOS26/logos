@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreGraphics
+import simd
 
 struct PasteboardBackgroundView: View {
     let pasteboardSize: CGSize
@@ -840,22 +841,21 @@ struct LayerCanvasView: View {
             let centerY = pathBounds.minY + pathBounds.height * originY
             let angle = CGFloat(linear.storedAngle * .pi / 180.0)
 
-            let dx = linear.endPoint.x - linear.startPoint.x
-            let dy = linear.endPoint.y - linear.startPoint.y
-            let length = sqrt(dx * dx + dy * dy) * scale * max(pathBounds.width, pathBounds.height)
+            // SIMD-optimized gradient calculations
+            let startVec = SIMD2<Double>(Double(linear.startPoint.x), Double(linear.startPoint.y))
+            let endVec = SIMD2<Double>(Double(linear.endPoint.x), Double(linear.endPoint.y))
+            let delta = endVec - startVec
+            let length = simd_length(delta) * scale * max(pathBounds.width, pathBounds.height)
 
             let halfLength = length / 2
-            let cosAngle = cos(angle)
-            let sinAngle = sin(angle)
+            let angleVec = SIMD2<Double>(cos(Double(angle)), sin(Double(angle)))
+            let centerVec = SIMD2<Double>(Double(centerX), Double(centerY))
 
-            let start = CGPoint(
-                x: centerX - cosAngle * halfLength,
-                y: centerY - sinAngle * halfLength
-            )
-            let end = CGPoint(
-                x: centerX + cosAngle * halfLength,
-                y: centerY + sinAngle * halfLength
-            )
+            let startVec2 = centerVec - angleVec * halfLength
+            let endVec2 = centerVec + angleVec * halfLength
+
+            let start = CGPoint(x: startVec2.x, y: startVec2.y)
+            let end = CGPoint(x: endVec2.x, y: endVec2.y)
 
             cgContext.drawLinearGradient(
                 cgGradient,
