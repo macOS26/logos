@@ -801,7 +801,7 @@ struct GradientFillSection: View {
                 affectedLayers.insert(updatedObject.layerIndex)
             }
         }
-        document.triggerLayerUpdates(for: affectedLayers)
+        // Don't trigger layer updates - let Canvas update via .id(layerUpdateTrigger) when command executes
     }
 
     func addGradientToSwatches() {
