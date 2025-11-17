@@ -42,7 +42,7 @@ extension StrokeDefaults: Codable {
 
 // MARK: - Grid Settings
 
-struct GridSettings: Codable, Equatable {
+struct GridSettings: Equatable {
     var showRulers: Bool
     var showGrid: Bool
     var snapToGrid: Bool
@@ -58,6 +58,32 @@ struct GridSettings: Codable, Equatable {
         gridSpacing: 12.0,
         gridOnTop: false
     )
+}
+
+extension GridSettings: Codable {
+    enum CodingKeys: String, CodingKey {
+        case showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, gridOnTop
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        showRulers = try container.decode(Bool.self, forKey: .showRulers)
+        showGrid = try container.decode(Bool.self, forKey: .showGrid)
+        snapToGrid = try container.decode(Bool.self, forKey: .snapToGrid)
+        snapToPoint = try container.decode(Bool.self, forKey: .snapToPoint)
+        gridSpacing = try container.decode(Double.self, forKey: .gridSpacing)
+        gridOnTop = try container.decodeIfPresent(Bool.self, forKey: .gridOnTop) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(showRulers, forKey: .showRulers)
+        try container.encode(showGrid, forKey: .showGrid)
+        try container.encode(snapToGrid, forKey: .snapToGrid)
+        try container.encode(snapToPoint, forKey: .snapToPoint)
+        try container.encode(gridSpacing, forKey: .gridSpacing)
+        try container.encode(gridOnTop, forKey: .gridOnTop)
+    }
 }
 
 // MARK: - Color Swatches
