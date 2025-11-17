@@ -29,28 +29,23 @@ struct CurveSmoothing {
         return smoothedPoints
     }
 
+    // SIMD-optimized Chaikin smoothing using simd_mix
     private static func applySingleChaikinIteration(points: [CGPoint], ratio: Double) -> [CGPoint] {
         guard points.count >= 2 else { return points }
 
         var newPoints: [CGPoint] = []
-
         newPoints.append(points[0])
 
         for i in 0..<points.count-1 {
-            let p0 = points[i]
-            let p1 = points[i + 1]
-            let q = CGPoint(
-                x: p0.x + (p1.x - p0.x) * ratio,
-                y: p0.y + (p1.y - p0.y) * ratio
-            )
+            let p0 = points[i].simd
+            let p1 = points[i + 1].simd
 
-            let r = CGPoint(
-                x: p0.x + (p1.x - p0.x) * (1.0 - ratio),
-                y: p0.y + (p1.y - p0.y) * (1.0 - ratio)
-            )
+            // SIMD linear interpolation
+            let q = p0 + (p1 - p0) * ratio
+            let r = p0 + (p1 - p0) * (1.0 - ratio)
 
-            newPoints.append(q)
-            newPoints.append(r)
+            newPoints.append(CGPoint(q))
+            newPoints.append(CGPoint(r))
         }
 
         if let lastPoint = points.last {
@@ -134,49 +129,44 @@ struct CurveSmoothing {
         return elements
     }
 
+    // SIMD-optimized perpendicular distance using simd_dot and simd_length
     private static func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
-        let A = point.x - lineStart.x
-        let B = point.y - lineStart.y
-        let C = lineEnd.x - lineStart.x
-        let D = lineEnd.y - lineStart.y
-        let dot = A * C + B * D
-        let lenSq = C * C + D * D
+        let pointVec = point.simd - lineStart.simd
+        let lineVec = lineEnd.simd - lineStart.simd
+        let lenSq = simd_length_squared(lineVec)
 
         if lenSq == 0 {
-            return sqrt(A * A + B * B)
+            return simd_length(pointVec)
         }
 
-        let param = dot / lenSq
-        let xx, yy: Double
+        let param = simd_dot(pointVec, lineVec) / lenSq
+        let closest: SIMD2<Double>
         if param < 0 {
-            xx = lineStart.x
-            yy = lineStart.y
+            closest = lineStart.simd
         } else if param > 1 {
-            xx = lineEnd.x
-            yy = lineEnd.y
+            closest = lineEnd.simd
         } else {
-            xx = lineStart.x + param * C
-            yy = lineStart.y + param * D
+            closest = lineStart.simd + param * lineVec
         }
 
-        let dx = point.x - xx
-        let dy = point.y - yy
-        return sqrt(dx * dx + dy * dy)
+        return simd_length(point.simd - closest)
     }
 
+    // SIMD-optimized curvature using simd_normalize and simd_dot
     private static func calculateCurvature(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> Double {
-        let v1 = CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-        let v2 = CGPoint(x: p2.x - p1.x, y: p2.y - p1.y)
-        let len1 = sqrt(v1.x * v1.x + v1.y * v1.y)
-        let len2 = sqrt(v2.x * v2.x + v2.y * v2.y)
+        let v1 = p1.simd - p0.simd
+        let v2 = p2.simd - p1.simd
+        let len1 = simd_length(v1)
+        let len2 = simd_length(v2)
 
         if len1 == 0 || len2 == 0 {
             return 0
         }
 
-        let n1 = CGPoint(x: v1.x / len1, y: v1.y / len1)
-        let n2 = CGPoint(x: v2.x / len2, y: v2.y / len2)
-        let dotProduct = n1.x * n2.x + n1.y * n2.y
+        // SIMD normalize and dot product
+        let n1 = simd_normalize(v1)
+        let n2 = simd_normalize(v2)
+        let dotProduct = simd_dot(n1, n2)
 
         return 1.0 - abs(dotProduct)
     }
