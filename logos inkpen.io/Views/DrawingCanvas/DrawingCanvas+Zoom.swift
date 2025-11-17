@@ -42,9 +42,9 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Logarithmic zoom: gradual below 1600% (16.0), faster above
-        // Sensitivity scales from 1.0 at low zoom to 2.0 at 1600%+
-        let sensitivity = 1.0 + min(initialZoomLevel / 16.0, 1.0)
+        // Logarithmic zoom: 1.0x at 100%, scales to 2.0x at 1600%+
+        // Linear interpolation from 100% (1.0) to 1600% (16.0)
+        let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
         let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
@@ -65,9 +65,9 @@ extension DrawingCanvas {
             return
         }
 
-        // Logarithmic zoom: gradual below 1600% (16.0), faster above
-        // Sensitivity scales from 1.0 at low zoom to 2.0 at 1600%+
-        let sensitivity = 1.0 + min(initialZoomLevel / 16.0, 1.0)
+        // Logarithmic zoom: 1.0x at 100%, scales to 2.0x at 1600%+
+        // Linear interpolation from 100% (1.0) to 1600% (16.0)
+        let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
         let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
