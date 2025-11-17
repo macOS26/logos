@@ -5,6 +5,7 @@ struct PreferencesView: View {
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
     @AppStorage("imageTileSize") var tileSize: Int = 512
+    @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 0 // 0=default, 1=none, 2=low, 3=high, 4=medium
     @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {
@@ -94,6 +95,32 @@ struct PreferencesView: View {
                             .buttonStyle(.bordered)
 
                             Spacer()
+                        }
+
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Interpolation Quality:")
+                                    .font(.subheadline)
+
+                                Picker("", selection: $interpolationQuality) {
+                                    Text("Default").tag(0)
+                                    Text("None").tag(1)
+                                    Text("Low").tag(2)
+                                    Text("High").tag(3)
+                                    Text("Medium").tag(4)
+                                }
+                                .labelsHidden()
+                                .frame(width: 120)
+
+                                Spacer()
+                            }
+
+                            Text("Quality of image scaling. Default is recommended.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                     }
                     .padding(.vertical, 8)
