@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import simd
 
 func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
     let metalEngine = MetalComputeEngine.shared
@@ -21,28 +22,21 @@ func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, origina
 }
 
 private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
-    let draggedVector = CGPoint(
-        x: draggedHandle.x - anchorPoint.x,
-        y: draggedHandle.y - anchorPoint.y
-    )
+    // SIMD-optimized vector operations
+    let anchorVec = SIMD2<Double>(Double(anchorPoint.x), Double(anchorPoint.y))
+    let draggedVec = SIMD2<Double>(Double(draggedHandle.x), Double(draggedHandle.y))
+    let originalVec = SIMD2<Double>(Double(originalOppositeHandle.x), Double(originalOppositeHandle.y))
 
-    let originalVector = CGPoint(
-        x: originalOppositeHandle.x - anchorPoint.x,
-        y: originalOppositeHandle.y - anchorPoint.y
-    )
-    let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
-    let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
+    let draggedVector = draggedVec - anchorVec
+    let originalVector = originalVec - anchorVec
+
+    let originalLength = simd_length(originalVector)
+    let draggedLength = simd_length(draggedVector)
+
     guard draggedLength > 0.1 else { return originalOppositeHandle }
 
-    let normalizedDragged = CGPoint(
-        x: draggedVector.x / draggedLength,
-        y: draggedVector.y / draggedLength
-    )
+    let normalizedDragged = simd_normalize(draggedVector)
+    let linkedHandleVec = anchorVec - normalizedDragged * originalLength
 
-    let linkedHandle = CGPoint(
-        x: anchorPoint.x - normalizedDragged.x * originalLength,
-        y: anchorPoint.y - normalizedDragged.y * originalLength
-    )
-
-    return linkedHandle
+    return CGPoint(x: linkedHandleVec.x, y: linkedHandleVec.y)
 }
