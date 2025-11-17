@@ -34,11 +34,6 @@ extension DrawingCanvas {
         return allowedZoomSteps.first ?? 0.75
     }
 
-    /// Ease-in-ease-out function for smooth zoom transitions
-    private func easeInOutCubic(_ t: Float) -> Float {
-        return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0
-    }
-
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
         guard !isBezierDrawing && !isPanGestureActive else {
             return
@@ -53,11 +48,8 @@ extension DrawingCanvas {
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Apply 1.5x speed with ease-in-ease-out
-        let delta = gestureValue - 1.0
-        let normalizedDelta = delta * 1.5  // 1.5x speed multiplier
-        let easedDelta = easeInOutCubic(normalizedDelta)
-        let adjustedValue = 1.0 + easedDelta
+        // Apply 1.5x speed multiplier directly to gesture
+        let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let newZoomLevel = CGFloat(currentZoom * adjustedValue)
         let clampedZoom = max(0.75, min(640.0, newZoomLevel))
@@ -84,11 +76,8 @@ extension DrawingCanvas {
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Apply 1.5x speed with ease-in-ease-out
-        let delta = gestureValue - 1.0
-        let normalizedDelta = delta * 1.5  // 1.5x speed multiplier
-        let easedDelta = easeInOutCubic(normalizedDelta)
-        let adjustedValue = 1.0 + easedDelta
+        // Apply 1.5x speed multiplier directly to gesture
+        let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))
 
