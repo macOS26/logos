@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 extension DrawingCanvas {
 
@@ -258,31 +259,31 @@ extension DrawingCanvas {
         var bestIntersection: CGPoint?
         var bestScore = Double.infinity
 
+        // SIMD-optimized trig operations
+        let dir1 = SIMD2<Double>(cos(angleFromCurrentRad), sin(angleFromCurrentRad))
+        let currentVec = SIMD2<Double>(Double(currentPoint.x), Double(currentPoint.y))
+        let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
+
         for existingPoint in bezierPoints {
+            let existingVec = SIMD2<Double>(Double(existingPoint.x), Double(existingPoint.y))
+
             for constraintAngleFromPoint in constraintAngles {
                 let angleFromPointRad = constraintAngleFromPoint * .pi / 180.0
-                let cos1 = cos(angleFromCurrentRad)
-                let sin1 = sin(angleFromCurrentRad)
-                let cos2 = cos(angleFromPointRad)
-                let sin2 = sin(angleFromPointRad)
-                let denominator = cos1 * sin2 - sin1 * cos2
+                let dir2 = SIMD2<Double>(cos(angleFromPointRad), sin(angleFromPointRad))
+                let denominator = dir1.x * dir2.y - dir1.y * dir2.x
 
                 if abs(denominator) > 0.001 {
-                    let dx0 = existingPoint.x - currentPoint.x
-                    let dy0 = existingPoint.y - currentPoint.y
-                    let t1 = (dx0 * sin2 - dy0 * cos2) / denominator
-                    let t2 = (dx0 * sin1 - dy0 * cos1) / denominator
+                    let delta = existingVec - currentVec
+                    let t1 = (delta.x * dir2.y - delta.y * dir2.x) / denominator
+                    let t2 = (delta.x * dir1.y - delta.y * dir1.x) / denominator
 
                     if t1 > 0 && t2 > 0 {
-                        let intersectionX = currentPoint.x + t1 * cos1
-                        let intersectionY = currentPoint.y + t1 * sin1
-                        let intersection = CGPoint(x: intersectionX, y: intersectionY)
-                        let distToTarget = sqrt(pow(target.x - intersection.x, 2) +
-                                               pow(target.y - intersection.y, 2))
+                        let intersectionVec = currentVec + dir1 * t1
+                        let distToTarget = simd_length(targetVec - intersectionVec)
 
                         if distToTarget < bestScore {
                             bestScore = distToTarget
-                            bestIntersection = intersection
+                            bestIntersection = CGPoint(x: intersectionVec.x, y: intersectionVec.y)
                         }
                     }
                 }
@@ -293,9 +294,11 @@ extension DrawingCanvas {
     }
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
-        let dx = target.x - reference.x
-        let dy = target.y - reference.y
-        let distance = sqrt(dx * dx + dy * dy)
+        // SIMD-optimized vector operations
+        let refVec = SIMD2<Double>(Double(reference.x), Double(reference.y))
+        let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
+        let delta = targetVec - refVec
+        let distance = simd_length(delta)
 
         guard distance > 0.001 else { return target }
 
@@ -305,7 +308,7 @@ extension DrawingCanvas {
             }
         }
 
-        let angle = atan2(dy, dx)
+        let angle = atan2(delta.y, delta.x)
         var angleDegrees = angle * 180.0 / .pi
         if angleDegrees < 0 {
             angleDegrees += 360
@@ -324,10 +327,11 @@ extension DrawingCanvas {
         }
 
         let constrainedAngleRad = closestAngle * .pi / 180.0
-        let constrainedX = reference.x + distance * cos(constrainedAngleRad)
-        let constrainedY = reference.y + distance * sin(constrainedAngleRad)
+        // SIMD-optimized trig and vector operations
+        let offset = SIMD2<Double>(cos(constrainedAngleRad), sin(constrainedAngleRad)) * distance
+        let result = refVec + offset
 
-        return CGPoint(x: constrainedX, y: constrainedY)
+        return CGPoint(x: result.x, y: result.y)
     }
 
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
