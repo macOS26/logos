@@ -6,6 +6,11 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
+        // Hide transform box when drag starts (if preference enabled)
+        if ApplicationSettings.shared.hideTransformBoxDuringDrag {
+            transformBoxOpacity = 0.0
+        }
+
         // Iterate UUIDs directly - O(1) lookup per object
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
@@ -196,6 +201,9 @@ extension DrawingCanvas {
 
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
+
+            // IMMEDIATELY show transform box before any heavy work
+            transformBoxOpacity = 1.0
 
             // Keep currentDragDelta so transform box stays in position during updates
             let finalDelta = currentDragDelta

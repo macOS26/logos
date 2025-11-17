@@ -9,6 +9,7 @@ struct TransformBoxHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let dragPreviewDelta: CGPoint
+    let transformBoxOpacity: Double
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
@@ -44,8 +45,8 @@ struct TransformBoxHandles: View {
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
-        // Hide transform box during drag if preference is enabled
-        let shouldHideDuringDrag = settings.hideTransformBoxDuringDrag && dragPreviewDelta != .zero
+        // Determine final opacity: use explicit opacity if hiding during drag preference is enabled
+        let finalOpacity = settings.hideTransformBoxDuringDrag ? transformBoxOpacity : 1.0
 
         ZStack {
             // Render transform box outline using Canvas (like direct selection)
@@ -72,7 +73,7 @@ struct TransformBoxHandles: View {
                 context.stroke(path, with: .color(strokeColor), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
             .allowsHitTesting(false)
-            .opacity(shouldHideDuringDrag ? 0 : 1)
+            .opacity(finalOpacity)
 
             // Only show red preview lines if live preview is disabled
             if isScaling && !previewTransform.isIdentity && !settings.liveScalingPreview {
@@ -269,7 +270,7 @@ struct TransformBoxHandles: View {
                         endScaling()
                     }
             )
-            .opacity(shouldHideDuringDrag ? 0 : 1)
+            .opacity(finalOpacity)
             }
         }
         .onAppear {

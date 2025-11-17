@@ -11,6 +11,7 @@ struct SelectionHandlesView: View {
     let isCommandPressed: Bool
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
+    let transformBoxOpacity: Double
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
 
@@ -76,6 +77,7 @@ struct SelectionHandlesView: View {
                                                 zoomLevel: zoomLevel,
                                                 canvasOffset: canvasOffset,
                                                 dragPreviewDelta: dragPreviewDelta,
+                                                transformBoxOpacity: transformBoxOpacity,
                                                 isShiftPressed: isShiftPressed,
                                                 transformOrigin: document.viewState.transformOrigin,
                                                 strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -152,6 +154,7 @@ struct SelectionHandlesView: View {
                         zoomLevel: zoomLevel,
                         canvasOffset: canvasOffset,
                         dragPreviewDelta: dragPreviewDelta,
+                        transformBoxOpacity: transformBoxOpacity,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.viewState.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),
@@ -253,6 +256,7 @@ struct SelectionHandlesView: View {
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset,
                     dragPreviewDelta: dragPreviewDelta,
+                    transformBoxOpacity: transformBoxOpacity,
                     isShiftPressed: isShiftPressed,
                     transformOrigin: document.viewState.transformOrigin,
                     strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5),

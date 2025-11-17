@@ -45,6 +45,7 @@ struct DrawingCanvas: View {
     @State internal var initialObjectTransforms: [UUID: CGAffineTransform] = [:]
     @State internal var currentDragDelta: CGPoint = .zero
     @State internal var dragPreviewUpdateTrigger: Bool = false
+    @State internal var transformBoxOpacity: Double = 1.0
     @State internal var shapeDragStart = CGPoint.zero
     @State internal var shapeStartPoint = CGPoint.zero
     @State internal var isShiftPressed = false
