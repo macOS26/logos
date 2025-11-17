@@ -359,16 +359,6 @@ struct DocumentSettingsView: View {
                     }
 
                     HStack {
-                        Text("Grid on Top")
-                            .settingsToggleLabel()
-
-                        StylusToggleButton(isOn: $document.gridSettings.gridOnTop) { newValue in
-                            UserDefaults.standard.set(newValue, forKey: "gridOnTop")
-                            document.objectWillChange.send()
-                        }
-                    }
-
-                    HStack {
                         Text("Snap to Grid")
                             .settingsToggleLabel()
 
@@ -376,6 +366,16 @@ struct DocumentSettingsView: View {
                             document.gridSettings.snapToGrid = newValue
                             UserDefaults.standard.set(newValue, forKey: "snapToGrid")
                             document.onSettingsChanged()
+                        }
+                    }
+
+                    HStack {
+                        Text("Grid on Top")
+                            .settingsToggleLabel()
+
+                        StylusToggleButton(isOn: $document.gridSettings.gridOnTop) { newValue in
+                            UserDefaults.standard.set(newValue, forKey: "gridOnTop")
+                            document.objectWillChange.send()
                         }
                     }
                 }
