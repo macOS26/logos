@@ -42,10 +42,16 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Logarithmic zoom: 1.0x at 100%, scales to 2.0x at 1600%+
-        // Linear interpolation from 100% (1.0) to 1600% (16.0)
-        let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
-        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        // Asymmetric zoom: IN faster, OUT slower
+        let adjustedValue: CGFloat
+        if value > 1.0 {
+            // Zooming IN - logarithmic: 1.0x at 100%, scales to 2.0x at 1600%+
+            let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
+            adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        } else {
+            // Zooming OUT - 2x slower (0.5x)
+            adjustedValue = 1.0 + (value - 1.0) * 0.5
+        }
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
@@ -65,10 +71,16 @@ extension DrawingCanvas {
             return
         }
 
-        // Logarithmic zoom: 1.0x at 100%, scales to 2.0x at 1600%+
-        // Linear interpolation from 100% (1.0) to 1600% (16.0)
-        let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
-        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        // Asymmetric zoom: IN faster, OUT slower
+        let adjustedValue: CGFloat
+        if value > 1.0 {
+            // Zooming IN - logarithmic: 1.0x at 100%, scales to 2.0x at 1600%+
+            let sensitivity = 1.0 + min((initialZoomLevel - 1.0) / 15.0, 1.0)
+            adjustedValue = 1.0 + (value - 1.0) * sensitivity
+        } else {
+            // Zooming OUT - 2x slower (0.5x)
+            adjustedValue = 1.0 + (value - 1.0) * 0.5
+        }
         let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
