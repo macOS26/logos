@@ -180,10 +180,8 @@ final class AppEventMonitor {
                         accumulatedNudgeOffset.dy += nudgeAmount.dy
                         isNudging = true
 
-                        // Apply live offset to viewState with spring animation
-                        withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
-                            activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
-                        }
+                        // Apply live offset to viewState
+                        activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
 
                         return nil
                     }
@@ -200,17 +198,18 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) && isNudging {
-                // Commit the accumulated offset
-                if accumulatedNudgeOffset != .zero {
-                    activeDoc.nudgeSelectedObjects(by: accumulatedNudgeOffset)
-                }
+                // Save final offset and clear live state FIRST to show transform box immediately
+                let finalOffset = accumulatedNudgeOffset
 
-                // Reset state with quick animation
+                // Reset state BEFORE updating document
                 accumulatedNudgeOffset = .zero
-                withAnimation(.easeOut(duration: 0.1)) {
-                    activeDoc.viewState.liveNudgeOffset = .zero
-                }
+                activeDoc.viewState.liveNudgeOffset = .zero
                 isNudging = false
+
+                // Now commit the offset (transform box will show at final position)
+                if finalOffset != .zero {
+                    activeDoc.nudgeSelectedObjects(by: finalOffset)
+                }
 
                 return nil
             }

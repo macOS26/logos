@@ -116,8 +116,7 @@ struct DocumentSettingsView: View {
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 24)
+                .padding(24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -324,7 +323,7 @@ struct DocumentSettingsView: View {
             SettingsSectionHeader(icon: "eye", title: "Display Options")
 
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 40) {
+                HStack(spacing: 25) {
                     HStack {
                         Text("Show Rulers")
                             .settingsToggleLabel()
@@ -348,32 +347,32 @@ struct DocumentSettingsView: View {
                     }
                 }
 
-                HStack(spacing: 40) {
+                HStack(spacing: 25) {
                     HStack {
                         Text("Show Grid")
                             .settingsToggleLabel()
-
+                        
                         StylusToggleButton(isOn: $document.gridSettings.showGrid) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "showGrid")
                             document.objectWillChange.send()
                         }
                     }
-
+                    
                     HStack {
                         Text("Snap to Grid")
                             .settingsToggleLabel()
-
+                        
                         StylusToggleButton(isOn: $document.settings.snapToGrid) { newValue in
                             document.gridSettings.snapToGrid = newValue
                             UserDefaults.standard.set(newValue, forKey: "snapToGrid")
                             document.onSettingsChanged()
                         }
                     }
-
+                    
                     HStack {
                         Text("Grid on Top")
                             .settingsToggleLabel()
-
+                        
                         StylusToggleButton(isOn: $document.gridSettings.gridOnTop) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "gridOnTop")
                             document.objectWillChange.send()

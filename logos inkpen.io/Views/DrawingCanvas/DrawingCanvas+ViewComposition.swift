@@ -182,6 +182,7 @@ extension DrawingCanvas {
                 isCommandPressed: self.isCommandPressed,
                 isTemporarySelectionViaCommand: self.isTemporarySelectionViaCommand,
                 dragPreviewDelta: currentDragDelta,
+                liveNudgeOffset: document.viewState.liveNudgeOffset,
                 liveScaleTransform: $liveScaleTransform,
                 liveScaleDimensions: $liveScaleDimensions
             )
