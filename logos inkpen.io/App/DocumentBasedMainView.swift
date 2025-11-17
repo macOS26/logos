@@ -273,6 +273,14 @@ struct DocumentBasedMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ActualSize"))) { _ in
             handleActualSize()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+            // Update active document when this window becomes key
+            guard let window = notification.object as? NSWindow else { return }
+            if window == NSApp.keyWindow {
+                print("🪟 Window became key, setting active document to \(ObjectIdentifier(document))")
+                DrawingCanvasRegistry.shared.setActiveDocument(document)
+            }
+        }
         .onDisappear {
             documentState.cleanup()
         }
