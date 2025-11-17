@@ -302,18 +302,16 @@ extension DrawingCanvas {
     }
 
     private func startEyedropperColorPick() {
+        #if canImport(AppKit)
         let sampler = NSColorSampler()
         sampler.show { pickedColor in
-            guard let nsColor = pickedColor?.usingColorSpace(.displayP3) else { return }
-            var r: CGFloat = 0
-            var g: CGFloat = 0
-            var b: CGFloat = 0
-            var a: CGFloat = 0
-            nsColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-            let rgb = RGBColor(red: Double(r), green: Double(g), blue: Double(b), alpha: Double(a))
+            guard let displayP3Color = pickedColor?.usingColorSpace(.displayP3) else { return }
+            let rgba = displayP3Color.cgColor.rgbaComponents
+            let rgb = RGBColor(red: Double(rgba.r), green: Double(rgba.g), blue: Double(rgba.b), alpha: Double(rgba.a))
             let vectorColor = VectorColor.rgb(rgb)
             document.setActiveColor(vectorColor)
         }
+        #endif
     }
 
     private func selectSameColorAt(_ location: CGPoint) {
