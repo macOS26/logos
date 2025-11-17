@@ -40,8 +40,9 @@ enum DrawingCanvasPathHelpers {
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        // SIMD-optimized distance calculation
-        let distance = abs(A * point.x + B * point.y + C) / simd_length(SIMD2(A, B))
+        // SIMD-optimized distance calculation: sqrt(A² + B²)
+        let normalLength = sqrt(A * A + B * B)
+        let distance = abs(A * point.x + B * point.y + C) / normalLength
         return distance
     }
 
@@ -107,9 +108,11 @@ enum DrawingCanvasPathHelpers {
         let v1 = p1.simd - p0.simd
         let v2 = p2.simd - p1.simd
         let avg = (v1 + v2) * 0.5
-        let length = simd_length(avg)
-        if length > 0 {
-            let normalized = simd_normalize(avg)
+        // Manual length: sqrt(x² + y²)
+        let lengthSquared = avg.x * avg.x + avg.y * avg.y
+        if lengthSquared > 0 {
+            let length = sqrt(lengthSquared)
+            let normalized = avg / length
             return CGPoint(normalized)
         } else {
             return CGPoint(x: 1, y: 0)

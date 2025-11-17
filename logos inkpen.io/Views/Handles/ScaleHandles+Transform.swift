@@ -178,9 +178,11 @@ extension ScaleHandles {
     func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 
-        // SIMD-optimized scale extraction
-        let scaleX = simd_length(SIMD2(transform.a, transform.c))
-        let scaleY = simd_length(SIMD2(transform.b, transform.d))
+        // SIMD-optimized scale extraction: length = sqrt(a² + c²)
+        let scaleXVec = SIMD2<Double>(Double(transform.a), Double(transform.c))
+        let scaleYVec = SIMD2<Double>(Double(transform.b), Double(transform.d))
+        let scaleX = CGFloat(sqrt(scaleXVec.x * scaleXVec.x + scaleXVec.y * scaleXVec.y))
+        let scaleY = CGFloat(sqrt(scaleYVec.x * scaleYVec.x + scaleYVec.y * scaleYVec.y))
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 

@@ -512,10 +512,11 @@ extension DrawingCanvas {
                 perpVec = SIMD2(-dir.y, dir.x)
             }
 
-            // SIMD normalize
-            let length = simd_length(perpVec)
-            if length > 0 {
-                perpVec = simd_normalize(perpVec)
+            // SIMD normalize: length = sqrt(x² + y²), normalize = vec / length
+            let lengthSquared = perpVec.x * perpVec.x + perpVec.y * perpVec.y
+            if lengthSquared > 0 {
+                let length = sqrt(lengthSquared)
+                perpVec = perpVec / length
             }
 
             // SIMD offset calculation
