@@ -46,12 +46,8 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        var objectsToRemove: [VectorObject] = []
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = snapshot.objects[objectID] {
-                objectsToRemove.append(obj)
-            }
-        }
+        // Collect objects for deletion - O(n) where n = selected objects
+        let objectsToRemove = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
 
         if !objectsToRemove.isEmpty {
             let command = DeleteObjectCommand(objects: objectsToRemove)
@@ -78,12 +74,8 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        var candidateObjects: [VectorObject] = []
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = snapshot.objects[objectID] {
-                candidateObjects.append(obj)
-            }
-        }
+        // Collect candidate objects - O(n) where n = selected objects
+        let candidateObjects = viewState.selectedObjectIDs.compactMap { snapshot.objects[$0] }
 
         // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
         let objectsToDelete = candidateObjects.filter { object in
@@ -290,22 +282,13 @@ extension VectorDocument {
     func duplicateSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        var selectedShapes: [VectorObject] = []
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = snapshot.objects[objectID],
-               obj.layerIndex == layerIndex {
-                switch obj.objectType {
-                case .shape, .image, .warp, .group, .clipGroup, .clipMask:
-                    selectedShapes.append(obj)
-                case .text:
-                    break
-                }
-            }
-        }
-
         var newShapeIDs: Set<UUID> = []
 
-        for obj in selectedShapes {
+        // Iterate directly over UUIDs and lookup from snapshot - O(1) per lookup
+        for objectID in viewState.selectedObjectIDs {
+            guard let obj = snapshot.objects[objectID],
+                  obj.layerIndex == layerIndex else { continue }
+
             switch obj.objectType {
             case .shape(let shape),
                  .image(let shape),
