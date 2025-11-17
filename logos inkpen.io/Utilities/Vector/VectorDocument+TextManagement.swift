@@ -143,46 +143,27 @@ extension VectorDocument {
             }
         }
 
+        // Convert generates shapes (modifies document)
         var newShapeIDs: Set<UUID> = []
-        let shapesBefore = snapshot.objects.values.compactMap { obj -> UUID? in
-            switch obj.objectType {
-            case .shape(let shape),
-                 .image(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                return shape.id
-            case .text:
-                return nil
-            }
-        }
-        let shapesBeforeSet = Set(shapesBefore)
+        let shapesBefore = Set(snapshot.objects.keys.filter {
+            if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
+            return false
+        })
 
         for textObj in selectedTexts {
             let viewModel = ProfessionalTextViewModel(textObject: textObj, document: self)
             viewModel.convertToPath()
         }
 
-        let shapesAfter = snapshot.objects.values.compactMap { obj -> UUID? in
-            switch obj.objectType {
-            case .shape(let shape),
-                 .image(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                return shape.id
-            case .text:
-                return nil
-            }
-        }
-        let shapesAfterSet = Set(shapesAfter)
-
-        newShapeIDs = shapesAfterSet.subtracting(shapesBeforeSet)
+        // Find new shapes created by conversion
+        let shapesAfter = Set(snapshot.objects.keys.filter {
+            if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
+            return false
+        })
+        newShapeIDs = shapesAfter.subtracting(shapesBefore)
 
         if !newShapeIDs.isEmpty {
-            // Capture new shape objects for undo
+            // Capture added shapes for undo (already in snapshot from convertToPath)
             var addedShapeObjects: [UUID: VectorObject] = [:]
             for uuid in newShapeIDs {
                 if let obj = snapshot.objects[uuid] {
@@ -190,16 +171,8 @@ extension VectorDocument {
                 }
             }
 
-            // Remove text objects from snapshot
-            for textID in removedTextIDs {
-                snapshot.objects.removeValue(forKey: textID)
-            }
-
-            viewState.selectedObjectIDs.removeAll()
-            viewState.selectedObjectIDs = newShapeIDs
-            
-
-            // Use command system for undo/redo
+            // Store command for undo (conversion already happened via convertToPath)
+            // Command.undo() will restore text and remove shapes
             let command = TextManagementCommand(
                 operation: .convertToOutlines(
                     removedTextIDs: removedTextIDs,
@@ -211,7 +184,10 @@ extension VectorDocument {
                 oldSelection: oldSelection,
                 newSelection: newShapeIDs
             )
-            commandManager.execute(command)
+
+            // Record command without executing (conversion already done by convertToPath)
+            commandManager.recordCompletedCommand(command)
+            viewState.selectedObjectIDs = newShapeIDs
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }

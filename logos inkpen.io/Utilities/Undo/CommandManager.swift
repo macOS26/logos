@@ -24,6 +24,15 @@ class CommandManager: ObservableObject {
         //document.objectWillChange.send()
         document.isUndoRedoOperation = false
 
+        addToUndoStack(command)
+    }
+
+    /// Add command to undo stack without executing (work already done)
+    func recordCompletedCommand(_ command: Command) {
+        addToUndoStack(command)
+    }
+
+    private func addToUndoStack(_ command: Command) {
         if let lastCommand = undoStack.last,
            let mergedCommand = lastCommand.mergeWith(command) {
             undoStack[undoStack.count - 1] = mergedCommand
@@ -36,9 +45,7 @@ class CommandManager: ObservableObject {
         }
 
         redoStack.removeAll()
-
         updateState()
-
     }
 
     func undo() {
