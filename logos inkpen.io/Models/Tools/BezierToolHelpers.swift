@@ -181,19 +181,44 @@ extension DrawingCanvas {
     }
 
     internal func finishBezierPath() {
-        guard let activeBezierShape = activeBezierShape else {
+        guard activeBezierShape != nil,
+              let finalPath = bezierPath else {
             cancelBezierDrawing()
             return
         }
 
         if bezierPoints.count < 2 {
-            ensureIncompletePathHasProperColors(shape: activeBezierShape)
             cancelBezierDrawing()
             currentShapeId = nil
             return
         }
 
-        applyFinalColorsToPath(shape: activeBezierShape)
+        // Create a new shape with new UUID (don't try to update old one)
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: document.defaultStrokeWidth,
+            placement: document.strokeDefaults.placement,
+            dashPattern: [],
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
+            opacity: document.defaultStrokeOpacity
+        )
+
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity
+        )
+
+        var newShape = VectorShape(
+            name: "Bezier Path",
+            path: finalPath,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
+        newShape.updateBounds()
+
+        document.addShape(newShape)
 
         cancelBezierDrawing()
     }
