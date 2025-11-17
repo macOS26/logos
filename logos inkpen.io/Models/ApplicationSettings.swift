@@ -97,6 +97,9 @@ class ApplicationSettings: ObservableObject {
     @Published var liveScalingPreview: Bool = UserDefaults.standard.object(forKey: "liveScalingPreview") as? Bool ?? false {
         didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
     }
+    @Published var hideTransformBoxDuringDrag: Bool = UserDefaults.standard.object(forKey: "hideTransformBoxDuringDrag") as? Bool ?? false {
+        didSet { UserDefaults.standard.set(hideTransformBoxDuringDrag, forKey: "hideTransformBoxDuringDrag") }
+    }
     @Published var boundingBoxIncludesStrokes: Bool = UserDefaults.standard.object(forKey: "boundingBoxIncludesStrokes") as? Bool ?? true {
         didSet { UserDefaults.standard.set(boundingBoxIncludesStrokes, forKey: "boundingBoxIncludesStrokes") }
     }

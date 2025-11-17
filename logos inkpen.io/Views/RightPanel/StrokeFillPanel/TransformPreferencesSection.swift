@@ -29,6 +29,22 @@ struct TransformPreferencesSection: View {
                     .controlSize(.small)
                     .help("When enabled, objects scale in real-time during transform; when disabled, only a red outline preview is shown")
                 }
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Hide Transform Box While Dragging")
+                            .font(.subheadline)
+                            .foregroundColor(Color.ui.primaryText)
+                        Text("Show transform box only after drag completes")
+                            .font(.caption)
+                            .foregroundColor(Color.ui.secondaryText)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $settings.hideTransformBoxDuringDrag)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .controlSize(.small)
+                    .help("When enabled, the transform box is hidden during drag and appears after drag ends")
+                }
             }
         }
         .padding()
