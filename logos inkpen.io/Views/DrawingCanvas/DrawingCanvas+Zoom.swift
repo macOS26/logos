@@ -42,15 +42,12 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Zoom sensitivity: 1.0x at 100%, scales to 2.0x at 1600%, stays 2.0x above
+        // Zoom sensitivity: 0.5x from 50-1600%, 1.0x at 1600%+
         let sensitivity: CGFloat
-        if initialZoomLevel <= 1.0 {
-            sensitivity = 1.0
-        } else if initialZoomLevel >= 16.0 {
-            sensitivity = 2.0
+        if initialZoomLevel < 16.0 {
+            sensitivity = 0.5
         } else {
-            // Linear interpolation from 1.0 to 2.0 between 100% (1.0) and 1600% (16.0)
-            sensitivity = 1.0 + (initialZoomLevel - 1.0) / 15.0
+            sensitivity = 1.0
         }
         let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
@@ -72,15 +69,12 @@ extension DrawingCanvas {
             return
         }
 
-        // Zoom sensitivity: 1.0x at 100%, scales to 2.0x at 1600%, stays 2.0x above
+        // Zoom sensitivity: 0.5x from 50-1600%, 1.0x at 1600%+
         let sensitivity: CGFloat
-        if initialZoomLevel <= 1.0 {
-            sensitivity = 1.0
-        } else if initialZoomLevel >= 16.0 {
-            sensitivity = 2.0
+        if initialZoomLevel < 16.0 {
+            sensitivity = 0.5
         } else {
-            // Linear interpolation from 1.0 to 2.0 between 100% (1.0) and 1600% (16.0)
-            sensitivity = 1.0 + (initialZoomLevel - 1.0) / 15.0
+            sensitivity = 1.0
         }
         let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
