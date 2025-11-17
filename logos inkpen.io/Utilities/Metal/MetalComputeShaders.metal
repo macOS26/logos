@@ -701,3 +701,30 @@ kernel void path_intersection_calculation(
         }
     }
 }
+
+// GPU-accelerated coordinate transformation for zoom/pan operations
+// Transforms screen <-> canvas coordinates using SIMD vector operations
+struct CoordinateTransformParams {
+    float2 offset;           // Canvas offset (pan)
+    float zoom;              // Zoom level
+    bool isScreenToCanvas;   // Transform direction
+};
+
+kernel void coordinate_transform(
+    device const float2* inputPoints [[buffer(0)]],
+    device float2* outputPoints [[buffer(1)]],
+    constant CoordinateTransformParams& params [[buffer(2)]],
+    uint index [[thread_position_in_grid]]
+) {
+    float2 point = inputPoints[index];
+
+    if (params.isScreenToCanvas) {
+        // Screen to Canvas: (point - offset) / zoom
+        // Use SIMD vector operations for optimal performance
+        outputPoints[index] = (point - params.offset) / params.zoom;
+    } else {
+        // Canvas to Screen: point * zoom + offset
+        // Single SIMD instruction: fused multiply-add
+        outputPoints[index] = fma(point, params.zoom, params.offset);
+    }
+}

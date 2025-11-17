@@ -13,7 +13,17 @@ extension DrawingCanvas {
     }
 
     private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
-        // SIMD optimization for batch coordinate transformation
+        // Use GPU for large batches (> 100 points), CPU SIMD for small batches
+        if points.count > 100 {
+            return GPUCoordinateTransform.shared.transformPoints(
+                points,
+                offset: canvasOffset,
+                zoom: CGFloat(zoomLevel),
+                screenToCanvas: true
+            )
+        }
+
+        // CPU SIMD optimization for batch coordinate transformation
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let zoom = Float(zoomLevel)
 
@@ -34,7 +44,17 @@ extension DrawingCanvas {
     }
 
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // SIMD optimization for batch coordinate transformation
+        // Use GPU for large batches (> 100 points), CPU SIMD for small batches
+        if points.count > 100 {
+            return GPUCoordinateTransform.shared.transformPoints(
+                points,
+                offset: canvasOffset,
+                zoom: CGFloat(zoomLevel),
+                screenToCanvas: false
+            )
+        }
+
+        // CPU SIMD optimization for batch coordinate transformation
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let zoom = Float(zoomLevel)
 
