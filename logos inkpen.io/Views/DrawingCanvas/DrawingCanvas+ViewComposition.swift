@@ -232,6 +232,18 @@ extension DrawingCanvas {
                 }
             }
         }
+
+        // Grid overlay - rendered on top of all layers
+        if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
+            OptimizedGridView(
+                gridSpacing: document.settings.gridSpacing,
+                canvasSize: document.settings.sizeInPoints,
+                unit: document.settings.unit,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
+            .allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder
@@ -255,25 +267,12 @@ extension DrawingCanvas {
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
         } else if layer.name == "Canvas" {
-            ZStack {
-                CanvasBackgroundView(
-                    canvasSize: document.settings.sizeInPoints,
-                    backgroundColor: document.settings.backgroundColor.color,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset
-                )
-
-                if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
-                    OptimizedGridView(
-                        gridSpacing: document.settings.gridSpacing,
-                        canvasSize: document.settings.sizeInPoints,
-                        unit: document.settings.unit,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset
-                    )
-                    .allowsHitTesting(false)
-                }
-            }
+            CanvasBackgroundView(
+                canvasSize: document.settings.sizeInPoints,
+                backgroundColor: document.settings.backgroundColor.color,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
         }
