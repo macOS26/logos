@@ -116,6 +116,12 @@ extension DrawingCanvas {
             }
         }
 
+        else if newTool == .bezierPen {
+            // Preserve selectedPoints when switching to bezier pen (for path continuation)
+            // Don't clear selectedPoints, selectedHandles, or selectedObjectIDs
+            // Keep everything as-is for path continuation feature
+        }
+
         else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
             // Clear any leftover point/handle selections
             selectedPoints.removeAll()
@@ -126,11 +132,6 @@ extension DrawingCanvas {
                 selectedObjectIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
-        }
-
-        else if newTool == .bezierPen {
-            // Preserve selectedPoints when switching to bezier pen (for path continuation)
-            // Don't clear selectedPoints, selectedHandles, or selectedObjectIDs
         }
 
         // Maintain selection when switching to font tool
