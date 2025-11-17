@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    internal var allowedZoomSteps: [CGFloat] { [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
+    internal var allowedZoomSteps: [CGFloat] { [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
 
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
         let clamped = max(allowedZoomSteps.first ?? 0.5, min(allowedZoomSteps.last ?? 640.0, zoom))
