@@ -368,9 +368,7 @@ struct DocumentSettingsView: View {
                             document.onSettingsChanged()
                         }
                     }
-                }
 
-                HStack(spacing: 40) {
                     HStack {
                         Text("Grid on Top")
                             .settingsToggleLabel()
@@ -380,8 +378,6 @@ struct DocumentSettingsView: View {
                             document.objectWillChange.send()
                         }
                     }
-
-                    Spacer()
                 }
             }
         }
