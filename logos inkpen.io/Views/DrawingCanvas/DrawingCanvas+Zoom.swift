@@ -2,11 +2,11 @@ import SwiftUI
 import simd
 
 extension DrawingCanvas {
-    internal var allowedZoomSteps: [CGFloat] { [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
+    internal var allowedZoomSteps: [CGFloat] { [0.75, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
 
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
-        let clamped = max(allowedZoomSteps.first ?? 0.5, min(allowedZoomSteps.last ?? 640.0, zoom))
-        var best = allowedZoomSteps.first ?? 0.5
+        let clamped = max(allowedZoomSteps.first ?? 0.75, min(allowedZoomSteps.last ?? 640.0, zoom))
+        var best = allowedZoomSteps.first ?? 0.75
         var bestDiff = abs(clamped - best)
         for step in allowedZoomSteps {
             let d = abs(clamped - step)
@@ -31,7 +31,12 @@ extension DrawingCanvas {
         for step in allowedZoomSteps.reversed() {
             if step < zoom - epsilon { return step }
         }
-        return allowedZoomSteps.first ?? 0.5
+        return allowedZoomSteps.first ?? 0.75
+    }
+
+    /// Ease-in-ease-out function for smooth zoom transitions
+    private func easeInOutCubic(_ t: Float) -> Float {
+        return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0
     }
 
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
@@ -43,15 +48,19 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Apple HIG: Use 1:1 magnification gesture - value is already natural
         // SIMD optimization for performance on Apple Silicon
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Direct 1:1 mapping - no dampening (Apple standard)
-        let newZoomLevel = CGFloat(currentZoom * gestureValue)
-        let clampedZoom = max(0.5, min(640.0, newZoomLevel))
+        // Apply 1.5x speed with ease-in-ease-out
+        let delta = gestureValue - 1.0
+        let normalizedDelta = delta * 1.5  // 1.5x speed multiplier
+        let easedDelta = easeInOutCubic(normalizedDelta)
+        let adjustedValue = 1.0 + easedDelta
+
+        let newZoomLevel = CGFloat(currentZoom * adjustedValue)
+        let clampedZoom = max(0.75, min(640.0, newZoomLevel))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: currentMousePosition, geometry: geometry)
@@ -70,14 +79,18 @@ extension DrawingCanvas {
             return
         }
 
-        // Apple HIG: Use 1:1 magnification gesture - value is already natural
         // SIMD optimization for performance on Apple Silicon
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Direct 1:1 mapping - no dampening (Apple standard)
-        let finalZoomLevel = max(0.5, min(640.0, CGFloat(currentZoom * gestureValue)))
+        // Apply 1.5x speed with ease-in-ease-out
+        let delta = gestureValue - 1.0
+        let normalizedDelta = delta * 1.5  // 1.5x speed multiplier
+        let easedDelta = easeInOutCubic(normalizedDelta)
+        let adjustedValue = 1.0 + easedDelta
+
+        let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
