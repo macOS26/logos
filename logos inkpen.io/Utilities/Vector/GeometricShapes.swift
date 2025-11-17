@@ -1,4 +1,5 @@
 import CoreGraphics
+import simd
 
 class GeometricShapes {
     static func createRectangle(origin: CGPoint, size: CGSize, cornerRadius: CGFloat = 0) -> VectorPath {
@@ -155,17 +156,19 @@ class GeometricShapes {
     static func createStar(center: CGPoint, outerRadius: CGFloat, innerRadius: CGFloat, points: Int, orientation: CGFloat = 0) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = .pi / Double(points)
+        let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
 
         for i in 0..<(points * 2) {
             let angle = Double(i) * angleStep + Double(orientation) - .pi / 2
-            let radius = i % 2 == 0 ? outerRadius : innerRadius
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
+            let radius = i % 2 == 0 ? Double(outerRadius) : Double(innerRadius)
+            // SIMD-optimized trig and vector operations
+            let offset = SIMD2<Double>(cos(angle), sin(angle)) * radius
+            let point = centerVec + offset
 
             if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
+                elements.append(.move(to: VectorPoint(point.x, point.y)))
             } else {
-                elements.append(.line(to: VectorPoint(x, y)))
+                elements.append(.line(to: VectorPoint(point.x, point.y)))
             }
         }
         elements.append(.close)
@@ -235,17 +238,26 @@ class GeometricShapes {
     }
 
     static func createArrow(start: CGPoint, end: CGPoint, headLength: CGFloat = 20, headWidth: CGFloat = 10) -> VectorPath {
-        let dx = end.x - start.x
-        let dy = end.y - start.y
-        let length = sqrt(dx * dx + dy * dy)
+        // SIMD-optimized vector operations
+        let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
+        let endVec = SIMD2<Double>(Double(end.x), Double(end.y))
+        let direction = endVec - startVec
+        let length = simd_length(direction)
 
         if length == 0 { return VectorPath() }
 
-        let unitX = dx / length
-        let unitY = dy / length
-        let headStart = CGPoint(x: end.x - headLength * unitX, y: end.y - headLength * unitY)
-        let headPoint1 = CGPoint(x: headStart.x - headWidth * unitY, y: headStart.y + headWidth * unitX)
-        let headPoint2 = CGPoint(x: headStart.x + headWidth * unitY, y: headStart.y - headWidth * unitX)
+        let unit = simd_normalize(direction)
+        let perpendicular = SIMD2<Double>(-unit.y, unit.x)  // SIMD swizzle for perpendicular
+
+        let headStartVec = endVec - unit * Double(headLength)
+        let headStart = CGPoint(x: headStartVec.x, y: headStartVec.y)
+
+        let headPoint1Vec = headStartVec - perpendicular * Double(headWidth)
+        let headPoint1 = CGPoint(x: headPoint1Vec.x, y: headPoint1Vec.y)
+
+        let headPoint2Vec = headStartVec + perpendicular * Double(headWidth)
+        let headPoint2 = CGPoint(x: headPoint2Vec.x, y: headPoint2Vec.y)
+
         let elements: [PathElement] = [
             .move(to: VectorPoint(start)),
             .line(to: VectorPoint(headStart)),
@@ -293,12 +305,14 @@ class GeometricShapes {
     private static func regularPolygonPoints(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat) -> [CGPoint] {
         var points: [CGPoint] = []
         let angleStep = 2 * .pi / Double(sides)
+        let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
 
         for i in 0..<sides {
             let angle = Double(i) * angleStep + Double(orientation) - .pi / 2
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
-            points.append(CGPoint(x: x, y: y))
+            // SIMD-optimized trig and vector operations
+            let offset = SIMD2<Double>(cos(angle), sin(angle)) * Double(radius)
+            let point = centerVec + offset
+            points.append(CGPoint(x: point.x, y: point.y))
         }
 
         return points
@@ -308,6 +322,9 @@ class GeometricShapes {
         var elements: [PathElement] = []
         let angleStep = 2 * .pi / Double(teeth)
         let toothAngle = angleStep * 0.3
+        let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
+        let outerRad = Double(outerRadius)
+        let innerRad = Double(innerRadius)
 
         for i in 0..<teeth {
             let baseAngle = Double(i) * angleStep
@@ -315,20 +332,29 @@ class GeometricShapes {
             let outerAngle2 = baseAngle + toothAngle / 2
             let innerAngle1 = baseAngle - angleStep / 2
             let innerAngle2 = baseAngle + angleStep / 2
-            let outerPoint1 = CGPoint(x: center.x + cos(outerAngle1) * outerRadius, y: center.y + sin(outerAngle1) * outerRadius)
-            let outerPoint2 = CGPoint(x: center.x + cos(outerAngle2) * outerRadius, y: center.y + sin(outerAngle2) * outerRadius)
-            let innerPoint1 = CGPoint(x: center.x + cos(innerAngle1) * innerRadius, y: center.y + sin(innerAngle1) * innerRadius)
-            let innerPoint2 = CGPoint(x: center.x + cos(innerAngle2) * innerRadius, y: center.y + sin(innerAngle2) * innerRadius)
+
+            // SIMD-optimized trig and vector operations
+            let outerOffset1 = SIMD2<Double>(cos(outerAngle1), sin(outerAngle1)) * outerRad
+            let outerPoint1 = centerVec + outerOffset1
+
+            let outerOffset2 = SIMD2<Double>(cos(outerAngle2), sin(outerAngle2)) * outerRad
+            let outerPoint2 = centerVec + outerOffset2
+
+            let innerOffset1 = SIMD2<Double>(cos(innerAngle1), sin(innerAngle1)) * innerRad
+            let innerPoint1 = centerVec + innerOffset1
+
+            let innerOffset2 = SIMD2<Double>(cos(innerAngle2), sin(innerAngle2)) * innerRad
+            let innerPoint2 = centerVec + innerOffset2
 
             if i == 0 {
-                elements.append(.move(to: VectorPoint(outerPoint1)))
+                elements.append(.move(to: VectorPoint(outerPoint1.x, outerPoint1.y)))
             } else {
-                elements.append(.line(to: VectorPoint(outerPoint1)))
+                elements.append(.line(to: VectorPoint(outerPoint1.x, outerPoint1.y)))
             }
 
-            elements.append(.line(to: VectorPoint(outerPoint2)))
-            elements.append(.line(to: VectorPoint(innerPoint2)))
-            elements.append(.line(to: VectorPoint(innerPoint1)))
+            elements.append(.line(to: VectorPoint(outerPoint2.x, outerPoint2.y)))
+            elements.append(.line(to: VectorPoint(innerPoint2.x, innerPoint2.y)))
+            elements.append(.line(to: VectorPoint(innerPoint1.x, innerPoint1.y)))
         }
 
         elements.append(.close)
@@ -339,18 +365,22 @@ class GeometricShapes {
     static func createSpiral(center: CGPoint, startRadius: CGFloat, endRadius: CGFloat, turns: Double) -> VectorPath {
         var elements: [PathElement] = []
         let steps = Int(turns * 36)
+        let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
+        let startRad = Double(startRadius)
+        let endRad = Double(endRadius)
 
         for i in 0..<steps {
             let t = Double(i) / Double(steps - 1)
             let angle = t * turns * 2 * .pi
-            let radius = startRadius + (endRadius - startRadius) * t
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
+            let radius = startRad + (endRad - startRad) * t
+            // SIMD-optimized trig and vector operations
+            let offset = SIMD2<Double>(cos(angle), sin(angle)) * radius
+            let point = centerVec + offset
 
             if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
+                elements.append(.move(to: VectorPoint(point.x, point.y)))
             } else {
-                elements.append(.line(to: VectorPoint(x, y)))
+                elements.append(.line(to: VectorPoint(point.x, point.y)))
             }
         }
 
