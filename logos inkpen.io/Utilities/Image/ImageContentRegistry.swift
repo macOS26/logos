@@ -23,11 +23,13 @@ enum ImageContentRegistry {
 
         var loadedCGImage: CGImage? = nil
 
+        // Try embedded image first
         if let data = shape.embeddedImageData,
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
         }
+        // ONLY use bookmark for linked images - no fallback file access
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
@@ -37,26 +39,6 @@ enum ImageContentRegistry {
                    let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                     loadedCGImage = cgImage
                 }
-            }
-        } else if let path = shape.linkedImagePath {
-            var url: URL? = nil
-            if path.hasPrefix("/") {
-                url = URL(fileURLWithPath: path)
-            } else if let base = document.baseDirectoryURL {
-                url = base.appendingPathComponent(path)
-            } else {
-                let homeURL = FileManager.default.homeDirectoryForCurrentUser
-                url = homeURL.appendingPathComponent(path)
-                if let urlPath = url?.path, !FileManager.default.fileExists(atPath: urlPath) {
-                    let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-                    url = docsURL?.appendingPathComponent(path)
-                }
-            }
-
-            if let finalURL = url,
-               let imageSource = CGImageSourceCreateWithURL(finalURL as CFURL, nil),
-               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                loadedCGImage = cgImage
             }
         }
 
