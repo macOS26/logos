@@ -1409,6 +1409,7 @@ struct IsolatedLayerView: View {
 
     var body: some View {
         // let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+        let _ = layerUpdateTrigger  // Track trigger to force redraw
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
