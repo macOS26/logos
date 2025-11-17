@@ -69,11 +69,11 @@ struct CMYKColor: Codable, Hashable {
         self.alpha = alpha
     }
 
+    // SIMD-optimized CMYK to RGB conversion
     var rgbColor: RGBColor {
-        let r = (1.0 - cyan) * (1.0 - black)
-        let g = (1.0 - magenta) * (1.0 - black)
-        let b = (1.0 - yellow) * (1.0 - black)
-        return RGBColor(red: r, green: g, blue: b, alpha: alpha)
+        let cmyk = SIMD4<Double>(1.0 - cyan, 1.0 - magenta, 1.0 - yellow, 1.0 - black)
+        let rgb = SIMD3<Double>(cmyk.x, cmyk.y, cmyk.z) * cmyk.w
+        return RGBColor(red: rgb.x, green: rgb.y, blue: rgb.z, alpha: alpha)
     }
 
     var color: Color {
