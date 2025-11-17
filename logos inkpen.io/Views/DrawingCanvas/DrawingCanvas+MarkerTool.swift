@@ -482,43 +482,47 @@ extension DrawingCanvas {
     }
 
     private func generateMarkerOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
+        // SIMD-optimized marker offset calculation for real-time drawing
         var offsetPoints: [CGPoint] = []
 
         for i in 0..<centerPoints.count {
             let point = centerPoints[i]
             let thickness = point.thickness
-            var perpendicular: CGPoint
+            var perpVec: SIMD2<Double>
 
             if i == 0 {
                 if i + 1 < centerPoints.count {
                     let nextPoint = centerPoints[i + 1].location
-                    let direction = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
-                    perpendicular = CGPoint(x: -direction.y, y: direction.x)
+                    // SIMD vector math
+                    let dir = nextPoint.simd - point.location.simd
+                    perpVec = SIMD2(-dir.y, dir.x)
                 } else {
-                    perpendicular = CGPoint(x: 0, y: 1)
+                    perpVec = SIMD2(0, 1)
                 }
             } else if i == centerPoints.count - 1 {
                 let prevPoint = centerPoints[i - 1].location
-                let direction = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
-                perpendicular = CGPoint(x: -direction.y, y: direction.x)
+                // SIMD vector math
+                let dir = point.location.simd - prevPoint.simd
+                perpVec = SIMD2(-dir.y, dir.x)
             } else {
                 let prevPoint = centerPoints[i - 1].location
                 let nextPoint = centerPoints[i + 1].location
-                let direction = CGPoint(x: nextPoint.x - prevPoint.x, y: nextPoint.y - prevPoint.y)
-                perpendicular = CGPoint(x: -direction.y, y: direction.x)
+                // SIMD vector math
+                let dir = nextPoint.simd - prevPoint.simd
+                perpVec = SIMD2(-dir.y, dir.x)
             }
 
-            let length = sqrt(perpendicular.x * perpendicular.x + perpendicular.y * perpendicular.y)
+            // SIMD normalize
+            let length = simd_length(perpVec)
             if length > 0 {
-                perpendicular = CGPoint(x: perpendicular.x / length, y: perpendicular.y / length)
+                perpVec = simd_normalize(perpVec)
             }
 
+            // SIMD offset calculation
             let offsetDistance = thickness / 2.0
             let multiplier: Double = isLeftSide ? 1.0 : -1.0
-            let offsetPoint = CGPoint(
-                x: point.location.x + perpendicular.x * offsetDistance * multiplier,
-                y: point.location.y + perpendicular.y * offsetDistance * multiplier
-            )
+            let offsetVec = point.location.simd + perpVec * offsetDistance * multiplier
+            let offsetPoint = CGPoint(offsetVec)
 
             offsetPoints.append(offsetPoint)
         }
