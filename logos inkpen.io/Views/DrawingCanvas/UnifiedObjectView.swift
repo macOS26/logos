@@ -135,7 +135,14 @@ struct LayerCanvasView: View {
     // Filters out objects that are:
     // 1. Hidden (isVisible == false)
     // 2. Outside the viewport bounds (performance optimization)
+    // NOTE: Culling is DISABLED during pan (livePanDelta != .zero) for smooth scrolling
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
+        // Skip culling during pan - render all objects for smooth sliding
+        if livePanDelta != .zero {
+            return objectIDs.compactMap { document.snapshot.objects[$0] }
+                .filter { $0.isVisible }
+        }
+
         let viewport = viewportRect(canvasSize: canvasSize)
 
         return objectIDs.compactMap { id in
