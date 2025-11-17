@@ -144,7 +144,7 @@ extension DrawingCanvas {
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
-                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .font && newTool != .hand && newTool != .scale && newTool != .rotate && newTool != .shear && newTool != .warp {
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .bezierPen && newTool != .font && newTool != .hand && newTool != .scale && newTool != .rotate && newTool != .shear && newTool != .warp {
             // print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
