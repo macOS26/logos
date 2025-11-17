@@ -180,8 +180,10 @@ final class AppEventMonitor {
                         accumulatedNudgeOffset.dy += nudgeAmount.dy
                         isNudging = true
 
-                        // Apply live offset to viewState
-                        activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
+                        // Apply live offset to viewState with spring animation
+                        withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
+                            activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
+                        }
 
                         return nil
                     }
@@ -203,9 +205,11 @@ final class AppEventMonitor {
                     activeDoc.nudgeSelectedObjects(by: accumulatedNudgeOffset)
                 }
 
-                // Reset state
+                // Reset state with quick animation
                 accumulatedNudgeOffset = .zero
-                activeDoc.viewState.liveNudgeOffset = .zero
+                withAnimation(.easeOut(duration: 0.1)) {
+                    activeDoc.viewState.liveNudgeOffset = .zero
+                }
                 isNudging = false
 
                 return nil
