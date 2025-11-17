@@ -79,18 +79,18 @@ struct PreferencesView: View {
                         }
 
                         HStack(spacing: 8) {
-                            Button("Small (128px)") {
+                            Button("128px") {
                                 tileSize = 128
                             }
                             .buttonStyle(.bordered)
 
-                            Button("Medium (512px)") {
-                                tileSize = 512
+                            Button("256px") {
+                                tileSize = 256
                             }
                             .buttonStyle(.bordered)
 
-                            Button("Large (1024px)") {
-                                tileSize = 1024
+                            Button("512px") {
+                                tileSize = 512
                             }
                             .buttonStyle(.bordered)
 
