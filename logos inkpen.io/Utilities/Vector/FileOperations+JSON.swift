@@ -119,7 +119,7 @@ extension FileOperations {
     }
 
     /// Remove legacy "Canvas Background" and "Pasteboard Background" objects from layers
-    private static func removeLegacyBackgroundObjects(from document: VectorDocument) {
+    static func removeLegacyBackgroundObjects(from document: VectorDocument) {
         for layerIndex in 0..<document.snapshot.layers.count {
             var layer = document.snapshot.layers[layerIndex]
 

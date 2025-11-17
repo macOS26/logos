@@ -184,6 +184,9 @@ extension FileOperations {
 
         document.selectedLayerIndex = 2
 
+        // Remove legacy background objects from imported SVG
+        FileOperations.removeLegacyBackgroundObjects(from: document)
+
         return document
     }
 }
