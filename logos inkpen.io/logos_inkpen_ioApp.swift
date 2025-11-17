@@ -6,10 +6,9 @@ struct logos_inken_ioApp: App {
     @FocusedObject var documentState: DocumentState? {
         didSet {
             print("📋 documentState changed: \(documentState != nil ? "EXISTS" : "NIL"), hasSelection: \(documentState?.hasSelection ?? false)")
-
-            // Update active document in registry when window focus changes
-            if let document = documentState?.document {
-                DrawingCanvasRegistry.shared.setActiveDocument(document)
+            // Update AppEventMonitor with the focused document
+            if let doc = documentState?.document {
+                AppEventMonitor.shared.setActiveDocument(doc)
             }
         }
     }

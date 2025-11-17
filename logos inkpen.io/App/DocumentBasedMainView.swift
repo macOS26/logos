@@ -271,18 +271,6 @@ struct DocumentBasedMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ActualSize"))) { _ in
             handleActualSize()
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
-            // Update active document when this window becomes key
-            if let window = notification.object as? NSWindow,
-               window == NSApp.keyWindow {
-                AppEventMonitor.shared.setActiveDocument(document)
-                print("🪟 Window became key for document \(ObjectIdentifier(document))")
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
-            // Mark as not focused when window loses focus
-            documentState.isFocused = false
-        }
         .onDisappear {
             documentState.cleanup()
         }
