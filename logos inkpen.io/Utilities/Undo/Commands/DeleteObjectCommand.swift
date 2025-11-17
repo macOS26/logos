@@ -2,10 +2,14 @@ import Foundation
 import Combine
 
 class DeleteObjectCommand: BaseCommand {
-    private let objects: [VectorObject]
+    private let objectsToRestore: [UUID: VectorObject]  // Store by UUID for O(1) lookup
 
     init(objects: [VectorObject]) {
-        self.objects = objects
+        var dict: [UUID: VectorObject] = [:]
+        for obj in objects {
+            dict[obj.id] = obj
+        }
+        self.objectsToRestore = dict
     }
 
     convenience init(object: VectorObject) {
@@ -13,11 +17,11 @@ class DeleteObjectCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        let idsToRemove = Set(objects.map { $0.id })
+        let idsToRemove = Set(objectsToRestore.keys)
         var affectedLayers = Set<Int>()
 
-        // Track affected layers
-        for obj in objects {
+        // Track affected layers (O(n) where n = number of objects to delete)
+        for (_, obj) in objectsToRestore {
             affectedLayers.insert(obj.layerIndex)
         }
 
@@ -27,10 +31,10 @@ class DeleteObjectCommand: BaseCommand {
         }
 
         // Remove object IDs from their specific layers only
-        for obj in objects {
+        for (uuid, obj) in objectsToRestore {
             let layerIndex = obj.layerIndex
             if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
-                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == obj.id }
+                document.snapshot.layers[layerIndex].objectIDs.removeAll { $0 == uuid }
             }
         }
 
@@ -43,15 +47,15 @@ class DeleteObjectCommand: BaseCommand {
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
 
-        // Restore to snapshot.objects dictionary
-        for obj in objects {
-            document.snapshot.objects[obj.id] = obj
+        // Restore to snapshot.objects dictionary (O(1) per object)
+        for (uuid, obj) in objectsToRestore {
+            document.snapshot.objects[uuid] = obj
             affectedLayers.insert(obj.layerIndex)
 
             // Add back to appropriate layer
             if obj.layerIndex < document.snapshot.layers.count {
-                if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(obj.id) {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
+                if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(uuid) {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
                 }
             }
         }
