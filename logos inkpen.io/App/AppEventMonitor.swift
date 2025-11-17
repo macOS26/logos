@@ -19,13 +19,12 @@ final class AppEventMonitor {
                 return event
             }
 
-            // Get the active document from registry
-            guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else {
-                print("⚠️ AppEventMonitor: No active document in registry")
+            // Get the document from the focused window's DocumentState
+            let allDocumentStates = DocumentStateRegistry.shared.table.allObjects
+            guard let focusedDocState = allDocumentStates.first(where: { $0.isFocused }),
+                  let activeDoc = focusedDocState.document else {
                 return event
             }
-
-            print("🔑 AppEventMonitor: Handling key event for document \(ObjectIdentifier(activeDoc))")
 
             // Handle the event using the active document
             return self.handleKeyEvent(event, activeDoc: activeDoc)
