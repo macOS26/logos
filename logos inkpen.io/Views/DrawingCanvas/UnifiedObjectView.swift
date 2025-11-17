@@ -51,7 +51,7 @@ struct CanvasBackgroundView: View {
 }
 
 struct LayerCanvasView: View {
-    let objects: [VectorObject]
+    let objectIDs: [UUID]
     let document: VectorDocument  // Need this for cgImageCache and mask lookups
     let documentURL: URL?  // For resolving relative image paths
     let zoomLevel: Double
@@ -102,26 +102,30 @@ struct LayerCanvasView: View {
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
         let viewport = viewportRect(canvasSize: canvasSize)
 
-        return objects.filter { object in
-            // Skip hidden objects
-            guard object.isVisible else { return false }
+        return objectIDs.compactMap { id in
+            guard let object = document.snapshot.objects[id],
+                  object.isVisible else { return nil }
 
             // Don't cull text objects - they need better bounds calculation
             if case .text = object.objectType {
-                return true
+                return object
             }
 
             // Get object bounds
             let objectBounds = object.shape.bounds
 
             // Use SIMD for fast intersection test
-            return objectBounds.intersectsSIMD(viewport)
+            return objectBounds.intersectsSIMD(viewport) ? object : nil
         }
     }
 
     // Get layer index for debug printing
     private var layerInfo: String {
-        objects.first.map { obj in "Layer[\(obj.layerIndex)]" } ?? "Empty"
+        guard let firstID = objectIDs.first,
+              let obj = document.snapshot.objects[firstID] else {
+            return "Empty"
+        }
+        return "Layer[\(obj.layerIndex)]"
     }
 
     // Apply live point/handle positions to a shape for rendering preview
@@ -225,7 +229,7 @@ struct LayerCanvasView: View {
         Canvas { context, size in
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
-            let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
+            //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objectIDs.count) → \(visibleObjects.count) objects")
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
@@ -1345,11 +1349,6 @@ struct IsolatedLayerView: View {
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt
 
-    // Compute objects fresh from snapshot on every render
-    private var objects: [VectorObject] {
-        objectIDs.compactMap { document.snapshot.objects[$0] }
-    }
-
     // Helper to collect all text shapes (both top-level and grouped)
     private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
         // EARLY RETURN: Skip expensive iteration if we're not in text mode
@@ -1363,8 +1362,8 @@ struct IsolatedLayerView: View {
 
         // print("🔍 collectEditingTextShapes: checking snapshot directly")
 
-        // Fetch FRESH data from document.snapshot.objects, not stale objects parameter
-        for objectID in objects.map({ $0.id }) {
+        // Fetch FRESH data from document.snapshot.objects
+        for objectID in objectIDs {
             guard let freshObject = document.snapshot.objects[objectID],
                   freshObject.isVisible else { continue }
 
@@ -1411,7 +1410,7 @@ struct IsolatedLayerView: View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
-                objects: objects,
+                objectIDs: objectIDs,
                 document: document,
                 documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
                 zoomLevel: zoomLevel,
