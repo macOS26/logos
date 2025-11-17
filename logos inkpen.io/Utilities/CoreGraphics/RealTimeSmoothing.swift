@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 struct RealTimeSmoothing {
 
@@ -28,16 +29,15 @@ struct RealTimeSmoothing {
         var smoothedPoints = points
 
         for i in 1..<points.count - 1 {
-            let prev = points[i - 1]
-            let curr = points[i]
-            let next = points[i + 1]
-            let smoothX = prev.x * 0.25 + curr.x * 0.5 + next.x * 0.25
-            let smoothY = prev.y * 0.25 + curr.y * 0.5 + next.y * 0.25
+            // SIMD-optimized vector operations
+            let prevVec = SIMD2<Double>(Double(points[i - 1].x), Double(points[i - 1].y))
+            let currVec = SIMD2<Double>(Double(points[i].x), Double(points[i].y))
+            let nextVec = SIMD2<Double>(Double(points[i + 1].x), Double(points[i + 1].y))
 
-            smoothedPoints[i] = CGPoint(
-                x: curr.x * (1.0 - strength) + smoothX * strength,
-                y: curr.y * (1.0 - strength) + smoothY * strength
-            )
+            let smoothVec = prevVec * 0.25 + currVec * 0.5 + nextVec * 0.25
+            let resultVec = currVec * (1.0 - strength) + smoothVec * strength
+
+            smoothedPoints[i] = CGPoint(x: resultVec.x, y: resultVec.y)
         }
 
         return smoothedPoints
