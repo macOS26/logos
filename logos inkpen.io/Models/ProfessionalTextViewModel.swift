@@ -318,6 +318,10 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         let targetLayerIndex = document.selectedLayerIndex ?? 2
+
+        // Find the position of the text object in the layer BEFORE converting
+        let textPositionInLayer = document.snapshot.layers[targetLayerIndex].objectIDs.firstIndex(of: textObject.id)
+
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
             // Union the path with itself to preserve curves properly
@@ -358,10 +362,22 @@ class ProfessionalTextViewModel: ObservableObject {
             // Force type to .shape (NOT .text)
             let shapeObject = VectorObject(id: outlineShape.id, layerIndex: targetLayerIndex, objectType: .shape(outlineShape))
             document.snapshot.objects[outlineShape.id] = shapeObject
-            if !document.snapshot.layers[targetLayerIndex].objectIDs.contains(outlineShape.id) {
-                document.snapshot.layers[targetLayerIndex].objectIDs.append(outlineShape.id)
-            }
             createdShapeIDs.append(outlineShape.id)
+        }
+
+        // Insert outline shapes at the same position as the original text
+        if let insertIndex = textPositionInLayer {
+            // Insert all shapes at the text's position (in order)
+            for (offset, shapeID) in createdShapeIDs.enumerated() {
+                document.snapshot.layers[targetLayerIndex].objectIDs.insert(shapeID, at: insertIndex + offset)
+            }
+        } else {
+            // Fallback: append if text position not found
+            for shapeID in createdShapeIDs {
+                if !document.snapshot.layers[targetLayerIndex].objectIDs.contains(shapeID) {
+                    document.snapshot.layers[targetLayerIndex].objectIDs.append(shapeID)
+                }
+            }
         }
 
         document.removeTextFromUnifiedSystem(id: textObject.id)
