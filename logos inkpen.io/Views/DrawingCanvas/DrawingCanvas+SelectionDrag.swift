@@ -197,14 +197,8 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // Cache the bounds and delta to show transform box IMMEDIATELY
-            let finalDelta = currentDragDelta
-            if let bounds = cachedSelectionBoundsForDrag {
-                immediateTransformBoxBounds = bounds
-                immediateTransformBoxDelta = finalDelta
-            }
-
             // IMMEDIATELY clear drag state to show transform box
+            let finalDelta = currentDragDelta
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
@@ -214,11 +208,22 @@ extension DrawingCanvas {
             document.activeLayerIndexDuringDrag = nil
             layerPreviewOpacities.removeAll()
 
-            var oldShapes: [UUID: VectorShape] = [:]
-            var affectedObjectIDs: Set<UUID> = []
+            // Clear remaining drag state immediately
+            defer {
+                initialObjectPositions.removeAll()
+                initialObjectTransforms.removeAll()
+                selectionDragStart = CGPoint.zero
+            }
 
-            // First pass: collect old shapes for undo
-            for objectID in document.viewState.selectedObjectIDs {
+            // Defer expensive snapshot updates to next frame - transform box shows immediately
+            DispatchQueue.main.async { [weak document] in
+                guard let document = document else { return }
+
+                var oldShapes: [UUID: VectorShape] = [:]
+                var affectedObjectIDs: Set<UUID> = []
+
+                // First pass: collect old shapes for undo
+                for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 if case .shape(let shape) = object.objectType {
                     oldShapes[object.id] = shape
@@ -284,20 +289,10 @@ extension DrawingCanvas {
                     newShapes: newShapes
                 )
                 document.executeCommand(command)
-            }
+                }
 
-            document.updateTransformPanelValues()
-            // Note: Layer triggers handled by ShapeModificationCommand
-
-            // Clear remaining drag state (drag state already cleared above for immediate transform box)
-            initialObjectPositions.removeAll()
-            initialObjectTransforms.removeAll()
-            selectionDragStart = CGPoint.zero
-
-            // Clear cached transform box after document updates
-            DispatchQueue.main.async {
-                immediateTransformBoxBounds = nil
-                immediateTransformBoxDelta = .zero
+                document.updateTransformPanelValues()
+                // Note: Layer triggers handled by ShapeModificationCommand
             }
 
         } else {
