@@ -197,9 +197,10 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // IMMEDIATELY clear drag state to show transform box
+            // Keep currentDragDelta so transform box stays in position during updates
             let finalDelta = currentDragDelta
-            currentDragDelta = .zero
+
+            // Clear other drag state but KEEP currentDragDelta
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.currentDragOffset = .zero
@@ -231,24 +232,20 @@ extension DrawingCanvas {
                 }
             }
 
-            // Second pass: apply drag delta
+            // Second pass: apply drag delta to snapshot
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 switch object.objectType {
                 case .text(let shape):
-                    // print("🟣 DRAG FINISH: Text object \(shape.id)")
                     document.translateTextInUnified(id: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 }
             }
-
-            // syncUnifiedObjectsAfterMovement()
 
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
@@ -282,6 +279,10 @@ extension DrawingCanvas {
 
             document.updateTransformPanelValues()
             // Note: Layer triggers handled by ShapeModificationCommand
+
+            // NOW clear currentDragDelta after snapshot is updated
+            // Transform box will stay in correct position because objects are now at final position
+            currentDragDelta = .zero
 
             // Clear remaining drag state (drag state already cleared above for immediate transform box)
             initialObjectPositions.removeAll()
