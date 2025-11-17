@@ -203,7 +203,7 @@ extension DrawingCanvas {
             guard document.selectedLayerIndex != nil else { return }
 
             // IMMEDIATELY show transform box before any heavy work
-            transformBoxOpacity = 0.5
+            transformBoxOpacity = 1.0
 
             // Keep currentDragDelta so transform box stays in position during updates
             let finalDelta = currentDragDelta
