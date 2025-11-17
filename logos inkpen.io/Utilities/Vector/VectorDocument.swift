@@ -103,7 +103,8 @@ final class VectorDocument: ObservableObject, Codable {
             showGrid: settings.showGrid,
             snapToGrid: settings.snapToGrid,
             snapToPoint: settings.snapToPoint,
-            gridSpacing: settings.gridSpacing
+            gridSpacing: settings.gridSpacing,
+            gridOnTop: UserDefaults.standard.bool(forKey: "gridOnTop")
         )
 
         createCanvasAndWorkingLayers()

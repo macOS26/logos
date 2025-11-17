@@ -369,6 +369,20 @@ struct DocumentSettingsView: View {
                         }
                     }
                 }
+
+                HStack(spacing: 40) {
+                    HStack {
+                        Text("Grid on Top")
+                            .settingsToggleLabel()
+
+                        StylusToggleButton(isOn: $document.gridSettings.gridOnTop) { newValue in
+                            UserDefaults.standard.set(newValue, forKey: "gridOnTop")
+                            document.objectWillChange.send()
+                        }
+                    }
+
+                    Spacer()
+                }
             }
         }
     }

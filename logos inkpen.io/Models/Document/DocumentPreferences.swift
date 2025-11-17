@@ -48,13 +48,15 @@ struct GridSettings: Codable, Equatable {
     var snapToGrid: Bool
     var snapToPoint: Bool
     var gridSpacing: Double
+    var gridOnTop: Bool
 
     static let `default` = GridSettings(
         showRulers: false,
         showGrid: false,
         snapToGrid: false,
         snapToPoint: false,
-        gridSpacing: 12.0
+        gridSpacing: 12.0,
+        gridOnTop: false
     )
 }
 

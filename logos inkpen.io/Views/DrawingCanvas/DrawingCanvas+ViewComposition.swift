@@ -233,8 +233,8 @@ extension DrawingCanvas {
             }
         }
 
-        // Grid overlay - rendered on top of all layers
-        if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
+        // Grid overlay - rendered on top of all layers (when gridOnTop is enabled)
+        if document.gridSettings.showGrid && document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
             OptimizedGridView(
                 gridSpacing: document.settings.gridSpacing,
                 canvasSize: document.settings.sizeInPoints,
@@ -275,6 +275,18 @@ extension DrawingCanvas {
             )
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
+
+            // Grid on canvas (default behavior)
+            if document.gridSettings.showGrid && !document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
+                OptimizedGridView(
+                    gridSpacing: document.settings.gridSpacing,
+                    canvasSize: document.settings.sizeInPoints,
+                    unit: document.settings.unit,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset
+                )
+                .allowsHitTesting(false)
+            }
         }
 
         // Pass objectIDs so IsolatedLayerView can fetch fresh objects on every render
