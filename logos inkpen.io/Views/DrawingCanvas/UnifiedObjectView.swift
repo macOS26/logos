@@ -990,7 +990,7 @@ struct LayerCanvasView: View {
             paragraphStyle.minimumLineHeight = effectiveLineHeight
             paragraphStyle.maximumLineHeight = effectiveLineHeight
 
-            let textColor = vectorText.typography.fillColor.cgColor.platformColor
+            let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
 
             // Shared attributes to avoid duplicate dictionary creation
             let commonAttributes: [NSAttributedString.Key: Any] = [
@@ -1118,7 +1118,7 @@ struct LayerCanvasView: View {
 
                     // Draw stroke (always center for text)
                     cgContext.addPath(textPath)
-                    let strokeColor = vectorText.typography.strokeColor.cgColor.platformColor
+                    let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
                     cgContext.setStrokeColor(strokeColor.cgColor)
                     cgContext.setLineWidth(effectiveStrokeWidth)
                     cgContext.setLineJoin(vectorText.typography.strokeLineJoin.cgLineJoin)
@@ -1146,62 +1146,49 @@ struct LayerCanvasView: View {
     }
 
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
-        // 1. Try bookmark data first (security-scoped access)
-        if let bookmarkData = bookmarkData {
-            var isStale = false
-            if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                let _ = url.startAccessingSecurityScopedResource()
-                defer { url.stopAccessingSecurityScopedResource() }
-                if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
-                   let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                    return cgImage
-                }
+        // ONLY use bookmark data (security-scoped access required)
+        guard let bookmarkData = bookmarkData else {
+            // No bookmark - notify missing image
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("MissingLinkedImage"),
+                    object: nil,
+                    userInfo: ["shapeID": shapeID, "path": linkedPath]
+                )
             }
+            return nil
         }
 
-        // 2. Try absolute path (skip if in protected directory without security scope)
-        let absoluteURL = URL(fileURLWithPath: linkedPath)
-        let protectedPaths = ["/Users/", "/Desktop/", "/Documents/", "/Downloads/"]
-        let isProtected = protectedPaths.contains { linkedPath.contains($0) }
-
-        // Only try absolute path if not in protected location (prevents spam errors)
-        if !isProtected,
-           let imageSource = CGImageSourceCreateWithURL(absoluteURL as CFURL, nil),
-           let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-            return cgImage
-        }
-
-        // 3. Try relative to document
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let relativeURL = docDir.appendingPathComponent(linkedPath)
-            if let imageSource = CGImageSourceCreateWithURL(relativeURL as CFURL, nil),
-               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                return cgImage
+        var isStale = false
+        guard let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) else {
+            // Bookmark failed - notify missing image
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("MissingLinkedImage"),
+                    object: nil,
+                    userInfo: ["shapeID": shapeID, "path": linkedPath]
+                )
             }
+            return nil
         }
 
-        // 4. Try next to document (same directory, just filename)
-        if let docURL = documentURL {
-            let docDir = docURL.deletingLastPathComponent()
-            let filename = URL(fileURLWithPath: linkedPath).lastPathComponent
-            let sameDir = docDir.appendingPathComponent(filename)
-            if let imageSource = CGImageSourceCreateWithURL(sameDir as CFURL, nil),
-               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                return cgImage
+        let started = url.startAccessingSecurityScopedResource()
+        defer { if started { url.stopAccessingSecurityScopedResource() } }
+
+        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+            // Image file not found at bookmark URL
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("MissingLinkedImage"),
+                    object: nil,
+                    userInfo: ["shapeID": shapeID, "path": linkedPath]
+                )
             }
+            return nil
         }
 
-        // 5. Image not found - notify so user can be prompted
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(
-                name: Notification.Name("MissingLinkedImage"),
-                object: nil,
-                userInfo: ["shapeID": shapeID, "path": linkedPath]
-            )
-        }
-
-        return nil
+        return cgImage
     }
 
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
@@ -1295,17 +1282,6 @@ struct LayerCanvasView: View {
 
         // ALWAYS draw - Canvas clears every frame, we MUST redraw
 
-        // Calculate viewport for tile culling (same as vector object culling)
-        let viewport = viewportRect(canvasSize: canvasSize)
-
-        // Calculate tiles with viewport culling
-        let tiles = calculateVisibleImageTiles(
-            imageBounds: renderBounds,
-            imageSize: CGSize(width: image.width, height: image.height),
-            viewport: viewport,
-            tileSize: imageTileSize
-        )
-
         // Draw using CGContext
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -1320,96 +1296,18 @@ struct LayerCanvasView: View {
             // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // Draw only visible tiles
-            for tile in tiles {
-                cgContext.saveGState()
+            // Flip coordinate system for image rendering
+            cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
+            cgContext.scaleBy(x: 1.0, y: -1.0)
 
-                // Flip coordinate system for this tile
-                cgContext.translateBy(x: tile.destRect.minX, y: tile.destRect.maxY)
-                cgContext.scaleBy(x: 1.0, y: -1.0)
+            // Set rendering quality
+            cgContext.interpolationQuality = .medium
 
-                // Set rendering quality
-                cgContext.interpolationQuality = .medium
-
-                // Crop source image to tile region
-                if let tileImage = image.cropping(to: tile.sourceRect) {
-                    cgContext.draw(tileImage, in: CGRect(origin: .zero, size: tile.destRect.size))
-                }
-
-                cgContext.restoreGState()
-            }
+            // Draw the image
+            cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
         }
-    }
-
-    // Calculate visible image tiles using viewport culling (same approach as vector objects)
-    private func calculateVisibleImageTiles(
-        imageBounds: CGRect,
-        imageSize: CGSize,
-        viewport: CGRect,
-        tileSize: Int
-    ) -> [(sourceRect: CGRect, destRect: CGRect)] {
-        // SIMD scale vector (x, y scale)
-        let scale = SIMD2<Double>(
-            imageBounds.width / imageSize.width,
-            imageBounds.height / imageSize.height
-        )
-
-        // SIMD offset vector (imageBounds origin)
-        let offset = SIMD2<Double>(imageBounds.minX, imageBounds.minY)
-
-        // SIMD image size and tile size
-        let imgSize = SIMD2<Double>(imageSize.width, imageSize.height)
-        let tileSizeVec = SIMD2<Double>(repeating: Double(tileSize))
-
-        // Calculate total number of tiles
-        let numCols = Int(ceil(imageSize.width / CGFloat(tileSize)))
-        let numRows = Int(ceil(imageSize.height / CGFloat(tileSize)))
-
-        var visibleTiles: [(CGRect, CGRect)] = []
-
-        // Iterate through all tiles and cull using viewport intersection
-        for row in 0..<numRows {
-            for col in 0..<numCols {
-                // SIMD tile origin in image pixel coordinates
-                let tileOrigin = SIMD2<Double>(Double(col * tileSize), Double(row * tileSize))
-
-                // SIMD tile size with clamping (min operation vectorized)
-                let remaining = imgSize - tileOrigin
-                let tileSize2D = SIMD2(
-                    min(tileSizeVec.x, remaining.x),
-                    min(tileSizeVec.y, remaining.y)
-                )
-
-                // Source rect in image pixel coordinates
-                let sourceRect = CGRect(
-                    x: tileOrigin.x,
-                    y: tileOrigin.y,
-                    width: tileSize2D.x,
-                    height: tileSize2D.y
-                )
-
-                // SIMD destination calculation: offset + (tileOrigin * scale)
-                let destOrigin = offset + (tileOrigin * scale)
-                let destSize = tileSize2D * scale
-
-                // Destination rect in canvas coordinates
-                let destRect = CGRect(
-                    x: destOrigin.x,
-                    y: destOrigin.y,
-                    width: destSize.x,
-                    height: destSize.y
-                )
-
-                // Use SIMD intersection test (same as vector object culling!)
-                if destRect.intersectsSIMD(viewport) {
-                    visibleTiles.append((sourceRect, destRect))
-                }
-            }
-        }
-
-        return visibleTiles
     }
 
 }
