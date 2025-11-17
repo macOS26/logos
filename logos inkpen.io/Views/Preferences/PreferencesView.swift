@@ -40,17 +40,17 @@ struct PreferencesView: View {
                         }
 
                         HStack(spacing: 8) {
-                            Button("Low (20%)") {
-                                imageQuality = 0.2
-                            }
-                            .buttonStyle(.bordered)
-
-                            Button("Medium (50%)") {
+                            Button("50%") {
                                 imageQuality = 0.5
                             }
                             .buttonStyle(.bordered)
 
-                            Button("High (100%)") {
+                            Button("75%") {
+                                imageQuality = 0.75
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("100%") {
                                 imageQuality = 1.0
                             }
                             .buttonStyle(.bordered)
