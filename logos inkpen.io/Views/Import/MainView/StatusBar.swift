@@ -55,6 +55,12 @@ struct StatusBar: View {
 
             Spacer()
 
+            Text("\(formatNumber(getTotalObjectCount())) obj  •  \(formatNumber(getTotalPointCount())) pts")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
             Text("Zoom: \(Int(zoomLevel * 100))%")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -136,5 +142,51 @@ struct StatusBar: View {
         }
 
         return combinedBounds
+    }
+
+    private func getTotalObjectCount() -> Int {
+        return document.snapshot.objects.count
+    }
+
+    private func getTotalPointCount() -> Int {
+        var totalPoints = 0
+
+        for vectorObject in document.snapshot.objects.values {
+            switch vectorObject.objectType {
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                totalPoints += countPointsInPath(shape.path)
+            case .text:
+                // Text objects don't have vector points
+                break
+            }
+        }
+
+        return totalPoints
+    }
+
+    private func countPointsInPath(_ path: VectorPath) -> Int {
+        var count = 0
+        for element in path.elements {
+            switch element {
+            case .move:
+                count += 1
+            case .line:
+                count += 1
+            case .quadCurve:
+                count += 2  // control point + end point
+            case .curve:
+                count += 3  // 2 control points + end point
+            case .close:
+                break
+            }
+        }
+        return count
+    }
+
+    private func formatNumber(_ number: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        return formatter.string(from: NSNumber(value: number)) ?? "\(number)"
     }
 }
