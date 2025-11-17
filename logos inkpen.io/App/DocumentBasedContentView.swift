@@ -16,6 +16,16 @@ struct DocumentBasedContentView: View {
                     hasHydratedImages = true
                 }
             }
+            .onChange(of: imagePreviewQuality) { _, _ in
+                // Clear image caches when quality changes
+                ImageContentRegistry.clearAll(in: inkpenDocument.document)
+                MetalImageTileRenderer.shared?.clearCache()
+            }
+            .onChange(of: imageTileSize) { _, _ in
+                // Clear image caches when tile size changes
+                ImageContentRegistry.clearAll(in: inkpenDocument.document)
+                MetalImageTileRenderer.shared?.clearCache()
+            }
     }
 
 
