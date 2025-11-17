@@ -1,10 +1,10 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    internal var allowedZoomSteps: [CGFloat] { [0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0, 160.0] }
+    internal var allowedZoomSteps: [CGFloat] { [0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0, 192.0, 256.0, 384.0, 512.0, 640.0] }
 
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
-        let clamped = max(allowedZoomSteps.first ?? 0.5, min(allowedZoomSteps.last ?? 160.0, zoom))
+        let clamped = max(allowedZoomSteps.first ?? 0.5, min(allowedZoomSteps.last ?? 640.0, zoom))
         var best = allowedZoomSteps.first ?? 0.5
         var bestDiff = abs(clamped - best)
         for step in allowedZoomSteps {
@@ -22,7 +22,7 @@ extension DrawingCanvas {
         for step in allowedZoomSteps {
             if step > zoom + epsilon { return step }
         }
-        return allowedZoomSteps.last ?? 160.0
+        return allowedZoomSteps.last ?? 640.0
     }
 
     internal func nextAllowedStepDown(from zoom: CGFloat) -> CGFloat {
@@ -42,7 +42,7 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        let newZoomLevel = max(0.5, min(160.0, initialZoomLevel * value))
+        let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * value))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
@@ -61,7 +61,7 @@ extension DrawingCanvas {
             return
         }
 
-        let finalZoomLevel = max(0.5, min(160.0, initialZoomLevel * value))
+        let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * value))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
