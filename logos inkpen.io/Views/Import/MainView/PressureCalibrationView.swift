@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 struct PressureCalibrationView: View {
     @ObservedObject private var pressureManager = PressureManager.shared
@@ -349,61 +350,69 @@ struct PressureCalibrationView: View {
             let thickness = CGFloat(curveThickness * 10.0) * 2.0
 
             if i == 0 {
+                // SIMD-optimized vector operations
                 let nextPoint = pressurePoints[i + 1]
-                let direction = CGVector(dx: nextPoint.location.x - point.location.x,
-                                       dy: nextPoint.location.y - point.location.y)
-                let length = sqrt(direction.dx * direction.dx + direction.dy * direction.dy)
+                let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                let nextVec = SIMD2<Double>(Double(nextPoint.location.x), Double(nextPoint.location.y))
+                let direction = nextVec - pointVec
+                let length = simd_length(direction)
 
                 if length > 0 {
-                    let normalizedDirection = CGVector(dx: direction.dx / length, dy: direction.dy / length)
-                    let perpendicular = CGVector(dx: -normalizedDirection.dy, dy: normalizedDirection.dx)
+                    let normalized = simd_normalize(direction)
+                    let perpendicular = SIMD2<Double>(-normalized.y, normalized.x)
 
-                    leftEdgePoints.append(CGPoint(x: point.location.x + perpendicular.dx * thickness,
-                                                y: point.location.y + perpendicular.dy * thickness))
-                    rightEdgePoints.append(CGPoint(x: point.location.x - perpendicular.dx * thickness,
-                                                 y: point.location.y - perpendicular.dy * thickness))
+                    let leftEdge = pointVec + perpendicular * thickness
+                    let rightEdge = pointVec - perpendicular * thickness
+
+                    leftEdgePoints.append(CGPoint(x: leftEdge.x, y: leftEdge.y))
+                    rightEdgePoints.append(CGPoint(x: rightEdge.x, y: rightEdge.y))
                 } else {
                     leftEdgePoints.append(point.location)
                     rightEdgePoints.append(point.location)
                 }
             } else if i == pressurePoints.count - 1 {
+                // SIMD-optimized vector operations
                 let prevPoint = pressurePoints[i - 1]
-                let direction = CGVector(dx: point.location.x - prevPoint.location.x,
-                                       dy: point.location.y - prevPoint.location.y)
-                let length = sqrt(direction.dx * direction.dx + direction.dy * direction.dy)
+                let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                let prevVec = SIMD2<Double>(Double(prevPoint.location.x), Double(prevPoint.location.y))
+                let direction = pointVec - prevVec
+                let length = simd_length(direction)
 
                 if length > 0 {
-                    let normalizedDirection = CGVector(dx: direction.dx / length, dy: direction.dy / length)
-                    let perpendicular = CGVector(dx: -normalizedDirection.dy, dy: normalizedDirection.dx)
+                    let normalized = simd_normalize(direction)
+                    let perpendicular = SIMD2<Double>(-normalized.y, normalized.x)
 
-                    leftEdgePoints.append(CGPoint(x: point.location.x + perpendicular.dx * thickness,
-                                                y: point.location.y + perpendicular.dy * thickness))
-                    rightEdgePoints.append(CGPoint(x: point.location.x - perpendicular.dx * thickness,
-                                                 y: point.location.y - perpendicular.dy * thickness))
+                    let leftEdge = pointVec + perpendicular * thickness
+                    let rightEdge = pointVec - perpendicular * thickness
+
+                    leftEdgePoints.append(CGPoint(x: leftEdge.x, y: leftEdge.y))
+                    rightEdgePoints.append(CGPoint(x: rightEdge.x, y: rightEdge.y))
                 } else {
                     leftEdgePoints.append(point.location)
                     rightEdgePoints.append(point.location)
                 }
             } else {
+                // SIMD-optimized vector operations
                 let prevPoint = pressurePoints[i - 1]
                 let nextPoint = pressurePoints[i + 1]
-                let prevDirection = CGVector(dx: point.location.x - prevPoint.location.x,
-                                           dy: point.location.y - prevPoint.location.y)
-                let nextDirection = CGVector(dx: nextPoint.location.x - point.location.x,
-                                           dy: nextPoint.location.y - point.location.y)
+                let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                let prevVec = SIMD2<Double>(Double(prevPoint.location.x), Double(prevPoint.location.y))
+                let nextVec = SIMD2<Double>(Double(nextPoint.location.x), Double(nextPoint.location.y))
 
-                let avgDirection = CGVector(dx: (prevDirection.dx + nextDirection.dx) / 2,
-                                          dy: (prevDirection.dy + nextDirection.dy) / 2)
-                let length = sqrt(avgDirection.dx * avgDirection.dx + avgDirection.dy * avgDirection.dy)
+                let prevDirection = pointVec - prevVec
+                let nextDirection = nextVec - pointVec
+                let avgDirection = (prevDirection + nextDirection) / 2.0
+                let length = simd_length(avgDirection)
 
                 if length > 0 {
-                    let normalizedDirection = CGVector(dx: avgDirection.dx / length, dy: avgDirection.dy / length)
-                    let perpendicular = CGVector(dx: -normalizedDirection.dy, dy: normalizedDirection.dx)
+                    let normalized = simd_normalize(avgDirection)
+                    let perpendicular = SIMD2<Double>(-normalized.y, normalized.x)
 
-                    leftEdgePoints.append(CGPoint(x: point.location.x + perpendicular.dx * thickness,
-                                                y: point.location.y + perpendicular.dy * thickness))
-                    rightEdgePoints.append(CGPoint(x: point.location.x - perpendicular.dx * thickness,
-                                                 y: point.location.y - perpendicular.dy * thickness))
+                    let leftEdge = pointVec + perpendicular * thickness
+                    let rightEdge = pointVec - perpendicular * thickness
+
+                    leftEdgePoints.append(CGPoint(x: leftEdge.x, y: leftEdge.y))
+                    rightEdgePoints.append(CGPoint(x: rightEdge.x, y: rightEdge.y))
                 } else {
                     leftEdgePoints.append(point.location)
                     rightEdgePoints.append(point.location)
