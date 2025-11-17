@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 struct ProfessionalDirectSelectionView: View {
     let document: VectorDocument
@@ -300,10 +301,8 @@ struct ProfessionalDirectSelectionView: View {
         }
 
         // Skip drawing if handle is collapsed (at same position as anchor)
-        // SIMD-optimized distance calculation: sqrt(dx² + dy²)
-        let dx = handle.x - anchor.x
-        let dy = handle.y - anchor.y
-        let distance = sqrt(dx * dx + dy * dy)
+        // SIMD-optimized distance calculation
+        let distance = simd_length(SIMD2(Double(handle.x - anchor.x), Double(handle.y - anchor.y)))
         if distance < 0.5 {
             return  // Handle is collapsed, don't draw it
         }
