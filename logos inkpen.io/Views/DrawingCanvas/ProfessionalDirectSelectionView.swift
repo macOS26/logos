@@ -300,9 +300,8 @@ struct ProfessionalDirectSelectionView: View {
         }
 
         // Skip drawing if handle is collapsed (at same position as anchor)
-        let dx = handle.x - anchor.x
-        let dy = handle.y - anchor.y
-        let distance = sqrt(dx * dx + dy * dy)
+        // SIMD-optimized distance calculation
+        let distance = simd_length(SIMD2(handle.x - anchor.x, handle.y - anchor.y))
         if distance < 0.5 {
             return  // Handle is collapsed, don't draw it
         }
