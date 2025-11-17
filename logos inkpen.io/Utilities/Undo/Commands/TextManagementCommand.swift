@@ -53,18 +53,12 @@ class TextManagementCommand: BaseCommand {
             for textID in removedTextIDs {
                 if let obj = document.snapshot.objects[textID] {
                     document.snapshot.objects.removeValue(forKey: textID)
-                    if obj.layerIndex < document.snapshot.layers.count {
-                        document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == textID }
-                    }
+                    document.removeFromLayer(layerIndex: obj.layerIndex, objectID: textID)
                 }
             }
             for (uuid, obj) in addedObjects {
                 document.snapshot.objects[uuid] = obj
-                if obj.layerIndex < document.snapshot.layers.count {
-                    if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(uuid) {
-                        document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
-                    }
-                }
+                document.appendToLayer(layerIndex: obj.layerIndex, objectID: uuid)
             }
             document.viewState.selectedObjectIDs = newSelection
         }
@@ -103,16 +97,12 @@ class TextManagementCommand: BaseCommand {
             for shapeID in addedShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {
                     document.snapshot.objects.removeValue(forKey: shapeID)
-                    if obj.layerIndex < document.snapshot.layers.count {
-                        document.snapshot.layers[obj.layerIndex].objectIDs.removeAll { $0 == shapeID }
-                    }
+                    document.removeFromLayer(layerIndex: obj.layerIndex, objectID: shapeID)
                 }
             }
             for (uuid, obj) in removedObjects {
                 document.snapshot.objects[uuid] = obj
-                if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
-                }
+                document.appendToLayer(layerIndex: obj.layerIndex, objectID: uuid)
             }
             document.viewState.selectedObjectIDs = oldSelection
         }
