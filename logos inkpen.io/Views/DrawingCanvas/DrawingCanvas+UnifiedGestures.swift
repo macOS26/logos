@@ -125,8 +125,27 @@ extension DrawingCanvas {
             handlePanGesture(value: value, geometry: geometry)
 
         case .zoom:
-            // Zoom tool doesn't support dragging - only click to zoom
-            break
+            // Zoom by dragging up/down at the magnifying glass location
+            if zoomToolDragStartPoint == .zero {
+                // Start the drag
+                zoomToolDragStartPoint = value.startLocation
+                zoomToolInitialZoomLevel = zoomLevel
+                isActivelyZooming = true
+            }
+
+            // Calculate vertical distance dragged (up = negative, down = positive)
+            let dragDelta = value.location.y - zoomToolDragStartPoint.y
+
+            // Convert drag distance to zoom factor (drag 100pts = 2x zoom change)
+            // Negative dragDelta (drag up) = zoom in, positive = zoom out
+            let zoomSensitivity: CGFloat = 0.01 // 1% per pixel
+            let zoomFactor = 1.0 - (dragDelta * zoomSensitivity)
+            let targetZoom = zoomToolInitialZoomLevel * zoomFactor
+            let clampedZoom = max(0.75, min(640.0, targetZoom))
+
+            // Zoom at the starting point (where the magnifying glass was clicked)
+            let focalPoint = zoomToolDragStartPoint
+            handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: focalPoint, geometry: geometry)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
@@ -177,23 +196,14 @@ extension DrawingCanvas {
             finishPanGesture()
 
         case .zoom:
-            // Bake deltas into real zoom/pan values
-            if isActivelyZooming {
-                let finalZoom = zoomLevel * liveZoomDelta
-                let finalOffset = CGPoint(
-                    x: canvasOffset.x + livePanDelta.x,
-                    y: canvasOffset.y + livePanDelta.y
-                )
-                zoomLevel = finalZoom
-                canvasOffset = finalOffset
-
-                // Reset deltas
-                liveZoomDelta = 1.0
-                livePanDelta = .zero
-                isActivelyZooming = false
-            }
+            // Reset zoom tool state
             zoomToolDragStartPoint = .zero
-            zoomToolInitialZoomLevel = zoomLevel
+            isActivelyZooming = false
+            #if os(macOS)
+            if isCanvasHovering && document.viewState.currentTool == .zoom {
+                MagnifyingGlassCursor.set()
+            }
+            #endif
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
