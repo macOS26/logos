@@ -20,16 +20,17 @@ extension DrawingCanvas {
         // SIMD optimization for pan delta calculation
         let currentLoc = SIMD2<Float>(Float(value.location.x), Float(value.location.y))
         let startLoc = SIMD2<Float>(Float(handToolDragStart.x), Float(handToolDragStart.y))
+        let initialOffset = SIMD2<Float>(Float(initialCanvasOffset.x), Float(initialCanvasOffset.y))
 
         let delta = currentLoc - startLoc
+        let newOffset = initialOffset + delta
 
         #if os(macOS)
         if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
         #endif
+        canvasOffset = CGPoint(x: CGFloat(newOffset.x), y: CGFloat(newOffset.y))
 
-        // Use live delta for instant feedback without redrawing canvas
-        livePanDelta = CGPoint(x: CGFloat(delta.x), y: CGFloat(delta.y))
     }
 }

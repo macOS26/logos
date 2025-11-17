@@ -1,27 +1,9 @@
 import Foundation
-import CoreGraphics
 
 extension VectorDocument {
 
     // MARK: - New Structure Sync Helpers
     // Keep newLayers[].objectIDs and objects dictionary in sync
-
-    // MARK: - Spatial Index Helpers
-
-    /// Calculate bounding box for an object
-    private func calculateBounds(for object: VectorObject) -> CGRect {
-        return object.shape.bounds
-    }
-
-    /// Update spatial index for an object
-    private func updateSpatialIndex(for objectID: UUID) {
-        guard let object = snapshot.objects[objectID] else {
-            spatialIndex.remove(objectID: objectID)
-            return
-        }
-        let bounds = calculateBounds(for: object)
-        spatialIndex.update(objectID: objectID, bounds: bounds)
-    }
 
     /// Add object to new structure
     func addObjectToNewStructure(_ object: VectorObject, layerID: UUID) {
@@ -37,16 +19,10 @@ extension VectorDocument {
         if !snapshot.layers[layerIndex].objectIDs.contains(updatedObject.id) {
             snapshot.layers[layerIndex].objectIDs.append(updatedObject.id)
         }
-
-        // Update spatial index
-        updateSpatialIndex(for: updatedObject.id)
     }
 
     /// Remove object from new structure
     func removeObjectFromNewStructure(objectID: UUID) {
-        // Remove from spatial index
-        spatialIndex.remove(objectID: objectID)
-
         // Remove from objects dictionary
         snapshot.objects.removeValue(forKey: objectID)
 
@@ -89,21 +65,10 @@ extension VectorDocument {
     /// Update object in dictionary (for modifications like color, position, etc)
     func updateObjectInNewStructure(_ object: VectorObject) {
         snapshot.objects[object.id] = object
-
-        // Update spatial index with new bounds
-        updateSpatialIndex(for: object.id)
     }
 
     /// Find which layer contains an object
     func findLayerContaining(objectID: UUID) -> UUID? {
         return snapshot.layers.first { $0.objectIDs.contains(objectID) }?.id
-    }
-
-    /// Rebuild entire spatial index from snapshot objects
-    func rebuildSpatialIndex() {
-        let objectBounds: [(UUID, CGRect)] = snapshot.objects.map { (id, object) in
-            (id, calculateBounds(for: object))
-        }
-        spatialIndex.rebuild(objects: objectBounds)
     }
 }

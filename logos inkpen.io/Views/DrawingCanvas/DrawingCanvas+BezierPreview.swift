@@ -12,7 +12,7 @@ extension DrawingCanvas {
             let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
 
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let fillPath = Path { path in
@@ -62,7 +62,7 @@ extension DrawingCanvas {
                 rawCanvasMouseLocation
 
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let fillPath = Path { path in
@@ -159,7 +159,7 @@ extension DrawingCanvas {
 
                     // Snap lines using Canvas
                     Canvas { context, size in
-                        context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                        context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                         context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                         // Line from last point to snap point
@@ -213,7 +213,7 @@ extension DrawingCanvas {
 
             // Rubber band curves using Canvas
             Canvas { context, size in
-                context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+                context.translateBy(x: effectiveCanvasOffset.x, y: effectiveCanvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 if showClosePathHint && bezierPoints.count >= 3 {

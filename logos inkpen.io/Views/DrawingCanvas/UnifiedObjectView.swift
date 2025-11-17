@@ -121,22 +121,27 @@ struct LayerCanvasView: View {
         )
     }
 
-    // Pre-filter visible objects with viewport culling (O(log n) using R-Tree)
+    // Pre-filter visible objects with viewport culling (O(n) once per objects change)
     // Filters out objects that are:
     // 1. Hidden (isVisible == false)
     // 2. Outside the viewport bounds (performance optimization)
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
         let viewport = viewportRect(canvasSize: canvasSize)
 
-        // Query R-Tree for objects in viewport - O(log n)
-        let visibleIDs = Set(document.spatialIndex.query(viewport: viewport))
-
-        // Filter to only objects in this layer that are visible and in viewport
         return objectIDs.compactMap { id in
-            guard visibleIDs.contains(id),
-                  let object = document.snapshot.objects[id],
+            guard let object = document.snapshot.objects[id],
                   object.isVisible else { return nil }
-            return object
+
+            // Don't cull text objects - they need better bounds calculation
+            if case .text = object.objectType {
+                return object
+            }
+
+            // Get object bounds
+            let objectBounds = object.shape.bounds
+
+            // Use SIMD for fast intersection test
+            return objectBounds.intersectsSIMD(viewport) ? object : nil
         }
     }
 
