@@ -12,22 +12,16 @@ class ImageTileCache {
 
     private init() {}
 
-    /// Get the current tile size from preferences
-    var tileSizePixels: Int {
-        UserDefaults.standard.object(forKey: "imageTileSize") as? Int ?? 512
-    }
-
     /// Calculate which tiles intersect the viewport
     /// - Parameters:
     ///   - imageRect: The image bounds in SCREEN coordinates (with zoom applied)
     ///   - viewportRect: The visible viewport in SCREEN coordinates
     ///   - imageSize: The actual image pixel dimensions
     ///   - canvasSize: The image size in CANVAS coordinates (before zoom)
-    ///   - tileSize: The tile size in pixels (optional, defaults to user preference)
+    ///   - tileSize: The tile size in pixels
     /// - Returns: Array of tile coordinates and their rects in image coordinates
-    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int? = nil) -> [(coord: TileCoordinate, rect: CGRect)] {
-        // Use provided tile size or default to preferences
-        let currentTileSize = tileSize ?? tileSizePixels
+    func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int) -> [(coord: TileCoordinate, rect: CGRect)] {
+        let currentTileSize = tileSize
 
         // Calculate total number of tiles in the image
         let numCols = Int(ceil(imageSize.width / CGFloat(currentTileSize)))
