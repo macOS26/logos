@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
-    @Published var isFocused = false
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
