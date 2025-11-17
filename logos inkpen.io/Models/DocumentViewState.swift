@@ -39,9 +39,9 @@ class DocumentViewState: ObservableObject {
     @Published var warpBounds: [UUID: CGRect] = [:]
     @Published var hasPressureInput: Bool = false
 
-    // MARK: - Drag State
-    @Published var isDraggingVisibility: Bool = false
-    @Published var isDraggingLock: Bool = false
+    // MARK: - Drag State (UI-only, no @Published needed)
+    var isDraggingVisibility: Bool = false
+    var isDraggingLock: Bool = false
 
     // MARK: - Gradient Live State
     @Published var liveGradientOriginX: Double? = nil

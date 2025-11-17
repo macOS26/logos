@@ -116,10 +116,7 @@ class DocumentState: ObservableObject {
 
         await MainActor.run {
             selectionCancellable = document.viewState.objectWillChange.sink { [weak self] _ in
-                // Defer to next runloop to avoid reentrancy when viewState is modified
-                DispatchQueue.main.async {
-                    self?.updateAllStates()
-                }
+                self?.updateAllStates()
             }
         }
     }
