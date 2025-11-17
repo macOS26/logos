@@ -431,11 +431,12 @@ struct ProfessionalLayerRow: View {
             }
         } else if isShiftPressed {
             if let anchorID = selectionAnchorID {
+                // Work with UUIDs directly - no temporary VectorObject array
                 let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
-                let currentLayerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
+                let reversedIDs = Array(objectIDs.reversed())
 
-                if let anchorIndex = currentLayerObjects.firstIndex(where: { $0.id == anchorID }),
-                   let clickedIndex = currentLayerObjects.firstIndex(where: { $0.id == objectID }) {
+                if let anchorIndex = reversedIDs.firstIndex(of: anchorID),
+                   let clickedIndex = reversedIDs.firstIndex(of: objectID) {
 
                     let currentMin = selectionRangeMin ?? anchorIndex
                     let currentMax = selectionRangeMax ?? anchorIndex
@@ -446,8 +447,7 @@ struct ProfessionalLayerRow: View {
                     selectionRangeMin = newMin
                     selectionRangeMax = newMax
 
-                    let rangeObjects = currentLayerObjects[newMin...newMax]
-                    let rangeIDs = Set(rangeObjects.map { $0.id })
+                    let rangeIDs = Set(reversedIDs[newMin...newMax])
 
                     document.viewState.selectedObjectIDs = rangeIDs
                 } else {
