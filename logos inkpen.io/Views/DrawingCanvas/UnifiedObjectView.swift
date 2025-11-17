@@ -106,6 +106,11 @@ struct LayerCanvasView: View {
             // Skip hidden objects
             guard object.isVisible else { return false }
 
+            // Don't cull text objects - they need better bounds calculation
+            if case .text = object.objectType {
+                return true
+            }
+
             // Get object bounds
             let objectBounds = object.shape.bounds
 
@@ -220,7 +225,7 @@ struct LayerCanvasView: View {
         Canvas { context, size in
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
-            //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
+            let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objects.count) → \(visibleObjects.count) objects")
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
