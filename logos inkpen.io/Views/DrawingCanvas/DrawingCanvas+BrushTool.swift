@@ -120,8 +120,10 @@ extension DrawingCanvas {
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
-                let distance = hypot(point.location.x - lastPoint.location.x,
-                                   point.location.y - lastPoint.location.y)
+                // SIMD-optimized distance calculation
+                let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                let lastVec = SIMD2<Double>(Double(lastPoint.location.x), Double(lastPoint.location.y))
+                let distance = simd_length(pointVec - lastVec)
                 if distance < dupThreshold {
                     continue
                 }
@@ -137,11 +139,14 @@ extension DrawingCanvas {
             let endPoint = dedupedPoints[1]
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
-            let dx = endPoint.location.x - startPoint.location.x
-            let dy = endPoint.location.y - startPoint.location.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-            let perpX = lineLength > 0 ? -dy / lineLength : 0
-            let perpY = lineLength > 0 ? dx / lineLength : 0
+            // SIMD-optimized line length and perpendicular
+            let startVec = SIMD2<Double>(Double(startPoint.location.x), Double(startPoint.location.y))
+            let endVec = SIMD2<Double>(Double(endPoint.location.x), Double(endPoint.location.y))
+            let delta = endVec - startVec
+            let lineLength = simd_length(delta)
+            let perp = lineLength > 0 ? SIMD2<Double>(-delta.y, delta.x) / lineLength : SIMD2<Double>(0, 0)
+            let perpX = perp.x
+            let perpY = perp.y
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
@@ -270,11 +275,12 @@ extension DrawingCanvas {
             case .failure(let error):
                 print("⚠️ Metal failed: \(error), using CPU fallback")
                 usedMetal = false  // Metal failed, will use CPU
-                // CPU fallback
+                // CPU fallback with SIMD
                 for point in brushRawPoints {
                     if let lastPoint = dedupedPoints.last {
-                        let distance = hypot(point.location.x - lastPoint.location.x,
-                                           point.location.y - lastPoint.location.y)
+                        let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                        let lastVec = SIMD2<Double>(Double(lastPoint.location.x), Double(lastPoint.location.y))
+                        let distance = simd_length(pointVec - lastVec)
                         if distance < dupThreshold {
                             continue
                         }
@@ -288,8 +294,10 @@ extension DrawingCanvas {
         if !usedMetal {
             for point in brushRawPoints {
                 if let lastPoint = dedupedPoints.last {
-                    let distance = hypot(point.location.x - lastPoint.location.x,
-                                       point.location.y - lastPoint.location.y)
+                    // SIMD-optimized distance calculation
+                    let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
+                    let lastVec = SIMD2<Double>(Double(lastPoint.location.x), Double(lastPoint.location.y))
+                    let distance = simd_length(pointVec - lastVec)
                     if distance < dupThreshold {
                         continue
                     }
@@ -303,9 +311,12 @@ extension DrawingCanvas {
         guard dedupedLocations.count >= 2 else { return }
 
         if dedupedLocations.count == 2 {
+            // SIMD-optimized distance check
             let start = dedupedLocations[0]
             let end = dedupedLocations[1]
-            let distance = hypot(end.x - start.x, end.y - start.y)
+            let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
+            let endVec = SIMD2<Double>(Double(end.x), Double(end.y))
+            let distance = simd_length(endVec - startVec)
             guard distance >= 2.0 else { return }
         }
 
@@ -412,11 +423,12 @@ extension DrawingCanvas {
         var firstClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
         var secondClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
 
+        // SIMD-optimized distance calculations
+        let targetVec = SIMD2<Double>(Double(targetPoint.x), Double(targetPoint.y))
+
         for rawPoint in rawPoints {
-            let distance = hypot(
-                targetPoint.x - rawPoint.location.x,
-                targetPoint.y - rawPoint.location.y
-            )
+            let rawVec = SIMD2<Double>(Double(rawPoint.location.x), Double(rawPoint.location.y))
+            let distance = simd_length(targetVec - rawVec)
 
             if distance < firstClosest.distance {
                 secondClosest = firstClosest
