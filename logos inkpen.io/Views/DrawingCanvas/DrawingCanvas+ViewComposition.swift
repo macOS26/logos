@@ -275,36 +275,34 @@ extension DrawingCanvas {
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
         } else if layer.name == "Canvas" {
-            ZStack {
-                CanvasBackgroundView(
+            CanvasBackgroundView(
+                canvasSize: document.settings.sizeInPoints,
+                backgroundColor: document.settings.backgroundColor.color,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
+            .opacity(layerOpacity)
+            .blendMode(layerBlendMode.swiftUIBlendMode)
+
+            // Grid on canvas (default behavior) - above background, clipped to canvas
+            if document.gridSettings.showGrid && !document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
+                OptimizedGridView(
+                    gridSpacing: document.settings.gridSpacing,
                     canvasSize: document.settings.sizeInPoints,
-                    backgroundColor: document.settings.backgroundColor.color,
+                    unit: document.settings.unit,
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset
                 )
-
-                // Grid on canvas (default behavior) - above background, clipped to canvas
-                if document.gridSettings.showGrid && !document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
-                    OptimizedGridView(
-                        gridSpacing: document.settings.gridSpacing,
-                        canvasSize: document.settings.sizeInPoints,
-                        unit: document.settings.unit,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset
-                    )
-                    .allowsHitTesting(false)
-                    .clipShape(
-                        Rectangle()
-                            .size(
-                                width: document.settings.sizeInPoints.width * zoomLevel,
-                                height: document.settings.sizeInPoints.height * zoomLevel
-                            )
-                            .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    )
-                }
+                .allowsHitTesting(false)
+                .clipShape(
+                    Rectangle()
+                        .size(
+                            width: document.settings.sizeInPoints.width * zoomLevel,
+                            height: document.settings.sizeInPoints.height * zoomLevel
+                        )
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                )
             }
-            .opacity(layerOpacity)
-            .blendMode(layerBlendMode.swiftUIBlendMode)
         }
 
         // Pass objectIDs so IsolatedLayerView can fetch fresh objects on every render
