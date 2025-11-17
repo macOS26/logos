@@ -42,7 +42,9 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * value))
+        // Make zoom 2x more sensitive: double the change from 1.0
+        let adjustedValue = 1.0 + (value - 1.0) * 2.0
+        let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
@@ -61,7 +63,9 @@ extension DrawingCanvas {
             return
         }
 
-        let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * value))
+        // Make zoom 2x more sensitive: double the change from 1.0
+        let adjustedValue = 1.0 + (value - 1.0) * 2.0
+        let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
