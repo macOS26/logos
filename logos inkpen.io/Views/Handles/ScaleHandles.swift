@@ -317,7 +317,7 @@ struct ScaleHandles: View {
             }
             cachedPreviewPath = path
         }
-        .id("scale-handles-\(pointsRefreshTrigger)")
+        //.id("scale-handles-\(pointsRefreshTrigger)")
     }
 
     @State var keyEventMonitor: Any?

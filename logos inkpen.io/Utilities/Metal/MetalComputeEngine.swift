@@ -1193,70 +1193,70 @@ class MetalComputeEngine {
         }
     }
 
-    func executeParallelOperations<T>(_ operations: [(MTLCommandBuffer) -> T]) -> [T] {
-        let group = DispatchGroup()
-        var results: [T?] = Array(repeating: nil, count: operations.count)
-        let resultsQueue = DispatchQueue(label: "com.logos.parallel.results", attributes: .concurrent)
+//    func executeParallelOperations<T>(_ operations: [(MTLCommandBuffer) -> T]) -> [T] {
+//        let group = DispatchGroup()
+//        var results: [T?] = Array(repeating: nil, count: operations.count)
+//        let resultsQueue = DispatchQueue(label: "com.logos.parallel.results", attributes: .concurrent)
+//
+//        for (index, operation) in operations.enumerated() {
+//            group.enter()
+//            DispatchQueue.global(qos: .userInitiated).async {
+//                if let commandBuffer = self.commandQueue.makeCommandBuffer() {
+//                    let result = operation(commandBuffer)
+//
+//                    resultsQueue.async(flags: .barrier) {
+//                        results[index] = result
+//                    }
+//
+//                    commandBuffer.commit()
+//                }
+//                group.leave()
+//            }
+//        }
+//
+//        group.wait()
+//        return results.compactMap { $0 }
+//    }
 
-        for (index, operation) in operations.enumerated() {
-            group.enter()
-            DispatchQueue.global(qos: .userInitiated).async {
-                if let commandBuffer = self.commandQueue.makeCommandBuffer() {
-                    let result = operation(commandBuffer)
+//    var isFullGPUAccelerationAvailable: Bool {
+//        return douglasPeuckerPipeline != nil &&
+//               bezierCalculationPipeline != nil &&
+//               matrixTransformPipeline != nil &&
+//               collisionDetectionPipeline != nil &&
+//               pathRenderingPipeline != nil
+//    }
 
-                    resultsQueue.async(flags: .barrier) {
-                        results[index] = result
-                    }
+//    func getPerformanceMode() -> String {
+//        let availablePipelines = [
+//            douglasPeuckerPipeline != nil ? "Douglas-Peucker" : nil,
+//            bezierCalculationPipeline != nil ? "Bezier" : nil,
+//            matrixTransformPipeline != nil ? "Matrix" : nil,
+//            collisionDetectionPipeline != nil ? "Collision" : nil,
+//            pathRenderingPipeline != nil ? "PathRender" : nil
+//        ].compactMap { $0 }
+//
+//        if isFullGPUAccelerationAvailable {
+//            return "🚀 Full GPU Acceleration (\(device.name)) - All 5 Phases Active"
+//        } else if !availablePipelines.isEmpty {
+//            return "🔄 GPU Hybrid Mode - \(availablePipelines.joined(separator: ", "))"
+//        } else {
+//            return "💻 CPU Mode - GPU Unavailable"
+//        }
+//    }
 
-                    commandBuffer.commit()
-                }
-                group.leave()
-            }
-        }
-
-        group.wait()
-        return results.compactMap { $0 }
-    }
-
-    var isFullGPUAccelerationAvailable: Bool {
-        return douglasPeuckerPipeline != nil &&
-               bezierCalculationPipeline != nil &&
-               matrixTransformPipeline != nil &&
-               collisionDetectionPipeline != nil &&
-               pathRenderingPipeline != nil
-    }
-
-    func getPerformanceMode() -> String {
-        let availablePipelines = [
-            douglasPeuckerPipeline != nil ? "Douglas-Peucker" : nil,
-            bezierCalculationPipeline != nil ? "Bezier" : nil,
-            matrixTransformPipeline != nil ? "Matrix" : nil,
-            collisionDetectionPipeline != nil ? "Collision" : nil,
-            pathRenderingPipeline != nil ? "PathRender" : nil
-        ].compactMap { $0 }
-
-        if isFullGPUAccelerationAvailable {
-            return "🚀 Full GPU Acceleration (\(device.name)) - All 5 Phases Active"
-        } else if !availablePipelines.isEmpty {
-            return "🔄 GPU Hybrid Mode - \(availablePipelines.joined(separator: ", "))"
-        } else {
-            return "💻 CPU Mode - GPU Unavailable"
-        }
-    }
-
-    func getAccelerationSummary() -> String {
-        return """
-        🎯 GPU Acceleration Status:
-        • Phase 1: Douglas-Peucker Simplification ✅
-        • Phase 2: Bezier Curve Calculations \(bezierCalculationPipeline != nil ? "✅" : "❌")
-        • Phase 3: Matrix Transformations \(matrixTransformPipeline != nil ? "✅" : "❌")
-        • Phase 4: Collision Detection \(collisionDetectionPipeline != nil ? "✅" : "❌")
-        • Phase 5: Path Rendering \(pathRenderingPipeline != nil ? "✅" : "❌")
-
-        Device: \(device.name)
-        Mode: \(getPerformanceMode())
-        """
-    }
+//    func getAccelerationSummary() -> String {
+//        return """
+//        🎯 GPU Acceleration Status:
+//        • Phase 1: Douglas-Peucker Simplification ✅
+//        • Phase 2: Bezier Curve Calculations \(bezierCalculationPipeline != nil ? "✅" : "❌")
+//        • Phase 3: Matrix Transformations \(matrixTransformPipeline != nil ? "✅" : "❌")
+//        • Phase 4: Collision Detection \(collisionDetectionPipeline != nil ? "✅" : "❌")
+//        • Phase 5: Path Rendering \(pathRenderingPipeline != nil ? "✅" : "❌")
+//
+//        Device: \(device.name)
+//        Mode: \(getPerformanceMode())
+//        """
+//    }
 
     // MARK: - Path Hit Testing (GPU-Accelerated)
 

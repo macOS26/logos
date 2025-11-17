@@ -176,7 +176,7 @@ struct RotateHandles: View {
             }
             cachedPreviewPath = path
         }
-        .id("rotation-handles-\(pointsRefreshTrigger)")
+       // .id("rotation-handles-\(pointsRefreshTrigger)")
     }
 
     private func extractPathPoints() {

@@ -81,6 +81,7 @@ struct LayerCanvasView: View {
     let imageInterpolationQuality: CGInterpolationQuality
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
+    let layerUpdateTrigger: UInt?
 
     var appState = AppState.shared
 
@@ -232,6 +233,9 @@ struct LayerCanvasView: View {
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
             //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objectIDs.count) → \(visibleObjects.count) objects")
+            
+            // Cheap SwiftUI layer update
+            _ = layerUpdateTrigger
 
             // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
@@ -1408,7 +1412,7 @@ struct IsolatedLayerView: View {
     }
 
     var body: some View {
-        let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+        //let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
@@ -1440,9 +1444,9 @@ struct IsolatedLayerView: View {
                 imageTileSize: imageTileSize,
                 imageInterpolationQuality: imageInterpolationQuality,
                 liveCornerRadii: liveCornerRadii,
-                selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius
+                selectedShapeIDForCornerRadius: selectedShapeIDForCornerRadius,
+                layerUpdateTrigger: layerUpdateTrigger
             )
-            .id(layerUpdateTrigger)
 
             // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in

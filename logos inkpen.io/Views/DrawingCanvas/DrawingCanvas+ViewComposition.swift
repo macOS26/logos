@@ -331,7 +331,7 @@ extension DrawingCanvas {
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)
             // Use only layer.id for view identity - trigger passed as parameter will cause redraw
-            .id(layer.id)
+            //.id(layer.id)
            // .allowsHitTesting(isActiveLayer)
         }
     }

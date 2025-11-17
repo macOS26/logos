@@ -5,7 +5,7 @@ final class VectorDocument: ObservableObject, Codable {
     // MARK: - New Structure
     var snapshot: DocumentSnapshot = DocumentSnapshot()
 
-    // MARK: - Legacy Structure (to be migrated)
+    // MARK: - Legacy Structure (to be migrated) 
     // View-only state (doesn't trigger document saves)
     var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings = DocumentSettings()

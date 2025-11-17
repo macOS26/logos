@@ -116,7 +116,7 @@ struct SelectionHandlesView: View {
                 }  // Close else block for multi-selection check
             }
         }
-        .id(selectionID) // Force re-render when selection changes
+        //.id(selectionID) // Force re-render when selection changes
     }
 
     @ViewBuilder

@@ -78,7 +78,7 @@ struct ProfessionalTextCanvas: View {
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * zoomLevel : 0,
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * zoomLevel : 0)
-        .id(dragPreviewTrigger)
+        //.id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
     }
 

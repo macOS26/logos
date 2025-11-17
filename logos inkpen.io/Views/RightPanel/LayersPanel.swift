@@ -322,7 +322,7 @@ struct LayersPanel: View {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
-                            .id(layer.id) // Stable identity for efficient updates
+                           // .id(layer.id) // Stable identity for efficient updates
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.changeNotifier.layerChangeToken)

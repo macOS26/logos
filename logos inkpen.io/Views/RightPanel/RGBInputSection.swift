@@ -389,8 +389,18 @@ struct RGBInputSection: View {
 
     private func onRedEditingChanged(_ isEditing: Bool) {
         if isEditing {
-            // Start of drag - set opacity for preview
-            let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+            // Start of drag - set opacity for preview from selected object or default
+            let currentOpacity: Double
+            if let firstSelectedID = selectedObjectIDs.first,
+               let object = snapshot.objects[firstSelectedID] {
+                if activeColorTarget == .fill {
+                    currentOpacity = object.shape.fillStyle?.opacity ?? defaultFillOpacity
+                } else {
+                    currentOpacity = object.shape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                }
+            } else {
+                currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
+            }
             colorDeltaOpacity = currentOpacity
         } else {
             // print("HELLO")
