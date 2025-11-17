@@ -200,16 +200,6 @@ extension DrawingCanvas {
             // Capture final state
             let finalDelta = currentDragDelta
 
-            // IMMEDIATELY clear drag state to show transform box NOW
-            currentDragDelta = .zero
-            liveDragOffset = .zero
-            cachedSelectionBoundsForDrag = nil
-            document.currentDragOffset = .zero
-            document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil
-            document.activeLayerIndexDuringDrag = nil
-            layerPreviewOpacities.removeAll()
-
             // Clear remaining drag state immediately
             defer {
                 initialObjectPositions.removeAll()
@@ -217,15 +207,11 @@ extension DrawingCanvas {
                 selectionDragStart = CGPoint.zero
             }
 
-            // Defer expensive snapshot updates and undo to next frame
-            DispatchQueue.main.async { [weak document] in
-                guard let document = document else { return }
+            var oldShapes: [UUID: VectorShape] = [:]
+            var affectedObjectIDs: Set<UUID> = []
 
-                var oldShapes: [UUID: VectorShape] = [:]
-                var affectedObjectIDs: Set<UUID> = []
-
-                // First pass: collect old shapes for undo
-                for objectID in document.viewState.selectedObjectIDs {
+            // First pass: collect old shapes for undo
+            for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 if case .shape(let shape) = object.objectType {
                     oldShapes[object.id] = shape
@@ -244,24 +230,20 @@ extension DrawingCanvas {
                 }
             }
 
-            // Second pass: apply drag delta
+            // Second pass: apply drag delta SYNCHRONOUSLY (update snapshot immediately)
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 switch object.objectType {
                 case .text(let shape):
-                    // print("🟣 DRAG FINISH: Text object \(shape.id)")
                     document.translateTextInUnified(id: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
                     affectedObjectIDs.insert(object.id)
                     oldShapes[object.id] = shape
                 }
             }
-
-            // syncUnifiedObjectsAfterMovement()
 
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
@@ -284,17 +266,27 @@ extension DrawingCanvas {
                 }
             }
 
+            // NOW clear drag state - snapshot is updated, transform box will show at correct position
+            currentDragDelta = .zero
+            liveDragOffset = .zero
+            cachedSelectionBoundsForDrag = nil
+            document.currentDragOffset = .zero
+            document.dragPreviewCoordinates = .zero
+            document.cachedSelectionBounds = nil
+            document.activeLayerIndexDuringDrag = nil
+            layerPreviewOpacities.removeAll()
+
+            // Defer ONLY the undo command to async (expensive)
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: Array(affectedObjectIDs),
                     oldShapes: oldShapes,
                     newShapes: newShapes
                 )
-                document.executeCommand(command)
+                DispatchQueue.main.async {
+                    document.executeCommand(command)
+                    document.updateTransformPanelValues()
                 }
-
-                document.updateTransformPanelValues()
-                // Note: Layer triggers handled by ShapeModificationCommand
             }
 
         } else {
