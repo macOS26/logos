@@ -125,22 +125,8 @@ extension DrawingCanvas {
             handlePanGesture(value: value, geometry: geometry)
 
         case .zoom:
-            if zoomToolDragStartPoint == .zero {
-                zoomToolDragStartPoint = value.startLocation
-                zoomToolInitialZoomLevel = zoomLevel
-                isActivelyZooming = true
-            }
-            #if os(macOS)
-            MagnifyingGlassCursor.set()
-            #endif
-            let deltaY = value.location.y - zoomToolDragStartPoint.y
-            let sensitivity: CGFloat = 300.0
-            // Drag up = zoom in, drag down = zoom out (or reverse with Option)
-            var scaleChange = exp(-deltaY / sensitivity)
-            if isOptionPressed { scaleChange = 1.0 / scaleChange }
-            let continuousZoom = max(0.75, min(640.0, zoomToolInitialZoomLevel * scaleChange))
-            // Zoom from the point where user started dragging
-            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry, isLive: true)
+            // Zoom tool doesn't support dragging - only click to zoom
+            break
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
