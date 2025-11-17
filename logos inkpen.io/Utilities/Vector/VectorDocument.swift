@@ -154,6 +154,9 @@ final class VectorDocument: ObservableObject, Codable {
         // Rebuild parent group cache after loading
         rebuildParentGroupCache()
 
+        // Rebuild spatial index after loading
+        rebuildSpatialIndex()
+
         documentColorDefaults = ColorDefaults()
         colorSwatches = decodedSnapshot.colorSwatches
         gridSettings = decodedSnapshot.gridSettings

@@ -98,4 +98,12 @@ extension VectorDocument {
     func findLayerContaining(objectID: UUID) -> UUID? {
         return snapshot.layers.first { $0.objectIDs.contains(objectID) }?.id
     }
+
+    /// Rebuild entire spatial index from snapshot objects
+    func rebuildSpatialIndex() {
+        let objectBounds: [(UUID, CGRect)] = snapshot.objects.map { (id, object) in
+            (id, calculateBounds(for: object))
+        }
+        spatialIndex.rebuild(objects: objectBounds)
+    }
 }
