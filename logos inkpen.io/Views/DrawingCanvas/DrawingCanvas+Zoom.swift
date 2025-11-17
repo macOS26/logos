@@ -42,8 +42,10 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // Make zoom 2x more sensitive: double the change from 1.0
-        let adjustedValue = 1.0 + (value - 1.0) * 2.0
+        // Logarithmic zoom: gradual below 1600% (16.0), faster above
+        // Sensitivity scales from 1.0 at low zoom to 2.0 at 1600%+
+        let sensitivity = 1.0 + min(initialZoomLevel / 16.0, 1.0)
+        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let newZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
@@ -63,8 +65,10 @@ extension DrawingCanvas {
             return
         }
 
-        // Make zoom 2x more sensitive: double the change from 1.0
-        let adjustedValue = 1.0 + (value - 1.0) * 2.0
+        // Logarithmic zoom: gradual below 1600% (16.0), faster above
+        // Sensitivity scales from 1.0 at low zoom to 2.0 at 1600%+
+        let sensitivity = 1.0 + min(initialZoomLevel / 16.0, 1.0)
+        let adjustedValue = 1.0 + (value - 1.0) * sensitivity
         let finalZoomLevel = max(0.5, min(640.0, initialZoomLevel * adjustedValue))
 
         if currentMousePosition != .zero {
