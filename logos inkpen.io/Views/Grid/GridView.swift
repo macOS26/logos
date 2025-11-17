@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import simd
 
 // Isolated Canvas-based grid view that doesn't update with VectorObject changes
 struct GridCanvasView: View {
@@ -75,6 +76,12 @@ struct GridCanvasView: View {
         zoomLevel: Double,
         canvasOffset: CGPoint
     ) {
+        // SIMD optimization for grid transform calculations
+        let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
+        let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
+        let zoom = Float(zoomLevel)
+        let scaledSize = sizeVec * zoom
+
         let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / gridSpacing)) + 1
 
         var path = Path()
@@ -85,12 +92,12 @@ struct GridCanvasView: View {
             if shouldDraw {
                 let x = CGFloat(i) * gridSpacing
                 if x <= canvasSize.width {
-                    let transformedX = x * zoomLevel + canvasOffset.x
-                    let startY = canvasOffset.y
-                    let endY = canvasSize.height * zoomLevel + canvasOffset.y
+                    let transformedX = Float(x) * zoom + offsetVec.x
+                    let startY = offsetVec.y
+                    let endY = scaledSize.y + offsetVec.y
 
-                    path.move(to: CGPoint(x: transformedX, y: startY))
-                    path.addLine(to: CGPoint(x: transformedX, y: endY))
+                    path.move(to: CGPoint(x: CGFloat(transformedX), y: CGFloat(startY)))
+                    path.addLine(to: CGPoint(x: CGFloat(transformedX), y: CGFloat(endY)))
                 }
             }
         }
@@ -101,12 +108,12 @@ struct GridCanvasView: View {
             if shouldDraw {
                 let y = CGFloat(i) * gridSpacing
                 if y <= canvasSize.height {
-                    let transformedY = y * zoomLevel + canvasOffset.y
-                    let startX = canvasOffset.x
-                    let endX = canvasSize.width * zoomLevel + canvasOffset.x
+                    let transformedY = Float(y) * zoom + offsetVec.y
+                    let startX = offsetVec.x
+                    let endX = scaledSize.x + offsetVec.x
 
-                    path.move(to: CGPoint(x: startX, y: transformedY))
-                    path.addLine(to: CGPoint(x: endX, y: transformedY))
+                    path.move(to: CGPoint(x: CGFloat(startX), y: CGFloat(transformedY)))
+                    path.addLine(to: CGPoint(x: CGFloat(endX), y: CGFloat(transformedY)))
                 }
             }
         }
