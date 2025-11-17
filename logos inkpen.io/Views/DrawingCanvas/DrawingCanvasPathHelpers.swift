@@ -40,7 +40,8 @@ enum DrawingCanvasPathHelpers {
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
+        // SIMD-optimized distance calculation
+        let distance = abs(A * point.x + B * point.y + C) / simd_length(SIMD2(A, B))
         return distance
     }
 
@@ -101,16 +102,15 @@ enum DrawingCanvasPathHelpers {
         return elements
     }
 
+    // SIMD-optimized tangent calculation
     static func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
-        let dx1 = p1.x - p0.x
-        let dy1 = p1.y - p0.y
-        let dx2 = p2.x - p1.x
-        let dy2 = p2.y - p1.y
-        let avgDx = (dx1 + dx2) / 2
-        let avgDy = (dy1 + dy2) / 2
-        let length = sqrt(avgDx * avgDx + avgDy * avgDy)
+        let v1 = p1.simd - p0.simd
+        let v2 = p2.simd - p1.simd
+        let avg = (v1 + v2) * 0.5
+        let length = simd_length(avg)
         if length > 0 {
-            return CGPoint(x: avgDx / length, y: avgDy / length)
+            let normalized = simd_normalize(avg)
+            return CGPoint(normalized)
         } else {
             return CGPoint(x: 1, y: 0)
         }
