@@ -135,11 +135,12 @@ extension DrawingCanvas {
             #endif
             let deltaY = value.location.y - zoomToolDragStartPoint.y
             let sensitivity: CGFloat = 300.0
+            // Drag up = zoom in, drag down = zoom out (or reverse with Option)
             var scaleChange = exp(-deltaY / sensitivity)
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
             let continuousZoom = max(0.75, min(640.0, zoomToolInitialZoomLevel * scaleChange))
-            // Zoom towards current cursor position (where magnifying glass is)
-            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.location, geometry: geometry, isLive: true)
+            // Zoom from the point where user started dragging
+            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry, isLive: true)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
