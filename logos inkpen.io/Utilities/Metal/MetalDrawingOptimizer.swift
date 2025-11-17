@@ -1,4 +1,5 @@
 import MetalKit
+import simd
 
 class MetalDrawingOptimizer {
 
@@ -66,28 +67,31 @@ class MetalDrawingOptimizer {
     }
 
     private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> CGFloat {
-        let A = point.x - lineStart.x
-        let B = point.y - lineStart.y
-        let C = lineEnd.x - lineStart.x
-        let D = lineEnd.y - lineStart.y
-        let dot = A * C + B * D
-        let lenSq = C * C + D * D
+        // SIMD-optimized perpendicular distance calculation
+        let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
+        let startVec = SIMD2<Double>(Double(lineStart.x), Double(lineStart.y))
+        let endVec = SIMD2<Double>(Double(lineEnd.x), Double(lineEnd.y))
 
-        guard lenSq != 0 else { return sqrt(A * A + B * B) }
+        let toPoint = pointVec - startVec
+        let lineVec = endVec - startVec
+
+        let dot = simd_dot(toPoint, lineVec)
+        let lenSq = simd_length_squared(lineVec)
+
+        guard lenSq != 0 else { return CGFloat(simd_length(toPoint)) }
 
         let param = dot / lenSq
-        let closestPoint: CGPoint
+        let closestVec: SIMD2<Double>
         if param < 0 {
-            closestPoint = lineStart
+            closestVec = startVec
         } else if param > 1 {
-            closestPoint = lineEnd
+            closestVec = endVec
         } else {
-            closestPoint = CGPoint(x: lineStart.x + param * C, y: lineStart.y + param * D)
+            closestVec = startVec + lineVec * param
         }
 
-        let dx = point.x - closestPoint.x
-        let dy = point.y - closestPoint.y
-        return sqrt(dx * dx + dy * dy)
+        let distance = simd_length(pointVec - closestVec)
+        return CGFloat(distance)
     }
 
     func trackDrawingStart() {
