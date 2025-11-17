@@ -424,7 +424,7 @@ extension FileOperations {
         let font = text.typography.nsFont
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor(cgColor: text.typography.fillColor.cgColor) ?? NSColor.black,
+            .foregroundColor: text.typography.fillColor.cgColor.platformColor,
             .kern: text.typography.letterSpacing
         ]
 

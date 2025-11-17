@@ -201,7 +201,7 @@ struct VariableStrokeSection: View {
             .padding(.top, 4)
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(12)
     }
 }

@@ -46,7 +46,7 @@ class SlidingPopoverManager: NSObject, NSPopoverDelegate {
             // Add vibrancy/translucent effect
             if let popoverView = newPopover.contentViewController?.view {
                 popoverView.wantsLayer = true
-                popoverView.layer?.backgroundColor = NSColor.clear.cgColor
+                popoverView.layer?.backgroundColor = PlatformColor.clear.cgColor
             }
 
             // Calculate positioning rect and convert Edge to NSRectEdge
@@ -156,7 +156,7 @@ struct GlassCloseButton: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
                     .frame(width: 28, height: 28)
-                    .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+                    .background(Color.platformWindowBackground.opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 28))
             }
             .buttonStyle(BorderlessButtonStyle())

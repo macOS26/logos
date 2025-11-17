@@ -11,11 +11,39 @@ typealias PlatformColor = UIColor
 #endif
 
 extension Color {
+    /// Platform-specific control background color (controlBackgroundColor on macOS, systemBackground on iOS)
     static var platformControlBackground: Color {
         #if canImport(AppKit)
         return Color(NSColor.controlBackgroundColor)
         #elseif canImport(UIKit)
         return Color(UIColor.systemBackground)
+        #endif
+    }
+
+    /// Platform-specific window background color (windowBackgroundColor on macOS, systemBackground on iOS)
+    static var platformWindowBackground: Color {
+        #if canImport(AppKit)
+        return Color(NSColor.windowBackgroundColor)
+        #elseif canImport(UIKit)
+        return Color(UIColor.systemBackground)
+        #endif
+    }
+
+    /// Platform-specific text background color (textBackgroundColor on macOS, systemBackground on iOS)
+    static var platformTextBackground: Color {
+        #if canImport(AppKit)
+        return Color(NSColor.textBackgroundColor)
+        #elseif canImport(UIKit)
+        return Color(UIColor.systemBackground)
+        #endif
+    }
+
+    /// Platform-specific secondary label color (secondaryLabelColor on both platforms)
+    static var platformSecondaryLabel: Color {
+        #if canImport(AppKit)
+        return Color(NSColor.secondaryLabelColor)
+        #elseif canImport(UIKit)
+        return Color(UIColor.secondaryLabel)
         #endif
     }
 }

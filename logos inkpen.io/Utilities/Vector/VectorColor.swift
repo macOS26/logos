@@ -104,7 +104,7 @@ enum VectorColor: Hashable {
         case .hsb(let hsbColor):
             if useDisplayP3 {
                 let color = Color(hue: hsbColor.hue / 360.0, saturation: hsbColor.saturation, brightness: hsbColor.brightness)
-                let nsColor = NSColor(color)
+                let nsColor = PlatformColor(color)
                 if let p3Color = nsColor.usingColorSpace(.displayP3) {
                     let r = Int(p3Color.redComponent * 255)
                     let g = Int(p3Color.greenComponent * 255)

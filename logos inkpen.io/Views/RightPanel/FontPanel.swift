@@ -127,7 +127,7 @@ struct FontPanel: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
                 }
-                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                .background(Color.platformControlBackground.opacity(0.5))
                 .cornerRadius(12)
                 .padding(.horizontal, 12)
 

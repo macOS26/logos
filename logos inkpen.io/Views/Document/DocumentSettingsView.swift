@@ -122,7 +122,7 @@ struct DocumentSettingsView: View {
             professionalFooter
         }
         .frame(width: 600, height: 700)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color.platformWindowBackground)
     }
 
     private var professionalHeader: some View {
@@ -169,7 +169,7 @@ struct DocumentSettingsView: View {
 
             Divider()
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
     }
 
     private var documentSizeSection: some View {
@@ -419,6 +419,6 @@ struct DocumentSettingsView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
     }
 }

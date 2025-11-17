@@ -299,7 +299,7 @@ struct ProfessionalTextCanvas: View {
             }()
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,
-                .foregroundColor: NSColor.clear,  // DEBUG: Change to .systemPink to see NSTextView
+                .foregroundColor: PlatformColor.clear,  // DEBUG: Change to .systemPink to see NSTextView
                 .paragraphStyle: paragraphStyle,
                 .kern: letterSpacing
             ]
@@ -308,7 +308,7 @@ struct ProfessionalTextCanvas: View {
                 let range = NSRange(location: 0, length: textView.string.count)
                 textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-                textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.clear, range: range)  // DEBUG: Change to .systemPink
+                textView.textStorage?.addAttribute(.foregroundColor, value: PlatformColor.clear, range: range)  // DEBUG: Change to .systemPink
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 

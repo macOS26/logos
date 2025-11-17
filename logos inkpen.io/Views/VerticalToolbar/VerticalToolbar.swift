@@ -277,7 +277,7 @@ struct VerticalToolbar: View {
                 .padding(.bottom, 4)
                 .frame(width: 48)
             }
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color.platformControlBackground)
             .overlay(
                 Rectangle()
                     .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),

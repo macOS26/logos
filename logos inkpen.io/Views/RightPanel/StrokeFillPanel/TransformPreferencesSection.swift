@@ -32,7 +32,7 @@ struct TransformPreferencesSection: View {
             }
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .cornerRadius(12)
     }
 }

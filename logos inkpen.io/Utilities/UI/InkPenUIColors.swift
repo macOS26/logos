@@ -7,11 +7,11 @@ class InkPenUIColors: ObservableObject {
     private init() {}
 
     var windowBackground: Color {
-        Color(NSColor.windowBackgroundColor)
+        Color.platformWindowBackground
     }
 
     var controlBackground: Color {
-        Color(NSColor.controlBackgroundColor)
+        Color.platformControlBackground
     }
 
     var lightGrayBackground: Color {
@@ -19,7 +19,7 @@ class InkPenUIColors: ObservableObject {
     }
 
     var semiTransparentControlBackground: Color {
-        Color(NSColor.controlBackgroundColor).opacity(0.5)
+        Color.platformControlBackground.opacity(0.5)
     }
 
     var primaryBlue: Color {
@@ -87,14 +87,14 @@ class InkPenUIColors: ObservableObject {
     }
 
     var textBackground: Color {
-        Color(NSColor.textBackgroundColor)
+        Color.platformTextBackground
     }
 
     func color(_ baseColor: Color, opacity: Double) -> Color {
         baseColor.opacity(opacity)
     }
 
-    func systemColor(_ nsColor: NSColor, opacity: Double = 1.0) -> Color {
+    func systemColor(_ nsColor: PlatformColor, opacity: Double = 1.0) -> Color {
         Color(nsColor).opacity(opacity)
     }
 }

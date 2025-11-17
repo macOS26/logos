@@ -245,7 +245,7 @@ struct NewDocumentSetupView: View {
                 VStack(spacing: 16) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(NSColor.controlBackgroundColor))
+                            .fill(Color.platformControlBackground)
                             .frame(width: 210, height: 210)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
@@ -450,7 +450,7 @@ struct NewDocumentSetupView: View {
             let infoText = "\(Int(setupData.width))×\(Int(setupData.height))"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: PlatformFont.systemFont(ofSize: 12, weight: .medium),
-                .foregroundColor: NSColor.gray
+                .foregroundColor: PlatformColor.gray
             ]
 
             let textSize = infoText.size(withAttributes: attributes)

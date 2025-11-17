@@ -61,7 +61,7 @@ struct StatusBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 4)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .overlay(
             Rectangle()
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),

@@ -132,7 +132,7 @@ struct TypographyProperties: Codable, Hashable {
             .paragraphStyle: nsParagraphStyle
         ]
         if includeColor {
-            attributes[.foregroundColor] = NSColor(cgColor: fillColor.cgColor) ?? .black
+            attributes[.foregroundColor] = fillColor.cgColor.platformColor
         }
         return attributes
     }

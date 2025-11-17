@@ -565,7 +565,7 @@ class DocumentState: ObservableObject {
         let iconSizesLabel = NSTextField(labelWithString: "Sizes: 1024×1024, 512×512, 256×256, 128×128, 64×64, 32×32, 16×16 px")
         iconSizesLabel.frame = CGRect(x: 40, y: 75, width: 300, height: 20)
         iconSizesLabel.font = PlatformFont.systemFont(ofSize: 10)
-        iconSizesLabel.textColor = NSColor.secondaryLabelColor
+        iconSizesLabel.textColor = PlatformColor.secondaryLabelColor
         iconSizesLabel.isHidden = true
         accessoryView.addSubview(iconSizesLabel)
 

@@ -40,7 +40,7 @@ struct PressureCurveEditor: View {
 
             ZStack {
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.platformControlBackground)
                     .border(Color.gray.opacity(0.3), width: 1)
 
                 Path { path in

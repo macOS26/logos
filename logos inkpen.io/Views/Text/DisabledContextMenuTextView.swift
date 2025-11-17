@@ -5,7 +5,7 @@ class DisabledContextMenuTextView: NSTextView {
     var shouldShowCursor: Bool = true
 
     // Force cursor redraw when insertionPointColor changes
-    override var insertionPointColor: NSColor? {
+    override var insertionPointColor: PlatformColor? {
         didSet {
             if let layoutManager = layoutManager,
                let textContainer = textContainer {
@@ -50,8 +50,8 @@ class DisabledContextMenuTextView: NSTextView {
         return false
     }
 
-    override func drawInsertionPoint(in rect: CGRect, color: NSColor, turnedOn flag: Bool) {
-        let cursorColor = shouldShowCursor ? color : NSColor.clear
+    override func drawInsertionPoint(in rect: CGRect, color: PlatformColor, turnedOn flag: Bool) {
+        let cursorColor = shouldShowCursor ? color : PlatformColor.clear
         var thickerRect = rect
         thickerRect.size.width = 1.0
         super.drawInsertionPoint(in: thickerRect, color: cursorColor, turnedOn: flag)

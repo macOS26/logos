@@ -990,7 +990,7 @@ struct LayerCanvasView: View {
             paragraphStyle.minimumLineHeight = effectiveLineHeight
             paragraphStyle.maximumLineHeight = effectiveLineHeight
 
-            let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
+            let textColor = vectorText.typography.fillColor.cgColor.platformColor
 
             // Shared attributes to avoid duplicate dictionary creation
             let commonAttributes: [NSAttributedString.Key: Any] = [
@@ -1118,7 +1118,7 @@ struct LayerCanvasView: View {
 
                     // Draw stroke (always center for text)
                     cgContext.addPath(textPath)
-                    let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
+                    let strokeColor = vectorText.typography.strokeColor.cgColor.platformColor
                     cgContext.setStrokeColor(strokeColor.cgColor)
                     cgContext.setLineWidth(effectiveStrokeWidth)
                     cgContext.setLineJoin(vectorText.typography.strokeLineJoin.cgLineJoin)

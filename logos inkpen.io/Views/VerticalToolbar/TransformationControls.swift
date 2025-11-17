@@ -53,7 +53,7 @@ struct NinePointOriginSelector: View {
             }
         }
         .frame(width: 38, height: 38)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.platformControlBackground)
         .overlay(
             RoundedRectangle(cornerRadius: 3)
                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -178,14 +178,14 @@ struct TransformationControls: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 12, height: 12)
-                    .foregroundColor(keepProportions ? .orange : Color(NSColor.systemBlue))
+                    .foregroundColor(keepProportions ? .orange : Color(PlatformColor.systemBlue))
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
             .background(
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.platformControlBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
                             .strokeBorder(keepProportions ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)

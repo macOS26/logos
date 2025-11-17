@@ -2,7 +2,7 @@ import SwiftUI
 
 extension Color {
     var components: (red: Double, green: Double, blue: Double, alpha: Double) {
-        let baseNSColor = NSColor(self)
+        let baseNSColor = PlatformColor(self)
 
         if let converted = baseNSColor.usingColorSpace(NSColorSpace.sRGB) ?? baseNSColor.usingColorSpace(NSColorSpace.deviceRGB) {
             var r: CGFloat = 0

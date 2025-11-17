@@ -136,7 +136,7 @@ struct DocumentBasedMainView: View {
             StatusBar(zoomLevel: zoomLevel, document: document)
         }
         .frame(minHeight: 524)
-        .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
+        .toolbarBackground(Color.platformControlBackground, for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
 
