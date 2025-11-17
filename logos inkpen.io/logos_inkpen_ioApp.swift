@@ -997,25 +997,25 @@ class ClipboardManager {
                 }
             }
 
-            var objectsToAdd: [VectorObject] = []
             var newObjectIDs: Set<UUID> = []
 
-            for shape in clipboardData.shapes {
+            // Build objects array for command - O(n) where n = clipboard items
+            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
                 let newShape = regenerateUUIDs(for: shape)
-                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
+                return VectorObject(shape: newShape, layerIndex: layerIndex)
             }
 
-            for text in clipboardData.texts {
+            let textObjects = clipboardData.texts.map { text -> VectorObject in
                 var newText = text
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
+                return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
+
+            let objectsToAdd = shapeObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
@@ -1059,25 +1059,25 @@ class ClipboardManager {
                 }
             }
 
-            var objectsToAdd: [VectorObject] = []
             var newObjectIDs: Set<UUID> = []
 
-            for shape in clipboardData.shapes {
+            // Build objects array for command - O(n) where n = clipboard items
+            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
                 let newShape = regenerateUUIDs(for: shape)
-                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
+                return VectorObject(shape: newShape, layerIndex: layerIndex)
             }
 
-            for text in clipboardData.texts {
+            let textObjects = clipboardData.texts.map { text -> VectorObject in
                 var newText = text
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
+                return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
+
+            let objectsToAdd = shapeObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
@@ -1121,25 +1121,25 @@ class ClipboardManager {
                 }
             }
 
-            var objectsToAdd: [VectorObject] = []
             var newObjectIDs: Set<UUID> = []
 
-            for shape in clipboardData.shapes {
+            // Build objects array for command - O(n) where n = clipboard items
+            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
                 let newShape = regenerateUUIDs(for: shape)
-                let vectorObject = VectorObject(shape: newShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newShape.id)
+                return VectorObject(shape: newShape, layerIndex: layerIndex)
             }
 
-            for text in clipboardData.texts {
+            let textObjects = clipboardData.texts.map { text -> VectorObject in
                 var newText = text
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let vectorObject = VectorObject(shape: textShape, layerIndex: layerIndex)
-                objectsToAdd.append(vectorObject)
                 newObjectIDs.insert(newText.id)
+                return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
+
+            let objectsToAdd = shapeObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
