@@ -14,16 +14,16 @@ struct ProfessionalLayerRow: View {
     @State private var selectionAnchorID: UUID? = nil
     @State private var selectionRangeMin: Int? = nil
     @State private var selectionRangeMax: Int? = nil
-    @State private var cachedLayerObjects: [VectorObject] = []
+    @State private var cachedObjectIDs: [UUID] = []  // Cache UUIDs only, lookup objects O(1)
 
     // Check if this layer is selected using settings.selectedLayerId
     private var isSelected: Bool {
         document.settings.selectedLayerId == layer.id
     }
 
-    // Use cached layer objects instead of recomputing every render
+    // Lookup objects on-demand from snapshot - O(1) per object
     private var layerObjects: [VectorObject] {
-        cachedLayerObjects
+        cachedObjectIDs.compactMap { document.snapshot.objects[$0] }
     }
 
     private var isVisibleBinding: Binding<Bool> {
@@ -62,16 +62,13 @@ struct ProfessionalLayerRow: View {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
 
-        // Initialize cached layer objects
-        let objectIDs = layer.objectIDs
-        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
-        _cachedLayerObjects = State(initialValue: objects)
+        // Initialize cached object IDs - just store UUIDs, not full objects
+        _cachedObjectIDs = State(initialValue: Array(layer.objectIDs.reversed()))
     }
 
     private func updateCachedObjects() {
-        let objectIDs = layer.objectIDs
-        let objects = objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
-        cachedLayerObjects = objects
+        // Cache UUIDs only - objects are looked up O(1) on-demand
+        cachedObjectIDs = Array(layer.objectIDs.reversed())
     }
 
     private func setExpanded(_ value: Bool) {
