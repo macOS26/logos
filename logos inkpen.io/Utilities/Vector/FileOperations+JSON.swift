@@ -43,6 +43,9 @@ extension FileOperations {
             // Log version for migration tracking
             Log.fileOperation("📦 Opened inkpen document version: \(document.snapshot.formatVersion)", level: .info)
 
+            // Remove legacy background objects
+            removeLegacyBackgroundObjects(from: document)
+
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
             for obj in document.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
@@ -75,6 +78,9 @@ extension FileOperations {
 
         // Try to decode as current format first
         if let document = try? decoder.decode(VectorDocument.self, from: data) {
+            // Remove legacy background objects
+            removeLegacyBackgroundObjects(from: document)
+
             // Set base directory for image hydration
             let baseDirectory = sourceURL?.deletingLastPathComponent()
             ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
@@ -110,5 +116,43 @@ extension FileOperations {
 
         Log.error("❌ JSON data import failed: Unable to decode as current or legacy format", category: .error)
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
+    }
+
+    /// Remove legacy "Canvas Background" and "Pasteboard Background" objects from layers
+    private static func removeLegacyBackgroundObjects(from document: VectorDocument) {
+        for layerIndex in 0..<document.snapshot.layers.count {
+            var layer = document.snapshot.layers[layerIndex]
+
+            // Find objects named "Canvas Background" or "Pasteboard Background"
+            var objectsToRemove: [UUID] = []
+            for objectID in layer.objectIDs {
+                guard let obj = document.snapshot.objects[objectID] else { continue }
+
+                // Extract shape from objectType
+                let shapeName: String?
+                switch obj.objectType {
+                case .shape(let shape), .text(let shape), .image(let shape),
+                     .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    shapeName = shape.name
+                }
+
+                if shapeName == "Canvas Background" || shapeName == "Pasteboard Background" {
+                    objectsToRemove.append(objectID)
+                }
+            }
+
+            // Remove from layer
+            if !objectsToRemove.isEmpty {
+                layer.objectIDs.removeAll { objectsToRemove.contains($0) }
+                document.snapshot.layers[layerIndex] = layer
+
+                // Remove from objects dictionary
+                for objectID in objectsToRemove {
+                    document.snapshot.objects.removeValue(forKey: objectID)
+                }
+
+                Log.fileOperation("🧹 Removed \(objectsToRemove.count) legacy background object(s) from layer '\(layer.name)'", level: .info)
+            }
+        }
     }
 }
