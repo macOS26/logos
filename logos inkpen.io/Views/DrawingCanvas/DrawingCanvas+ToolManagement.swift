@@ -3,6 +3,8 @@ import Combine
 
 extension DrawingCanvas {
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
+        print("🔧 Tool change: \(oldTool.rawValue) → \(newTool.rawValue), selectedPoints: \(selectedPoints.count)")
+
         if isCornerRadiusEditMode {
             isCornerRadiusEditMode = false
         }
@@ -120,6 +122,16 @@ extension DrawingCanvas {
             // Preserve selectedPoints when switching to bezier pen (for path continuation)
             // Don't clear selectedPoints, selectedHandles, or selectedObjectIDs
             // Keep everything as-is for path continuation feature
+            print("🔧 Preserving selections for bezier pen: points=\(selectedPoints.count), handles=\(selectedHandles.count)")
+
+            // If a point is selected, automatically load the path for continuation
+            if !isBezierDrawing, let selectedPointID = selectedPoints.first {
+                if getShapeForPoint(selectedPointID) != nil,
+                   let pointPosition = getPointPosition(selectedPointID) {
+                    print("🔧 Auto-loading path for continuation from selected point")
+                    continueExistingPath(from: pointPosition)
+                }
+            }
         }
 
         else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
@@ -151,7 +163,7 @@ extension DrawingCanvas {
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .bezierPen && newTool != .font && newTool != .hand && newTool != .scale && newTool != .rotate && newTool != .shear && newTool != .warp {
-            // print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup)")
+            print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup) - oldTool: \(oldTool.rawValue), newTool: \(newTool.rawValue)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()

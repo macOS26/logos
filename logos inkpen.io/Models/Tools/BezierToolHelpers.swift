@@ -334,7 +334,7 @@ extension DrawingCanvas {
         return CGPoint(x: result.x, y: result.y)
     }
 
-    private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
+    internal func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
         for object in document.snapshot.objects.values {
             if case .shape(let shape) = object.objectType {
                 if shape.id == pointID.shapeID {
@@ -384,7 +384,7 @@ extension DrawingCanvas {
         }
     }
 
-    private func continueExistingPath(from pointPosition: VectorPoint) {
+    internal func continueExistingPath(from pointPosition: VectorPoint) {
         // Get the selected point to find which shape and which endpoint
         guard let selectedPointID = selectedPoints.first,
               let shape = getShapeForPoint(selectedPointID) else {
