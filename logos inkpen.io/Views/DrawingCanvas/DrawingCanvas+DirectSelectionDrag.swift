@@ -1,5 +1,7 @@
 import SwiftUI
 import Combine
+import simd
+
 extension DrawingCanvas {
     internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         // Check for curve segment dragging first (before shape, points, or handles)
@@ -245,20 +247,24 @@ extension DrawingCanvas {
             return false
         }
 
-        // Calculate vectors
-        let vec1 = CGPoint(x: h1.x - first.x, y: h1.y - first.y)
-        let vec2 = CGPoint(x: h2.x - first.x, y: h2.y - first.y)
+        // SIMD-optimized vector operations
+        let firstVec = SIMD2<Double>(Double(first.x), Double(first.y))
+        let h1Vec = SIMD2<Double>(Double(h1.x), Double(h1.y))
+        let h2Vec = SIMD2<Double>(Double(h2.x), Double(h2.y))
 
-        let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
-        let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
+        let vec1 = h1Vec - firstVec
+        let vec2 = h2Vec - firstVec
+
+        let len1 = simd_length(vec1)
+        let len2 = simd_length(vec2)
 
         if len1 < 0.1 || len2 < 0.1 { return false }
 
         // Normalize and check angle
-        let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
-        let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+        let norm1 = simd_normalize(vec1)
+        let norm2 = simd_normalize(vec2)
 
-        let dot = norm1.x * norm2.x + norm1.y * norm2.y
+        let dot = simd_dot(norm1, norm2)
 
         return dot < -0.9962  // cos(175°) ≈ -0.9962
     }
@@ -322,22 +328,26 @@ extension DrawingCanvas {
               let h1 = handle1,
               let h2 = handle2 else { return false }
 
-        // Calculate vectors from anchor to each handle
-        let vec1 = CGPoint(x: h1.x - anchor.x, y: h1.y - anchor.y)
-        let vec2 = CGPoint(x: h2.x - anchor.x, y: h2.y - anchor.y)
+        // SIMD-optimized vector operations
+        let anchorVec = SIMD2<Double>(Double(anchor.x), Double(anchor.y))
+        let h1Vec = SIMD2<Double>(Double(h1.x), Double(h1.y))
+        let h2Vec = SIMD2<Double>(Double(h2.x), Double(h2.y))
 
-        let len1 = sqrt(vec1.x * vec1.x + vec1.y * vec1.y)
-        let len2 = sqrt(vec2.x * vec2.x + vec2.y * vec2.y)
+        let vec1 = h1Vec - anchorVec
+        let vec2 = h2Vec - anchorVec
+
+        let len1 = simd_length(vec1)
+        let len2 = simd_length(vec2)
 
         // If either handle is at the anchor, not smooth
         if len1 < 0.1 || len2 < 0.1 { return false }
 
         // Normalize vectors
-        let norm1 = CGPoint(x: vec1.x / len1, y: vec1.y / len1)
-        let norm2 = CGPoint(x: vec2.x / len2, y: vec2.y / len2)
+        let norm1 = simd_normalize(vec1)
+        let norm2 = simd_normalize(vec2)
 
         // Calculate dot product (should be -1 for 180 degrees)
-        let dot = norm1.x * norm2.x + norm1.y * norm2.y
+        let dot = simd_dot(norm1, norm2)
 
         // Consider smooth if within 5 degrees of 180 degrees
         // This is a more reasonable threshold for detecting smooth points
@@ -755,30 +765,23 @@ extension DrawingCanvas {
     }
 
     private func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
-        let draggedVector = CGPoint(
-            x: draggedHandle.x - anchorPoint.x,
-            y: draggedHandle.y - anchorPoint.y
-        )
+        // SIMD-optimized vector operations
+        let anchorVec = SIMD2<Double>(Double(anchorPoint.x), Double(anchorPoint.y))
+        let draggedVec = SIMD2<Double>(Double(draggedHandle.x), Double(draggedHandle.y))
+        let originalVec = SIMD2<Double>(Double(originalOppositeHandle.x), Double(originalOppositeHandle.y))
 
-        let originalVector = CGPoint(
-            x: originalOppositeHandle.x - anchorPoint.x,
-            y: originalOppositeHandle.y - anchorPoint.y
-        )
+        let draggedVector = draggedVec - anchorVec
+        let originalVector = originalVec - anchorVec
 
-        let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
-        let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
+        let originalLength = simd_length(originalVector)
+        let draggedLength = simd_length(draggedVector)
 
         guard draggedLength > 0.1 else { return originalOppositeHandle }
 
-        let normalizedDragged = CGPoint(
-            x: draggedVector.x / draggedLength,
-            y: draggedVector.y / draggedLength
-        )
+        let normalizedDragged = simd_normalize(draggedVector)
+        let linkedVec = anchorVec - normalizedDragged * originalLength
 
-        return CGPoint(
-            x: anchorPoint.x - normalizedDragged.x * originalLength,
-            y: anchorPoint.y - normalizedDragged.y * originalLength
-        )
+        return CGPoint(x: linkedVec.x, y: linkedVec.y)
     }
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
