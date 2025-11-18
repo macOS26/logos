@@ -136,7 +136,7 @@ extension FileOperations {
                     shapeName = shape.name
                 }
 
-                print("🔍 Layer '\(layer.name)' object: '\(shapeName ?? "nil")'")
+                // print("🔍 Layer '\(layer.name)' object: '\(shapeName ?? "nil")'")
 
                 if shapeName == "Canvas Background" || shapeName == "Pasteboard Background" {
                     objectsToRemove.append(objectID)

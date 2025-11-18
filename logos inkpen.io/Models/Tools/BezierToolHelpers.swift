@@ -197,7 +197,20 @@ extension DrawingCanvas {
         updatePathWithHandles()
 
         // Update activeBezierShape with the current bezierPath
-        if let currentPath = bezierPath {
+        if var currentPath = bezierPath {
+            // Save pending handles for path continuation
+            // First point's outgoing handle (control2)
+            if let firstPointHandles = bezierHandles[0], let control2 = firstPointHandles.control2 {
+                currentPath.pendingStartHandle = control2
+                print("🔧 Saved pendingStartHandle: \(control2)")
+            }
+            // Last point's outgoing handle (control2)
+            let lastIndex = bezierPoints.count - 1
+            if let lastPointHandles = bezierHandles[lastIndex], let control2 = lastPointHandles.control2 {
+                currentPath.pendingEndHandle = control2
+                print("🔧 Saved pendingEndHandle: \(control2)")
+            }
+
             activeBezierShape.path = currentPath
             activeBezierShape.updateBounds()
         }
@@ -210,18 +223,43 @@ extension DrawingCanvas {
             // Update the object with new path
             var updatedShape = activeBezierShape
             updatedShape.path = bezierPath ?? activeBezierShape.path
+            // Also copy pending handles to the updated shape
+            updatedShape.path.pendingStartHandle = activeBezierShape.path.pendingStartHandle
+            updatedShape.path.pendingEndHandle = activeBezierShape.path.pendingEndHandle
             updatedShape.updateBounds()
 
             let objectType = VectorObject.determineType(for: updatedShape)
             let updatedObj = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: objectType)
 
+            // Update the document
             document.snapshot.objects[activeBezierShape.id] = updatedObj
             document.triggerLayerUpdate(for: obj.layerIndex)
+
+            // Register undo command (work already done, just record for undo)
+            if isContinuingExistingPath, let originalShape = originalBezierShapeForUndo {
+                // Continuing existing path - use ShapeModificationCommand
+                let command = ShapeModificationCommand(
+                    objectIDs: [activeBezierShape.id],
+                    oldShapes: [activeBezierShape.id: originalShape],
+                    newShapes: [activeBezierShape.id: updatedShape]
+                )
+                document.commandManager.recordCompletedCommand(command)
+                print("🔧 Registered undo for path modification")
+            } else {
+                // New path - use AddObjectCommand
+                let command = AddObjectCommand(object: updatedObj)
+                document.commandManager.recordCompletedCommand(command)
+                print("🔧 Registered undo for new path")
+            }
 
             print("🔧 Shape updated successfully")
         } else {
             print("🔧 ERROR: Shape not found in document!")
         }
+
+        // Reset continuation state
+        isContinuingExistingPath = false
+        originalBezierShapeForUndo = nil
 
         cancelBezierDrawing()
     }
@@ -439,6 +477,10 @@ extension DrawingCanvas {
         var currentIndex = 0
         var previousPoint: VectorPoint?
 
+        // Get pending handles from the path metadata
+        let pendingStartHandle = shape.path.pendingStartHandle
+        let pendingEndHandle = shape.path.pendingEndHandle
+
         for element in shape.path.elements {
             switch element {
             case .move(to: let point):
@@ -483,6 +525,25 @@ extension DrawingCanvas {
             }
         }
 
+        // Apply pending handles from path metadata
+        // First point's outgoing handle
+        if let pendingStart = pendingStartHandle {
+            var handleInfo = handles[0] ?? BezierHandleInfo()
+            handleInfo.control2 = pendingStart
+            handleInfo.hasHandles = true
+            handles[0] = handleInfo
+            print("🔧 Loaded pendingStartHandle for point 0")
+        }
+        // Last point's outgoing handle
+        let lastPointIndex = points.count - 1
+        if let pendingEnd = pendingEndHandle {
+            var handleInfo = handles[lastPointIndex] ?? BezierHandleInfo()
+            handleInfo.control2 = pendingEnd
+            handleInfo.hasHandles = true
+            handles[lastPointIndex] = handleInfo
+            print("🔧 Loaded pendingEndHandle for point \(lastPointIndex)")
+        }
+
         // Determine if selected point is start (index 0) or end (last index)
         let isStartPoint = selectedPointID.elementIndex == 0
         let isEndPoint = selectedPointID.elementIndex == points.count - 1
@@ -505,9 +566,22 @@ extension DrawingCanvas {
                 // Swap control1 and control2 when reversing
                 newHandleInfo.control1 = handleInfo.control2
                 newHandleInfo.control2 = handleInfo.control1
+                // Preserve hasHandles flag if either control point exists
+                newHandleInfo.hasHandles = (handleInfo.control1 != nil || handleInfo.control2 != nil)
                 reversedHandles[newIndex] = newHandleInfo
             }
             handles = reversedHandles
+
+            // After reversal, the original pendingStartHandle should be the new last point's control2
+            // (for continuing to draw from that point)
+            if let pendingStart = pendingStartHandle {
+                let newLastIndex = points.count - 1
+                var handleInfo = handles[newLastIndex] ?? BezierHandleInfo()
+                handleInfo.control2 = pendingStart
+                handleInfo.hasHandles = true
+                handles[newLastIndex] = handleInfo
+                print("🔧 Applied pendingStartHandle to reversed last point \(newLastIndex)")
+            }
         }
 
         // Load the existing path into editing state
@@ -519,6 +593,16 @@ extension DrawingCanvas {
         activeBezierPointIndex = points.count - 1  // Continue from the end
         activeBezierShape = shape
         currentShapeId = shape.id
+
+        // Track that we're continuing an existing path (for undo)
+        isContinuingExistingPath = true
+        originalBezierShapeForUndo = shape
+
+        // Debug: print extracted handles
+        print("🔧 continueExistingPath: loaded \(points.count) points, \(handles.count) handle entries")
+        for (index, handleInfo) in handles.sorted(by: { $0.key < $1.key }) {
+            print("  Point \(index): control1=\(handleInfo.control1 != nil), control2=\(handleInfo.control2 != nil), hasHandles=\(handleInfo.hasHandles)")
+        }
 
         // Rebuild bezierPath from points and handles (important when reversed!)
         rebuildBezierPath()
@@ -566,6 +650,10 @@ extension DrawingCanvas {
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
+
+        // This is a new path, not continuing existing
+        isContinuingExistingPath = false
+        originalBezierShapeForUndo = nil
 
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,

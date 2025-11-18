@@ -74,7 +74,8 @@ struct DrawingCanvas: View {
     @State internal var currentSnapPoint: CGPoint? = nil
     @State internal var currentShapeId: UUID? = nil
     @State internal var activeBezierShape: VectorShape? = nil
-    @State internal var originalContinuedPathLayerIndex: Int? = nil
+    @State internal var isContinuingExistingPath: Bool = false
+    @State internal var originalBezierShapeForUndo: VectorShape? = nil
 
     @State internal var freehandPath: VectorPath?
     @State internal var freehandRawPoints: [CGPoint] = []
@@ -201,7 +202,8 @@ struct DrawingCanvas: View {
                     // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
                     cachedObjectCount = document.snapshot.objects.count
-                    spatialIndex.rebuild(from: document.snapshot)
+                    let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
+                    spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                     rebuildLockedObjectsCache()
                     hasSpatialIndexInitialized = true
                 }
@@ -228,7 +230,12 @@ struct DrawingCanvas: View {
                         let start = CFAbsoluteTimeGetCurrent()
                         spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
                         let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
-                        print("🔷 Spatial index rebuild: \(String(format: "%.1f", duration))ms for \(changedLayerIDs.count) layer(s), \(document.snapshot.objects.count) total objects")
+                        // Count objects only in the changed layers
+                        var layerObjectCount = 0
+                        for layer in document.snapshot.layers where changedLayerIDs.contains(layer.id) {
+                            layerObjectCount += layer.objectIDs.count
+                        }
+                        print("🔷 Spatial index rebuild: \(String(format: "%.1f", duration))ms for \(changedLayerIDs.count) layer(s), \(layerObjectCount) layer objects")
                         rebuildLockedObjectsCache()
                     }
                 }
@@ -238,7 +245,8 @@ struct DrawingCanvas: View {
                     // Rebuild spatial index when objects are added/removed
                     if newCount != cachedObjectCount {
                         cachedObjectCount = newCount
-                        spatialIndex.rebuild(from: document.snapshot)
+                        let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
+                        spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                         rebuildLockedObjectsCache()
                     }
                 }
@@ -246,7 +254,8 @@ struct DrawingCanvas: View {
                     // Skip rebuild during initial load
                     guard hasSpatialIndexInitialized else { return }
                     // Rebuild spatial index when stroke bounds setting changes
-                    spatialIndex.rebuild(from: document.snapshot)
+                    let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
+                    spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshVisibleHandles"))) { _ in
                     // Refresh visible handles after anchor type conversion
