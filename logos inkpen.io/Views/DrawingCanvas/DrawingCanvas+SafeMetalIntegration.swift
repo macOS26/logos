@@ -34,6 +34,15 @@ extension DrawingCanvas {
         .onAppear {
             setupCanvas()
             previousTool = document.viewState.currentTool
+            // Fit to page on document open - delay to ensure geometry is ready
+            if !hasPerformedInitialFitToPage {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    if !hasPerformedInitialFitToPage {
+                        document.requestZoom(to: 0.0, mode: .fitToPage)
+                        hasPerformedInitialFitToPage = true
+                    }
+                }
+            }
         }
         .onDisappear {
             // teardownKeyEventMonitoring()

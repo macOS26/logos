@@ -264,20 +264,6 @@ struct DocumentBasedMainView: View {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
             }
-
-            calculateInitialZoom()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomIn"))) { _ in
-            handleZoomIn()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ZoomOut"))) { _ in
-            handleZoomOut()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FitToPage"))) { _ in
-            handleFitToPage()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ActualSize"))) { _ in
-            handleActualSize()
         }
         .background(HostingWindowFinder(callback: { window in
             self.viewWindow = window
@@ -355,46 +341,6 @@ struct DocumentBasedMainView: View {
 
     private func calculateInitialZoom() {
         document.requestZoom(to: 0.0, mode: .fitToPage)
-    }
-
-    private func handleZoomIn() {
-        let oldZoom = zoomLevel
-        let newZoom = min(zoomLevel * 1.25, 640.0)
-
-        let viewportCenterX = viewportSize.width / 2
-        let viewportCenterY = viewportSize.height / 2
-
-        let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
-        let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
-
-        zoomLevel = newZoom
-
-        canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
-        canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
-    }
-
-    private func handleZoomOut() {
-        let oldZoom = zoomLevel
-        let newZoom = max(zoomLevel / 1.25, 0.5)
-
-        let viewportCenterX = viewportSize.width / 2
-        let viewportCenterY = viewportSize.height / 2
-
-        let canvasCenterX = (viewportCenterX - canvasOffset.x) / oldZoom
-        let canvasCenterY = (viewportCenterY - canvasOffset.y) / oldZoom
-
-        zoomLevel = newZoom
-
-        canvasOffset.x = viewportCenterX - (canvasCenterX * newZoom)
-        canvasOffset.y = viewportCenterY - (canvasCenterY * newZoom)
-    }
-
-    private func handleFitToPage() {
-        calculateInitialZoom()
-    }
-
-    private func handleActualSize() {
-        zoomLevel = 1.0
     }
 }
 

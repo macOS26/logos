@@ -697,8 +697,8 @@ struct StrokeFillPanel: View {
         if !layersToUpdate.isEmpty {
             onTriggerLayerUpdates(layersToUpdate)
 
-            // Post notification to refresh visible handles in DrawingCanvas
-            NotificationCenter.default.post(name: Notification.Name("RefreshVisibleHandles"), object: nil)
+            // Trigger handle refresh in DrawingCanvas
+            document.viewState.handleRefreshTrigger.toggle()
         }
     }
 

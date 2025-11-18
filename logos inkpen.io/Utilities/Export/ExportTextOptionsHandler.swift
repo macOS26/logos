@@ -41,8 +41,8 @@ extension DocumentState {
         _ document: VectorDocument,
         exportHandler: () throws -> Data
     ) async throws -> Data {
-        let savedData = try JSONEncoder().encode(document)
-        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+        let savedSnapshot = document.snapshot
+        let savedSelection = document.viewState.selectedObjectIDs
 
         await MainActor.run {
             DocumentState.convertAllTextToOutlinesForExport(document)
@@ -51,8 +51,8 @@ extension DocumentState {
         let exportData = try exportHandler()
 
         await MainActor.run {
-            document.snapshot = savedState.snapshot
-            document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
+            document.snapshot = savedSnapshot
+            document.viewState.selectedObjectIDs = savedSelection
         }
 
         return exportData
@@ -65,8 +65,8 @@ extension DocumentState {
         includeInkpenData: Bool,
         isAutoDesk: Bool = false
     ) async throws -> String {
-        let savedData = try JSONEncoder().encode(document)
-        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+        let savedSnapshot = document.snapshot
+        let savedSelection = document.viewState.selectedObjectIDs
 
         await MainActor.run {
             DocumentState.convertAllTextToOutlinesForExport(document)
@@ -89,8 +89,8 @@ extension DocumentState {
         }
 
         await MainActor.run {
-            document.snapshot = savedState.snapshot
-            document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
+            document.snapshot = savedSnapshot
+            document.viewState.selectedObjectIDs = savedSelection
         }
 
         return svgContent

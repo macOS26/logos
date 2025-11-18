@@ -148,18 +148,22 @@ struct VectorPath: Codable, Hashable, Identifiable {
     var pendingStartHandle: VectorPoint?
     /// Pending outgoing handle for the last point (used when continuing path from end)
     var pendingEndHandle: VectorPoint?
+    /// Bezier handle state for each point (only stored for unclosed paths that need continuation)
+    /// Uses String keys for JSON compatibility
+    var bezierHandles: [String: BezierHandleInfo]?
 
-    init(elements: [PathElement] = [], isClosed: Bool = false, fillRule: CGPathFillRule = .winding, pendingStartHandle: VectorPoint? = nil, pendingEndHandle: VectorPoint? = nil) {
+    init(elements: [PathElement] = [], isClosed: Bool = false, fillRule: CGPathFillRule = .winding, pendingStartHandle: VectorPoint? = nil, pendingEndHandle: VectorPoint? = nil, bezierHandles: [String: BezierHandleInfo]? = nil) {
         self.id = UUID()
         self.elements = elements
         self.isClosed = isClosed
         self.fillRule = FillRule(fillRule)
         self.pendingStartHandle = pendingStartHandle
         self.pendingEndHandle = pendingEndHandle
+        self.bezierHandles = bezierHandles
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, elements, isClosed, fillRule, pendingStartHandle, pendingEndHandle
+        case id, elements, isClosed, fillRule, pendingStartHandle, pendingEndHandle, bezierHandles
     }
 
     func encode(to encoder: Encoder) throws {
@@ -183,6 +187,10 @@ struct VectorPath: Codable, Hashable, Identifiable {
         if let pendingEndHandle = pendingEndHandle {
             try container.encode(pendingEndHandle, forKey: .pendingEndHandle)
         }
+        // Only encode bezierHandles for unclosed paths
+        if let bezierHandles = bezierHandles, !bezierHandles.isEmpty {
+            try container.encode(bezierHandles, forKey: .bezierHandles)
+        }
     }
 
     init(from decoder: Decoder) throws {
@@ -193,6 +201,7 @@ struct VectorPath: Codable, Hashable, Identifiable {
         fillRule = try container.decode(FillRule.self, forKey: .fillRule)
         pendingStartHandle = try container.decodeIfPresent(VectorPoint.self, forKey: .pendingStartHandle)
         pendingEndHandle = try container.decodeIfPresent(VectorPoint.self, forKey: .pendingEndHandle)
+        bezierHandles = try container.decodeIfPresent([String: BezierHandleInfo].self, forKey: .bezierHandles)
     }
 
     init(cgPath: CGPath, fillRule: CGPathFillRule = .winding) {

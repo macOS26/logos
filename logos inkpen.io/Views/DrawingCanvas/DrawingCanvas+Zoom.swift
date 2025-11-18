@@ -107,13 +107,15 @@ extension DrawingCanvas {
         case .actualSize:
             actualSize(geometry: geometry)
 
-        case .zoomIn, .zoomOut:
-            if currentMousePosition != .zero {
-                handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: currentMousePosition, geometry: geometry)
-            } else {
-                let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
-                handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: viewCenter, geometry: geometry)
-            }
+        case .zoomIn:
+            let newZoom = nextAllowedStepUp(from: zoomLevel)
+            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+            handleZoomAtPoint(newZoomLevel: newZoom, focalPoint: viewCenter, geometry: geometry)
+
+        case .zoomOut:
+            let newZoom = nextAllowedStepDown(from: zoomLevel)
+            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+            handleZoomAtPoint(newZoomLevel: newZoom, focalPoint: viewCenter, geometry: geometry)
 
         case .custom(let focalPoint):
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)

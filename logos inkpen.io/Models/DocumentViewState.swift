@@ -21,6 +21,7 @@ class DocumentViewState: ObservableObject {
     // MARK: - Viewport State
     @Published var viewMode: ViewMode = .color
     @Published var zoomRequest: ZoomRequest? = nil
+    @Published var handleRefreshTrigger: Bool = false
 
     // NOTE: zoomLevel and canvasOffset removed - now managed as @State in DocumentBasedMainView
     // and passed as @Binding to child views (same pattern as fillDeltaOpacity, etc.)

@@ -191,14 +191,6 @@ struct DrawingCanvas: View {
         GeometryReader { geometry in
             enhancedCanvasMainContent(geometry: geometry)
                 .onAppear {
-                    if !hasPerformedInitialFitToPage {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            fitToPage(geometry: geometry)
-                            hasPerformedInitialFitToPage = true
-                        }
-                    }
-                }
-                .onAppear {
                     // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
                     cachedObjectCount = document.snapshot.objects.count
@@ -257,7 +249,7 @@ struct DrawingCanvas: View {
                     let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
                     spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                 }
-                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshVisibleHandles"))) { _ in
+                .onChange(of: document.viewState.handleRefreshTrigger) {
                     // Refresh visible handles after anchor type conversion
                     if document.viewState.currentTool == .directSelection {
                         showHandlesForSelectedPoints()

@@ -1015,19 +1015,19 @@ class DocumentState: ObservableObject {
     }
 
     func zoomIn() {
-        NotificationCenter.default.post(name: Notification.Name("ZoomIn"), object: nil)
+        document?.requestZoom(to: 0.0, mode: .zoomIn)
     }
 
     func zoomOut() {
-        NotificationCenter.default.post(name: Notification.Name("ZoomOut"), object: nil)
+        document?.requestZoom(to: 0.0, mode: .zoomOut)
     }
 
     func fitToPage() {
-        NotificationCenter.default.post(name: Notification.Name("FitToPage"), object: nil)
+        document?.requestZoom(to: 0.0, mode: .fitToPage)
     }
 
     func actualSize() {
-        NotificationCenter.default.post(name: Notification.Name("ActualSize"), object: nil)
+        document?.requestZoom(to: 1.0, mode: .actualSize)
     }
 
     func toggleColorKeylineView() {

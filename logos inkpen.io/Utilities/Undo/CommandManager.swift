@@ -60,8 +60,6 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = false
 
         updateState()
-
-        NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
     }
 
     func redo() {

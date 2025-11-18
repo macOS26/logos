@@ -125,7 +125,8 @@ extension DrawingCanvas {
             print("🔧 Preserving selections for bezier pen: points=\(selectedPoints.count), handles=\(selectedHandles.count)")
 
             // If a point is selected, automatically load the path for continuation
-            if !isBezierDrawing, let selectedPointID = selectedPoints.first {
+            // Always reload from the path - don't rely on stale state
+            if let selectedPointID = selectedPoints.first {
                 if getShapeForPoint(selectedPointID) != nil,
                    let pointPosition = getPointPosition(selectedPointID) {
                     print("🔧 Auto-loading path for continuation from selected point")
