@@ -181,7 +181,7 @@ extension DrawingCanvas {
     }
 
     internal func finishBezierPath() {
-        guard let activeBezierShape = activeBezierShape else {
+        guard var activeBezierShape = activeBezierShape else {
             cancelBezierDrawing()
             return
         }
@@ -195,15 +195,21 @@ extension DrawingCanvas {
 
         // Update the path one final time with all points and handles
         updatePathWithHandles()
-        updateActiveBezierShapeInDocument()
+
+        // Update activeBezierShape with the current bezierPath
+        if let currentPath = bezierPath {
+            activeBezierShape.path = currentPath
+            activeBezierShape.updateBounds()
+        }
 
         // Re-add the shape to the document (it was removed when we started editing)
         // or apply final colors if it's already there
         if document.snapshot.objects[activeBezierShape.id] == nil {
-            // Shape was removed for editing, re-add it
+            // Shape was removed for editing, re-add it with updated path
             document.addShape(activeBezierShape)
         } else {
-            // Shape is in document, just update colors
+            // Shape is in document, update it
+            updateActiveBezierShapeInDocument()
             applyFinalColorsToPath(shape: activeBezierShape)
         }
 
