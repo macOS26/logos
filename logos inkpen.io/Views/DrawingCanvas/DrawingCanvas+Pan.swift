@@ -20,8 +20,10 @@ extension DrawingCanvas {
         // SIMD optimization for pan delta calculation
         let currentLoc = SIMD2<Float>(Float(value.location.x), Float(value.location.y))
         let startLoc = SIMD2<Float>(Float(handToolDragStart.x), Float(handToolDragStart.y))
+        let initialOffset = SIMD2<Float>(Float(initialCanvasOffset.x), Float(initialCanvasOffset.y))
 
         let delta = currentLoc - startLoc
+        let newOffset = initialOffset + delta
 
         #if os(macOS)
         if document.viewState.currentTool == .hand {
@@ -29,20 +31,12 @@ extension DrawingCanvas {
         }
         #endif
 
-        // Use GPU transform for 60fps panning - don't update canvasOffset during drag
-        livePanDelta = CGPoint(x: CGFloat(delta.x), y: CGFloat(delta.y))
+        // Update canvasOffset directly - Canvas needs this to render correctly
+        canvasOffset = CGPoint(x: CGFloat(newOffset.x), y: CGFloat(newOffset.y))
     }
 
     internal func handlePanGestureEnd() {
-        // Bake livePanDelta into canvasOffset
-        let finalOffset = CGPoint(
-            x: initialCanvasOffset.x + livePanDelta.x,
-            y: initialCanvasOffset.y + livePanDelta.y
-        )
-        canvasOffset = finalOffset
-
-        // Reset live state
-        livePanDelta = .zero
+        // Reset state
         initialCanvasOffset = .zero
         handToolDragStart = .zero
         isPanGestureActive = false

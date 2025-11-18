@@ -114,18 +114,6 @@ struct LayerCanvasView: View {
         let docOrigin = -offsetVec / zoom
         let docSize = sizeVec / zoom
 
-        // During pan, expand viewport by screen size in all directions
-        // This ensures content is pre-rendered for smooth GPU transform panning
-        if isPanning {
-            let padding = max(docSize.x, docSize.y)  // Full screen worth of padding
-            return CGRect(
-                x: CGFloat(docOrigin.x - padding),
-                y: CGFloat(docOrigin.y - padding),
-                width: CGFloat(docSize.x + padding * 2),
-                height: CGFloat(docSize.y + padding * 2)
-            )
-        }
-
         return CGRect(
             x: CGFloat(docOrigin.x),
             y: CGFloat(docOrigin.y),
@@ -139,6 +127,16 @@ struct LayerCanvasView: View {
     // 1. Hidden (isVisible == false)
     // 2. Outside the viewport bounds (performance optimization)
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
+        // During pan, skip culling to avoid filtering overhead every frame
+        // Just return all visible objects
+        if isPanning {
+            return objectIDs.compactMap { id in
+                guard let object = document.snapshot.objects[id],
+                      object.isVisible else { return nil }
+                return object
+            }
+        }
+
         let viewport = viewportRect(canvasSize: canvasSize)
 
         return objectIDs.compactMap { id in
