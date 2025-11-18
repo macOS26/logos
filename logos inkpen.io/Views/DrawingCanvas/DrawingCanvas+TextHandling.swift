@@ -545,42 +545,16 @@ extension DrawingCanvas {
     func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
         guard let textObj = document.findText(by: textID) else { return }
 
-        let oldShape = document.findShape(by: textID)
-        var oldShapes: [UUID: VectorShape] = [:]
-        if let shape = oldShape {
-            oldShapes[textID] = shape
-        }
-
-        document.updateTextPositionInUnified(id: textObj.id, position: newPosition)
-
-        if let updatedShape = document.findShape(by: textID) {
-            let objectIDs = [textID]
-            var newShapes: [UUID: VectorShape] = [:]
-            newShapes[textID] = updatedShape
-
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
+        document.modifyShapesWithUndo(shapeIDs: [textID]) { _ in
+            document.updateTextPositionInUnified(id: textObj.id, position: newPosition)
         }
     }
 
     func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
         guard let textObj = document.findText(by: textID) else { return }
 
-        let oldShape = document.findShape(by: textID)
-        var oldShapes: [UUID: VectorShape] = [:]
-        if let shape = oldShape {
-            oldShapes[textID] = shape
-        }
-
-        document.updateTextBoundsInUnified(id: textObj.id, bounds: newBounds)
-
-        if let updatedShape = document.findShape(by: textID) {
-            let objectIDs = [textID]
-            var newShapes: [UUID: VectorShape] = [:]
-            newShapes[textID] = updatedShape
-
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
+        document.modifyShapesWithUndo(shapeIDs: [textID]) { _ in
+            document.updateTextBoundsInUnified(id: textObj.id, bounds: newBounds)
         }
     }
 
