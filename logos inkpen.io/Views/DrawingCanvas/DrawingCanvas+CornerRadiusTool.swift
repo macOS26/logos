@@ -203,15 +203,9 @@ extension DrawingCanvas {
 
             if let originalShape = sharedOriginalShape,
                let finalShape = getSelectedRectangleShape() {
-                var oldShapes: [UUID: VectorShape] = [:]
-                var newShapes: [UUID: VectorShape] = [:]
-                let objectIDs = [originalShape.id]
-
-                oldShapes[originalShape.id] = originalShape
-                newShapes[finalShape.id] = finalShape
-
-                let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                document.commandManager.execute(command)
+                document.modifyShapesWithUndo(shapeIDs: [originalShape.id]) { shape in
+                    shape = finalShape
+                }
             }
 
             sharedOriginalShape = nil
