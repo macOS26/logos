@@ -203,53 +203,43 @@ struct CornerRadiusToolbar: View {
     }
 
     private func updateCornerRadius(index: Int, value: Double) {
-        guard var selectedShape = getSelectedShape() else { return }
+        guard let selectedShape = getSelectedShape() else { return }
 
-        let oldShape = selectedShape
+        document.modifyShapesWithUndo(shapeIDs: [selectedShape.id]) { shape in
+            // Initialize rounded rectangle properties if needed
+            if !shape.isRoundedRectangle && isRectangleShape(shape) {
+                let pathBounds = shape.path.cgPath.boundingBox
+                shape.originalBounds = pathBounds
+                shape.isRoundedRectangle = true
 
-        // Initialize rounded rectangle properties if needed
-        if !selectedShape.isRoundedRectangle && isRectangleShape(selectedShape) {
-            let pathBounds = selectedShape.path.cgPath.boundingBox
-            selectedShape.originalBounds = pathBounds
-            selectedShape.isRoundedRectangle = true
-
-            if selectedShape.cornerRadii.isEmpty {
-                selectedShape.cornerRadii = [0.0, 0.0, 0.0, 0.0]
+                if shape.cornerRadii.isEmpty {
+                    shape.cornerRadii = [0.0, 0.0, 0.0, 0.0]
+                }
             }
+
+            var updatedRadii = shape.cornerRadii
+
+            while updatedRadii.count <= index {
+                updatedRadii.append(0.0)
+            }
+            updatedRadii[index] = value
+
+            let currentBounds = shape.path.cgPath.boundingBox
+            let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
+                rect: currentBounds,
+                cornerRadii: updatedRadii
+            )
+
+            // Update shape properties
+            shape.cornerRadii = updatedRadii
+            shape.path = newPath
+            shape.updateBounds()
         }
 
-        var updatedRadii = selectedShape.cornerRadii
-
-        while updatedRadii.count <= index {
-            updatedRadii.append(0.0)
-        }
-        updatedRadii[index] = value
-
-        let currentBounds = selectedShape.path.cgPath.boundingBox
-        let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
-            rect: currentBounds,
-            cornerRadii: updatedRadii
-        )
-
-        // Update shape in snapshot
-        selectedShape.cornerRadii = updatedRadii
-        selectedShape.path = newPath
-        selectedShape.updateBounds()
-
-        // Find and update in snapshot
+        // Trigger layer update
         if let obj = document.snapshot.objects[selectedShape.id] {
-            let updatedObj = VectorObject(shape: selectedShape, layerIndex: obj.layerIndex)
-            document.snapshot.objects[selectedShape.id] = updatedObj
             document.triggerLayerUpdate(for: obj.layerIndex)
         }
-
-        // Create undo command
-        let command = ShapeModificationCommand(
-            objectIDs: [selectedShape.id],
-            oldShapes: [selectedShape.id: oldShape],
-            newShapes: [selectedShape.id: selectedShape]
-        )
-        document.commandManager.execute(command)
 
         updateCornerValues()
     }
