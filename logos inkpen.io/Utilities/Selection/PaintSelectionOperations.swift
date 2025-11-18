@@ -8,122 +8,46 @@ enum PaintSelectionOperations {
 
     /// Handle fill opacity editing completion with undo/redo
     static func handleFillOpacityEditingComplete(_ opacity: Double, document: VectorDocument) {
-        var oldShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
-        let activeShapeIDs = document.getActiveShapeIDs()
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                document.defaultFillOpacity = opacity
+                updateFillOpacityLive(opacity, document: document, isEditing: false)
 
-        for shapeID in activeShapeIDs {
-            if let shape = document.findShape(by: shapeID) {
-                oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
+                for objectID in document.viewState.selectedObjectIDs {
+                    document.clearTextPreviewTypography(id: objectID)
+                }
             }
-        }
-
-        document.defaultFillOpacity = opacity
-        updateFillOpacityLive(opacity, document: document, isEditing: false)
-
-        for objectID in document.viewState.selectedObjectIDs {
-            document.clearTextPreviewTypography(id: objectID)
-        }
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for shapeID in objectIDs {
-            if let shape = document.findShape(by: shapeID) {
-                newShapes[shapeID] = shape
-            }
-        }
-
-        if !objectIDs.isEmpty {
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
+        )
     }
 
     /// Handle stroke width editing completion with undo/redo
     static func handleStrokeWidthEditingComplete(_ width: Double, document: VectorDocument) {
-        var oldShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
-        let activeShapeIDs = document.getActiveShapeIDs()
-
-        for shapeID in activeShapeIDs {
-            if let shape = document.findShape(by: shapeID) {
-                oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                document.defaultStrokeWidth = width
+                updateStrokeWidthLive(width, document: document, isEditing: false)
             }
-        }
-
-        document.defaultStrokeWidth = width
-        updateStrokeWidthLive(width, document: document, isEditing: false)
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for shapeID in objectIDs {
-            if let shape = document.findShape(by: shapeID) {
-                newShapes[shapeID] = shape
-            }
-        }
-
-        if !objectIDs.isEmpty {
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
+        )
     }
 
     /// Handle stroke opacity editing completion with undo/redo
     static func handleStrokeOpacityEditingComplete(_ opacity: Double, document: VectorDocument) {
-        var oldShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
-        let activeShapeIDs = document.getActiveShapeIDs()
-
-        for shapeID in activeShapeIDs {
-            if let shape = document.findShape(by: shapeID) {
-                oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                document.defaultStrokeOpacity = opacity
+                updateStrokeOpacityLive(opacity, document: document, isEditing: false)
             }
-        }
-
-        document.defaultStrokeOpacity = opacity
-        updateStrokeOpacityLive(opacity, document: document, isEditing: false)
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for shapeID in objectIDs {
-            if let shape = document.findShape(by: shapeID) {
-                newShapes[shapeID] = shape
-            }
-        }
-
-        if !objectIDs.isEmpty {
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
+        )
     }
 
     /// Handle miter limit editing completion with undo/redo
     static func handleMiterLimitEditingComplete(_ miterLimit: Double, document: VectorDocument) {
-        var oldShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
-        let activeShapeIDs = document.getActiveShapeIDs()
-
-        for shapeID in activeShapeIDs {
-            if let shape = document.findShape(by: shapeID) {
-                oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                document.strokeDefaults.miterLimit = miterLimit
+                updateStrokeMiterLimit(miterLimit, document: document)
             }
-        }
-
-        document.strokeDefaults.miterLimit = miterLimit
-        updateStrokeMiterLimit(miterLimit, document: document)
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for shapeID in objectIDs {
-            if let shape = document.findShape(by: shapeID) {
-                newShapes[shapeID] = shape
-            }
-        }
-
-        if !objectIDs.isEmpty {
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
+        )
     }
 
     // MARK: - Fill Operations
