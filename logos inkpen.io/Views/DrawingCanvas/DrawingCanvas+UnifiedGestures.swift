@@ -287,9 +287,8 @@ extension DrawingCanvas {
     }
 
     private func finishPanGesture() {
-        initialCanvasOffset = CGPoint.zero
-        handToolDragStart = CGPoint.zero
-        isPanGestureActive = false
+        // Use the optimized pan end handler that bakes livePanDelta into canvasOffset
+        handlePanGestureEnd()
 
         #if os(macOS)
         if isCanvasHovering && document.viewState.currentTool == .hand {

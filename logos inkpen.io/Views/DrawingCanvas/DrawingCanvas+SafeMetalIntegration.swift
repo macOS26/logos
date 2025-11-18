@@ -10,7 +10,8 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-
+            // canvasOffset only changes at pan end, not during drag
+            // livePanDelta is applied as GPU transform via .offset() for 60fps
             canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .none)
 
             canvasOverlays(geometry: geometry)
