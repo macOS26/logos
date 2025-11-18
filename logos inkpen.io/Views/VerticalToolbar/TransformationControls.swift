@@ -327,186 +327,168 @@ struct TransformationControls: View {
               newWidth > 0,
               newHeight > 0 else { return }
 
-        var oldShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                let originOffset = document.viewState.transformOrigin.point
+                let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
+                let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
+                let pageOrigin = document.settings.pageOrigin ?? .zero
+                let newOriginX = newX + pageOrigin.x
+                let newOriginY = newY + pageOrigin.y
+                let scaleX = newWidth / currentBounds.width
+                let scaleY = newHeight / currentBounds.height
 
-        for objectID in document.viewState.selectedObjectIDs {
-            if let shape = document.findShape(by: objectID) {
-                oldShapes[objectID] = shape
-                objectIDs.append(objectID)
-            }
-        }
+                for objectID in document.viewState.selectedObjectIDs {
+                    if let newVectorObject = document.snapshot.objects[objectID],
+                       case .shape(var shape) = newVectorObject.objectType {
 
-        let originOffset = document.viewState.transformOrigin.point
-        let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
-        let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
-        let pageOrigin = document.settings.pageOrigin ?? .zero
-        let newOriginX = newX + pageOrigin.x
-        let newOriginY = newY + pageOrigin.y
-        let scaleX = newWidth / currentBounds.width
-        let scaleY = newHeight / currentBounds.height
+                        if shape.isGroupContainer {
+                            var transformedGroupedShapes: [VectorShape] = []
+                            for var groupedShape in shape.groupedShapes {
+                                var transformedElements: [PathElement] = []
+                                for element in groupedShape.path.elements {
+                                    switch element {
+                                    case .move(let to):
+                                        let pt = to.cgPoint
+                                        let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        transformedElements.append(.move(to: VectorPoint(newPt)))
+                                    case .line(let to):
+                                        let pt = to.cgPoint
+                                        let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        transformedElements.append(.line(to: VectorPoint(newPt)))
+                                    case .curve(let to, let control1, let control2):
+                                        let toPt = to.cgPoint
+                                        let c1Pt = control1.cgPoint
+                                        let c2Pt = control2.cgPoint
+                                        let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        let newC1 = transformPoint(c1Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        let newC2 = transformPoint(c2Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        transformedElements.append(.curve(to: VectorPoint(newTo),
+                                                                         control1: VectorPoint(newC1),
+                                                                         control2: VectorPoint(newC2)))
+                                    case .quadCurve(let to, let control):
+                                        let toPt = to.cgPoint
+                                        let cPt = control.cgPoint
+                                        let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                  newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                  scaleX: scaleX, scaleY: scaleY)
+                                        let newC = transformPoint(cPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                                newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                                scaleX: scaleX, scaleY: scaleY)
+                                        transformedElements.append(.quadCurve(to: VectorPoint(newTo),
+                                                                             control: VectorPoint(newC)))
+                                    case .close:
+                                        transformedElements.append(.close)
+                                    }
+                                }
+                                groupedShape.path = VectorPath(elements: transformedElements)
+                                groupedShape.updateBounds()
+                                transformedGroupedShapes.append(groupedShape)
+                            }
+                            shape.groupedShapes = transformedGroupedShapes
+                            shape.updateBounds()
+                        } else if shape.typography != nil {
+                            let currentPosition = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                            let newPosition = transformPoint(currentPosition,
+                                                            currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                            newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                            scaleX: scaleX, scaleY: scaleY)
 
-        for objectID in document.viewState.selectedObjectIDs {
-            if let newVectorObject = document.snapshot.objects[objectID],
-               case .shape(var shape) = newVectorObject.objectType {
+                            shape.textPosition = newPosition
+                            shape.transform = CGAffineTransform(translationX: newPosition.x, y: newPosition.y)
 
-                if shape.isGroupContainer {
-                    var transformedGroupedShapes: [VectorShape] = []
-                    for var groupedShape in shape.groupedShapes {
-                        var transformedElements: [PathElement] = []
-                        for element in groupedShape.path.elements {
-                            switch element {
-                            case .move(let to):
-                                let pt = to.cgPoint
-                                let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                transformedElements.append(.move(to: VectorPoint(newPt)))
-                            case .line(let to):
-                                let pt = to.cgPoint
-                                let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                transformedElements.append(.line(to: VectorPoint(newPt)))
-                            case .curve(let to, let control1, let control2):
-                                let toPt = to.cgPoint
-                                let c1Pt = control1.cgPoint
-                                let c2Pt = control2.cgPoint
-                                let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                let newC1 = transformPoint(c1Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                let newC2 = transformPoint(c2Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                transformedElements.append(.curve(to: VectorPoint(newTo),
-                                                                 control1: VectorPoint(newC1),
-                                                                 control2: VectorPoint(newC2)))
-                            case .quadCurve(let to, let control):
-                                let toPt = to.cgPoint
-                                let cPt = control.cgPoint
-                                let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                          newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                          scaleX: scaleX, scaleY: scaleY)
-                                let newC = transformPoint(cPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                        newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                        scaleX: scaleX, scaleY: scaleY)
-                                transformedElements.append(.quadCurve(to: VectorPoint(newTo),
-                                                                     control: VectorPoint(newC)))
-                            case .close:
-                                transformedElements.append(.close)
+                            if scaleX != 1.0 || scaleY != 1.0 {
+                                let newWidth = shape.bounds.width * scaleX
+                                let newHeight = shape.bounds.height * scaleY
+                                shape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
+
+                                if let areaSize = shape.areaSize {
+                                    shape.areaSize = CGSize(width: areaSize.width * scaleX, height: areaSize.height * scaleY)
+                                }
+                            }
+                        } else {
+                            var transformedElements: [PathElement] = []
+                            for element in shape.path.elements {
+                                switch element {
+                                case .move(let to):
+                                    let pt = to.cgPoint
+                                    let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    transformedElements.append(.move(to: VectorPoint(newPt)))
+                                case .line(let to):
+                                    let pt = to.cgPoint
+                                    let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    transformedElements.append(.line(to: VectorPoint(newPt)))
+                                case .curve(let to, let control1, let control2):
+                                    let toPt = to.cgPoint
+                                    let c1Pt = control1.cgPoint
+                                    let c2Pt = control2.cgPoint
+                                    let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    let newC1 = transformPoint(c1Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    let newC2 = transformPoint(c2Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    transformedElements.append(.curve(to: VectorPoint(newTo),
+                                                                     control1: VectorPoint(newC1),
+                                                                     control2: VectorPoint(newC2)))
+                                case .quadCurve(let to, let control):
+                                    let toPt = to.cgPoint
+                                    let cPt = control.cgPoint
+                                    let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                              newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                              scaleX: scaleX, scaleY: scaleY)
+                                    let newC = transformPoint(cPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                            newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                            scaleX: scaleX, scaleY: scaleY)
+                                    transformedElements.append(.quadCurve(to: VectorPoint(newTo),
+                                                                         control: VectorPoint(newC)))
+                                case .close:
+                                    transformedElements.append(.close)
+                                }
+                            }
+                            shape.path = VectorPath(elements: transformedElements)
+                            shape.updateBounds()
+                        }
+
+                        for layerIndex in document.snapshot.layers.indices {
+                            let shapes = document.getShapesForLayer(layerIndex)
+                            if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
+                                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
+
+                                if shape.typography != nil {
+                                    if let position = shape.textPosition {
+                                        document.updateTextPositionInUnified(id: shape.id, position: position)
+                                    }
+                                    if let areaSize = shape.areaSize {
+                                        document.updateTextAreaSizeInUnified(id: shape.id, areaSize: areaSize)
+                                    }
+                                    document.updateTextBoundsInUnified(id: shape.id, bounds: shape.bounds)
+                                }
+                                document.triggerLayerUpdate(for: layerIndex)
+                                break
                             }
                         }
-                        groupedShape.path = VectorPath(elements: transformedElements)
-                        groupedShape.updateBounds()
-                        transformedGroupedShapes.append(groupedShape)
-                    }
-                    shape.groupedShapes = transformedGroupedShapes
-                    shape.updateBounds()
-                } else if shape.typography != nil {
-                    let currentPosition = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                    let newPosition = transformPoint(currentPosition,
-                                                    currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                    newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                    scaleX: scaleX, scaleY: scaleY)
-
-                    shape.textPosition = newPosition
-                    shape.transform = CGAffineTransform(translationX: newPosition.x, y: newPosition.y)
-
-                    if scaleX != 1.0 || scaleY != 1.0 {
-                        let newWidth = shape.bounds.width * scaleX
-                        let newHeight = shape.bounds.height * scaleY
-                        shape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
-
-                        if let areaSize = shape.areaSize {
-                            shape.areaSize = CGSize(width: areaSize.width * scaleX, height: areaSize.height * scaleY)
-                        }
-                    }
-                } else {
-                    var transformedElements: [PathElement] = []
-                    for element in shape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            let pt = to.cgPoint
-                            let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            transformedElements.append(.move(to: VectorPoint(newPt)))
-                        case .line(let to):
-                            let pt = to.cgPoint
-                            let newPt = transformPoint(pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            transformedElements.append(.line(to: VectorPoint(newPt)))
-                        case .curve(let to, let control1, let control2):
-                            let toPt = to.cgPoint
-                            let c1Pt = control1.cgPoint
-                            let c2Pt = control2.cgPoint
-                            let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            let newC1 = transformPoint(c1Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            let newC2 = transformPoint(c2Pt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            transformedElements.append(.curve(to: VectorPoint(newTo),
-                                                             control1: VectorPoint(newC1),
-                                                             control2: VectorPoint(newC2)))
-                        case .quadCurve(let to, let control):
-                            let toPt = to.cgPoint
-                            let cPt = control.cgPoint
-                            let newTo = transformPoint(toPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                      newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                      scaleX: scaleX, scaleY: scaleY)
-                            let newC = transformPoint(cPt, currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
-                                                    newOrigin: CGPoint(x: newOriginX, y: newOriginY),
-                                                    scaleX: scaleX, scaleY: scaleY)
-                            transformedElements.append(.quadCurve(to: VectorPoint(newTo),
-                                                                 control: VectorPoint(newC)))
-                        case .close:
-                            transformedElements.append(.close)
-                        }
-                    }
-                    shape.path = VectorPath(elements: transformedElements)
-                    shape.updateBounds()
-                }
-
-                for layerIndex in document.snapshot.layers.indices {
-                    let shapes = document.getShapesForLayer(layerIndex)
-                    if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
-                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
-
-                        if shape.typography != nil {
-                            if let position = shape.textPosition {
-                                document.updateTextPositionInUnified(id: shape.id, position: position)
-                            }
-                            if let areaSize = shape.areaSize {
-                                document.updateTextAreaSizeInUnified(id: shape.id, areaSize: areaSize)
-                            }
-                            document.updateTextBoundsInUnified(id: shape.id, bounds: shape.bounds)
-                        }
-                        document.triggerLayerUpdate(for: layerIndex)
-                        break
                     }
                 }
             }
-        }
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for objectID in objectIDs {
-            if let updatedShape = document.findShape(by: objectID) {
-                newShapes[objectID] = updatedShape
-            }
-        }
-
-        if !objectIDs.isEmpty {
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
+        )
 
         updateValuesFromSelection()
     }
