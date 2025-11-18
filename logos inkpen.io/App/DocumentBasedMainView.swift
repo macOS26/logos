@@ -354,35 +354,7 @@ struct DocumentBasedMainView: View {
     }
 
     private func calculateInitialZoom() {
-        let documentBounds = document.documentBounds
-
-        guard let window = NSApplication.shared.mainWindow else {
-            document.requestZoom(to: 0.0, mode: .fitToPage)
-            return
-        }
-
-        let windowSize = window.frame.size
-        let rulerOffset: CGFloat = document.gridSettings.showRulers ? 20 : 0
-        let availableWidth = windowSize.width - 48 - 280 - rulerOffset
-        let availableHeight = windowSize.height - 24 - rulerOffset
-        let scaleX = availableWidth / documentBounds.width
-        let scaleY = availableHeight / documentBounds.height
-        let fitZoom = max(0.5, min(640.0, min(scaleX, scaleY)))
-
-        zoomLevel = fitZoom
-
-        let visibleCenter = CGPoint(
-            x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
-            y: (availableHeight + rulerOffset) / 2.0 + rulerOffset
-        )
-        let documentCenter = CGPoint(
-            x: documentBounds.midX,
-            y: documentBounds.midY
-        )
-        canvasOffset = CGPoint(
-            x: visibleCenter.x - (documentCenter.x * fitZoom),
-            y: visibleCenter.y - (documentCenter.y * fitZoom)
-        )
+        document.requestZoom(to: 0.0, mode: .fitToPage)
     }
 
     private func handleZoomIn() {
