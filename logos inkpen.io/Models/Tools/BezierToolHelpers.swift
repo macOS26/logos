@@ -202,15 +202,25 @@ extension DrawingCanvas {
             activeBezierShape.updateBounds()
         }
 
-        // Re-add the shape to the document (it was removed when we started editing)
-        // or apply final colors if it's already there
-        if document.snapshot.objects[activeBezierShape.id] == nil {
-            // Shape was removed for editing, re-add it with updated path
-            document.addShape(activeBezierShape)
+        // Shape should be in document - update it with final path
+        print("🔧 finishBezierPath: points = \(bezierPoints.count), elements = \(activeBezierShape.path.elements.count)")
+
+        // Update the shape in the document with the final path
+        if let obj = document.snapshot.objects[activeBezierShape.id] {
+            // Update the object with new path
+            var updatedShape = activeBezierShape
+            updatedShape.path = bezierPath ?? activeBezierShape.path
+            updatedShape.updateBounds()
+
+            let objectType = VectorObject.determineType(for: updatedShape)
+            let updatedObj = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: objectType)
+
+            document.snapshot.objects[activeBezierShape.id] = updatedObj
+            document.triggerLayerUpdate(for: obj.layerIndex)
+
+            print("🔧 Shape updated successfully")
         } else {
-            // Shape is in document, update it
-            updateActiveBezierShapeInDocument()
-            applyFinalColorsToPath(shape: activeBezierShape)
+            print("🔧 ERROR: Shape not found in document!")
         }
 
         cancelBezierDrawing()
@@ -513,8 +523,8 @@ extension DrawingCanvas {
         // Rebuild bezierPath from points and handles (important when reversed!)
         rebuildBezierPath()
 
-        // Remove the shape from the document while editing (will be re-added on finish)
-        document.removeShapeFromUnifiedSystem(id: shape.id)
+        // DON'T remove the shape - we'll update it in place during editing
+        // The shape stays in the document and gets updated via updateActiveBezierShapeInDocument()
 
         selectedPoints.removeAll()
     }
