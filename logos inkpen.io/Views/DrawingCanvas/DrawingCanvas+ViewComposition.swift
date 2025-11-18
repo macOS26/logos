@@ -355,7 +355,8 @@ extension DrawingCanvas {
                 imageInterpolationQuality: imageInterpolationQuality,
                 liveCornerRadii: liveCornerRadii,
                 selectedShapeIDForCornerRadius: selectedShapeInThisLayer,
-                layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id] ?? 0
+                layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id] ?? 0,
+                isPanning: isPanGestureActive
             )
             // .scaleEffect(liveZoomDelta, anchor: .topLeading)
             // .offset(x: livePanDelta.x, y: livePanDelta.y)

@@ -87,6 +87,7 @@ struct LayerCanvasView: View {
     let colorDeltaColor: VectorColor?
     let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
+    let isPanning: Bool  // When true, expand viewport for smooth pan
     let activeColorTarget: ColorTarget
     @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
@@ -112,6 +113,18 @@ struct LayerCanvasView: View {
         // Transform to document coords: (screenX - offset) / zoom
         let docOrigin = -offsetVec / zoom
         let docSize = sizeVec / zoom
+
+        // During pan, expand viewport by screen size in all directions
+        // This ensures content is pre-rendered for smooth GPU transform panning
+        if isPanning {
+            let padding = max(docSize.x, docSize.y)  // Full screen worth of padding
+            return CGRect(
+                x: CGFloat(docOrigin.x - padding),
+                y: CGFloat(docOrigin.y - padding),
+                width: CGFloat(docSize.x + padding * 2),
+                height: CGFloat(docSize.y + padding * 2)
+            )
+        }
 
         return CGRect(
             x: CGFloat(docOrigin.x),
@@ -1388,6 +1401,7 @@ struct IsolatedLayerView: View {
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt
+    let isPanning: Bool  // For expanded viewport during pan
 
     // Helper to collect all text shapes (both top-level and grouped)
     private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
@@ -1469,6 +1483,7 @@ struct IsolatedLayerView: View {
                 colorDeltaColor: colorDeltaColor,
                 colorDeltaOpacity: colorDeltaOpacity,
                 activeGradientDelta: $activeGradientDelta,
+                isPanning: isPanning,
                 activeColorTarget: activeColorTarget,
                 textContentDelta: $textContentDelta,
                 fontSizeDelta: fontSizeDelta,

@@ -508,7 +508,8 @@ private struct PNGExportView: View {
                         imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(UserDefaults.standard.object(forKey: "imageInterpolationQuality") as? Int ?? 1)) ?? .none,
                         liveCornerRadii: [],
                         selectedShapeIDForCornerRadius: nil,
-                        layerUpdateTrigger: 0
+                        layerUpdateTrigger: 0,
+                        isPanning: false
                     )
                 }
             }
