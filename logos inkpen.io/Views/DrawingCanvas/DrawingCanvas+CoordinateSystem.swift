@@ -113,9 +113,10 @@ extension DrawingCanvas {
 
         zoomLevel = max(0.1, min(16.0, fitZoom))
 
+        let rulerBorderCompensationY: CGFloat = document.gridSettings.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
-            x: (viewSize.width + rulerOffset) / 2.0,
-            y: (viewSize.height + rulerOffset) / 2.0
+            x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
         )
 
         let documentCenter = CGPoint(
