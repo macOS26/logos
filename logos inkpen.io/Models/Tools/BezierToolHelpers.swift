@@ -505,16 +505,48 @@ extension DrawingCanvas {
         bezierHandles = handles
         liveBezierHandles.removeAll()
         originalBezierHandles.removeAll()
-        bezierPath = shape.path
         isBezierDrawing = true
         activeBezierPointIndex = points.count - 1  // Continue from the end
         activeBezierShape = shape
         currentShapeId = shape.id
 
+        // Rebuild bezierPath from points and handles (important when reversed!)
+        rebuildBezierPath()
+
         // Remove the shape from the document while editing (will be re-added on finish)
         document.removeShapeFromUnifiedSystem(id: shape.id)
 
         selectedPoints.removeAll()
+    }
+
+    /// Rebuild bezierPath from bezierPoints and bezierHandles
+    private func rebuildBezierPath() {
+        guard !bezierPoints.isEmpty else {
+            bezierPath = nil
+            return
+        }
+
+        var elements: [PathElement] = []
+        elements.append(.move(to: bezierPoints[0]))
+
+        for i in 1..<bezierPoints.count {
+            let currentPoint = bezierPoints[i]
+            let previousHandles = bezierHandles[i - 1]
+            let currentHandles = bezierHandles[i]
+
+            let hasOutgoingHandle = previousHandles?.control2 != nil
+            let hasIncomingHandle = currentHandles?.control1 != nil
+
+            if hasOutgoingHandle || hasIncomingHandle {
+                let control1 = previousHandles?.control2 ?? VectorPoint(bezierPoints[i - 1].x, bezierPoints[i - 1].y)
+                let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
+                elements.append(.curve(to: currentPoint, control1: control1, control2: control2))
+            } else {
+                elements.append(.line(to: currentPoint))
+            }
+        }
+
+        bezierPath = VectorPath(elements: elements)
     }
 
     private func createNewPathFromPoint(_ pointPosition: VectorPoint) {
