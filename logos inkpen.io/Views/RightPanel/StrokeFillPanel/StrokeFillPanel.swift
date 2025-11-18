@@ -321,31 +321,61 @@ struct StrokeFillPanel: View {
     }
 
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
-
-
-
-
         guard !selectedPoints.isEmpty else {
-
             return
         }
 
         var layersToUpdate = Set<Int>()
 
+        // Group selected points by shape and spatial location to handle coincident points
+        // This prevents processing the same anchor location multiple times
+        var processedAnchors: [UUID: Set<Int>] = [:] // shapeID -> processed element indices
+
         for pointID in selectedPoints {
-
-
             guard var object = snapshot.objects[pointID.shapeID],
                   case .shape(var shape) = object.objectType,
                   pointID.elementIndex < shape.path.elements.count else {
-
                 continue
             }
 
+            // Skip if we've already processed this element index for this shape
+            if processedAnchors[pointID.shapeID]?.contains(pointID.elementIndex) == true {
+                continue
+            }
 
-
+            // Check if this is a coincident point (element 0 and last element at same location)
             let elementIndex = pointID.elementIndex
             var elements = shape.path.elements
+
+            guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
+
+            // Find coincident element (if any)
+            var coincidentIndex: Int? = nil
+            if elementIndex == 0 {
+                // Check if last element is at same position
+                let lastIndex = elements.count - 1
+                if lastIndex > 0, let lastPos = getAnchorPosition(from: elements[lastIndex]) {
+                    if abs(lastPos.x - anchorPosCG.x) < 0.1 && abs(lastPos.y - anchorPosCG.y) < 0.1 {
+                        coincidentIndex = lastIndex
+                    }
+                }
+            } else {
+                // Check if element 0 is at same position
+                if let firstPos = getAnchorPosition(from: elements[0]) {
+                    if abs(firstPos.x - anchorPosCG.x) < 0.1 && abs(firstPos.y - anchorPosCG.y) < 0.1 {
+                        coincidentIndex = 0
+                    }
+                }
+            }
+
+            // Mark both this element and its coincident partner as processed
+            if processedAnchors[pointID.shapeID] == nil {
+                processedAnchors[pointID.shapeID] = []
+            }
+            processedAnchors[pointID.shapeID]?.insert(elementIndex)
+            if let coincident = coincidentIndex {
+                processedAnchors[pointID.shapeID]?.insert(coincident)
+            }
 
 
 
@@ -406,205 +436,100 @@ struct StrokeFillPanel: View {
                 }
 
             case .cusp:
-
-                // Create handles at 90° angle from each other, pointing OUTWARD from corner
+                // For cusp: create 2 independent handles at this anchor
                 let handleLength: Double = 40.0
 
-                // Calculate the bisector angle between incoming and outgoing paths
-                var bisectorAngle: Double = .pi * 0.75  // 135° default
+                // Determine if this is a coincident point
+                let isCoincidentPoint = coincidentIndex != nil
 
-                // Get previous and next points
+                // Get previous and next anchor positions for angle calculation
                 var prevPos: CGPoint?
                 var nextPos: CGPoint?
 
-                if elementIndex > 0 {
-                    switch elements[elementIndex - 1] {
-                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        prevPos = to.cgPoint
-                    case .close:
-                        break
+                if isCoincidentPoint {
+                    // For coincident point:
+                    // - prev = second-to-last element's position
+                    // - next = element 1's position
+                    let lastIndex = elements.count - 1
+                    if lastIndex > 1 {
+                        prevPos = getAnchorPosition(from: elements[lastIndex - 1])
                     }
-                } else if elementIndex == 0 {
-                    // For element 0, look at the last element for the previous position
                     if elements.count > 1 {
-                        let lastIndex = elements.count - 1
-                        switch elements[lastIndex] {
-                        case .curve(_, _, _):
-                            // For closing curve, the previous position is where it comes from
-                            if lastIndex > 0, case .line(let to) = elements[lastIndex - 1] {
-                                prevPos = to.cgPoint
-                            } else if lastIndex > 0, case .curve(let to, _, _) = elements[lastIndex - 1] {
-                                prevPos = to.cgPoint
-                            }
-                        case .close:
-                            // For .close, look at the element before it
-                            if lastIndex > 0 {
-                                switch elements[lastIndex - 1] {
-                                case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                                    prevPos = to.cgPoint
-                                default:
-                                    break
-                                }
-                            }
-                        default:
-                            break
-                        }
+                        nextPos = getAnchorPosition(from: elements[1])
+                    }
+                } else if elementIndex > 0 {
+                    prevPos = getAnchorPosition(from: elements[elementIndex - 1])
+                    if elementIndex + 1 < elements.count {
+                        nextPos = getAnchorPosition(from: elements[elementIndex + 1])
                     }
                 }
 
-                if elementIndex + 1 < elements.count {
-                    switch elements[elementIndex + 1] {
-                    case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        nextPos = to.cgPoint
-                    case .close:
-                        if case .move(let firstTo) = elements[0] {
-                            nextPos = CGPoint(x: firstTo.x, y: firstTo.y)
-                        }
-                    default:
-                        break
-                    }
-                } else if elementIndex == elements.count - 1 {
-                    // For the last element, if it curves back to first, look at element 1 for next
-                    if elements.count > 1 {
-                        switch elements[1] {
-                        case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                            nextPos = to.cgPoint
-                        default:
-                            break
-                        }
-                    }
-                }
-
-                // Declare angle variables
-                var incomingAngle: Double = 0
+                // Calculate angles - handles point away from path direction
+                var incomingAngle: Double = .pi
                 var outgoingAngle: Double = 0
 
-                // Special case for top-left corner of rectangle when element 0 or last
-                if shape.geometricType == .rectangle && (elementIndex == 0 || elementIndex == elements.count - 1) {
-                    // For rectangles, element 0 and last element (if curve back to start) are the top-left corner
-                    // Since they're coincident points, just check if this is one of them
-                    if case .move(let firstPoint) = elements[0] {
-                        let isTopLeft = abs(anchorPosCG.x - firstPoint.x) < 0.1 && abs(anchorPosCG.y - firstPoint.y) < 0.1
-
-                        if isTopLeft {
-                            // Top-left corner: handles LEFT and UP (swapped to fix twist)
-                            incomingAngle = .pi  // LEFT
-                            outgoingAngle = 270 * .pi / 180  // UP
-
-                        }
-                    }
-                }
-                // Calculate bisector angle from prev and next positions
-                else if let prev = prevPos, let next = nextPos {
-                    let angleToPrev = atan2(prev.y - anchorPosCG.y, prev.x - anchorPosCG.x)
-                    let angleToNext = atan2(next.y - anchorPosCG.y, next.x - anchorPosCG.x)
-
-
-
-
-                    // For rectangles, simply determine corner and set handles outward
-                    // Top-right: prev=180° (from left), next=90° (to down)
-                    if abs(angleToPrev - .pi) < 0.1 && abs(angleToNext - .pi/2) < 0.1 {
-                        // Handles: UP and RIGHT
-                        incomingAngle = 270 * .pi / 180  // UP (-90° or 270°)
-                        outgoingAngle = 0  // RIGHT
-
-                    }
-                    // Bottom-right: prev=-90° (from up), next=180° (to left)
-                    else if abs(angleToPrev + .pi/2) < 0.1 && abs(angleToNext - .pi) < 0.1 {
-                        // Handles: RIGHT and DOWN (swapped to fix twist)
-                        incomingAngle = 0  // RIGHT
-                        outgoingAngle = 90 * .pi / 180  // DOWN
-
-                    }
-                    // Bottom-left: prev=0° (from right), next=-90° (to up)
-                    else if abs(angleToPrev) < 0.1 && abs(angleToNext + .pi/2) < 0.1 {
-                        // Handles: DOWN and LEFT
-                        incomingAngle = 90 * .pi / 180  // DOWN
-                        outgoingAngle = .pi  // LEFT
-
-                    }
-                    // Top-left: prev=90° (from down), next=-180° or 180° (to right)
-                    else if abs(angleToPrev - .pi/2) < 0.1 && (abs(angleToNext - .pi) < 0.1 || abs(angleToNext + .pi) < 0.1) {
-                        // Handles: UP and LEFT
-                        incomingAngle = 270 * .pi / 180  // UP
-                        outgoingAngle = .pi  // LEFT
-
-                    }
-                    else {
-                        // Non-rectangle shape - use bisector method
-
-                        var avgAngle = (angleToPrev + angleToNext) / 2.0
-                        var diff = angleToNext - angleToPrev
-                        if diff > .pi { diff -= 2.0 * .pi }
-                        if diff < -.pi { diff += 2.0 * .pi }
-
-                        if diff < 0 {
-                            avgAngle += .pi
-                        }
-                        bisectorAngle = avgAngle
-                        incomingAngle = bisectorAngle - .pi / 4
-                        outgoingAngle = bisectorAngle + .pi / 4
-                    }
+                if let prev = prevPos, let next = nextPos {
+                    incomingAngle = atan2(anchorPosCG.y - prev.y, anchorPosCG.x - prev.x)
+                    outgoingAngle = atan2(anchorPosCG.y - next.y, anchorPosCG.x - next.x)
+                } else if let prev = prevPos {
+                    incomingAngle = atan2(anchorPosCG.y - prev.y, anchorPosCG.x - prev.x)
+                    outgoingAngle = incomingAngle + .pi / 2
+                } else if let next = nextPos {
+                    outgoingAngle = atan2(anchorPosCG.y - next.y, anchorPosCG.x - next.x)
+                    incomingAngle = outgoingAngle - .pi / 2
                 }
 
 
 
 
 
-                // Create new control points
-                // control2 = incoming handle TO this anchor (extends in direction of angle)
-                let newControl2 = VectorPoint(
-                    anchorPos.x + cos(incomingAngle) * handleLength,
-                    anchorPos.y + sin(incomingAngle) * handleLength
+                // Create handle positions
+                let incomingHandle = VectorPoint(
+                    anchorPosCG.x + cos(incomingAngle) * handleLength,
+                    anchorPosCG.y + sin(incomingAngle) * handleLength
+                )
+                let outgoingHandle = VectorPoint(
+                    anchorPosCG.x + cos(outgoingAngle) * handleLength,
+                    anchorPosCG.y + sin(outgoingAngle) * handleLength
                 )
 
-                // Update THIS element's control2 (incoming to this anchor)
-                if case .curve(_, let control1, _) = elements[elementIndex] {
-                    // Keep control1 as-is (it belongs to PREVIOUS anchor)
-                    elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: newControl2)
-
-
-                } else if elementIndex == 0, case .move(_) = elements[elementIndex] {
-                    // Special case: For element 0 (.move), we need to update the LAST element's control2
-                    // if it's a curve that goes back to the first point
+                if isCoincidentPoint {
+                    // For coincident points, only set 2 handles total:
+                    // - Incoming handle = control2 of last element
+                    // - Outgoing handle = control1 of element 1
                     let lastIndex = elements.count - 1
-                    if lastIndex > 0 {
-                        if case .curve(let to, let control1, _) = elements[lastIndex] {
-                            // Update the last element's control2 (incoming to element 0)
-                            elements[lastIndex] = .curve(to: to, control1: control1, control2: newControl2)
 
+                    // Update incoming handle (control2 of last element)
+                    if case .curve(let to, let control1, _) = elements[lastIndex] {
+                        elements[lastIndex] = .curve(to: to, control1: control1, control2: incomingHandle)
+                    }
 
+                    // Update outgoing handle (control1 of element 1)
+                    if elements.count > 1 {
+                        if case .curve(let to, _, let control2) = elements[1] {
+                            elements[1] = .curve(to: to, control1: outgoingHandle, control2: control2)
+                        } else if case .line(let to) = elements[1] {
+                            elements[1] = .curve(to: to, control1: outgoingHandle, control2: to)
                         }
                     }
-                }
+                } else {
+                    // Regular (non-coincident) point
+                    // Update incoming handle (control2 of this element)
+                    if case .curve(_, let control1, _) = elements[elementIndex] {
+                        elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: incomingHandle)
+                    }
 
-                // Update NEXT element's control1 (outgoing from this anchor)
-                if elementIndex + 1 < elements.count {
-                    let newControl1 = VectorPoint(
-                        anchorPos.x + cos(outgoingAngle) * handleLength,
-                        anchorPos.y + sin(outgoingAngle) * handleLength
-                    )
-
-                    if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
-                        // Update next element's control1 (outgoing from THIS anchor)
-                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
-
-
-                    } else if case .line(let to) = elements[elementIndex + 1] {
-                        // Convert next line to curve with outgoing handle
-                        elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: to)
-
-
-                    } else if case .close = elements[elementIndex + 1] {
-                        // Replace .close with .curve that goes back to first point
-                        // Get first point from element 0
-                        if case .move(let firstPoint) = elements[0] {
-                            // Remove the .close and add a .curve back to start
-                            elements.remove(at: elementIndex + 1)
-                            elements.append(.curve(to: firstPoint, control1: newControl1, control2: firstPoint))
-
-
+                    // Update outgoing handle (control1 of next element)
+                    if elementIndex + 1 < elements.count {
+                        if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
+                            elements[elementIndex + 1] = .curve(to: to, control1: outgoingHandle, control2: control2)
+                        } else if case .line(let to) = elements[elementIndex + 1] {
+                            elements[elementIndex + 1] = .curve(to: to, control1: outgoingHandle, control2: to)
+                        } else if case .close = elements[elementIndex + 1] {
+                            if case .move(let firstPoint) = elements[0] {
+                                elements.remove(at: elementIndex + 1)
+                                elements.append(.curve(to: firstPoint, control1: outgoingHandle, control2: firstPoint))
+                            }
                         }
                     }
                 }
