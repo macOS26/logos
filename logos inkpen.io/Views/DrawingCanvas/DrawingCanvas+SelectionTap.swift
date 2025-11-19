@@ -210,12 +210,18 @@ extension DrawingCanvas {
         print("    🔎 performShapeHitTest at \(location), shape bounds=\(shape.bounds), transform=\(shape.transform)")
 
         if shape.typography != nil {
-            let textBounds = CGRect(
-                x: shape.transform.tx,
-                y: shape.transform.ty,
-                width: shape.bounds.width,
-                height: shape.bounds.height
-            )
+            let textBounds: CGRect
+            if let position = shape.textPosition, let size = shape.areaSize {
+                // textPosition is the world position - do NOT apply transform
+                textBounds = CGRect(origin: position, size: size)
+            } else {
+                textBounds = CGRect(
+                    x: shape.transform.tx,
+                    y: shape.transform.ty,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
+            }
             let isHit = textBounds.contains(location)
             return isHit
         }

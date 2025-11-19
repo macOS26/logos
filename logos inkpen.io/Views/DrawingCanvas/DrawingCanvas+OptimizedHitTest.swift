@@ -23,14 +23,19 @@ extension DrawingCanvas {
             // Perform path-only hit test (no bounding box)
             switch object.objectType {
             case .text(let textShape):
-                // Text hit test using transform position
-                let textPos = CGPoint(x: textShape.transform.tx, y: textShape.transform.ty)
-                let textBounds = CGRect(
-                    x: textPos.x,
-                    y: textPos.y,
-                    width: textShape.bounds.width,
-                    height: textShape.bounds.height
-                )
+                // Text hit test using textPosition and areaSize
+                // textPosition is the world position - do NOT apply transform
+                let textBounds: CGRect
+                if let position = textShape.textPosition, let size = textShape.areaSize {
+                    textBounds = CGRect(origin: position, size: size)
+                } else {
+                    textBounds = CGRect(
+                        x: textShape.transform.tx,
+                        y: textShape.transform.ty,
+                        width: textShape.bounds.width,
+                        height: textShape.bounds.height
+                    )
+                }
                 return textBounds.contains(point)
 
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape),
@@ -84,14 +89,19 @@ extension DrawingCanvas {
             // Perform hit test based on object type
             switch object.objectType {
             case .text(let textShape):
-                // Text hit test using transform position
-                let textPos = CGPoint(x: textShape.transform.tx, y: textShape.transform.ty)
-                let textBounds = CGRect(
-                    x: textPos.x,
-                    y: textPos.y,
-                    width: textShape.bounds.width,
-                    height: textShape.bounds.height
-                )
+                // Text hit test using textPosition and areaSize
+                // textPosition is the world position - do NOT apply transform
+                let textBounds: CGRect
+                if let position = textShape.textPosition, let size = textShape.areaSize {
+                    textBounds = CGRect(origin: position, size: size)
+                } else {
+                    textBounds = CGRect(
+                        x: textShape.transform.tx,
+                        y: textShape.transform.ty,
+                        width: textShape.bounds.width,
+                        height: textShape.bounds.height
+                    )
+                }
                 return textBounds.contains(point)
 
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape),

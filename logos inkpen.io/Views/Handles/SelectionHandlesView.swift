@@ -201,7 +201,24 @@ struct SelectionHandlesView: View {
             guard let object = document.snapshot.objects[objectID] else { continue }
 
             switch object.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .text(let shape):
+            case .text(let shape):
+                // Text uses textPosition and areaSize for bounds
+                // textPosition is the world position - do NOT apply transform
+                let textBounds: CGRect
+                if let position = shape.textPosition, let size = shape.areaSize {
+                    textBounds = CGRect(origin: position, size: size)
+                } else {
+                    textBounds = shape.bounds.applying(shape.transform)
+                }
+
+                if let existing = combinedBounds {
+                    combinedBounds = existing.union(textBounds)
+                } else {
+                    combinedBounds = textBounds
+                }
+                continue
+
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 var baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
                 // Apply stroke expansion if preference is enabled and shape has stroke

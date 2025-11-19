@@ -80,13 +80,19 @@ struct SpatialIndex {
                     let bounds: CGRect
                     switch object.objectType {
                     case .text(let shape):
-                        // Text uses transform for position like other shapes
-                        bounds = CGRect(
-                            x: shape.transform.tx,
-                            y: shape.transform.ty,
-                            width: shape.bounds.width,
-                            height: shape.bounds.height
-                        )
+                        // Text uses textPosition and areaSize for bounds
+                        // textPosition is the world position - do NOT apply transform
+                        if let position = shape.textPosition, let size = shape.areaSize {
+                            bounds = CGRect(origin: position, size: size)
+                        } else {
+                            // Fallback to transform-based position
+                            bounds = CGRect(
+                                x: shape.transform.tx,
+                                y: shape.transform.ty,
+                                width: shape.bounds.width,
+                                height: shape.bounds.height
+                            )
+                        }
                     case .shape(let shape),
                          .image(let shape),
                          .warp(let shape),
@@ -190,13 +196,19 @@ struct SpatialIndex {
                     let bounds: CGRect
                     switch object.objectType {
                     case .text(let shape):
-                        // Text uses transform for position like other shapes
-                        bounds = CGRect(
-                            x: shape.transform.tx,
-                            y: shape.transform.ty,
-                            width: shape.bounds.width,
-                            height: shape.bounds.height
-                        )
+                        // Text uses textPosition and areaSize for bounds
+                        // textPosition is the world position - do NOT apply transform
+                        if let position = shape.textPosition, let size = shape.areaSize {
+                            bounds = CGRect(origin: position, size: size)
+                        } else {
+                            // Fallback to transform-based position
+                            bounds = CGRect(
+                                x: shape.transform.tx,
+                                y: shape.transform.ty,
+                                width: shape.bounds.width,
+                                height: shape.bounds.height
+                            )
+                        }
                     case .shape(let shape),
                          .image(let shape),
                          .warp(let shape),

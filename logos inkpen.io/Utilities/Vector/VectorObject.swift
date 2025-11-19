@@ -136,14 +136,15 @@ extension VectorObject: Codable {
         var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
 
         // MIGRATION: Fix old text objects that have textPosition instead of transform
+        // Keep textPosition intact - it's used by spatial index and hit testing
         if shape.typography != nil, let textPosition = shape.textPosition {
             if shape.transform.tx == 0 && shape.transform.ty == 0 {
-                // Old format - migrate textPosition to transform
+                // Old format - copy textPosition to transform for compatibility
                 var newTransform = shape.transform
                 newTransform.tx = textPosition.x
                 newTransform.ty = textPosition.y
                 shape.transform = newTransform
-                shape.textPosition = nil
+                // DO NOT clear textPosition - spatial index needs it
             }
         }
 
