@@ -50,6 +50,56 @@ extension DrawingCanvas {
         }
     }
 
+    /// Direct selection hit test - finds individual paths/text inside groups
+    /// Returns (shapeID, isGroupChild) tuple
+    internal func findShapeForDirectSelection(_ location: CGPoint) -> (UUID, Bool)? {
+        let validatedLocation = validateAndCorrectLocation(location)
+
+        // First check inside groups for child paths and text
+        for object in document.snapshot.objects.values {
+            // Check if layer is locked
+            let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
+            if layer?.isLocked == true || !layer!.isVisible { continue }
+
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                // Check each child shape in the group
+                for childShape in groupShape.groupedShapes.reversed() {
+                    if !childShape.isVisible || childShape.isLocked { continue }
+
+                    // Check if it's text
+                    if childShape.typography != nil {
+                        let textBounds: CGRect
+                        if let position = childShape.textPosition, let size = childShape.areaSize {
+                            textBounds = CGRect(origin: position, size: size)
+                        } else {
+                            textBounds = CGRect(
+                                x: childShape.transform.tx,
+                                y: childShape.transform.ty,
+                                width: childShape.bounds.width,
+                                height: childShape.bounds.height
+                            )
+                        }
+                        if textBounds.contains(validatedLocation) {
+                            return (childShape.id, true)
+                        }
+                    } else if performPathOnlyHitTest(shape: childShape, at: validatedLocation) {
+                        return (childShape.id, true)
+                    }
+                }
+            default:
+                continue
+            }
+        }
+
+        // Then check top-level objects
+        if let hitObject = findObjectWithPathHitTest(location) {
+            return (hitObject.id, false)
+        }
+
+        return nil
+    }
+
     /// Optimized hit testing using spatial index for O(1) performance
     internal func findObjectAtLocationOptimized(_ location: CGPoint) -> VectorObject? {
         let validatedLocation = validateAndCorrectLocation(location)

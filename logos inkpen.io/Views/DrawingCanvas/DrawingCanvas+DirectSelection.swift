@@ -5,32 +5,39 @@ extension DrawingCanvas {
 
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
         for shapeID in selectedObjectIDs {
-            if let object = document.snapshot.objects[shapeID],
-               case .shape(let shape) = object.objectType {
-                // Use O(1) layer index lookup
-                let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
+            guard let object = document.snapshot.objects[shapeID] else { continue }
 
-                if layer?.isLocked == true || shape.isLocked {
-                    selectedObjectIDs.removeAll()
-                    selectedPoints.removeAll()
-                    selectedHandles.removeAll()
-                    syncDirectSelectionWithDocument()
+            // Use O(1) layer index lookup
+            let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
+            let shape = object.shape
+
+            if layer?.isLocked == true || shape.isLocked {
+                selectedObjectIDs.removeAll()
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+                syncDirectSelectionWithDocument()
+                return true
+            }
+
+            switch object.objectType {
+            case .shape(let shape):
+                if checkAnchorPointsInShape(shape, at: location, tolerance: tolerance) {
                     return true
                 }
 
-                    if shape.isGroupContainer {
-                        for groupedShape in shape.groupedShapes {
-                            if !groupedShape.isVisible { continue }
+            case .group(let groupShape), .clipGroup(let groupShape):
+                // Check anchor points in grouped shapes
+                for groupedShape in groupShape.groupedShapes {
+                    if !groupedShape.isVisible { continue }
 
-                            if checkAnchorPointsInShape(groupedShape, at: location, tolerance: tolerance) {
-                                return true
-                            }
-                        }
-                    } else {
-                        if checkAnchorPointsInShape(shape, at: location, tolerance: tolerance) {
-                            return true
-                        }
+                    if checkAnchorPointsInShape(groupedShape, at: location, tolerance: tolerance) {
+                        return true
                     }
+                }
+
+            default:
+                // Text, image, warp, clipMask don't have editable anchor points
+                continue
             }
         }
 
@@ -187,16 +194,18 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Use path-only hit test for direct selection (not bounding box)
-        guard let hitObject = findObjectWithPathHitTest(location) else {
+        // Use direct selection hit test that finds paths inside groups
+        guard let (shapeID, _) = findShapeForDirectSelection(location) else {
             return false
         }
 
-        let shape = hitObject.shape
+        // Find the shape to check if locked
+        guard let shape = document.findShapeIncludingGroups(by: shapeID) else {
+            return false
+        }
 
-        // Check if locked using O(1) index lookup
-        let layer = hitObject.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[hitObject.layerIndex] : nil
-        if layer?.isLocked == true || shape.isLocked {
+        // Check if locked
+        if shape.isLocked {
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
@@ -208,16 +217,16 @@ extension DrawingCanvas {
 
         if isShiftCurrentlyPressed {
             // Shift-select: toggle shape selection
-            if selectedObjectIDs.contains(shape.id) {
-                selectedObjectIDs.remove(shape.id)
+            if selectedObjectIDs.contains(shapeID) {
+                selectedObjectIDs.remove(shapeID)
             } else {
-                selectedObjectIDs.insert(shape.id)
+                selectedObjectIDs.insert(shapeID)
             }
             // Keep existing points/handles when shift-selecting shapes
         } else {
             // Normal select: clear and select only this shape
             selectedObjectIDs.removeAll()
-            selectedObjectIDs.insert(shape.id)
+            selectedObjectIDs.insert(shapeID)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             visibleHandles.removeAll()

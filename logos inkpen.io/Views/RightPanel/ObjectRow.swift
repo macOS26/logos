@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
@@ -208,6 +209,7 @@ struct ObjectRow: View {
                             objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
                         )
                         document.snapshot.objects[objectId] = updatedObject
+                        document.objectWillChange.send()
                         document.changeNotifier.notifyObjectChanged(objectId)
                         document.triggerLayerUpdate(for: layerIndex)
                     }
@@ -246,6 +248,7 @@ struct ObjectRow: View {
                             objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
                         )
                         document.snapshot.objects[objectId] = updatedObject
+                        document.objectWillChange.send()
                         document.changeNotifier.notifyObjectChanged(objectId)
                         document.triggerLayerUpdate(for: layerIndex)
                     }

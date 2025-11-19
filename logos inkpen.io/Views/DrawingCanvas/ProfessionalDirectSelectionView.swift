@@ -38,22 +38,41 @@ struct ProfessionalDirectSelectionView: View {
 
             // Draw outlines for selected shapes
             for objectID in selectedObjectIDs {
-                guard let object = document.snapshot.objects[objectID] else { continue }
-
-                switch object.objectType {
-                case .shape(let shape):
-                    drawOutline(shape, context: &context, zoom: zoom)
-                case .text(let shape):
-                    drawTextOutline(shape, context: &context, zoom: zoom)
-                default:
-                    break
+                // First check top-level objects
+                if let object = document.snapshot.objects[objectID] {
+                    switch object.objectType {
+                    case .shape(let shape):
+                        drawOutline(shape, context: &context, zoom: zoom)
+                    case .text(let shape):
+                        drawTextOutline(shape, context: &context, zoom: zoom)
+                    case .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        // Non-editable objects get red outline
+                        drawNonEditableOutline(shape, context: &context, zoom: zoom)
+                    }
+                } else if let childShape = document.findShapeIncludingGroups(by: objectID) {
+                    // It's a child shape inside a group
+                    if childShape.typography != nil {
+                        // Text child - draw text outline
+                        drawTextOutline(childShape, context: &context, zoom: zoom)
+                    } else {
+                        // Path child - draw editable outline
+                        drawOutline(childShape, context: &context, zoom: zoom)
+                    }
                 }
             }
 
             // Draw ALL anchor points AFTER outlines (so blue line shows through)
             for objectID in selectedObjectIDs {
-                guard let object = document.snapshot.objects[objectID],
-                      case .shape(let shape) = object.objectType else { continue }
+                // Find shape - either top-level or inside a group
+                let shape: VectorShape?
+                if let object = document.snapshot.objects[objectID],
+                   case .shape(let s) = object.objectType {
+                    shape = s
+                } else {
+                    shape = document.findShapeIncludingGroups(by: objectID)
+                }
+
+                guard let shape = shape else { continue }
 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     if let point = extractPoint(element) {
@@ -85,8 +104,16 @@ struct ProfessionalDirectSelectionView: View {
 
             // Draw selected handles
             for handleID in selectedHandles {
-                guard let object = document.snapshot.objects[handleID.shapeID],
-                      case .shape(let shape) = object.objectType,
+                // Find shape - either top-level or inside a group
+                let shape: VectorShape?
+                if let object = document.snapshot.objects[handleID.shapeID],
+                   case .shape(let s) = object.objectType {
+                    shape = s
+                } else {
+                    shape = document.findShapeIncludingGroups(by: handleID.shapeID)
+                }
+
+                guard let shape = shape,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
                 // Skip handles for corner anchor points
@@ -108,8 +135,16 @@ struct ProfessionalDirectSelectionView: View {
 
             // Draw visible handles
             for handleID in visibleHandles where !selectedHandles.contains(handleID) {
-                guard let object = document.snapshot.objects[handleID.shapeID],
-                      case .shape(let shape) = object.objectType,
+                // Find shape - either top-level or inside a group
+                let shape: VectorShape?
+                if let object = document.snapshot.objects[handleID.shapeID],
+                   case .shape(let s) = object.objectType {
+                    shape = s
+                } else {
+                    shape = document.findShapeIncludingGroups(by: handleID.shapeID)
+                }
+
+                guard let shape = shape,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
                 // Skip handles for corner anchor points
@@ -261,6 +296,22 @@ struct ProfessionalDirectSelectionView: View {
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
         ctx.concatenate(shapeTransform)
         ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
+    }
+
+    private func drawNonEditableOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
+        // Non-editable objects (images, groups, warps, etc.) get red bounding box
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+
+        // Create rectangle path in local coordinates
+        var outlinePath = Path()
+        outlinePath.addRect(bounds)
+
+        // Apply shape transform and drag preview offset
+        var ctx = context
+        var shapeTransform = shape.transform
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        ctx.concatenate(shapeTransform)
+        ctx.stroke(outlinePath, with: .color(.red), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {

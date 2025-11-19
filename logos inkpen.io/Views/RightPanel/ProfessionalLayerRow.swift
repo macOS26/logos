@@ -381,6 +381,10 @@ struct ProfessionalLayerRow: View {
             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
         case .group(let shape),
              .clipGroup(let shape):
+            // Create state hash for group and children to force refresh on visibility/lock changes
+            let stateHash = shape.groupedShapes.map {
+                ($0.isVisible ? "v" : "h") + ($0.isLocked ? "l" : "u")
+            }.joined() + (shape.isVisible ? "v" : "h") + (shape.isLocked ? "l" : "u")
             ObjectRow(
                 objectType: .group,
                 objectId: shape.id,
@@ -394,6 +398,7 @@ struct ProfessionalLayerRow: View {
                 groupedShapes: shape.groupedShapes,
                 showBottomIndicator: isLast
             )
+            .id("\(shape.id)-\(stateHash)")
             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
         case .shape(let shape),
              .image(let shape),

@@ -50,9 +50,10 @@ class GroupCommand: BaseCommand {
         // print("🟣 GroupCommand.execute: addedObjectIDs=\(addedObjectIDs)")
         // print("🟣 GroupCommand.execute: BEFORE layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
-        // Find the index in layer.objectIDs for insertion
-        let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
-            ?? document.snapshot.layers[layerIndex].objectIDs.count
+        // Find the index in layer.objectIDs for insertion BEFORE any removal
+        let originalObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+        let insertionIndex = originalObjectIDs.firstIndex { removedObjectIDs.contains($0) }
+            ?? originalObjectIDs.count
 
         // Remove old objects from snapshot.objects (for pathfinder operations like combine/union)
         for objectID in removedObjectIDs {
@@ -62,6 +63,19 @@ class GroupCommand: BaseCommand {
         // Remove from layer.objectIDs
         var updatedObjectIDs = document.snapshot.layers[layerIndex].objectIDs
         updatedObjectIDs.removeAll { removedObjectIDs.contains($0) }
+
+        // Also remove any addedObjectIDs that might already exist (prevent duplicates)
+        updatedObjectIDs.removeAll { addedObjectIDs.contains($0) }
+
+        // Calculate adjusted insertion index after removals
+        var adjustedInsertionIndex = insertionIndex
+        for id in removedObjectIDs {
+            if let idx = originalObjectIDs.firstIndex(of: id), idx < insertionIndex {
+                adjustedInsertionIndex -= 1
+            }
+        }
+        // Clamp to valid range
+        adjustedInsertionIndex = min(adjustedInsertionIndex, updatedObjectIDs.count)
 
         // print("🟣 GroupCommand.execute: AFTER REMOVAL layer.objectIDs=\(document.snapshot.layers[layerIndex].objectIDs)")
 
@@ -90,7 +104,8 @@ class GroupCommand: BaseCommand {
                 }
             }
 
-            updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
+            let safeIndex = min(adjustedInsertionIndex + offset, updatedObjectIDs.count)
+            updatedObjectIDs.insert(objectID, at: safeIndex)
 
             // Log group contents
             // if shape.isGroup || shape.isClippingGroup {
@@ -149,6 +164,9 @@ class GroupCommand: BaseCommand {
         // Remove group from layer.objectIDs
         var updatedObjectIDs = document.snapshot.layers[layerIndex].objectIDs
         updatedObjectIDs.removeAll { addedObjectIDs.contains($0) }
+
+        // Also remove any removedObjectIDs that might already exist (prevent duplicates)
+        updatedObjectIDs.removeAll { removedObjectIDs.contains($0) }
 
         // Restore removed shapes back to snapshot.objects (for combine/union operations)
         for (objectID, shape) in removedShapes {

@@ -308,6 +308,28 @@ extension VectorDocument {
         }
     }
 
+    /// Finds a shape by ID, including children inside groups
+    func findShapeIncludingGroups(by id: UUID) -> VectorShape? {
+        // First check top-level objects
+        if let object = snapshot.objects[id] {
+            return object.shape
+        }
+
+        // Search inside groups
+        for object in snapshot.objects.values {
+            switch object.objectType {
+            case .group(let groupShape), .clipGroup(let groupShape):
+                if let childShape = groupShape.groupedShapes.first(where: { $0.id == id }) {
+                    return childShape
+                }
+            default:
+                continue
+            }
+        }
+
+        return nil
+    }
+
     func findText(by id: UUID) -> VectorText? {
         // O(1) lookup in snapshot.objects
         if let object = snapshot.objects[id] {

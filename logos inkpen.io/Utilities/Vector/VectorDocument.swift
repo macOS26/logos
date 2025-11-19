@@ -219,14 +219,17 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     private func setupViewStateForwarding() {
+        // Forward viewState changes - needed for layers panel to update on visibility toggles
         viewState.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellables)
 
+        // Forward changeNotifier for panels that use .onChange(of: changeToken)
         changeNotifier.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellables)
 
+        // Forward fontManager changes (relatively rare)
         fontManager.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellables)
@@ -258,8 +261,18 @@ final class VectorDocument: ObservableObject, Codable {
     func updateLayerObjectIDs(layerIndex: Int, newObjectIDs: [UUID]) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
+        // Deduplicate objectIDs while preserving order
+        var seen = Set<UUID>()
+        var dedupedObjectIDs: [UUID] = []
+        for id in newObjectIDs {
+            if !seen.contains(id) {
+                seen.insert(id)
+                dedupedObjectIDs.append(id)
+            }
+        }
+
         var layer = snapshot.layers[layerIndex]
-        layer.objectIDs = newObjectIDs
+        layer.objectIDs = dedupedObjectIDs
         snapshot.layers[layerIndex] = layer
 
         triggerLayerUpdate(for: layerIndex)

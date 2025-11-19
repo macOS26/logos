@@ -20,7 +20,8 @@ struct TransformBoxHandles: View {
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
-    @ObservedObject private var settings = ApplicationSettings.shared
+    // Access settings directly instead of @ObservedObject to avoid cross-document redraws
+    private var settings: ApplicationSettings { ApplicationSettings.shared }
 
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
