@@ -15,43 +15,31 @@ extension VectorDocument {
             }
         }
 
+        guard !selectedWarpObjects.isEmpty else { return }
+
         var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
+        var layerIndices: [UUID: Int] = [:]
+
         for obj in selectedWarpObjects {
             if case .warp(let shape) = obj.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
-            }
-        }
+                layerIndices[shape.id] = obj.layerIndex
 
-        for obj in selectedWarpObjects {
-            if case .warp(let shape) = obj.objectType,
-               let layerIndex = obj.layerIndex < snapshot.layers.count ? obj.layerIndex : nil {
-               let shapes = getShapesForLayer(layerIndex)
-               if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-
+                // Create new shape and store it
                 if let unwrappedShape = shape.unwrapWarpObject() {
-                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: unwrappedShape)
-
-                    viewState.selectedObjectIDs.remove(shape.id)
-                    viewState.selectedObjectIDs.insert(unwrappedShape.id)
-
+                    newShapes[shape.id] = unwrappedShape
                 }
-               }
-            }
-        }
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for id in affectedIDs {
-            if let shape = findShape(by: id) {
-                newShapes[id] = shape
             }
         }
 
         let command = WarpObjectCommand(
             affectedObjectIDs: affectedIDs,
             oldShapes: oldShapes,
-            newShapes: newShapes
+            newShapes: newShapes,
+            layerIndices: layerIndices
         )
         commandManager.execute(command)
     }
@@ -68,43 +56,31 @@ extension VectorDocument {
             }
         }
 
+        guard !selectedWarpObjects.isEmpty else { return }
+
         var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
+        var layerIndices: [UUID: Int] = [:]
+
         for obj in selectedWarpObjects {
             if case .warp(let shape) = obj.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
-            }
-        }
+                layerIndices[shape.id] = obj.layerIndex
 
-        for obj in selectedWarpObjects {
-            if case .warp(let shape) = obj.objectType,
-               let layerIndex = obj.layerIndex < snapshot.layers.count ? obj.layerIndex : nil {
-               let shapes = getShapesForLayer(layerIndex)
-               if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-
+                // Create new shape and store it
                 if let expandedShape = shape.expandWarpObject() {
-                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: expandedShape)
-
-                    viewState.selectedObjectIDs.remove(shape.id)
-                    viewState.selectedObjectIDs.insert(expandedShape.id)
-
+                    newShapes[shape.id] = expandedShape
                 }
-               }
-            }
-        }
-
-        var newShapes: [UUID: VectorShape] = [:]
-        for id in affectedIDs {
-            if let shape = findShape(by: id) {
-                newShapes[id] = shape
             }
         }
 
         let command = WarpObjectCommand(
             affectedObjectIDs: affectedIDs,
             oldShapes: oldShapes,
-            newShapes: newShapes
+            newShapes: newShapes,
+            layerIndices: layerIndices
         )
         commandManager.execute(command)
     }

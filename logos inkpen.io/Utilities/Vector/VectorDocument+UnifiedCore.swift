@@ -35,31 +35,38 @@ extension VectorDocument {
             switch object.objectType {
             case .text(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .shape(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .image(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .image(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .warp(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .warp(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .group(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .group(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .clipGroup(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipGroup(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
 
             case .clipMask(var shape):
                 update(&shape)
-                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipMask(shape))
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
             }
 
             // Update snapshot ONLY
