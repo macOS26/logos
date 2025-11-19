@@ -227,7 +227,7 @@ struct ShearHandles: View {
             }
             cachedPreviewPath = path
         }
-       // .id("shear-handles-\(pointsRefreshTrigger)")
+       .id("shear-handles-\(pointsRefreshTrigger)")
     }
 
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {

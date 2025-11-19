@@ -115,7 +115,7 @@ struct FontPickerView: View {
                     Text(cleanVariantName(variant))
                         .font(getFontForVariant(family: currentFamily, variantName: variant))
                         .tag(variant)
-                        //.id("\(currentFamily)-\(variant)")
+                        .id("\(currentFamily)-\(variant)")
                 }
             }
             .fontPickerStyle()
