@@ -84,16 +84,32 @@ struct LayersPanel: View {
     
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
-        
+
+        // Helper function to recursively add nested group children
+        func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID) {
+            guard childShape.isGroupContainer else { return }
+
+            let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
+            guard isChildGroupExpanded else { return }
+
+            let nestedMembers = document.resolveGroupMembers(childShape)
+            for nestedChild in nestedMembers.reversed() {
+                rows.append(.childObject(layerIndex: layerIndex, parentObjectId: childShape.id, childShapeId: nestedChild.id))
+
+                // Recursively handle deeper nesting
+                addNestedGroupChildren(childShape: nestedChild, layerIndex: layerIndex, parentObjectId: nestedChild.id)
+            }
+        }
+
         for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
             rows.append(.layer(index: layerIndex))
-            
+
             let isExpanded = if layerIndex <= 1 {
                 document.settings.layerExpansionState[layer.id] ?? false
             } else {
                 document.settings.layerExpansionState[layer.id] ?? true
             }
-            
+
             if isExpanded {
                 // Use the layer's objectIDs array from snapshot
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
@@ -103,8 +119,8 @@ struct LayersPanel: View {
                         rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
                         // Check if this is an expanded group or clipGroup
-                        let isExpanded = document.settings.groupExpansionState[object.id] ?? false
-                        if isExpanded {
+                        let isGroupExpanded = document.settings.groupExpansionState[object.id] ?? false
+                        if isGroupExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
                                 // Resolve members using memberIDs (or fallback to groupedShapes)
@@ -112,6 +128,9 @@ struct LayersPanel: View {
                                 // Display reversed to match layer objectIDs display order
                                 for childShape in memberShapes.reversed() {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+
+                                    // Recursively add nested group children
+                                    addNestedGroupChildren(childShape: childShape, layerIndex: layerIndex, parentObjectId: childShape.id)
                                 }
                             default:
                                 break
@@ -121,7 +140,7 @@ struct LayersPanel: View {
                 }
             }
         }
-        
+
         return rows
     }
 
@@ -387,31 +406,24 @@ struct LayersPanel: View {
                     }
                 }
             }
-        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
+        case .childObject(let layerIndex, _, let childShapeId):
+            print("🟡 toggleVisibility childObject: \(childShapeId)")
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                if let parentObj = document.snapshot.objects[parentObjectId] {
-                    var updatedParentShape: VectorShape?
-
-                    switch parentObj.objectType {
-                    case .group(var parentShape), .clipGroup(var parentShape):
-                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                            parentShape.groupedShapes[childIndex].isVisible.toggle()
-                            updatedParentShape = parentShape
-                        }
-                    default:
-                        break
-                    }
-
-                    if let parentShape = updatedParentShape {
-                        let updatedObject = VectorObject(
-                            id: parentObjectId,
-                            layerIndex: layerIndex,
-                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
-                        )
-                        document.snapshot.objects[parentObjectId] = updatedObject
-                        processedObjectsDuringDrag.insert(childShapeId)
-                        document.triggerLayerUpdate(for: layerIndex)
-                    }
+                // With memberIDs, child objects are stored directly in snapshot.objects
+                if let childObj = document.snapshot.objects[childShapeId] {
+                    var shape = childObj.shape
+                    shape.isVisible.toggle()
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObj.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    processedObjectsDuringDrag.insert(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
+                    print("🟢 toggleVisibility childObject SUCCESS: \(childShapeId)")
+                } else {
+                    print("🔴 toggleVisibility childObject NOT FOUND: \(childShapeId)")
                 }
             }
         }
@@ -447,21 +459,20 @@ struct LayersPanel: View {
                     }
                 }
             }
-        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
+        case .childObject(let layerIndex, _, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                if let parentObj = document.snapshot.objects[parentObjectId] {
-                    if case .shape(var parentShape) = parentObj.objectType {
-                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                            parentShape.groupedShapes[childIndex].isLocked.toggle()
-                            let updatedObject = VectorObject(
-                                shape: parentShape,
-                                layerIndex: layerIndex,
-                            )
-                            document.snapshot.objects[parentObjectId] = updatedObject
-                            processedObjectsDuringDrag.insert(childShapeId)
-                            document.triggerLayerUpdate(for: layerIndex)
-                        }
-                    }
+                // With memberIDs, child objects are stored directly in snapshot.objects
+                if let childObj = document.snapshot.objects[childShapeId] {
+                    var shape = childObj.shape
+                    shape.isLocked.toggle()
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObj.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    processedObjectsDuringDrag.insert(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
                 }
             }
         }
