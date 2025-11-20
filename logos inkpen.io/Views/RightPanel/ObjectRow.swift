@@ -185,14 +185,21 @@ struct ObjectRow: View {
             get: {
                 // Members are now in snapshot.objects with their own UUIDs
                 if let childObject = document.snapshot.objects[childShapeId] {
+                    print("🔵 childVisibilityBinding GET: childShapeId=\(childShapeId), isVisible=\(childObject.shape.isVisible)")
                     return childObject.shape.isVisible
                 }
+                print("🔴 childVisibilityBinding GET: childShapeId=\(childShapeId) NOT FOUND in snapshot.objects")
                 return true
             },
             set: { newValue in
+                print("🟡 childVisibilityBinding SET: childShapeId=\(childShapeId), newValue=\(newValue)")
                 // Update the child object directly in snapshot.objects
-                guard let childObject = document.snapshot.objects[childShapeId] else { return }
+                guard let childObject = document.snapshot.objects[childShapeId] else {
+                    print("🔴 childVisibilityBinding SET: childShapeId=\(childShapeId) NOT FOUND in snapshot.objects")
+                    return
+                }
                 var shape = childObject.shape
+                print("🟡 childVisibilityBinding SET: oldValue=\(shape.isVisible), newValue=\(newValue)")
                 if shape.isVisible != newValue {
                     shape.isVisible = newValue
                     let updatedObject = VectorObject(
@@ -203,6 +210,7 @@ struct ObjectRow: View {
                     document.snapshot.objects[childShapeId] = updatedObject
                     document.changeNotifier.notifyObjectChanged(childShapeId)
                     document.triggerLayerUpdate(for: layerIndex)
+                    print("🟢 childVisibilityBinding SET: Updated successfully")
                 }
             }
         )
@@ -463,23 +471,53 @@ struct ObjectRow: View {
                             .help(childLockBinding.wrappedValue ? "Unlock Object" : "Lock Object")
 
                             HStack(spacing: 4) {
-                                Color.clear.frame(width: 12, height: 12)
+                                // Check if child is a nested group
+                                if childShape.isGroupContainer {
+                                    let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                                            var updatedSettings = document.settings
+                                            updatedSettings.groupExpansionState[childShape.id] = !isChildGroupExpanded
+                                            document.settings = updatedSettings
+                                        }
+                                    }) {
+                                        Image(systemName: isChildGroupExpanded ? "chevron.down" : "chevron.right")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 12, height: 12)
+                                    }
+                                    .buttonStyle(BorderlessButtonStyle())
+                                    .help("Expand/collapse nested group")
+                                } else {
+                                    Color.clear.frame(width: 12, height: 12)
+                                }
 
                                 Image(systemName: childIconFor(childShape, index: originalIndex))
                                     .font(.system(size: 10))
                                     .foregroundColor(childIconColorFor(childShape, index: originalIndex))
                                     .frame(width: 12)
-                                
+
                                 Circle()
                                     .fill(isChildSelected ? Color.blue : Color.clear)
                                     .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                     .frame(width: 8, height: 8)
-                                
+
                                 Text(childShape.typography != nil ? (childShape.textContent ?? "Text") : childShape.name)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(isChildSelected ? .blue : .secondary)
                                     .lineLimit(1)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                                // Show member count for nested groups
+                                if childShape.isGroupContainer {
+                                    Spacer()
+                                    let childMemberCount = childShape.memberIDs.isEmpty ? childShape.groupedShapes.count : childShape.memberIDs.count
+                                    Text("\(childMemberCount)")
+                                        .font(.system(size: 9))
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.secondary.opacity(0.8))
+                                        .padding(.trailing, 4)
+                                }
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 4)
@@ -493,7 +531,7 @@ struct ObjectRow: View {
                     .onTapGesture {
                         let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
                         let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-                        
+
                         if isCommandPressed {
                             if document.viewState.selectedObjectIDs.contains(childShape.id) {
                                 document.viewState.selectedObjectIDs.remove(childShape.id)
@@ -506,11 +544,212 @@ struct ObjectRow: View {
                             document.viewState.selectedObjectIDs = [childShape.id]
                         }
                     }
+
+                    // Recursively render nested group children if this child is an expanded group
+                    if childShape.isGroupContainer {
+                        let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
+                        if isNestedGroupExpanded {
+                            let nestedMemberIDs = childShape.memberIDs.isEmpty ? childShape.groupedShapes.map { $0.id } : childShape.memberIDs
+                            NestedGroupChildrenView(
+                                memberIDs: nestedMemberIDs,
+                                layerIndex: layerIndex,
+                                document: document
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
 
+// Recursive view for nested group children
+struct NestedGroupChildrenView: View {
+    let memberIDs: [UUID]
+    let layerIndex: Int
+    @ObservedObject var document: VectorDocument
+
+    private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if let childObject = document.snapshot.objects[childShapeId] {
+                    return childObject.shape.isVisible
+                }
+                return true
+            },
+            set: { newValue in
+                guard let childObject = document.snapshot.objects[childShapeId] else { return }
+                var shape = childObject.shape
+                if shape.isVisible != newValue {
+                    shape.isVisible = newValue
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObject.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    document.changeNotifier.notifyObjectChanged(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
+                }
+            }
+        )
+    }
+
+    private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if let childObject = document.snapshot.objects[childShapeId] {
+                    return childObject.shape.isLocked
+                }
+                return false
+            },
+            set: { newValue in
+                guard let childObject = document.snapshot.objects[childShapeId] else { return }
+                var shape = childObject.shape
+                if shape.isLocked != newValue {
+                    shape.isLocked = newValue
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObject.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    document.changeNotifier.notifyObjectChanged(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
+                }
+            }
+        )
+    }
+
+    var body: some View {
+        let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
+        let displayShapes = Array(memberShapes.reversed())
+
+        ForEach(Array(displayShapes.enumerated()), id: \.element.id) { index, childShape in
+            let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
+            let childVisBinding = childVisibilityBinding(for: childShape.id)
+            let childLockBinding = childLockBinding(for: childShape.id)
+
+            ZStack(alignment: .bottom) {
+                HStack(spacing: 2) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 21, height: 1)
+
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 19, height: 1)
+
+                    Spacer()
+                }
+                .padding(.leading, 2.5)
+                .padding(.trailing, 4)
+
+                HStack(spacing: 2) {
+                    Button(action: {
+                        childVisBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
+                            .visibilityButton(isVisible: childVisBinding.wrappedValue)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+
+                    Button(action: {
+                        childLockBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: childLockBinding.wrappedValue ? "lock.fill" : "lock.open")
+                            .lockButton(isLocked: childLockBinding.wrappedValue)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+
+                    HStack(spacing: 4) {
+                        if childShape.isGroupContainer {
+                            let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                                    var updatedSettings = document.settings
+                                    updatedSettings.groupExpansionState[childShape.id] = !isChildGroupExpanded
+                                    document.settings = updatedSettings
+                                }
+                            }) {
+                                Image(systemName: isChildGroupExpanded ? "chevron.down" : "chevron.right")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 12, height: 12)
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                        } else {
+                            Color.clear.frame(width: 12, height: 12)
+                        }
+
+                        Image(systemName: childShape.isGroupContainer ? "square.stack" : "square")
+                            .font(.system(size: 10))
+                            .foregroundColor(childShape.isGroupContainer ? .green : .blue)
+                            .frame(width: 12)
+
+                        Circle()
+                            .fill(isChildSelected ? Color.blue : Color.clear)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            .frame(width: 8, height: 8)
+
+                        Text(childShape.name)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(isChildSelected ? .blue : .secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if childShape.isGroupContainer {
+                            Spacer()
+                            let childMemberCount = childShape.memberIDs.isEmpty ? childShape.groupedShapes.count : childShape.memberIDs.count
+                            Text("\(childMemberCount)")
+                                .font(.system(size: 9))
+                                .foregroundColor(.secondary.opacity(0.8))
+                                .padding(.trailing, 4)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 3)
+                    .frame(height: kLayerRowHeight)
+                    .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
+                }
+                .padding(.horizontal, 4)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
+                let isCommandPressed = NSEvent.modifierFlags.contains(.command)
+
+                if isCommandPressed {
+                    if document.viewState.selectedObjectIDs.contains(childShape.id) {
+                        document.viewState.selectedObjectIDs.remove(childShape.id)
+                    } else {
+                        document.viewState.selectedObjectIDs.insert(childShape.id)
+                    }
+                } else if isShiftPressed {
+                    document.viewState.selectedObjectIDs.insert(childShape.id)
+                } else {
+                    document.viewState.selectedObjectIDs = [childShape.id]
+                }
+            }
+
+            // Recursively render deeper nested groups
+            if childShape.isGroupContainer {
+                let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
+                if isNestedGroupExpanded {
+                    let nestedMemberIDs = childShape.memberIDs.isEmpty ? childShape.groupedShapes.map { $0.id } : childShape.memberIDs
+                    NestedGroupChildrenView(
+                        memberIDs: nestedMemberIDs,
+                        layerIndex: layerIndex,
+                        document: document
+                    )
+                }
+            }
+        }
+    }
+}
+
+extension ObjectRow {
     private var objectIcon: String {
         switch objectType {
         case .shape:
