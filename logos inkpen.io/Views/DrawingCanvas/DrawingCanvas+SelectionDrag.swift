@@ -357,81 +357,28 @@ extension DrawingCanvas {
             return
         }
 
-        if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
-            var updatedGroupedShapes: [VectorShape] = []
-
-            for var groupedShape in shape.groupedShapes {
-                let objectType = VectorObject.determineType(for: groupedShape)
-                if case .text = objectType {
-                    if let textPosition = groupedShape.textPosition {
-                        groupedShape.textPosition = CGPoint(x: textPosition.x + delta.x, y: textPosition.y + delta.y)
-                    }
-                    document.translateTextInUnified(id: groupedShape.id, delta: delta)
-                }
-
-                var updatedElements: [PathElement] = []
-
-                for element in groupedShape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        updatedElements.append(.move(to: VectorPoint(newPoint)))
-
-                    case .line(let to):
-                        let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        updatedElements.append(.line(to: VectorPoint(newPoint)))
-
-                    case .curve(let to, let control1, let control2):
-                        let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
-                        let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
-                        updatedElements.append(.curve(
-                            to: VectorPoint(newTo),
-                            control1: VectorPoint(newControl1),
-                            control2: VectorPoint(newControl2),
-                        ))
-
-                    case .quadCurve(let to, let control):
-                        let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
-                        let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
-                        updatedElements.append(.quadCurve(
-                            to: VectorPoint(newTo),
-                            control: VectorPoint(newControl),
-                        ))
-
-                    case .close:
-                        updatedElements.append(.close)
+        // Handle groups with memberIDs - move each member shape
+        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+            for memberID in shape.memberIDs {
+                if let memberObj = document.snapshot.objects[memberID] {
+                    switch memberObj.objectType {
+                    case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .group(let memberShape), .clipGroup(let memberShape), .clipMask(let memberShape):
+                        // Recursively apply drag to member (handles nested groups)
+                        applyDragDeltaToShape(shape: memberShape, delta: delta)
+                    case .text(let memberShape):
+                        if let textPosition = memberShape.textPosition {
+                            var updatedShape = memberShape
+                            updatedShape.textPosition = CGPoint(x: textPosition.x + delta.x, y: textPosition.y + delta.y)
+                            let updatedObject = VectorObject(
+                                id: memberID,
+                                layerIndex: memberObj.layerIndex,
+                                objectType: .text(updatedShape)
+                            )
+                            document.snapshot.objects[memberID] = updatedObject
+                        }
                     }
                 }
-
-                groupedShape.path = VectorPath(elements: updatedElements, isClosed: groupedShape.path.isClosed)
-                groupedShape.updateBounds()
-
-                updatedGroupedShapes.append(groupedShape)
-
-                // Update child in snapshot.objects so hit-testing/selection matches rendering
-                if let childObj = document.snapshot.objects[groupedShape.id] {
-                    let updatedChild = VectorObject(shape: groupedShape, layerIndex: childObj.layerIndex)
-                    document.snapshot.objects[groupedShape.id] = updatedChild
-                    // print("🟢 GROUP MOVE: Updated child \(groupedShape.id) in snapshot.objects")
-                }
             }
-
-            var groupShape = shape
-            groupShape.groupedShapes = updatedGroupedShapes
-
-            if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-                var updatedWarpEnvelope: [CGPoint] = []
-                for corner in shape.warpEnvelope {
-                    let movedCorner = CGPoint(x: corner.x + delta.x, y: corner.y + delta.y)
-                    updatedWarpEnvelope.append(movedCorner)
-                }
-                groupShape.warpEnvelope = updatedWarpEnvelope
-
-            }
-
-            groupShape.updateBounds()
-            document.updateShapeByID(groupShape.id) { $0 = groupShape }
             return
         }
 
