@@ -379,6 +379,19 @@ extension DrawingCanvas {
                     }
                 }
             }
+
+            // Update the group's bounds from the moved member shapes
+            var updatedGroupShape = shape
+            updatedGroupShape.bounds = document.calculateGroupBounds(shape)
+
+            if let groupObj = document.snapshot.objects[shape.id] {
+                let updatedObject = VectorObject(
+                    id: shape.id,
+                    layerIndex: groupObj.layerIndex,
+                    objectType: shape.isClippingGroup ? .clipGroup(updatedGroupShape) : .group(updatedGroupShape)
+                )
+                document.snapshot.objects[shape.id] = updatedObject
+            }
             return
         }
 
