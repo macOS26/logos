@@ -379,6 +379,8 @@ extension DrawingCanvas {
                     }
                 }
             }
+            // Notify that the group object changed so transform box updates
+            document.changeNotifier.notifyObjectChanged(shape.id)
             return
         }
 
