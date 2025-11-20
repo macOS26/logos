@@ -9,8 +9,10 @@ extension VectorDocument {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
                 if !shape.memberIDs.isEmpty {
+                    print("🎨 Updating fill color for group \(id) with \(shape.memberIDs.count) members")
                     // Modern group: update each member shape
                     for memberID in shape.memberIDs {
+                        print("🎨   Updating member \(memberID)")
                         updateShapeFillColorInUnified(id: memberID, color: color)
                     }
                     return
@@ -19,6 +21,8 @@ extension VectorDocument {
                 break
             }
         }
+
+        print("🎨 Updating fill color for non-group shape \(id)")
 
         updateShapeByID(id) { shape in
             // Update the shape itself
