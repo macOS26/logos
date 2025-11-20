@@ -547,3 +547,11 @@ extension ColorSwatchButton where Content == AnyView {
         }
     }
 }
+
+/*
+ 
+ curl -X GET "https://api.cloudflare.com/client/v4/zones/YOUR_ZONE_ID/dns_records" \
+      -H "Authorization: Bearer YOUR_API_TOKEN" \
+      -H "Content-Type: application/json"
+ 
+ */
