@@ -4,9 +4,23 @@ import Combine
 extension VectorDocument {
 
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
-        // print("🔴 UPDATE FILL: Called for shape \(id), color=\(color)")
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    // Modern group: update each member shape
+                    for memberID in shape.memberIDs {
+                        updateShapeFillColorInUnified(id: memberID, color: color)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
-            // print("🔴 UPDATE FILL: Found shape, isGroupContainer=\(shape.isGroupContainer)")
             // Update the shape itself
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
@@ -14,12 +28,10 @@ extension VectorDocument {
                 shape.fillStyle?.color = color
             }
 
-            // If this is a group, update all children
-            if shape.isGroupContainer {
-                // print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
+            // If this is a legacy group with embedded children, update them
+            if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
-                    // print("🔴 UPDATE FILL: Updating child \(childShape.id)")
                     if childShape.fillStyle == nil {
                         childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
                     } else {
@@ -28,16 +40,28 @@ extension VectorDocument {
                     updatedChildren.append(childShape)
                 }
                 shape.groupedShapes = updatedChildren
-                // print("🔴 UPDATE FILL: Updated children saved back to group")
             }
-            // print("🔴 UPDATE FILL: Updated shape saved to snapshot")
         }
     }
 
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
-        // print("🟠 UPDATE STROKE: Called for shape \(id), color=\(color)")
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    // Modern group: update each member shape
+                    for memberID in shape.memberIDs {
+                        updateShapeStrokeColorInUnified(id: memberID, color: color)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
-            // print("🟠 UPDATE STROKE: Found shape, isGroupContainer=\(shape.isGroupContainer)")
             // Update the shape itself
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
@@ -45,12 +69,10 @@ extension VectorDocument {
                 shape.strokeStyle?.color = color
             }
 
-            // If this is a group, update all children
-            if shape.isGroupContainer {
-                // print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
+            // If this is a legacy group with embedded children, update them
+            if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
-                    // print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
                     if childShape.strokeStyle == nil {
                         childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                     } else {
@@ -59,13 +81,26 @@ extension VectorDocument {
                     updatedChildren.append(childShape)
                 }
                 shape.groupedShapes = updatedChildren
-                // print("🟠 UPDATE STROKE: Updated children saved back to group")
             }
-            // print("🟠 UPDATE STROKE: Updated shape saved to snapshot")
         }
     }
 
     func updateShapeFillOpacityInUnified(id: UUID, opacity: Double) {
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    for memberID in shape.memberIDs {
+                        updateShapeFillOpacityInUnified(id: memberID, opacity: opacity)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: defaultFillColor, opacity: opacity)
@@ -76,6 +111,21 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeWidthInUnified(id: UUID, width: Double) {
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    for memberID in shape.memberIDs {
+                        updateShapeStrokeWidthInUnified(id: memberID, width: width)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
@@ -110,6 +160,21 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeOpacityInUnified(id: UUID, opacity: Double) {
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    for memberID in shape.memberIDs {
+                        updateShapeStrokeOpacityInUnified(id: memberID, opacity: opacity)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: opacity)
@@ -120,12 +185,42 @@ extension VectorDocument {
     }
 
     func updateShapeOpacityInUnified(id: UUID, opacity: Double) {
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    for memberID in shape.memberIDs {
+                        updateShapeOpacityInUnified(id: memberID, opacity: opacity)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
             shape.opacity = opacity
         }
     }
 
     func updateShapeStrokePlacementInUnified(id: UUID, placement: StrokePlacement) {
+        // Check if this is a group with memberIDs - update members separately
+        if let object = snapshot.objects[id] {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                if !shape.memberIDs.isEmpty {
+                    for memberID in shape.memberIDs {
+                        updateShapeStrokePlacementInUnified(id: memberID, placement: placement)
+                    }
+                    return
+                }
+            default:
+                break
+            }
+        }
+
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
