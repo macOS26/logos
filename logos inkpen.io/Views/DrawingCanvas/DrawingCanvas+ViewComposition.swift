@@ -358,11 +358,8 @@ extension DrawingCanvas {
                 layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id] ?? 0,
                 isPanning: isPanGestureActive
             )
-            // .scaleEffect(liveZoomDelta, anchor: .topLeading)
-            // .offset(x: livePanDelta.x, y: livePanDelta.y)
-            // Use only layer.id for view identity - trigger passed as parameter will cause redraw
-            //.id(layer.id)
-           // .allowsHitTesting(isActiveLayer)
+            // Force SwiftUI to recreate view when layer content changes (group/ungroup undo/redo)
+            .id(document.viewState.layerUpdateTriggers[layer.id] ?? 0)
         }
     }
 
