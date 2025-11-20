@@ -391,7 +391,7 @@ struct ProfessionalLayerRow: View {
                 },
                 layerIndex: layerIndex,
                 document: document,
-                groupedShapes: shape.groupedShapes,
+                memberIDs: shape.memberIDs.isEmpty ? shape.groupedShapes.map { $0.id } : shape.memberIDs,
                 showBottomIndicator: isLast
             )
             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))

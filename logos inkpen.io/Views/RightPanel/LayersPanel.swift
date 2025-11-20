@@ -107,8 +107,10 @@ struct LayersPanel: View {
                         if isExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
+                                // Resolve members using memberIDs (or fallback to groupedShapes)
+                                let memberShapes = document.resolveGroupMembers(shape)
                                 // Display reversed to match layer objectIDs display order
-                                for childShape in shape.groupedShapes.reversed() {
+                                for childShape in memberShapes.reversed() {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
                                 }
                             default:

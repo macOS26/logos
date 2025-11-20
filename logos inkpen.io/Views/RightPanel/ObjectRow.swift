@@ -73,7 +73,7 @@ struct ObjectRow: View {
     let onSelect: (_ isShiftPressed: Bool, _ isCommandPressed: Bool) -> Void
     let layerIndex: Int
     let document: VectorDocument
-    let groupedShapes: [VectorShape]?
+    let memberIDs: [UUID]
     let showBottomIndicator: Bool
 
     private var isGroupExpanded: Bool {
@@ -86,7 +86,7 @@ struct ObjectRow: View {
         document.settings = updatedSettings
     }
 
-    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
+    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, memberIDs: [UUID] = [], showBottomIndicator: Bool = false) {
         self.objectType = objectType
         self.objectId = objectId
         self.name = name
@@ -94,7 +94,7 @@ struct ObjectRow: View {
         self.onSelect = onSelect
         self.layerIndex = layerIndex
         self.document = document
-        self.groupedShapes = groupedShapes
+        self.memberIDs = memberIDs
         self.showBottomIndicator = showBottomIndicator
     }
     
@@ -183,74 +183,54 @@ struct ObjectRow: View {
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.snapshot.objects[objectId] {
-                    switch object.objectType {
-                    case .group(let parentShape), .clipGroup(let parentShape):
-                        if let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
-                            return child.isVisible
-                        }
-                    default:
-                        break
-                    }
+                // Members are now in snapshot.objects with their own UUIDs
+                if let childObject = document.snapshot.objects[childShapeId] {
+                    return childObject.shape.isVisible
                 }
                 return true
             },
             set: { newValue in
-                guard let parentObject = document.snapshot.objects[objectId] else { return }
-                switch parentObject.objectType {
-                case .group(var parentShape), .clipGroup(var parentShape):
-                    if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                        parentShape.groupedShapes[childIndex].isVisible = newValue
-
-                        let updatedObject = VectorObject(
-                            id: objectId,
-                            layerIndex: layerIndex,
-                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
-                        )
-                        document.snapshot.objects[objectId] = updatedObject
-                        document.changeNotifier.notifyObjectChanged(objectId)
-                        document.triggerLayerUpdate(for: layerIndex)
-                    }
-                default:
-                    break
+                // Update the child object directly in snapshot.objects
+                guard let childObject = document.snapshot.objects[childShapeId] else { return }
+                var shape = childObject.shape
+                if shape.isVisible != newValue {
+                    shape.isVisible = newValue
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObject.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    document.changeNotifier.notifyObjectChanged(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
                 }
             }
         )
     }
-    
+
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                if let object = document.snapshot.objects[objectId] {
-                    switch object.objectType {
-                    case .group(let parentShape), .clipGroup(let parentShape):
-                        if let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
-                            return child.isLocked
-                        }
-                    default:
-                        break
-                    }
+                // Members are now in snapshot.objects with their own UUIDs
+                if let childObject = document.snapshot.objects[childShapeId] {
+                    return childObject.shape.isLocked
                 }
                 return false
             },
             set: { newValue in
-                guard let parentObject = document.snapshot.objects[objectId] else { return }
-                switch parentObject.objectType {
-                case .group(var parentShape), .clipGroup(var parentShape):
-                    if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                        parentShape.groupedShapes[childIndex].isLocked = newValue
-
-                        let updatedObject = VectorObject(
-                            id: objectId,
-                            layerIndex: layerIndex,
-                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
-                        )
-                        document.snapshot.objects[objectId] = updatedObject
-                        document.changeNotifier.notifyObjectChanged(objectId)
-                        document.triggerLayerUpdate(for: layerIndex)
-                    }
-                default:
-                    break
+                // Update the child object directly in snapshot.objects
+                guard let childObject = document.snapshot.objects[childShapeId] else { return }
+                var shape = childObject.shape
+                if shape.isLocked != newValue {
+                    shape.isLocked = newValue
+                    let updatedObject = VectorObject(
+                        id: childShapeId,
+                        layerIndex: childObject.layerIndex,
+                        objectType: VectorObject.determineType(for: shape)
+                    )
+                    document.snapshot.objects[childShapeId] = updatedObject
+                    document.changeNotifier.notifyObjectChanged(childShapeId)
+                    document.triggerLayerUpdate(for: layerIndex)
                 }
             }
         )
@@ -421,15 +401,17 @@ struct ObjectRow: View {
                 }
             }
             
-            if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
+            if objectType == .group, isGroupExpanded, !memberIDs.isEmpty {
+                // Resolve member shapes from snapshot.objects using memberIDs
+                let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
                 // Reverse for regular groups to match layer display order, but not for clip groups (mask must be first)
                 let displayShapes = document.snapshot.objects[objectId].map { obj -> [VectorShape] in
                     if case .clipGroup = obj.objectType {
-                        return shapes
+                        return memberShapes
                     } else {
-                        return Array(shapes.reversed())
+                        return Array(memberShapes.reversed())
                     }
-                } ?? shapes
+                } ?? memberShapes
                 ForEach(Array(displayShapes.enumerated()), id: \.element.id) { index, childShape in
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
