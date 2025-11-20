@@ -34,11 +34,31 @@ extension VectorDocument {
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        // Capture old state
+        // Helper to recursively collect member IDs for groups
+        func collectAllMemberIDs(_ shapeID: UUID, into collection: inout [UUID]) {
+            guard let shape = findShape(by: shapeID) else { return }
+
+            // Add the shape itself
+            if !collection.contains(shapeID) {
+                collection.append(shapeID)
+            }
+
+            // If it's a group with members, recursively collect them
+            if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty {
+                for memberID in shape.memberIDs {
+                    collectAllMemberIDs(memberID, into: &collection)
+                }
+            }
+        }
+
+        // Capture old state (including all member shapes for groups)
         for shapeID in activeShapeIDs {
+            collectAllMemberIDs(shapeID, into: &objectIDs)
+        }
+
+        for shapeID in objectIDs {
             if let shape = findShape(by: shapeID) {
                 oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
             }
         }
 
@@ -104,11 +124,31 @@ extension VectorDocument {
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        // Capture old state
+        // Helper to recursively collect member IDs for groups
+        func collectAllMemberIDs(_ shapeID: UUID, into collection: inout [UUID]) {
+            guard let shape = findShape(by: shapeID) else { return }
+
+            // Add the shape itself
+            if !collection.contains(shapeID) {
+                collection.append(shapeID)
+            }
+
+            // If it's a group with members, recursively collect them
+            if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty {
+                for memberID in shape.memberIDs {
+                    collectAllMemberIDs(memberID, into: &collection)
+                }
+            }
+        }
+
+        // Capture old state (including all member shapes for groups)
         for shapeID in activeShapeIDs {
+            collectAllMemberIDs(shapeID, into: &objectIDs)
+        }
+
+        for shapeID in objectIDs {
             if let shape = findShape(by: shapeID) {
                 oldShapes[shapeID] = shape
-                objectIDs.append(shapeID)
             }
         }
 
