@@ -23,13 +23,24 @@ class ShapeModificationCommand: BaseCommand {
     }
 
     private func applyShapes(_ shapes: [UUID: VectorShape], to document: VectorDocument) {
+        var affectedLayers = Set<Int>()
+
         for id in objectIDs {
             if let shape = shapes[id] {
                 // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-                document.updateShapeByID(id) { existingShape in
+                // Pass silent: true to batch layer updates
+                document.updateShapeByID(id, silent: true) { existingShape in
                     existingShape = shape
+                }
+
+                // Track which layers are affected
+                if let obj = document.snapshot.objects[id] {
+                    affectedLayers.insert(obj.layerIndex)
                 }
             }
         }
+
+        // Trigger layer updates for all affected layers
+        document.triggerLayerUpdates(for: affectedLayers)
     }
 }
