@@ -308,6 +308,37 @@ extension VectorDocument {
         }
     }
 
+    /// Resolves member shapes for a group using memberIDs
+    /// Falls back to groupedShapes for backwards compatibility with old groups
+    /// - Parameter groupShape: The group shape to resolve members for
+    /// - Returns: Array of member shapes in order
+    func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
+        // NEW: Use memberIDs if available
+        if !groupShape.memberIDs.isEmpty {
+            return groupShape.memberIDs.compactMap { findShape(by: $0) }
+        }
+        // DEPRECATED: Fallback to groupedShapes for old groups
+        return groupShape.groupedShapes
+    }
+
+    /// Recursively resolves all shapes in a group, including nested groups
+    /// - Parameter groupShape: The group shape to resolve
+    /// - Returns: Flat array of all leaf shapes (non-group shapes)
+    func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
+        let members = resolveGroupMembers(groupShape)
+        var result: [VectorShape] = []
+
+        for member in members {
+            if member.isGroupContainer {
+                result.append(contentsOf: resolveGroupMembersRecursively(member))
+            } else {
+                result.append(member)
+            }
+        }
+
+        return result
+    }
+
     func findText(by id: UUID) -> VectorText? {
         // O(1) lookup in snapshot.objects
         if let object = snapshot.objects[id] {
@@ -318,10 +349,11 @@ extension VectorDocument {
             }
         }
 
-        // Not a top-level text object - search inside groups
+        // Not a top-level text object - search inside groups using memberIDs
         for object in snapshot.objects.values {
             if case .group(let shape) = object.objectType {
-                if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.typography != nil }),
+                let members = resolveGroupMembers(shape)
+                if let textShape = members.first(where: { $0.id == id && $0.typography != nil }),
                    var vectorText = VectorText.from(textShape) {
                     vectorText.layerIndex = object.layerIndex
                     return vectorText

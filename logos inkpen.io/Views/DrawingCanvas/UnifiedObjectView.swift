@@ -311,9 +311,11 @@ struct LayerCanvasView: View {
                 case .clipGroup(let clipGroupShape):
                     // ClipGroup: first grouped shape is the mask, rest are clipped content
 
-                    guard !clipGroupShape.groupedShapes.isEmpty else { break }
-                    let maskShape = clipGroupShape.groupedShapes[0]
-                    let contentShapes = Array(clipGroupShape.groupedShapes.dropFirst())
+                    // Resolve member shapes using memberIDs (or fallback to groupedShapes)
+                    let memberShapes = document.resolveGroupMembers(clipGroupShape)
+                    guard !memberShapes.isEmpty else { break }
+                    let maskShape = memberShapes[0]
+                    let contentShapes = Array(memberShapes.dropFirst())
 
                     // for (idx, child) in contentShapes.enumerated() {
                     // }
@@ -470,13 +472,16 @@ struct LayerCanvasView: View {
 
                 case .group(let groupShape):
                     // Regular Group: render all child shapes (no clipping)
-                    guard !groupShape.groupedShapes.isEmpty else { break }
+                    guard groupShape.isGroupContainer else { break }
+
+                    // Resolve member shapes using memberIDs (or fallback to groupedShapes)
+                    let memberShapes = document.resolveGroupMembers(groupShape)
 
                     // Save parent's transform (includes drag delta if parent group is selected)
                     let parentTransform = context.transform
 
                     // Render each child shape in the group
-                    for childShape in groupShape.groupedShapes {
+                    for childShape in memberShapes {
                         guard childShape.isVisible else { continue }
 
                         // Check if THIS CHILD is individually selected (not just the group)

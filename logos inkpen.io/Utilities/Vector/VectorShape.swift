@@ -370,7 +370,8 @@ struct VectorShape: Hashable, Identifiable {
     var linkedImagePath: String? = nil
     var linkedImageBookmarkData: Data? = nil
     var isGroup: Bool
-    var groupedShapes: [VectorShape]
+    var groupedShapes: [VectorShape]  // DEPRECATED: Use memberIDs instead
+    var memberIDs: [UUID]  // NEW: Like Layer.objectIDs - just references, allows nested groups
     var groupTransform: CGAffineTransform
     var isClippingGroup: Bool = false
     var isCompoundPath: Bool
@@ -457,7 +458,7 @@ struct VectorShape: Hashable, Identifiable {
         return mutablePath
     }
 
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:], anchorTypes: [Int: AnchorPointType] = [:]) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], memberIDs: [UUID] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:], anchorTypes: [Int: AnchorPointType] = [:]) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -472,6 +473,7 @@ struct VectorShape: Hashable, Identifiable {
         self.bounds = path.cgPath.boundingBoxOfPath
         self.isGroup = isGroup
         self.groupedShapes = groupedShapes
+        self.memberIDs = memberIDs
         self.groupTransform = groupTransform
         self.isClippingGroup = isClippingGroup
         self.isCompoundPath = isCompoundPath
@@ -531,38 +533,27 @@ struct VectorShape: Hashable, Identifiable {
         }
     }
 
+    /// Creates a group shape from member shapes
+    /// - Parameters:
+    ///   - shapes: The shapes to include in the group (used for bounds calculation and memberIDs extraction)
+    ///   - name: The name for the group
+    ///   - isClippingGroup: Whether this is a clipping group
+    /// - Returns: A new group shape with memberIDs set to the IDs of the input shapes
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
-        // print("🟣 VectorShape.group() INPUT shapes count = \(shapes.count)")
-        // for (index, shape) in shapes.enumerated() {
-        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-        //     print("🟣 VectorShape.group() INPUT shapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        // }
-
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
             let shapeBounds: CGRect
             if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else {
-                shapeBounds = shape.bounds
+                // Apply transform to get world-space bounds
+                shapeBounds = shape.bounds.applying(shape.transform)
             }
             calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
         }
 
-        var preservedShapes = shapes
-        for i in preservedShapes.indices {
-            if preservedShapes[i].typography != nil {
-                if preservedShapes[i].textPosition == nil {
-                    preservedShapes[i].textPosition = CGPoint(x: preservedShapes[i].transform.tx, y: preservedShapes[i].transform.ty)
-                }
-            }
-        }
-
-        // print("🟣 VectorShape.group() FINAL preservedShapes count = \(preservedShapes.count)")
-        // for (index, shape) in preservedShapes.enumerated() {
-        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-        //     print("🟣 VectorShape.group() FINAL preservedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        // }
+        // Extract member IDs from the shapes - these stay in snapshot.objects
+        let memberIDs = shapes.map { $0.id }
 
         let groupPath = VectorPath(elements: [], isClosed: false)
         var groupShape = VectorShape(
@@ -577,24 +568,19 @@ struct VectorShape: Hashable, Identifiable {
             opacity: 1.0,
             blendMode: .normal,
             isGroup: true,
-            groupedShapes: preservedShapes,
+            groupedShapes: [],  // DEPRECATED - no longer used
+            memberIDs: memberIDs,  // NEW: Just store references like Layer.objectIDs
             groupTransform: .identity,
             isClippingGroup: isClippingGroup
         )
 
         groupShape.bounds = calculatedGroupBounds
 
-        // print("🟣 VectorShape.group() RESULT groupedShapes count = \(groupShape.groupedShapes.count)")
-        // for (index, shape) in groupShape.groupedShapes.enumerated() {
-        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-        //     print("🟣 VectorShape.group() RESULT groupedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        // }
-
         return groupShape
     }
 
     var isGroupContainer: Bool {
-        return isGroup && !groupedShapes.isEmpty
+        return isGroup && (!memberIDs.isEmpty || !groupedShapes.isEmpty)
     }
 
     var isCompoundPathContainer: Bool {
@@ -604,6 +590,13 @@ struct VectorShape: Hashable, Identifiable {
     var groupBounds: CGRect {
         guard isGroupContainer else { return bounds }
 
+        // NEW: For memberIDs groups, bounds were calculated at creation time
+        // The actual member shapes are in snapshot.objects, not embedded here
+        if !memberIDs.isEmpty {
+            return bounds
+        }
+
+        // DEPRECATED: For legacy groups with embedded groupedShapes
         var groupBounds = CGRect.null
         for shape in groupedShapes {
             let shapeBounds: CGRect
@@ -742,7 +735,7 @@ extension VectorShape: Codable {
         case id, name, path, geometricType, strokeStyle, fillStyle
         case transform, isVisible, isLocked, opacity, blendMode, bounds
         case embeddedImageData, linkedImagePath, linkedImageBookmarkData
-        case isGroup, groupedShapes, groupTransform, isClippingGroup
+        case isGroup, groupedShapes, memberIDs, groupTransform, isClippingGroup
         case isCompoundPath, isClippingPath, clippedByShapeID
         case isWarpObject, originalPath, warpEnvelope, originalEnvelope, warpedBounds
         case isRoundedRectangle, originalBounds, cornerRadii
@@ -796,6 +789,12 @@ extension VectorShape: Codable {
         if isGroup {
             try container.encode(isGroup, forKey: .isGroup)
 
+            // NEW: Encode memberIDs (preferred)
+            if !memberIDs.isEmpty {
+                try container.encode(memberIDs, forKey: .memberIDs)
+            }
+
+            // DEPRECATED: Still encode groupedShapes for backwards compatibility
             if !groupedShapes.isEmpty {
                 try container.encode(groupedShapes, forKey: .groupedShapes)
             }
@@ -883,6 +882,7 @@ extension VectorShape: Codable {
 
         isGroup = try container.decodeIfPresent(Bool.self, forKey: .isGroup) ?? false
         groupedShapes = try container.decodeIfPresent([VectorShape].self, forKey: .groupedShapes) ?? []
+        memberIDs = try container.decodeIfPresent([UUID].self, forKey: .memberIDs) ?? []
         groupTransform = try container.decodeIfPresent(CGAffineTransform.self, forKey: .groupTransform) ?? .identity
         isClippingGroup = try container.decodeIfPresent(Bool.self, forKey: .isClippingGroup) ?? false
 

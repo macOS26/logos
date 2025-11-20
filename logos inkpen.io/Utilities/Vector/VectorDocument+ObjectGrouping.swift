@@ -7,46 +7,22 @@ extension VectorDocument {
             return
         }
 
-        // print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
-
-        var removedShapes: [UUID: VectorShape] = [:]
-
-        // Extract shapes directly from snapshot using UUIDs - O(1) per lookup
-        for objectID in viewState.selectedObjectIDs {
-            if let obj = snapshot.objects[objectID] {
-                switch obj.objectType {
-                case .text(let shape),
-                     .shape(let shape),
-                     .image(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    removedShapes[obj.id] = shape
-                }
-            }
-        }
-
+        // Get shapes in stacking order - these will become group members
         let selectedShapes = getSelectedShapesInStackingOrder()
 
-        // print("🔴 GROUP: selectedShapes count = \(selectedShapes.count)")
-        // for (index, shape) in selectedShapes.enumerated() {
-        //     let typeName = shape.typography != nil ? "TEXT" : "SHAPE"
-        //     print("🔴 GROUP: selectedShapes[\(index)] = \(typeName) name=\(shape.name) id=\(shape.id)")
-        // }
-
+        // Create group with memberIDs - shapes stay in snapshot.objects
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
-        // Build removedObjectIDs in the correct stacking order from selectedShapes
-        let removedObjectIDsInOrder = selectedShapes.map { $0.id }
+        // The member IDs that will be removed from layer.objectIDs (but stay in snapshot.objects)
+        let memberObjectIDs = selectedShapes.map { $0.id }
 
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
-            removedObjectIDs: removedObjectIDsInOrder,
-            removedShapes: removedShapes,
+            removedObjectIDs: memberObjectIDs,  // Remove from layer.objectIDs only
+            removedShapes: [:],  // Don't remove shapes from snapshot.objects - they're now group members
             addedObjectIDs: [groupShape.id],
             addedShapes: [groupShape.id: groupShape],
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
@@ -119,66 +95,54 @@ extension VectorDocument {
     }
 
     func ungroupSelectedObjects() {
-        // print("🟡 UNGROUP: Starting, viewState.selectedObjectIDs=\(viewState.selectedObjectIDs)")
         guard let layerIndex = selectedLayerIndex,
               !viewState.selectedObjectIDs.isEmpty else {
-            // print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(viewState.selectedObjectIDs.isEmpty)")
             return
         }
 
         var newSelectedShapeIDs: Set<UUID> = []
-        var shapesToRemove: [UUID] = []
-        var shapesToAdd: [VectorShape] = []
+        var groupsToRemove: [UUID] = []
+        var memberIDsToRestore: [UUID] = []
 
         var removedShapes: [UUID: VectorShape] = [:]
 
         for objectID in viewState.selectedObjectIDs {
-            // print("🟡 UNGROUP: Processing objectID=\(objectID)")
-
             if let vectorObject = findObject(by: objectID) {
                 switch vectorObject.objectType {
                 case .group(let shape), .clipGroup(let shape):
-                    // print("🟡 UNGROUP: Found group, isGroupContainer=\(shape.isGroupContainer), groupedShapes.count=\(shape.groupedShapes.count)")
-
                     if shape.isGroupContainer {
                         removedShapes[objectID] = shape
+                        groupsToRemove.append(objectID)
 
-                        let shapesToUngroup = shape.groupedShapes
-
-                        for groupedShape in shapesToUngroup {
-                            // print("🟡 UNGROUP: Adding grouped shape id=\(groupedShape.id)")
-                            shapesToAdd.append(groupedShape)
-                            newSelectedShapeIDs.insert(groupedShape.id)
+                        // NEW: Use memberIDs if available, fallback to groupedShapes for old groups
+                        if !shape.memberIDs.isEmpty {
+                            for memberID in shape.memberIDs {
+                                memberIDsToRestore.append(memberID)
+                                newSelectedShapeIDs.insert(memberID)
+                            }
+                        } else {
+                            // DEPRECATED: Fallback for old groups with groupedShapes
+                            for groupedShape in shape.groupedShapes {
+                                memberIDsToRestore.append(groupedShape.id)
+                                newSelectedShapeIDs.insert(groupedShape.id)
+                            }
                         }
-
-                        shapesToRemove.append(objectID)
                     } else {
                         newSelectedShapeIDs.insert(objectID)
                     }
                 case .shape, .image, .warp, .clipMask, .text:
-                    // print("🟡 UNGROUP: Not a group, keeping selected")
                     newSelectedShapeIDs.insert(objectID)
                 }
-            } else {
-                // print("🔴 UNGROUP: Could not find object \(objectID)")
             }
-        }
-
-        var addedShapes: [UUID: VectorShape] = [:]
-        var addedObjectIDsInOrder: [UUID] = []
-
-        for shape in shapesToAdd {
-            addedShapes[shape.id] = shape
-            addedObjectIDsInOrder.append(shape.id)
         }
 
         let command = GroupCommand(
             operation: .ungroup,
             layerIndex: layerIndex,
-            removedObjectIDs: shapesToRemove,
+            removedObjectIDs: groupsToRemove,  // Groups to remove from layer.objectIDs and snapshot.objects
             removedShapes: removedShapes,
-            addedObjectIDs: addedObjectIDsInOrder,
-            addedShapes: addedShapes,
+            addedObjectIDs: memberIDsToRestore,  // Member IDs to restore to layer.objectIDs
+            addedShapes: [:],  // Members already exist in snapshot.objects
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedShapeIDs
         )

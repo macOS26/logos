@@ -32,7 +32,7 @@ struct VectorObject: Identifiable, Hashable {
             return .clipMask(shape)
         } else if shape.isClippingGroup {
             return .clipGroup(shape)
-        } else if shape.isGroup && !shape.groupedShapes.isEmpty {
+        } else if shape.isGroup && (!shape.memberIDs.isEmpty || !shape.groupedShapes.isEmpty) {
             return .group(shape)
         } else if shape.isWarpObject {
             return .warp(shape)
@@ -178,7 +178,7 @@ extension VectorObject: Codable {
                 objectType = .clipMask(shape)
             } else if shape.isClippingGroup {
                 objectType = .clipGroup(shape)
-            } else if shape.isGroup && !shape.groupedShapes.isEmpty {
+            } else if shape.isGroup && (!shape.memberIDs.isEmpty || !shape.groupedShapes.isEmpty) {
                 objectType = .group(shape)
             } else if shape.isWarpObject {
                 objectType = .warp(shape)
