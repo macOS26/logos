@@ -480,44 +480,53 @@ struct LayerCanvasView: View {
                     // Save parent's transform (includes drag delta if parent group is selected)
                     let parentTransform = context.transform
 
-                    // Render each child shape in the group
-                    for childShape in memberShapes {
-                        guard childShape.isVisible else { continue }
+                    // Helper function to recursively render group members
+                    func renderGroupMembers(_ shapes: [VectorShape], parentXform: CGAffineTransform) {
+                        for childShape in shapes {
+                            guard childShape.isVisible else { continue }
 
-                        // Check if THIS CHILD is individually selected (not just the group)
-                        let isChildSelected = selectedObjectIDs.contains(childShape.id)
-                        let isChildText = childShape.typography != nil
+                            // Check if THIS CHILD is individually selected (not just the group)
+                            let isChildSelected = selectedObjectIDs.contains(childShape.id)
+                            let isChildText = childShape.typography != nil
 
-                        // Apply drag preview to individual child if it's selected
-                        if isChildSelected && dragPreviewDelta != .zero {
-                            context.transform = baseTransform
-                                .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
-                        } else {
-                            context.transform = parentTransform  // Preserve parent's drag delta
-                        }
-
-                        // Use child-specific selection state for scale transform
-                        let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
-
-                        // Check if child itself is clipped by another object
-                        let maskShape: VectorShape? = {
-                            guard let maskID = childShape.clippedByShapeID,
-                                  let maskObject = document.snapshot.objects[maskID] else {
-                                return nil
+                            // Apply drag preview to individual child if it's selected
+                            if isChildSelected && dragPreviewDelta != .zero {
+                                context.transform = baseTransform
+                                    .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
+                            } else {
+                                context.transform = parentXform  // Preserve parent's drag delta
                             }
-                            return maskObject.shape
-                        }()
 
-                        let liveChildShape = applyLiveCornerRadii(to: applyLivePositions(to: childShape))
+                            // Use child-specific selection state for scale transform
+                            let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                        if VectorText.from(liveChildShape) != nil {
-                            renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: maskShape)
-                        } else if hasImageData(liveChildShape) {
-                            renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape, canvasSize: size)
-                        } else {
-                            renderShape(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            // Check if child itself is clipped by another object
+                            let maskShape: VectorShape? = {
+                                guard let maskID = childShape.clippedByShapeID,
+                                      let maskObject = document.snapshot.objects[maskID] else {
+                                    return nil
+                                }
+                                return maskObject.shape
+                            }()
+
+                            let liveChildShape = applyLiveCornerRadii(to: applyLivePositions(to: childShape))
+
+                            // If child is a nested group, recursively render its members
+                            if liveChildShape.isGroupContainer {
+                                let nestedMembers = document.resolveGroupMembers(liveChildShape)
+                                renderGroupMembers(nestedMembers, parentXform: context.transform)
+                            } else if VectorText.from(liveChildShape) != nil {
+                                renderText(liveChildShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: maskShape)
+                            } else if hasImageData(liveChildShape) {
+                                renderImage(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape, canvasSize: size)
+                            } else {
+                                renderShape(liveChildShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: maskShape)
+                            }
                         }
                     }
+
+                    // Render all members (including nested groups)
+                    renderGroupMembers(memberShapes, parentXform: parentTransform)
 
                 case .shape(let shape), .warp(let shape), .clipMask(let shape):
                     // Get mask shape if this object is clipped by another object
