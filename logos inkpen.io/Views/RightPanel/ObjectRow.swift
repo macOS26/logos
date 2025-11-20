@@ -682,7 +682,7 @@ struct NestedGroupChildrenView: View {
                             Color.clear.frame(width: 12, height: 12)
                         }
 
-                        Image(systemName: childShape.isGroupContainer ? "folder.fill" : "square")
+                        Image(systemName: childShape.isGroupContainer ? "folder" : "square")
                             .font(.system(size: 10))
                             .foregroundColor(childShape.isGroupContainer ? .purple : .blue)
                             .frame(width: 12)
@@ -764,7 +764,7 @@ extension ObjectRow {
             }
             return "square"
         case .text: return "textformat"
-        case .group: return "square.stack"
+        case .group: return "folder.fill"
         }
     }
 
@@ -793,9 +793,9 @@ extension ObjectRow {
         if childShape.typography != nil {
             return "textformat"
         }
-        // Use folder icon for nested groups
+        // Use outlined folder icon for nested groups
         if childShape.isGroupContainer {
-            return "folder.fill"
+            return "folder"
         }
         return childIconName(for: childShape)
     }
