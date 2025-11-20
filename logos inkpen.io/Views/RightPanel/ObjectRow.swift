@@ -793,6 +793,10 @@ extension ObjectRow {
         if childShape.typography != nil {
             return "textformat"
         }
+        // Use folder icon for nested groups
+        if childShape.isGroupContainer {
+            return "folder.fill"
+        }
         return childIconName(for: childShape)
     }
 
@@ -810,6 +814,10 @@ extension ObjectRow {
 
         if childShape.typography != nil {
             return .green
+        }
+        // Use purple for nested groups
+        if childShape.isGroupContainer {
+            return .purple
         }
         return .blue
     }
