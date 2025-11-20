@@ -295,17 +295,27 @@ struct ObjectRow: View {
                                 .font(.system(size: 10))
                                 .foregroundColor(objectIconColor)
                                 .frame(width: 12)
-                            
+
                             Circle()
                                 .fill(isSelected ? Color.blue : Color.clear)
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                 .frame(width: 8, height: 8)
-                            
+
                             Text(name)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                            // Show member count for groups (like layers show object count)
+                            if objectType == .group && !memberIDs.isEmpty {
+                                Spacer()
+                                Text("\(memberIDs.count)")
+                                    .font(.system(size: 9))
+                                    .multilineTextAlignment(.trailing)
+                                    .foregroundColor(.secondary.opacity(0.8))
+                                    .padding(.trailing, 4)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
