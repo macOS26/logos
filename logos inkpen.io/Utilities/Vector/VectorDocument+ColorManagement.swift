@@ -145,20 +145,45 @@ extension VectorDocument {
                         oldOpacities[objectID] = currentOpacity
                         newOpacities[objectID] = currentOpacity
 
-                        // Capture old colors of children
-                        for childShape in shape.groupedShapes {
-                            if let typography = childShape.typography {
-                                oldColors[childShape.id] = typography.fillColor
-                                newColors[childShape.id] = color
-                                let childOpacity = typography.fillOpacity
-                                oldOpacities[childShape.id] = childOpacity
-                                newOpacities[childShape.id] = childOpacity
-                            } else {
-                                oldColors[childShape.id] = childShape.fillStyle?.color ?? .black
-                                newColors[childShape.id] = color
-                                let childOpacity = childShape.fillStyle?.opacity ?? defaultFillOpacity
-                                oldOpacities[childShape.id] = childOpacity
-                                newOpacities[childShape.id] = childOpacity
+                        // Capture old colors of member shapes (modern groups with memberIDs)
+                        if !shape.memberIDs.isEmpty {
+                            for memberID in shape.memberIDs {
+                                if let memberObj = snapshot.objects[memberID] {
+                                    switch memberObj.objectType {
+                                    case .text(let memberShape):
+                                        oldColors[memberID] = memberShape.typography?.fillColor ?? .black
+                                        newColors[memberID] = color
+                                        let childOpacity = memberShape.typography?.fillOpacity ?? defaultFillOpacity
+                                        oldOpacities[memberID] = childOpacity
+                                        newOpacities[memberID] = childOpacity
+                                    case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .clipMask(let memberShape):
+                                        oldColors[memberID] = memberShape.fillStyle?.color ?? .black
+                                        newColors[memberID] = color
+                                        let childOpacity = memberShape.fillStyle?.opacity ?? defaultFillOpacity
+                                        oldOpacities[memberID] = childOpacity
+                                        newOpacities[memberID] = childOpacity
+                                    case .group, .clipGroup:
+                                        // Nested groups handled recursively
+                                        break
+                                    }
+                                }
+                            }
+                        } else {
+                            // Legacy groups with embedded groupedShapes
+                            for childShape in shape.groupedShapes {
+                                if let typography = childShape.typography {
+                                    oldColors[childShape.id] = typography.fillColor
+                                    newColors[childShape.id] = color
+                                    let childOpacity = typography.fillOpacity
+                                    oldOpacities[childShape.id] = childOpacity
+                                    newOpacities[childShape.id] = childOpacity
+                                } else {
+                                    oldColors[childShape.id] = childShape.fillStyle?.color ?? .black
+                                    newColors[childShape.id] = color
+                                    let childOpacity = childShape.fillStyle?.opacity ?? defaultFillOpacity
+                                    oldOpacities[childShape.id] = childOpacity
+                                    newOpacities[childShape.id] = childOpacity
+                                }
                             }
                         }
 
@@ -169,20 +194,45 @@ extension VectorDocument {
                         oldOpacities[objectID] = currentOpacity
                         newOpacities[objectID] = currentOpacity
 
-                        // Capture old colors of children
-                        for childShape in shape.groupedShapes {
-                            if let typography = childShape.typography {
-                                oldColors[childShape.id] = typography.strokeColor
-                                newColors[childShape.id] = color
-                                let childOpacity = typography.strokeOpacity
-                                oldOpacities[childShape.id] = childOpacity
-                                newOpacities[childShape.id] = childOpacity
-                            } else {
-                                oldColors[childShape.id] = childShape.strokeStyle?.color ?? .clear
-                                newColors[childShape.id] = color
-                                let childOpacity = childShape.strokeStyle?.opacity ?? defaultStrokeOpacity
-                                oldOpacities[childShape.id] = childOpacity
-                                newOpacities[childShape.id] = childOpacity
+                        // Capture old colors of member shapes (modern groups with memberIDs)
+                        if !shape.memberIDs.isEmpty {
+                            for memberID in shape.memberIDs {
+                                if let memberObj = snapshot.objects[memberID] {
+                                    switch memberObj.objectType {
+                                    case .text(let memberShape):
+                                        oldColors[memberID] = memberShape.typography?.strokeColor ?? .clear
+                                        newColors[memberID] = color
+                                        let childOpacity = memberShape.typography?.strokeOpacity ?? defaultStrokeOpacity
+                                        oldOpacities[memberID] = childOpacity
+                                        newOpacities[memberID] = childOpacity
+                                    case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .clipMask(let memberShape):
+                                        oldColors[memberID] = memberShape.strokeStyle?.color ?? .clear
+                                        newColors[memberID] = color
+                                        let childOpacity = memberShape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                                        oldOpacities[memberID] = childOpacity
+                                        newOpacities[memberID] = childOpacity
+                                    case .group, .clipGroup:
+                                        // Nested groups handled recursively
+                                        break
+                                    }
+                                }
+                            }
+                        } else {
+                            // Legacy groups with embedded groupedShapes
+                            for childShape in shape.groupedShapes {
+                                if let typography = childShape.typography {
+                                    oldColors[childShape.id] = typography.strokeColor
+                                    newColors[childShape.id] = color
+                                    let childOpacity = typography.strokeOpacity
+                                    oldOpacities[childShape.id] = childOpacity
+                                    newOpacities[childShape.id] = childOpacity
+                                } else {
+                                    oldColors[childShape.id] = childShape.strokeStyle?.color ?? .clear
+                                    newColors[childShape.id] = color
+                                    let childOpacity = childShape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                                    oldOpacities[childShape.id] = childOpacity
+                                    newOpacities[childShape.id] = childOpacity
+                                }
                             }
                         }
                     }
