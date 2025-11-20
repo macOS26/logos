@@ -263,21 +263,44 @@ extension VectorDocument {
         for objectID in viewState.selectedObjectIDs {
             if let vectorObject = snapshot.objects[ objectID] {
                 switch vectorObject.objectType {
-                case .group(let groupShape):
-                    for childShape in groupShape.groupedShapes {
-                        if let childObject = snapshot.objects[ childShape.id] {
-                            switch childObject.objectType {
-                            case .text:
-                                updateShapeByID(childShape.id) { shape in
-                                    applyColorToShape(&shape, color: color, isText: true)
+                case .group(let groupShape), .clipGroup(let groupShape):
+                    // Modern groups with memberIDs
+                    if !groupShape.memberIDs.isEmpty {
+                        for memberID in groupShape.memberIDs {
+                            if let memberObject = snapshot.objects[memberID] {
+                                switch memberObject.objectType {
+                                case .text:
+                                    updateShapeByID(memberID) { shape in
+                                        applyColorToShape(&shape, color: color, isText: true)
+                                    }
+                                case .shape, .image, .warp, .clipGroup, .clipMask:
+                                    updateShapeByID(memberID) { shape in
+                                        applyColorToShape(&shape, color: color, isText: false)
+                                    }
+                                case .group:
+                                    updateShapeByID(memberID) { shape in
+                                        applyColorToShape(&shape, color: color, isText: false)
+                                    }
                                 }
-                            case .shape, .image, .warp, .clipGroup, .clipMask:
-                                updateShapeByID(childShape.id) { shape in
-                                    applyColorToShape(&shape, color: color, isText: false)
-                                }
-                            case .group:
-                                updateShapeByID(childShape.id) { shape in
-                                    applyColorToShape(&shape, color: color, isText: false)
+                            }
+                        }
+                    } else {
+                        // Legacy groups with embedded groupedShapes
+                        for childShape in groupShape.groupedShapes {
+                            if let childObject = snapshot.objects[ childShape.id] {
+                                switch childObject.objectType {
+                                case .text:
+                                    updateShapeByID(childShape.id) { shape in
+                                        applyColorToShape(&shape, color: color, isText: true)
+                                    }
+                                case .shape, .image, .warp, .clipGroup, .clipMask:
+                                    updateShapeByID(childShape.id) { shape in
+                                        applyColorToShape(&shape, color: color, isText: false)
+                                    }
+                                case .group:
+                                    updateShapeByID(childShape.id) { shape in
+                                        applyColorToShape(&shape, color: color, isText: false)
+                                    }
                                 }
                             }
                         }
@@ -286,7 +309,7 @@ extension VectorDocument {
                     updateShapeByID(objectID) { shape in
                         applyColorToShape(&shape, color: color, isText: true)
                     }
-                case .shape, .image, .warp, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .clipMask:
                     updateShapeByID(objectID) { shape in
                         applyColorToShape(&shape, color: color, isText: false)
                     }
