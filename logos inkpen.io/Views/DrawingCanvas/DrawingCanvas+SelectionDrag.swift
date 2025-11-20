@@ -231,10 +231,16 @@ extension DrawingCanvas {
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
 
-            // First pass: collect old shapes for undo
+            // First pass: collect old shapes for undo (BEFORE any modifications)
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
-                if case .shape(let shape) = object.objectType {
+
+                switch object.objectType {
+                case .text(let shape):
+                    oldShapes[object.id] = shape
+                    affectedObjectIDs.insert(object.id)
+
+                case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
@@ -248,6 +254,20 @@ extension DrawingCanvas {
                             }
                         }
                     }
+
+                case .group(let shape), .clipGroup(let shape):
+                    oldShapes[object.id] = shape
+                    affectedObjectIDs.insert(object.id)
+
+                    // For groups with memberIDs, also capture old state of all member shapes
+                    if !shape.memberIDs.isEmpty {
+                        for memberID in shape.memberIDs {
+                            if let memberObj = document.snapshot.objects[memberID] {
+                                oldShapes[memberID] = memberObj.shape
+                                affectedObjectIDs.insert(memberID)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -257,12 +277,8 @@ extension DrawingCanvas {
                 switch object.objectType {
                 case .text(let shape):
                     document.translateTextInUnified(id: shape.id, delta: finalDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
                 case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
-                    affectedObjectIDs.insert(object.id)
-                    oldShapes[object.id] = shape
                 }
             }
 
