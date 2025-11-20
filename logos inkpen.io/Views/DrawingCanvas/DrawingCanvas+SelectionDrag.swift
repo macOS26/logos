@@ -49,7 +49,13 @@ extension DrawingCanvas {
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let bounds: CGRect
+                if shape.isGroupContainer {
+                    // Use document's calculateGroupBounds to resolve member shapes
+                    bounds = document.calculateGroupBounds(shape)
+                } else {
+                    bounds = shape.bounds
+                }
                 // Apply transform to get bounds in document coordinates
                 let transformedBounds = bounds.applying(shape.transform)
                 if let existing = combinedBounds {
@@ -85,7 +91,12 @@ extension DrawingCanvas {
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let bounds: CGRect
+                if shape.isGroupContainer {
+                    bounds = document.calculateGroupBounds(shape)
+                } else {
+                    bounds = shape.bounds
+                }
                 // Calculate center in DOCUMENT coordinates (not local bounds)
                 let localCenter = CGPoint(x: bounds.midX, y: bounds.midY)
                 let documentCenter = localCenter.applying(shape.transform)

@@ -339,6 +339,31 @@ extension VectorDocument {
         return result
     }
 
+    /// Calculate bounds for a group by resolving its member shapes
+    /// - Parameter groupShape: The group shape to calculate bounds for
+    /// - Returns: The combined bounds of all member shapes in document coordinates
+    func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
+        guard groupShape.isGroupContainer else { return groupShape.bounds }
+
+        let members = resolveGroupMembers(groupShape)
+        var calculatedBounds = CGRect.null
+
+        for member in members {
+            let memberBounds: CGRect
+            if member.typography != nil, let textPosition = member.textPosition, let areaSize = member.areaSize {
+                memberBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
+            } else if member.isGroupContainer {
+                // Recursively calculate bounds for nested groups
+                memberBounds = calculateGroupBounds(member).applying(member.transform)
+            } else {
+                memberBounds = member.bounds.applying(member.transform)
+            }
+            calculatedBounds = calculatedBounds.union(memberBounds)
+        }
+
+        return calculatedBounds.isEmpty ? groupShape.bounds : calculatedBounds
+    }
+
     func findText(by id: UUID) -> VectorText? {
         // O(1) lookup in snapshot.objects
         if let object = snapshot.objects[id] {
