@@ -231,6 +231,24 @@ extension DrawingCanvas {
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
 
+            // Helper to recursively collect all member shapes from nested groups
+            func collectGroupMembers(_ shape: VectorShape) {
+                guard !shape.memberIDs.isEmpty else { return }
+                for memberID in shape.memberIDs {
+                    guard let memberObj = document.snapshot.objects[memberID] else { continue }
+                    oldShapes[memberID] = memberObj.shape
+                    affectedObjectIDs.insert(memberID)
+
+                    // Recursively collect nested group members
+                    switch memberObj.objectType {
+                    case .group(let nestedShape), .clipGroup(let nestedShape):
+                        collectGroupMembers(nestedShape)
+                    default:
+                        break
+                    }
+                }
+            }
+
             // First pass: collect old shapes for undo (BEFORE any modifications)
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
@@ -259,15 +277,8 @@ extension DrawingCanvas {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
-                    // For groups with memberIDs, also capture old state of all member shapes
-                    if !shape.memberIDs.isEmpty {
-                        for memberID in shape.memberIDs {
-                            if let memberObj = document.snapshot.objects[memberID] {
-                                oldShapes[memberID] = memberObj.shape
-                                affectedObjectIDs.insert(memberID)
-                            }
-                        }
-                    }
+                    // Recursively capture old state of all member shapes (including nested groups)
+                    collectGroupMembers(shape)
                 }
             }
 
