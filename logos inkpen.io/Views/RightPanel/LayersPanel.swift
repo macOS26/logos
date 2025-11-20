@@ -86,6 +86,8 @@ struct LayersPanel: View {
         var rows: [RowType] = []
 
         // Helper function to recursively add nested group children
+        // Note: NestedGroupChildrenView in ObjectRow.swift already reverses the display order,
+        // so we should NOT reverse here to keep indices aligned
         func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID) {
             guard childShape.isGroupContainer else { return }
 
@@ -93,8 +95,8 @@ struct LayersPanel: View {
             guard isChildGroupExpanded else { return }
 
             let nestedMembers = document.resolveGroupMembers(childShape)
-            // Reverse to match NestedGroupChildrenView display order
-            for nestedChild in nestedMembers.reversed() {
+            // Don't reverse - NestedGroupChildrenView already reverses for display
+            for nestedChild in nestedMembers {
                 rows.append(.childObject(layerIndex: layerIndex, parentObjectId: childShape.id, childShapeId: nestedChild.id))
 
                 // Recursively handle deeper nesting
