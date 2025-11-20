@@ -545,6 +545,9 @@ struct VectorShape: Hashable, Identifiable {
             let shapeBounds: CGRect
             if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
+            } else if shape.isGroupContainer {
+                // Use groupBounds for nested groups to get their full member bounds
+                shapeBounds = shape.groupBounds.applying(shape.transform)
             } else {
                 // Apply transform to get world-space bounds
                 shapeBounds = shape.bounds.applying(shape.transform)
