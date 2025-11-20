@@ -682,9 +682,9 @@ struct NestedGroupChildrenView: View {
                             Color.clear.frame(width: 12, height: 12)
                         }
 
-                        Image(systemName: childShape.isGroupContainer ? "square.stack" : "square")
+                        Image(systemName: childShape.isGroupContainer ? "folder.fill" : "square")
                             .font(.system(size: 10))
-                            .foregroundColor(childShape.isGroupContainer ? .green : .blue)
+                            .foregroundColor(childShape.isGroupContainer ? .purple : .blue)
                             .frame(width: 12)
 
                         Circle()
