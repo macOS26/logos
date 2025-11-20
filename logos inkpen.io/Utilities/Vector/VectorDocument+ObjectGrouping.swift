@@ -105,6 +105,7 @@ extension VectorDocument {
         var memberIDsToRestore: [UUID] = []
 
         var removedShapes: [UUID: VectorShape] = [:]
+        var addedShapes: [UUID: VectorShape] = [:]
 
         for objectID in viewState.selectedObjectIDs {
             if let vectorObject = findObject(by: objectID) {
@@ -122,9 +123,12 @@ extension VectorDocument {
                             }
                         } else {
                             // DEPRECATED: Fallback for old groups with groupedShapes
+                            // Legacy groups have embedded shapes that don't exist in snapshot.objects
+                            // We need to extract them and add them as new objects
                             for groupedShape in shape.groupedShapes {
                                 memberIDsToRestore.append(groupedShape.id)
                                 newSelectedShapeIDs.insert(groupedShape.id)
+                                addedShapes[groupedShape.id] = groupedShape
                             }
                         }
                     } else {
@@ -142,7 +146,7 @@ extension VectorDocument {
             removedObjectIDs: groupsToRemove,  // Groups to remove from layer.objectIDs and snapshot.objects
             removedShapes: removedShapes,
             addedObjectIDs: memberIDsToRestore,  // Member IDs to restore to layer.objectIDs
-            addedShapes: [:],  // Members already exist in snapshot.objects
+            addedShapes: addedShapes,  // For legacy groups, contains the embedded shapes to create
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedShapeIDs
         )

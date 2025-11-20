@@ -84,8 +84,17 @@ class GroupCommand: BaseCommand {
                 document.removeParentCacheForGroup(objectID)
             }
 
-            // Add member IDs back to layer.objectIDs (they already exist in snapshot.objects)
+            // Add member IDs back to layer.objectIDs
             for (offset, objectID) in addedObjectIDs.enumerated() {
+                // For legacy groups, shapes need to be created in snapshot.objects
+                if let shape = addedShapes[objectID] {
+                    let newObject = VectorObject(
+                        shape: shape,
+                        layerIndex: layerIndex
+                    )
+                    document.snapshot.objects[objectID] = newObject
+                }
+                // For modern groups, shapes already exist in snapshot.objects
                 updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
             }
 
@@ -143,6 +152,14 @@ class GroupCommand: BaseCommand {
 
         case .ungroup:
             // Undo ungroup: restore group to snapshot.objects, remove members from layer.objectIDs
+
+            // For legacy groups, remove the shapes that were created during ungroup
+            for objectID in addedObjectIDs {
+                if addedShapes[objectID] != nil {
+                    document.snapshot.objects.removeValue(forKey: objectID)
+                }
+            }
+
             for (objectID, shape) in removedShapes {
                 let restoredObject = VectorObject(
                     shape: shape,
