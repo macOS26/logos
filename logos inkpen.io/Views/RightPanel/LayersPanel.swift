@@ -112,9 +112,6 @@ struct LayersPanel: View {
                                 // Display reversed to match layer objectIDs display order
                                 for childShape in memberShapes.reversed() {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
-
-                                    // Recursively add nested group children
-                                    addNestedGroupChildren(childShape: childShape, layerIndex: layerIndex, parentObjectId: childShape.id, to: &rows)
                                 }
                             default:
                                 break
@@ -126,21 +123,6 @@ struct LayersPanel: View {
         }
         
         return rows
-    }
-
-    private func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID, to rows: inout [RowType]) {
-        guard childShape.isGroupContainer else { return }
-
-        let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
-        guard isChildGroupExpanded else { return }
-
-        let nestedMembers = document.resolveGroupMembers(childShape)
-        for nestedChild in nestedMembers.reversed() {
-            rows.append(.childObject(layerIndex: layerIndex, parentObjectId: parentObjectId, childShapeId: nestedChild.id))
-
-            // Recursively handle deeper nesting
-            addNestedGroupChildren(childShape: nestedChild, layerIndex: layerIndex, parentObjectId: nestedChild.id, to: &rows)
-        }
     }
 
     var body: some View {
@@ -299,7 +281,7 @@ struct LayersPanel: View {
                 let rowY = CGFloat(rowIndex) * kLayerRowHeight
                 let iconCenterY = rowY + (kLayerRowHeight / 2)
 
-                Color.red.opacity(0.3)
+                Color.red.opacity(0.0000000)
                     .frame(width: 20, height: 20)
                     .contentShape(Rectangle())
                     .position(x: xPosition, y: iconCenterY)
@@ -348,11 +330,20 @@ struct LayersPanel: View {
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.changeNotifier.layerChangeToken)
                 .padding(.horizontal, 4)
 
-                // NOTE: Drag overlays disabled for now because visibleRows doesn't align with
-                // actual rendered rows (layers contain objects/children in nested VStacks).
-                // The individual button actions in ObjectRow and NestedGroupChildrenView handle
-                // visibility/lock toggling for objects and nested children.
-                // TODO: Re-enable when row structure is flattened to match visibleRows
+                if overlaysEnabled {
+                    let iconSize: CGFloat = 20
+                    let iconSpacing: CGFloat = 2
+                    let rowPadding: CGFloat = 4
+                    let eyeIconX = rowPadding + (iconSize / 2)
+                    let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
+
+                    dragOverlay(xPosition: eyeIconX, isDragging: \.isDraggingVisibility, toggle: toggleVisibility)
+                        .padding(.horizontal, 4)
+
+                    dragOverlay(xPosition: lockIconX, isDragging: \.isDraggingLock, toggle: toggleLock)
+                        .padding(.horizontal, 4)
+                        .zIndex(200)
+                }
             }
         }
     }
@@ -396,24 +387,31 @@ struct LayersPanel: View {
                     }
                 }
             }
-        case .childObject(let layerIndex, _, let childShapeId):
-            print("🟡 toggleVisibility childObject: \(childShapeId)")
+        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                // With memberIDs, child objects are stored directly in snapshot.objects
-                if let childObj = document.snapshot.objects[childShapeId] {
-                    var shape = childObj.shape
-                    shape.isVisible.toggle()
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObj.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
-                    )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    processedObjectsDuringDrag.insert(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
-                    print("🟢 toggleVisibility childObject SUCCESS: \(childShapeId)")
-                } else {
-                    print("🔴 toggleVisibility childObject NOT FOUND: \(childShapeId)")
+                if let parentObj = document.snapshot.objects[parentObjectId] {
+                    var updatedParentShape: VectorShape?
+
+                    switch parentObj.objectType {
+                    case .group(var parentShape), .clipGroup(var parentShape):
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isVisible.toggle()
+                            updatedParentShape = parentShape
+                        }
+                    default:
+                        break
+                    }
+
+                    if let parentShape = updatedParentShape {
+                        let updatedObject = VectorObject(
+                            id: parentObjectId,
+                            layerIndex: layerIndex,
+                            objectType: parentShape.isClippingGroup ? .clipGroup(parentShape) : .group(parentShape)
+                        )
+                        document.snapshot.objects[parentObjectId] = updatedObject
+                        processedObjectsDuringDrag.insert(childShapeId)
+                        document.triggerLayerUpdate(for: layerIndex)
+                    }
                 }
             }
         }
@@ -449,20 +447,21 @@ struct LayersPanel: View {
                     }
                 }
             }
-        case .childObject(let layerIndex, _, let childShapeId):
+        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                // With memberIDs, child objects are stored directly in snapshot.objects
-                if let childObj = document.snapshot.objects[childShapeId] {
-                    var shape = childObj.shape
-                    shape.isLocked.toggle()
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObj.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
-                    )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    processedObjectsDuringDrag.insert(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
+                if let parentObj = document.snapshot.objects[parentObjectId] {
+                    if case .shape(var parentShape) = parentObj.objectType {
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isLocked.toggle()
+                            let updatedObject = VectorObject(
+                                shape: parentShape,
+                                layerIndex: layerIndex,
+                            )
+                            document.snapshot.objects[parentObjectId] = updatedObject
+                            processedObjectsDuringDrag.insert(childShapeId)
+                            document.triggerLayerUpdate(for: layerIndex)
+                        }
+                    }
                 }
             }
         }
