@@ -86,7 +86,7 @@ struct TransformationControls: View {
     }
 
     var hasSelection: Bool {
-        !document.viewState.PublishedSelectedObjectIDs.isEmpty
+        !document.viewState.selectedObjectIDs.isEmpty
     }
 
     private var currentUnit: MeasurementUnit {
@@ -318,10 +318,12 @@ struct TransformationControls: View {
 
         var combinedBounds: CGRect?
 
-        for objectID in document.viewState.selectedObjectIDs {
-            if let newVectorObject = document.snapshot.objects[objectID] {
-                switch newVectorObject.objectType {
-                case .text(let shape):
+        // Iterate through all objects to find selected ones
+        // This is more reliable than direct lookup by ID
+        for vectorObject in document.snapshot.objects.values {
+            switch vectorObject.objectType {
+            case .text(let shape):
+                if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                     let shapeBounds = CGRect(
                         x: position.x,
@@ -330,12 +332,14 @@ struct TransformationControls: View {
                         height: shape.bounds.height
                     )
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
-                case .shape(let shape),
-                     .image(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
+                }
+            case .shape(let shape),
+                 .image(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                 }
