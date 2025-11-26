@@ -30,6 +30,32 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .picas: return 12.0
         }
     }
+
+    /// Convert points to this measurement unit
+    func fromPoints(_ points: Double) -> Double {
+        return points / pointsPerUnit
+    }
+
+    /// Convert from this measurement unit to points
+    func toPoints(_ value: Double) -> Double {
+        return value * pointsPerUnit
+    }
+
+    /// Format a value in this unit with appropriate decimal precision
+    func format(_ value: Double) -> String {
+        switch self {
+        case .inches:
+            return String(format: "%.3f", value)
+        case .centimeters:
+            return String(format: "%.2f", value)
+        case .millimeters:
+            return String(format: "%.1f", value)
+        case .points, .pixels:
+            return String(format: "%.1f", value)
+        case .picas:
+            return String(format: "%.2f", value)
+        }
+    }
 }
 
 enum ZoomMode: Equatable {

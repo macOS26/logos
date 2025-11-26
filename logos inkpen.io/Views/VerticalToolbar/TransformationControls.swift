@@ -89,6 +89,14 @@ struct TransformationControls: View {
         !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
 
+    private var currentUnit: MeasurementUnit {
+        document.settings.unit
+    }
+
+    private var unitSuffix: String {
+        currentUnit.abbreviation
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             NinePointOriginSelector(selectedOrigin: transformOriginBinding)
@@ -101,13 +109,17 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary)
                 TextField("", text: $xValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 60)
+                    .frame(width: 50)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
                     .onSubmit {
                         applyTransformation()
                     }
+                Text(unitSuffix)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 16, alignment: .leading)
             }
 
             HStack(spacing: 2) {
@@ -116,13 +128,17 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary)
                 TextField("", text: $yValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 60)
+                    .frame(width: 50)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
                     .onSubmit {
                         applyTransformation()
                     }
+                Text(unitSuffix)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 16, alignment: .leading)
             }
 
             HStack(spacing: 2) {
@@ -131,7 +147,7 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary)
                 TextField("", text: $widthValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 60)
+                    .frame(width: 50)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -146,6 +162,10 @@ struct TransformationControls: View {
                             updateHeightProportionally()
                         }
                     }
+                Text(unitSuffix)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 16, alignment: .leading)
             }
 
             HStack(spacing: 2) {
@@ -154,7 +174,7 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary)
                 TextField("", text: $heightValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 60)
+                    .frame(width: 50)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -169,6 +189,10 @@ struct TransformationControls: View {
                             updateWidthProportionally()
                         }
                     }
+                Text(unitSuffix)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 16, alignment: .leading)
             }
 
             Button(action: {
@@ -219,9 +243,12 @@ struct TransformationControls: View {
         }
         .onChange(of: liveScaleDimensions) { _, _ in
             if document.isHandleScalingActive && liveScaleDimensions != .zero {
-                widthValue = String(format: "%.2f", liveScaleDimensions.width)
-                heightValue = String(format: "%.2f", liveScaleDimensions.height)
+                widthValue = currentUnit.format(currentUnit.fromPoints(liveScaleDimensions.width))
+                heightValue = currentUnit.format(currentUnit.fromPoints(liveScaleDimensions.height))
             }
+        }
+        .onChange(of: document.settings.unit) { _, _ in
+            updateValuesFromSelection()
         }
     }
 
@@ -236,11 +263,11 @@ struct TransformationControls: View {
 
         let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
+        let xInPoints = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
+        let yInPoints = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
 
-        xValue = String(format: "%.2f", x)
-        yValue = String(format: "%.2f", y)
+        xValue = currentUnit.format(currentUnit.fromPoints(xInPoints))
+        yValue = currentUnit.format(currentUnit.fromPoints(yInPoints))
     }
 
     private func updateValuesFromSelection() {
@@ -255,26 +282,26 @@ struct TransformationControls: View {
 
         let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y - pageOrigin.y
+        let xInPoints = bounds.minX + bounds.width * origin.x - pageOrigin.x
+        let yInPoints = bounds.minY + bounds.height * origin.y - pageOrigin.y
 
-        xValue = String(format: "%.2f", x)
-        yValue = String(format: "%.2f", y)
-        widthValue = String(format: "%.2f", bounds.width)
-        heightValue = String(format: "%.2f", bounds.height)
+        xValue = currentUnit.format(currentUnit.fromPoints(xInPoints))
+        yValue = currentUnit.format(currentUnit.fromPoints(yInPoints))
+        widthValue = currentUnit.format(currentUnit.fromPoints(bounds.width))
+        heightValue = currentUnit.format(currentUnit.fromPoints(bounds.height))
         aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : 1.0
     }
 
     private func updateHeightProportionally() {
         guard let width = Double(widthValue), aspectRatio > 0 else { return }
         let newHeight = width / aspectRatio
-        heightValue = String(format: "%.2f", newHeight)
+        heightValue = currentUnit.format(newHeight)
     }
 
     private func updateWidthProportionally() {
         guard let height = Double(heightValue), aspectRatio > 0 else { return }
         let newWidth = height * aspectRatio
-        widthValue = String(format: "%.2f", newWidth)
+        widthValue = currentUnit.format(newWidth)
     }
 
     private func transformPoint(_ point: CGPoint, currentOrigin: CGPoint, newOrigin: CGPoint, scaleX: CGFloat, scaleY: CGFloat) -> CGPoint {
@@ -320,12 +347,18 @@ struct TransformationControls: View {
 
     private func applyTransformation() {
         guard let currentBounds = getSelectionBounds(),
-              let newX = Double(xValue),
-              let newY = Double(yValue),
-              let newWidth = Double(widthValue),
-              let newHeight = Double(heightValue),
-              newWidth > 0,
-              newHeight > 0 else { return }
+              let newXInUnit = Double(xValue),
+              let newYInUnit = Double(yValue),
+              let newWidthInUnit = Double(widthValue),
+              let newHeightInUnit = Double(heightValue),
+              newWidthInUnit > 0,
+              newHeightInUnit > 0 else { return }
+
+        // Convert user input from document units to points
+        let newX = currentUnit.toPoints(newXInUnit)
+        let newY = currentUnit.toPoints(newYInUnit)
+        let newWidth = currentUnit.toPoints(newWidthInUnit)
+        let newHeight = currentUnit.toPoints(newHeightInUnit)
 
         document.modifySelectedShapesWithUndo(
             preCapture: {
