@@ -54,9 +54,7 @@ class DocumentViewState: ObservableObject {
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
-            print("🔄 selectedObjectIDs didSet: \(selectedObjectIDs)")
             PublishedSelectedObjectIDs = selectedObjectIDs
-            print("   PublishedSelectedObjectIDs now: \(PublishedSelectedObjectIDs)")
         }
     }
 
