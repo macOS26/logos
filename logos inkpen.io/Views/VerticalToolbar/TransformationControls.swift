@@ -68,7 +68,7 @@ struct NinePointOriginSelector: View {
 }
 
 struct TransformationControls: View {
-    let document: VectorDocument
+    @ObservedObject var document: VectorDocument
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     @State private var keepProportions: Bool = false
@@ -271,7 +271,12 @@ struct TransformationControls: View {
     }
 
     private func updateValuesFromSelection() {
+        print("🔍 updateValuesFromSelection called")
+        print("   selectedObjectIDs: \(document.viewState.selectedObjectIDs)")
+        print("   PublishedSelectedObjectIDs: \(document.viewState.PublishedSelectedObjectIDs)")
+
         guard let bounds = getSelectionBounds() else {
+            print("   ❌ No bounds found")
             xValue = ""
             yValue = ""
             widthValue = ""
@@ -280,6 +285,7 @@ struct TransformationControls: View {
             return
         }
 
+        print("   ✅ Bounds: \(bounds)")
         let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let xInPoints = bounds.minX + bounds.width * origin.x - pageOrigin.x
@@ -290,6 +296,8 @@ struct TransformationControls: View {
         widthValue = currentUnit.format(currentUnit.fromPoints(bounds.width))
         heightValue = currentUnit.format(currentUnit.fromPoints(bounds.height))
         aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : 1.0
+
+        print("   📏 Set values: X=\(xValue) Y=\(yValue) W=\(widthValue) H=\(heightValue)")
     }
 
     private func updateHeightProportionally() {

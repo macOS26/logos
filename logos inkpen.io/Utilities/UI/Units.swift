@@ -49,7 +49,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .centimeters:
             return String(format: "%.2f", value)
         case .millimeters:
-            return String(format: "%.1f", value)
+            return String(format: "%.2f", value)
         case .points, .pixels:
             return String(format: "%.1f", value)
         case .picas:
