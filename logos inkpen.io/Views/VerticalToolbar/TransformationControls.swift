@@ -86,7 +86,7 @@ struct TransformationControls: View {
     }
 
     var hasSelection: Bool {
-        !document.viewState.selectedObjectIDs.isEmpty
+        !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
 
     private var currentUnit: MeasurementUnit {
@@ -227,7 +227,7 @@ struct TransformationControls: View {
         .onAppear {
             updateValuesFromSelection()
         }
-        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
+        .onChange(of: document.viewState.PublishedSelectedObjectIDs) { _, _ in
             updateValuesFromSelection()
         }
         .onChange(of: document.viewState.transformOrigin) { _, _ in
