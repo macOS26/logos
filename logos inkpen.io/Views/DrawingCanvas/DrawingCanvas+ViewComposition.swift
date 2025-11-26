@@ -241,7 +241,8 @@ extension DrawingCanvas {
                 canvasSize: document.settings.sizeInPoints,
                 unit: document.settings.unit,
                 zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
+                canvasOffset: canvasOffset,
+                pageOrigin: document.settings.pageOrigin ?? .zero
             )
             .allowsHitTesting(false)
             .clipShape(
@@ -292,7 +293,8 @@ extension DrawingCanvas {
                     canvasSize: document.settings.sizeInPoints,
                     unit: document.settings.unit,
                     zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset
+                    canvasOffset: canvasOffset,
+                    pageOrigin: document.settings.pageOrigin ?? .zero
                 )
                 .allowsHitTesting(false)
                 .clipShape(

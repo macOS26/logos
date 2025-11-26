@@ -7,6 +7,7 @@ struct OptimizedGridView: View {
     let unit: MeasurementUnit
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let pageOrigin: CGPoint
 
     var body: some View {
         Canvas { context, size in
@@ -17,7 +18,7 @@ struct OptimizedGridView: View {
                 case .pixels, .points:
                     return 25.0
                 case .millimeters:
-                    return 10.0
+                    return 1.0
                 case .picas:
                     return 4.0
                 default:
@@ -45,16 +46,20 @@ struct OptimizedGridView: View {
                 showMinor: shouldShowMinor
             )
 
-            // Calculate visible tile range
+            // Calculate visible tile range, accounting for page origin
             let visibleStartX = max(0, -canvasOffset.x / zoomLevel)
             let visibleEndX = min(canvasSize.width, (size.width - canvasOffset.x) / zoomLevel)
             let visibleStartY = max(0, -canvasOffset.y / zoomLevel)
             let visibleEndY = min(canvasSize.height, (size.height - canvasOffset.y) / zoomLevel)
 
-            let tileStartX = Int(floor(visibleStartX / tileSize))
-            let tileEndX = Int(ceil(visibleEndX / tileSize))
-            let tileStartY = Int(floor(visibleStartY / tileSize))
-            let tileEndY = Int(ceil(visibleEndY / tileSize))
+            // Align grid tiles with page origin
+            let offsetFromOriginX = (visibleStartX - pageOrigin.x) / tileSize
+            let offsetFromOriginY = (visibleStartY - pageOrigin.y) / tileSize
+
+            let tileStartX = Int(floor(offsetFromOriginX))
+            let tileEndX = Int(ceil((visibleEndX - pageOrigin.x) / tileSize))
+            let tileStartY = Int(floor(offsetFromOriginY))
+            let tileEndY = Int(ceil((visibleEndY - pageOrigin.y) / tileSize))
 
             // Guard against invalid ranges
             guard tileStartX <= tileEndX && tileStartY <= tileEndY else { return }
@@ -63,8 +68,8 @@ struct OptimizedGridView: View {
             // Only draw visible tiles, reusing the same patterns
             for tileX in tileStartX...tileEndX {
                 for tileY in tileStartY...tileEndY {
-                    let x = CGFloat(tileX) * tileSize
-                    let y = CGFloat(tileY) * tileSize
+                    let x = pageOrigin.x + CGFloat(tileX) * tileSize
+                    let y = pageOrigin.y + CGFloat(tileY) * tileSize
 
                     // Check if tile is within canvas bounds
                     if x < canvasSize.width && y < canvasSize.height {
