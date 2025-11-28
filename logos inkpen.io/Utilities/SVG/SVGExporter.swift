@@ -21,8 +21,10 @@ class SVGExporter {
         let originalSize = document.settings.sizeInPoints
         let scaledWidth = originalSize.width * dpiScale
         let scaledHeight = originalSize.height * dpiScale
-        let viewBoxWidth = originalSize.width
-        let viewBoxHeight = originalSize.height
+        // For Autodesk, use scaled viewBox to match width/height (96 DPI)
+        // This ensures Autodesk reads the document at the correct size
+        let viewBoxWidth = isAutoDesk ? scaledWidth : originalSize.width
+        let viewBoxHeight = isAutoDesk ? scaledHeight : originalSize.height
         let widthStr = formatSVGNumber(scaledWidth)
         let heightStr = formatSVGNumber(scaledHeight)
         let viewBoxWidthStr = formatSVGNumber(viewBoxWidth)
@@ -71,13 +73,15 @@ class SVGExporter {
             svg += "<g \(layerAttrs)>\n"
 
             let shapesInLayer = document.getShapesForLayer(layerIndex)
+            // For Autodesk, scale coordinates to 96 DPI; otherwise use 1.0 (72 DPI)
+            let shapeScale: CGFloat = isAutoDesk ? dpiScale : 1.0
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
 
                 if let object = document.findObject(by: shape.id), case .text = object.objectType {
-                    svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
+                    svg += exportTextShape(shape, dpiScale: shapeScale, renderingMode: textRenderingMode)
                 } else {
-                    svg += exportShape(shape, dpiScale: 1.0, document: document)
+                    svg += exportShape(shape, dpiScale: shapeScale, document: document)
                 }
             }
 
@@ -112,7 +116,7 @@ class SVGExporter {
             return exportImageShape(shape, image: image, dpiScale: dpiScale)
         }
 
-        let pathData = generatePathData(from: shape.path, transform: shape.transform)
+        let pathData = generatePathData(from: shape.path, transform: shape.transform, dpiScale: dpiScale)
 
         svg += "<path d=\"\(pathData)\""
 
@@ -139,7 +143,8 @@ class SVGExporter {
             } else {
                 svg += " stroke=\"\(strokeStyle.color.svgColor)\""
             }
-            svg += " stroke-width=\"\(strokeStyle.width)\""
+            let scaledWidth = strokeStyle.width * dpiScale
+            svg += " stroke-width=\"\(scaledWidth)\""
             if strokeStyle.opacity != 1.0 {
                 svg += " stroke-opacity=\"\(strokeStyle.opacity)\""
             }
@@ -826,28 +831,31 @@ class SVGExporter {
         return svg
     }
 
-    private func generatePathData(from path: VectorPath, transform: CGAffineTransform) -> String {
+    private func generatePathData(from path: VectorPath, transform: CGAffineTransform, dpiScale: CGFloat = 1.0) -> String {
         var pathData = ""
+        // Combine shape transform with DPI scale for Autodesk export
+        let scaleTransform = CGAffineTransform(scaleX: dpiScale, y: dpiScale)
+        let combinedTransform = transform.concatenating(scaleTransform)
 
         for element in path.elements {
             switch element {
             case .move(let to):
-                let point = to.cgPoint.applying(transform)
+                let point = to.cgPoint.applying(combinedTransform)
                 pathData += "M\(point.x),\(point.y) "
 
             case .line(let to):
-                let point = to.cgPoint.applying(transform)
+                let point = to.cgPoint.applying(combinedTransform)
                 pathData += "L\(point.x),\(point.y) "
 
             case .curve(let to, let control1, let control2):
-                let toPoint = to.cgPoint.applying(transform)
-                let c1 = control1.cgPoint.applying(transform)
-                let c2 = control2.cgPoint.applying(transform)
+                let toPoint = to.cgPoint.applying(combinedTransform)
+                let c1 = control1.cgPoint.applying(combinedTransform)
+                let c2 = control2.cgPoint.applying(combinedTransform)
                 pathData += "C\(c1.x),\(c1.y) \(c2.x),\(c2.y) \(toPoint.x),\(toPoint.y) "
 
             case .quadCurve(let to, let control):
-                let toPoint = to.cgPoint.applying(transform)
-                let c = control.cgPoint.applying(transform)
+                let toPoint = to.cgPoint.applying(combinedTransform)
+                let c = control.cgPoint.applying(combinedTransform)
                 pathData += "Q\(c.x),\(c.y) \(toPoint.x),\(toPoint.y) "
 
             case .close:
