@@ -43,18 +43,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
 
     /// Format a value in this unit with appropriate decimal precision
     func format(_ value: Double) -> String {
-        switch self {
-        case .inches:
-            return String(format: "%.3f", value)
-        case .centimeters:
-            return String(format: "%.2f", value)
-        case .millimeters:
-            return String(format: "%.2f", value)
-        case .points, .pixels:
-            return String(format: "%.2f", value)
-        case .picas:
-            return String(format: "%.2f", value)
-        }
+        return String(format: "%.3f", value)
     }
 }
 
