@@ -369,7 +369,11 @@ extension DrawingCanvas {
         // print("         isGroupContainer=\(shape.isGroupContainer), hasImage=\(ImageContentRegistry.containsImage(shape, in: document))")
         // print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
 
-        if ImageContentRegistry.containsImage(shape, in: document) {
+        // For images or shapes with non-identity transforms (rotation, scale, etc.),
+        // update the transform's translation rather than modifying path coordinates.
+        // This prevents "lagging" when dragging rotated shapes imported from SVG.
+        let hasNonIdentityTransform = !shape.transform.isIdentity
+        if ImageContentRegistry.containsImage(shape, in: document) || hasNonIdentityTransform {
             var updatedShape = shape
 
             if updatedShape.transform.isIdentity {
