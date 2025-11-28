@@ -398,16 +398,14 @@ class SVGParser: NSObject, XMLParserDelegate {
 
                 let scaleX = viewBoxScale.x
                 let scaleY = viewBoxScale.y
-                let is96DPI = abs(scaleX - (4.0/3.0)) < 0.1 && abs(scaleY - (4.0/3.0)) < 0.1
 
-                if is96DPI {
-                    currentTransform = CGAffineTransform.identity
-                        .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                } else {
-                    currentTransform = CGAffineTransform.identity
-                        .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                        .scaledBy(x: scaleX, y: scaleY)
-                }
+                // Always apply the viewBox scale transform to map viewBox coordinates
+                // to document coordinates. For 96 DPI SVGs (scale ≈ 4/3), this scales
+                // the artwork up to match the document size, ensuring the imported
+                // SVG appears at 100% when reopened.
+                currentTransform = CGAffineTransform.identity
+                    .translatedBy(x: -viewBoxX, y: -viewBoxY)
+                    .scaledBy(x: scaleX, y: scaleY)
 
             }
         } else {
