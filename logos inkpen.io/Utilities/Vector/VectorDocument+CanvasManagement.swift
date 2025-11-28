@@ -63,7 +63,8 @@ extension VectorDocument {
     }
 
     func onSettingsChanged() {
-        // Background layers now rendered via SwiftUI Canvas - no update needed
+        // Sync gridSettings from settings when unit or grid spacing changes
+        gridSettings.gridSpacing = settings.gridSpacing
     }
 
     /// Migrate old documents that have background shapes to new Canvas-based rendering

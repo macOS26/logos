@@ -31,6 +31,24 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         }
     }
 
+    /// Default grid spacing in the unit's native measurement (not points)
+    /// Returns the appropriate grid spacing when switching to this unit
+    var defaultGridSpacing: Double {
+        switch self {
+        case .inches: return 0.125      // 1/8 inch
+        case .centimeters: return 0.5   // 5mm
+        case .millimeters: return 1.0   // 1mm
+        case .points: return 9.0        // 9pt (1/8 inch)
+        case .pixels: return 10.0       // 10px
+        case .picas: return 1.0         // 1 pica
+        }
+    }
+
+    /// Default grid spacing converted to points
+    var defaultGridSpacingInPoints: Double {
+        return toPoints(defaultGridSpacing)
+    }
+
     /// Convert points to this measurement unit
     func fromPoints(_ points: Double) -> Double {
         return points / pointsPerUnit
