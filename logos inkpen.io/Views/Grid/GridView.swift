@@ -169,7 +169,7 @@ struct GridView: View, Equatable {
             }
         }()
         let actualGridSpacing = baseSpacing * spacingMultiplier
-        let majorGridInterval = 4
+        let majorGridInterval = unit.majorGridInterval
 
         GridCanvasView(
             gridSpacing: actualGridSpacing,

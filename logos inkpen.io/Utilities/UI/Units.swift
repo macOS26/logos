@@ -49,6 +49,18 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         return toPoints(defaultGridSpacing)
     }
 
+    /// Number of minor grid lines between major lines
+    var majorGridInterval: Int {
+        switch self {
+        case .inches: return 8       // Major line every 1" (8 × 1/8")
+        case .centimeters: return 2  // Major line every 1cm (2 × 5mm)
+        case .millimeters: return 5  // Major line every 5mm
+        case .points: return 8       // Major line every 72pt/1" (8 × 9pt)
+        case .pixels: return 10      // Major line every 100px
+        case .picas: return 6        // Major line every 6pc/1"
+        }
+    }
+
     /// Convert points to this measurement unit
     func fromPoints(_ points: Double) -> Double {
         return points / pointsPerUnit

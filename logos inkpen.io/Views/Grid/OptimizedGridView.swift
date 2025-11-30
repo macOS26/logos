@@ -26,7 +26,7 @@ struct OptimizedGridView: View {
                 }
             }()
             let actualGridSpacing = baseSpacing * spacingMultiplier
-            let majorGridInterval = 4
+            let majorGridInterval = unit.majorGridInterval
 
             // Create a single tile size (4x4 grid cells)
             let tileSize = actualGridSpacing * CGFloat(majorGridInterval)
