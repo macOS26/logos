@@ -204,8 +204,12 @@ extension FileOperations {
         }
 
         NSGraphicsContext.saveGraphicsState()
-        let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: false)
+        let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: true)
         NSGraphicsContext.current = nsContext
+
+        // Flip the context to match AppKit/SwiftUI coordinate system (top-left origin)
+        cgContext.translateBy(x: 0, y: outputSize.height)
+        cgContext.scaleBy(x: 1, y: -1)
 
         hostingView.displayIfNeeded()
         hostingView.layer?.render(in: cgContext)
