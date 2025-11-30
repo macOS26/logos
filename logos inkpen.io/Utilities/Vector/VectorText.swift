@@ -646,8 +646,12 @@ extension VectorText {
             transform: finalTransform
         )
 
+        // Preserve the VectorText's UUID so it's recognized as the same object
+        shape.id = self.id
+
         shape.textContent = content
         shape.typography = typography
+        shape.textPosition = position
         shape.areaSize = areaSize
         shape.bounds = bounds
         shape.cursorPosition = 0
