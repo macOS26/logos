@@ -25,7 +25,14 @@ final class ColorExportManager {
         to outputURL: URL
     ) throws -> Bool {
 
-        let ciImage = CIImage(cgImage: cgImage)
+        // CIImage uses bottom-left origin, so we need to flip to match CGImage's top-left origin
+        var ciImage = CIImage(cgImage: cgImage)
+
+        // Flip vertically to correct CIImage's coordinate system
+        let flipTransform = CGAffineTransform(scaleX: 1, y: -1)
+            .translatedBy(x: 0, y: -ciImage.extent.height)
+        ciImage = ciImage.transformed(by: flipTransform)
+
         let targetColorSpace = getColorSpace(for: colorSpace)
 
         let convertedCIImage = ciImage.matchedFromWorkingSpace(to: targetColorSpace) ?? ciImage
