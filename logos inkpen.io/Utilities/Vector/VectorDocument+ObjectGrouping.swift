@@ -117,7 +117,15 @@ extension VectorDocument {
 
                         // NEW: Use memberIDs if available, fallback to groupedShapes for old groups
                         if !shape.memberIDs.isEmpty {
-                            for memberID in shape.memberIDs {
+                            // For clipping groups, memberIDs is [mask, content1, content2, ...]
+                            // but original stacking order was [content1, content2, ..., mask]
+                            // So we need to move the mask (first) to the end
+                            var idsInStackingOrder = Array(shape.memberIDs)
+                            if shape.isClippingGroup && idsInStackingOrder.count > 1 {
+                                let maskID = idsInStackingOrder.removeFirst()
+                                idsInStackingOrder.append(maskID)
+                            }
+                            for memberID in idsInStackingOrder {
                                 memberIDsToRestore.append(memberID)
                                 newSelectedShapeIDs.insert(memberID)
                             }
