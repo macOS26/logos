@@ -281,54 +281,54 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
-        let accessoryView = NSView(frame: CGRect(x: 0, y: 0, width: 400, height: 250))
+        let accessoryView = NSView(frame: CGRect(x: 0, y: 0, width: 400, height: 280))
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
-        textToOutlinesCheckbox.frame = CGRect(x: 20, y: 210, width: 250, height: 20)
+        textToOutlinesCheckbox.frame = CGRect(x: 20, y: 240, width: 250, height: 20)
         textToOutlinesCheckbox.state = .off
         accessoryView.addSubview(textToOutlinesCheckbox)
 
         let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
-        textModeLabel.frame = CGRect(x: 40, y: 165, width: 300, height: 20)
+        textModeLabel.frame = CGRect(x: 40, y: 195, width: 300, height: 20)
         textModeLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
-        glyphsRadio.frame = CGRect(x: 60, y: 140, width: 300, height: 18)
+        glyphsRadio.frame = CGRect(x: 60, y: 170, width: 300, height: 18)
         glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
-        linesRadio.frame = CGRect(x: 60, y: 120, width: 300, height: 18)
+        linesRadio.frame = CGRect(x: 60, y: 150, width: 300, height: 18)
         linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
         let colorSpaceLabel = NSTextField(labelWithString: "Color Space:")
-        colorSpaceLabel.frame = CGRect(x: 20, y: 85, width: 300, height: 20)
+        colorSpaceLabel.frame = CGRect(x: 20, y: 115, width: 300, height: 20)
         colorSpaceLabel.font = PlatformFont.systemFont(ofSize: PlatformFont.smallSystemFontSize)
         accessoryView.addSubview(colorSpaceLabel)
 
         let displayP3Radio = NSButton(radioButtonWithTitle: "Display P3 (wide gamut)", target: nil, action: nil)
-        displayP3Radio.frame = CGRect(x: 40, y: 60, width: 250, height: 18)
+        displayP3Radio.frame = CGRect(x: 40, y: 90, width: 250, height: 18)
         displayP3Radio.state = AppState.shared.exportColorSpace == .displayP3 ? .on : .off
         accessoryView.addSubview(displayP3Radio)
 
         let sRGBRadio = NSButton(radioButtonWithTitle: "sRGB (standard, maximum compatibility)", target: nil, action: nil)
-        sRGBRadio.frame = CGRect(x: 40, y: 40, width: 300, height: 18)
+        sRGBRadio.frame = CGRect(x: 40, y: 70, width: 300, height: 18)
         sRGBRadio.state = AppState.shared.exportColorSpace == .sRGB ? .on : .off
         accessoryView.addSubview(sRGBRadio)
 
-        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
-                                  target: nil, action: nil)
-        bgCheckbox.frame = CGRect(x: 20, y: 10, width: 200, height: 20)
-        bgCheckbox.state = .off
-        accessoryView.addSubview(bgCheckbox)
-
         let includeInkpenCheckbox = NSButton(checkboxWithTitle: "Include native .inkpen document",
                                              target: nil, action: nil)
-        includeInkpenCheckbox.frame = CGRect(x: 20, y: 20, width: 250, height: 20)
+        includeInkpenCheckbox.frame = CGRect(x: 20, y: 40, width: 250, height: 20)
         includeInkpenCheckbox.state = .on
         accessoryView.addSubview(includeInkpenCheckbox)
+
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+                                  target: nil, action: nil)
+        bgCheckbox.frame = CGRect(x: 20, y: 15, width: 200, height: 20)
+        bgCheckbox.state = .off
+        accessoryView.addSubview(bgCheckbox)
 
         let svgHandler = ExportTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
                                                   textModeLabel: textModeLabel,
