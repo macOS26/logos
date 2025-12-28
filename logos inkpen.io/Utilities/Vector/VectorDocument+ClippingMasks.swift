@@ -6,7 +6,7 @@ extension VectorDocument {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
 
-        guard let layerIndex = selectedLayerIndex else { return }
+        guard let targetLayerIndex = selectedLayerIndex else { return }
 
         var shapesInOrder = selectedShapes
         let maskShape = shapesInOrder.removeLast()
@@ -15,20 +15,35 @@ extension VectorDocument {
 
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
+        // Collect objects by their actual layer index
+        var objectsByLayer: [Int: [UUID]] = [:]
         var removedShapes: [UUID: VectorShape] = [:]
+
         for objectID in viewState.selectedObjectIDs {
-            if let obj = snapshot.objects[objectID],
-               case .shape(let shape) = obj.objectType {
-                removedShapes[obj.id] = shape
+            if let obj = snapshot.objects[objectID] {
+                let objLayerIndex = obj.layerIndex
+                objectsByLayer[objLayerIndex, default: []].append(objectID)
+                removedShapes[obj.id] = obj.shape
             }
         }
+
+        // Remove objects from layers OTHER than the target layer first
+        // (The GroupCommand will handle the target layer)
+        for (layerIdx, objectIDs) in objectsByLayer where layerIdx != targetLayerIndex {
+            var layerObjectIDs = snapshot.layers[layerIdx].objectIDs
+            layerObjectIDs.removeAll { objectIDs.contains($0) }
+            updateLayerObjectIDs(layerIndex: layerIdx, newObjectIDs: layerObjectIDs)
+        }
+
+        // Objects on the target layer that GroupCommand will remove
+        let targetLayerObjectIDs = objectsByLayer[targetLayerIndex] ?? []
 
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
 
         let command = GroupCommand(
             operation: .group,
-            layerIndex: layerIndex,
-            removedObjectIDs: Array(viewState.selectedObjectIDs),
+            layerIndex: targetLayerIndex,
+            removedObjectIDs: targetLayerObjectIDs,
             removedShapes: removedShapes,
             addedObjectIDs: [clippingGroup.id],
             addedShapes: [clippingGroup.id: clippingGroup],
