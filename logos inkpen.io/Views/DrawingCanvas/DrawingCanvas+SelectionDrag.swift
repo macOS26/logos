@@ -353,6 +353,8 @@ extension DrawingCanvas {
                     updatedHandles[index] = newHandleInfo
                 }
                 bezierHandles = updatedHandles
+                // Rebuild the bezierPath from updated points/handles
+                updatePathWithHandles()
                 // Update activeBezierShape reference from document
                 if let updatedShape = document.findShape(by: bezierShape.id) {
                     activeBezierShape = updatedShape
