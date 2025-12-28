@@ -15,13 +15,13 @@ extension DrawingCanvas {
             stopAllTextEditing()
         }
 
-        // Don't finish paths when switching to hand tool (temporary tool via spacebar)
-        if previousTool == .bezierPen && newTool != .bezierPen && newTool != .hand && isBezierDrawing {
+        // Don't finish paths when switching to temporary tools (hand/zoom)
+        if previousTool == .bezierPen && newTool != .bezierPen && newTool != .hand && newTool != .zoom && isBezierDrawing {
             finishBezierPath()
         }
 
-        // Don't finish freehand when switching to hand tool (temporary tool via spacebar)
-        if previousTool == .freehand && newTool != .freehand && newTool != .hand && isFreehandDrawing {
+        // Don't finish freehand when switching to temporary tools (hand/zoom)
+        if previousTool == .freehand && newTool != .freehand && newTool != .hand && newTool != .zoom && isFreehandDrawing {
             handleFreehandDragEnd()
         }
 
@@ -165,7 +165,7 @@ extension DrawingCanvas {
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
-                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .bezierPen && newTool != .font && newTool != .hand && newTool != .scale && newTool != .rotate && newTool != .shear && newTool != .warp {
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .bezierPen && newTool != .font && newTool != .hand && newTool != .zoom && newTool != .scale && newTool != .rotate && newTool != .shear && newTool != .warp {
             print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup) - oldTool: \(oldTool.rawValue), newTool: \(newTool.rawValue)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
@@ -174,9 +174,9 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
 
-        // Preserve selection when switching to/from Hand tool (temporary tool via spacebar)
-        else if newTool == .hand || oldTool == .hand {
-            // Hand tool is temporary - don't modify selection state
+        // Preserve selection when switching to/from temporary tools (hand/zoom)
+        else if newTool == .hand || oldTool == .hand || newTool == .zoom || oldTool == .zoom {
+            // Temporary tools - don't modify selection state
         }
 
         // print("🟡 selectedObjectIDs AFTER: \(document.viewState.selectedObjectIDs)")

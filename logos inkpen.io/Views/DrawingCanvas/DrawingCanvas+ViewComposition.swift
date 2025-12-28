@@ -153,8 +153,8 @@ extension DrawingCanvas {
             }
         }
 
-        // Show bezier view when drawing, even when temporarily using hand tool (spacebar pan)
-        if isBezierDrawing && (document.viewState.currentTool == .bezierPen || document.viewState.currentTool == .hand) {
+        // Show bezier view when drawing, even when temporarily using hand/zoom tool
+        if isBezierDrawing && (document.viewState.currentTool == .bezierPen || document.viewState.currentTool == .hand || document.viewState.currentTool == .zoom) {
             ProfessionalBezierView(
                 document: document,
                 zoomLevel: zoomLevel,
