@@ -6,6 +6,13 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
+        // If bezier drawing is active during Cmd+selection, include the active bezier shape
+        if isBezierDrawing, let bezierShape = activeBezierShape {
+            if !document.viewState.selectedObjectIDs.contains(bezierShape.id) {
+                document.viewState.selectedObjectIDs.insert(bezierShape.id)
+            }
+        }
+
         // Hide transform box when drag starts (if preference enabled)
         if ApplicationSettings.shared.hideTransformBoxDuringDrag {
             transformBoxOpacity = 0.000001
@@ -325,6 +332,32 @@ extension DrawingCanvas {
 
             document.updateTransformPanelValues()
             // Note: Layer triggers handled by ShapeModificationCommand
+
+            // If bezier drawing is active, update the local bezierPoints to match the moved shape
+            if isBezierDrawing, let bezierShape = activeBezierShape,
+               affectedObjectIDs.contains(bezierShape.id) {
+                // Update bezierPoints with the drag delta
+                bezierPoints = bezierPoints.map { point in
+                    VectorPoint(point.x + finalDelta.x, point.y + finalDelta.y)
+                }
+                // Update bezierHandles with the drag delta
+                var updatedHandles: [Int: BezierHandleInfo] = [:]
+                for (index, handleInfo) in bezierHandles {
+                    var newHandleInfo = handleInfo
+                    if let c1 = handleInfo.control1 {
+                        newHandleInfo.control1 = VectorPoint(c1.x + finalDelta.x, c1.y + finalDelta.y)
+                    }
+                    if let c2 = handleInfo.control2 {
+                        newHandleInfo.control2 = VectorPoint(c2.x + finalDelta.x, c2.y + finalDelta.y)
+                    }
+                    updatedHandles[index] = newHandleInfo
+                }
+                bezierHandles = updatedHandles
+                // Update activeBezierShape reference from document
+                if let updatedShape = document.findShape(by: bezierShape.id) {
+                    activeBezierShape = updatedShape
+                }
+            }
 
             // NOW clear currentDragDelta after snapshot is updated
             // Transform box will stay in correct position because objects are now at final position
