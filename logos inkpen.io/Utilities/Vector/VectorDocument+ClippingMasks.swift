@@ -15,40 +15,31 @@ extension VectorDocument {
 
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
-        // Collect objects by their actual layer index
-        var objectsByLayer: [Int: [UUID]] = [:]
+        // Collect original layer indices for each object (for undo support)
+        var originalLayerIndices: [UUID: Int] = [:]
         var removedShapes: [UUID: VectorShape] = [:]
+        var allRemovedObjectIDs: [UUID] = []
 
         for objectID in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[objectID] {
-                let objLayerIndex = obj.layerIndex
-                objectsByLayer[objLayerIndex, default: []].append(objectID)
+                originalLayerIndices[objectID] = obj.layerIndex
                 removedShapes[obj.id] = obj.shape
+                allRemovedObjectIDs.append(objectID)
             }
         }
-
-        // Remove objects from layers OTHER than the target layer first
-        // (The GroupCommand will handle the target layer)
-        for (layerIdx, objectIDs) in objectsByLayer where layerIdx != targetLayerIndex {
-            var layerObjectIDs = snapshot.layers[layerIdx].objectIDs
-            layerObjectIDs.removeAll { objectIDs.contains($0) }
-            updateLayerObjectIDs(layerIndex: layerIdx, newObjectIDs: layerObjectIDs)
-        }
-
-        // Objects on the target layer that GroupCommand will remove
-        let targetLayerObjectIDs = objectsByLayer[targetLayerIndex] ?? []
 
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
 
         let command = GroupCommand(
             operation: .group,
             layerIndex: targetLayerIndex,
-            removedObjectIDs: targetLayerObjectIDs,
+            removedObjectIDs: allRemovedObjectIDs,
             removedShapes: removedShapes,
             addedObjectIDs: [clippingGroup.id],
             addedShapes: [clippingGroup.id: clippingGroup],
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
-            newSelectedObjectIDs: newSelectedIDs
+            newSelectedObjectIDs: newSelectedIDs,
+            originalLayerIndices: originalLayerIndices
         )
 
         commandManager.execute(command)

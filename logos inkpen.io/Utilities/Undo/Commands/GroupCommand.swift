@@ -24,6 +24,9 @@ class GroupCommand: BaseCommand {
     private let oldSelectedObjectIDs: Set<UUID>
     private let newSelectedObjectIDs: Set<UUID>
 
+    // For cross-layer grouping: track original layer index for each object
+    private let originalLayerIndices: [UUID: Int]
+
     init(operation: GroupOperation,
          layerIndex: Int,
          removedObjectIDs: [UUID],
@@ -31,7 +34,8 @@ class GroupCommand: BaseCommand {
          addedObjectIDs: [UUID],
          addedShapes: [UUID: VectorShape],
          oldSelectedObjectIDs: Set<UUID>,
-         newSelectedObjectIDs: Set<UUID>) {
+         newSelectedObjectIDs: Set<UUID>,
+         originalLayerIndices: [UUID: Int] = [:]) {
         self.operation = operation
         self.layerIndex = layerIndex
         self.removedObjectIDs = removedObjectIDs
@@ -40,10 +44,26 @@ class GroupCommand: BaseCommand {
         self.addedShapes = addedShapes
         self.oldSelectedObjectIDs = oldSelectedObjectIDs
         self.newSelectedObjectIDs = newSelectedObjectIDs
+        self.originalLayerIndices = originalLayerIndices
     }
 
     override func execute(on document: VectorDocument) {
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
+
+        // For cross-layer grouping: remove objects from their original layers first
+        if !originalLayerIndices.isEmpty {
+            var layerUpdates: [Int: [UUID]] = [:]
+            for (objectID, origLayer) in originalLayerIndices {
+                if origLayer != layerIndex && origLayer >= 0 && origLayer < document.snapshot.layers.count {
+                    layerUpdates[origLayer, default: []].append(objectID)
+                }
+            }
+            for (origLayerIdx, objectIDs) in layerUpdates {
+                var layerObjectIDs = document.snapshot.layers[origLayerIdx].objectIDs
+                layerObjectIDs.removeAll { objectIDs.contains($0) }
+                document.updateLayerObjectIDs(layerIndex: origLayerIdx, newObjectIDs: layerObjectIDs)
+            }
+        }
 
         // Find the index in layer.objectIDs for insertion
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
@@ -139,15 +159,39 @@ class GroupCommand: BaseCommand {
         // Handle based on operation type
         switch operation {
         case .group:
-            // Undo group: remove group from snapshot.objects, restore members to layer.objectIDs
+            // Undo group: remove group from snapshot.objects, restore members to their original layers
             for id in addedObjectIDs {
                 document.snapshot.objects.removeValue(forKey: id)
                 document.removeParentCacheForGroup(id)
             }
 
-            // Restore member IDs to layer.objectIDs (they still exist in snapshot.objects)
-            for (offset, objectID) in removedObjectIDs.enumerated() {
-                updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
+            // For cross-layer grouping: restore objects to their original layers
+            if !originalLayerIndices.isEmpty {
+                var layerRestores: [Int: [UUID]] = [:]
+                for objectID in removedObjectIDs {
+                    let origLayer = originalLayerIndices[objectID] ?? layerIndex
+                    layerRestores[origLayer, default: []].append(objectID)
+                }
+                // Restore to each original layer
+                for (origLayerIdx, objectIDs) in layerRestores {
+                    guard origLayerIdx >= 0 && origLayerIdx < document.snapshot.layers.count else { continue }
+                    if origLayerIdx == layerIndex {
+                        // Will be handled below with updatedObjectIDs
+                        for (offset, objectID) in objectIDs.enumerated() {
+                            updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
+                        }
+                    } else {
+                        var layerObjectIDs = document.snapshot.layers[origLayerIdx].objectIDs
+                        layerObjectIDs.append(contentsOf: objectIDs)
+                        document.updateLayerObjectIDs(layerIndex: origLayerIdx, newObjectIDs: layerObjectIDs)
+                        document.triggerLayerUpdate(for: origLayerIdx)
+                    }
+                }
+            } else {
+                // Standard single-layer undo: restore member IDs to layer.objectIDs
+                for (offset, objectID) in removedObjectIDs.enumerated() {
+                    updatedObjectIDs.insert(objectID, at: insertionIndex + offset)
+                }
             }
 
         case .ungroup:
