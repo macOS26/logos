@@ -61,12 +61,12 @@ final class AppEventMonitor {
             return event
         }
 
-        // Space bar - temporary hand tool
+        // Space bar - temporary hand tool (or zoom if Cmd is then pressed)
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
             // Only activate on first press, ignore repeats
-            if !isSpacebarPressed && activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+            if !isSpacebarPressed && temporaryTool == nil {
                 isSpacebarPressed = true
                 previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .hand
@@ -79,7 +79,7 @@ final class AppEventMonitor {
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
             isSpacebarPressed = false
-            if let previous = previousTool, temporaryTool == .hand {
+            if let previous = previousTool, (temporaryTool == .hand || temporaryTool == .zoom) {
                 activeDoc.viewState.currentTool = previous
                 temporaryTool = nil
                 previousTool = nil
@@ -87,17 +87,28 @@ final class AppEventMonitor {
             return nil
         }
 
-        // Cmd key - temporary selection (arrow) tool from any tool
+        // Modifier key changes
         if event.type == .flagsChanged {
             let cmdPressed = event.modifierFlags.contains(.command)
 
-            // Cmd pressed: switch current tool to selection
-            if cmdPressed && activeDoc.viewState.currentTool != .selection && temporaryTool == nil {
+            // Space + Cmd = zoom tool (classic graphics software behavior)
+            // Press Space first to get hand tool, then add Cmd to switch to zoom
+            if isSpacebarPressed && cmdPressed && temporaryTool == .hand {
+                temporaryTool = .zoom
+                activeDoc.viewState.currentTool = .zoom
+            }
+            // Space held but Cmd released = back to hand tool
+            else if isSpacebarPressed && !cmdPressed && temporaryTool == .zoom {
+                temporaryTool = .hand
+                activeDoc.viewState.currentTool = .hand
+            }
+            // Cmd alone (no space) = temporary selection tool
+            else if cmdPressed && !isSpacebarPressed && activeDoc.viewState.currentTool != .selection && temporaryTool == nil {
                 previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .selection
                 activeDoc.viewState.currentTool = .selection
             }
-            // Cmd released: switch back to previous tool
+            // Cmd released (no space) = restore previous tool
             else if !cmdPressed && temporaryTool == .selection {
                 if let previous = previousTool {
                     activeDoc.viewState.currentTool = previous
