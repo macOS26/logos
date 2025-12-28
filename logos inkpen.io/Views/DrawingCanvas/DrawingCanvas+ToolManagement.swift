@@ -5,23 +5,32 @@ extension DrawingCanvas {
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         print("🔧 Tool change: \(oldTool.rawValue) → \(newTool.rawValue), selectedPoints: \(selectedPoints.count)")
 
+        // Track if this is a temporary Cmd-switch to selection tool
+        let isCmdPressed = NSEvent.modifierFlags.contains(.command)
+        if newTool == .selection && isCmdPressed {
+            isTemporarySelectionViaCommand = true
+        } else if oldTool == .selection && isTemporarySelectionViaCommand {
+            isTemporarySelectionViaCommand = false
+        }
+
         if isCornerRadiusEditMode {
             isCornerRadiusEditMode = false
         }
 
         if (previousTool == .font || oldTool == .font) && newTool != .font {
             stopAllTextEditing()
-        } else if newTool == .selection {
+        } else if newTool == .selection && !isTemporarySelectionViaCommand {
             stopAllTextEditing()
         }
 
-        // Don't finish paths when switching to temporary tools (hand/zoom)
-        if previousTool == .bezierPen && newTool != .bezierPen && newTool != .hand && newTool != .zoom && isBezierDrawing {
+        // Don't finish paths when switching to temporary tools (hand/zoom/Cmd+selection)
+        let isTemporaryTool = newTool == .hand || newTool == .zoom || (newTool == .selection && isTemporarySelectionViaCommand)
+        if previousTool == .bezierPen && newTool != .bezierPen && !isTemporaryTool && isBezierDrawing {
             finishBezierPath()
         }
 
-        // Don't finish freehand when switching to temporary tools (hand/zoom)
-        if previousTool == .freehand && newTool != .freehand && newTool != .hand && newTool != .zoom && isFreehandDrawing {
+        // Don't finish freehand when switching to temporary tools (hand/zoom/Cmd+selection)
+        if previousTool == .freehand && newTool != .freehand && !isTemporaryTool && isFreehandDrawing {
             handleFreehandDragEnd()
         }
 
@@ -98,7 +107,11 @@ extension DrawingCanvas {
         // print("🟡 handleSelectionConversion: \(oldTool.rawValue) -> \(newTool.rawValue)")
         // print("🟡 selectedObjectIDs BEFORE: \(document.viewState.selectedObjectIDs)")
 
-        if newTool == .selection {
+        // Cmd+selection is temporary - preserve all state
+        if newTool == .selection && isTemporarySelectionViaCommand {
+            // Don't modify any selection state for temporary Cmd+selection
+        }
+        else if newTool == .selection {
             if !selectedObjectIDs.isEmpty {
                 document.viewState.selectedObjectIDs = selectedObjectIDs
                 selectedObjectIDs.removeAll()
