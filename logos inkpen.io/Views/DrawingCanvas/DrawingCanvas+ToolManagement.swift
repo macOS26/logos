@@ -15,11 +15,13 @@ extension DrawingCanvas {
             stopAllTextEditing()
         }
 
-        if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
+        // Don't finish paths when switching to hand tool (temporary tool via spacebar)
+        if previousTool == .bezierPen && newTool != .bezierPen && newTool != .hand && isBezierDrawing {
             finishBezierPath()
         }
 
-        if previousTool == .freehand && newTool != .freehand && isFreehandDrawing {
+        // Don't finish freehand when switching to hand tool (temporary tool via spacebar)
+        if previousTool == .freehand && newTool != .freehand && newTool != .hand && isFreehandDrawing {
             handleFreehandDragEnd()
         }
 
