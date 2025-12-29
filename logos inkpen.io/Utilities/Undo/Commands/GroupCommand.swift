@@ -142,7 +142,6 @@ class GroupCommand: BaseCommand {
         // Apply all objectID changes at once with automatic trigger
         document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: updatedObjectIDs)
 
-        document.viewState.orderedSelectedObjectIDs = Array(newSelectedObjectIDs)
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
     }
@@ -250,7 +249,6 @@ class GroupCommand: BaseCommand {
         // Apply all objectID changes at once with automatic trigger
         document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: updatedObjectIDs)
 
-        document.viewState.orderedSelectedObjectIDs = Array(oldSelectedObjectIDs)
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
     }

@@ -88,6 +88,9 @@ struct PathOperationsPanel: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
+                        mergeCoincidentPointsInSelectedShapes()
+                    }
                     .help("Merge coincident points in selected shapes (excluding start and end points)")
 
                     Button {
@@ -97,6 +100,9 @@ struct PathOperationsPanel: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
+                        removeOverlapFromSelectedShapes()
+                    }
                     .help("Remove self-intersections and overlapping areas within selected shapes")
 
                     Button {
@@ -106,6 +112,9 @@ struct PathOperationsPanel: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
+                        removeOverlapFromAllShapes()
+                    }
                     .help("Remove overlaps from all shapes in the document")
                 }
                 .padding(.horizontal, 16)
@@ -147,6 +156,9 @@ struct PathOperationsPanel: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
+                        document.makeClippingMaskFromSelection()
+                    }
 
                     Button {
                         document.releaseClippingMaskForSelection()
@@ -155,6 +167,9 @@ struct PathOperationsPanel: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
+                        document.releaseClippingMaskForSelection()
+                    }
                 }
                 .padding(.horizontal, 16)
             }
