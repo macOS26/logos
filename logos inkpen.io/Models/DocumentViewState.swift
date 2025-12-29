@@ -55,10 +55,16 @@ class DocumentViewState: ObservableObject {
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
             PublishedSelectedObjectIDs = selectedObjectIDs
+            // Keep ordered array in sync - remove any IDs no longer in set
+            orderedSelectedObjectIDs = orderedSelectedObjectIDs.filter { selectedObjectIDs.contains($0) }
         }
     }
 
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
+
+    /// Ordered list of selected object IDs - first selected object is first in array
+    /// Used for alignment operations where first selected object stays in place
+    var orderedSelectedObjectIDs: [UUID] = []
 
     // Point selection for direct selection tool
     var selectedPoints: Set<PointID> = [] {

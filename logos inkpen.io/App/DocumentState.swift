@@ -954,6 +954,19 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
+    /// Align selected objects by their individual transform origins.
+    /// First selected object stays in place; others move to align.
+    func alignByOrigin() {
+        document?.alignSelectedObjectsByOrigin()
+        updateAllStates()
+    }
+
+    /// Returns true if at least 2 objects are selected (needed for alignment)
+    var canAlign: Bool {
+        guard let doc = document else { return false }
+        return doc.viewState.orderedSelectedObjectIDs.count >= 2
+    }
+
     func duplicate() {
         guard let document = document else { return }
         if !document.viewState.selectedObjectIDs.isEmpty {

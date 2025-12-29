@@ -119,14 +119,24 @@ extension DrawingCanvas {
             let previousSelection = document.viewState.selectedObjectIDs
 
             if isShiftPressed {
+                // Add to selection - append to ordered array
+                if !document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
+                    document.viewState.orderedSelectedObjectIDs.append(objectToSelect.id)
+                }
                 document.viewState.selectedObjectIDs.insert(objectToSelect.id)
             } else if isCommandPressed {
                 if document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
+                    // Remove from selection
+                    document.viewState.orderedSelectedObjectIDs.removeAll { $0 == objectToSelect.id }
                     document.viewState.selectedObjectIDs.remove(objectToSelect.id)
                 } else {
+                    // Add to selection
+                    document.viewState.orderedSelectedObjectIDs.append(objectToSelect.id)
                     document.viewState.selectedObjectIDs.insert(objectToSelect.id)
                 }
             } else {
+                // Single selection - replace ordered array
+                document.viewState.orderedSelectedObjectIDs = [objectToSelect.id]
                 document.viewState.selectedObjectIDs = [objectToSelect.id]
             }
 
