@@ -400,6 +400,7 @@ struct ObjectRow: View {
                 Button("Duplicate") {
                 }
                 Button("Delete") {
+                    document.viewState.orderedSelectedObjectIDs = [objectId]
                     document.viewState.selectedObjectIDs = [objectId]
                     if objectType == .shape {
                         document.removeSelectedShapes()
@@ -534,13 +535,19 @@ struct ObjectRow: View {
 
                         if isCommandPressed {
                             if document.viewState.selectedObjectIDs.contains(childShape.id) {
+                                document.viewState.orderedSelectedObjectIDs.removeAll { $0 == childShape.id }
                                 document.viewState.selectedObjectIDs.remove(childShape.id)
                             } else {
+                                document.viewState.orderedSelectedObjectIDs.append(childShape.id)
                                 document.viewState.selectedObjectIDs.insert(childShape.id)
                             }
                         } else if isShiftPressed {
+                            if !document.viewState.selectedObjectIDs.contains(childShape.id) {
+                                document.viewState.orderedSelectedObjectIDs.append(childShape.id)
+                            }
                             document.viewState.selectedObjectIDs.insert(childShape.id)
                         } else {
+                            document.viewState.orderedSelectedObjectIDs = [childShape.id]
                             document.viewState.selectedObjectIDs = [childShape.id]
                         }
                     }
@@ -722,13 +729,19 @@ struct NestedGroupChildrenView: View {
 
                 if isCommandPressed {
                     if document.viewState.selectedObjectIDs.contains(childShape.id) {
+                        document.viewState.orderedSelectedObjectIDs.removeAll { $0 == childShape.id }
                         document.viewState.selectedObjectIDs.remove(childShape.id)
                     } else {
+                        document.viewState.orderedSelectedObjectIDs.append(childShape.id)
                         document.viewState.selectedObjectIDs.insert(childShape.id)
                     }
                 } else if isShiftPressed {
+                    if !document.viewState.selectedObjectIDs.contains(childShape.id) {
+                        document.viewState.orderedSelectedObjectIDs.append(childShape.id)
+                    }
                     document.viewState.selectedObjectIDs.insert(childShape.id)
                 } else {
+                    document.viewState.orderedSelectedObjectIDs = [childShape.id]
                     document.viewState.selectedObjectIDs = [childShape.id]
                 }
             }

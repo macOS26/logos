@@ -425,8 +425,10 @@ struct ProfessionalLayerRow: View {
 
         if isCommandPressed {
             if document.viewState.selectedObjectIDs.contains(objectID) {
+                document.viewState.orderedSelectedObjectIDs.removeAll { $0 == objectID }
                 document.viewState.selectedObjectIDs.remove(objectID)
             } else {
+                document.viewState.orderedSelectedObjectIDs.append(objectID)
                 document.viewState.selectedObjectIDs.insert(objectID)
             }
         } else if isShiftPressed {
@@ -447,17 +449,25 @@ struct ProfessionalLayerRow: View {
                     selectionRangeMin = newMin
                     selectionRangeMax = newMax
 
-                    let rangeIDs = Set(reversedIDs[newMin...newMax])
+                    let rangeIDs = Array(reversedIDs[newMin...newMax])
 
-                    document.viewState.selectedObjectIDs = rangeIDs
+                    document.viewState.orderedSelectedObjectIDs = rangeIDs
+                    document.viewState.selectedObjectIDs = Set(rangeIDs)
                 } else {
+                    if !document.viewState.selectedObjectIDs.contains(objectID) {
+                        document.viewState.orderedSelectedObjectIDs.append(objectID)
+                    }
                     document.viewState.selectedObjectIDs.insert(objectID)
                 }
             } else {
+                if !document.viewState.selectedObjectIDs.contains(objectID) {
+                    document.viewState.orderedSelectedObjectIDs.append(objectID)
+                }
                 document.viewState.selectedObjectIDs.insert(objectID)
                 selectionAnchorID = objectID
             }
         } else {
+            document.viewState.orderedSelectedObjectIDs = [objectID]
             document.viewState.selectedObjectIDs = [objectID]
             selectionAnchorID = objectID
             selectionRangeMin = nil
