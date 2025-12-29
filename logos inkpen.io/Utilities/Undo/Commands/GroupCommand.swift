@@ -10,6 +10,7 @@ class GroupCommand: BaseCommand {
         case releaseCompound
         case makeLooping
         case releaseLooping
+        case pathOperation  // For pathfinder operations that replace shapes
     }
 
     private let operation: GroupOperation

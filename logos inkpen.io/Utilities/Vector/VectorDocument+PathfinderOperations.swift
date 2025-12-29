@@ -332,8 +332,9 @@ extension VectorDocument {
         }
 
         // Create command with old and new shapes
+        // Use .pathOperation to properly remove old shapes from snapshot.objects
         let command = GroupCommand(
-            operation: .group,
+            operation: .pathOperation,
             layerIndex: layerIndex,
             removedObjectIDs: Array(oldShapes.keys),
             removedShapes: oldShapes,
