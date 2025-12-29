@@ -44,6 +44,7 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [clippingGroup.id]
         viewState.selectedObjectIDs = [clippingGroup.id]
     }
 

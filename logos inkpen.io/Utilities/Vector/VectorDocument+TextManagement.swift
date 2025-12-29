@@ -18,8 +18,8 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [text.id]
         viewState.selectedObjectIDs = [text.id]
-
     }
 
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
@@ -42,9 +42,9 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [text.id]
         viewState.selectedObjectIDs = [text.id]
         selectedLayerIndex = layerIndex
-
     }
 
     func removeSelectedText() {

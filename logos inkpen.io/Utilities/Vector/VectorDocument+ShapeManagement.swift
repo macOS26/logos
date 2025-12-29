@@ -9,9 +9,8 @@ extension VectorDocument {
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
+        viewState.orderedSelectedObjectIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
-        viewState.selectedObjectIDs = [shape.id]
-        
     }
 
     func addShapeToFront(_ shape: VectorShape) {
@@ -23,9 +22,8 @@ extension VectorDocument {
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
+        viewState.orderedSelectedObjectIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
-        viewState.selectedObjectIDs = [shape.id]
-        
     }
 
     func addShape(_ shape: VectorShape, to layerIndex: Int) {

@@ -159,6 +159,7 @@ extension DrawingCanvas {
 
         if let textObject = document.findText(by: textID) {
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
+            document.viewState.orderedSelectedObjectIDs = [textID]
             document.viewState.selectedObjectIDs = [textID]
             isEditingText = true
             editingTextID = textID
@@ -185,6 +186,7 @@ extension DrawingCanvas {
         if isDoubleClick || isCornerClick {
             switch currentState {
             case .unselected:
+                document.viewState.orderedSelectedObjectIDs = [textID]
                 document.viewState.selectedObjectIDs = [textID]
 
                 if document.viewState.currentTool == .font && isCornerClick {
@@ -208,6 +210,7 @@ extension DrawingCanvas {
         } else {
             switch currentState {
             case .unselected:
+                document.viewState.orderedSelectedObjectIDs = [textID]
                 document.viewState.selectedObjectIDs = [textID]
 
             case .selected:
@@ -298,6 +301,7 @@ extension DrawingCanvas {
 
         document.addShape(shape)
 
+        document.viewState.orderedSelectedObjectIDs = [shape.id]
         document.viewState.selectedObjectIDs = [shape.id]
 
         isEditingText = true
@@ -701,6 +705,7 @@ extension DrawingCanvas {
         document.addShape(shape)
 
         // Select it
+        document.viewState.orderedSelectedObjectIDs = [shape.id]
         document.viewState.selectedObjectIDs = [shape.id]
 
         isEditingText = true

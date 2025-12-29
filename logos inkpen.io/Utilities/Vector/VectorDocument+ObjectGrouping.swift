@@ -31,6 +31,7 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [groupShape.id]
         viewState.selectedObjectIDs = [groupShape.id]
     }
 
@@ -91,6 +92,7 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [flattenedShape.id]
         viewState.selectedObjectIDs = [flattenedShape.id]
     }
 
@@ -263,6 +265,7 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [compoundShape.id]
         viewState.selectedObjectIDs = [compoundShape.id]
     }
 
@@ -316,6 +319,7 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
+        viewState.orderedSelectedObjectIDs = [loopingShape.id]
         viewState.selectedObjectIDs = [loopingShape.id]
     }
 

@@ -9,6 +9,7 @@ extension DrawingCanvas {
         // If bezier drawing is active during Cmd+selection, include the active bezier shape
         if isBezierDrawing, let bezierShape = activeBezierShape {
             if !document.viewState.selectedObjectIDs.contains(bezierShape.id) {
+                document.viewState.orderedSelectedObjectIDs.append(bezierShape.id)
                 document.viewState.selectedObjectIDs.insert(bezierShape.id)
             }
         }
