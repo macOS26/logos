@@ -147,8 +147,6 @@ struct MainToolbarContent: ToolbarContent {
             .help("Development Tools")
 #endif
 
-            TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
-
             // Align by anchor points button
             Button {
                 document.alignSelectedObjectsByOrigin()
@@ -162,6 +160,8 @@ struct MainToolbarContent: ToolbarContent {
             .disabled(document.viewState.orderedSelectedObjectIDs.count < 2)
             .opacity(document.viewState.orderedSelectedObjectIDs.count >= 2 ? 1.0 : 0.4)
             .help("Align by Anchor Points (⌘⌥A) - First selected object stays in place")
+
+            TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
             CornerRadiusToolbar(selectedObjectIDs: document.viewState.selectedObjectIDs, snapshot: document.snapshot, document: document)
 
