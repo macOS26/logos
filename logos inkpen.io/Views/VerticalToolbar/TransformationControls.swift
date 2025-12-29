@@ -81,7 +81,16 @@ struct TransformationControls: View {
     private var transformOriginBinding: Binding<TransformOrigin> {
         Binding(
             get: { document.viewState.transformOrigin },
-            set: { document.viewState.transformOrigin = $0 }
+            set: { newOrigin in
+                // Update viewState (for UI reactivity)
+                document.viewState.transformOrigin = newOrigin
+                // Also save to each selected object
+                for objectID in document.viewState.selectedObjectIDs {
+                    document.updateShapeByID(objectID, silent: false) { shape in
+                        shape.transformOrigin = newOrigin
+                    }
+                }
+            }
         )
     }
 
@@ -225,9 +234,12 @@ struct TransformationControls: View {
         }
         .padding(.horizontal, 8)
         .onAppear {
+            syncTransformOriginFromSelection()
             updateValuesFromSelection()
         }
         .onChange(of: document.viewState.PublishedSelectedObjectIDs) { _, _ in
+            // Sync transform origin from selected object to viewState
+            syncTransformOriginFromSelection()
             updateValuesFromSelection()
         }
         .onChange(of: document.viewState.transformOrigin) { _, _ in
@@ -249,6 +261,20 @@ struct TransformationControls: View {
         }
         .onChange(of: document.settings.unit) { _, _ in
             updateValuesFromSelection()
+        }
+    }
+
+    /// Sync transform origin from the first selected object to viewState
+    private func syncTransformOriginFromSelection() {
+        guard let firstID = document.viewState.selectedObjectIDs.first,
+              let obj = document.snapshot.objects[firstID] else {
+            return
+        }
+        // Read the object's stored origin, default to center if not set
+        let objectOrigin = obj.shape.transformOrigin ?? .center
+        // Only update if different to avoid unnecessary triggers
+        if document.viewState.transformOrigin != objectOrigin {
+            document.viewState.transformOrigin = objectOrigin
         }
     }
 
