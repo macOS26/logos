@@ -394,9 +394,6 @@ struct VectorShape: Hashable, Identifiable {
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
 
-    /// Per-object transform origin (9-point selector). Defaults to center if nil.
-    var transformOrigin: TransformOrigin? = nil
-
     /// Explicit anchor point types set by user (elementIndex -> type)
     /// If nil or .auto, geometry-based detection is used
     var anchorTypes: [Int: AnchorPointType] = [:]
