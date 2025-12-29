@@ -149,6 +149,20 @@ struct MainToolbarContent: ToolbarContent {
 
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
+            // Align by anchor points button
+            Button {
+                document.alignSelectedObjectsByOrigin()
+            } label: {
+                Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                    .font(.system(size: 14))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(document.viewState.orderedSelectedObjectIDs.count < 2)
+            .opacity(document.viewState.orderedSelectedObjectIDs.count >= 2 ? 1.0 : 0.4)
+            .help("Align by Anchor Points (⌘⌥A) - First selected object stays in place")
+
             CornerRadiusToolbar(selectedObjectIDs: document.viewState.selectedObjectIDs, snapshot: document.snapshot, document: document)
 
             Button {
