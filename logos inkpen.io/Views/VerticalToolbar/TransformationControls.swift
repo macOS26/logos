@@ -80,13 +80,36 @@ struct TransformationControls: View {
 
     private var transformOriginBinding: Binding<TransformOrigin> {
         Binding(
-            get: { document.viewState.transformOrigin },
-            set: { document.viewState.transformOrigin = $0 }
+            get: {
+                // Get origin from first selected shape, default to center
+                guard let firstID = document.viewState.selectedObjectIDs.first,
+                      let obj = document.snapshot.objects[firstID] else {
+                    return .center
+                }
+                return obj.shape.transformOrigin ?? .center
+            },
+            set: { newOrigin in
+                // Set origin on all selected shapes
+                for objectID in document.viewState.selectedObjectIDs {
+                    document.updateShapeByID(objectID, silent: true) { shape in
+                        shape.transformOrigin = newOrigin
+                    }
+                }
+            }
         )
     }
 
     var hasSelection: Bool {
         !document.viewState.PublishedSelectedObjectIDs.isEmpty
+    }
+
+    /// Get the current transform origin from the first selected object
+    private var currentOrigin: TransformOrigin {
+        guard let firstID = document.viewState.selectedObjectIDs.first,
+              let obj = document.snapshot.objects[firstID] else {
+            return .center
+        }
+        return obj.shape.transformOrigin ?? .center
     }
 
     private var currentUnit: MeasurementUnit {
@@ -261,7 +284,7 @@ struct TransformationControls: View {
             return
         }
 
-        let origin = document.viewState.transformOrigin.point
+        let origin = currentOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let xInPoints = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
         let yInPoints = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
@@ -280,7 +303,7 @@ struct TransformationControls: View {
             return
         }
 
-        let origin = document.viewState.transformOrigin.point
+        let origin = currentOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let xInPoints = bounds.minX + bounds.width * origin.x - pageOrigin.x
         let yInPoints = bounds.minY + bounds.height * origin.y - pageOrigin.y
@@ -366,7 +389,7 @@ struct TransformationControls: View {
 
         document.modifySelectedShapesWithUndo(
             preCapture: {
-                let originOffset = document.viewState.transformOrigin.point
+                let originOffset = currentOrigin.point
                 let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
                 let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
                 let pageOrigin = document.settings.pageOrigin ?? .zero
