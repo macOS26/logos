@@ -186,10 +186,26 @@ struct DrawingCanvas: View {
     @State internal var hasPerformedInitialFitToPage = false
     @State internal var hasSpatialIndexInitialized = false
     @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
+    @State private var previousWindowSize: CGSize = .zero
 
     var body: some View {
         GeometryReader { geometry in
             enhancedCanvasMainContent(geometry: geometry)
+                .onChange(of: geometry.size) { oldSize, newSize in
+                    // Auto fit-to-page when window is resized
+                    guard hasPerformedInitialFitToPage else { return }
+                    guard previousWindowSize != .zero else {
+                        previousWindowSize = newSize
+                        return
+                    }
+                    // Only fit if size actually changed significantly (> 1 pixel)
+                    let widthChanged = abs(newSize.width - previousWindowSize.width) > 1
+                    let heightChanged = abs(newSize.height - previousWindowSize.height) > 1
+                    if widthChanged || heightChanged {
+                        previousWindowSize = newSize
+                        document.requestZoom(to: 0.0, mode: .fitToPage)
+                    }
+                }
                 .onAppear {
                     // Initial setup only
                     selectedObjectIDs = document.viewState.selectedObjectIDs
