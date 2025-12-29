@@ -207,12 +207,11 @@ extension DrawingCanvas {
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        print("    🔎 performShapeHitTest at \(location), shape bounds=\(shape.bounds), transform=\(shape.transform)")
+        // Bounds-only hit testing - no tolerance
 
         if shape.typography != nil {
             let textBounds: CGRect
             if let position = shape.textPosition, let size = shape.areaSize {
-                // textPosition is the world position - do NOT apply transform
                 textBounds = CGRect(origin: position, size: size)
             } else {
                 textBounds = CGRect(
@@ -222,68 +221,24 @@ extension DrawingCanvas {
                     height: shape.bounds.height
                 )
             }
-            let isHit = textBounds.contains(location)
-            return isHit
+            return textBounds.contains(location)
         }
 
-        // CRITICAL: Groups must use groupBounds, not shape.bounds
+        // Groups use groupBounds
         if shape.isGroupContainer {
-            let groupTestBounds = shape.groupBounds
-            // print("🔶 HIT TEST GROUP: location=\(location), groupBounds=\(groupTestBounds), contains=\(groupTestBounds.contains(location))")
-            return groupTestBounds.contains(location)
+            return shape.groupBounds.contains(location)
         }
 
-        if isOptionPressed {
-            let baseTolerance: CGFloat = 8.0
-            let tolerance = max(2.0, baseTolerance / zoomLevel)
-            let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-            print("    🔑 Option pressed path hit test: isHit=\(isHit)")
-            return isHit
-        } else {
-            let isImageShape = ImageContentRegistry.containsImage(shape, in: document)
-            let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-            print("    📍 isStrokeOnly=\(isStrokeOnly), hasStroke=\(shape.strokeStyle != nil)")
+        // Get transformed bounds
+        var hitBounds = shape.bounds.applying(shape.transform)
 
-            if isImageShape {
-                let transformedBounds = shape.bounds.applying(shape.transform)
-                if transformedBounds.contains(location) {
-                    return true
-                } else {
-                    let baseTolerance: CGFloat = 4.0
-                    let tolerance = max(1.0, baseTolerance / zoomLevel)
-                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                    return isHit
-                }
-            } else if isStrokeOnly && shape.strokeStyle != nil {
-                let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                let strokeTolerance = max(12.0, strokeWidth + 8.0)
-                let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                return isHit
-            } else {
-                let transformedBounds = shape.bounds.applying(shape.transform)
-                print("    📐 Checking transformed bounds: \(transformedBounds), contains=\(transformedBounds.contains(location))")
-
-                if transformedBounds.contains(location) {
-                    return true
-                } else {
-                    // For stroked shapes, we need to account for stroke width in the tolerance
-                    // The stroke width is already in canvas coordinates, so we don't divide by zoom
-                    let baseTolerance: CGFloat = 4.0
-                    var tolerance = max(1.0, baseTolerance / zoomLevel)
-
-                    // If shape has stroke, expand tolerance to include half the stroke width
-                    if let strokeStyle = shape.strokeStyle {
-                        // Stroke width is in canvas coords, so add it directly
-                        tolerance = max(tolerance, (strokeStyle.width / 2.0) + baseTolerance / 2 )
-                    }
-
-                    print("    🎪 Falling back to PathOperations.hitTest with tolerance=\(tolerance)")
-                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                    print("    🎪 PathOperations.hitTest result: \(isHit)")
-                    return isHit
-                }
-            }
+        // For stroked shapes, expand bounds by half stroke width
+        if let strokeStyle = shape.strokeStyle {
+            let halfStroke = strokeStyle.width / 2.0
+            hitBounds = hitBounds.insetBy(dx: -halfStroke, dy: -halfStroke)
         }
+
+        return hitBounds.contains(location)
     }
 
      internal func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
