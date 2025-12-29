@@ -368,7 +368,14 @@ struct TransformBoxHandles: View {
         ]
 
         if index < handleToOrigin.count {
-            document.viewState.transformOrigin = handleToOrigin[index]
+            let newOrigin = handleToOrigin[index]
+            document.viewState.transformOrigin = newOrigin
+            // Also save to each selected object
+            for objectID in document.viewState.selectedObjectIDs {
+                document.updateShapeByID(objectID, silent: false) { shape in
+                    shape.transformOrigin = newOrigin
+                }
+            }
         }
     }
 
