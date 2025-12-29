@@ -265,14 +265,11 @@ struct logos_inken_ioApp: App {
 
                     }
 
-                    Menu("Align") {
-                        Button("Align by Anchor Points") {
-                            documentState?.alignByOrigin()
-                        }
-                        .keyboardShortcut("a", modifiers: [.command, .option])
-                        .disabled(documentState?.canAlign != true)
-                        .help("Align selected objects by their individual anchor points. First selected object stays in place.")
+                    Button("Align") {
+                        documentState?.alignByOrigin()
                     }
+                    .keyboardShortcut("a", modifiers: [.command, .option])
+                    .disabled(documentState?.canAlign != true)
 
                     Button("Group") {
                         documentState?.groupObjects()
