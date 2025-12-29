@@ -47,8 +47,12 @@ struct logos_inken_ioApp: App {
                 .environment(appState)
                 .navigationTitle(windowTitle(for: file.fileURL))
                 .background(WindowAccessor { window in
-                    // Enable window state restoration - remembers size and position
-                    window?.setFrameAutosaveName("LogosDocumentWindow")
+                    guard let window = window else { return }
+                    // Enable state restoration for window frame and document
+                    window.isRestorable = true
+                    if window.frameAutosaveName.isEmpty {
+                        window.setFrameAutosaveName("InkpenDocumentWindow")
+                    }
                 })
                 .onAppear {
                     appState.setWindowActions(
