@@ -271,8 +271,17 @@ extension VectorDocument {
         }
 
         if !visibleObjects.isEmpty {
-            viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
+            // Sort by area (largest to smallest) so largest object is selection #1
+            let sortedByArea = visibleObjects.sorted { obj1, obj2 in
+                let bounds1 = obj1.shape.isGroupContainer ? obj1.shape.groupBounds : obj1.shape.bounds
+                let bounds2 = obj2.shape.isGroupContainer ? obj2.shape.groupBounds : obj2.shape.bounds
+                let area1 = bounds1.width * bounds1.height
+                let area2 = bounds2.width * bounds2.height
+                return area1 > area2
+            }
 
+            viewState.orderedSelectedObjectIDs = sortedByArea.map { $0.id }
+            viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
         }
     }
 
