@@ -46,6 +46,10 @@ struct logos_inken_ioApp: App {
             DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
                 .environment(appState)
                 .navigationTitle(windowTitle(for: file.fileURL))
+                .background(WindowAccessor { window in
+                    // Enable window state restoration - remembers size and position
+                    window?.setFrameAutosaveName("LogosDocumentWindow")
+                })
                 .onAppear {
                     appState.setWindowActions(
                         openWindow: { id in openWindow(id: id) },
