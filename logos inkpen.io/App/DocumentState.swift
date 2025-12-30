@@ -110,6 +110,7 @@ class DocumentState: ObservableObject {
     }
 
     private var selectionCancellable: AnyCancellable?
+    private var commandManagerCancellable: AnyCancellable?
 
     private func setupDocumentObserversAsync() async {
         // Observe selection changes
@@ -117,6 +118,11 @@ class DocumentState: ObservableObject {
 
         await MainActor.run {
             selectionCancellable = document.viewState.objectWillChange.sink { [weak self] _ in
+                self?.updateAllStates()
+            }
+
+            // Observe command manager changes (for undo/redo state)
+            commandManagerCancellable = document.commandManager.objectWillChange.sink { [weak self] _ in
                 self?.updateAllStates()
             }
         }
