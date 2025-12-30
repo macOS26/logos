@@ -2,6 +2,30 @@ import SwiftUI
 
 extension VectorDocument {
 
+    /// Removes orphaned objects from snapshot.objects that are not in any layer's objectIDs.
+    /// These can be left behind by buggy operations (e.g., offset path with incorrect undo handling).
+    func cleanupOrphanedObjects() {
+        // Build set of all valid object IDs from layers
+        var validObjectIDs = Set<UUID>()
+        for layer in snapshot.layers {
+            for objectID in layer.objectIDs {
+                validObjectIDs.insert(objectID)
+            }
+        }
+
+        // Find orphaned objects
+        let allObjectIDs = Set(snapshot.objects.keys)
+        let orphanedIDs = allObjectIDs.subtracting(validObjectIDs)
+
+        // Remove orphans
+        if !orphanedIDs.isEmpty {
+            Log.info("🧹 Cleaning up \(orphanedIDs.count) orphaned object(s)", category: .general)
+            for orphanID in orphanedIDs {
+                snapshot.objects.removeValue(forKey: orphanID)
+            }
+        }
+    }
+
     func getShapeAtIndex(layerIndex: Int, shapeIndex: Int) -> VectorShape? {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return nil }

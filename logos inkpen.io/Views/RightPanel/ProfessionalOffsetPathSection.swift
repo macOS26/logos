@@ -210,30 +210,23 @@ struct ProfessionalOffsetPathSection: View {
 
     private func performOffsetPath() {
         guard !selectedObjectIDs.isEmpty else { return }
+        guard let layerIndex = document.selectedLayerIndex else { return }
 
         let selectedShapes = document.getSelectedShapes()
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
-        var objectIDs: [UUID] = []
+        var removedObjectIDs: [UUID] = []
 
+        // Capture old shapes
         for shape in selectedShapes {
             oldShapes[shape.id] = shape
-            objectIDs.append(shape.id)
-        }
-
-        var newOffsetShapeIDs: Set<UUID> = []
-        var originalShapeIndices: [UUID: Int] = [:]
-        if let layerIndex = document.selectedLayerIndex {
-            let shapes = document.getShapesForLayer(layerIndex)
-            for (index, shape) in shapes.enumerated() {
-                if selectedObjectIDs.contains(shape.id) {
-                    originalShapeIndices[shape.id] = index
-                }
+            if !keepOriginalPath {
+                removedObjectIDs.append(shape.id)
             }
         }
 
+        // Create offset shapes
         for shape in selectedShapes {
-
             let offsetValue = CGFloat(offsetDistance)
             let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetValue) * 2.0,
                                                     lineCap: .round,
@@ -256,42 +249,31 @@ struct ProfessionalOffsetPathSection: View {
                 }
             }
 
-                let offsetVectorPath = VectorPath(cgPath: finalPath)
-                let offsetShape = VectorShape(
-                    name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
-                    path: offsetVectorPath,
-                    strokeStyle: shape.strokeStyle,
-                    fillStyle: shape.fillStyle,
-                    transform: shape.transform,
-                    opacity: shape.opacity
-                )
+            let offsetVectorPath = VectorPath(cgPath: finalPath)
+            let offsetShape = VectorShape(
+                name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
+                path: offsetVectorPath,
+                strokeStyle: shape.strokeStyle,
+                fillStyle: shape.fillStyle,
+                transform: shape.transform,
+                opacity: shape.opacity
+            )
 
-                if offsetDistance >= 0 {
-                    if let layerIndex = document.selectedLayerIndex {
-                        document.addShapeBehindInUnifiedSystem(offsetShape, layerIndex: layerIndex, behindShapeIDs: [shape.id])
-                    }
-                } else {
-                    document.addShape(offsetShape)
-                }
-
-                newOffsetShapeIDs.insert(offsetShape.id)
-                objectIDs.append(offsetShape.id)
-                newShapes[offsetShape.id] = offsetShape
+            newShapes[offsetShape.id] = offsetShape
         }
 
-        if keepOriginalPath {
-            // Keep original shapes in newShapes
-            for shape in selectedShapes {
-                newShapes[shape.id] = shape
-            }
-        } else {
-            // Don't include original shapes in newShapes (they will be deleted)
-            // oldShapes already has them, newShapes only has offset shapes
-        }
-
-        document.viewState.selectedObjectIDs = newOffsetShapeIDs
-        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-        document.commandManager.execute(command)
+        // Use GroupCommand for proper undo/redo that handles layer objectIDs
+        let command = GroupCommand(
+            operation: .pathOperation,
+            layerIndex: layerIndex,
+            removedObjectIDs: removedObjectIDs,
+            removedShapes: keepOriginalPath ? [:] : oldShapes,
+            addedObjectIDs: Array(newShapes.keys),
+            addedShapes: newShapes,
+            oldSelectedObjectIDs: Set(oldShapes.keys),
+            newSelectedObjectIDs: Set(newShapes.keys)
+        )
+        document.executeCommand(command)
     }
 
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {

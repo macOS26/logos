@@ -85,6 +85,9 @@ struct InkpenDocument: FileDocument {
                 throw error
             }
         }
+
+        // Clean up any orphaned objects left by buggy operations
+        self.document.cleanupOrphanedObjects()
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
