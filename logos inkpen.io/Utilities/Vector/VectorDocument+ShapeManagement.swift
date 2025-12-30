@@ -223,17 +223,77 @@ extension VectorDocument {
         return result
     }
 
+    // MARK: - Selection with Undo Support
+
+    /// Changes selection with undo/redo support
+    func setSelectionWithUndo(_ newSelectedIDs: Set<UUID>, ordered: [UUID]? = nil) {
+        let oldSelectedIDs = viewState.selectedObjectIDs
+        let oldOrderedIDs = viewState.orderedSelectedObjectIDs
+
+        // Don't create command if nothing changed
+        guard newSelectedIDs != oldSelectedIDs else { return }
+
+        let newOrderedIDs = ordered ?? Array(newSelectedIDs)
+
+        let command = SelectionCommand(
+            oldSelectedIDs: oldSelectedIDs,
+            newSelectedIDs: newSelectedIDs,
+            oldOrderedIDs: oldOrderedIDs,
+            newOrderedIDs: newOrderedIDs
+        )
+        executeCommand(command)
+    }
+
+    /// Adds to selection with undo/redo support
+    func addToSelectionWithUndo(_ shapeID: UUID) {
+        guard findObject(by: shapeID) != nil else { return }
+
+        var newSelectedIDs = viewState.selectedObjectIDs
+        newSelectedIDs.insert(shapeID)
+
+        var newOrderedIDs = viewState.orderedSelectedObjectIDs
+        if !newOrderedIDs.contains(shapeID) {
+            newOrderedIDs.append(shapeID)
+        }
+
+        setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
+    }
+
+    /// Removes from selection with undo/redo support
+    func removeFromSelectionWithUndo(_ shapeID: UUID) {
+        var newSelectedIDs = viewState.selectedObjectIDs
+        newSelectedIDs.remove(shapeID)
+
+        var newOrderedIDs = viewState.orderedSelectedObjectIDs
+        newOrderedIDs.removeAll { $0 == shapeID }
+
+        setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
+    }
+
+    /// Toggles selection with undo/redo support
+    func toggleSelectionWithUndo(_ shapeID: UUID) {
+        if viewState.selectedObjectIDs.contains(shapeID) {
+            removeFromSelectionWithUndo(shapeID)
+        } else {
+            addToSelectionWithUndo(shapeID)
+        }
+    }
+
+    /// Clears selection with undo/redo support
+    func clearSelectionWithUndo() {
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
+        setSelectionWithUndo([], ordered: [])
+    }
+
     func selectShape(_ shapeID: UUID) {
         if let vectorObject = findObject(by: shapeID) {
-            viewState.selectedObjectIDs = [vectorObject.id]
-            
+            setSelectionWithUndo([vectorObject.id], ordered: [vectorObject.id])
         }
     }
 
     func addToSelection(_ shapeID: UUID) {
         if let vectorObject = findObject(by: shapeID) {
-            viewState.selectedObjectIDs.insert(vectorObject.id)
-            
+            addToSelectionWithUndo(vectorObject.id)
         }
     }
 
@@ -280,8 +340,9 @@ extension VectorDocument {
                 return area1 > area2
             }
 
-            viewState.orderedSelectedObjectIDs = sortedByArea.map { $0.id }
-            viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
+            let orderedIDs = sortedByArea.map { $0.id }
+            let selectedIDs = Set(visibleObjects.map { $0.id })
+            setSelectionWithUndo(selectedIDs, ordered: orderedIDs)
         }
     }
 

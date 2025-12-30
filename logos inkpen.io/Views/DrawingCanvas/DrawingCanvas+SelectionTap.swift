@@ -63,7 +63,7 @@ extension DrawingCanvas {
                 // Track previous selection to trigger only affected layers
                 let previousSelection = document.viewState.selectedObjectIDs
 
-                document.viewState.selectedObjectIDs = [shape.id]
+                document.setSelectionWithUndo([shape.id], ordered: [shape.id])
                 isCornerRadiusEditMode = true
 
                 // Trigger updates for affected layers only
@@ -103,7 +103,7 @@ extension DrawingCanvas {
               document.viewState.currentTool == .warp else {
             // For non-selection tools, deselect when clicking empty space
             if !isShiftPressed && !isCommandPressed {
-                document.viewState.selectedObjectIDs = []
+                document.clearSelectionWithUndo()
             }
             return
         }
@@ -119,25 +119,14 @@ extension DrawingCanvas {
             let previousSelection = document.viewState.selectedObjectIDs
 
             if isShiftPressed {
-                // Add to selection - append to ordered array
-                if !document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
-                    document.viewState.orderedSelectedObjectIDs.append(objectToSelect.id)
-                }
-                document.viewState.selectedObjectIDs.insert(objectToSelect.id)
+                // Add to selection
+                document.addToSelectionWithUndo(objectToSelect.id)
             } else if isCommandPressed {
-                if document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
-                    // Remove from selection
-                    document.viewState.orderedSelectedObjectIDs.removeAll { $0 == objectToSelect.id }
-                    document.viewState.selectedObjectIDs.remove(objectToSelect.id)
-                } else {
-                    // Add to selection
-                    document.viewState.orderedSelectedObjectIDs.append(objectToSelect.id)
-                    document.viewState.selectedObjectIDs.insert(objectToSelect.id)
-                }
+                // Toggle selection
+                document.toggleSelectionWithUndo(objectToSelect.id)
             } else {
-                // Single selection - replace ordered array
-                document.viewState.orderedSelectedObjectIDs = [objectToSelect.id]
-                document.viewState.selectedObjectIDs = [objectToSelect.id]
+                // Single selection
+                document.setSelectionWithUndo([objectToSelect.id], ordered: [objectToSelect.id])
             }
 
             // Trigger updates for affected layers only
@@ -175,7 +164,7 @@ extension DrawingCanvas {
                 // Track previous selection to trigger only affected layers
                 let previousSelection = document.viewState.selectedObjectIDs
 
-                document.viewState.selectedObjectIDs = []
+                document.clearSelectionWithUndo()
 
                 // Trigger updates for previously selected layers only
                 var affectedLayers = Set<Int>()

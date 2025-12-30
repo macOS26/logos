@@ -910,7 +910,7 @@ class DocumentState: ObservableObject {
     }
 
     func deselectAll() {
-        document?.viewState.selectedObjectIDs.removeAll()
+        document?.clearSelectionWithUndo()
         updateAllStates()
     }
 
