@@ -298,7 +298,18 @@ extension VectorDocument {
     }
 
     func selectAll() {
+        // Build set of object IDs that are actually in layers (not orphaned)
+        var objectIDsInLayers = Set<UUID>()
+        for layer in snapshot.layers {
+            for objectID in layer.objectIDs {
+                objectIDsInLayers.insert(objectID)
+            }
+        }
+
         let visibleObjects = snapshot.objects.values.filter { object in
+            // Skip orphaned objects not in any layer
+            guard objectIDsInLayers.contains(object.id) else { return false }
+
             // Skip invisible or locked objects
             guard object.isVisible && !object.isLocked else { return false }
 

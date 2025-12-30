@@ -149,7 +149,10 @@
       "Bash(\"Views/VerticalToolbar/TransformationControls.swift\")",
       "Bash(do)",
       "Bash([ -f \"$file\" ])",
-      "Bash(xcrun xcodebuild:*)"
+      "Bash(xcrun xcodebuild:*)",
+      "Bash(unzip -p /Users/toddbruss/Documents/trackball-mount.inkpen document.json)",
+      "Bash(unzip:*)",
+      "Bash(xxd:*)"
     ],
     "deny": [],
     "ask": []
