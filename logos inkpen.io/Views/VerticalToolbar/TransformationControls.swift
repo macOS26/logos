@@ -270,11 +270,11 @@ struct TransformationControls: View {
               let obj = document.snapshot.objects[firstID] else {
             return
         }
-        // Read the object's stored origin, default to center if not set
-        let objectOrigin = obj.shape.transformOrigin ?? .center
-        // Only update if different to avoid unnecessary triggers
-        if document.viewState.transformOrigin != objectOrigin {
-            document.viewState.transformOrigin = objectOrigin
+        // Only sync if object has a saved transform origin - don't reset user's choice
+        if let objectOrigin = obj.shape.transformOrigin {
+            if document.viewState.transformOrigin != objectOrigin {
+                document.viewState.transformOrigin = objectOrigin
+            }
         }
     }
 
