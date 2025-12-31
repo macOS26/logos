@@ -80,8 +80,8 @@ extension VectorDocument {
                 return false
             }
 
-            // Skip objects on Canvas or Pasteboard layers (indices 1 and 0)
-            if object.layerIndex <= 1 {
+            // Skip objects on Canvas, Pasteboard, or Guides layers (indices 0, 1, 2)
+            if object.layerIndex <= 2 {
                 return false
             }
 
@@ -321,8 +321,8 @@ extension VectorDocument {
             // Skip objects on invisible or locked layers
             guard layer.isVisible && !layer.isLocked else { return false }
 
-            // Skip objects on Canvas or Pasteboard layers (layer indices 1 and 0)
-            guard object.layerIndex > 1 else { return false }
+            // Skip objects on Canvas, Pasteboard, or Guides layers (layer indices 0, 1, 2)
+            guard object.layerIndex > 2 else { return false }
 
             // Skip background shapes
             switch object.objectType {

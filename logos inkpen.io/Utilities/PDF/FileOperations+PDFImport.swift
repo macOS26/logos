@@ -112,7 +112,7 @@ extension FileOperations {
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
-        document.selectedLayerIndex = 2
+        document.selectedLayerIndex = 3
 
         return document
     }

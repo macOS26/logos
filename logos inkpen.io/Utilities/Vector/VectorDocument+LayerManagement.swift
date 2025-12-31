@@ -241,7 +241,7 @@ extension VectorDocument {
         }
 
         for (index, layer) in snapshot.layers.enumerated() {
-            if layer.name != "Canvas" && layer.name != "Pasteboard" && !layer.isLocked {
+            if layer.name != "Canvas" && layer.name != "Pasteboard" && layer.name != "Guides" && !layer.isLocked {
                 settings.selectedLayerId = layer.id
                 settings.selectedLayerName = layer.name
                 selectedLayerIndex = index
@@ -251,7 +251,7 @@ extension VectorDocument {
             }
         }
 
-        if snapshot.layers.count <= 2 {
+        if snapshot.layers.count <= 3 {
             addLayer(name: "Layer 1")
         }
     }
@@ -267,8 +267,8 @@ extension VectorDocument {
             return
         }
 
-        // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
-        let finalTargetIndex = targetLayerIndex <= 1 ? 2 : targetLayerIndex
+        // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
+        let finalTargetIndex = targetLayerIndex <= 2 ? 3 : targetLayerIndex
 
         let sourceLayerIndex = object.layerIndex
 
@@ -290,8 +290,8 @@ extension VectorDocument {
             return
         }
 
-        // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
-        let finalTargetIndex = targetLayerIndex <= 1 ? 2 : targetLayerIndex
+        // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
+        let finalTargetIndex = targetLayerIndex <= 2 ? 3 : targetLayerIndex
 
         var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
 

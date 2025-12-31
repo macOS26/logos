@@ -1063,7 +1063,7 @@ class ClipboardManager {
 
             if layerIndex < document.snapshot.layers.count {
                 let layerName = document.snapshot.layers[layerIndex].name
-                if layerName == "Canvas" || layerName == "Pasteboard" {
+                if layerName == "Canvas" || layerName == "Pasteboard" || layerName == "Guides" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
                 }
@@ -1125,7 +1125,7 @@ class ClipboardManager {
 
             if layerIndex < document.snapshot.layers.count {
                 let layerName = document.snapshot.layers[layerIndex].name
-                if layerName == "Canvas" || layerName == "Pasteboard" {
+                if layerName == "Canvas" || layerName == "Pasteboard" || layerName == "Guides" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
                 }
@@ -1187,7 +1187,7 @@ class ClipboardManager {
 
             if layerIndex < document.snapshot.layers.count {
                 let layerName = document.snapshot.layers[layerIndex].name
-                if layerName == "Canvas" || layerName == "Pasteboard" {
+                if layerName == "Canvas" || layerName == "Pasteboard" || layerName == "Guides" {
                     Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
                 }

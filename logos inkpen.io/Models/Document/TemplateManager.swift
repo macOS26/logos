@@ -40,7 +40,7 @@ class TemplateManager {
 
         let document = VectorDocument(settings: blankSettings)
 
-        document.selectedLayerIndex = 2
+        document.selectedLayerIndex = 3
         document.viewState.selectedObjectIDs.removeAll()
         document.removeAllText()
 

@@ -72,7 +72,7 @@ extension DrawingCanvas {
         if targetLayerIndex == nil {
             // Find first non-special layer
             for (index, layer) in document.snapshot.layers.enumerated() {
-                if layer.name != "Pasteboard" && layer.name != "Canvas" {
+                if layer.name != "Pasteboard" && layer.name != "Canvas" && layer.name != "Guides" {
                     targetLayerIndex = index
                     break
                 }

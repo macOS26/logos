@@ -29,7 +29,19 @@ extension VectorDocument {
             color: .blue
         ))
 
-        // Create default working layer
+        // Create Guides layer (index 2)
+        snapshot.layers.append(Layer(
+            id: UUID(),
+            name: "Guides",
+            objectIDs: [],
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            color: .cyan
+        ))
+
+        // Create default working layer (index 3)
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Layer 1",

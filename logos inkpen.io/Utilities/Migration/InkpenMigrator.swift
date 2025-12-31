@@ -234,7 +234,7 @@ struct InkpenMigrator {
         // Set selectedLayerId to first editable layer (Layer 1 at index 2)
         if migratedLayers.count > 2 {
             document.settings.selectedLayerId = migratedLayers[2].id
-            document.selectedLayerIndex = 2
+            document.selectedLayerIndex = 3
             Log.fileOperation("  🎯 Set default selected layer to '\(migratedLayers[2].name)'", level: .debug)
         }
 

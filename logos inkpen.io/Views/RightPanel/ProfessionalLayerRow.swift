@@ -285,7 +285,7 @@ struct ProfessionalLayerRow: View {
                 }
             }
         )
-        .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
+        .if(layer.name != "Canvas" && layer.name != "Pasteboard" && layer.name != "Guides") { view in
             view.draggable(DraggableItem.layer(
                 DraggableLayer(
                     layerIndex: layerIndex,
@@ -341,8 +341,8 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                // Canvas and Pasteboard layers (0 and 1) cannot contain objects - redirect to layer 2
-                let targetIndex = layerIndex <= 1 ? 2 : layerIndex
+                // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
+                let targetIndex = layerIndex <= 2 ? 3 : layerIndex
 
                 if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
                     document.moveObjectsToLayer(objectIds: Array(document.viewState.selectedObjectIDs), targetLayerIndex: targetIndex)

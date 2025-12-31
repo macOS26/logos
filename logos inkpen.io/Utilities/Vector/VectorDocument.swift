@@ -113,11 +113,11 @@ final class VectorDocument: ObservableObject, Codable {
 
         createCanvasAndWorkingLayers()
 
-        self.selectedLayerIndex = 2
+        self.selectedLayerIndex = 3
         self.layerIndex = snapshot.layers.count
 
-        if snapshot.layers.count > 2 {
-            let workingLayer = snapshot.layers[2]
+        if snapshot.layers.count > 3 {
+            let workingLayer = snapshot.layers[3]
             self.settings.selectedLayerId = workingLayer.id
             self.settings.selectedLayerName = workingLayer.name
         }
