@@ -271,6 +271,16 @@ struct DrawingCanvas: View {
                         showHandlesForSelectedPoints()
                     }
                 }
+                .onChange(of: document.viewState.selectedObjectIDs) { _, newSelection in
+                    // Sync local selection state when selection changes externally (e.g., from layers panel)
+                    if selectedObjectIDs != newSelection {
+                        selectedObjectIDs = newSelection
+                        // Clear point/handle selection when objects change
+                        selectedPoints.removeAll()
+                        selectedHandles.removeAll()
+                        visibleHandles.removeAll()
+                    }
+                }
         }
     }
 }
