@@ -193,6 +193,7 @@ final class VectorDocument: ObservableObject, Codable {
 
         originalHandlePositions = [:]
 
+        ensureGuidesLayerExists()
         validateSelectedLayer()
         
         if let fillColor = settings.fillColor {

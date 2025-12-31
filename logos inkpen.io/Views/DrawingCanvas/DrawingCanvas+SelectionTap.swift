@@ -217,6 +217,26 @@ extension DrawingCanvas {
             return shape.groupBounds.contains(location)
         }
 
+        // Special handling for guides - use tolerance-based hit testing
+        if shape.isGuide, let orientation = shape.guideOrientation {
+            let guideTolerance: CGFloat = 5.0  // 5px tolerance for guide selection
+
+            // Extract guide position from path
+            guard let firstElement = shape.path.elements.first,
+                  case .move(let point) = firstElement else {
+                return false
+            }
+
+            switch orientation {
+            case .horizontal:
+                let guideY = CGFloat(point.y)
+                return abs(location.y - guideY) <= guideTolerance
+            case .vertical:
+                let guideX = CGFloat(point.x)
+                return abs(location.x - guideX) <= guideTolerance
+            }
+        }
+
         // Get transformed bounds
         var hitBounds = shape.bounds.applying(shape.transform)
 

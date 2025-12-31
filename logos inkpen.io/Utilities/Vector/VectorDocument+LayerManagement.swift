@@ -220,6 +220,41 @@ extension VectorDocument {
         changeNotifier.notifyLayersChanged()
     }
 
+    /// Ensures the Guides layer exists at index 2 for documents created before guides were added
+    func ensureGuidesLayerExists() {
+        // Check if Guides layer already exists
+        if snapshot.layers.count > 2 && snapshot.layers[2].name == "Guides" {
+            return
+        }
+
+        // Check if we have at least Pasteboard and Canvas layers
+        guard snapshot.layers.count >= 2 else { return }
+
+        // Insert Guides layer at index 2
+        let guidesLayer = Layer(
+            id: UUID(),
+            name: "Guides",
+            objectIDs: [],
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            color: .cyan
+        )
+
+        snapshot.layers.insert(guidesLayer, at: 2)
+
+        // Update layer indices for all objects in layers 2 and above
+        for layerIdx in 3..<snapshot.layers.count {
+            for objectID in snapshot.layers[layerIdx].objectIDs {
+                if let object = snapshot.objects[objectID] {
+                    let updatedObject = VectorObject(id: object.id, layerIndex: layerIdx, objectType: object.objectType)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
+        }
+    }
+
     func validateSelectedLayer() {
         if let savedId = settings.selectedLayerId,
            snapshot.layers.first(where: { $0.id == savedId }) != nil {
