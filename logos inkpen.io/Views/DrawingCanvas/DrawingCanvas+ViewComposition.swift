@@ -256,12 +256,12 @@ extension DrawingCanvas {
             )
         }
 
-        // Guides overlay - non-photo blue lines (selectable/movable when unlocked)
+        // Guides overlay - non-photo blue lines
         GuidesView(
-            document: document,
+            guides: document.gridSettings.guides,
+            showGuides: document.gridSettings.showGuides,
             zoomLevel: zoomLevel,
-            canvasOffset: canvasOffset,
-            canvasSize: document.settings.sizeInPoints
+            canvasOffset: canvasOffset
         )
     }
 
