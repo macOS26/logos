@@ -40,14 +40,17 @@ struct SelectionHandlesView: View {
                             }
 
                             switch newVectorObject.objectType {
+                            case .guide:
+                                // Guides don't show selection handles - they're just movable lines
+                                EmptyView()
+
                             case .shape(let shape),
                                  .image(let shape),
                                  .warp(let shape),
                                  .group(let shape),
                                  .clipGroup(let shape),
                                  .clipMask(let shape),
-                                 .text(let shape),
-                                 .guide(let shape):
+                                 .text(let shape):
                                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                                 if !isBackgroundShape {
                                     if document.viewState.currentTool == .warp {
