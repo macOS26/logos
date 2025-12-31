@@ -4,6 +4,14 @@ import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
+
+    /// Gets the document base name (without extension) for export filenames
+    private func getDocumentBaseName() -> String {
+        if let fileURL = NSDocumentController.shared.currentDocument?.fileURL {
+            return fileURL.deletingPathExtension().lastPathComponent
+        }
+        return "Untitled"
+    }
     @Published var isFocused = false
     @Published var canUndo = false
     @Published var canRedo = false
@@ -280,7 +288,7 @@ class DocumentState: ObservableObject {
 
         let panel = NSSavePanel()
         panel.title = "Export SVG"
-        panel.nameFieldStringValue = "Untitled.svg"
+        panel.nameFieldStringValue = "\(getDocumentBaseName()).svg"
         panel.allowedContentTypes = [.svg]
         panel.canCreateDirectories = true
         panel.showsTagField = false
@@ -440,7 +448,7 @@ class DocumentState: ObservableObject {
 
         let panel = NSSavePanel()
         panel.title = "Export PDF"
-        panel.nameFieldStringValue = "Untitled.pdf"
+        panel.nameFieldStringValue = "\(getDocumentBaseName()).pdf"
         panel.allowedContentTypes = [.pdf]
         panel.canCreateDirectories = true
         panel.showsTagField = false
@@ -550,7 +558,7 @@ class DocumentState: ObservableObject {
 
         let panel = NSSavePanel()
         panel.title = "Export PNG"
-        panel.nameFieldStringValue = "Untitled.png"
+        panel.nameFieldStringValue = "\(getDocumentBaseName()).png"
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.showsTagField = false
@@ -761,7 +769,7 @@ class DocumentState: ObservableObject {
 
         let panel = NSSavePanel()
         panel.title = "Export AutoDesk SVG"
-        panel.nameFieldStringValue = "Untitled.svg"
+        panel.nameFieldStringValue = "\(getDocumentBaseName())-96dpi.svg"
         panel.allowedContentTypes = [.svg]
         panel.canCreateDirectories = true
         panel.showsTagField = false
