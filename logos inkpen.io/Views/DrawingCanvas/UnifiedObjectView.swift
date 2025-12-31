@@ -288,6 +288,9 @@ struct LayerCanvasView: View {
             // Render objects in original stacking order
             // Selected objects share the same drag delta transform
             for object in visibleObjects {
+                // Skip guides - they're rendered separately by GuidesView at screen scale
+                if case .guide = object.objectType { continue }
+
                 let isSelected = selectedObjectIDs.contains(object.id)
 
                 // Apply selection transform (with drag delta + nudge offset) for selected objects
