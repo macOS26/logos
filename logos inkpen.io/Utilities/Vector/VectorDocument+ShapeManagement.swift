@@ -80,8 +80,9 @@ extension VectorDocument {
                 return false
             }
 
-            // Skip objects on Canvas, Pasteboard, or Guides layers (indices 0, 1, 2)
-            if object.layerIndex <= 2 {
+            // Skip objects on Canvas or Pasteboard layers (indices 0, 1)
+            // Allow deletion of guides on Guides layer (index 2)
+            if object.layerIndex <= 1 {
                 return false
             }
 
