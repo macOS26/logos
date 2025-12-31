@@ -2,13 +2,19 @@ import SwiftUI
 
 extension VectorDocument {
     func groupSelectedObjects() {
-        guard let layerIndex = selectedLayerIndex,
-              viewState.selectedObjectIDs.count > 1 else {
+        guard viewState.selectedObjectIDs.count > 1 else {
             return
         }
 
         // Get shapes in stacking order - these will become group members
         let selectedShapes = getSelectedShapesInStackingOrder()
+
+        // Use the layer of the first selected object, not selectedLayerIndex
+        guard let firstObjectID = viewState.orderedSelectedObjectIDs.first ?? viewState.selectedObjectIDs.first,
+              let firstObject = snapshot.objects[firstObjectID] else {
+            return
+        }
+        let layerIndex = firstObject.layerIndex
 
         // Create group with memberIDs - shapes stay in snapshot.objects
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
