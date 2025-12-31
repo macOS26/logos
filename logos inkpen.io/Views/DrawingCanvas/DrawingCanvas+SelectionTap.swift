@@ -187,20 +187,10 @@ extension DrawingCanvas {
         }
     }
 
-    /// Path-only hit test for direct selection (no bounding box)
+    /// Hit test for direct selection - click anywhere on shape to select it
     internal func performPathOnlyHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        if shape.typography != nil {
-            let textBounds = CGRect(
-                x: shape.transform.tx,
-                y: shape.transform.ty,
-                width: shape.bounds.width,
-                height: shape.bounds.height
-            )
-            return textBounds.contains(location)
-        }
-
-        // Direct selection - ZERO tolerance, must click exactly on path
-        return PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 0.0)
+        // Direct selection uses same hit test as arrow tool
+        return performShapeHitTest(shape: shape, at: location)
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
