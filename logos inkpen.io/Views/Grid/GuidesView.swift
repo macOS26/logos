@@ -7,6 +7,7 @@ struct GuidesView: View {
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    @Binding var liveDragOffset: CGPoint
 
     var body: some View {
         if showGuides {
@@ -15,7 +16,6 @@ struct GuidesView: View {
 
             let guideShapes = document.getGuideShapes()
             let selectedIDs = document.viewState.selectedObjectIDs
-            let dragOffset = document.viewState.dragGuideOffset
 
             GeometryReader { geometry in
                 ZStack {
@@ -25,7 +25,7 @@ struct GuidesView: View {
                                 shape: shape,
                                 orientation: orientation,
                                 isSelected: selectedIDs.contains(shape.id),
-                                dragOffset: dragOffset,
+                                dragOffset: liveDragOffset,
                                 zoomLevel: zoomLevel,
                                 canvasOffset: canvasOffset,
                                 viewSize: geometry.size
