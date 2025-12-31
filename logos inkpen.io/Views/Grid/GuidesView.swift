@@ -16,6 +16,7 @@ struct GuidesView: View {
 
             let guideShapes = document.getGuideShapes()
             let selectedIDs = document.viewState.selectedObjectIDs
+            let isKeylineMode = document.viewState.viewMode == .keyline
 
             GeometryReader { geometry in
                 ZStack {
@@ -25,6 +26,7 @@ struct GuidesView: View {
                                 shape: shape,
                                 orientation: orientation,
                                 isSelected: selectedIDs.contains(shape.id),
+                                isKeylineMode: isKeylineMode,
                                 dragOffset: liveDragOffset,
                                 zoomLevel: zoomLevel,
                                 canvasOffset: canvasOffset,
@@ -44,10 +46,18 @@ private struct GuideLineView: View {
     let shape: VectorShape
     let orientation: Guide.Orientation
     let isSelected: Bool
+    let isKeylineMode: Bool
     let dragOffset: CGPoint
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let viewSize: CGSize
+
+    private var guideColor: Color {
+        if isKeylineMode {
+            return .black
+        }
+        return isSelected ? Color.nonPhotoBlueSelected : Color.nonPhotoBlue
+    }
 
     var body: some View {
         Path { p in
@@ -73,7 +83,7 @@ private struct GuideLineView: View {
                 p.addLine(to: CGPoint(x: screenX, y: viewSize.height))
             }
         }
-        .stroke(isSelected ? Color.nonPhotoBlueSelected : Color.nonPhotoBlue, lineWidth: 1)
+        .stroke(guideColor, lineWidth: 1)
     }
 
     private func extractGuidePosition() -> CGFloat {
