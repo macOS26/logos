@@ -299,7 +299,10 @@ extension VectorDocument {
 
     /// Recalculates group bounds from its member shapes
     func recalculateGroupBounds(groupID: UUID) {
-        guard let object = snapshot.objects[groupID] else { return }
+        guard let object = snapshot.objects[groupID] else {
+            Log.error("❌ recalculateGroupBounds: Group \(groupID) not found in snapshot.objects", category: .error)
+            return
+        }
 
         var memberIDs: [UUID] = []
         switch object.objectType {
@@ -310,9 +313,14 @@ extension VectorDocument {
         }
 
         var calculatedGroupBounds = CGRect.null
+        var foundMembers = 0
         for memberID in memberIDs {
-            guard let memberObject = snapshot.objects[memberID] else { continue }
+            guard let memberObject = snapshot.objects[memberID] else {
+                Log.error("❌ recalculateGroupBounds: Member \(memberID) not found in snapshot.objects", category: .error)
+                continue
+            }
             let memberShape = memberObject.shape
+            foundMembers += 1
 
             let shapeBounds: CGRect
             if memberShape.typography != nil, let textPosition = memberShape.textPosition, let areaSize = memberShape.areaSize {
@@ -322,11 +330,20 @@ extension VectorDocument {
             } else {
                 shapeBounds = memberShape.bounds.applying(memberShape.transform)
             }
-            calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
+
+            // Validate bounds before union
+            if !shapeBounds.isNull && !shapeBounds.isInfinite && shapeBounds.width > 0 && shapeBounds.height > 0 {
+                calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
+            }
         }
 
-        updateShapeByID(groupID) { shape in
-            shape.bounds = calculatedGroupBounds
+        // Only update if we found valid bounds
+        if !calculatedGroupBounds.isNull && !calculatedGroupBounds.isInfinite && foundMembers > 0 {
+            updateShapeByID(groupID) { shape in
+                shape.bounds = calculatedGroupBounds
+            }
+        } else {
+            Log.error("❌ recalculateGroupBounds: Invalid bounds calculated for group \(groupID), foundMembers=\(foundMembers)", category: .error)
         }
     }
 
