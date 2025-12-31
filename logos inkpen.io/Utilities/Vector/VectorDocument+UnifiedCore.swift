@@ -2,7 +2,8 @@ import SwiftUI
 
 extension VectorDocument {
 
-    /// Removes orphaned objects from snapshot.objects that are not in any layer's objectIDs.
+    /// Removes orphaned objects from snapshot.objects that are not in any layer's objectIDs
+    /// and are not referenced by any group's memberIDs.
     /// These can be left behind by buggy operations (e.g., offset path with incorrect undo handling).
     func cleanupOrphanedObjects() {
         // Build set of all valid object IDs from layers
@@ -10,6 +11,16 @@ extension VectorDocument {
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
                 validObjectIDs.insert(objectID)
+            }
+        }
+
+        // Also include all objects referenced by group memberIDs (recursively)
+        for object in snapshot.objects.values {
+            switch object.objectType {
+            case .group(let shape), .clipGroup(let shape):
+                collectMemberIDsRecursively(shape.memberIDs, into: &validObjectIDs)
+            default:
+                break
             }
         }
 
@@ -22,6 +33,22 @@ extension VectorDocument {
             Log.info("🧹 Cleaning up \(orphanedIDs.count) orphaned object(s)", category: .general)
             for orphanID in orphanedIDs {
                 snapshot.objects.removeValue(forKey: orphanID)
+            }
+        }
+    }
+
+    /// Recursively collects all memberIDs from groups and nested groups
+    private func collectMemberIDsRecursively(_ memberIDs: [UUID], into validIDs: inout Set<UUID>) {
+        for memberID in memberIDs {
+            validIDs.insert(memberID)
+            // Check if this member is also a group with its own members
+            if let memberObject = snapshot.objects[memberID] {
+                switch memberObject.objectType {
+                case .group(let shape), .clipGroup(let shape):
+                    collectMemberIDsRecursively(shape.memberIDs, into: &validIDs)
+                default:
+                    break
+                }
             }
         }
     }
