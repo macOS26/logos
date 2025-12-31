@@ -1055,7 +1055,9 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            guard let layerIndex = document.selectedLayerIndex else { return }
+            // Use settings.selectedLayerId to find the correct layer index
+            guard let selectedLayerId = document.settings.selectedLayerId,
+                  let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
             if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
                 Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
@@ -1117,7 +1119,9 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            guard let layerIndex = document.selectedLayerIndex else { return }
+            // Use settings.selectedLayerId to find the correct layer index
+            guard let selectedLayerId = document.settings.selectedLayerId,
+                  let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
             if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
                 Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
@@ -1179,7 +1183,9 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            guard let layerIndex = document.selectedLayerIndex else { return }
+            // Use settings.selectedLayerId to find the correct layer index
+            guard let selectedLayerId = document.settings.selectedLayerId,
+                  let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
             if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
                 Log.error("❌ Cannot paste into locked layer '\(document.snapshot.layers[layerIndex].name)'", category: .error)
