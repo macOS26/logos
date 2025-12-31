@@ -70,9 +70,12 @@ extension VectorDocument {
                 let shapeBounds: CGRect
                 if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                     shapeBounds = calculateGroupBoundsFromMembers(memberIDs: shape.memberIDs)
+                    Log.info("📐 Group bounds for \(shape.id): \(shapeBounds), memberIDs: \(shape.memberIDs.count)", category: .general)
                 } else {
                     shapeBounds = shape.bounds.applying(shape.transform)
                 }
+
+                Log.info("📐 Shape '\(shape.name)' bounds: \(shapeBounds)", category: .general)
 
                 if !shapeBounds.isNull && !shapeBounds.isInfinite && shapeBounds.width > 0 && shapeBounds.height > 0 {
                     if !hasContent {
@@ -81,6 +84,8 @@ extension VectorDocument {
                     } else {
                         artworkBounds = artworkBounds.union(shapeBounds)
                     }
+                } else {
+                    Log.error("❌ Invalid bounds for '\(shape.name)': isNull=\(shapeBounds.isNull), isInfinite=\(shapeBounds.isInfinite), width=\(shapeBounds.width), height=\(shapeBounds.height)", category: .error)
                 }
             }
         }
