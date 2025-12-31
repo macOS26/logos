@@ -606,9 +606,10 @@ struct LayerCanvasView: View {
 
     private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         // Fast path: skip invisible shapes (O(1))
+        // In keyline mode, ALWAYS render - show all shape outlines regardless of fill/stroke settings
         let hasVisibleFill = viewMode == .color && shape.fillStyle != nil && shape.fillStyle!.color != .clear
-        let hasVisibleStroke = (viewMode == .keyline || shape.strokeStyle != nil) && (shape.strokeStyle == nil || shape.strokeStyle!.color != .clear)
-        guard hasVisibleFill || hasVisibleStroke else { return }
+        let hasVisibleStroke = shape.strokeStyle != nil && shape.strokeStyle!.color != .clear
+        guard viewMode == .keyline || hasVisibleFill || hasVisibleStroke else { return }
 
         // Use cached CGPath (O(1) on cache hit)
         // If scaleTransform is active, apply it to the path geometry to scale the shape
