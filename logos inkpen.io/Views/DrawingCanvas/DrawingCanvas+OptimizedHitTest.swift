@@ -59,6 +59,11 @@ extension DrawingCanvas {
         for obj in document.snapshot.objects.values {
             switch obj.objectType {
             case .group(let groupShape), .clipGroup(let groupShape):
+                // Modern groups use memberIDs
+                for memberID in groupShape.memberIDs {
+                    groupedChildIDs.insert(memberID)
+                }
+                // Legacy groups use groupedShapes (deprecated)
                 for childShape in groupShape.groupedShapes {
                     groupedChildIDs.insert(childShape.id)
                 }
@@ -133,7 +138,6 @@ extension DrawingCanvas {
     private func metalHitTest(at point: CGPoint, testFunction: (VectorObject, CGPoint) -> Bool) -> VectorObject? {
         // Get candidates from GPU spatial index
         let candidates = spatialIndex.candidateObjectIDs(at: point)
-        print("🔍 Hit test at \(point) found \(candidates.count) candidates")
 
         // Iterate layers from top to bottom (reversed)
         for layer in document.snapshot.layers.reversed() {
@@ -145,13 +149,10 @@ extension DrawingCanvas {
                 guard candidates.contains(objectID) else { continue }
 
                 guard let object = document.snapshot.objects[objectID] else {
-                    print("  ❌ Object not found for ID: \(objectID)")
                     continue
                 }
 
-                let testResult = testFunction(object, point)
-                print("  🎯 Testing object \(objectID): testResult=\(testResult)")
-                if testResult {
+                if testFunction(object, point) {
                     return object
                 }
             }
