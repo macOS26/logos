@@ -50,6 +50,7 @@ struct GuidesView: View {
                         context.stroke(path, with: .color(Color.nonPhotoBlue), lineWidth: 1)
                     }
                 }
+                .id("guides-\(dragOffset.x)-\(dragOffset.y)")
                 .allowsHitTesting(false)
             }
         }
