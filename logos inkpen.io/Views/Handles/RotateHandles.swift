@@ -348,6 +348,12 @@ struct RotateHandles: View {
             return
         }
 
+        // For groups, use the proper group transform function
+        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+            document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
+            return
+        }
+
         var transformedElements: [PathElement] = []
 
         for element in shape.path.elements {

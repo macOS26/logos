@@ -18,17 +18,25 @@ extension ScaleHandles {
     }
 
     func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
-        guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
+        guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
 
         if currentTransform.isIdentity {
             return
         }
 
+        // For modern groups with memberIDs, use the proper group transform function
+        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+            document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
+            return
+        }
+
+        // For legacy groups with embedded groupedShapes
         if shape.isGroup && !shape.groupedShapes.isEmpty {
+            var mutableShape = shape
             var transformedGroupedShapes: [VectorShape] = []
 
-            for var groupedShape in shape.groupedShapes {
+            for var groupedShape in mutableShape.groupedShapes {
                 var transformedElements: [PathElement] = []
 
                 for element in groupedShape.path.elements {
@@ -71,10 +79,10 @@ extension ScaleHandles {
                 transformedGroupedShapes.append(groupedShape)
             }
 
-            shape.groupedShapes = transformedGroupedShapes
-            shape.transform = .identity
-            shape.updateBounds()
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
+            mutableShape.groupedShapes = transformedGroupedShapes
+            mutableShape.transform = .identity
+            mutableShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: mutableShape)
 
             return
         }

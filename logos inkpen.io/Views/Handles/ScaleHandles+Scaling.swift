@@ -57,8 +57,14 @@ extension ScaleHandles {
         liveScaleTransform = .identity
 
         var oldShapes: [UUID: VectorShape] = [:]
-        if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
-            oldShapes[shape.id] = oldShape
+        if let object = document.findObject(by: shape.id) {
+            switch object.objectType {
+            case .shape(let oldShape), .group(let oldShape), .clipGroup(let oldShape),
+                 .image(let oldShape), .warp(let oldShape), .clipMask(let oldShape), .guide(let oldShape):
+                oldShapes[shape.id] = oldShape
+            case .text:
+                break
+            }
         }
 
         if let vectorObject = document.findObject(by: shape.id),

@@ -153,7 +153,8 @@
       "Bash(unzip -p /Users/toddbruss/Documents/trackball-mount.inkpen document.json)",
       "Bash(unzip:*)",
       "Bash(xxd:*)",
-      "WebFetch(domain:www.manualslib.com)"
+      "WebFetch(domain:www.manualslib.com)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
