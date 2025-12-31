@@ -1121,10 +1121,28 @@ class ClipboardManager {
             // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build objects array for command
-            let shapeObjects = newShapes.map { shape -> VectorObject in
-                newObjectIDs.insert(shape.id)
-                return VectorObject(shape: shape, layerIndex: layerIndex)
+            // Build set of all member IDs (shapes that belong to groups)
+            var memberIDSet = Set<UUID>()
+            for shape in newShapes {
+                if !shape.memberIDs.isEmpty {
+                    memberIDSet.formUnion(shape.memberIDs)
+                }
+            }
+
+            // Separate group members from top-level objects
+            var topLevelObjects: [VectorObject] = []
+            var memberObjects: [VectorObject] = []
+
+            for shape in newShapes {
+                let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+                if memberIDSet.contains(shape.id) {
+                    // This is a group member - add to snapshot.objects only
+                    memberObjects.append(obj)
+                } else {
+                    // This is a top-level object - add to layer
+                    topLevelObjects.append(obj)
+                    newObjectIDs.insert(shape.id)
+                }
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
@@ -1136,7 +1154,12 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            let objectsToAdd = shapeObjects + textObjects
+            // Add member objects directly to snapshot.objects (not to layer)
+            for memberObj in memberObjects {
+                document.snapshot.objects[memberObj.id] = memberObj
+            }
+
+            let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
@@ -1187,10 +1210,26 @@ class ClipboardManager {
             // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build objects array for command
-            let shapeObjects = newShapes.map { shape -> VectorObject in
-                newObjectIDs.insert(shape.id)
-                return VectorObject(shape: shape, layerIndex: layerIndex)
+            // Build set of all member IDs (shapes that belong to groups)
+            var memberIDSet = Set<UUID>()
+            for shape in newShapes {
+                if !shape.memberIDs.isEmpty {
+                    memberIDSet.formUnion(shape.memberIDs)
+                }
+            }
+
+            // Separate group members from top-level objects
+            var topLevelObjects: [VectorObject] = []
+            var memberObjects: [VectorObject] = []
+
+            for shape in newShapes {
+                let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+                if memberIDSet.contains(shape.id) {
+                    memberObjects.append(obj)
+                } else {
+                    topLevelObjects.append(obj)
+                    newObjectIDs.insert(shape.id)
+                }
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
@@ -1202,7 +1241,12 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            let objectsToAdd = shapeObjects + textObjects
+            // Add member objects directly to snapshot.objects (not to layer)
+            for memberObj in memberObjects {
+                document.snapshot.objects[memberObj.id] = memberObj
+            }
+
+            let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
@@ -1253,10 +1297,26 @@ class ClipboardManager {
             // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build objects array for command
-            let shapeObjects = newShapes.map { shape -> VectorObject in
-                newObjectIDs.insert(shape.id)
-                return VectorObject(shape: shape, layerIndex: layerIndex)
+            // Build set of all member IDs (shapes that belong to groups)
+            var memberIDSet = Set<UUID>()
+            for shape in newShapes {
+                if !shape.memberIDs.isEmpty {
+                    memberIDSet.formUnion(shape.memberIDs)
+                }
+            }
+
+            // Separate group members from top-level objects
+            var topLevelObjects: [VectorObject] = []
+            var memberObjects: [VectorObject] = []
+
+            for shape in newShapes {
+                let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+                if memberIDSet.contains(shape.id) {
+                    memberObjects.append(obj)
+                } else {
+                    topLevelObjects.append(obj)
+                    newObjectIDs.insert(shape.id)
+                }
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
@@ -1268,7 +1328,12 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            let objectsToAdd = shapeObjects + textObjects
+            // Add member objects directly to snapshot.objects (not to layer)
+            for memberObj in memberObjects {
+                document.snapshot.objects[memberObj.id] = memberObj
+            }
+
+            let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
                 // Store current tool before executing command
