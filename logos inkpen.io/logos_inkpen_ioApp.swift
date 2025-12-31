@@ -976,10 +976,45 @@ class ClipboardManager {
 
     private init() {}
 
+    /// Regenerates UUIDs for all shapes, maintaining a consistent mapping for memberIDs
+    private func regenerateUUIDsForShapes(_ shapes: [VectorShape]) -> ([VectorShape], [UUID: UUID]) {
+        // First pass: create mapping from old to new UUIDs for ALL shapes
+        var oldToNewID: [UUID: UUID] = [:]
+        for shape in shapes {
+            oldToNewID[shape.id] = UUID()
+        }
+
+        // Second pass: apply new UUIDs and update memberIDs references
+        var newShapes: [VectorShape] = []
+        for shape in shapes {
+            var newShape = shape
+            newShape.id = oldToNewID[shape.id] ?? UUID()
+
+            // Update memberIDs to use new UUIDs
+            if !newShape.memberIDs.isEmpty {
+                newShape.memberIDs = newShape.memberIDs.map { oldToNewID[$0] ?? $0 }
+            }
+
+            // Regenerate UUIDs for grouped shapes (legacy)
+            if !newShape.groupedShapes.isEmpty {
+                newShape.groupedShapes = newShape.groupedShapes.map { childShape in
+                    var newChild = childShape
+                    newChild.id = UUID()
+                    return newChild
+                }
+            }
+
+            newShapes.append(newShape)
+        }
+
+        return (newShapes, oldToNewID)
+    }
+
     private func regenerateUUIDs(for shape: VectorShape) -> VectorShape {
         var newShape = shape
         newShape.id = UUID()
 
+        // Regenerate UUIDs for grouped shapes (legacy)
         if !newShape.groupedShapes.isEmpty {
             newShape.groupedShapes = newShape.groupedShapes.map { childShape in
                 regenerateUUIDs(for: childShape)
@@ -1034,6 +1069,15 @@ class ClipboardManager {
                      .clipMask(let shape),
                      .guide(let shape):
                     shapesToCopy.append(shape)
+
+                    // For groups with memberIDs, also copy member shapes
+                    if !shape.memberIDs.isEmpty {
+                        for memberID in shape.memberIDs {
+                            if let memberObj = document.snapshot.objects[memberID] {
+                                shapesToCopy.append(memberObj.shape)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1074,11 +1118,13 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Build objects array for command - O(n) where n = clipboard items
-            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
-                let newShape = regenerateUUIDs(for: shape)
-                newObjectIDs.insert(newShape.id)
-                return VectorObject(shape: newShape, layerIndex: layerIndex)
+            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
+            let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
+
+            // Build objects array for command
+            let shapeObjects = newShapes.map { shape -> VectorObject in
+                newObjectIDs.insert(shape.id)
+                return VectorObject(shape: shape, layerIndex: layerIndex)
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
@@ -1138,11 +1184,13 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Build objects array for command - O(n) where n = clipboard items
-            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
-                let newShape = regenerateUUIDs(for: shape)
-                newObjectIDs.insert(newShape.id)
-                return VectorObject(shape: newShape, layerIndex: layerIndex)
+            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
+            let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
+
+            // Build objects array for command
+            let shapeObjects = newShapes.map { shape -> VectorObject in
+                newObjectIDs.insert(shape.id)
+                return VectorObject(shape: shape, layerIndex: layerIndex)
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
@@ -1202,11 +1250,13 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Build objects array for command - O(n) where n = clipboard items
-            let shapeObjects = clipboardData.shapes.map { shape -> VectorObject in
-                let newShape = regenerateUUIDs(for: shape)
-                newObjectIDs.insert(newShape.id)
-                return VectorObject(shape: newShape, layerIndex: layerIndex)
+            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
+            let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
+
+            // Build objects array for command
+            let shapeObjects = newShapes.map { shape -> VectorObject in
+                newObjectIDs.insert(shape.id)
+                return VectorObject(shape: shape, layerIndex: layerIndex)
             }
 
             let textObjects = clipboardData.texts.map { text -> VectorObject in
