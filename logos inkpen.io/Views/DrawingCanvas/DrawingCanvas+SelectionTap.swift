@@ -199,10 +199,8 @@ extension DrawingCanvas {
             return textBounds.contains(location)
         }
 
-        // Direct selection always uses path hit test
-        let baseTolerance: CGFloat = 8.0
-        let tolerance = max(2.0, baseTolerance / zoomLevel)
-        return PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+        // Direct selection - ZERO tolerance, must click exactly on path
+        return PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 0.0)
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
