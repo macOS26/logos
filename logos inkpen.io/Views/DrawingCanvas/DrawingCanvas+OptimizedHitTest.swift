@@ -67,11 +67,23 @@ extension DrawingCanvas {
             }
         }
 
+        // Check if Guides layer (index 2) is the selected layer
+        let isGuidesLayerSelected = document.selectedLayerIndex == 2
+
         // Use Metal spatial index for GPU-accelerated candidate lookup
         return metalHitTest(at: validatedLocation) { object, point in
             // ARROW TOOL: Skip children that are inside groups - only select the group
             if groupedChildIDs.contains(object.id) {
                 return false
+            }
+
+            // If Guides layer is selected, only allow selecting guides
+            if isGuidesLayerSelected {
+                if case .guide = object.objectType {
+                    // Allow guide selection
+                } else {
+                    return false
+                }
             }
 
             // Skip background shapes
