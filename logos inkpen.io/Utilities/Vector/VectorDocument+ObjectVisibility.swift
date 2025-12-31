@@ -18,7 +18,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     oldValues[id] = shape.isLocked
                     newValues[id] = true
                 }
@@ -55,7 +56,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if shape.isLocked {
                     affectedIDs.append(obj.id)
                     oldValues[obj.id] = true
@@ -91,7 +93,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     oldValues[id] = shape.isVisible
                     newValues[id] = false
                 }
@@ -128,7 +131,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if !shape.isVisible {
                     affectedIDs.append(shape.id)
                     oldValues[shape.id] = false

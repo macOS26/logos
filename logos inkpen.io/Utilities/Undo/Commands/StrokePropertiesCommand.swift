@@ -152,7 +152,7 @@ class StrokePropertiesCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 continue
             }
         }
@@ -173,7 +173,7 @@ class StrokePropertiesCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 continue
             }
         }
@@ -194,7 +194,7 @@ class StrokePropertiesCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 continue
             }
         }
@@ -215,7 +215,7 @@ class StrokePropertiesCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 continue
             }
         }
@@ -236,7 +236,7 @@ class StrokePropertiesCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 continue
             }
         }

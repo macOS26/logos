@@ -39,7 +39,7 @@ extension DrawingCanvas {
                 return textBounds.contains(point)
 
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape),
-                 .clipGroup(let shape), .clipMask(let shape):
+                 .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 // Shape hit test - path only
                 if shape.clippedByShapeID != nil {
                     return false
@@ -105,7 +105,7 @@ extension DrawingCanvas {
                 return textBounds.contains(point)
 
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape),
-                 .clipGroup(let shape), .clipMask(let shape):
+                 .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 // Shape hit test
                 if shape.clippedByShapeID != nil {
                     return false

@@ -96,7 +96,8 @@ struct SpatialIndex {
                     case .shape(let shape),
                          .image(let shape),
                          .warp(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         bounds = shape.bounds.applying(shape.transform)
                     case .group, .clipGroup:
                         // Already handled above
@@ -212,7 +213,8 @@ struct SpatialIndex {
                     case .shape(let shape),
                          .image(let shape),
                          .warp(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         bounds = shape.bounds.applying(shape.transform)
                     case .group, .clipGroup:
                         // Already handled above

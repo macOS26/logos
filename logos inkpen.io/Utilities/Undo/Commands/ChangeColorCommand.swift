@@ -117,6 +117,9 @@ class ChangeColorCommand: BaseCommand {
                     }
                     obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                     document.snapshot.objects[id] = obj
+
+                case .guide:
+                    break  // Guides don't have color changes
                 }
             }
         }

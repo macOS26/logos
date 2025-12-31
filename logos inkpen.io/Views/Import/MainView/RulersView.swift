@@ -57,8 +57,7 @@ struct RulersView: View {
                             // Only create guide if dragged onto canvas area
                             if value.location.y > rulerThickness {
                                 let canvasY = (value.location.y - canvasOffset.y) / zoomLevel
-                                let newGuide = Guide(position: canvasY, orientation: .horizontal)
-                                document.gridSettings.guides.append(newGuide)
+                                document.addGuideShape(position: canvasY, orientation: .horizontal)
                             }
                             isDraggingGuide = false
                             draggingGuideOrientation = nil
@@ -117,8 +116,7 @@ struct RulersView: View {
                             // Only create guide if dragged onto canvas area
                             if value.location.x > rulerThickness {
                                 let canvasX = (value.location.x - canvasOffset.x) / zoomLevel
-                                let newGuide = Guide(position: canvasX, orientation: .vertical)
-                                document.gridSettings.guides.append(newGuide)
+                                document.addGuideShape(position: canvasX, orientation: .vertical)
                             }
                             isDraggingGuide = false
                             draggingGuideOrientation = nil
@@ -664,22 +662,43 @@ extension VectorDocument {
     }
 
     func snapToGuidelines(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
-        guard gridSettings.snapToGuides && gridSettings.showGuides else { return point }
+        // Check if Guides layer is visible (index 2)
+        let guidesLayerVisible = snapshot.layers.count > 2 && snapshot.layers[2].isVisible
+        guard gridSettings.snapToGuides && guidesLayerVisible else { return point }
 
         var snappedPoint = point
         var didSnapX = false
         var didSnapY = false
 
-        for guide in gridSettings.guides {
-            switch guide.orientation {
+        // Get guide shapes from Guides layer
+        let guideShapes = getShapesForLayer(2).filter { $0.isGuide }
+
+        for shape in guideShapes {
+            guard let orientation = shape.guideOrientation else { continue }
+
+            // Extract position from the shape's path
+            let position: CGFloat
+            if let firstElement = shape.path.elements.first,
+               case .move(let pt) = firstElement {
+                switch orientation {
+                case .horizontal:
+                    position = CGFloat(pt.y)
+                case .vertical:
+                    position = CGFloat(pt.x)
+                }
+            } else {
+                continue
+            }
+
+            switch orientation {
             case .horizontal:
-                if !didSnapY && abs(point.y - guide.position) < snapDistance {
-                    snappedPoint.y = guide.position
+                if !didSnapY && abs(point.y - position) < snapDistance {
+                    snappedPoint.y = position
                     didSnapY = true
                 }
             case .vertical:
-                if !didSnapX && abs(point.x - guide.position) < snapDistance {
-                    snappedPoint.x = guide.position
+                if !didSnapX && abs(point.x - position) < snapDistance {
+                    snappedPoint.x = position
                     didSnapX = true
                 }
             }

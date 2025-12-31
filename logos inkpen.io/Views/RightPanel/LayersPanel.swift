@@ -391,7 +391,7 @@ struct LayersPanel: View {
                     var updatedShape: VectorShape?
 
                     switch obj.objectType {
-                    case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape):
+                    case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape), .guide(var shape):
                         shape.isVisible.toggle()
                         updatedShape = shape
                     }
@@ -444,7 +444,7 @@ struct LayersPanel: View {
                     var updatedShape: VectorShape?
 
                     switch obj.objectType {
-                    case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape):
+                    case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape), .guide(var shape):
                         shape.isLocked.toggle()
                         updatedShape = shape
                     }

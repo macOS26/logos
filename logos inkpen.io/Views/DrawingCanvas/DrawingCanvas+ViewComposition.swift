@@ -258,7 +258,7 @@ extension DrawingCanvas {
 
         // Guides overlay - non-photo blue lines
         GuidesView(
-            guides: document.gridSettings.guides,
+            document: document,
             showGuides: document.snapshot.layers.count > 2 ? document.snapshot.layers[2].isVisible : false,
             zoomLevel: zoomLevel,
             canvasOffset: canvasOffset
@@ -619,7 +619,8 @@ extension DrawingCanvas {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             draggedShapeView(shape, dragDelta: dragDelta)
         case .text:
             EmptyView()

@@ -67,7 +67,7 @@ enum PaintSelectionOperations {
             switch object.objectType {
             case .text(let shape):
                 document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
@@ -89,7 +89,7 @@ enum PaintSelectionOperations {
                     oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
                     document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
                     newOpacities[objectID] = opacity
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                     oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
                     if let layerIndex = obj.layerIndex < document.snapshot.layers.count ? obj.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
@@ -126,7 +126,7 @@ enum PaintSelectionOperations {
                     document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
                 }
 
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeFillColorInUnified(id: shape.id, color: color)
                 if let opacity = opacity {
                     document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
@@ -156,7 +156,7 @@ enum PaintSelectionOperations {
                 if shape.typography?.hasStroke == true {
                     document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
                 }
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
             }
         }
@@ -179,7 +179,7 @@ enum PaintSelectionOperations {
             switch object.objectType {
             case .text:
                 break
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
@@ -199,7 +199,7 @@ enum PaintSelectionOperations {
         for shapeID in activeShapeIDs {
             if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                     oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
                     newPlacements[shapeID] = placement
                 case .text:
@@ -234,7 +234,7 @@ enum PaintSelectionOperations {
             for shapeID in activeShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
-                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                         oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
                         newLineJoins[shapeID] = lineJoin
                     case .text(let shape):
@@ -278,7 +278,7 @@ enum PaintSelectionOperations {
             for shapeID in activeShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
-                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                         oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
                         newLineCaps[shapeID] = lineCap
                     case .text:
@@ -307,7 +307,7 @@ enum PaintSelectionOperations {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
             switch object.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeStrokeMiterLimitInUnified(id: shape.id, miterLimit: miterLimit)
             case .text:
                 continue
@@ -327,7 +327,7 @@ enum PaintSelectionOperations {
             for shapeID in activeShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
-                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                         oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
                         newMiterLimits[shapeID] = miterLimit
                     case .text:
@@ -356,7 +356,7 @@ enum PaintSelectionOperations {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
             switch object.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 document.updateShapeStrokeScaleWithTransformInUnified(id: shape.id, scaleWithTransform: scaleWithTransform)
             case .text:
                 continue
@@ -376,7 +376,7 @@ enum PaintSelectionOperations {
         for shapeID in document.viewState.selectedObjectIDs {
             if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                     oldOpacities[shapeID] = shape.opacity
                     newOpacities[shapeID] = opacity
                 case .text:
@@ -418,7 +418,7 @@ enum PaintSelectionOperations {
         for shapeID in activeShapeIDs {
             if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                     oldColors[shapeID] = shape.fillStyle?.color ?? .black
                     newColors[shapeID] = fillColor
                     oldOpacities[shapeID] = shape.fillStyle?.opacity ?? 1.0

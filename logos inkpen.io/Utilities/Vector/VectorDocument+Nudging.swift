@@ -14,7 +14,8 @@ extension VectorDocument {
                              .warp(var shape),
                              .group(var shape),
                              .clipGroup(var shape),
-                             .clipMask(var shape):
+                             .clipMask(var shape),
+                             .guide(var shape):
                             if shape.isGroupContainer {
                                 var nudgedGroupedShapes: [VectorShape] = []
                                 for var groupedShape in shape.groupedShapes {

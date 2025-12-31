@@ -60,7 +60,8 @@ class MoveObjectToLayerCommand: BaseCommand {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             document.snapshot.objects[objectID] = VectorObject(
                 shape: shape,
                 layerIndex: toLayerIndex

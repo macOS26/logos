@@ -34,7 +34,8 @@ extension DrawingCanvas {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         if !shape.isVisible { continue }
 
                         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -271,7 +272,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 let transformedBounds = shape.bounds.applying(shape.transform)
                 let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
                 let contains = selectionBoxBounds.contains(location)
@@ -294,7 +296,8 @@ extension DrawingCanvas {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             return shape
         case .text:
             return nil

@@ -42,6 +42,9 @@ class StrokeWidthCommand: BaseCommand {
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
+
+            case .guide:
+                continue  // Guides don't support stroke width changes
             }
         }
 

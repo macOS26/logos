@@ -364,7 +364,8 @@ struct TransformationControls: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds

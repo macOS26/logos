@@ -93,7 +93,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
                     return false
@@ -125,11 +126,12 @@ extension VectorDocument {
             if let obj = snapshot.objects[objectID] {
                 switch obj.objectType {
                 case .shape(let shape),
-                 .image(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     selectedShapes.append(shape)
                 case .text:
                     break
@@ -147,11 +149,12 @@ extension VectorDocument {
             if let obj = snapshot.objects[shapeID] {
                 switch obj.objectType {
                 case .shape(let shape),
-                 .image(let shape),
+                     .image(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     shapes.append(shape)
                 case .text:
                     break
@@ -214,7 +217,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     result.append(shape)
                 }
             }
@@ -332,7 +336,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     return false
                 }
@@ -373,7 +378,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 var newShape = shape
                 newShape.id = UUID()
                 if ImageContentRegistry.containsImage(shape, in: self),
@@ -406,5 +412,78 @@ extension VectorDocument {
         newShape.transform = .identity
 
         return newShape
+    }
+
+    // MARK: - Guide Management
+
+    /// Creates a guide shape and adds it to the Guides layer (index 2)
+    func addGuideShape(position: CGFloat, orientation: Guide.Orientation) {
+        // Guides layer is at index 2
+        let guidesLayerIndex = 2
+        guard guidesLayerIndex < snapshot.layers.count else { return }
+
+        // Create a line path for the guide
+        // For guides, we use a very long line that extends beyond typical canvas bounds
+        let lineLength: CGFloat = 100000 // Long enough to cover any reasonable canvas
+
+        let path: VectorPath
+        switch orientation {
+        case .horizontal:
+            path = VectorPath(elements: [
+                .move(to: VectorPoint(-lineLength / 2, position)),
+                .line(to: VectorPoint(lineLength / 2, position))
+            ], isClosed: false)
+        case .vertical:
+            path = VectorPath(elements: [
+                .move(to: VectorPoint(position, -lineLength / 2)),
+                .line(to: VectorPoint(position, lineLength / 2))
+            ], isClosed: false)
+        }
+
+        // Create the guide shape with non-photo blue stroke
+        // Non-photo blue: RGB(164, 221, 237) / #a4dded
+        let nonPhotoBlue = VectorColor.rgb(RGBColor(red: 164/255, green: 221/255, blue: 237/255))
+        var guideShape = VectorShape(
+            name: "Guide",
+            path: path,
+            geometricType: nil,
+            strokeStyle: StrokeStyle(
+                color: nonPhotoBlue,
+                width: 1.0,
+                placement: .center,
+                opacity: 1.0
+            ),
+            fillStyle: nil
+        )
+        guideShape.isGuide = true
+        guideShape.guideOrientation = orientation
+
+        // Add to Guides layer
+        addShape(guideShape, to: guidesLayerIndex)
+
+        // Don't select guides after creation
+        viewState.selectedObjectIDs.removeAll()
+        viewState.orderedSelectedObjectIDs.removeAll()
+    }
+
+    /// Removes all guides from the Guides layer
+    func clearGuides() {
+        let guidesLayerIndex = 2
+        guard guidesLayerIndex < snapshot.layers.count else { return }
+
+        let guideIDs = snapshot.layers[guidesLayerIndex].objectIDs
+        for guideID in guideIDs {
+            if let object = snapshot.objects[guideID] {
+                removeShapeFromUnifiedSystem(id: object.shape.id)
+            }
+        }
+    }
+
+    /// Gets all guide shapes from the Guides layer
+    func getGuideShapes() -> [VectorShape] {
+        let guidesLayerIndex = 2
+        guard guidesLayerIndex < snapshot.layers.count else { return [] }
+
+        return getShapesForLayer(guidesLayerIndex).filter { $0.isGuide }
     }
 }

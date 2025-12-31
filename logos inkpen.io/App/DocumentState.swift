@@ -173,7 +173,7 @@ class DocumentState: ObservableObject {
             switch newVectorObject.objectType {
             case .shape, .image, .warp, .group, .clipGroup, .clipMask:
                 return true
-            case .text:
+            case .text, .guide:
                 return false
             }
         }
@@ -235,7 +235,7 @@ class DocumentState: ObservableObject {
                      .clipMask(let shape):
                     if shape.linkedImagePath != nil { return true }
                     if ImageContentRegistry.containsImage(shape, in: document) { return true }
-                case .text:
+                case .text, .guide:
                     break
                 }
             }
@@ -1099,7 +1099,7 @@ class DocumentState: ObservableObject {
     }
 
     func clearGuides() {
-        document?.gridSettings.guides.removeAll()
+        document?.clearGuides()
     }
 
     func createOutlines() {

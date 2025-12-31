@@ -29,7 +29,7 @@ class TextEditCommand: BaseCommand {
             obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
             document.snapshot.objects[textID] = obj
             document.triggerLayerUpdate(for: obj.layerIndex)
-        case .shape, .image, .warp, .group, .clipGroup, .clipMask:
+        case .shape, .image, .warp, .group, .clipGroup, .clipMask, .guide:
             break
         }
     }

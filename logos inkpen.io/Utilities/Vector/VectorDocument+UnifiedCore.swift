@@ -91,6 +91,11 @@ extension VectorDocument {
                 update(&shape)
                 let newType = VectorObject.determineType(for: shape)
                 updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
+
+            case .guide(var shape):
+                update(&shape)
+                let newType = VectorObject.determineType(for: shape)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: newType)
             }
 
             // Update snapshot ONLY
@@ -163,6 +168,8 @@ extension VectorDocument {
             case .clipGroup(let shape):
                 return shape
             case .clipMask(let shape):
+                return shape
+            case .guide(let shape):
                 return shape
             }
         }

@@ -28,7 +28,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape
             case .text:
                 return nil
@@ -134,7 +135,8 @@ extension VectorDocument {
                      .image(let shape),
                      .warp(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     let shapeBounds = shape.bounds
                     if let existing = combinedBounds {
                         combinedBounds = existing.union(shapeBounds)
@@ -157,7 +159,8 @@ extension VectorDocument {
                  .image(let shape),
                  .warp(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 allShapeIDs.insert(shape.id)
             case .group(let shape):
                 allShapeIDs.insert(shape.id)
@@ -184,7 +187,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let fillStyle = shape.fillStyle {
                     colors.insert(fillStyle.color)
                 }
@@ -301,7 +305,8 @@ extension VectorDocument {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             return shape
         case .text(let shape):
             return shape
@@ -414,7 +419,8 @@ extension VectorDocument {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape
             case .text:
                 return nil

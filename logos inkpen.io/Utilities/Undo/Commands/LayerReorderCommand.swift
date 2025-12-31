@@ -55,6 +55,8 @@ class LayerReorderCommand: BaseCommand {
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 case .clipMask(let shape):
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .guide(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 }
                 document.snapshot.objects[update.objectID] = obj
             }

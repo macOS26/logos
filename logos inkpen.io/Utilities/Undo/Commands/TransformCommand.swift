@@ -52,7 +52,7 @@ class TransformCommand: BaseCommand {
                 // Update parent group if this child is in a group
                 document.updateChildInParentGroup(childID: id, updatedShape: shape)
 
-            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+            case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape), .guide(var shape):
                 if let transform = transforms[id] {
                     shape.transform = transform
                 }

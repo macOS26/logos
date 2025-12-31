@@ -36,7 +36,8 @@ struct MainToolbarContent: ToolbarContent {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
 
                     let hasCloseElement = shape.path.elements.contains { element in
                         if case .close = element { return true }
@@ -74,7 +75,8 @@ struct MainToolbarContent: ToolbarContent {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
 
                     if let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
@@ -365,7 +367,8 @@ struct MainToolbarContent: ToolbarContent {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         let shapeBounds = shape.bounds.applying(shape.transform)
                         combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                     }
@@ -412,7 +415,8 @@ struct MainToolbarContent: ToolbarContent {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
 
@@ -490,7 +494,8 @@ struct MainToolbarContent: ToolbarContent {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
                     if let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {

@@ -661,7 +661,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let strokeColor = shape.strokeStyle?.color {
                     return strokeColor
                 } else {
@@ -683,7 +684,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.color
                 }
@@ -703,7 +705,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.width ?? defaultStrokeWidth
             }
         }
@@ -721,7 +724,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.placement ?? strokeDefaults.placement
             }
         }
@@ -749,7 +753,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let opacity = shape.fillStyle?.opacity {
                     return opacity
                 }
@@ -769,7 +774,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let opacity = shape.strokeStyle?.opacity {
                     return opacity
                 }
@@ -789,7 +795,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.lineJoin.cgLineJoin ?? strokeDefaults.lineJoin
             }
         }
@@ -807,7 +814,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.lineCap.cgLineCap ?? strokeDefaults.lineCap
             }
         }
@@ -825,7 +833,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.miterLimit ?? strokeDefaults.miterLimit
             }
         }
@@ -843,7 +852,8 @@ struct StrokeFillPanel: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 return shape.strokeStyle?.scaleWithTransform ?? false
             }
         }
@@ -861,7 +871,8 @@ struct StrokeFillPanel: View {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     return shape.linkedImagePath != nil || shape.embeddedImageData != nil
                 }
             }
@@ -880,7 +891,8 @@ struct StrokeFillPanel: View {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                         return shape.opacity
                     }
@@ -1137,7 +1149,8 @@ struct StrokeFillPanel: View {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     onUpdateShapeStrokePlacementInUnified(shape.id, placement)
                 }
             }

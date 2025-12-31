@@ -37,7 +37,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if shape.isLocked {
                     return
                 }
@@ -56,7 +57,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 let bounds: CGRect
                 if shape.isGroupContainer {
                     // Use document's calculateGroupBounds to resolve member shapes
@@ -98,7 +100,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 let bounds: CGRect
                 if shape.isGroupContainer {
                     bounds = document.calculateGroupBounds(shape)
@@ -137,7 +140,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if shape.isLocked {
                     return
                 }
@@ -266,7 +270,7 @@ extension DrawingCanvas {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
-                case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape), .guide(let shape):
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
@@ -296,7 +300,7 @@ extension DrawingCanvas {
                 switch object.objectType {
                 case .text(let shape):
                     document.translateTextInUnified(id: shape.id, delta: finalDelta)
-                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: finalDelta)
                 }
             }
@@ -312,7 +316,7 @@ extension DrawingCanvas {
                         } else {
                             newShapes[objectID] = shape
                         }
-                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                         if let updatedShape = document.findShape(by: shape.id) {
                             newShapes[objectID] = updatedShape
                         } else {
@@ -387,7 +391,7 @@ extension DrawingCanvas {
         // print("🟠 DRAG END: Applying delta to objectID=\(objectID)")
 
         switch object.objectType {
-        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+        case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
             // print("🟠 DRAG END: Shape name=\(shape.name), isGroup=\(shape.isGroup), isClippingGroup=\(shape.isClippingGroup)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
@@ -429,7 +433,7 @@ extension DrawingCanvas {
             for memberID in shape.memberIDs {
                 if let memberObj = document.snapshot.objects[memberID] {
                     switch memberObj.objectType {
-                    case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .group(let memberShape), .clipGroup(let memberShape), .clipMask(let memberShape):
+                    case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .group(let memberShape), .clipGroup(let memberShape), .clipMask(let memberShape), .guide(let memberShape):
                         // Recursively apply drag to member (handles nested groups)
                         applyDragDeltaToShape(shape: memberShape, delta: delta)
                     case .text(let memberShape):
@@ -514,7 +518,7 @@ extension DrawingCanvas {
         if shape.isClippingPath {
             for object in document.snapshot.objects.values {
                 switch object.objectType {
-                case .shape(let checkShape), .image(let checkShape), .warp(let checkShape), .group(let checkShape), .clipGroup(let checkShape), .clipMask(let checkShape):
+                case .shape(let checkShape), .image(let checkShape), .warp(let checkShape), .group(let checkShape), .clipGroup(let checkShape), .clipMask(let checkShape), .guide(let checkShape):
                     if checkShape.clippedByShapeID == shape.id {
                         applyDragDeltaToUnifiedObject(objectID: checkShape.id, delta: delta)
                     }

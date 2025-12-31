@@ -33,7 +33,8 @@ struct InkpenDocument: FileDocument {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         if let textPos = shape.textPosition {
                             minX = min(minX, textPos.x)
                             minY = min(minY, textPos.y)

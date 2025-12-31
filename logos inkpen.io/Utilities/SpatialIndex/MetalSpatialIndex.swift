@@ -156,7 +156,7 @@ class MetalSpatialIndex {
                     case .text(let shape):
                         bounds = CGRect(x: shape.transform.tx, y: shape.transform.ty,
                                        width: shape.bounds.width, height: shape.bounds.height)
-                    case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape):
+                    case .shape(let shape), .image(let shape), .warp(let shape), .clipMask(let shape), .guide(let shape):
                         bounds = shape.bounds.applying(shape.transform)
                         if includeStrokesInBounds, let strokeStyle = shape.strokeStyle {
                             let strokeExpansion = strokeStyle.width / 2.0

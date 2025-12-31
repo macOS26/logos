@@ -85,7 +85,7 @@ class GradientCommand: BaseCommand {
                 document.snapshot.objects[id] = obj
                 // print("⚡️ GradientCommand: Updated snapshot.objects[\(id)]")
                 affectedLayers.insert(obj.layerIndex)
-            case .text:
+            case .text, .guide:
                 break
             }
         }

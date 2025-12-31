@@ -19,7 +19,7 @@ extension DrawingCanvas {
 
         for object in document.snapshot.objects.values {
             switch object.objectType {
-            case .shape(let shape), .text(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .text(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 if !shape.isVisible || shape.isLocked {
                     continue
                 }

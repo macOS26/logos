@@ -528,7 +528,7 @@ struct LayerCanvasView: View {
                     // Render all members (including nested groups)
                     renderGroupMembers(memberShapes, parentXform: parentTransform)
 
-                case .shape(let shape), .warp(let shape), .clipMask(let shape):
+                case .shape(let shape), .warp(let shape), .clipMask(let shape), .guide(let shape):
                     // Get mask shape if this object is clipped by another object
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,

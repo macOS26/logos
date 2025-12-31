@@ -13,6 +13,7 @@ struct VectorObject: Identifiable, Hashable {
         case group(VectorShape)
         case clipGroup(VectorShape)
         case clipMask(VectorShape)
+        case guide(VectorShape)
     }
 
     // New explicit initializer - preferred
@@ -24,7 +25,9 @@ struct VectorObject: Identifiable, Hashable {
 
     // Helper to determine object type from shape properties
     static func determineType(for shape: VectorShape) -> ObjectType {
-        if shape.typography != nil {
+        if shape.isGuide {
+            return .guide(shape)
+        } else if shape.typography != nil {
             return .text(shape)
         } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
             return .image(shape)
@@ -56,7 +59,8 @@ struct VectorObject: Identifiable, Hashable {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             return shape.isVisible
         }
     }
@@ -69,7 +73,8 @@ struct VectorObject: Identifiable, Hashable {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             return shape.isLocked
         }
     }
@@ -82,7 +87,8 @@ struct VectorObject: Identifiable, Hashable {
              .warp(let shape),
              .group(let shape),
              .clipGroup(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             return shape
         }
     }
@@ -122,6 +128,9 @@ extension VectorObject: Codable {
             try objectContainer.encode(shape, forKey: .shape)
         case .clipMask(let shape):
             try objectContainer.encode("clipMask", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .guide(let shape):
+            try objectContainer.encode("guide", forKey: .type)
             try objectContainer.encode(shape, forKey: .shape)
         }
     }
@@ -165,12 +174,16 @@ extension VectorObject: Codable {
                 objectType = .clipGroup(shape)
             case "clipMask":
                 objectType = .clipMask(shape)
+            case "guide":
+                objectType = .guide(shape)
             default:
                 objectType = .shape(shape) // Fallback
             }
         } else {
             // Fallback for old files - infer from shape properties
-            if shape.typography != nil {
+            if shape.isGuide {
+                objectType = .guide(shape)
+            } else if shape.typography != nil {
                 objectType = .text(shape)
             } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
                 objectType = .image(shape)

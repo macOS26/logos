@@ -606,7 +606,7 @@ struct logos_inken_ioApp: App {
                     Button("Clear Guides") {
                         documentState?.clearGuides()
                     }
-                    .disabled(documentState?.document?.gridSettings.guides.isEmpty ?? true)
+                    .disabled(documentState?.document?.getGuideShapes().isEmpty ?? true)
                 }
 
                 CommandMenu("Tools") {
@@ -1031,7 +1031,8 @@ class ClipboardManager {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     shapesToCopy.append(shape)
                 }
             }

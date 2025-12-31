@@ -132,7 +132,8 @@ extension FileOperations {
                 let shapeName: String?
                 switch obj.objectType {
                 case .shape(let shape), .text(let shape), .image(let shape),
-                     .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                     .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape),
+                     .guide(let shape):
                     shapeName = shape.name
                 }
 

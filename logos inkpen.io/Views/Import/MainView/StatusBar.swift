@@ -108,7 +108,7 @@ struct StatusBar: View {
 
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     if combinedBounds == nil {
@@ -153,7 +153,7 @@ struct StatusBar: View {
 
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 totalPoints += countPointsInPath(shape.path)
             case .text:
                 // Text objects don't have vector points

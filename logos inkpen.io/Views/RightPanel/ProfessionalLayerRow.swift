@@ -398,7 +398,8 @@ struct ProfessionalLayerRow: View {
         case .shape(let shape),
              .image(let shape),
              .warp(let shape),
-             .clipMask(let shape):
+             .clipMask(let shape),
+             .guide(let shape):
             ObjectRow(
                 objectType: .shape,
                 objectId: shape.id,

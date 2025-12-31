@@ -379,6 +379,8 @@ struct VectorShape: Hashable, Identifiable {
     var isClippingPath: Bool = false
     var clippedByShapeID: UUID?
     var isWarpObject: Bool
+    var isGuide: Bool = false
+    var guideOrientation: Guide.Orientation? = nil
     var originalPath: VectorPath?
     var warpEnvelope: [CGPoint]
     var originalEnvelope: [CGPoint]
@@ -744,6 +746,7 @@ extension VectorShape: Codable {
         case isGroup, groupedShapes, memberIDs, groupTransform, isClippingGroup
         case isCompoundPath, isClippingPath, clippedByShapeID
         case isWarpObject, originalPath, warpEnvelope, originalEnvelope, warpedBounds
+        case isGuide, guideOrientation
         case isRoundedRectangle, originalBounds, cornerRadii
         case textContent, typography
         case cursorPosition, areaSize, isEditing, textPosition
@@ -824,6 +827,9 @@ extension VectorShape: Codable {
         if !originalEnvelope.isEmpty { try container.encode(originalEnvelope, forKey: .originalEnvelope) }
         try container.encodeIfPresent(warpedBounds, forKey: .warpedBounds)
 
+        if isGuide { try container.encode(isGuide, forKey: .isGuide) }
+        try container.encodeIfPresent(guideOrientation, forKey: .guideOrientation)
+
         if isRoundedRectangle { try container.encode(isRoundedRectangle, forKey: .isRoundedRectangle) }
         try container.encodeIfPresent(originalBounds, forKey: .originalBounds)
         if !cornerRadii.isEmpty { try container.encode(cornerRadii, forKey: .cornerRadii) }
@@ -901,6 +907,9 @@ extension VectorShape: Codable {
         warpEnvelope = try container.decodeIfPresent([CGPoint].self, forKey: .warpEnvelope) ?? []
         originalEnvelope = try container.decodeIfPresent([CGPoint].self, forKey: .originalEnvelope) ?? []
         warpedBounds = try container.decodeIfPresent(CGRect.self, forKey: .warpedBounds)
+
+        isGuide = try container.decodeIfPresent(Bool.self, forKey: .isGuide) ?? false
+        guideOrientation = try container.decodeIfPresent(Guide.Orientation.self, forKey: .guideOrientation)
 
         isRoundedRectangle = try container.decodeIfPresent(Bool.self, forKey: .isRoundedRectangle) ?? false
         originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)

@@ -154,7 +154,7 @@ extension FileOperations {
                         case .text:
                             let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                             return textContent.isEmpty
-                        case .shape, .image, .warp, .group, .clipGroup, .clipMask:
+                        case .shape, .image, .warp, .group, .clipGroup, .clipMask, .guide:
                             return shape.path.elements.isEmpty
                         }
                     }()

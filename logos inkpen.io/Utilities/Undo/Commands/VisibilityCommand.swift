@@ -44,7 +44,8 @@ class VisibilityCommand: BaseCommand {
                  .warp(var shape),
                  .group(var shape),
                  .clipGroup(var shape),
-                 .clipMask(var shape):
+                 .clipMask(var shape),
+                 .guide(var shape):
                 switch property {
                 case .visibility:
                     shape.isVisible = value

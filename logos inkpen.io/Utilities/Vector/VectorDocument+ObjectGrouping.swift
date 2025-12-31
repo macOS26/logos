@@ -49,7 +49,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     removedShapes[obj.id] = shape
                 }
             }
@@ -144,7 +145,7 @@ extension VectorDocument {
                     } else {
                         newSelectedShapeIDs.insert(objectID)
                     }
-                case .shape, .image, .warp, .clipMask, .text:
+                case .shape, .image, .warp, .clipMask, .text, .guide:
                     newSelectedShapeIDs.insert(objectID)
                 }
             }
@@ -229,7 +230,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     removedShapes[obj.id] = shape
                 }
             }
@@ -283,7 +285,8 @@ extension VectorDocument {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     removedShapes[obj.id] = shape
                 }
             }

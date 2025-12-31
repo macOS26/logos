@@ -27,7 +27,8 @@ struct ColorSwatchGrid: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.color
                 }
@@ -52,7 +53,8 @@ struct ColorSwatchGrid: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.color
                 } else {
@@ -77,7 +79,8 @@ struct ColorSwatchGrid: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.opacity
                 }
@@ -100,7 +103,8 @@ struct ColorSwatchGrid: View {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.opacity
                 }

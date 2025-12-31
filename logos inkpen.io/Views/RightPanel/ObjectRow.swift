@@ -109,7 +109,8 @@ struct ObjectRow: View {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         return shape.isVisible
                     }
                 }
@@ -124,7 +125,8 @@ struct ObjectRow: View {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     if shape.isVisible != newValue {
                         let command = VisibilityCommand(
                             objectIDs: [objectId],
@@ -150,7 +152,8 @@ struct ObjectRow: View {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .guide(let shape):
                         return shape.isLocked
                     }
                 }
@@ -165,7 +168,8 @@ struct ObjectRow: View {
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
-                     .clipMask(let shape):
+                     .clipMask(let shape),
+                     .guide(let shape):
                     if shape.isLocked != newValue {
                         let command = VisibilityCommand(
                             objectIDs: [objectId],

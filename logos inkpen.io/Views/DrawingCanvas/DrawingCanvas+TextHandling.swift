@@ -72,7 +72,7 @@ extension DrawingCanvas {
                     }
                 }
                 return false
-            case .shape, .image, .warp, .clipMask:
+            case .shape, .image, .warp, .clipMask, .guide:
                 return false
             }
         }
@@ -92,7 +92,7 @@ extension DrawingCanvas {
                             document.setTextEditingInUnified(id: childShape.id, isEditing: false)
                         }
                     }
-                case .shape, .image, .warp, .clipGroup, .clipMask:
+                case .shape, .image, .warp, .clipGroup, .clipMask, .guide:
                     break
                 }
             }
@@ -138,7 +138,7 @@ extension DrawingCanvas {
                         }
                     }
                 }
-            case .shape, .image, .warp, .clipMask:
+            case .shape, .image, .warp, .clipMask, .guide:
                 break
             }
         }

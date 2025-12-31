@@ -46,7 +46,8 @@ struct SelectionHandlesView: View {
                                  .group(let shape),
                                  .clipGroup(let shape),
                                  .clipMask(let shape),
-                                 .text(let shape):
+                                 .text(let shape),
+                                 .guide(let shape):
                                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                                 if !isBackgroundShape {
                                     if document.viewState.currentTool == .warp {
@@ -218,7 +219,7 @@ struct SelectionHandlesView: View {
                 }
                 continue
 
-            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 var baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
                 // Apply stroke expansion if preference is enabled and shape has stroke

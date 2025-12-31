@@ -29,7 +29,8 @@ extension DrawingCanvas {
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
-                 .clipMask(let shape):
+                 .clipMask(let shape),
+                 .guide(let shape):
                 if !shape.isVisible {
                     continue
                 }
