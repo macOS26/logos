@@ -68,7 +68,8 @@ extension DrawingCanvas {
         }
 
         // Check if Guides layer (index 2) is the selected layer
-        let isGuidesLayerSelected = document.selectedLayerIndex == 2
+        let guidesLayerID = document.snapshot.layers.count > 2 ? document.snapshot.layers[2].id : nil
+        let isGuidesLayerSelected = guidesLayerID != nil && document.settings.selectedLayerId == guidesLayerID
 
         // Use Metal spatial index for GPU-accelerated candidate lookup
         return metalHitTest(at: validatedLocation) { object, point in
