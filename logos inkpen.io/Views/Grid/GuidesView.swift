@@ -7,17 +7,33 @@ struct GuidesView: View {
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let liveDragOffset: CGPoint
 
     var body: some View {
         if showGuides {
+            // Force refresh when objects are moved (including guides)
+            let _ = document.viewState.objectPositionUpdateTrigger
+
             let guideShapes = document.getGuideShapes()
+            let selectedIDs = document.viewState.selectedObjectIDs
+
             if !guideShapes.isEmpty {
                 Canvas { context, size in
                     for shape in guideShapes {
                         guard shape.isGuide, let orientation = shape.guideOrientation else { continue }
 
                         // Extract position from the shape's path
-                        let position = extractGuidePosition(from: shape, orientation: orientation)
+                        var position = extractGuidePosition(from: shape, orientation: orientation)
+
+                        // Apply live drag offset if this guide is selected
+                        if selectedIDs.contains(shape.id) {
+                            switch orientation {
+                            case .horizontal:
+                                position += liveDragOffset.y / zoomLevel
+                            case .vertical:
+                                position += liveDragOffset.x / zoomLevel
+                            }
+                        }
 
                         let path = Path { p in
                             switch orientation {

@@ -261,7 +261,8 @@ extension DrawingCanvas {
             document: document,
             showGuides: document.snapshot.layers.count > 2 ? document.snapshot.layers[2].isVisible : false,
             zoomLevel: zoomLevel,
-            canvasOffset: canvasOffset
+            canvasOffset: canvasOffset,
+            liveDragOffset: liveDragOffset
         )
     }
 
