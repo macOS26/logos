@@ -104,7 +104,11 @@ final class VectorDocument: ObservableObject, Codable {
             snapToGrid: settings.snapToGrid,
             snapToPoint: settings.snapToPoint,
             gridSpacing: settings.gridSpacing,
-            gridOnTop: UserDefaults.standard.bool(forKey: "gridOnTop")
+            gridOnTop: UserDefaults.standard.bool(forKey: "gridOnTop"),
+            guides: [],
+            showGuides: true,
+            guidesLocked: false,
+            snapToGuides: true
         )
 
         createCanvasAndWorkingLayers()

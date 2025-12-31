@@ -1086,6 +1086,22 @@ class DocumentState: ObservableObject {
         document?.settings.snapToPoint = document?.gridSettings.snapToPoint ?? false
     }
 
+    func toggleGuides() {
+        document?.gridSettings.showGuides.toggle()
+    }
+
+    func toggleLockGuides() {
+        document?.gridSettings.guidesLocked.toggle()
+    }
+
+    func toggleSnapToGuides() {
+        document?.gridSettings.snapToGuides.toggle()
+    }
+
+    func clearGuides() {
+        document?.gridSettings.guides.removeAll()
+    }
+
     func createOutlines() {
         guard let document = document, !document.viewState.selectedObjectIDs.isEmpty else { return }
         document.convertSelectedTextToOutlines()

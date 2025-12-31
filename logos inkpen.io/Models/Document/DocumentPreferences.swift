@@ -49,6 +49,10 @@ struct GridSettings: Equatable {
     var snapToPoint: Bool
     var gridSpacing: Double
     var gridOnTop: Bool
+    var guides: [Guide]
+    var showGuides: Bool
+    var guidesLocked: Bool
+    var snapToGuides: Bool
 
     static let `default` = GridSettings(
         showRulers: false,
@@ -56,13 +60,18 @@ struct GridSettings: Equatable {
         snapToGrid: false,
         snapToPoint: false,
         gridSpacing: 12.0,
-        gridOnTop: false
+        gridOnTop: false,
+        guides: [],
+        showGuides: true,
+        guidesLocked: false,
+        snapToGuides: true
     )
 }
 
 extension GridSettings: Codable {
     enum CodingKeys: String, CodingKey {
         case showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, gridOnTop
+        case guides, showGuides, guidesLocked, snapToGuides
     }
 
     init(from decoder: Decoder) throws {
@@ -73,6 +82,10 @@ extension GridSettings: Codable {
         snapToPoint = try container.decode(Bool.self, forKey: .snapToPoint)
         gridSpacing = try container.decode(Double.self, forKey: .gridSpacing)
         gridOnTop = try container.decodeIfPresent(Bool.self, forKey: .gridOnTop) ?? false
+        guides = try container.decodeIfPresent([Guide].self, forKey: .guides) ?? []
+        showGuides = try container.decodeIfPresent(Bool.self, forKey: .showGuides) ?? true
+        guidesLocked = try container.decodeIfPresent(Bool.self, forKey: .guidesLocked) ?? false
+        snapToGuides = try container.decodeIfPresent(Bool.self, forKey: .snapToGuides) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
@@ -83,6 +96,10 @@ extension GridSettings: Codable {
         try container.encode(snapToPoint, forKey: .snapToPoint)
         try container.encode(gridSpacing, forKey: .gridSpacing)
         try container.encode(gridOnTop, forKey: .gridOnTop)
+        try container.encode(guides, forKey: .guides)
+        try container.encode(showGuides, forKey: .showGuides)
+        try container.encode(guidesLocked, forKey: .guidesLocked)
+        try container.encode(snapToGuides, forKey: .snapToGuides)
     }
 }
 

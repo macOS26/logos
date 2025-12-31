@@ -565,6 +565,48 @@ struct logos_inken_ioApp: App {
                         }
                     }
                     .keyboardShortcut(".", modifiers: [.command])
+
+                    Divider()
+
+                    Button {
+                        documentState?.toggleGuides()
+                    } label: {
+                        HStack {
+                            if documentState?.document?.gridSettings.showGuides == true {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Show Guides")
+                        }
+                    }
+                    .keyboardShortcut(";", modifiers: [.command, .shift])
+
+                    Button {
+                        documentState?.toggleLockGuides()
+                    } label: {
+                        HStack {
+                            if documentState?.document?.gridSettings.guidesLocked == true {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Lock Guides")
+                        }
+                    }
+                    .keyboardShortcut("l", modifiers: [.command, .option])
+
+                    Button {
+                        documentState?.toggleSnapToGuides()
+                    } label: {
+                        HStack {
+                            if documentState?.document?.gridSettings.snapToGuides == true {
+                                Image(systemName: "checkmark")
+                            }
+                            Text("Snap to Guides")
+                        }
+                    }
+
+                    Button("Clear Guides") {
+                        documentState?.clearGuides()
+                    }
+                    .disabled(documentState?.document?.gridSettings.guides.isEmpty ?? true)
                 }
 
                 CommandMenu("Tools") {

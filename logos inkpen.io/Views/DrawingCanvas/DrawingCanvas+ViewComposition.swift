@@ -255,6 +255,15 @@ extension DrawingCanvas {
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
             )
         }
+
+        // Guides overlay - non-photo blue lines
+        GuidesView(
+            guides: document.gridSettings.guides,
+            showGuides: document.gridSettings.showGuides,
+            zoomLevel: zoomLevel,
+            canvasOffset: canvasOffset,
+            canvasSize: document.settings.sizeInPoints
+        )
     }
 
     @ViewBuilder

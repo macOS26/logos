@@ -152,7 +152,8 @@
       "Bash(xcrun xcodebuild:*)",
       "Bash(unzip -p /Users/toddbruss/Documents/trackball-mount.inkpen document.json)",
       "Bash(unzip:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "WebFetch(domain:www.manualslib.com)"
     ],
     "deny": [],
     "ask": []

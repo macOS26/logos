@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct RulersView: View {
-    var document: VectorDocument
+    @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
 
     private let rulerThickness: CGFloat = 20
+
+    // Guide dragging state
+    @State private var isDraggingGuide = false
+    @State private var draggingGuideOrientation: Guide.Orientation?
+    @State private var draggingGuidePosition: CGFloat = 0
 
     var body: some View {
         if document.gridSettings.showRulers {
@@ -38,6 +43,27 @@ struct RulersView: View {
                 .contentShape(Path { path in
                     path.addRect(CGRect(x: rulerThickness, y: 0, width: max(0, geometry.size.width - rulerThickness), height: rulerThickness))
                 })
+                .gesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            // Dragging from horizontal ruler creates a HORIZONTAL guide
+                            isDraggingGuide = true
+                            draggingGuideOrientation = .horizontal
+                            // Convert screen Y to canvas Y
+                            let canvasY = (value.location.y - canvasOffset.y) / zoomLevel
+                            draggingGuidePosition = canvasY
+                        }
+                        .onEnded { value in
+                            // Only create guide if dragged onto canvas area
+                            if value.location.y > rulerThickness {
+                                let canvasY = (value.location.y - canvasOffset.y) / zoomLevel
+                                let newGuide = Guide(position: canvasY, orientation: .horizontal)
+                                document.gridSettings.guides.append(newGuide)
+                            }
+                            isDraggingGuide = false
+                            draggingGuideOrientation = nil
+                        }
+                )
                 .contextMenu {
                     Text("Units").font(.caption).foregroundColor(.secondary)
                     ForEach(MeasurementUnit.allCases, id: \.self) { unit in
@@ -77,6 +103,27 @@ struct RulersView: View {
                 .contentShape(Path { path in
                     path.addRect(CGRect(x: 0, y: rulerThickness, width: rulerThickness, height: max(0, geometry.size.height - rulerThickness)))
                 })
+                .gesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            // Dragging from vertical ruler creates a VERTICAL guide
+                            isDraggingGuide = true
+                            draggingGuideOrientation = .vertical
+                            // Convert screen X to canvas X
+                            let canvasX = (value.location.x - canvasOffset.x) / zoomLevel
+                            draggingGuidePosition = canvasX
+                        }
+                        .onEnded { value in
+                            // Only create guide if dragged onto canvas area
+                            if value.location.x > rulerThickness {
+                                let canvasX = (value.location.x - canvasOffset.x) / zoomLevel
+                                let newGuide = Guide(position: canvasX, orientation: .vertical)
+                                document.gridSettings.guides.append(newGuide)
+                            }
+                            isDraggingGuide = false
+                            draggingGuideOrientation = nil
+                        }
+                )
                 .contextMenu {
                     Text("Units").font(.caption).foregroundColor(.secondary)
                     ForEach(MeasurementUnit.allCases, id: \.self) { unit in
@@ -88,6 +135,24 @@ struct RulersView: View {
                 }
 
                 PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
+
+                // Guide preview line while dragging
+                if isDraggingGuide, let orientation = draggingGuideOrientation {
+                    let screenPosition = draggingGuidePosition * zoomLevel + (orientation == .horizontal ? canvasOffset.y : canvasOffset.x)
+                    if orientation == .horizontal {
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: screenPosition))
+                            path.addLine(to: CGPoint(x: geometry.size.width, y: screenPosition))
+                        }
+                        .stroke(Color.nonPhotoBlue, lineWidth: 1)
+                    } else {
+                        Path { path in
+                            path.move(to: CGPoint(x: screenPosition, y: 0))
+                            path.addLine(to: CGPoint(x: screenPosition, y: geometry.size.height))
+                        }
+                        .stroke(Color.nonPhotoBlue, lineWidth: 1)
+                    }
+                }
             }
         }
     }
@@ -598,8 +663,46 @@ extension VectorDocument {
         return CGPoint(x: snappedX, y: snappedY)
     }
 
-    func snapToGuidelines(_ point: CGPoint) -> CGPoint {
-        return point
+    func snapToGuidelines(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
+        guard gridSettings.snapToGuides && gridSettings.showGuides else { return point }
+
+        var snappedPoint = point
+        var didSnapX = false
+        var didSnapY = false
+
+        for guide in gridSettings.guides {
+            switch guide.orientation {
+            case .horizontal:
+                if !didSnapY && abs(point.y - guide.position) < snapDistance {
+                    snappedPoint.y = guide.position
+                    didSnapY = true
+                }
+            case .vertical:
+                if !didSnapX && abs(point.x - guide.position) < snapDistance {
+                    snappedPoint.x = guide.position
+                    didSnapX = true
+                }
+            }
+
+            if didSnapX && didSnapY {
+                break
+            }
+        }
+
+        return snappedPoint
+    }
+
+    /// Combined snap to both grid and guides
+    func snapPoint(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
+        var result = point
+
+        // First try guides (higher priority)
+        result = snapToGuidelines(result, snapDistance: snapDistance)
+
+        // Then grid
+        result = snapToGrid(result)
+
+        return result
     }
 }
 
