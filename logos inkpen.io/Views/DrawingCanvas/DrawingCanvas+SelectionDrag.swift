@@ -194,6 +194,9 @@ extension DrawingCanvas {
         currentDragDelta = canvasDelta
         liveDragOffset = canvasDelta
 
+        // Update guide drag offset for live preview (in document coordinates)
+        document.viewState.dragGuideOffset = CGPoint(x: canvasDelta.x / zoomLevel, y: canvasDelta.y / zoomLevel)
+
         // Set active layer for performance optimization (hides other layers during drag)
         if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.viewState.selectedObjectIDs.first {
             if let obj = document.findObject(by: firstSelected) {
@@ -216,6 +219,7 @@ extension DrawingCanvas {
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             liveDragOffset = .zero
+            document.viewState.dragGuideOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.activeLayerIndexDuringDrag = nil
             layerPreviewOpacities.removeAll()
@@ -233,6 +237,7 @@ extension DrawingCanvas {
 
             // Clear other drag state but KEEP currentDragDelta
             liveDragOffset = .zero
+            document.viewState.dragGuideOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
@@ -377,6 +382,7 @@ extension DrawingCanvas {
 
         } else {
             liveDragOffset = .zero
+            document.viewState.dragGuideOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.cachedSelectionBounds = nil
         }

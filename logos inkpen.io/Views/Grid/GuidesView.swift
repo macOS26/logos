@@ -7,7 +7,6 @@ struct GuidesView: View {
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let liveDragOffset: CGPoint
 
     var body: some View {
         if showGuides {
@@ -16,6 +15,7 @@ struct GuidesView: View {
 
             let guideShapes = document.getGuideShapes()
             let selectedIDs = document.viewState.selectedObjectIDs
+            let dragOffset = document.viewState.dragGuideOffset
 
             if !guideShapes.isEmpty {
                 Canvas { context, size in
@@ -29,9 +29,9 @@ struct GuidesView: View {
                         if selectedIDs.contains(shape.id) {
                             switch orientation {
                             case .horizontal:
-                                position += liveDragOffset.y / zoomLevel
+                                position += dragOffset.y
                             case .vertical:
-                                position += liveDragOffset.x / zoomLevel
+                                position += dragOffset.x
                             }
                         }
 

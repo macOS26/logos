@@ -51,6 +51,9 @@ class DocumentViewState: ObservableObject {
     // MARK: - Nudge Live State
     @Published var liveNudgeOffset: CGVector = .zero
 
+    // MARK: - Guide Drag State
+    @Published var dragGuideOffset: CGPoint = .zero
+
     // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
