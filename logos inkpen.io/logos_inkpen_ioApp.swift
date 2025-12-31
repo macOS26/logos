@@ -50,8 +50,19 @@ struct logos_inken_ioApp: App {
                     guard let window = window else { return }
                     // Enable state restoration for window frame and document
                     window.isRestorable = true
-                    if window.frameAutosaveName.isEmpty {
-                        window.setFrameAutosaveName("InkpenDocumentWindow")
+
+                    // Use unique autosave name per document to preserve individual window positions
+                    let autosaveName: String
+                    if let fileURL = file.fileURL {
+                        // Use file path hash for unique per-document window frame
+                        autosaveName = "InkpenDoc_\(fileURL.path.hashValue)"
+                    } else {
+                        // For untitled documents, use window number for uniqueness
+                        autosaveName = "InkpenUntitled_\(window.windowNumber)"
+                    }
+
+                    if window.frameAutosaveName != autosaveName {
+                        window.setFrameAutosaveName(autosaveName)
                     }
                 })
                 .onAppear {
@@ -62,7 +73,6 @@ struct logos_inken_ioApp: App {
                 }
         }
         .defaultSize(width: 1400, height: 900)
-        .windowResizability(.contentSize)
         .commands {
             Group {
                 CommandGroup(replacing: .importExport) {
