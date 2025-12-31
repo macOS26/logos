@@ -317,6 +317,12 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("d", modifiers: [.command])
                     .disabled(documentState?.hasSelection != true)
 
+                    Button("Move...") {
+                        documentState?.showMoveDialog = true
+                    }
+                    .keyboardShortcut("m", modifiers: [.command, .shift])
+                    .disabled(documentState?.hasSelection != true)
+
                     Divider()
 
                     Button("Lock") {

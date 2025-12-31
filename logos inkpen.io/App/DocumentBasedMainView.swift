@@ -160,6 +160,15 @@ struct DocumentBasedMainView: View {
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
         }
+        .sheet(isPresented: Binding(
+            get: { documentState.showMoveDialog },
+            set: { documentState.showMoveDialog = $0 }
+        )) {
+            MoveObjectDialog(document: document, isPresented: Binding(
+                get: { documentState.showMoveDialog },
+                set: { documentState.showMoveDialog = $0 }
+            ))
+        }
         .sheet(isPresented: $showingColorPicker) {
             ColorPickerModal(
                 snapshot: Binding(

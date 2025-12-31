@@ -30,6 +30,7 @@ class DocumentState: ObservableObject {
     @Published var canUnwrapWarpObject = false
     @Published var canExpandWarpObject = false
     @Published var canEmbedLinkedImages = false
+    @Published var showMoveDialog = false
 
     private var isTerminating = false
     private var pasteboardChangeCount: Int = 0
