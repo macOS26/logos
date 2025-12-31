@@ -73,7 +73,7 @@ private struct GuideLineView: View {
                 p.addLine(to: CGPoint(x: screenX, y: viewSize.height))
             }
         }
-        .stroke(Color.nonPhotoBlue, lineWidth: 1)
+        .stroke(isSelected ? Color.nonPhotoBlueSelected : Color.nonPhotoBlue, lineWidth: 1)
     }
 
     private func extractGuidePosition() -> CGFloat {

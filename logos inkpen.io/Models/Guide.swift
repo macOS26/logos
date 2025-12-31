@@ -21,4 +21,5 @@ struct Guide: Identifiable, Codable, Equatable {
 /// Non-photo blue color for guides (traditional graphic design color)
 extension Color {
     static let nonPhotoBlue = Color(red: 164/255, green: 221/255, blue: 237/255)  // #a4dded
+    static let nonPhotoBlueSelected = Color(red: 64/255, green: 156/255, blue: 200/255)  // Darker blue for selected guides
 }
