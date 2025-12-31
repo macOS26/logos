@@ -194,8 +194,8 @@ extension DrawingCanvas {
         currentDragDelta = canvasDelta
         liveDragOffset = canvasDelta
 
-        // Update guide drag offset for live preview (in document coordinates)
-        document.viewState.dragGuideOffset = CGPoint(x: canvasDelta.x / zoomLevel, y: canvasDelta.y / zoomLevel)
+        // Update guide drag offset for live preview (canvasDelta is already in document coordinates)
+        document.viewState.dragGuideOffset = canvasDelta
 
         // Set active layer for performance optimization (hides other layers during drag)
         if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.viewState.selectedObjectIDs.first {
