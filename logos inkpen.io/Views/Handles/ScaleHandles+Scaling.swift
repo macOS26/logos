@@ -56,16 +56,10 @@ extension ScaleHandles {
         liveScaleDimensions = .zero
         liveScaleTransform = .identity
 
+        // Collect ALL shape IDs that will be modified (group + all members recursively)
+        var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
-        if let object = document.findObject(by: shape.id) {
-            switch object.objectType {
-            case .shape(let oldShape), .group(let oldShape), .clipGroup(let oldShape),
-                 .image(let oldShape), .warp(let oldShape), .clipMask(let oldShape), .guide(let oldShape):
-                oldShapes[shape.id] = oldShape
-            case .text:
-                break
-            }
-        }
+        collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
 
         if let vectorObject = document.findObject(by: shape.id),
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
@@ -81,19 +75,25 @@ extension ScaleHandles {
             previewTransform = .identity
             finalMarqueeBounds = .zero
 
+            // Capture new state of ALL modified shapes
             var newShapes: [UUID: VectorShape] = [:]
-            if let transformedShape = document.findShape(by: shape.id) {
-                newShapes[shape.id] = transformedShape
+            for shapeID in allShapeIDs {
+                if let transformedShape = document.findShape(by: shapeID) {
+                    newShapes[shapeID] = transformedShape
+                }
             }
 
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
-                    objectIDs: [shape.id],
+                    objectIDs: allShapeIDs,
                     oldShapes: oldShapes,
                     newShapes: newShapes
                 )
                 document.executeCommand(command)
             }
+
+            // Force UI refresh
+            document.triggerLayerUpdate(for: layerIndex)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.document.updateTransformPanelValues()
@@ -105,6 +105,25 @@ extension ScaleHandles {
         }
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
+        }
+    }
+
+    /// Recursively collect shape and all member shapes for undo
+    private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
+        guard let object = document.findObject(by: shapeID) else { return }
+
+        ids.append(shapeID)
+
+        switch object.objectType {
+        case .shape(let s), .image(let s), .warp(let s), .clipMask(let s), .guide(let s):
+            oldShapes[shapeID] = s
+        case .group(let s), .clipGroup(let s):
+            oldShapes[shapeID] = s
+            for memberID in s.memberIDs {
+                collectShapesForUndo(shapeID: memberID, into: &ids, oldShapes: &oldShapes)
+            }
+        case .text:
+            break
         }
     }
 
