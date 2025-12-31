@@ -320,7 +320,16 @@ extension VectorDocument {
     func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
         // NEW: Use memberIDs if available
         if !groupShape.memberIDs.isEmpty {
-            return groupShape.memberIDs.compactMap { findShape(by: $0) }
+            let resolved = groupShape.memberIDs.compactMap { findShape(by: $0) }
+            if resolved.count != groupShape.memberIDs.count {
+                Log.error("⚠️ resolveGroupMembers: Only resolved \(resolved.count)/\(groupShape.memberIDs.count) members for group \(groupShape.id)", category: .error)
+                for memberID in groupShape.memberIDs {
+                    if snapshot.objects[memberID] == nil {
+                        Log.error("  ❌ Member \(memberID) NOT found in snapshot.objects", category: .error)
+                    }
+                }
+            }
+            return resolved
         }
         // DEPRECATED: Fallback to groupedShapes for old groups
         return groupShape.groupedShapes
