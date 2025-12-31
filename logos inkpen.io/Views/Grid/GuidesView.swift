@@ -17,48 +17,66 @@ struct GuidesView: View {
             let selectedIDs = document.viewState.selectedObjectIDs
             let dragOffset = document.viewState.dragGuideOffset
 
-            if !guideShapes.isEmpty {
-                Canvas { context, size in
-                    for shape in guideShapes {
-                        guard shape.isGuide, let orientation = shape.guideOrientation else { continue }
-
-                        // Extract position from the shape's path
-                        var position = extractGuidePosition(from: shape, orientation: orientation)
-
-                        // Apply live drag offset if this guide is selected
-                        if selectedIDs.contains(shape.id) {
-                            switch orientation {
-                            case .horizontal:
-                                position += dragOffset.y
-                            case .vertical:
-                                position += dragOffset.x
-                            }
+            GeometryReader { geometry in
+                ZStack {
+                    ForEach(guideShapes, id: \.id) { shape in
+                        if shape.isGuide, let orientation = shape.guideOrientation {
+                            GuideLineView(
+                                shape: shape,
+                                orientation: orientation,
+                                isSelected: selectedIDs.contains(shape.id),
+                                dragOffset: dragOffset,
+                                zoomLevel: zoomLevel,
+                                canvasOffset: canvasOffset,
+                                viewSize: geometry.size
+                            )
                         }
-
-                        let path = Path { p in
-                            switch orientation {
-                            case .horizontal:
-                                let screenY = position * zoomLevel + canvasOffset.y
-                                p.move(to: CGPoint(x: 0, y: screenY))
-                                p.addLine(to: CGPoint(x: size.width, y: screenY))
-                            case .vertical:
-                                let screenX = position * zoomLevel + canvasOffset.x
-                                p.move(to: CGPoint(x: screenX, y: 0))
-                                p.addLine(to: CGPoint(x: screenX, y: size.height))
-                            }
-                        }
-                        context.stroke(path, with: .color(Color.nonPhotoBlue), lineWidth: 1)
                     }
                 }
-                .id("guides-\(dragOffset.x)-\(dragOffset.y)")
-                .allowsHitTesting(false)
             }
+            .allowsHitTesting(false)
         }
     }
+}
 
-    /// Extracts the guide position from the shape's path
-    private func extractGuidePosition(from shape: VectorShape, orientation: Guide.Orientation) -> CGFloat {
-        // The guide position is stored in the path - for horizontal it's Y, for vertical it's X
+/// Individual guide line - reactive to dragOffset changes
+private struct GuideLineView: View {
+    let shape: VectorShape
+    let orientation: Guide.Orientation
+    let isSelected: Bool
+    let dragOffset: CGPoint
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let viewSize: CGSize
+
+    var body: some View {
+        Path { p in
+            var position = extractGuidePosition()
+
+            if isSelected {
+                switch orientation {
+                case .horizontal:
+                    position += dragOffset.y
+                case .vertical:
+                    position += dragOffset.x
+                }
+            }
+
+            switch orientation {
+            case .horizontal:
+                let screenY = position * zoomLevel + canvasOffset.y
+                p.move(to: CGPoint(x: 0, y: screenY))
+                p.addLine(to: CGPoint(x: viewSize.width, y: screenY))
+            case .vertical:
+                let screenX = position * zoomLevel + canvasOffset.x
+                p.move(to: CGPoint(x: screenX, y: 0))
+                p.addLine(to: CGPoint(x: screenX, y: viewSize.height))
+            }
+        }
+        .stroke(Color.nonPhotoBlue, lineWidth: 1)
+    }
+
+    private func extractGuidePosition() -> CGFloat {
         guard let firstElement = shape.path.elements.first else { return 0 }
 
         switch firstElement {
