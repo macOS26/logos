@@ -3,7 +3,7 @@ import SwiftUI
 struct ProfessionalOffsetPathSection: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
-    @State private var offsetDistance: Int = 10
+    @State private var offsetDistance: Double = 0.5  // In document units
     @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
@@ -48,18 +48,16 @@ struct ProfessionalOffsetPathSection: View {
 
                             Spacer()
 
-                            Text("\(offsetDistance)pt")
+                            Text(String(format: "%.1f %@", offsetDistance, document.settings.unit.abbreviation))
                                 .font(.caption2)
                                 .foregroundColor(.primary)
                                 .monospacedDigit()
                         }
 
                         ZStack {
-
-                            Slider(value: Binding(
-                                get: { Double(offsetDistance) },
-                                set: { offsetDistance = Int($0) }
-                            ), in: -72...72)
+                            // Range: -1 to 1 inch equivalent in document units
+                            let maxOffset = document.settings.unit.fromPoints(72)
+                            Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
                             .controlSize(.regular)
                             .tint(Color.clear)
 
@@ -226,9 +224,10 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         // Create offset shapes
+        let unit = document.settings.unit
         for shape in selectedShapes {
-            let offsetValue = CGFloat(offsetDistance)
-            let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetValue) * 2.0,
+            let offsetInPoints = CGFloat(unit.toPoints(offsetDistance))
+            let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetInPoints) * 2.0,
                                                     lineCap: .round,
                                                     lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
                                                     miterLimit: CGFloat(miterLimit))
@@ -250,8 +249,9 @@ struct ProfessionalOffsetPathSection: View {
             }
 
             let offsetVectorPath = VectorPath(cgPath: finalPath)
+            let offsetSign = offsetDistance > 0 ? "+" : ""
             let offsetShape = VectorShape(
-                name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
+                name: "\(shape.name) Offset \(offsetSign)\(String(format: "%.1f", offsetDistance))\(unit.abbreviation)",
                 path: offsetVectorPath,
                 strokeStyle: shape.strokeStyle,
                 fillStyle: shape.fillStyle,
