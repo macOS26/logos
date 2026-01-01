@@ -165,19 +165,14 @@ struct StatusBar: View {
     }
 
     private func countPointsInPath(_ path: VectorPath) -> Int {
+        // Count only anchor points, not control handles
         var count = 0
         for element in path.elements {
             switch element {
-            case .move:
-                count += 1
-            case .line:
-                count += 1
-            case .quadCurve:
-                count += 2  // control point + end point
-            case .curve:
-                count += 3  // 2 control points + end point
+            case .move, .line, .quadCurve, .curve:
+                count += 1  // Each adds one anchor point
             case .close:
-                break
+                break  // Close doesn't add a point
             }
         }
         return count
