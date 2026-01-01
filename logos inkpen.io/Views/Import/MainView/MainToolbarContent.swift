@@ -294,7 +294,15 @@ struct MainToolbarContent: ToolbarContent {
         var objectIDs: [UUID] = []
 
         for vectorObject in document.snapshot.objects.values {
-            if case .shape(let shape) = vectorObject.objectType {
+            switch vectorObject.objectType {
+            case .shape(let shape),
+                 .image(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape),
+                 .guide(let shape):
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
             }
@@ -307,7 +315,15 @@ struct MainToolbarContent: ToolbarContent {
         document.translateAllContent(by: delta)
 
         for vectorObject in document.snapshot.objects.values {
-            if case .shape(let shape) = vectorObject.objectType {
+            switch vectorObject.objectType {
+            case .shape(let shape),
+                 .image(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape),
+                 .guide(let shape):
                 newShapes[shape.id] = shape
             }
         }
@@ -328,7 +344,15 @@ struct MainToolbarContent: ToolbarContent {
         var objectIDs: [UUID] = []
 
         for vectorObject in document.snapshot.objects.values {
-            if case .shape(let shape) = vectorObject.objectType {
+            switch vectorObject.objectType {
+            case .shape(let shape),
+                 .image(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape),
+                 .guide(let shape):
                 oldShapes[shape.id] = shape
                 objectIDs.append(shape.id)
             }
@@ -341,7 +365,15 @@ struct MainToolbarContent: ToolbarContent {
         document.translateAllContent(by: delta)
 
         for vectorObject in document.snapshot.objects.values {
-            if case .shape(let shape) = vectorObject.objectType {
+            switch vectorObject.objectType {
+            case .shape(let shape),
+                 .image(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape),
+                 .guide(let shape):
                 newShapes[shape.id] = shape
             }
         }
