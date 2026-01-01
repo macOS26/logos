@@ -237,15 +237,8 @@ extension DrawingCanvas {
             }
         }
 
-        // Get transformed bounds
-        var hitBounds = shape.bounds.applying(shape.transform)
-
-        // For stroked shapes, expand bounds by half stroke width
-        if let strokeStyle = shape.strokeStyle {
-            let halfStroke = strokeStyle.width / 2.0
-            hitBounds = hitBounds.insetBy(dx: -halfStroke, dy: -halfStroke)
-        }
-
+        // Get transformed bounds - exact bounding box only
+        let hitBounds = shape.bounds.applying(shape.transform)
         return hitBounds.contains(location)
     }
 
