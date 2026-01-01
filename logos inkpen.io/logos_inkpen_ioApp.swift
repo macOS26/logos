@@ -48,6 +48,12 @@ struct logos_inken_ioApp: App {
                 .navigationTitle(windowTitle(for: file.fileURL))
                 .background(WindowAccessor { window in
                     guard let window = window else { return }
+
+                    // Never allow window to open minimized
+                    if window.isMiniaturized {
+                        window.deminiaturize(nil)
+                    }
+
                     // Enable state restoration for window frame and document
                     window.isRestorable = true
 
@@ -61,8 +67,17 @@ struct logos_inken_ioApp: App {
                         autosaveName = "InkpenUntitled_\(window.windowNumber)"
                     }
 
+                    // Check if window has a saved frame before setting autosave name
+                    let hadSavedFrame = window.frameAutosaveName == autosaveName
+
                     if window.frameAutosaveName != autosaveName {
                         window.setFrameAutosaveName(autosaveName)
+                    }
+
+                    // If no saved frame, fill the screen
+                    if !hadSavedFrame, let screen = window.screen ?? NSScreen.main {
+                        let visibleFrame = screen.visibleFrame
+                        window.setFrame(visibleFrame, display: true)
                     }
                 })
                 .onAppear {
@@ -72,7 +87,6 @@ struct logos_inken_ioApp: App {
                     )
                 }
         }
-        .defaultSize(width: 1400, height: 900)
         .commands {
             Group {
                 CommandGroup(replacing: .importExport) {
