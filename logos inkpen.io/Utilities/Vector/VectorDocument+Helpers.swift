@@ -259,14 +259,18 @@ extension VectorDocument {
             return
         }
 
-        // For groups with memberIDs, use proper group transform function
-        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-            applyTransformToGroup(groupID: shape.id, transform: transform)
-            // Reset group's transform to identity after applying
-            updateShapeByID(shape.id) { s in
-                s.transform = .identity
+        // For groups, use proper group transform function
+        if let obj = snapshot.objects[shape.id] {
+            switch obj.objectType {
+            case .group, .clipGroup:
+                applyTransformToGroup(groupID: shape.id, transform: transform)
+                updateShapeByID(shape.id) { s in
+                    s.transform = .identity
+                }
+                return
+            default:
+                break
             }
-            return
         }
 
         shape.path = shape.path.applying(transform)
