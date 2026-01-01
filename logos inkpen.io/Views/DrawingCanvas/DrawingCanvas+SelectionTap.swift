@@ -195,7 +195,7 @@ extension DrawingCanvas {
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        // Exact path-based hit testing
+        // Bounds-only hit testing - no tolerance
 
         if shape.typography != nil {
             let textBounds: CGRect
@@ -212,16 +212,9 @@ extension DrawingCanvas {
             return textBounds.contains(location)
         }
 
-        // Groups - check if point is inside any member's path
+        // Groups use groupBounds
         if shape.isGroupContainer {
-            for memberID in shape.memberIDs {
-                if let memberShape = document.findShape(by: memberID) {
-                    if performShapeHitTest(shape: memberShape, at: location) {
-                        return true
-                    }
-                }
-            }
-            return false
+            return shape.groupBounds.contains(location)
         }
 
         // Special handling for guides - use tolerance-based hit testing
@@ -244,34 +237,16 @@ extension DrawingCanvas {
             }
         }
 
-        // Get transformed path for exact hit testing
-        var transform = shape.transform
-        let transformedPath = shape.path.cgPath.copy(using: &transform) ?? shape.path.cgPath
+        // Get transformed bounds
+        var hitBounds = shape.bounds.applying(shape.transform)
 
-        // Check if point is inside filled area
-        if shape.fillStyle != nil {
-            if transformedPath.contains(location) {
-                return true
-            }
+        // For stroked shapes, expand bounds by half stroke width
+        if let strokeStyle = shape.strokeStyle {
+            let halfStroke = strokeStyle.width / 2.0
+            hitBounds = hitBounds.insetBy(dx: -halfStroke, dy: -halfStroke)
         }
 
-        // Check if point is on stroke
-        if let strokeStyle = shape.strokeStyle, strokeStyle.width > 0 {
-            let strokePath = transformedPath.copy(strokingWithWidth: strokeStyle.width,
-                                                   lineCap: strokeStyle.lineCap.cgLineCap,
-                                                   lineJoin: strokeStyle.lineJoin.cgLineJoin,
-                                                   miterLimit: strokeStyle.miterLimit)
-            if strokePath.contains(location) {
-                return true
-            }
-        }
-
-        // For shapes with no fill and no stroke, fall back to bounds
-        if shape.fillStyle == nil && (shape.strokeStyle == nil || shape.strokeStyle?.width == 0) {
-            return shape.bounds.applying(shape.transform).contains(location)
-        }
-
-        return false
+        return hitBounds.contains(location)
     }
 
      internal func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
