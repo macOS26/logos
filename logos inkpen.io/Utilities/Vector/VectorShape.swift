@@ -517,6 +517,14 @@ struct VectorShape: Hashable, Identifiable {
             return
         }
 
+        // Modern groups with memberIDs - bounds are managed externally via recalculateGroupBounds()
+        // Do NOT reset them here as we don't have access to the actual member shapes
+        if isGroup && !memberIDs.isEmpty {
+            // Keep existing bounds - they were set during group creation or by recalculateGroupBounds()
+            return
+        }
+
+        // DEPRECATED: Old-style groups with embedded groupedShapes
         if isGroup && !groupedShapes.isEmpty {
             var calculatedBounds = CGRect.zero
             for (index, shape) in groupedShapes.enumerated() {
