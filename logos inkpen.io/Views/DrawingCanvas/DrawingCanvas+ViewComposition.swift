@@ -402,10 +402,13 @@ extension DrawingCanvas {
                 y: canvasLabelPosition.y * zoomLevel + canvasOffset.y
             )
 
-            let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
-            let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
+            let unit = document.settings.unit
+            let displayWidth = unit.fromPoints(width)
+            let displayHeight = unit.fromPoints(height)
+            let widthText = displayWidth == floor(displayWidth) ? String(format: "%.0f", displayWidth) : String(format: "%.2f", displayWidth)
+            let heightText = displayHeight == floor(displayHeight) ? String(format: "%.0f", displayHeight) : String(format: "%.2f", displayHeight)
 
-            Text("W: \(widthText) pt\nH: \(heightText) pt")
+            Text("W: \(widthText) \(unit.abbreviation)\nH: \(heightText) \(unit.abbreviation)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white)
                 .padding(6)
@@ -433,10 +436,13 @@ extension DrawingCanvas {
                 y: canvasLabelPosition.y * zoomLevel + canvasOffset.y
             )
 
-            let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
-            let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
+            let unit = document.settings.unit
+            let displayWidth = unit.fromPoints(width)
+            let displayHeight = unit.fromPoints(height)
+            let widthText = displayWidth == floor(displayWidth) ? String(format: "%.0f", displayWidth) : String(format: "%.2f", displayWidth)
+            let heightText = displayHeight == floor(displayHeight) ? String(format: "%.0f", displayHeight) : String(format: "%.2f", displayHeight)
 
-            Text("W: \(widthText) pt\nH: \(heightText) pt")
+            Text("W: \(widthText) \(unit.abbreviation)\nH: \(heightText) \(unit.abbreviation)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white)
                 .padding(6)
