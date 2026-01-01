@@ -405,8 +405,8 @@ extension DrawingCanvas {
             let unit = document.settings.unit
             let displayWidth = unit.fromPoints(width)
             let displayHeight = unit.fromPoints(height)
-            let widthText = displayWidth == floor(displayWidth) ? String(format: "%.0f", displayWidth) : String(format: "%.2f", displayWidth)
-            let heightText = displayHeight == floor(displayHeight) ? String(format: "%.0f", displayHeight) : String(format: "%.2f", displayHeight)
+            let widthText = String(format: "%.3f", displayWidth)
+            let heightText = String(format: "%.3f", displayHeight)
 
             Text("W: \(widthText) \(unit.abbreviation)\nH: \(heightText) \(unit.abbreviation)")
                 .font(.system(size: 11, weight: .medium))
@@ -439,8 +439,8 @@ extension DrawingCanvas {
             let unit = document.settings.unit
             let displayWidth = unit.fromPoints(width)
             let displayHeight = unit.fromPoints(height)
-            let widthText = displayWidth == floor(displayWidth) ? String(format: "%.0f", displayWidth) : String(format: "%.2f", displayWidth)
-            let heightText = displayHeight == floor(displayHeight) ? String(format: "%.0f", displayHeight) : String(format: "%.2f", displayHeight)
+            let widthText = String(format: "%.3f", displayWidth)
+            let heightText = String(format: "%.3f", displayHeight)
 
             Text("W: \(widthText) \(unit.abbreviation)\nH: \(heightText) \(unit.abbreviation)")
                 .font(.system(size: 11, weight: .medium))
