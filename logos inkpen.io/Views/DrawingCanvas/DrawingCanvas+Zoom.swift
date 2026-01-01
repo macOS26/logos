@@ -2,10 +2,16 @@ import SwiftUI
 import simd
 
 extension DrawingCanvas {
-    internal var allowedZoomSteps: [CGFloat] { [0.75, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
+    // Zoom steps from 25% to 16000%
+    internal var allowedZoomSteps: [CGFloat] { [
+        0.25, 0.33, 0.5, 0.67, 0.75, 1.0,           // 25% - 100%
+        1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0,    // 150% - 1000%
+        12.0, 16.0, 20.0, 25.0, 32.0, 40.0, 50.0,   // 1200% - 5000%
+        64.0, 80.0, 100.0, 125.0, 160.0             // 6400% - 16000%
+    ] }
 
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
-        let clamped = max(allowedZoomSteps.first ?? 0.75, min(allowedZoomSteps.last ?? 640.0, zoom))
+        let clamped = max(allowedZoomSteps.first ?? 0.25, min(allowedZoomSteps.last ?? 160.0, zoom))
         var best = allowedZoomSteps.first ?? 0.75
         var bestDiff = abs(clamped - best)
         for step in allowedZoomSteps {
@@ -23,7 +29,7 @@ extension DrawingCanvas {
         for step in allowedZoomSteps {
             if step > zoom + epsilon { return step }
         }
-        return allowedZoomSteps.last ?? 640.0
+        return allowedZoomSteps.last ?? 160.0
     }
 
     internal func nextAllowedStepDown(from zoom: CGFloat) -> CGFloat {
@@ -31,7 +37,7 @@ extension DrawingCanvas {
         for step in allowedZoomSteps.reversed() {
             if step < zoom - epsilon { return step }
         }
-        return allowedZoomSteps.first ?? 0.75
+        return allowedZoomSteps.first ?? 0.25
     }
 
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
@@ -52,7 +58,7 @@ extension DrawingCanvas {
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let newZoomLevel = CGFloat(currentZoom * adjustedValue)
-        let clampedZoom = max(0.75, min(640.0, newZoomLevel))
+        let clampedZoom = max(0.25, min(160.0, newZoomLevel))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: currentMousePosition, geometry: geometry)
@@ -79,7 +85,7 @@ extension DrawingCanvas {
         // Apply 1.5x speed multiplier directly to gesture
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
-        let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))
+        let finalZoomLevel = max(0.25, min(160.0, CGFloat(currentZoom * adjustedValue)))
 
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
