@@ -641,8 +641,12 @@ struct MainToolbarContent: ToolbarContent {
             cornerRadii: [0.0, 0.0, 0.0, 0.0]
         )
 
-        // Add the shape using regular addShape (same as rectangle tool)
-        document.addShape(rectangle)
+        // Add shape directly to unified system (bypasses command for speed)
+        if let layerIndex = document.selectedLayerIndex {
+            document.addShapeToUnifiedSystem(rectangle, layerIndex: layerIndex)
+            document.viewState.selectedObjectIDs = [rectangle.id]
+            document.viewState.orderedSelectedObjectIDs = [rectangle.id]
+        }
     }
 
     /// Get combined bounds for all selected objects (fast path, no transform application)
