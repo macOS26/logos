@@ -602,7 +602,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func createRectangleFromBoundingBox() {
-        guard let bounds = getSelectionBoundsForDocument(), bounds.width > 0, bounds.height > 0 else { return }
+        guard let bounds = getBoundingBoxForSelection(), bounds.width > 0, bounds.height > 0 else { return }
 
         // Create path using the same formula as the rectangle tool
         let path = VectorPath(elements: [
@@ -641,7 +641,31 @@ struct MainToolbarContent: ToolbarContent {
             cornerRadii: [0.0, 0.0, 0.0, 0.0]
         )
 
-        // Add the shape to the front of the current layer and select it
-        document.addShapeToFront(rectangle)
+        // Add the shape using regular addShape (same as rectangle tool)
+        document.addShape(rectangle)
+    }
+
+    /// Get combined bounds for all selected objects (fast path, no transform application)
+    private func getBoundingBoxForSelection() -> CGRect? {
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
+
+        var combinedBounds: CGRect?
+
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let obj = document.snapshot.objects[objectID] else { continue }
+
+            let shapeBounds: CGRect
+            switch obj.objectType {
+            case .text(let shape):
+                let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                shapeBounds = CGRect(x: position.x, y: position.y, width: shape.bounds.width, height: shape.bounds.height)
+            case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
+                shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+            }
+
+            combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
+        }
+
+        return combinedBounds
     }
 }
