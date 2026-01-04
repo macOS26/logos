@@ -165,6 +165,19 @@ struct MainToolbarContent: ToolbarContent {
 
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
+            Button {
+                createRectangleFromBoundingBox()
+            } label: {
+                Image(systemName: "rectangle.on.rectangle")
+                    .font(.system(size: 20))
+                    .offset(y: 1)
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(BorderlessButtonStyle())
+            .help("Create Rectangle from Bounding Box")
+            .disabled(!hasSelection())
+
             CornerRadiusToolbar(selectedObjectIDs: document.viewState.selectedObjectIDs, snapshot: document.snapshot, document: document)
 
             Button {
@@ -582,5 +595,53 @@ struct MainToolbarContent: ToolbarContent {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             document.commandManager.execute(command)
         }
+    }
+
+    private func hasSelection() -> Bool {
+        return !document.viewState.selectedObjectIDs.isEmpty
+    }
+
+    private func createRectangleFromBoundingBox() {
+        guard let bounds = getSelectionBoundsForDocument(), bounds.width > 0, bounds.height > 0 else { return }
+
+        // Create path using the same formula as the rectangle tool
+        let path = VectorPath(elements: [
+            .move(to: VectorPoint(bounds.minX, bounds.minY)),
+            .line(to: VectorPoint(bounds.maxX, bounds.minY)),
+            .line(to: VectorPoint(bounds.maxX, bounds.maxY)),
+            .line(to: VectorPoint(bounds.minX, bounds.maxY)),
+            .close
+        ], isClosed: true)
+
+        // Apply document default stroke style (same as rectangle tool)
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: document.defaultStrokeWidth,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
+            opacity: document.defaultStrokeOpacity
+        )
+
+        // Apply document default fill style (same as rectangle tool)
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity
+        )
+
+        // Create shape with same properties as rectangle tool
+        let rectangle = VectorShape(
+            name: "Rectangle",
+            path: path,
+            geometricType: .rectangle,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle,
+            isRoundedRectangle: true,
+            originalBounds: bounds,
+            cornerRadii: [0.0, 0.0, 0.0, 0.0]
+        )
+
+        // Add the shape to the front of the current layer and select it
+        document.addShapeToFront(rectangle)
     }
 }
