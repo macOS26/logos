@@ -76,6 +76,9 @@ struct ObjectRow: View {
     let memberIDs: [UUID]
     let showBottomIndicator: Bool
 
+    @State private var isEditingName: Bool = false
+    @State private var editedName: String = ""
+
     private var isGroupExpanded: Bool {
         document.settings.groupExpansionState[objectId] ?? false
     }
@@ -84,6 +87,28 @@ struct ObjectRow: View {
         var updatedSettings = document.settings
         updatedSettings.groupExpansionState[objectId] = value
         document.settings = updatedSettings
+    }
+
+    private func saveRenamedObject() {
+        guard !editedName.isEmpty else {
+            isEditingName = false
+            return
+        }
+
+        if let object = document.snapshot.objects[objectId] {
+            var shape = object.shape
+            shape.name = editedName
+            let updatedObject = VectorObject(
+                id: objectId,
+                layerIndex: object.layerIndex,
+                objectType: VectorObject.determineType(for: shape)
+            )
+            document.snapshot.objects[objectId] = updatedObject
+            document.changeNotifier.notifyObjectChanged(objectId)
+            document.triggerLayerUpdate(for: layerIndex)
+        }
+
+        isEditingName = false
     }
 
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, memberIDs: [UUID] = [], showBottomIndicator: Bool = false) {
@@ -313,11 +338,29 @@ struct ObjectRow: View {
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                 .frame(width: 8, height: 8)
 
-                            Text(name)
+                            if isEditingName {
+                                TextField("Name", text: $editedName, onCommit: {
+                                    saveRenamedObject()
+                                })
+                                .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .onAppear {
+                                    editedName = name
+                                }
+                            } else {
+                                Text(name)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .onTapGesture(count: 2) {
+                                        editedName = name
+                                        isEditingName = true
+                                    }
+                            }
 
                             // Show member count for groups (like layers show object count)
                             if objectType == .group && !memberIDs.isEmpty {
@@ -398,7 +441,12 @@ struct ObjectRow: View {
                 Button("Select") {
                     onSelect(false, false)
                 }
-                
+
+                Button("Rename") {
+                    editedName = name
+                    isEditingName = true
+                }
+
                 Divider()
 
                 Button("Duplicate") {
