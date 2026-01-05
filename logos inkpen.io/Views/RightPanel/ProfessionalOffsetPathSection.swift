@@ -263,6 +263,7 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         // Use GroupCommand for proper undo/redo that handles layer objectIDs
+        // Place offset path behind the original selection
         let command = GroupCommand(
             operation: .pathOperation,
             layerIndex: layerIndex,
@@ -271,7 +272,8 @@ struct ProfessionalOffsetPathSection: View {
             addedObjectIDs: Array(newShapes.keys),
             addedShapes: newShapes,
             oldSelectedObjectIDs: Set(oldShapes.keys),
-            newSelectedObjectIDs: Set(newShapes.keys)
+            newSelectedObjectIDs: Set(newShapes.keys),
+            behindObjectIDs: keepOriginalPath ? Set(oldShapes.keys) : []
         )
         document.executeCommand(command)
     }
