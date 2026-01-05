@@ -210,6 +210,20 @@ struct ProfessionalOffsetPathSection: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .onChange(of: document.settings.unit) { _, newUnit in
+            // Clamp offset value to new unit's range when units change
+            let maxOffset: Double = {
+                switch newUnit {
+                case .inches: return 1.0
+                case .centimeters: return 10.0
+                case .millimeters: return 10.0
+                case .points: return 25.0
+                case .pixels: return 50.0
+                case .picas: return 12.0
+                }
+            }()
+            offsetDistance = min(max(offsetDistance, -maxOffset), maxOffset)
+        }
     }
 
     private func canPerformOffset() -> Bool {
