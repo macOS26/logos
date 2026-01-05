@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ProfessionalOffsetPathSection: View {
     let selectedObjectIDs: Set<UUID>
@@ -242,17 +243,18 @@ struct ProfessionalOffsetPathSection: View {
                 }
             } else {
                 // NEGATIVE OFFSET - subtract stroke from original to get inset
-                let origBounds = shape.path.cgPath.boundingBox
-                let strokeBounds = offsetPath.boundingBox
-                print("⬇️ NEG OFFSET: original=\(Int(origBounds.width))x\(Int(origBounds.height)) stroke=\(Int(strokeBounds.width))x\(Int(strokeBounds.height))")
-
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
-                    let resultBounds = subtractResult.boundingBox
-                    print("⬇️ NEG OFFSET: subtract SUCCESS = \(Int(resultBounds.width))x\(Int(resultBounds.height))")
                     finalPath = subtractResult
                 } else {
-                    print("⬇️ NEG OFFSET: subtract returned NIL - using original")
-                    finalPath = shape.path.cgPath
+                    // Offset too large - shape would be consumed, show error and skip
+                    DispatchQueue.main.async {
+                        let alert = NSAlert()
+                        alert.messageText = "Invalid Offset Value"
+                        alert.informativeText = "The negative offset value \(String(format: "%.1f", offsetDistance))\(unit.abbreviation) is too large for \"\(shape.name)\". The shape would be completely consumed."
+                        alert.alertStyle = .warning
+                        alert.runModal()
+                    }
+                    continue // Skip this shape
                 }
             }
 
