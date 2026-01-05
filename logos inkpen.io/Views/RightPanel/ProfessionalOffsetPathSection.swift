@@ -56,10 +56,11 @@ struct ProfessionalOffsetPathSection: View {
                         }
 
                         ZStack {
-                            // Range depends on unit: mm ±10mm, points ±25pt, others ±1 inch equivalent
+                            // Range depends on unit: mm ±10mm, cm ±10cm, points ±25pt, others ±1 inch equivalent
                             let maxOffset: Double = {
                                 switch document.settings.unit {
                                 case .millimeters: return 10.0
+                                case .centimeters: return 10.0
                                 case .points: return 25.0
                                 default: return document.settings.unit.fromPoints(72)
                                 }
