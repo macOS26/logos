@@ -59,11 +59,12 @@ struct ProfessionalOffsetPathSection: View {
                             // Range depends on unit
                             let maxOffset: Double = {
                                 switch document.settings.unit {
-                                case .millimeters: return 10.0
-                                case .centimeters: return 10.0
-                                case .points: return 25.0
-                                case .pixels: return 50.0
-                                default: return document.settings.unit.fromPoints(72)
+                                case .inches: return 1.0        // ±1 inch
+                                case .centimeters: return 10.0  // ±10cm
+                                case .millimeters: return 10.0  // ±10mm
+                                case .points: return 25.0       // ±25pt
+                                case .pixels: return 50.0       // ±50px
+                                case .picas: return 6.0         // ±6 picas (1 inch)
                                 }
                             }()
                             Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
