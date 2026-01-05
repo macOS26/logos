@@ -273,8 +273,8 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         // Use GroupCommand for proper undo/redo that handles layer objectIDs
-        // Negative offset: place behind selection, Positive/zero offset: place in front
-        let placeBehind = offsetDistance < 0 && keepOriginalPath
+        // Positive offset: place behind selection, Negative/zero offset: place in front
+        let placeBehind = offsetDistance > 0 && keepOriginalPath
         let command = GroupCommand(
             operation: .pathOperation,
             layerIndex: layerIndex,
