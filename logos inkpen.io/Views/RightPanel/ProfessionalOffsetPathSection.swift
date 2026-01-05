@@ -241,9 +241,17 @@ struct ProfessionalOffsetPathSection: View {
                     finalPath = offsetPath
                 }
             } else {
+                // NEGATIVE OFFSET - subtract stroke from original to get inset
+                let origBounds = shape.path.cgPath.boundingBox
+                let strokeBounds = offsetPath.boundingBox
+                print("⬇️ NEG OFFSET: original=\(Int(origBounds.width))x\(Int(origBounds.height)) stroke=\(Int(strokeBounds.width))x\(Int(strokeBounds.height))")
+
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
+                    let resultBounds = subtractResult.boundingBox
+                    print("⬇️ NEG OFFSET: subtract SUCCESS = \(Int(resultBounds.width))x\(Int(resultBounds.height))")
                     finalPath = subtractResult
                 } else {
+                    print("⬇️ NEG OFFSET: subtract returned NIL - using original")
                     finalPath = shape.path.cgPath
                 }
             }
