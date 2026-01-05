@@ -28,6 +28,9 @@ class GroupCommand: BaseCommand {
     // For cross-layer grouping: track original layer index for each object
     private let originalLayerIndices: [UUID: Int]
 
+    // For placing new shapes behind existing shapes (e.g., offset path)
+    private let behindObjectIDs: Set<UUID>
+
     init(operation: GroupOperation,
          layerIndex: Int,
          removedObjectIDs: [UUID],
@@ -36,7 +39,8 @@ class GroupCommand: BaseCommand {
          addedShapes: [UUID: VectorShape],
          oldSelectedObjectIDs: Set<UUID>,
          newSelectedObjectIDs: Set<UUID>,
-         originalLayerIndices: [UUID: Int] = [:]) {
+         originalLayerIndices: [UUID: Int] = [:],
+         behindObjectIDs: Set<UUID> = []) {
         self.operation = operation
         self.layerIndex = layerIndex
         self.removedObjectIDs = removedObjectIDs
@@ -46,6 +50,7 @@ class GroupCommand: BaseCommand {
         self.oldSelectedObjectIDs = oldSelectedObjectIDs
         self.newSelectedObjectIDs = newSelectedObjectIDs
         self.originalLayerIndices = originalLayerIndices
+        self.behindObjectIDs = behindObjectIDs
     }
 
     override func execute(on document: VectorDocument) {
@@ -67,8 +72,14 @@ class GroupCommand: BaseCommand {
         }
 
         // Find the index in layer.objectIDs for insertion
-        let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
-            ?? document.snapshot.layers[layerIndex].objectIDs.count
+        let insertionIndex: Int
+        if !behindObjectIDs.isEmpty {
+            // Insert behind the specified objects (find first matching object)
+            insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { behindObjectIDs.contains($0) } ?? document.snapshot.layers[layerIndex].objectIDs.count
+        } else {
+            insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { removedObjectIDs.contains($0) }
+                ?? document.snapshot.layers[layerIndex].objectIDs.count
+        }
 
         // Remove from layer.objectIDs first
         var updatedObjectIDs = document.snapshot.layers[layerIndex].objectIDs

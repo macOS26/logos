@@ -263,6 +263,8 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         // Use GroupCommand for proper undo/redo that handles layer objectIDs
+        // Negative offset: place behind selection, Positive/zero offset: place in front
+        let placeBehind = offsetDistance < 0 && keepOriginalPath
         let command = GroupCommand(
             operation: .pathOperation,
             layerIndex: layerIndex,
@@ -271,9 +273,14 @@ struct ProfessionalOffsetPathSection: View {
             addedObjectIDs: Array(newShapes.keys),
             addedShapes: newShapes,
             oldSelectedObjectIDs: Set(oldShapes.keys),
-            newSelectedObjectIDs: Set(newShapes.keys)
+            newSelectedObjectIDs: Set(newShapes.keys),
+            behindObjectIDs: placeBehind ? Set(oldShapes.keys) : []
         )
         document.executeCommand(command)
+
+        // Always select the offset path
+        document.viewState.selectedObjectIDs = Set(newShapes.keys)
+        document.viewState.orderedSelectedObjectIDs = Array(newShapes.keys)
     }
 
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
