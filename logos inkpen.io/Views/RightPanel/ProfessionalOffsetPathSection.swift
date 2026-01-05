@@ -64,7 +64,7 @@ struct ProfessionalOffsetPathSection: View {
                                 case .millimeters: return 10.0  // ±10mm
                                 case .points: return 25.0       // ±25pt
                                 case .pixels: return 50.0       // ±50px
-                                case .picas: return 6.0         // ±6 picas (1 inch)
+                                case .picas: return 12.0        // ±12 picas
                                 }
                             }()
                             Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
