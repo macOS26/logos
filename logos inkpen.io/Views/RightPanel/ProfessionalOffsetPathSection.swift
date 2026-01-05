@@ -56,8 +56,14 @@ struct ProfessionalOffsetPathSection: View {
                         }
 
                         ZStack {
-                            // Range depends on unit: mm uses ±10mm, others use ±1 inch equivalent
-                            let maxOffset: Double = document.settings.unit == .millimeters ? 10.0 : document.settings.unit.fromPoints(72)
+                            // Range depends on unit: mm ±10mm, points ±25pt, others ±1 inch equivalent
+                            let maxOffset: Double = {
+                                switch document.settings.unit {
+                                case .millimeters: return 10.0
+                                case .points: return 25.0
+                                default: return document.settings.unit.fromPoints(72)
+                                }
+                            }()
                             Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
                             .controlSize(.regular)
                             .tint(Color.clear)
