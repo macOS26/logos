@@ -78,6 +78,9 @@ class SVGExporter {
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
 
+                // Skip shapes that are members of a group - they'll be exported via their parent group
+                if document.snapshot.parentGroupCache[shape.id] != nil { continue }
+
                 if let object = document.findObject(by: shape.id), case .text = object.objectType {
                     svg += exportTextShape(shape, dpiScale: shapeScale, renderingMode: textRenderingMode)
                 } else {
@@ -100,6 +103,26 @@ class SVGExporter {
             return ""
         }
 
+        // Handle groups and clip groups with memberIDs (new system)
+        if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
+            svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
+
+            for memberID in shape.memberIDs {
+                if let memberShape = doc.findShape(by: memberID) {
+                    if let memberObject = doc.findObject(by: memberID), case .text = memberObject.objectType {
+                        // Text shapes need special handling
+                        svg += exportTextShape(memberShape, dpiScale: dpiScale, renderingMode: .glyphs)
+                    } else {
+                        svg += exportShape(memberShape, dpiScale: dpiScale, document: doc)
+                    }
+                }
+            }
+
+            svg += "</g>\n"
+            return svg
+        }
+
+        // Handle groups with groupedShapes (old system)
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
 
