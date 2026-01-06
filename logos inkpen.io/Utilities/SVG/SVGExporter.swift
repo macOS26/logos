@@ -109,6 +109,9 @@ class SVGExporter {
 
             for memberID in shape.memberIDs {
                 if let memberShape = doc.findShape(by: memberID) {
+                    // Skip invisible member shapes
+                    if !memberShape.isVisible { continue }
+
                     if let memberObject = doc.findObject(by: memberID), case .text = memberObject.objectType {
                         // Text shapes need special handling
                         svg += exportTextShape(memberShape, dpiScale: dpiScale, renderingMode: .glyphs)
@@ -127,6 +130,9 @@ class SVGExporter {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
 
             for groupedShape in shape.groupedShapes {
+                // Skip invisible grouped shapes
+                if !groupedShape.isVisible { continue }
+
                 svg += exportShape(groupedShape, dpiScale: dpiScale, document: document)
             }
 
