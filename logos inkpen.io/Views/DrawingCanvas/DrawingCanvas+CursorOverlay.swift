@@ -41,11 +41,7 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         nsView.isHovering = isHovering
         nsView.currentTool = currentTool
         nsView.isPanActive = isPanActive
-
-        // Defer invalidateCursorRects to avoid layout recursion on startup
-        DispatchQueue.main.async {
-            nsView.window?.invalidateCursorRects(for: nsView)
-        }
+        nsView.window?.invalidateCursorRects(for: nsView)
 
         if isHovering {
             nsView.activateCursorLock(duration: 0.5)
