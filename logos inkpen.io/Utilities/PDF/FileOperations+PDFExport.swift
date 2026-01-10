@@ -161,6 +161,11 @@ extension FileOperations {
                         continue
                     }
 
+                    // Skip shapes that are members of a group - they'll be exported via their parent group
+                    if document.snapshot.parentGroupCache[shape.id] != nil {
+                        continue
+                    }
+
                     if shape.isClippingPath, let clipped = clippedShapes[shape.id], !clipped.isEmpty {
                         try renderClippingGroup(
                             clippingMask: shape,
@@ -215,6 +220,43 @@ extension FileOperations {
             return
         }
 
+        // Handle groups and clip groups with memberIDs (new system)
+        if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
+            context.saveGState()
+
+            context.concatenate(shape.transform)
+
+            if shape.blendMode != .normal {
+                context.setBlendMode(shape.blendMode.cgBlendMode)
+            }
+
+            if shape.opacity < 1.0 {
+                context.setAlpha(CGFloat(shape.opacity))
+            }
+
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+
+            for memberID in shape.memberIDs {
+                if let memberShape = doc.findShape(by: memberID), memberShape.isVisible {
+                    try renderShapeToPDFWithImageSupport(
+                        shape: memberShape,
+                        context: context,
+                        isExport: isExport,
+                        useCMYK: useCMYK,
+                        textRenderingMode: textRenderingMode,
+                        document: document
+                    )
+                }
+            }
+
+            context.endTransparencyLayer()
+
+            context.restoreGState()
+
+            return
+        }
+
+        // Handle groups with groupedShapes (legacy system)
         if shape.isGroup && !shape.groupedShapes.isEmpty {
 
             context.saveGState()
