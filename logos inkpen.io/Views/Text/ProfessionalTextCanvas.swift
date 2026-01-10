@@ -243,9 +243,12 @@ struct ProfessionalTextCanvas: View {
                 nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 nsView.textStorage?.endEditing()
 
+                // Defer layout to avoid recursion during view update
                 if let textContainer = nsView.textContainer {
-                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                    nsView.layoutManager?.ensureLayout(for: textContainer)
+                    DispatchQueue.main.async {
+                        nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                        nsView.layoutManager?.ensureLayout(for: textContainer)
+                    }
                 }
             }
 
@@ -258,7 +261,10 @@ struct ProfessionalTextCanvas: View {
                 nsView.frame = CGRect(x: 0, y: 0, width: width, height: height)
                 nsView.maxSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
                 nsView.minSize = CGSize(width: width, height: 50)
-                nsView.textContainer.flatMap { nsView.layoutManager?.ensureLayout(for: $0) }
+                // Defer layout to avoid recursion during view update
+                DispatchQueue.main.async {
+                    nsView.textContainer.flatMap { nsView.layoutManager?.ensureLayout(for: $0) }
+                }
             }
 
             applyStyle(to: nsView)
