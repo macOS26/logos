@@ -243,6 +243,13 @@ struct PressureSensitiveCanvasRepresentable: NSViewRepresentable {
 
     func updateNSView(_ nsView: PressureSensitiveCanvasView, context: Context) {
         nsView.onPressureEvent = onPressureEvent
-        hasPressureSupport = nsView.hasPressureSupport
+
+        // Defer state update to avoid layout recursion
+        let newValue = nsView.hasPressureSupport
+        if hasPressureSupport != newValue {
+            DispatchQueue.main.async {
+                hasPressureSupport = newValue
+            }
+        }
     }
 }
