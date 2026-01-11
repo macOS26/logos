@@ -251,6 +251,14 @@ class DocumentState: ObservableObject {
             .svg,
             .pdf,
             .png,
+            .jpeg,
+            .tiff,
+            .bmp,
+            .heic,
+            .heif,
+            .gif,
+            .webP,
+            .image,
             .data
         ]
         panel.allowsMultipleSelection = false

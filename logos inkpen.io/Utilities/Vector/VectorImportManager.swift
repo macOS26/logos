@@ -85,6 +85,15 @@ class VectorImportManager {
 
     enum RasterFormat: String, CaseIterable {
         case png = "png"
+        case jpg = "jpg"
+        case jpeg = "jpeg"
+        case tif = "tif"
+        case tiff = "tiff"
+        case bmp = "bmp"
+        case psd = "psd"
+        case heic = "heic"
+        case heif = "heif"
+        case gif = "gif"
         case webp = "webp"
     }
 

@@ -229,6 +229,14 @@ struct DocumentBasedMainView: View {
                 .svg,
                 .pdf,
                 .png,
+                .jpeg,
+                .tiff,
+                .bmp,
+                .heic,
+                .heif,
+                .gif,
+                .webP,
+                .image,
                 .data
             ],
             allowsMultipleSelection: false
