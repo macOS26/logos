@@ -858,11 +858,11 @@ class DocumentState: ObservableObject {
                             document,
                             includeBackground: includeBackground,
                             textRenderingMode: AppState.shared.svgTextRenderingMode,
-                            includeInkpenData: false,
+                            includeInkpenData: true,
                             isAutoDesk: true
                         )
                     } else {
-                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
+                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode, includeInkpenData: true)
                     }
 
                     try svgContent.write(to: url, atomically: true, encoding: .utf8)

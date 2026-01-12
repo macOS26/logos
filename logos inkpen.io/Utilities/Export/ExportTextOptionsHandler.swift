@@ -77,7 +77,8 @@ extension DocumentState {
             svgContent = try SVGExporter.shared.exportToAutoDeskSVG(
                 document,
                 includeBackground: includeBackground,
-                textRenderingMode: textRenderingMode
+                textRenderingMode: textRenderingMode,
+                includeInkpenData: true
             )
         } else {
             svgContent = try SVGExporter.shared.exportToSVG(

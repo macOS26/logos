@@ -12,9 +12,9 @@ class SVGExporter {
         return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
     }
 
-    func exportToAutoDeskSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
+    func exportToAutoDeskSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = true) throws -> String {
         let dpiScale: CGFloat = 96.0 / 72.0
-        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: true, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
+        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: true, includeBackground: includeBackground, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
     }
 
     private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
