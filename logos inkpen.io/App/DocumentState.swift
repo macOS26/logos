@@ -984,6 +984,18 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
+    /// Align selected objects horizontally by their transform origins (X axis only).
+    func alignByOriginX() {
+        document?.alignSelectedObjectsByOriginX()
+        updateAllStates()
+    }
+
+    /// Align selected objects vertically by their transform origins (Y axis only).
+    func alignByOriginY() {
+        document?.alignSelectedObjectsByOriginY()
+        updateAllStates()
+    }
+
     /// Returns true if at least 2 objects are selected (needed for alignment)
     var canAlign: Bool {
         guard let doc = document else { return false }

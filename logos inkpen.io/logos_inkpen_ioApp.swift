@@ -77,7 +77,10 @@ struct logos_inken_ioApp: App {
                     // If no saved frame, fill the screen
                     if !hadSavedFrame, let screen = window.screen ?? NSScreen.main {
                         let visibleFrame = screen.visibleFrame
-                        window.setFrame(visibleFrame, display: true)
+                        // Defer to avoid layout recursion during view hierarchy setup
+                        DispatchQueue.main.async {
+                            window.setFrame(visibleFrame, display: true)
+                        }
                     }
                 })
                 .onAppear {
@@ -293,6 +296,18 @@ struct logos_inken_ioApp: App {
                         documentState?.alignByOrigin()
                     }
                     .keyboardShortcut("a", modifiers: [.command, .option])
+                    .disabled(documentState?.canAlign != true)
+
+                    Button("Align X") {
+                        documentState?.alignByOriginX()
+                    }
+                    .keyboardShortcut("a", modifiers: [.command, .option, .shift])
+                    .disabled(documentState?.canAlign != true)
+
+                    Button("Align Y") {
+                        documentState?.alignByOriginY()
+                    }
+                    .keyboardShortcut("a", modifiers: [.command, .option, .control])
                     .disabled(documentState?.canAlign != true)
 
                     Button("Group") {
