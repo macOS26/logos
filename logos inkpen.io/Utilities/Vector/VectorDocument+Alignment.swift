@@ -46,8 +46,14 @@ extension VectorDocument {
                     guard abs(offsetX) > 0.001 || abs(offsetY) > 0.001 else { continue }
 
                     // Move the shape by translating all path points
-                    if shape.isGroupContainer {
-                        // Move grouped shapes
+                    if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+                        // Modern groups with memberIDs - use applyTransformToGroup
+                        let translationTransform = CGAffineTransform(translationX: offsetX, y: offsetY)
+                        applyTransformToGroup(groupID: shape.id, transform: translationTransform)
+                        // applyTransformToGroup handles all updates, so continue
+                        continue
+                    } else if shape.isGroupContainer {
+                        // Legacy groups with embedded groupedShapes
                         for i in shape.groupedShapes.indices {
                             var groupedShape = shape.groupedShapes[i]
                             translateShapePath(&groupedShape, dx: offsetX, dy: offsetY)
@@ -65,7 +71,7 @@ extension VectorDocument {
                         translateShapePath(&shape, dx: offsetX, dy: offsetY)
                     }
 
-                    // Update in document
+                    // Update in document (for legacy groups, text, and regular shapes)
                     updateShapeByID(objectID, silent: false) { s in
                         s = shape
                     }
