@@ -77,6 +77,10 @@ struct TransformationControls: View {
     @State private var widthValue: String = ""
     @State private var heightValue: String = ""
     @State private var aspectRatio: CGFloat = 1.0
+    @State private var scaleXValue: String = "100"
+    @State private var scaleYValue: String = "100"
+    @State private var linkScale: Bool = true
+    @State private var rotationValue: String = "0"
 
     private var transformOriginBinding: Binding<TransformOrigin> {
         Binding(
@@ -231,6 +235,111 @@ struct TransformationControls: View {
             .disabled(!hasSelection)
             .opacity(hasSelection ? 1.0 : 0.3)
             .help(keepProportions ? "⚠️ Proportions LOCKED - Width/Height ratio maintained" : "✓ Proportions UNLOCKED - Free resize")
+
+            Divider()
+                .frame(height: 24)
+
+            // Scale X
+            HStack(spacing: 2) {
+                Text("SX:")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                TextField("", text: $scaleXValue)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .frame(width: 40)
+                    .font(.system(size: 11))
+                    .multilineTextAlignment(.trailing)
+                    .disabled(!hasSelection)
+                    .onSubmit {
+                        applyScale()
+                    }
+                    .onChange(of: scaleXValue) { _, newValue in
+                        if linkScale, let scale = Double(newValue) {
+                            scaleYValue = String(format: "%.1f", scale)
+                        }
+                    }
+                Text("%")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 12, alignment: .leading)
+            }
+
+            // Scale Y
+            HStack(spacing: 2) {
+                Text("SY:")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                TextField("", text: $scaleYValue)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .frame(width: 40)
+                    .font(.system(size: 11))
+                    .multilineTextAlignment(.trailing)
+                    .disabled(!hasSelection)
+                    .onSubmit {
+                        applyScale()
+                    }
+                    .onChange(of: scaleYValue) { _, newValue in
+                        if linkScale, let scale = Double(newValue) {
+                            scaleXValue = String(format: "%.1f", scale)
+                        }
+                    }
+                Text("%")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 12, alignment: .leading)
+            }
+
+            // Link Scale button
+            Button(action: {
+                linkScale.toggle()
+            }) {
+                Image(systemName: linkScale ? "link" : "link.badge.plus")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12, height: 12)
+                    .foregroundColor(linkScale ? .orange : Color(PlatformColor.systemBlue))
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.platformControlBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(linkScale ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            .shadow(color: linkScale ?
+                Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3) :
+                Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3),
+                radius: 2)
+            .disabled(!hasSelection)
+            .opacity(hasSelection ? 1.0 : 0.3)
+            .help(linkScale ? "⚠️ Scale LINKED - X and Y scale together" : "✓ Scale UNLINKED - Independent X/Y scaling")
+
+            Divider()
+                .frame(height: 24)
+
+            // Rotation
+            HStack(spacing: 2) {
+                Text("R:")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                TextField("", text: $rotationValue)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .frame(width: 40)
+                    .font(.system(size: 11))
+                    .multilineTextAlignment(.trailing)
+                    .disabled(!hasSelection)
+                    .onSubmit {
+                        applyRotation()
+                    }
+                Text("°")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .frame(width: 12, alignment: .leading)
+            }
         }
         .padding(.horizontal, 8)
         .onAppear {
@@ -555,5 +664,228 @@ struct TransformationControls: View {
         )
 
         updateValuesFromSelection()
+    }
+
+    private func applyScale() {
+        guard let scaleX = Double(scaleXValue),
+              let scaleY = Double(scaleYValue),
+              scaleX > 0, scaleY > 0,
+              let currentBounds = getSelectionBounds() else { return }
+
+        let scaleFactorX = scaleX / 100.0
+        let scaleFactorY = scaleY / 100.0
+
+        // Skip if no scaling needed
+        guard abs(scaleFactorX - 1.0) > 0.001 || abs(scaleFactorY - 1.0) > 0.001 else { return }
+
+        let originOffset = document.viewState.transformOrigin.point
+        let originX = currentBounds.minX + currentBounds.width * originOffset.x
+        let originY = currentBounds.minY + currentBounds.height * originOffset.y
+
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                for objectID in document.viewState.selectedObjectIDs {
+                    if let vectorObject = document.snapshot.objects[objectID] {
+                        var shape = vectorObject.shape
+
+                        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+                            // Modern groups - use applyTransformToGroup
+                            let scaleTransform = CGAffineTransform(translationX: originX, y: originY)
+                                .scaledBy(x: scaleFactorX, y: scaleFactorY)
+                                .translatedBy(x: -originX, y: -originY)
+                            document.applyTransformToGroup(groupID: shape.id, transform: scaleTransform)
+                        } else if shape.isGroupContainer {
+                            // Legacy groups
+                            for i in shape.groupedShapes.indices {
+                                var groupedShape = shape.groupedShapes[i]
+                                scaleShapePath(&groupedShape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
+                                shape.groupedShapes[i] = groupedShape
+                            }
+                            shape.updateBounds()
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        } else if shape.typography != nil {
+                            // Text - scale position relative to origin
+                            if let pos = shape.textPosition {
+                                let newX = originX + (pos.x - originX) * scaleFactorX
+                                let newY = originY + (pos.y - originY) * scaleFactorY
+                                shape.textPosition = CGPoint(x: newX, y: newY)
+                                shape.transform = CGAffineTransform(translationX: newX, y: newY)
+                                shape.bounds = CGRect(x: 0, y: 0,
+                                                     width: shape.bounds.width * scaleFactorX,
+                                                     height: shape.bounds.height * scaleFactorY)
+                                if let areaSize = shape.areaSize {
+                                    shape.areaSize = CGSize(width: areaSize.width * scaleFactorX,
+                                                           height: areaSize.height * scaleFactorY)
+                                }
+                            }
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        } else {
+                            // Regular shape
+                            scaleShapePath(&shape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        // Reset scale values to 100% after applying
+        scaleXValue = "100"
+        scaleYValue = "100"
+        updateValuesFromSelection()
+    }
+
+    private func scaleShapePath(_ shape: inout VectorShape, scaleX: CGFloat, scaleY: CGFloat, originX: CGFloat, originY: CGFloat) {
+        var scaledElements: [PathElement] = []
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let newX = originX + (to.x - originX) * scaleX
+                let newY = originY + (to.y - originY) * scaleY
+                scaledElements.append(.move(to: VectorPoint(CGPoint(x: newX, y: newY))))
+            case .line(let to):
+                let newX = originX + (to.x - originX) * scaleX
+                let newY = originY + (to.y - originY) * scaleY
+                scaledElements.append(.line(to: VectorPoint(CGPoint(x: newX, y: newY))))
+            case .curve(let to, let control1, let control2):
+                let newToX = originX + (to.x - originX) * scaleX
+                let newToY = originY + (to.y - originY) * scaleY
+                let newC1X = originX + (control1.x - originX) * scaleX
+                let newC1Y = originY + (control1.y - originY) * scaleY
+                let newC2X = originX + (control2.x - originX) * scaleX
+                let newC2Y = originY + (control2.y - originY) * scaleY
+                scaledElements.append(.curve(
+                    to: VectorPoint(CGPoint(x: newToX, y: newToY)),
+                    control1: VectorPoint(CGPoint(x: newC1X, y: newC1Y)),
+                    control2: VectorPoint(CGPoint(x: newC2X, y: newC2Y))
+                ))
+            case .quadCurve(let to, let control):
+                let newToX = originX + (to.x - originX) * scaleX
+                let newToY = originY + (to.y - originY) * scaleY
+                let newCX = originX + (control.x - originX) * scaleX
+                let newCY = originY + (control.y - originY) * scaleY
+                scaledElements.append(.quadCurve(
+                    to: VectorPoint(CGPoint(x: newToX, y: newToY)),
+                    control: VectorPoint(CGPoint(x: newCX, y: newCY))
+                ))
+            case .close:
+                scaledElements.append(.close)
+            }
+        }
+        shape.path = VectorPath(elements: scaledElements)
+        shape.updateBounds()
+    }
+
+    private func applyRotation() {
+        guard let angle = Double(rotationValue),
+              let currentBounds = getSelectionBounds() else { return }
+
+        // Skip if no rotation needed
+        guard abs(angle) > 0.001 else { return }
+
+        let radians = angle * .pi / 180.0
+        let originOffset = document.viewState.transformOrigin.point
+        let originX = currentBounds.minX + currentBounds.width * originOffset.x
+        let originY = currentBounds.minY + currentBounds.height * originOffset.y
+
+        document.modifySelectedShapesWithUndo(
+            preCapture: {
+                for objectID in document.viewState.selectedObjectIDs {
+                    if let vectorObject = document.snapshot.objects[objectID] {
+                        var shape = vectorObject.shape
+
+                        if shape.isGroupContainer && !shape.memberIDs.isEmpty {
+                            // Modern groups - use applyTransformToGroup
+                            let rotationTransform = CGAffineTransform(translationX: originX, y: originY)
+                                .rotated(by: radians)
+                                .translatedBy(x: -originX, y: -originY)
+                            document.applyTransformToGroup(groupID: shape.id, transform: rotationTransform)
+                        } else if shape.isGroupContainer {
+                            // Legacy groups
+                            for i in shape.groupedShapes.indices {
+                                var groupedShape = shape.groupedShapes[i]
+                                rotateShapePath(&groupedShape, radians: radians, originX: originX, originY: originY)
+                                shape.groupedShapes[i] = groupedShape
+                            }
+                            shape.updateBounds()
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        } else if shape.typography != nil {
+                            // Text - rotate position relative to origin
+                            if let pos = shape.textPosition {
+                                let dx = pos.x - originX
+                                let dy = pos.y - originY
+                                let newX = originX + dx * cos(radians) - dy * sin(radians)
+                                let newY = originY + dx * sin(radians) + dy * cos(radians)
+                                shape.textPosition = CGPoint(x: newX, y: newY)
+                                shape.transform = CGAffineTransform(translationX: newX, y: newY)
+                            }
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        } else {
+                            // Regular shape
+                            rotateShapePath(&shape, radians: radians, originX: originX, originY: originY)
+                            document.updateShapeByID(objectID, silent: false) { s in
+                                s = shape
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        // Reset rotation to 0 after applying
+        rotationValue = "0"
+        updateValuesFromSelection()
+    }
+
+    private func rotateShapePath(_ shape: inout VectorShape, radians: CGFloat, originX: CGFloat, originY: CGFloat) {
+        var rotatedElements: [PathElement] = []
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let rotated = rotatePoint(x: to.x, y: to.y, originX: originX, originY: originY, radians: radians)
+                rotatedElements.append(.move(to: VectorPoint(rotated)))
+            case .line(let to):
+                let rotated = rotatePoint(x: to.x, y: to.y, originX: originX, originY: originY, radians: radians)
+                rotatedElements.append(.line(to: VectorPoint(rotated)))
+            case .curve(let to, let control1, let control2):
+                let rotatedTo = rotatePoint(x: to.x, y: to.y, originX: originX, originY: originY, radians: radians)
+                let rotatedC1 = rotatePoint(x: control1.x, y: control1.y, originX: originX, originY: originY, radians: radians)
+                let rotatedC2 = rotatePoint(x: control2.x, y: control2.y, originX: originX, originY: originY, radians: radians)
+                rotatedElements.append(.curve(
+                    to: VectorPoint(rotatedTo),
+                    control1: VectorPoint(rotatedC1),
+                    control2: VectorPoint(rotatedC2)
+                ))
+            case .quadCurve(let to, let control):
+                let rotatedTo = rotatePoint(x: to.x, y: to.y, originX: originX, originY: originY, radians: radians)
+                let rotatedC = rotatePoint(x: control.x, y: control.y, originX: originX, originY: originY, radians: radians)
+                rotatedElements.append(.quadCurve(
+                    to: VectorPoint(rotatedTo),
+                    control: VectorPoint(rotatedC)
+                ))
+            case .close:
+                rotatedElements.append(.close)
+            }
+        }
+        shape.path = VectorPath(elements: rotatedElements)
+        shape.updateBounds()
+    }
+
+    private func rotatePoint(x: CGFloat, y: CGFloat, originX: CGFloat, originY: CGFloat, radians: CGFloat) -> CGPoint {
+        let dx = x - originX
+        let dy = y - originY
+        let newX = originX + dx * cos(radians) - dy * sin(radians)
+        let newY = originY + dx * sin(radians) + dy * cos(radians)
+        return CGPoint(x: newX, y: newY)
     }
 }
