@@ -1,11 +1,35 @@
 import Foundation
 import CoreGraphics
 
+/// Axis options for alignment operations
+enum AlignmentAxis {
+    case both      // Align X and Y
+    case xOnly     // Align X axis only (horizontal)
+    case yOnly     // Align Y axis only (vertical)
+}
+
 extension VectorDocument {
 
-    /// Align selected objects by their individual transform origins.
+    /// Align selected objects by their individual transform origins (both axes).
     /// The first selected object stays in place; other objects move to align.
     func alignSelectedObjectsByOrigin() {
+        alignSelectedObjectsByOrigin(axis: .both)
+    }
+
+    /// Align selected objects horizontally by their transform origins (X axis only).
+    /// The first selected object stays in place; other objects move horizontally to align.
+    func alignSelectedObjectsByOriginX() {
+        alignSelectedObjectsByOrigin(axis: .xOnly)
+    }
+
+    /// Align selected objects vertically by their transform origins (Y axis only).
+    /// The first selected object stays in place; other objects move vertically to align.
+    func alignSelectedObjectsByOriginY() {
+        alignSelectedObjectsByOrigin(axis: .yOnly)
+    }
+
+    /// Internal helper for alignment with axis control
+    private func alignSelectedObjectsByOrigin(axis: AlignmentAxis) {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
 
@@ -38,9 +62,21 @@ extension VectorDocument {
                         y: shapeBounds.minY + shapeBounds.height * shapeOrigin.point.y
                     )
 
-                    // Calculate offset needed to align
-                    let offsetX = anchorPoint.x - currentOriginPoint.x
-                    let offsetY = anchorPoint.y - currentOriginPoint.y
+                    // Calculate offset needed to align based on axis
+                    let offsetX: CGFloat
+                    let offsetY: CGFloat
+
+                    switch axis {
+                    case .both:
+                        offsetX = anchorPoint.x - currentOriginPoint.x
+                        offsetY = anchorPoint.y - currentOriginPoint.y
+                    case .xOnly:
+                        offsetX = anchorPoint.x - currentOriginPoint.x
+                        offsetY = 0
+                    case .yOnly:
+                        offsetX = 0
+                        offsetY = anchorPoint.y - currentOriginPoint.y
+                    }
 
                     // Skip if no movement needed
                     guard abs(offsetX) > 0.001 || abs(offsetY) > 0.001 else { continue }

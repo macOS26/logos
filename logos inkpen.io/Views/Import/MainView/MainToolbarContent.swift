@@ -149,7 +149,33 @@ struct MainToolbarContent: ToolbarContent {
             .help("Development Tools")
 #endif
 
-            // Align by anchor points button
+            // Align by anchor points buttons
+            Button {
+                document.alignSelectedObjectsByOriginX()
+            } label: {
+                Image(systemName: "arrow.left.and.right")
+                    .font(.system(size: 14))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(document.viewState.orderedSelectedObjectIDs.count < 2)
+            .opacity(document.viewState.orderedSelectedObjectIDs.count >= 2 ? 1.0 : 0.4)
+            .help("Align X by Anchor Points - Horizontal alignment only")
+
+            Button {
+                document.alignSelectedObjectsByOriginY()
+            } label: {
+                Image(systemName: "arrow.up.and.down")
+                    .font(.system(size: 14))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(document.viewState.orderedSelectedObjectIDs.count < 2)
+            .opacity(document.viewState.orderedSelectedObjectIDs.count >= 2 ? 1.0 : 0.4)
+            .help("Align Y by Anchor Points - Vertical alignment only")
+
             Button {
                 document.alignSelectedObjectsByOrigin()
             } label: {
@@ -161,7 +187,7 @@ struct MainToolbarContent: ToolbarContent {
             .buttonStyle(.plain)
             .disabled(document.viewState.orderedSelectedObjectIDs.count < 2)
             .opacity(document.viewState.orderedSelectedObjectIDs.count >= 2 ? 1.0 : 0.4)
-            .help("Align by Anchor Points (⌘⌥A) - First selected object stays in place")
+            .help("Align X+Y by Anchor Points - Full alignment")
 
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
