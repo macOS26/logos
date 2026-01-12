@@ -19,6 +19,23 @@ extension DrawingCanvas {
                 EyedropperCursor.set()
             } else if document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
+            } else if document.viewState.currentTool == .selection || document.viewState.currentTool == .directSelection {
+                // Check for guide hover
+                let canvasLocation = screenToCanvas(location, geometry: geometry)
+                let guideOrientation = findGuideAtLocation(canvasLocation)
+                hoveredGuideOrientation = guideOrientation
+
+                if let orientation = guideOrientation {
+                    // Set cursor based on guide orientation
+                    switch orientation {
+                    case .horizontal:
+                        NSCursor.resizeUpDown.set()
+                    case .vertical:
+                        NSCursor.resizeLeftRight.set()
+                    }
+                }
+            } else {
+                hoveredGuideOrientation = nil
             }
             #endif
 
@@ -55,6 +72,7 @@ extension DrawingCanvas {
         } else {
             currentMouseLocation = nil
             showClosePathHint = false
+            hoveredGuideOrientation = nil
             #if os(macOS)
             if !isCanvasHovering {
                 NSCursor.arrow.set()
