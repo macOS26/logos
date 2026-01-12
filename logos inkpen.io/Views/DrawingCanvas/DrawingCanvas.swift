@@ -71,7 +71,6 @@ struct DrawingCanvas: View {
     @State internal var showContinuePathHint = false
     @State internal var continuePathHintLocation: CGPoint = .zero
     @State internal var isCanvasHovering: Bool = false
-    @State internal var hoveredGuideOrientation: Guide.Orientation? = nil
     @State internal var currentSnapPoint: CGPoint? = nil
     @State internal var currentShapeId: UUID? = nil
     @State internal var activeBezierShape: VectorShape? = nil

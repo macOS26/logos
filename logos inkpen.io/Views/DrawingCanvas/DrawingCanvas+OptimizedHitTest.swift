@@ -76,9 +76,6 @@ extension DrawingCanvas {
         let guidesLayerID = document.snapshot.layers.count > 2 ? document.snapshot.layers[2].id : nil
         let isGuidesLayerSelected = guidesLayerID != nil && document.settings.selectedLayerId == guidesLayerID
 
-        // Check if guides are locked
-        let guidesLocked = document.gridSettings.guidesLocked
-
         // Use Metal spatial index for GPU-accelerated candidate lookup
         return metalHitTest(at: validatedLocation) { object, point in
             // ARROW TOOL: Skip children that are inside groups - only select the group
@@ -89,21 +86,10 @@ extension DrawingCanvas {
             // If Guides layer is selected, only allow selecting guides
             if isGuidesLayerSelected {
                 if case .guide = object.objectType {
-                    // Allow guide selection (unless locked)
-                    if guidesLocked {
-                        return false
-                    }
+                    // Allow guide selection
                 } else {
                     return false
                 }
-            }
-
-            // Allow guide selection from any layer (unless guides are locked)
-            if case .guide = object.objectType {
-                if guidesLocked {
-                    return false
-                }
-                // Guides can be selected - continue to hit test
             }
 
             // Skip background shapes
@@ -168,51 +154,6 @@ extension DrawingCanvas {
 
                 if testFunction(object, point) {
                     return object
-                }
-            }
-        }
-
-        return nil
-    }
-
-    /// Find guide at location for hover detection (returns guide orientation if hovering over a guide)
-    internal func findGuideAtLocation(_ location: CGPoint) -> Guide.Orientation? {
-        let validatedLocation = validateAndCorrectLocation(location)
-
-        // Check if guides are visible and not locked
-        guard document.snapshot.layers.count > 2,
-              document.snapshot.layers[2].isVisible,
-              !document.gridSettings.guidesLocked else {
-            return nil
-        }
-
-        let guidesLayer = document.snapshot.layers[2]
-        let guideTolerance: CGFloat = 5.0
-
-        // Check all guides in the Guides layer
-        for objectID in guidesLayer.objectIDs {
-            guard let object = document.snapshot.objects[objectID],
-                  case .guide(let shape) = object.objectType,
-                  let orientation = shape.guideOrientation else {
-                continue
-            }
-
-            // Get guide position from path
-            guard let firstElement = shape.path.elements.first,
-                  case .move(let point) = firstElement else {
-                continue
-            }
-
-            switch orientation {
-            case .horizontal:
-                let guideY = CGFloat(point.y)
-                if abs(validatedLocation.y - guideY) <= guideTolerance {
-                    return .horizontal
-                }
-            case .vertical:
-                let guideX = CGFloat(point.x)
-                if abs(validatedLocation.x - guideX) <= guideTolerance {
-                    return .vertical
                 }
             }
         }
