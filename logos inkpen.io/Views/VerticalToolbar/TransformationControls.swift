@@ -111,18 +111,19 @@ struct TransformationControls: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             NinePointOriginSelector(selectedOrigin: transformOriginBinding)
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
 
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 Text("X:")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
+                    .fixedSize()
                 TextField("", text: $xValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 50)
+                    .frame(width: 55)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -132,16 +133,17 @@ struct TransformationControls: View {
                 Text(unitSuffix)
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 16, alignment: .leading)
+                    .frame(width: 20, alignment: .leading)
             }
 
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 Text("Y:")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
+                    .fixedSize()
                 TextField("", text: $yValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 50)
+                    .frame(width: 55)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -151,16 +153,17 @@ struct TransformationControls: View {
                 Text(unitSuffix)
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 16, alignment: .leading)
+                    .frame(width: 20, alignment: .leading)
             }
 
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 Text("W:")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
+                    .fixedSize()
                 TextField("", text: $widthValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 50)
+                    .frame(width: 55)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -178,16 +181,17 @@ struct TransformationControls: View {
                 Text(unitSuffix)
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 16, alignment: .leading)
+                    .frame(width: 20, alignment: .leading)
             }
 
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 Text("H:")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
+                    .fixedSize()
                 TextField("", text: $heightValue)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 50)
+                    .frame(width: 55)
                     .font(.system(size: 11))
                     .multilineTextAlignment(.trailing)
                     .disabled(!hasSelection)
@@ -205,7 +209,7 @@ struct TransformationControls: View {
                 Text(unitSuffix)
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 16, alignment: .leading)
+                    .frame(width: 20, alignment: .leading)
             }
 
             Button(action: {

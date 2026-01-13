@@ -6,6 +6,9 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
+        // Reset shift constraint axis for new drag
+        shiftConstraintAxis = .none
+
         // If bezier drawing is active during Cmd+selection, include the active bezier shape
         if isBezierDrawing, let bezierShape = activeBezierShape {
             if !document.viewState.selectedObjectIDs.contains(bezierShape.id) {
@@ -148,10 +151,38 @@ extension DrawingCanvas {
             }
         }
 
-        let cursorDelta = CGPoint(
+        var cursorDelta = CGPoint(
             x: value.location.x - selectionDragStart.x,
             y: value.location.y - selectionDragStart.y
         )
+
+        // Shift-constrain: lock movement to horizontal or vertical axis (like FreeHand/Illustrator/Inkscape)
+        let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+        if isShiftCurrentlyPressed {
+            // Determine constraint axis based on which direction has more movement
+            if shiftConstraintAxis == .none {
+                // First time with shift pressed - determine the axis
+                if abs(cursorDelta.x) > abs(cursorDelta.y) {
+                    shiftConstraintAxis = .horizontal
+                } else if abs(cursorDelta.y) > abs(cursorDelta.x) {
+                    shiftConstraintAxis = .vertical
+                }
+                // If equal, wait for more movement to decide
+            }
+
+            // Apply the constraint
+            switch shiftConstraintAxis {
+            case .horizontal:
+                cursorDelta.y = 0
+            case .vertical:
+                cursorDelta.x = 0
+            case .none:
+                break
+            }
+        } else {
+            // Shift released - reset constraint for next drag
+            shiftConstraintAxis = .none
+        }
 
         let preciseZoom = Double(zoomLevel)
         var canvasDelta = CGPoint(
@@ -217,6 +248,7 @@ extension DrawingCanvas {
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
+            shiftConstraintAxis = .none
             document.activeLayerIndexDuringDrag = nil
             layerPreviewOpacities.removeAll()
             return
@@ -374,6 +406,7 @@ extension DrawingCanvas {
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
+            shiftConstraintAxis = .none
 
         } else {
             liveDragOffset = .zero

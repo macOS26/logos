@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+/// Axis constraint for shift-drag operations (like FreeHand/Illustrator/Inkscape)
+enum ShiftConstraintAxis {
+    case none       // No constraint active
+    case horizontal // Constrain to horizontal movement only
+    case vertical   // Constrain to vertical movement only
+}
+
 struct DrawingCanvas: View {
     var document: VectorDocument = VectorDocument()
     @Binding var zoomLevel: Double
@@ -44,6 +51,7 @@ struct DrawingCanvas: View {
     @State internal var initialObjectPositions: [UUID: CGPoint] = [:]
     @State internal var initialObjectTransforms: [UUID: CGAffineTransform] = [:]
     @State internal var currentDragDelta: CGPoint = .zero
+    @State internal var shiftConstraintAxis: ShiftConstraintAxis = .none
     @State internal var dragPreviewUpdateTrigger: Bool = false
     @State internal var transformBoxOpacity: Double = 1.0
     @State internal var shapeDragStart = CGPoint.zero
