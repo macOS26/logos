@@ -210,6 +210,16 @@ extension DrawingCanvas {
                     )
 
                     canvasDelta = CGPoint(x: snappedCenter.x - initialCenter.x, y: snappedCenter.y - initialCenter.y)
+
+                    // Re-apply shift constraint after snapping to prevent jumping in constrained direction
+                    switch shiftConstraintAxis {
+                    case .horizontal:
+                        canvasDelta.y = 0
+                    case .vertical:
+                        canvasDelta.x = 0
+                    case .none:
+                        break
+                    }
                 }
             }
         }
