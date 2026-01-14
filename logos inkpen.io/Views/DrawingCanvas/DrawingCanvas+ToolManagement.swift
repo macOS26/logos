@@ -127,9 +127,30 @@ extension DrawingCanvas {
             selectedHandles.removeAll()
             visibleHandles.removeAll()
 
-            // Keep existing object selection - user will click to select specific shapes
+            // If a group is selected, auto-select the topmost member shape
             if !document.viewState.selectedObjectIDs.isEmpty {
-                selectedObjectIDs = document.viewState.selectedObjectIDs
+                var newSelection = Set<UUID>()
+
+                for objectID in document.viewState.selectedObjectIDs {
+                    if let obj = document.snapshot.objects[objectID] {
+                        let shape = obj.shape
+                        if shape.isGroupContainer {
+                            // Select the topmost (last) member of the group
+                            if let topMemberID = shape.memberIDs.last,
+                               let _ = document.snapshot.objects[topMemberID] {
+                                newSelection.insert(topMemberID)
+                            } else if let topGroupedShape = shape.groupedShapes.last {
+                                // Legacy groups
+                                newSelection.insert(topGroupedShape.id)
+                            }
+                        } else {
+                            // Keep non-group objects selected
+                            newSelection.insert(objectID)
+                        }
+                    }
+                }
+
+                selectedObjectIDs = newSelection
                 syncDirectSelectionWithDocument()
             }
         }
