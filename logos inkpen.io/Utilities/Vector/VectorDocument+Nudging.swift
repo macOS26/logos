@@ -2,12 +2,9 @@ import SwiftUI
 
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        // Direct selection tool ONLY nudges points, never whole shapes
-        if viewState.currentTool == .directSelection {
-            if !viewState.selectedPoints.isEmpty {
-                nudgeSelectedPoints(by: nudgeAmount)
-            }
-            // If no points selected with direct selection, do nothing
+        // Direct selection tool with points selected: ONLY nudge points, never whole shapes
+        if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
+            nudgeSelectedPoints(by: nudgeAmount)
             return
         }
 
@@ -16,6 +13,8 @@ extension VectorDocument {
             nudgeSelectedPoints(by: nudgeAmount)
             return
         }
+
+        // No points selected - move whole shapes (works for all tools including direct selection)
 
         guard !viewState.selectedObjectIDs.isEmpty else { return }
 
