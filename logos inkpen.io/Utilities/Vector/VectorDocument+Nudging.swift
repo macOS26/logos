@@ -2,14 +2,16 @@ import SwiftUI
 
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        // Direct selection tool with selected points ALWAYS takes priority
-        // This overrides any transform box / whole shape movement
-        if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
-            nudgeSelectedPoints(by: nudgeAmount)
+        // Direct selection tool ONLY nudges points, never whole shapes
+        if viewState.currentTool == .directSelection {
+            if !viewState.selectedPoints.isEmpty {
+                nudgeSelectedPoints(by: nudgeAmount)
+            }
+            // If no points selected with direct selection, do nothing
             return
         }
 
-        // Also check if points are selected even without direct selection tool active
+        // For other tools, check if points are selected
         if !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return
