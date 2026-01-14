@@ -198,8 +198,14 @@ final class AppEventMonitor {
                         accumulatedNudgeOffset.dy += nudgeAmount.dy
                         isNudging = true
 
-                        // Apply live offset to viewState
-                        activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
+                        // Direct selection tool with selected points: nudge points immediately (no live shape offset)
+                        // This prevents the whole shape from "jumping" when only points should move
+                        if activeDoc.viewState.currentTool == DrawingTool.directSelection && !activeDoc.viewState.selectedPoints.isEmpty {
+                            // Don't apply live offset to shape - points are nudged on keyUp
+                        } else {
+                            // Apply live offset to viewState for whole-shape nudging
+                            activeDoc.viewState.liveNudgeOffset = accumulatedNudgeOffset
+                        }
 
                         return nil
                     }

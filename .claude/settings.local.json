@@ -154,7 +154,8 @@
       "Bash(unzip:*)",
       "Bash(xxd:*)",
       "WebFetch(domain:www.manualslib.com)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(open:*)"
     ],
     "deny": [],
     "ask": []
