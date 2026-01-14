@@ -1,6 +1,24 @@
 import SwiftUI
 import Combine
 
+/// Options for determining which object stays in place during alignment
+/// Note: Locked items ALWAYS trump this setting
+enum AlignmentAnchorMode: String, CaseIterable {
+    case firstSelected = "firstSelected"
+    case lastSelected = "lastSelected"
+    case largestArea = "largestArea"
+    case smallestArea = "smallestArea"
+
+    var displayName: String {
+        switch self {
+        case .firstSelected: return "First Selected"
+        case .lastSelected: return "Last Selected"
+        case .largestArea: return "Largest Area"
+        case .smallestArea: return "Smallest Area"
+        }
+    }
+}
+
 class ApplicationSettings: ObservableObject {
     static let shared = ApplicationSettings()
 
@@ -111,6 +129,12 @@ class ApplicationSettings: ObservableObject {
 
     // Image settings now use @AppStorage in views directly for better performance
     // No need for @Published or didSet - onChange in views handles cache clearing
+
+    // MARK: - Alignment Settings
+    /// How to determine which object stays in place during alignment (locked items always trump this)
+    @Published var alignmentAnchorMode: AlignmentAnchorMode = AlignmentAnchorMode(rawValue: UserDefaults.standard.string(forKey: "alignmentAnchorMode") ?? "firstSelected") ?? .firstSelected {
+        didSet { UserDefaults.standard.set(alignmentAnchorMode.rawValue, forKey: "alignmentAnchorMode") }
+    }
 
     private init() {}
 }

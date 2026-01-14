@@ -33,9 +33,9 @@ extension VectorDocument {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
 
-        // Get the anchor object (first selected)
-        guard let anchorID = orderedIDs.first,
-              let anchorObj = snapshot.objects[anchorID] else { return }
+        // Determine anchor object - LOCKED items ALWAYS trump preferences
+        let anchorID = determineAlignmentAnchor(from: orderedIDs)
+        guard let anchorObj = snapshot.objects[anchorID] else { return }
 
         let anchorShape = anchorObj.shape
         let anchorOrigin = anchorShape.transformOrigin ?? .center
@@ -50,7 +50,7 @@ extension VectorDocument {
         // Move other objects to align their origins with anchor point
         modifySelectedShapesWithUndo(
             preCapture: {
-                for objectID in orderedIDs.dropFirst() {
+                for objectID in orderedIDs where objectID != anchorID {
                     guard let obj = snapshot.objects[objectID] else { continue }
                     var shape = obj.shape
                     let shapeOrigin = shape.transformOrigin ?? .center
@@ -114,6 +114,60 @@ extension VectorDocument {
                 }
             }
         )
+    }
+
+    /// Determine which object should be the anchor (stay in place) during alignment.
+    /// LOCKED items ALWAYS trump the preference setting.
+    private func determineAlignmentAnchor(from orderedIDs: [UUID]) -> UUID {
+        // First priority: find any locked item - locked ALWAYS wins
+        for objectID in orderedIDs {
+            guard let obj = snapshot.objects[objectID] else { continue }
+            let shape = obj.shape
+            if shape.isLocked {
+                return objectID
+            }
+        }
+
+        // No locked items - use preference setting
+        let mode = ApplicationSettings.shared.alignmentAnchorMode
+
+        switch mode {
+        case .firstSelected:
+            return orderedIDs.first ?? orderedIDs[0]
+
+        case .lastSelected:
+            return orderedIDs.last ?? orderedIDs[0]
+
+        case .largestArea:
+            var largestID = orderedIDs[0]
+            var largestArea: CGFloat = 0
+            for objectID in orderedIDs {
+                guard let obj = snapshot.objects[objectID] else { continue }
+                let shape = obj.shape
+                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let area = bounds.width * bounds.height
+                if area > largestArea {
+                    largestArea = area
+                    largestID = objectID
+                }
+            }
+            return largestID
+
+        case .smallestArea:
+            var smallestID = orderedIDs[0]
+            var smallestArea: CGFloat = .greatestFiniteMagnitude
+            for objectID in orderedIDs {
+                guard let obj = snapshot.objects[objectID] else { continue }
+                let shape = obj.shape
+                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let area = bounds.width * bounds.height
+                if area < smallestArea {
+                    smallestArea = area
+                    smallestID = objectID
+                }
+            }
+            return smallestID
+        }
     }
 
     /// Helper to translate all points in a shape's path

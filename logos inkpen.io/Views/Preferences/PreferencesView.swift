@@ -23,6 +23,30 @@ struct PreferencesView: View {
                     .padding(.vertical, 8)
                 }
 
+                GroupBox(label: Label("Alignment", systemImage: "align.horizontal.center").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Anchor Object:")
+                                .font(.subheadline)
+
+                            Picker("", selection: $settings.alignmentAnchorMode) {
+                                ForEach(AlignmentAnchorMode.allCases, id: \.self) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 140)
+
+                            Spacer()
+                        }
+
+                        Text("Determines which object stays in place during alignment. Locked objects always take priority.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+
                 GroupBox(label: Label("Image Settings", systemImage: "photo").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
