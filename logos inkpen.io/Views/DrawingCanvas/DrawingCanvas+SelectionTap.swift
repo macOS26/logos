@@ -109,8 +109,51 @@ extension DrawingCanvas {
             return
         }
 
+        // Cmd+Click = Select Behind (cycle through stacked objects like Illustrator)
+        if isCommandPressed {
+            let objectsAtLocation = findAllObjectsAtLocation(validatedLocation)
+            if !objectsAtLocation.isEmpty {
+                // Check if we're clicking at the same location (within tolerance)
+                let tolerance: CGFloat = 5.0
+                let isSameLocation = abs(validatedLocation.x - selectBehindLocation.x) < tolerance &&
+                                     abs(validatedLocation.y - selectBehindLocation.y) < tolerance
+
+                if isSameLocation {
+                    // Cycle to next object behind
+                    selectBehindIndex = (selectBehindIndex + 1) % objectsAtLocation.count
+                } else {
+                    // New location - start from top
+                    selectBehindIndex = 0
+                    selectBehindLocation = validatedLocation
+                }
+
+                let objectToSelect = objectsAtLocation[selectBehindIndex]
+                let previousSelection = document.viewState.selectedObjectIDs
+                document.setSelectionWithUndo([objectToSelect.id], ordered: [objectToSelect.id])
+
+                // Trigger updates for affected layers
+                var affectedLayers = Set<Int>()
+                for objectID in previousSelection {
+                    if let object = document.snapshot.objects[objectID] {
+                        affectedLayers.insert(object.layerIndex)
+                    }
+                }
+                affectedLayers.insert(objectToSelect.layerIndex)
+                document.triggerLayerUpdates(for: affectedLayers)
+
+                document.selectedLayerIndex = objectToSelect.layerIndex
+                return
+            }
+        }
+
         // OPTIMIZED: Use direct UUID lookups instead of building array
         let hitObject = findObjectAtLocationOptimized(validatedLocation)
+
+        // Reset select behind state on normal click
+        if !isCommandPressed {
+            selectBehindIndex = 0
+            selectBehindLocation = .zero
+        }
 
         if let hitObject = hitObject {
 
@@ -122,9 +165,6 @@ extension DrawingCanvas {
             if isShiftPressed {
                 // Add to selection
                 document.addToSelectionWithUndo(objectToSelect.id)
-            } else if isCommandPressed {
-                // Toggle selection
-                document.toggleSelectionWithUndo(objectToSelect.id)
             } else {
                 // Single selection
                 document.setSelectionWithUndo([objectToSelect.id], ordered: [objectToSelect.id])
@@ -315,5 +355,35 @@ extension DrawingCanvas {
         case .text:
             return nil
         }
+    }
+
+    /// Find all objects at a location, ordered from top to bottom (for select behind)
+    internal func findAllObjectsAtLocation(_ location: CGPoint) -> [VectorObject] {
+        var results: [VectorObject] = []
+
+        // Iterate from top layer to bottom
+        for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
+            let layer = document.snapshot.layers[layerIndex]
+            if layer.isLocked { continue }
+
+            // Iterate from top object to bottom within layer
+            for objectID in layer.objectIDs.reversed() {
+                guard let object = document.snapshot.objects[objectID] else { continue }
+                let shape = object.shape
+
+                // Skip backgrounds
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    continue
+                }
+                if !shape.isVisible { continue }
+
+                // Hit test
+                if performShapeHitTest(shape: shape, at: location) {
+                    results.append(object)
+                }
+            }
+        }
+
+        return results
     }
 }

@@ -115,6 +115,8 @@ struct DrawingCanvas: View {
     @State internal var isPanGestureActive = false
     @State internal var lastClickTime: Date = Date.distantPast
     @State internal var lastClickLocation: CGPoint = .zero
+    @State internal var selectBehindIndex: Int = 0  // For Cmd+click cycling through stacked objects
+    @State internal var selectBehindLocation: CGPoint = .zero
 
     @State internal var dragStartGradient: VectorGradient? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
