@@ -201,6 +201,7 @@ extension DrawingCanvas {
                 geometry: geometry,
                 coincidentPointTolerance: coincidentPointTolerance,
                 dragPreviewDelta: currentDragDelta,
+                liveNudgeOffset: document.viewState.liveNudgeOffset,
                 livePointPositions: livePointPositions,
                 liveHandlePositions: liveHandlePositions,
                 draggedCurveSegment: draggedCurveSegment

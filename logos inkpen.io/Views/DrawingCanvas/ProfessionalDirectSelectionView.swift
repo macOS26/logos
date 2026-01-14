@@ -12,6 +12,7 @@ struct ProfessionalDirectSelectionView: View {
     let geometry: GeometryProxy
     let coincidentPointTolerance: Double
     let dragPreviewDelta: CGPoint
+    let liveNudgeOffset: CGVector
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
     let draggedCurveSegment: (shapeID: UUID, elementIndex: Int)?
@@ -67,9 +68,9 @@ struct ProfessionalDirectSelectionView: View {
                             CGPoint(x: point.x, y: point.y)
                         }
 
-                        // Transform position and apply drag preview offset
+                        // Transform position and apply drag preview + nudge offset
                         var shapeTransform = shape.transform
-                        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+                        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
                         let transformed = pointPosition.applying(shapeTransform)
 
                         // Scale down below 100% zoom using curve
@@ -223,10 +224,10 @@ struct ProfessionalDirectSelectionView: View {
             }
         }
 
-        // Apply shape transform and drag preview offset
+        // Apply shape transform and drag preview + nudge offset
         var ctx = context
         var shapeTransform = shape.transform
-        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         ctx.concatenate(shapeTransform)
 
         // Draw complete path in blue
@@ -255,10 +256,10 @@ struct ProfessionalDirectSelectionView: View {
         var outlinePath = Path()
         outlinePath.addRect(textBounds)
 
-        // Apply shape transform and drag preview offset
+        // Apply shape transform and drag preview + nudge offset
         var ctx = context
         var shapeTransform = shape.transform
-        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         ctx.concatenate(shapeTransform)
         ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
@@ -307,9 +308,9 @@ struct ProfessionalDirectSelectionView: View {
             return  // Handle is collapsed, don't draw it
         }
 
-        // Transform positions and apply drag preview offset
+        // Transform positions and apply drag preview + nudge offset
         var shapeTransform = shape.transform
-        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         let transformedAnchor = anchor.applying(shapeTransform)
         let transformedHandle = handle.applying(shapeTransform)
 
