@@ -101,6 +101,13 @@ struct MoveObjectDialog: View {
             return
         }
 
+        // Check if there are selected points (direct selection mode)
+        if !document.viewState.selectedPoints.isEmpty {
+            applyMoveToSelectedPoints(deltaX: deltaX, deltaY: deltaY)
+            isPresented = false
+            return
+        }
+
         // Apply movement with undo support
         document.modifySelectedShapesWithUndo { shape in
             // Move all path points
@@ -179,5 +186,82 @@ struct MoveObjectDialog: View {
         }
 
         isPresented = false
+    }
+
+    /// Move only the selected points (direct selection mode)
+    private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
+        let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
+
+        // Group points by shape for efficient processing
+        var pointsByShape: [UUID: [PointID]] = [:]
+        for pointID in document.viewState.selectedPoints {
+            pointsByShape[pointID.shapeID, default: []].append(pointID)
+        }
+
+        // Collect old shapes for undo
+        var oldShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for shapeID in pointsByShape.keys {
+            if let shape = document.findShape(by: shapeID) {
+                oldShapes[shapeID] = shape
+                objectIDs.append(shapeID)
+            }
+        }
+
+        // Move each selected point
+        for (shapeID, pointIDs) in pointsByShape {
+            guard var shape = document.findShape(by: shapeID) else { continue }
+
+            var elements = shape.path.elements
+            for pointID in pointIDs {
+                guard pointID.elementIndex < elements.count else { continue }
+
+                let element = elements[pointID.elementIndex]
+                switch element {
+                case .move(let to):
+                    elements[pointID.elementIndex] = .move(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy))
+                case .line(let to):
+                    elements[pointID.elementIndex] = .line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy))
+                case .curve(let to, let c1, let c2):
+                    // Move the anchor point and its control handles together
+                    elements[pointID.elementIndex] = .curve(
+                        to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
+                        control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),
+                        control2: VectorPoint(c2.x + nudgeAmount.dx, c2.y + nudgeAmount.dy)
+                    )
+                case .quadCurve(let to, let c):
+                    elements[pointID.elementIndex] = .quadCurve(
+                        to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
+                        control: VectorPoint(c.x + nudgeAmount.dx, c.y + nudgeAmount.dy)
+                    )
+                case .close:
+                    break
+                }
+            }
+
+            shape.path = VectorPath(elements: elements, isClosed: shape.path.isClosed)
+            shape.updateBounds()
+
+            document.updateShapeByID(shapeID, silent: false) { s in
+                s = shape
+            }
+        }
+
+        // Collect new shapes for undo
+        var newShapes: [UUID: VectorShape] = [:]
+        for shapeID in objectIDs {
+            if let shape = document.findShape(by: shapeID) {
+                newShapes[shapeID] = shape
+            }
+        }
+
+        // Create undo command
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.executeCommand(command)
+        }
+
+        document.viewState.objectPositionUpdateTrigger.toggle()
     }
 }
