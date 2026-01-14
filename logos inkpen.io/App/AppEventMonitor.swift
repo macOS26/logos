@@ -143,13 +143,12 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
-                // Plain or Shift+arrows: Nudge selected objects (works with any tool)
+                // Plain, Shift, or Option+arrows: Nudge selected objects (works with any tool)
                 if !event.modifierFlags.contains(.control) &&
-                   !event.modifierFlags.contains(.command) &&
-                   !event.modifierFlags.contains(.option) {
+                   !event.modifierFlags.contains(.command) {
 
-                    // Only nudge if something is selected, but consume the event regardless
-                    if activeDoc.viewState.selectedObjectIDs.isEmpty {
+                    // Only nudge if something is selected (objects or points), but consume the event regardless
+                    if activeDoc.viewState.selectedObjectIDs.isEmpty && activeDoc.viewState.selectedPoints.isEmpty {
                         return nil
                     }
 
