@@ -179,8 +179,15 @@ final class AppEventMonitor {
                         // Convert grid spacing from document units to points
                         let gridSpacingInPoints = activeDoc.settings.gridSpacing * activeDoc.settings.unit.pointsPerUnit
 
-                        // Shift key = 10x nudge
-                        let multiplier: CGFloat = event.modifierFlags.contains(.shift) ? 10.0 : 1.0
+                        // Shift key = 10x nudge, Option key = 1/10th nudge
+                        let multiplier: CGFloat
+                        if event.modifierFlags.contains(.shift) {
+                            multiplier = 10.0
+                        } else if event.modifierFlags.contains(.option) {
+                            multiplier = 0.1
+                        } else {
+                            multiplier = 1.0
+                        }
 
                         let nudgeAmount = CGVector(
                             dx: direction.dx * gridSpacingInPoints * multiplier,
