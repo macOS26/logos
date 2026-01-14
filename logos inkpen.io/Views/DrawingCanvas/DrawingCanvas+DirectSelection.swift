@@ -297,6 +297,13 @@ extension DrawingCanvas {
         let tolerance: Double = screenTolerance / zoomLevel
         var foundSelection = false
 
+        // Option+Click = Select Behind (cycle through stacked shapes)
+        let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
+        if isOptionCurrentlyPressed {
+            foundSelection = directSelectBehind(at: location)
+            if foundSelection { return }
+        }
+
         // First, try to select a point/handle on currently selected shapes
         if !selectedObjectIDs.isEmpty {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
@@ -315,6 +322,84 @@ extension DrawingCanvas {
             selectedObjectIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
+    }
+
+    /// Option+Click select behind for direct selection - cycles through shapes at location
+    private func directSelectBehind(at location: CGPoint) -> Bool {
+        // Find all shapes at this location (drilling into groups)
+        var shapesAtLocation: [VectorShape] = []
+
+        for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
+            if layer.isLocked { continue }
+
+            for (_, objectID) in layer.objectIDs.enumerated().reversed() {
+                guard let obj = document.snapshot.objects[objectID] else { continue }
+                let shape = obj.shape
+
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" { continue }
+                if shape.isLocked { continue }
+                if !shape.isVisible { continue }
+
+                // Check group members
+                if shape.isGroupContainer {
+                    for memberID in shape.memberIDs.reversed() {
+                        if let memberObj = document.snapshot.objects[memberID] {
+                            let memberShape = memberObj.shape
+                            if !memberShape.isVisible { continue }
+                            if memberShape.isLocked { continue }
+                            if performPathOnlyHitTest(shape: memberShape, at: location) {
+                                shapesAtLocation.append(memberShape)
+                            }
+                        }
+                    }
+                    for groupedShape in shape.groupedShapes.reversed() {
+                        if !groupedShape.isVisible { continue }
+                        if groupedShape.isLocked { continue }
+                        if performPathOnlyHitTest(shape: groupedShape, at: location) {
+                            shapesAtLocation.append(groupedShape)
+                        }
+                    }
+                } else {
+                    if performPathOnlyHitTest(shape: shape, at: location) {
+                        shapesAtLocation.append(shape)
+                    }
+                }
+            }
+        }
+
+        guard !shapesAtLocation.isEmpty else { return false }
+
+        // Check if clicking at same location
+        let clickTolerance: CGFloat = 5.0
+        let isSameLocation = abs(location.x - selectBehindLocation.x) < clickTolerance &&
+                             abs(location.y - selectBehindLocation.y) < clickTolerance
+
+        if isSameLocation {
+            // Cycle to next shape
+            selectBehindIndex = (selectBehindIndex + 1) % shapesAtLocation.count
+        } else {
+            // New location - check if top shape is already selected
+            selectBehindLocation = location
+            let topShape = shapesAtLocation[0]
+
+            if selectedObjectIDs.contains(topShape.id) && shapesAtLocation.count > 1 {
+                selectBehindIndex = 1
+            } else {
+                selectBehindIndex = 0
+            }
+        }
+
+        let shapeToSelect = shapesAtLocation[selectBehindIndex]
+
+        // Select this shape
+        selectedObjectIDs.removeAll()
+        selectedObjectIDs.insert(shapeToSelect.id)
+        selectedPoints.removeAll()
+        selectedHandles.removeAll()
+        visibleHandles.removeAll()
+
+        syncDirectSelectionWithDocument()
+        return true
     }
 
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
