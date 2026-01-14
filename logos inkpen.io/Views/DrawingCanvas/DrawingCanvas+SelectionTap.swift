@@ -122,9 +122,16 @@ extension DrawingCanvas {
                     // Cycle to next object behind
                     selectBehindIndex = (selectBehindIndex + 1) % objectsAtLocation.count
                 } else {
-                    // New location - start from top
-                    selectBehindIndex = 0
+                    // New location - check if top object is already selected
                     selectBehindLocation = validatedLocation
+                    let topObject = objectsAtLocation[0]
+
+                    // If top object is already selected, start with the one behind it
+                    if document.viewState.selectedObjectIDs.contains(topObject.id) && objectsAtLocation.count > 1 {
+                        selectBehindIndex = 1
+                    } else {
+                        selectBehindIndex = 0
+                    }
                 }
 
                 let objectToSelect = objectsAtLocation[selectBehindIndex]
