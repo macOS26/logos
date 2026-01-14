@@ -296,7 +296,7 @@ struct TransformBoxHandles: View {
                 }) {
                     Image(systemName: isLocked ? "lock.fill" : "lock.open")
                         .font(.system(size: max(13, 16 / zoomLevel)))  // 33% larger
-                        .foregroundColor(isLocked ? .orange : .gray)
+                        .foregroundColor(.gray)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .position(
