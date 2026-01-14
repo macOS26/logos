@@ -127,20 +127,9 @@ extension DrawingCanvas {
             selectedHandles.removeAll()
             visibleHandles.removeAll()
 
+            // Keep existing object selection - user will click to select specific shapes
             if !document.viewState.selectedObjectIDs.isEmpty {
                 selectedObjectIDs = document.viewState.selectedObjectIDs
-
-                // Auto-select all points in selected groups
-                for objectID in selectedObjectIDs {
-                    if let obj = document.snapshot.objects[objectID] {
-                        let shape = obj.shape
-                        if shape.isGroupContainer {
-                            // Select all points in group members
-                            selectAllPointsInGroup(shape: shape)
-                        }
-                    }
-                }
-
                 syncDirectSelectionWithDocument()
             }
         }
@@ -211,38 +200,6 @@ extension DrawingCanvas {
         if document.viewState.currentTool != .bezierPen {
             showClosePathHint = false
             showContinuePathHint = false
-        }
-
-    }
-
-    /// Select all anchor points in a group's member shapes
-    private func selectAllPointsInGroup(shape: VectorShape) {
-        // Handle modern groups with memberIDs
-        if !shape.memberIDs.isEmpty {
-            for memberID in shape.memberIDs {
-                if let memberObj = document.snapshot.objects[memberID] {
-                    let memberShape = memberObj.shape
-                    selectAllPointsInShape(shapeID: memberID, shape: memberShape)
-                }
-            }
-        }
-
-        // Handle legacy groups with embedded groupedShapes
-        for groupedShape in shape.groupedShapes {
-            selectAllPointsInShape(shapeID: groupedShape.id, shape: groupedShape)
-        }
-    }
-
-    /// Select all anchor points in a single shape
-    private func selectAllPointsInShape(shapeID: UUID, shape: VectorShape) {
-        for (elementIndex, element) in shape.path.elements.enumerated() {
-            switch element {
-            case .move, .line, .curve, .quadCurve:
-                let pointID = PointID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex)
-                selectedPoints.insert(pointID)
-            case .close:
-                break
-            }
         }
     }
 }

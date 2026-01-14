@@ -187,16 +187,16 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Use path-only hit test for direct selection (not bounding box)
-        guard let hitObject = findObjectWithPathHitTest(location) else {
+        // For direct selection: find the actual shape under the cursor
+        // This drills into groups to find the specific member shape clicked
+        // (like FreeHand/Illustrator - select by what paint/fill is clicked)
+
+        guard let hitShape = findShapeAtLocationForDirectSelect(at: location) else {
             return false
         }
 
-        let shape = hitObject.shape
-
-        // Check if locked using O(1) index lookup
-        let layer = hitObject.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[hitObject.layerIndex] : nil
-        if layer?.isLocked == true || shape.isLocked {
+        // Check if locked
+        if hitShape.isLocked {
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
@@ -208,16 +208,15 @@ extension DrawingCanvas {
 
         if isShiftCurrentlyPressed {
             // Shift-select: toggle shape selection
-            if selectedObjectIDs.contains(shape.id) {
-                selectedObjectIDs.remove(shape.id)
+            if selectedObjectIDs.contains(hitShape.id) {
+                selectedObjectIDs.remove(hitShape.id)
             } else {
-                selectedObjectIDs.insert(shape.id)
+                selectedObjectIDs.insert(hitShape.id)
             }
-            // Keep existing points/handles when shift-selecting shapes
         } else {
             // Normal select: clear and select only this shape
             selectedObjectIDs.removeAll()
-            selectedObjectIDs.insert(shape.id)
+            selectedObjectIDs.insert(hitShape.id)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             visibleHandles.removeAll()
@@ -225,6 +224,71 @@ extension DrawingCanvas {
 
         syncDirectSelectionWithDocument()
         return true
+    }
+
+    /// Find the actual shape at a location, drilling into groups to find the specific member
+    /// This is how FreeHand/Illustrator work - select by what paint is clicked, not object order
+    private func findShapeAtLocationForDirectSelect(at location: CGPoint) -> VectorShape? {
+        var bestHit: (shape: VectorShape, zOrder: Int)? = nil
+
+        for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
+            if layer.isLocked { continue }
+
+            for (objIndex, objectID) in layer.objectIDs.enumerated().reversed() {
+                guard let obj = document.snapshot.objects[objectID] else { continue }
+                let shape = obj.shape
+
+                // Skip backgrounds
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    continue
+                }
+
+                if shape.isLocked { continue }
+                if !shape.isVisible { continue }
+
+                // If this is a group, check its members (drill into the group)
+                if shape.isGroupContainer {
+                    // Check modern memberIDs
+                    for (memberIdx, memberID) in shape.memberIDs.enumerated().reversed() {
+                        if let memberObj = document.snapshot.objects[memberID] {
+                            let memberShape = memberObj.shape
+                            if !memberShape.isVisible { continue }
+                            if memberShape.isLocked { continue }
+
+                            if performPathOnlyHitTest(shape: memberShape, at: location) {
+                                let zOrder = layerIndex * 100000 + objIndex * 1000 + memberIdx
+                                if bestHit == nil || zOrder > bestHit!.zOrder {
+                                    bestHit = (memberShape, zOrder)
+                                }
+                            }
+                        }
+                    }
+
+                    // Check legacy groupedShapes
+                    for (idx, groupedShape) in shape.groupedShapes.enumerated().reversed() {
+                        if !groupedShape.isVisible { continue }
+                        if groupedShape.isLocked { continue }
+
+                        if performPathOnlyHitTest(shape: groupedShape, at: location) {
+                            let zOrder = layerIndex * 100000 + objIndex * 1000 + idx
+                            if bestHit == nil || zOrder > bestHit!.zOrder {
+                                bestHit = (groupedShape, zOrder)
+                            }
+                        }
+                    }
+                } else {
+                    // Regular shape - check directly
+                    if performPathOnlyHitTest(shape: shape, at: location) {
+                        let zOrder = layerIndex * 100000 + objIndex * 1000
+                        if bestHit == nil || zOrder > bestHit!.zOrder {
+                            bestHit = (shape, zOrder)
+                        }
+                    }
+                }
+            }
+        }
+
+        return bestHit?.shape
     }
 
     internal func handleDirectSelectionTap(at location: CGPoint) {
