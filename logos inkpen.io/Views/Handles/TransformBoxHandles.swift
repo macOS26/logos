@@ -25,19 +25,11 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
-    /// Check if any selected shape is locked
-    private var isAnySelectedShapeLocked: Bool {
-        // Check the main shape
-        if shape.isLocked {
-            return true
-        }
-        // Check all selected objects in multi-selection
-        for objectID in document.viewState.selectedObjectIDs {
-            if let obj = document.snapshot.objects[objectID], obj.shape.isLocked {
-                return true
-            }
-        }
-        return false
+    /// Check if single selected shape/group is locked (not for multi-selection)
+    private var isSingleSelectionLocked: Bool {
+        // Only show lock for single item selection
+        guard document.viewState.selectedObjectIDs.count == 1 else { return false }
+        return shape.isLocked
     }
 
     // Helper method for curved scaling below 100% zoom
@@ -290,8 +282,8 @@ struct TransformBoxHandles: View {
             .opacity(finalOpacity)
             }
 
-            // Lock icon near anchor point when shape is locked
-            if isAnySelectedShapeLocked {
+            // Lock icon near anchor point when single shape/group is locked
+            if isSingleSelectionLocked {
                 let anchorPt = handlePosition(index: 8, in: displayBounds)
                 let lockOffset: CGFloat = 16 / zoomLevel  // Offset from anchor point
                 Image(systemName: "lock.fill")
