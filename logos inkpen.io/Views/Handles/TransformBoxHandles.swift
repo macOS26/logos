@@ -25,10 +25,14 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
-    /// Check if single selected shape/group is locked (not for multi-selection)
+    /// Check if this is a single item selection (show lock button only for single selection)
+    private var isSingleSelection: Bool {
+        document.viewState.selectedObjectIDs.count == 1
+    }
+
+    /// Check if the single selected shape/group is locked
     private var isSingleSelectionLocked: Bool {
-        // Only show lock for single item selection
-        guard document.viewState.selectedObjectIDs.count == 1 else { return false }
+        guard isSingleSelection else { return false }
         return shape.isLocked
     }
 
@@ -282,19 +286,25 @@ struct TransformBoxHandles: View {
             .opacity(finalOpacity)
             }
 
-            // Lock icon near anchor point when single shape/group is locked
-            if isSingleSelectionLocked {
+            // Lock/unlock button near anchor point for single shape/group selection
+            if isSingleSelection {
                 let anchorPt = handlePosition(index: 8, in: displayBounds)
                 let lockOffset: CGFloat = 16 / zoomLevel  // Offset from anchor point
-                Image(systemName: "lock.fill")
-                    .font(.system(size: max(10, 12 / zoomLevel)))
-                    .foregroundColor(.orange)
-                    .position(
-                        x: anchorPt.x * zoomLevel + canvasOffset.x + (dragPreviewDelta.x * zoomLevel) + lockOffset * zoomLevel,
-                        y: anchorPt.y * zoomLevel + canvasOffset.y + (dragPreviewDelta.y * zoomLevel) - lockOffset * zoomLevel
-                    )
-                    .allowsHitTesting(false)
-                    .opacity(finalOpacity)
+                let isLocked = shape.isLocked
+                Button(action: {
+                    toggleShapeLock()
+                }) {
+                    Image(systemName: isLocked ? "lock.fill" : "lock.open")
+                        .font(.system(size: max(13, 16 / zoomLevel)))  // 33% larger
+                        .foregroundColor(isLocked ? .orange : .gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .position(
+                    x: anchorPt.x * zoomLevel + canvasOffset.x + (dragPreviewDelta.x * zoomLevel) + lockOffset * zoomLevel,
+                    y: anchorPt.y * zoomLevel + canvasOffset.y + (dragPreviewDelta.y * zoomLevel) - lockOffset * zoomLevel
+                )
+                .opacity(finalOpacity)
+                .help(isLocked ? "Unlock shape" : "Lock shape")
             }
         }
         .onAppear {
@@ -380,6 +390,17 @@ struct TransformBoxHandles: View {
             x: rect.minX + rect.width * origin.x,
             y: rect.minY + rect.height * origin.y
         )
+    }
+
+    private func toggleShapeLock() {
+        guard let objectID = document.viewState.selectedObjectIDs.first else { return }
+        document.updateShapeByID(objectID, silent: false) { shape in
+            shape.isLocked.toggle()
+        }
+        // Trigger layer update to sync with layers panel
+        if let obj = document.snapshot.objects[objectID] {
+            document.triggerLayerUpdate(for: obj.layerIndex)
+        }
     }
 
     private func setAnchorPoint(forHandle index: Int) {
