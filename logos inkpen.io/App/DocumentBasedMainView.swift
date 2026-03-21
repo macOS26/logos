@@ -17,6 +17,7 @@ struct DocumentBasedMainView: View {
     @State var showingImportProgress = false
     @State var showingSVGTestHarness = false
     @State var showingPressureCalibration = false
+    @State var showingAppleAITraining = false
     @State var hasInitializedTool = false
     @State var layerPreviewOpacities: [UUID: Double] = [:]
     @State var liveDragOffset: CGPoint = .zero
@@ -152,6 +153,7 @@ struct DocumentBasedMainView: View {
                 showingImportProgress: $showingImportProgress,
                 showingSVGTestHarness: $showingSVGTestHarness,
                 showingPressureCalibration: $showingPressureCalibration,
+                showingAppleAITraining: $showingAppleAITraining,
                 liveDragOffset: $liveDragOffset,
                 liveScaleDimensions: $liveScaleDimensions,
                 onRunDiagnostics: runPasteboardDiagnostics
@@ -260,6 +262,10 @@ struct DocumentBasedMainView: View {
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
                 .frame(width: 1200, height: 800)
+        }
+        .sheet(isPresented: $showingAppleAITraining) {
+            AppleAITrainingView()
+                .frame(width: 900, height: 700)
         }
         .onAppear {
             if !hasInitializedTool {

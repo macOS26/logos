@@ -11,6 +11,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingImportProgress: Bool
     @Binding var showingSVGTestHarness: Bool
     @Binding var showingPressureCalibration: Bool
+    @Binding var showingAppleAITraining: Bool
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     let onRunDiagnostics: () -> Void
@@ -134,6 +135,11 @@ struct MainToolbarContent: ToolbarContent {
                     showingPressureCalibration = true
                 }
                 .help("Calibrate pressure-sensitive input devices")
+
+                Button("Apple AI Training") {
+                    showingAppleAITraining = true
+                }
+                .help("Train custom Apple Intelligence models for handwriting and shape recognition")
 
                 Divider()
 
