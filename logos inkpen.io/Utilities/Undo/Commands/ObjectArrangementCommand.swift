@@ -30,10 +30,7 @@ class ObjectArrangementCommand: BaseCommand {
             guard let obj = document.snapshot.objects[id],
                   let targetIndex = targetIndices[id] else { continue }
 
-            if objectsByLayer[obj.layerIndex] == nil {
-                objectsByLayer[obj.layerIndex] = []
-            }
-            objectsByLayer[obj.layerIndex]!.append((id, targetIndex))
+            objectsByLayer[obj.layerIndex, default: []].append((id, targetIndex))
         }
 
         // Process each layer

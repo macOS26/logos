@@ -36,8 +36,12 @@ class PDFMetalAccelerator {
         }
 
         self.device = device
-        self.commandQueue = device.makeCommandQueue()!
-        self.library = device.makeDefaultLibrary()!
+        guard let commandQueue = device.makeCommandQueue(),
+              let library = device.makeDefaultLibrary() else {
+            fatalError("Failed to create Metal command queue or library")
+        }
+        self.commandQueue = commandQueue
+        self.library = library
 
         do {
             transformPointsPipeline = try createPipeline(named: "transformPoints")

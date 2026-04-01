@@ -87,13 +87,13 @@ struct CTLineTextConverter {
     /// Converts a CTLine to a CGPath by extracting glyph paths
     private static func convertCTLineToPath(line: CTLine, position: CGPoint) -> CGPath? {
         let linePath = CGMutablePath()
-        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
+        guard let runs = CTLineGetGlyphRuns(line) as? [CTRun], !runs.isEmpty else { return nil }
 
         for run in runs {
             let glyphCount = CTRunGetGlyphCount(run)
             guard glyphCount > 0 else { continue }
 
-            let attributes = CTRunGetAttributes(run) as! [NSAttributedString.Key: Any]
+            guard let attributes = CTRunGetAttributes(run) as? [NSAttributedString.Key: Any] else { continue }
             guard let font = attributes[.font] as? PlatformFont else { continue }
             let ctFont = font as CTFont
 

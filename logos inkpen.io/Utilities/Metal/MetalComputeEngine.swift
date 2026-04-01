@@ -1564,7 +1564,9 @@ class MetalComputeEngine {
         }
 
         // Add last point
-        resultPoints.append(points.last!)
+        if let lastPoint = points.last {
+            resultPoints.append(lastPoint)
+        }
 
         var resultPressures: [Float]?
         if let pressureOutput = pressureOutputBuffer {

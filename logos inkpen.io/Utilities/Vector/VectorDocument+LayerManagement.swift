@@ -365,15 +365,17 @@ extension VectorDocument {
 
         guard !visibleObjects.isEmpty else { return }
 
-        if viewState.selectedObjectIDs.isEmpty {
-            viewState.selectedObjectIDs = [visibleObjects.first!.id]
-
+        if viewState.selectedObjectIDs.isEmpty,
+           let firstObject = visibleObjects.first {
+            viewState.selectedObjectIDs = [firstObject.id]
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
-            viewState.selectedObjectIDs = [visibleObjects.first!.id]
+            if let firstObject = visibleObjects.first {
+                viewState.selectedObjectIDs = [firstObject.id]
+            }
 
             return
         }
@@ -400,16 +402,16 @@ extension VectorDocument {
 
         guard !visibleObjects.isEmpty else { return }
 
+        guard let lastObject = visibleObjects.last else { return }
+        
         if viewState.selectedObjectIDs.isEmpty {
-            viewState.selectedObjectIDs = [visibleObjects.last!.id]
-
+            viewState.selectedObjectIDs = [lastObject.id]
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
-            viewState.selectedObjectIDs = [visibleObjects.last!.id]
-
+            viewState.selectedObjectIDs = [lastObject.id]
             return
         }
 

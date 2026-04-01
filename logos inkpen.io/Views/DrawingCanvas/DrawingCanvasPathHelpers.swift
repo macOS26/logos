@@ -220,7 +220,7 @@ enum DrawingCanvasPathHelpers {
 
             for i in 1..<filtered.count {
                 let current = filtered[i]
-                let previous = result.last!
+                guard let previous = result.last else { continue }
 
                 let distance = hypot(current.x - previous.x, current.y - previous.y)
                 if distance >= tolerance {

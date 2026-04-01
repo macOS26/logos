@@ -14,8 +14,7 @@ struct PDFUltraFastPath {
     private static func douglasPeuckerSIMD(points: [CGPoint], epsilon: Float) -> [CGPoint] {
         guard points.count > 2 else { return points }
 
-        let firstPoint = points.first!
-        let lastPoint = points.last!
+        guard let firstPoint = points.first, let lastPoint = points.last else { return points }
         let distances = calculatePerpendicularDistancesSIMD(
             points: points,
             lineStart: firstPoint,

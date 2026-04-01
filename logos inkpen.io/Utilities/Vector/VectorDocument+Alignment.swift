@@ -100,7 +100,7 @@ extension VectorDocument {
                         // Move text by updating position
                         if let pos = shape.textPosition {
                             shape.textPosition = CGPoint(x: pos.x + offsetX, y: pos.y + offsetY)
-                            shape.transform = CGAffineTransform(translationX: shape.textPosition!.x, y: shape.textPosition!.y)
+                            shape.transform = CGAffineTransform(translationX: pos.x + offsetX, y: pos.y + offsetY)
                         }
                     } else {
                         // Move regular shape

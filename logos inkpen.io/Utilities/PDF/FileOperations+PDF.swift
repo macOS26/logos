@@ -298,17 +298,19 @@ extension FileOperations {
         func interpolateColor(at t: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
             guard !stops.isEmpty else { return (0, 0, 0, 0) }
 
-            if t <= stops.first!.position {
-                let s = stops.first!
-                return (s.r, s.g, s.b, s.a)
+            guard let first = stops.first, let last = stops.last else {
+                return (0, 0, 0, 0)
             }
-            if t >= stops.last!.position {
-                let s = stops.last!
-                return (s.r, s.g, s.b, s.a)
+            
+            if t <= first.position {
+                return (first.r, first.g, first.b, first.a)
+            }
+            if t >= last.position {
+                return (last.r, last.g, last.b, last.a)
             }
 
-            var lower = stops.first!
-            var upper = stops.last!
+            var lower = first
+            var upper = last
 
             for i in 0..<(stops.count - 1) {
                 if t >= stops[i].position && t <= stops[i + 1].position {
@@ -875,8 +877,9 @@ extension FileOperations {
     }
 
     private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> CGColor {
-        var lowerStop = stops.first!
-        var upperStop = stops.last!
+        guard let first = stops.first, let last = stops.last else { return .clear }
+        var lowerStop = first
+        var upperStop = last
 
         for i in 0..<(stops.count - 1) {
             if t >= stops[i].position && t <= stops[i + 1].position {
@@ -886,13 +889,15 @@ extension FileOperations {
             }
         }
 
-        if t <= stops.first!.position {
-            let cgColor = stops.first!.color.cgColor
-            return cgColor.withAlpha(CGFloat(stops.first!.opacity * opacity))
+        guard let firstStop = stops.first, let lastStop = stops.last else { return .clear }
+        
+        if t <= firstStop.position {
+            let cgColor = firstStop.color.cgColor
+            return cgColor.withAlpha(CGFloat(firstStop.opacity * opacity))
         }
-        if t >= stops.last!.position {
-            let cgColor = stops.last!.color.cgColor
-            return cgColor.withAlpha(CGFloat(stops.last!.opacity * opacity))
+        if t >= lastStop.position {
+            let cgColor = lastStop.color.cgColor
+            return cgColor.withAlpha(CGFloat(lastStop.opacity * opacity))
         }
 
         let range = upperStop.position - lowerStop.position

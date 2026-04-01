@@ -315,7 +315,7 @@ class SVGExporter {
             }
         }
 
-        if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {
+        if let areaSize = vectorText.areaSize, areaSize.width > 0, areaSize.height > 0 {
             svg += "</g>\n"
         }
 
@@ -556,7 +556,7 @@ class SVGExporter {
             }
         }
 
-        if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {
+        if let areaSize = vectorText.areaSize, areaSize.width > 0, areaSize.height > 0 {
             svg += "</g>\n"
         }
 

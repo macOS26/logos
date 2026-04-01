@@ -2,6 +2,9 @@
 
 A professional vector graphics editor for macOS, inspired by the classic FreeHand workflow. Built with SwiftUI and designed for precision illustration work.
 
+![inkpen.io Screenshot](assets/screenshot.png)
+
+## Features
 ## Features
 
 ### Drawing Tools
