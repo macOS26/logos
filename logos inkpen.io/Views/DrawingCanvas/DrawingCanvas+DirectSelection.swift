@@ -329,7 +329,7 @@ extension DrawingCanvas {
         // Find all shapes at this location (drilling into groups)
         var shapesAtLocation: [VectorShape] = []
 
-        for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
+        for (_, layer) in document.snapshot.layers.enumerated().reversed() {
             if layer.isLocked { continue }
 
             for (_, objectID) in layer.objectIDs.enumerated().reversed() {
