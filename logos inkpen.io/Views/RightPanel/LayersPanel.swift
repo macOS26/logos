@@ -189,6 +189,17 @@ struct LayersPanel: View {
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Add New Layer")
+            Button(action: {
+                if let idx = selectedIndex {
+                    document.removeLayer(at: idx)
+                }
+            }) {
+                Image(systemName: "minus")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .buttonStyle(BorderlessButtonStyle())
+            .disabled(selectedIndex == nil || document.snapshot.layers.count <= 1)
+            .help("Remove Selected Layer")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
