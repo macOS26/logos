@@ -124,11 +124,8 @@ extension FileOperations {
             color: .green
         )
 
-        if document.snapshot.layers.count < 3 {
-            document.snapshot.layers.append(importedLayer)
-        } else {
-            document.snapshot.layers[2] = importedLayer
-        }
+        document.snapshot.layers.append(importedLayer)
+        let targetLayer = document.snapshot.layers.count - 1
 
         var clippingMasks: [UUID: (mask: VectorShape, clippedShapes: [VectorShape])] = [:]
         var standaloneShapes: [VectorShape] = []
@@ -169,7 +166,7 @@ extension FileOperations {
         for shape in standaloneShapes {
             autoreleasepool {
 
-                document.addShapeToUnifiedSystem(shape, layerIndex: 2)
+                document.addShapeToUnifiedSystem(shape, layerIndex: targetLayer)
             }
         }
 
@@ -179,14 +176,14 @@ extension FileOperations {
 
                 for clippedShape in maskGroup.clippedShapes {
 
-                    document.addShapeToUnifiedSystem(clippedShape, layerIndex: 2)
+                    document.addShapeToUnifiedSystem(clippedShape, layerIndex: targetLayer)
                 }
 
-                document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: 2)
+                document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: targetLayer)
             }
         }
 
-        document.selectedLayerIndex = 3
+        document.selectedLayerIndex = targetLayer
 
         // Remove legacy background objects from imported SVG
         FileOperations.removeLegacyBackgroundObjects(from: document)
