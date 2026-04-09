@@ -657,7 +657,7 @@ struct LayerCanvasView: View {
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
                         // Check for colorDeltaColor for live preview during drag
-                        let effectiveFillColor: Color
+                        let effectiveFillColor: VectorColor
                         if let deltaColor = colorDeltaColor, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
                             effectiveFillColor = deltaColor
                         } else {
@@ -1163,7 +1163,7 @@ struct LayerCanvasView: View {
                     // Get glyphs and positions from CTLine to build path
                     guard let glyphRuns = CTLineGetGlyphRuns(line) as? [CTRun], !glyphRuns.isEmpty else {
                         cgContext.restoreGState()
-                        continue
+                        return
                     }
                     let textPath = CGMutablePath()
 
@@ -1176,7 +1176,8 @@ struct LayerCanvasView: View {
                         CTRunGetPositions(run, CFRangeMake(0, glyphCount), positions)
 
                         let attributes = CTRunGetAttributes(run) as NSDictionary
-                        if let font = attributes[kCTFontAttributeName] as? CTFont {
+                        if let fontRef = attributes[kCTFontAttributeName] {
+                            let font = fontRef as! CTFont
                             for i in 0..<glyphCount {
                                 if let glyphPath = CTFontCreatePathForGlyph(font, glyphs[i], nil) {
                                     let transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
