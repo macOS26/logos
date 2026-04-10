@@ -118,12 +118,101 @@ class PDFCommandParser {
 
         removeDuplicateClippingShapes()
 
+        // Post-processing pass: merge per-word text shapes into per-line text
+        // shapes. The PDF stream-time merge logic is brittle because some PDFs
+        // emit a new Tm/Td per word which the stream parser can't always detect
+        // as "same line". This pass operates on the final shapes array and
+        // groups adjacent text shapes by visual line (Y within tolerance), then
+        // concatenates their content with single spaces into one VectorText per
+        // visual line. The merged shape goes through the same CTLine rendering
+        // pipeline as native-typed InkPen text.
+        shapes = mergeTextShapesByLine(shapes)
+
         if !shapes.isEmpty {
             let artworkBounds = calculateArtworkBounds()
             pageSize = artworkBounds.size
         }
 
         return shapes
+    }
+
+    // Merges consecutive text shapes on the same visual line into single text
+    // shapes with space-separated content. Preserves order — runs through the
+    // shapes array linearly and only merges adjacent text shapes whose Y
+    // baselines are within 2pt of each other.
+    private func mergeTextShapesByLine(_ input: [VectorShape]) -> [VectorShape] {
+        guard !input.isEmpty else { return input }
+        var result: [VectorShape] = []
+        var pending: VectorShape? = nil
+
+        func isTextShape(_ s: VectorShape) -> Bool {
+            return s.textContent != nil && !(s.textContent ?? "").isEmpty
+        }
+
+        func shapeY(_ s: VectorShape) -> CGFloat {
+            // Prefer textPosition (the anchor point), fall back to bounds.
+            return s.textPosition?.y ?? s.bounds.minY
+        }
+        func shapeX(_ s: VectorShape) -> CGFloat {
+            return s.textPosition?.x ?? s.bounds.minX
+        }
+
+        func canMerge(_ a: VectorShape, _ b: VectorShape) -> Bool {
+            guard isTextShape(a) && isTextShape(b) else { return false }
+            // Same visual line: Y baseline within tolerance
+            let yDelta = abs(shapeY(a) - shapeY(b))
+            guard yDelta < 2.0 else { return false }
+            // Same typography family — if font families differ by more than
+            // the basics, keep them separate (e.g., a bold heading word next
+            // to regular body text should stay separate).
+            guard a.typography?.fontFamily == b.typography?.fontFamily else { return false }
+            guard abs((a.typography?.fontSize ?? 0) - (b.typography?.fontSize ?? 0)) < 0.5 else { return false }
+            return true
+        }
+
+        for shape in input {
+            if let prev = pending, canMerge(prev, shape) {
+                // Merge shape into prev: concatenate content with a single space.
+                var merged = prev
+                let prevContent = (prev.textContent ?? "")
+                let nextContent = (shape.textContent ?? "")
+                let joiner: String
+                if prevContent.last?.isWhitespace == true || nextContent.first?.isWhitespace == true {
+                    joiner = ""
+                } else {
+                    joiner = " "
+                }
+                merged.textContent = prevContent + joiner + nextContent
+                // Expand the bounds to cover both shapes horizontally.
+                let mergedMinX = min(prev.bounds.minX, shape.bounds.minX)
+                let mergedMaxX = max(prev.bounds.maxX, shape.bounds.maxX)
+                let mergedY = prev.bounds.minY
+                let mergedHeight = max(prev.bounds.height, shape.bounds.height)
+                merged.bounds = CGRect(x: mergedMinX, y: mergedY,
+                                       width: mergedMaxX - mergedMinX,
+                                       height: mergedHeight)
+                if var area = merged.areaSize {
+                    area.width = max(area.width, mergedMaxX - mergedMinX)
+                    merged.areaSize = area
+                } else {
+                    merged.areaSize = CGSize(width: mergedMaxX - mergedMinX, height: mergedHeight)
+                }
+                // Anchor the merged text at the leftmost starting position.
+                if let prevPos = prev.textPosition {
+                    merged.textPosition = CGPoint(x: min(prevPos.x, shapeX(shape)), y: prevPos.y)
+                }
+                pending = merged
+            } else {
+                if let prev = pending {
+                    result.append(prev)
+                }
+                pending = shape
+            }
+        }
+        if let prev = pending {
+            result.append(prev)
+        }
+        return result
     }
 
     func detectPDFVersion(document: CGPDFDocument) -> String {

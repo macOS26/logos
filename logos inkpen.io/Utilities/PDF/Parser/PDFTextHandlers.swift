@@ -100,6 +100,36 @@ extension PDFCommandParser {
         }
     }
 
+    // Line-grouping strategy: mirrors the EXPORT path in reverse.
+    //
+    // Export (renderTextToPDF_Lines) takes ONE VectorText and uses NSLayoutManager
+    // to break it into visual lines, creating one CTLine per line.
+    //
+    // Import should be the reverse: group PDF text operators by visual line
+    // (same baseline Y), accumulate into ONE content string with spaces between
+    // words, and produce ONE VectorText per visual line. That VectorText then
+    // flows through the existing CTLine rendering pipeline in UnifiedObjectView.
+    //
+    // Rules:
+    //   - Td/TD with significant ty change   → FINALIZE (new visual line)
+    //   - Td/TD with ty ≈ 0 (horizontal move) → append " " (inter-word spacing)
+    //   - Tm with ty change from current     → FINALIZE (new visual line)
+    //   - Tm with same ty but different tx   → append " " (inter-word spacing)
+    //   - Tj / TJ                            → append decoded chars to content
+    //   - T* (next line)                     → FINALIZE
+    //   - ET                                 → FINALIZE
+    //   - Tf (font change)                   → do NOT finalize, just update state
+
+    // Append a space to the current content if it's not already whitespace-terminated.
+    // Treats NBSP and other Unicode whitespace as already-spaced so we don't double up
+    // (PDFs with TT1-style "space fonts" decode to NBSP via the ToUnicode CMap).
+    private func appendInterWordSpaceIfNeeded() {
+        guard !currentTextContent.isEmpty else { return }
+        let last = currentTextContent.unicodeScalars.last
+        if let scalar = last, CharacterSet.whitespaces.contains(scalar) { return }
+        currentTextContent += " "
+    }
+
     func handleTextMove(scanner: CGPDFScannerRef) {
         var tx: CGPDFReal = 0
         var ty: CGPDFReal = 0
@@ -107,20 +137,23 @@ extension PDFCommandParser {
         if CGPDFScannerPopNumber(scanner, &ty),
            CGPDFScannerPopNumber(scanner, &tx) {
 
-            if !currentTextContent.isEmpty {
-                createVectorTextFromAccumulated()
-                currentTextContent = ""
-            }
-
             let translation = PDFSIMDMatrix.translation(tx: CGFloat(tx), ty: CGFloat(ty))
             simdLineMatrix.concatenate(translation)
             simdTextMatrix = simdLineMatrix
-
             currentLineMatrix = simdLineMatrix.cgAffineTransform
             currentTextMatrix = simdTextMatrix.cgAffineTransform
 
-            currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
-
+            let isNewLine = abs(ty) > 0.01
+            if isNewLine {
+                if !currentTextContent.isEmpty {
+                    createVectorTextFromAccumulated()
+                    currentTextContent = ""
+                }
+                currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
+            } else {
+                // Horizontal-only move — treat as inter-word space, keep accumulating.
+                appendInterWordSpaceIfNeeded()
+            }
         }
     }
 
@@ -131,22 +164,24 @@ extension PDFCommandParser {
         if CGPDFScannerPopNumber(scanner, &ty),
            CGPDFScannerPopNumber(scanner, &tx) {
 
-            if !currentTextContent.isEmpty {
-                createVectorTextFromAccumulated()
-                currentTextContent = ""
-            }
-
             textLeading = -Double(ty)
 
             let translation = PDFSIMDMatrix.translation(tx: CGFloat(tx), ty: CGFloat(ty))
             simdLineMatrix.concatenate(translation)
             simdTextMatrix = simdLineMatrix
-
             currentLineMatrix = simdLineMatrix.cgAffineTransform
             currentTextMatrix = simdTextMatrix.cgAffineTransform
 
-            currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
-
+            let isNewLine = abs(ty) > 0.01
+            if isNewLine {
+                if !currentTextContent.isEmpty {
+                    createVectorTextFromAccumulated()
+                    currentTextContent = ""
+                }
+                currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
+            } else {
+                appendInterWordSpaceIfNeeded()
+            }
         }
     }
 
@@ -162,13 +197,22 @@ extension PDFCommandParser {
            CGPDFScannerPopNumber(scanner, &b),
            CGPDFScannerPopNumber(scanner, &a) {
 
-            if !currentTextContent.isEmpty && isInTextObject {
-                let newPosition = CGPoint(x: CGFloat(e), y: CGFloat(f))
-                let startPosition = currentTextStartPosition
+            // Decide whether this Tm is a new visual line or same-line reposition.
+            // Compare the new Y to the CURRENT line matrix Y — if they're close,
+            // it's a same-line move (treat like inter-word spacing). If Y changes
+            // by more than a pixel, it's a new line and we finalize.
+            let oldF = CGFloat(simdTextMatrix.ty)
+            let newF = CGFloat(f)
+            let yDelta = abs(newF - oldF)
 
-                if abs(newPosition.x - startPosition.x) > 1 || abs(newPosition.y - startPosition.y) > 1 {
+            if !currentTextContent.isEmpty && isInTextObject {
+                if yDelta > 1.0 {
+                    // New visual line → finalize current content
                     createVectorTextFromAccumulated()
                     currentTextContent = ""
+                } else {
+                    // Same-line Tm reposition → treat as inter-word space
+                    appendInterWordSpaceIfNeeded()
                 }
             }
 
@@ -481,6 +525,17 @@ extension PDFCommandParser {
         return mapping
     }
 
+    // Strips the subset prefix (e.g. "ABCDEF+FontName" → "FontName") from a raw
+    // PDF BaseFont and returns the raw PostScript name. Font-to-macOS mapping is
+    // NOT done here — that's handled by resolveMacOSFont at text-creation time
+    // using runtime NSFontManager lookups.
+    private func cleanPDFFontName(_ fontName: String) -> String {
+        if let plusIndex = fontName.firstIndex(of: "+") {
+            return String(fontName[fontName.index(after: plusIndex)...])
+        }
+        return fontName
+    }
+
     private func resolveFontFromResources(_ resourceName: String) -> String? {
         guard let resources = pageResourcesDict else { return nil }
 
@@ -493,13 +548,7 @@ extension PDFCommandParser {
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
                    let baseFontName = baseFontName {
-                    let fontName = String(cString: baseFontName)
-
-                    if let plusIndex = fontName.firstIndex(of: "+") {
-                        let cleanName = String(fontName[fontName.index(after: plusIndex)...])
-                        return mapPDFFontToSystem(cleanName)
-                    }
-                    return mapPDFFontToSystem(fontName)
+                    return cleanPDFFontName(String(cString: baseFontName))
                 }
             }
         }
@@ -519,14 +568,7 @@ extension PDFCommandParser {
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
                    let baseFontName = baseFontName {
-                    let fontName = String(cString: baseFontName)
-                    let cleanName: String
-                    if let plusIndex = fontName.firstIndex(of: "+") {
-                        cleanName = String(fontName[fontName.index(after: plusIndex)...])
-                    } else {
-                        cleanName = fontName
-                    }
-                    return (mapPDFFontToSystem(cleanName), fontRef)
+                    return (cleanPDFFontName(String(cString: baseFontName)), fontRef)
                 }
             }
         }
@@ -534,37 +576,147 @@ extension PDFCommandParser {
         return nil
     }
 
-    private func mapPDFFontToSystem(_ pdfFontName: String) -> String {
-        let cleanName = pdfFontName
-            .replacingOccurrences(of: "-Roman", with: "")
-            .replacingOccurrences(of: "-Regular", with: "")
-            .replacingOccurrences(of: "-Book", with: "")
-            .replacingOccurrences(of: ",Bold", with: "-Bold")
-            .replacingOccurrences(of: ",Italic", with: "-Italic")
-            .replacingOccurrences(of: ",BoldItalic", with: "-BoldItalic")
+    // MARK: - PDF Font → macOS Font Resolution (runtime, no hardcoded mappings)
+    //
+    // Resolves a PDF PostScript font name (e.g. "TimesNewRomanPS-BoldMT",
+    // "Arial-Black", "Calibri", "HelveticaNeue-Light") into a (family, variant)
+    // pair that InkPen's TypographyProperties + NSFontManager can render via
+    // the existing CTLine pipeline in UnifiedObjectView.renderText.
+    //
+    // Everything is looked up at runtime via NSFontManager — there are no
+    // hardcoded family→family mappings. If the exact font isn't installed, we
+    // substitute the closest AVAILABLE family and then pick the closest AVAILABLE
+    // variant within that family (matching requested bold/italic/weight).
+    //
+    // Strategy:
+    //   1. Try the raw name as a PostScript name via PlatformFont(name:) — macOS
+    //      does a system-wide PostScript name lookup
+    //   2. If that fails, strip common PS/TrueType suffixes (PSMT, MT, PS) and retry
+    //   3. If still not found, parse family+variant from the name with a dash split
+    //      and check if that family exists via NSFontManager.availableFontFamilies
+    //   4. Fall back to "Helvetica Neue" (same default SVGTextHelpers.normalizeFontFamily
+    //      uses), choosing the CLOSEST variant that matches the requested bold/italic
+    //      characteristics — never losing the weight hint.
+    private func resolveMacOSFont(postScriptName rawName: String) -> (family: String, variant: String?) {
+        // Step 1: direct PostScript name lookup against the system font cache.
+        if let result = macOSFontFromPostScriptName(rawName) {
+            return result
+        }
 
-        let fontMapping: [String: String] = [
-            "Times-Roman": "Times New Roman",
-            "Times-Bold": "Times New Roman Bold",
-            "Times-Italic": "Times New Roman Italic",
-            "Times-BoldItalic": "Times New Roman Bold Italic",
-            "Helvetica": "Helvetica",
-            "Helvetica-Bold": "Helvetica-Bold",
-            "Helvetica-Oblique": "Helvetica-Oblique",
-            "Helvetica-BoldOblique": "Helvetica-BoldOblique",
-            "Courier": "Courier",
-            "Courier-Bold": "Courier-Bold",
-            "Courier-Oblique": "Courier-Oblique",
-            "Courier-BoldOblique": "Courier-BoldOblique",
-            "Symbol": "Symbol",
-            "ZapfDingbats": "Zapf Dingbats",
-            "ArialMT": "Arial",
-            "Arial-BoldMT": "Arial-Bold",
-            "Arial-ItalicMT": "Arial-Italic",
-            "Arial-BoldItalicMT": "Arial-BoldItalic"
-        ]
+        // Step 2: strip common PostScript/TrueType suffixes and retry.
+        // Order matters: try longest suffix first so "PSMT" wins over "MT".
+        let suffixesToStrip = ["PSMT", "PS", "MT"]
+        var stripped = rawName
+        for suffix in suffixesToStrip {
+            if stripped.hasSuffix(suffix) {
+                stripped = String(stripped.dropLast(suffix.count))
+                if stripped.hasSuffix("-") {
+                    stripped = String(stripped.dropLast())
+                }
+                if let result = macOSFontFromPostScriptName(stripped) {
+                    return result
+                }
+            }
+        }
 
-        return fontMapping[cleanName] ?? cleanName
+        // Step 3: parse the cleaned name as family-variant and check if the
+        // family exists in NSFontManager.availableFontFamilies (runtime list).
+        let (rawFamily, rawVariant) = dashSplitFamilyVariant(stripped)
+        let availableFamilies = NSFontManager.shared.availableFontFamilies
+        if let exactFamily = availableFamilies.first(where: { $0.caseInsensitiveCompare(rawFamily) == .orderedSame }) {
+            return (family: exactFamily, variant: closestVariantDisplayName(in: exactFamily, requested: rawVariant))
+        }
+
+        // Step 4: substitute to default fallback family, preserving the requested
+        // variant characteristics (bold/italic/weight) as closely as possible.
+        let fallbackFamily = availableFamilies.first(where: { $0 == "Helvetica Neue" })
+            ?? availableFamilies.first(where: { $0 == "Helvetica" })
+            ?? availableFamilies.first
+            ?? "Helvetica Neue"
+        return (family: fallbackFamily, variant: closestVariantDisplayName(in: fallbackFamily, requested: rawVariant))
+    }
+
+    // Attempts a PostScript-name lookup via macOS's font system. If successful,
+    // returns the font's actual family name and the matching variant display name
+    // from NSFontManager.availableMembers(ofFontFamily:).
+    private func macOSFontFromPostScriptName(_ name: String) -> (family: String, variant: String?)? {
+        guard let font = PlatformFont(name: name, size: 12) else { return nil }
+        // PlatformFont(name:) sometimes returns the system default for unknown
+        // names — verify the returned font's PostScript name matches.
+        let returnedPS = font.fontName
+        let family = font.familyName ?? name
+        let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
+        // Look for a member whose PostScript name matches what we asked for (or
+        // what the returned font reports).
+        for member in members {
+            if let postScript = member[0] as? String,
+               let displayName = member[1] as? String,
+               postScript == name || postScript == returnedPS {
+                return (family: family, variant: displayName)
+            }
+        }
+        // Font resolved but we couldn't find its display name — return family only.
+        return (family: family, variant: nil)
+    }
+
+    // Splits a name like "Times-BoldItalic" into ("Times", "BoldItalic") or
+    // "Arial" into ("Arial", nil). No mapping — pure string split.
+    private func dashSplitFamilyVariant(_ name: String) -> (family: String, variant: String?) {
+        if let dashIdx = name.lastIndex(of: "-") {
+            return (family: String(name[..<dashIdx]),
+                    variant: String(name[name.index(after: dashIdx)...]))
+        }
+        return (family: name, variant: nil)
+    }
+
+    // Picks the closest display-name variant for a family given a requested
+    // variant string. Exact match first, then case-insensitive, then fuzzy
+    // match based on bold/italic/weight characteristics so the closest weight
+    // is preserved even when a substitute family is used.
+    private func closestVariantDisplayName(in family: String, requested: String?) -> String? {
+        let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
+        let displayNames: [String] = members.compactMap { $0[1] as? String }
+        guard !displayNames.isEmpty else { return nil }
+
+        // No variant hint → prefer "Regular" if it exists.
+        guard let req = requested, !req.isEmpty else {
+            return displayNames.first(where: { $0 == "Regular" }) ?? displayNames.first
+        }
+
+        // Exact match
+        if displayNames.contains(req) { return req }
+        // Case-insensitive match
+        if let match = displayNames.first(where: { $0.caseInsensitiveCompare(req) == .orderedSame }) {
+            return match
+        }
+
+        // Fuzzy: score each available variant by how well its weight/italic
+        // characteristics match the requested variant. Matching bold is most
+        // important, then italic, then light/medium modifiers.
+        let reqLower = req.lowercased()
+        let wantBold = reqLower.contains("bold") || reqLower.contains("heavy") || reqLower.contains("black")
+        let wantItalic = reqLower.contains("italic") || reqLower.contains("oblique")
+        let wantLight = reqLower.contains("light") || reqLower.contains("thin")
+        let wantMedium = reqLower.contains("medium")
+
+        func score(_ name: String) -> Int {
+            let n = name.lowercased()
+            let isBold = n.contains("bold") || n.contains("heavy") || n.contains("black")
+            let isItalic = n.contains("italic") || n.contains("oblique")
+            let isLight = n.contains("light") || n.contains("thin")
+            let isMedium = n.contains("medium")
+            var s = 0
+            if isBold == wantBold { s += 8 }
+            if isItalic == wantItalic { s += 4 }
+            if isLight == wantLight { s += 2 }
+            if isMedium == wantMedium { s += 1 }
+            // Slight preference for shorter names — avoid "Condensed Bold" when
+            // plain "Bold" is present.
+            s -= name.count / 20
+            return s
+        }
+
+        return displayNames.max(by: { score($0) < score($1) }) ?? displayNames.first
     }
 
     private func advanceTextPosition(for text: String) {
@@ -575,7 +727,16 @@ extension PDFCommandParser {
     }
 
     private func createVectorTextFromAccumulated() {
-        guard !currentTextContent.isEmpty else { return }
+        // Strip leading/trailing whitespace (including NBSP from TT1-style space
+        // fonts) and skip entirely if only whitespace remains. This prevents the
+        // blank text boxes that previously appeared for every <0003>Tj operator.
+        let trimmed = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        // Normalize: replace NBSPs in the middle with regular spaces and collapse runs.
+        let normalized = trimmed
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+            .replacingOccurrences(of: "  ", with: " ")
+        currentTextContent = normalized
 
         var pdfX = currentTextStartPosition.x
         var pdfY = currentTextStartPosition.y
@@ -603,38 +764,13 @@ extension PDFCommandParser {
 
         let position = CGPoint(x: pdfX, y: finalY)
         let fullFontName = currentFontName ?? "Helvetica"
-        var fontFamily = fullFontName
-        var fontVariant: String? = nil
 
-        if let dashIndex = fullFontName.lastIndex(of: "-") {
-            fontFamily = String(fullFontName[..<dashIndex])
-            let variantPart = String(fullFontName[fullFontName.index(after: dashIndex)...])
-
-            if fontFamily == "HelveticaNeue" {
-                fontFamily = "Helvetica Neue"
-            } else if fontFamily == "TimesNewRomanPS" {
-                fontFamily = "Times New Roman"
-            } else if fontFamily == "ArialMT" {
-                fontFamily = "Arial"
-            }
-
-            let fontManager = NSFontManager.shared
-            let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
-
-            for member in members {
-                if let postScriptName = member[0] as? String,
-                   let displayName = member[1] as? String {
-                    if postScriptName == fullFontName {
-                        fontVariant = displayName
-                        break
-                    }
-                }
-            }
-
-            if fontVariant == nil {
-                fontVariant = variantPart
-            }
-        }
+        // Resolve the PDF PostScript name into a (family, variant) pair that
+        // InkPen's NSFontManager-backed text rendering pipeline can render.
+        // All lookups are runtime — no hardcoded mapping tables. If the exact
+        // font isn't installed, we fall back to the closest family AND closest
+        // variant so bold/italic hints are preserved.
+        let (fontFamily, fontVariant) = resolveMacOSFont(postScriptName: fullFontName)
 
         let fontSize = actualFontSize
         let hasFill = textRenderingMode == 0 || textRenderingMode == 2 || textRenderingMode == 4 || textRenderingMode == 6

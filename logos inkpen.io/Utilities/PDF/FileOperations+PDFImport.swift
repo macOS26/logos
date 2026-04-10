@@ -90,6 +90,22 @@ extension FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
+        // Create a dedicated "Imported PDF" layer so PDF content doesn't
+        // pollute the Guides layer. Matches the SVG import pattern in
+        // FileOperations+SVGImport.swift lines 116-128.
+        let importedLayer = Layer(
+            id: UUID(),
+            name: "Imported PDF",
+            objectIDs: [],
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            color: .green
+        )
+        document.snapshot.layers.append(importedLayer)
+        let targetLayer = document.snapshot.layers.count - 1
+
         for shape in result.shapes {
             var importedShape = shape
 
@@ -109,10 +125,10 @@ extension FileOperations {
                 }
             }
 
-            document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
+            document.addShapeToUnifiedSystem(importedShape, layerIndex: targetLayer)
         }
 
-        document.selectedLayerIndex = 3
+        document.selectedLayerIndex = targetLayer
 
         return document
     }
