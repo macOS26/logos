@@ -850,6 +850,52 @@ class SVGParser: NSObject, XMLParserDelegate {
             resolvedPath.fillRule = .evenOdd
         }
 
+        // Bake the transform into path coordinates so imported shapes
+        // behave identically to native InkPen objects (identity transform,
+        // coordinates in document space). This ensures point editing,
+        // selection, and hit testing work correctly.
+        if !transform.isIdentity {
+            let flattenedElements = resolvedPath.elements.map { element -> PathElement in
+                switch element {
+                case .move(let to):
+                    let p = to.cgPoint.applying(transform)
+                    return .move(to: VectorPoint(p))
+                case .line(let to):
+                    let p = to.cgPoint.applying(transform)
+                    return .line(to: VectorPoint(p))
+                case .curve(let to, let c1, let c2):
+                    let p = to.cgPoint.applying(transform)
+                    let cp1 = c1.cgPoint.applying(transform)
+                    let cp2 = c2.cgPoint.applying(transform)
+                    return .curve(to: VectorPoint(p), control1: VectorPoint(cp1), control2: VectorPoint(cp2))
+                case .quadCurve(let to, let c):
+                    let p = to.cgPoint.applying(transform)
+                    let cp = c.cgPoint.applying(transform)
+                    return .quadCurve(to: VectorPoint(p), control: VectorPoint(cp))
+                case .close:
+                    return .close
+                }
+            }
+            resolvedPath = VectorPath(elements: flattenedElements, isClosed: resolvedPath.isClosed, fillRule: resolvedPath.fillRule.cgPathFillRule)
+
+            // Stroke width also needs to scale with the transform
+            var resolvedStroke = stroke
+            if var s = resolvedStroke {
+                let avgScale = (abs(transform.a) + abs(transform.d)) / 2.0
+                s.width *= avgScale
+                resolvedStroke = s
+            }
+
+            return VectorShape(
+                name: name,
+                path: resolvedPath,
+                geometricType: geometricType,
+                strokeStyle: resolvedStroke,
+                fillStyle: fill,
+                transform: .identity
+            )
+        }
+
         return VectorShape(
             name: name,
             path: resolvedPath,

@@ -43,17 +43,27 @@ extension SVGParser {
         let spreadMethod = parseSpreadMethod(from: attributes)
 
         if gradientUnits == .userSpaceOnUse {
-            // userSpaceOnUse: apply full gradientTransform to coordinate points at parse time
-            // (usvg/SVGView approach — pre-resolve everything)
+            // userSpaceOnUse: pre-resolve coordinates into document space at parse time
+            // (usvg approach). cachedCGPath bakes the viewBox transform into paths,
+            // so gradient coordinates need the same transform applied.
+
+            // Apply gradientTransform first (in SVG user space)
             if let gradientTransformRaw = attributes["gradientTransform"] {
-                let transform = parseTransform(gradientTransformRaw)
-                startPoint = startPoint.applying(transform)
-                endPoint = endPoint.applying(transform)
-                x1 = startPoint.x
-                y1 = startPoint.y
-                x2 = endPoint.x
-                y2 = endPoint.y
+                let gradTransform = parseTransform(gradientTransformRaw)
+                startPoint = startPoint.applying(gradTransform)
+                endPoint = endPoint.applying(gradTransform)
             }
+
+            // Then apply the viewBox/current transform to match path coordinate space
+            if !currentTransform.isIdentity {
+                startPoint = startPoint.applying(currentTransform)
+                endPoint = endPoint.applying(currentTransform)
+            }
+
+            x1 = startPoint.x
+            y1 = startPoint.y
+            x2 = endPoint.x
+            y2 = endPoint.y
 
             let originX = (startPoint.x + endPoint.x) / 2.0
             let originY = (startPoint.y + endPoint.y) / 2.0

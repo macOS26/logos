@@ -93,24 +93,28 @@ extension SVGParser {
         let spreadMethod = parseSpreadMethod(from: attributes)
 
         if gradientUnits == .userSpaceOnUse {
-            // userSpaceOnUse: apply full gradientTransform to coordinate points at parse time
-            // (usvg/SVGView approach — pre-resolve everything)
-            if let gradientTransformRaw = attributes["gradientTransform"] {
-                let transform = parseTransform(gradientTransformRaw)
-                centerPoint = centerPoint.applying(transform)
-                focalPoint = focalPoint.applying(transform)
+            // userSpaceOnUse: pre-resolve coordinates into document space at parse time
+            // (usvg approach). cachedCGPath bakes the viewBox transform into paths,
+            // so gradient coordinates need the same transform applied.
+            r = finalRadius
 
-                // Scale radius by the uniform scale factor of the transform
-                let xScale = abs(transform.a)
-                let yScale = abs(transform.d)
-                if xScale == yScale {
-                    r = finalRadius * xScale
-                } else {
-                    // Non-uniform scale — use average (best approximation for circles)
-                    r = finalRadius * (xScale + yScale) / 2.0
-                }
-            } else {
-                r = finalRadius
+            // Apply gradientTransform first (in SVG user space)
+            if let gradientTransformRaw = attributes["gradientTransform"] {
+                let gradTransform = parseTransform(gradientTransformRaw)
+                centerPoint = centerPoint.applying(gradTransform)
+                focalPoint = focalPoint.applying(gradTransform)
+                let xScale = abs(gradTransform.a)
+                let yScale = abs(gradTransform.d)
+                r = xScale == yScale ? r * xScale : r * (xScale + yScale) / 2.0
+            }
+
+            // Then apply the viewBox/current transform to match path coordinate space
+            if !currentTransform.isIdentity {
+                centerPoint = centerPoint.applying(currentTransform)
+                focalPoint = focalPoint.applying(currentTransform)
+                let xScale = abs(currentTransform.a)
+                let yScale = abs(currentTransform.d)
+                r = xScale == yScale ? r * xScale : r * (xScale + yScale) / 2.0
             }
 
             var radialGradient = RadialGradient(
