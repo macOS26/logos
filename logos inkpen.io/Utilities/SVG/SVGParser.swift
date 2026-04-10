@@ -52,8 +52,36 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var clipPathStack: [String?] = []
 
     internal var elementDefinitions: [String: (elementName: String, attributes: [String: String])] = [:]
+    internal var symbolDefinitions: [String: [VectorShape]] = [:]
+    internal var symbolStack: [(id: String?, startIndex: Int)] = []
+    internal var markerDefinitions: [String: MarkerDefinition] = [:]
+    internal var markerStack: [(id: String?, startIndex: Int, attrs: [String: String])] = []
+    internal var defsDepth: Int = 0
+    internal var hiddenDepth: Int = 0  // Tracks display:none / visibility:hidden nesting
+    internal var elementHiddenStack: [Bool] = []  // Per-element flag for whether this element marked hidden start
     private var useRecursionDepth = 0
     private let maxUseRecursionDepth = 10
+
+    struct MarkerDefinition {
+        let shapes: [VectorShape]
+        let refX: Double
+        let refY: Double
+        let markerWidth: Double
+        let markerHeight: Double
+        let orient: String  // "auto", "auto-start-reverse", or angle in degrees
+        let unitsStrokeWidth: Bool  // markerUnits="strokeWidth" (default) vs "userSpaceOnUse"
+    }
+
+    private func isElementHidden(_ attributes: [String: String]) -> Bool {
+        if attributes["display"] == "none" { return true }
+        if attributes["visibility"] == "hidden" { return true }
+        if let style = attributes["style"] {
+            let dict = parseStyleAttribute(style)
+            if dict["display"] == "none" { return true }
+            if dict["visibility"] == "hidden" { return true }
+        }
+        return false
+    }
 
     var inkpenMetadata: String? = nil
     private var isInMetadata = false
@@ -163,6 +191,18 @@ class SVGParser: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElementName = elementName
 
+        // Track display:none / visibility:hidden — skip rendering subtree
+        let elementIsHidden = isElementHidden(attributeDict)
+        elementHiddenStack.append(elementIsHidden)
+        if elementIsHidden {
+            hiddenDepth += 1
+        }
+
+        // While hidden, skip all element parsing (but still track end tags)
+        if hiddenDepth > 0 {
+            return
+        }
+
         // Store elements by ID for <use> references
         if let id = attributeDict["id"] {
             switch elementName {
@@ -188,7 +228,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseSVGRoot(attributes: attributeDict)
 
         case "defs":
-            break
+            defsDepth += 1
+
+        case "symbol":
+            // Symbol body shapes get collected and stored under the symbol's id
+            // for later <use> reference. Mark current shapes count as the start.
+            symbolStack.append((id: attributeDict["id"], startIndex: shapes.count))
+
+        case "marker":
+            // Marker body shapes are collected so they can be instantiated at
+            // path endpoints. For now we parse and store them but full instantiation
+            // (positioning + rotation at path vertices) is not yet implemented.
+            markerStack.append((id: attributeDict["id"], startIndex: shapes.count, attrs: attributeDict))
 
         case "style":
             currentStyleContent = ""
@@ -261,6 +312,14 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "clipPath":
             parseClipPath(attributes: attributeDict)
 
+        case "mask":
+            // Treat <mask> like <clipPath> — collect child shapes as a path,
+            // store under the mask's id in the same dictionary so clip-path
+            // and mask attributes both resolve through one lookup.
+            isParsingClipPath = true
+            currentClipPathId = attributeDict["id"]
+            currentClipPath = nil
+
         case "image":
             parseImage(attributes: attributeDict)
 
@@ -273,6 +332,16 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        // Pop the hidden flag for this element and decrement depth if it was hidden
+        if let wasHidden = elementHiddenStack.popLast(), wasHidden {
+            hiddenDepth = max(0, hiddenDepth - 1)
+        }
+
+        // If still hidden (parent was), skip end-tag processing
+        if hiddenDepth > 0 {
+            return
+        }
+
         switch elementName {
         case "metadata":
             isInMetadata = false
@@ -319,13 +388,55 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "linearGradient", "radialGradient":
             finishGradientElement()
 
-        case "clipPath":
+        case "clipPath", "mask":
             isParsingClipPath = false
             if let clipId = currentClipPathId, let clipPath = currentClipPath {
                 clipPathDefinitions[clipId] = clipPath
             }
             currentClipPathId = nil
             currentClipPath = nil
+
+        case "defs":
+            // Shapes parsed inside <defs> should not render. Remove anything
+            // added during the defs block from the main shapes array.
+            // (Gradients, clipPaths, etc. are stored in their own dictionaries.)
+            defsDepth = max(0, defsDepth - 1)
+
+        case "symbol":
+            // Pop the symbol entry, extract collected shapes, store under the symbol id
+            if !symbolStack.isEmpty {
+                let entry = symbolStack.removeLast()
+                if entry.startIndex <= shapes.count {
+                    let symbolShapes = Array(shapes[entry.startIndex..<shapes.count])
+                    if let id = entry.id {
+                        symbolDefinitions[id] = symbolShapes
+                    }
+                    // Remove the symbol's shapes from the main array — they only render via <use>
+                    shapes.removeSubrange(entry.startIndex..<shapes.count)
+                }
+            }
+
+        case "marker":
+            // Pop the marker entry, extract collected shapes, store as MarkerDefinition
+            if !markerStack.isEmpty {
+                let entry = markerStack.removeLast()
+                if entry.startIndex <= shapes.count {
+                    let markerShapes = Array(shapes[entry.startIndex..<shapes.count])
+                    if let id = entry.id {
+                        markerDefinitions[id] = MarkerDefinition(
+                            shapes: markerShapes,
+                            refX: parseLength(entry.attrs["refX"]) ?? 0,
+                            refY: parseLength(entry.attrs["refY"]) ?? 0,
+                            markerWidth: parseLength(entry.attrs["markerWidth"]) ?? 3,
+                            markerHeight: parseLength(entry.attrs["markerHeight"]) ?? 3,
+                            orient: entry.attrs["orient"] ?? "0",
+                            unitsStrokeWidth: (entry.attrs["markerUnits"] ?? "strokeWidth") == "strokeWidth"
+                        )
+                    }
+                    // Remove the marker's shapes from the main array — they only render via marker-* attrs
+                    shapes.removeSubrange(entry.startIndex..<shapes.count)
+                }
+            }
 
         default:
             break
@@ -521,19 +632,11 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         let href = attributes["xlink:href"] ?? attributes["href"] ?? ""
         let refId = href.hasPrefix("#") ? String(href.dropFirst()) : href
-        guard !refId.isEmpty, let def = elementDefinitions[refId] else { return }
+        guard !refId.isEmpty else { return }
 
-        // Merge <use> positioning and style attributes with the referenced element
         let useX = parseLength(attributes["x"]) ?? 0
         let useY = parseLength(attributes["y"]) ?? 0
 
-        var mergedAttributes = def.attributes
-        // <use> attributes override referenced element's attributes (except id)
-        for (key, value) in attributes where key != "xlink:href" && key != "href" && key != "id" && key != "x" && key != "y" {
-            mergedAttributes[key] = value
-        }
-
-        // Apply <use> x/y as a translate transform
         let savedTransform = currentTransform
         if useX != 0 || useY != 0 {
             currentTransform = currentTransform.translatedBy(x: useX, y: useY)
@@ -543,18 +646,58 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
 
         useRecursionDepth += 1
-        switch def.elementName {
-        case "path":       parsePath(attributes: mergedAttributes)
-        case "rect":       parseRectangle(attributes: mergedAttributes)
-        case "circle":     parseCircle(attributes: mergedAttributes)
-        case "ellipse":    parseEllipse(attributes: mergedAttributes)
-        case "line":       parseLine(attributes: mergedAttributes)
-        case "polyline":   parsePolyline(attributes: mergedAttributes, closed: false)
-        case "polygon":    parsePolyline(attributes: mergedAttributes, closed: true)
-        default: break
-        }
-        useRecursionDepth -= 1
 
+        // Check symbol definitions first — symbols hold pre-parsed groups of shapes
+        if let symbolShapes = symbolDefinitions[refId] {
+            // Re-emit each symbol shape with the use's transform applied on top of its own
+            for shape in symbolShapes {
+                var instance = shape
+                instance.id = UUID()
+                // Apply the use's positioning to the already-flattened shape coordinates
+                if !currentTransform.isIdentity {
+                    let useTransform = CGAffineTransform(translationX: useX, y: useY)
+                    var combined = useTransform
+                    if let userTransform = attributes["transform"].map(parseTransform) {
+                        combined = combined.concatenating(userTransform)
+                    }
+                    let transformedElements = instance.path.elements.map { el -> PathElement in
+                        switch el {
+                        case .move(let to): return .move(to: VectorPoint(to.cgPoint.applying(combined)))
+                        case .line(let to): return .line(to: VectorPoint(to.cgPoint.applying(combined)))
+                        case .curve(let to, let c1, let c2):
+                            return .curve(to: VectorPoint(to.cgPoint.applying(combined)),
+                                         control1: VectorPoint(c1.cgPoint.applying(combined)),
+                                         control2: VectorPoint(c2.cgPoint.applying(combined)))
+                        case .quadCurve(let to, let c):
+                            return .quadCurve(to: VectorPoint(to.cgPoint.applying(combined)),
+                                             control: VectorPoint(c.cgPoint.applying(combined)))
+                        case .close: return .close
+                        }
+                    }
+                    instance.path = VectorPath(elements: transformedElements, isClosed: instance.path.isClosed, fillRule: instance.path.fillRule.cgPathFillRule)
+                }
+                shapes.append(instance)
+            }
+        } else if let def = elementDefinitions[refId] {
+            // Single element reference
+            var mergedAttributes = def.attributes
+            for (key, value) in attributes where key != "xlink:href" && key != "href" && key != "id" && key != "x" && key != "y" {
+                mergedAttributes[key] = value
+            }
+
+            switch def.elementName {
+            case "path":       parsePath(attributes: mergedAttributes)
+            case "rect":       parseRectangle(attributes: mergedAttributes)
+            case "circle":     parseCircle(attributes: mergedAttributes)
+            case "ellipse":    parseEllipse(attributes: mergedAttributes)
+            case "line":       parseLine(attributes: mergedAttributes)
+            case "polyline":   parsePolyline(attributes: mergedAttributes, closed: false)
+            case "polygon":    parsePolyline(attributes: mergedAttributes, closed: true)
+            default: break
+            }
+        }
+
+        useRecursionDepth -= 1
         currentTransform = savedTransform
     }
 
@@ -923,7 +1066,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
 
-        if let clipPathAttr = mergedAttributes["clip-path"] {
+        // Check both clip-path and mask attributes — masks are stored alongside
+        // clip paths in clipPathDefinitions and resolved through the same path.
+        let clipOrMaskAttr = mergedAttributes["clip-path"] ?? mergedAttributes["mask"]
+        if let clipPathAttr = clipOrMaskAttr {
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
                 if let endRange = idPart.range(of: ")") {

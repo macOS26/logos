@@ -158,7 +158,11 @@
       "Bash(open:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:docs.rs)",
-      "Read(//Users/toddbruss/Downloads/**)"
+      "Read(//Users/toddbruss/Downloads/**)",
+      "Bash(ls:*)",
+      "Bash(git clone:*)",
+      "Bash(curl -sL \"https://www.cte.iup.edu/cte/Resources/PDF_TestPage.pdf\" -o /tmp/PDF_TestPage.pdf)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

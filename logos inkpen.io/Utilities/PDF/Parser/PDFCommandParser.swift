@@ -3,7 +3,12 @@ import SwiftUI
 class PDFCommandParser {
     var commands: [PathCommand] = []
     var currentPoint = CGPoint.zero
-    var currentFillColor = CGColor(red: 0, green: 0, blue: 1, alpha: 1)
+    // PDF 1.7 spec §8.6.8 Table 52: the initial colour in both the fill and stroke
+    // colour parameters is black. Reference: pdf.js src/core/operator_list.js sets
+    // fillColor = "#000000" as the default. The blue default here was a bug causing
+    // all text to render blue when the PDF's `g` (set-gray) operator fired before
+    // text extraction but the initial state carried through.
+    var currentFillColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentStrokeColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentFillGradient: VectorGradient?
     var currentStrokeGradient: VectorGradient?

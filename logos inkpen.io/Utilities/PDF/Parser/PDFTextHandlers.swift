@@ -319,6 +319,19 @@ extension PDFCommandParser {
         return ""
     }
 
+    // Decode PDF text using the font's ToUnicode CMap.
+    //
+    // Reference: Mozilla pdf.js src/core/cmap.js — CMap.readCharCode (lines 320-341).
+    // https://github.com/mozilla/pdf.js/blob/master/src/core/cmap.js
+    //
+    // Per PDF 1.7 spec §9.10.3, a ToUnicode CMap defines how to decode character
+    // codes (1-4 bytes) into Unicode. CID (Type 0) fonts use 2-byte character
+    // codes — a hex string like <0003> is ONE code, not two separate bytes.
+    //
+    // pdf.js detects the code length from the CMap's codespace ranges and shifts
+    // bytes left by 8 per additional byte: `c = ((c << 8) | nextByte) >>> 0`
+    // (cmap.js:326). We use a simpler heuristic: if the map has any key > 0xFF,
+    // we know 2-byte codes are in use and read the string in 2-byte chunks.
     private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
         var toUnicodeStream: CGPDFStreamRef?
         guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
@@ -337,22 +350,54 @@ extension PDFCommandParser {
         }
 
         let codeToUnicode = parseCMap(cmapString)
+        guard !codeToUnicode.isEmpty else { return nil }
+
         let length = CGPDFStringGetLength(pdfString)
         guard length > 0, let bytes = CGPDFStringGetBytePtr(pdfString) else {
             return nil
         }
 
+        // Determine code length from the map's keys. If any key > 0xFF, the font
+        // uses 2-byte CIDs (typical for Type 0 CID fonts). Otherwise 1-byte.
+        let isTwoByteFont = isCIDFont(fontDict) || codeToUnicode.keys.contains(where: { $0 > 0xFF })
+        let stride = isTwoByteFont ? 2 : 1
+
         var result = ""
-        for i in 0..<length {
-            let charCode = UInt16(bytes[i])
+        var i = 0
+        while i < length {
+            let charCode: UInt16
+            if stride == 2 && i + 1 < length {
+                // Big-endian 2-byte code (pdf.js cmap.js:326 pattern)
+                charCode = (UInt16(bytes[i]) << 8) | UInt16(bytes[i + 1])
+            } else {
+                charCode = UInt16(bytes[i])
+            }
+
             if let unicodeString = codeToUnicode[charCode] {
                 result += unicodeString
-            } else {
-                result += String(UnicodeScalar(UInt8(charCode)))
+            } else if stride == 1 {
+                // Only fall back to raw byte for 1-byte fonts — for CID fonts
+                // an unmapped code should be skipped, not output as NULL garbage.
+                let scalar = UnicodeScalar(UInt8(charCode))
+                result += String(scalar)
             }
+
+            i += stride
         }
 
         return result.isEmpty ? nil : result
+    }
+
+    // Detect a Type 0 (CID) font via its /Subtype entry. CID fonts always use
+    // multi-byte character codes per the PDF spec.
+    private func isCIDFont(_ fontDict: CGPDFDictionaryRef) -> Bool {
+        var subtype: UnsafePointer<CChar>?
+        if CGPDFDictionaryGetName(fontDict, "Subtype", &subtype),
+           let subtype = subtype {
+            let name = String(cString: subtype)
+            return name == "Type0"
+        }
+        return false
     }
 
     private func parseCMap(_ cmapString: String) -> [UInt16: String] {
@@ -539,21 +584,22 @@ extension PDFCommandParser {
         let matrixFontSize = abs(tm.d)
         let actualFontSize = currentFontSize * matrixFontSize
 
-        if let usesTm = usesTextMatrixForPosition {
-            if !usesTm {
-                pdfX = currentTransformMatrix.tx
-                pdfY = currentTransformMatrix.ty
-            }
+        if let usesTm = usesTextMatrixForPosition, !usesTm {
+            pdfX = currentTransformMatrix.tx
+            pdfY = currentTransformMatrix.ty
         }
 
-        let finalY: CGFloat
-
-        if usesTextMatrixForPosition == false {
-            let flippedY = pageSize.height - pdfY
-            finalY = flippedY - actualFontSize
-        } else {
-            finalY = pdfY - actualFontSize
-        }
+        // PDF user space has origin at the bottom-left with Y increasing upward
+        // (PDF 1.7 §8.3.2.3). InkPen's canvas uses top-left origin with Y
+        // increasing downward. We always need to flip Y.
+        //
+        // PDF text position is the baseline; InkPen text position is the top-left
+        // of the text box. Subtract one font-size to go from baseline to top.
+        //
+        // Reference: Mozilla pdf.js src/display/canvas.js (showText) maps PDF text
+        // into canvas coordinates via the same flip via the page's transform.
+        let flippedY = pageSize.height - pdfY
+        let finalY = flippedY - actualFontSize
 
         let position = CGPoint(x: pdfX, y: finalY)
         let fullFontName = currentFontName ?? "Helvetica"
