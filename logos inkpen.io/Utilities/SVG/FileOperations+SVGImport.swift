@@ -165,7 +165,6 @@ extension FileOperations {
 
         for shape in standaloneShapes {
             autoreleasepool {
-
                 document.addShapeToUnifiedSystem(shape, layerIndex: targetLayer)
             }
         }

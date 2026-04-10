@@ -69,7 +69,7 @@ extension SVGParser {
 
         let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
         let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling)
-        let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
+        var r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
         let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
         let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
         var centerPoint: CGPoint
@@ -91,6 +91,54 @@ extension SVGParser {
         }
 
         let spreadMethod = parseSpreadMethod(from: attributes)
+
+        if gradientUnits == .userSpaceOnUse {
+            // userSpaceOnUse: apply full gradientTransform to coordinate points at parse time
+            // (usvg/SVGView approach — pre-resolve everything)
+            if let gradientTransformRaw = attributes["gradientTransform"] {
+                let transform = parseTransform(gradientTransformRaw)
+                centerPoint = centerPoint.applying(transform)
+                focalPoint = focalPoint.applying(transform)
+
+                // Scale radius by the uniform scale factor of the transform
+                let xScale = abs(transform.a)
+                let yScale = abs(transform.d)
+                if xScale == yScale {
+                    r = finalRadius * xScale
+                } else {
+                    // Non-uniform scale — use average (best approximation for circles)
+                    r = finalRadius * (xScale + yScale) / 2.0
+                }
+            } else {
+                r = finalRadius
+            }
+
+            var radialGradient = RadialGradient(
+                centerPoint: centerPoint,
+                radius: max(0.001, r),
+                stops: currentGradientStops,
+                focalPoint: focalPoint,
+                spreadMethod: spreadMethod,
+                units: gradientUnits
+            )
+
+            if let inherited = inheritedGradient, case .radial(let inh) = inherited {
+                if attributes["cx"] == nil && attributes["cy"] == nil { radialGradient.centerPoint = inh.centerPoint }
+                if attributes["r"] == nil { radialGradient.radius = inh.radius }
+                if attributes["gradientUnits"] == nil { radialGradient.units = inh.units }
+                if attributes["spreadMethod"] == nil { radialGradient.spreadMethod = inh.spreadMethod }
+            }
+
+            // Transform is baked into coordinates — no additional angle/scale needed
+            radialGradient.originPoint = centerPoint
+            radialGradient.angle = 0.0
+            radialGradient.scaleX = 1.0
+            radialGradient.scaleY = 1.0
+
+            return VectorGradient.radial(radialGradient)
+        }
+
+        // objectBoundingBox: existing angle/scale decomposition behavior
         let (gradientAngle, gradientScaleX, gradientScaleY) = parseGradientTransformFromAttributes(attributes)
 
         var radialGradient = RadialGradient(
@@ -99,7 +147,7 @@ extension SVGParser {
             stops: currentGradientStops,
             focalPoint: focalPoint,
             spreadMethod: spreadMethod,
-            units: .objectBoundingBox
+            units: gradientUnits
         )
 
         if let inherited = inheritedGradient, case .radial(let inh) = inherited {
@@ -114,8 +162,6 @@ extension SVGParser {
         radialGradient.scaleX = abs(gradientScaleX)
         radialGradient.scaleY = abs(gradientScaleY)
 
-        let vectorGradient = VectorGradient.radial(radialGradient)
-
-        return vectorGradient
+        return VectorGradient.radial(radialGradient)
     }
 }

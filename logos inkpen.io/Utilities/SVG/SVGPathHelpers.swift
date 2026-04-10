@@ -275,6 +275,7 @@ extension SVGParser {
                 }
 
             case "S":
+                var didAdvance = false
                 while i + 3 < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
                     let x2 = Double(tokens[i]) ?? 0
                     let y2 = Double(tokens[i + 1]) ?? 0
@@ -300,9 +301,12 @@ extension SVGParser {
                         control2: VectorPoint(x2, y2)
                     ))
                     i += 4
+                    didAdvance = true
                 }
+                if !didAdvance { i += 1 }
 
             case "s":
+                var didAdvance = false
                 while i + 3 < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
                     let dx2 = Double(tokens[i]) ?? 0
                     let dy2 = Double(tokens[i + 1]) ?? 0
@@ -338,7 +342,9 @@ extension SVGParser {
 
                     elements.append(smoothCurveElement)
                     i += 4
+                    didAdvance = true
                 }
+                if !didAdvance { i += 1 }
 
             case "Q":
                 if i + 3 < tokens.count {
@@ -379,11 +385,236 @@ extension SVGParser {
                     i += 1
                 }
 
+            case "T":
+                if i + 1 < tokens.count {
+                    let x = Double(tokens[i]) ?? 0
+                    let y = Double(tokens[i + 1]) ?? 0
+                    let cpX: Double
+                    let cpY: Double
+                    if let lastCP = lastControlPoint {
+                        cpX = 2.0 * currentPoint.x - lastCP.x
+                        cpY = 2.0 * currentPoint.y - lastCP.y
+                    } else {
+                        cpX = currentPoint.x
+                        cpY = currentPoint.y
+                    }
+                    currentPoint = CGPoint(x: x, y: y)
+                    lastControlPoint = CGPoint(x: cpX, y: cpY)
+                    elements.append(.quadCurve(to: VectorPoint(currentPoint), control: VectorPoint(cpX, cpY)))
+                    i += 2
+                } else {
+                    i += 1
+                }
+
+            case "t":
+                if i + 1 < tokens.count {
+                    let dx = Double(tokens[i]) ?? 0
+                    let dy = Double(tokens[i + 1]) ?? 0
+                    let cpX: Double
+                    let cpY: Double
+                    if let lastCP = lastControlPoint {
+                        cpX = 2.0 * currentPoint.x - lastCP.x
+                        cpY = 2.0 * currentPoint.y - lastCP.y
+                    } else {
+                        cpX = currentPoint.x
+                        cpY = currentPoint.y
+                    }
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    lastControlPoint = CGPoint(x: cpX, y: cpY)
+                    elements.append(.quadCurve(to: VectorPoint(currentPoint), control: VectorPoint(cpX, cpY)))
+                    i += 2
+                } else {
+                    i += 1
+                }
+
+            case "A", "a":
+                let isRelative = currentCommand == "a"
+                // Expand concatenated arc flags before parsing
+                let arcTokens = expandArcTokens(tokens, from: i)
+                var ai = 0
+                while ai + 6 < arcTokens.count {
+                    let rx = abs(Double(arcTokens[ai]) ?? 0)
+                    let ry = abs(Double(arcTokens[ai + 1]) ?? 0)
+                    let xRotation = Double(arcTokens[ai + 2]) ?? 0
+                    let largeArc = (Double(arcTokens[ai + 3]) ?? 0) != 0
+                    let sweep = (Double(arcTokens[ai + 4]) ?? 0) != 0
+                    let ex = Double(arcTokens[ai + 5]) ?? 0
+                    let ey = Double(arcTokens[ai + 6]) ?? 0
+                    let endPoint = isRelative ? CGPoint(x: currentPoint.x + ex, y: currentPoint.y + ey) : CGPoint(x: ex, y: ey)
+                    let curves = arcToBezierCurves(from: currentPoint, to: endPoint, rx: rx, ry: ry, xRotation: xRotation, largeArc: largeArc, sweep: sweep)
+                    elements.append(contentsOf: curves)
+                    currentPoint = endPoint
+                    lastControlPoint = nil
+                    ai += 7
+                }
+                // Advance i past the consumed original tokens
+                while i < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
+                    i += 1
+                }
+
             default:
                 i += 1
             }
         }
 
         return elements
+    }
+
+    // MARK: - SVG Arc Parameter Parsing
+    // Arc flags (large-arc and sweep) are single digits (0 or 1) that SVG allows
+    // to be concatenated without separators: "a130 130 0 014.981 3.3" means
+    // flags=0,1 x=4.981 y=3.3. The tokenizer sees "014.981" as one token.
+
+    private func expandArcTokens(_ tokens: [String], from start: Int) -> [String] {
+        var result: [String] = []
+        var paramIdx = 0
+        var ti = start
+        while ti < tokens.count {
+            let token = tokens[ti]
+            if token.rangeOfCharacter(from: .letters) != nil { break }
+
+            let posInGroup = paramIdx % 7
+            if (posInGroup == 3 || posInGroup == 4) && token.count > 1 {
+                let first = token.prefix(1)
+                if first == "0" || first == "1" {
+                    // Split off the flag digit
+                    result.append(String(first))
+                    paramIdx += 1
+                    let rest = String(token.dropFirst())
+                    // If we're now at position 4 (second flag) and rest also starts with a flag digit
+                    let newPos = paramIdx % 7
+                    if newPos == 4 && rest.count > 1 && (rest.hasPrefix("0") || rest.hasPrefix("1")) {
+                        // Split the second flag too: "14.981" → "1", "4.981"
+                        result.append(String(rest.prefix(1)))
+                        paramIdx += 1
+                        let rest2 = String(rest.dropFirst())
+                        if !rest2.isEmpty {
+                            result.append(rest2)
+                            paramIdx += 1
+                        }
+                    } else if !rest.isEmpty {
+                        result.append(rest)
+                        paramIdx += 1
+                    }
+                    ti += 1
+                    continue
+                }
+            }
+            result.append(token)
+            paramIdx += 1
+            ti += 1
+        }
+        return result
+    }
+
+    // MARK: - SVG Arc to Cubic Bezier Conversion
+    // Converts SVG elliptical arc parameters to cubic bezier curves.
+    // Implements the SVG spec endpoint-to-center parameterization algorithm.
+
+    func arcToBezierCurves(from p1: CGPoint, to p2: CGPoint, rx inputRx: Double, ry inputRy: Double, xRotation: Double, largeArc: Bool, sweep: Bool) -> [PathElement] {
+        // Degenerate cases
+        if p1.x == p2.x && p1.y == p2.y { return [] }
+        var rx = inputRx
+        var ry = inputRy
+        if rx == 0 || ry == 0 {
+            return [.line(to: VectorPoint(p2))]
+        }
+
+        let phi = xRotation * .pi / 180.0
+        let cosPhi = cos(phi)
+        let sinPhi = sin(phi)
+
+        // Step 1: Compute (x1', y1') — transform to unit circle space
+        let dx = (p1.x - p2.x) / 2.0
+        let dy = (p1.y - p2.y) / 2.0
+        let x1p = cosPhi * dx + sinPhi * dy
+        let y1p = -sinPhi * dx + cosPhi * dy
+
+        // Step 2: Correct radii if too small
+        let x1pSq = x1p * x1p
+        let y1pSq = y1p * y1p
+        var rxSq = rx * rx
+        var rySq = ry * ry
+        let radiusCheck = x1pSq / rxSq + y1pSq / rySq
+        if radiusCheck > 1.0 {
+            let scale = sqrt(radiusCheck)
+            rx *= scale
+            ry *= scale
+            rxSq = rx * rx
+            rySq = ry * ry
+        }
+
+        // Step 3: Compute center point (cx', cy')
+        var sq = max(0.0, (rxSq * rySq - rxSq * y1pSq - rySq * x1pSq) / (rxSq * y1pSq + rySq * x1pSq))
+        sq = sqrt(sq)
+        if largeArc == sweep { sq = -sq }
+        let cxp = sq * rx * y1p / ry
+        let cyp = -sq * ry * x1p / rx
+
+        // Step 4: Compute center point (cx, cy) in original coordinates
+        let cx = cosPhi * cxp - sinPhi * cyp + (p1.x + p2.x) / 2.0
+        let cy = sinPhi * cxp + cosPhi * cyp + (p1.y + p2.y) / 2.0
+
+        // Step 5: Compute start angle and sweep angle
+        let ux = (x1p - cxp) / rx
+        let uy = (y1p - cyp) / ry
+        let vx = (-x1p - cxp) / rx
+        let vy = (-y1p - cyp) / ry
+
+        let startAngle = atan2(uy, ux)
+        var sweepAngle = atan2(vy * ux - vx * uy, vx * ux + vy * uy)
+
+        if !sweep && sweepAngle > 0 {
+            sweepAngle -= 2.0 * .pi
+        } else if sweep && sweepAngle < 0 {
+            sweepAngle += 2.0 * .pi
+        }
+
+        // Step 6: Split into segments ≤ 90 degrees and convert each to bezier
+        let segmentCount = max(1, Int(ceil(abs(sweepAngle) / (.pi / 2.0))))
+        let segmentAngle = sweepAngle / Double(segmentCount)
+
+        var elements: [PathElement] = []
+        var angle = startAngle
+
+        for _ in 0..<segmentCount {
+            let endAngle = angle + segmentAngle
+            let curves = arcSegmentToBezier(cx: cx, cy: cy, rx: rx, ry: ry, phi: phi, startAngle: angle, segmentAngle: segmentAngle)
+            elements.append(contentsOf: curves)
+            angle = endAngle
+        }
+
+        return elements
+    }
+
+    private func arcSegmentToBezier(cx: Double, cy: Double, rx: Double, ry: Double, phi: Double, startAngle: Double, segmentAngle: Double) -> [PathElement] {
+        // Approximate a single arc segment (≤ 90°) with a cubic bezier
+        let alpha = sin(segmentAngle) * (sqrt(4.0 + 3.0 * tan(segmentAngle / 2.0) * tan(segmentAngle / 2.0)) - 1.0) / 3.0
+
+        let cosPhi = cos(phi)
+        let sinPhi = sin(phi)
+
+        let cosStart = cos(startAngle)
+        let sinStart = sin(startAngle)
+        let cosEnd = cos(startAngle + segmentAngle)
+        let sinEnd = sin(startAngle + segmentAngle)
+
+        // Control point 1
+        let dx1 = -rx * sinStart
+        let dy1 = ry * cosStart
+        let cp1x = cx + cosPhi * (rx * cosStart + alpha * dx1) - sinPhi * (ry * sinStart + alpha * dy1)
+        let cp1y = cy + sinPhi * (rx * cosStart + alpha * dx1) + cosPhi * (ry * sinStart + alpha * dy1)
+
+        // Control point 2
+        let dx2 = -rx * sinEnd
+        let dy2 = ry * cosEnd
+        let cp2x = cx + cosPhi * (rx * cosEnd - alpha * dx2) - sinPhi * (ry * sinEnd - alpha * dy2)
+        let cp2y = cy + sinPhi * (rx * cosEnd - alpha * dx2) + cosPhi * (ry * sinEnd - alpha * dy2)
+
+        // End point
+        let endX = cx + cosPhi * rx * cosEnd - sinPhi * ry * sinEnd
+        let endY = cy + sinPhi * rx * cosEnd + cosPhi * ry * sinEnd
+
+        return [.curve(to: VectorPoint(endX, endY), control1: VectorPoint(cp1x, cp1y), control2: VectorPoint(cp2x, cp2y))]
     }
 }

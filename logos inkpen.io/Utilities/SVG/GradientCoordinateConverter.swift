@@ -299,43 +299,29 @@ extension GradientCoordinateConverter {
     static func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false, viewBoxWidth: Double = 100.0, viewBoxHeight: Double = 100.0) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
 
+        if gradientUnits == .userSpaceOnUse {
+            // userSpaceOnUse: preserve absolute coordinates in SVG user space.
+            // Percentages refer to the viewport (viewBox) dimensions per SVG spec.
+            if trimmed.hasSuffix("%") {
+                let percentValue = Double(String(trimmed.dropLast(1))) ?? 0.0
+                let dimension = isXCoordinate ? viewBoxWidth : viewBoxHeight
+                return percentValue / 100.0 * dimension
+            }
+            // Absolute values stay as-is — they're in SVG user space coordinates
+            return Double(trimmed) ?? 0.0
+        }
+
+        // objectBoundingBox: normalize to 0-1 range
         if trimmed.hasSuffix("%") {
             let percentValue = Double(String(trimmed.dropLast(1))) ?? 0.0
             return percentValue / 100.0
         }
 
         if let absoluteValue = Double(trimmed) {
-            if gradientUnits == .userSpaceOnUse {
-                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
-                if normalizer > 0 {
-                    let normalizedValue = absoluteValue / normalizer
-                    let finalValue: Double
-                    if useExtremeValueHandling {
-                        if normalizedValue < 0.0 || normalizedValue > 1.0 {
-                            if normalizedValue < 0.0 {
-                                finalValue = 0.5 + (normalizedValue * 0.5)
-                            } else {
-                                finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
-                            }
-                        } else {
-                            finalValue = normalizedValue
-                        }
-                    } else {
-                        finalValue = normalizedValue
-                    }
-
-                    let clampedValue = max(0.0, min(1.0, finalValue))
-
-                    return clampedValue
-                } else {
-                    return absoluteValue
-                }
-            } else {
-                if absoluteValue > 1.0 {
-                    return min(absoluteValue / 100.0, 1.0)
-                }
-                return absoluteValue
+            if absoluteValue > 1.0 {
+                return min(absoluteValue / 100.0, 1.0)
             }
+            return absoluteValue
         }
 
         return 0.0

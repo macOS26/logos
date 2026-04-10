@@ -51,6 +51,10 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var pendingClipPathId: String?
     internal var clipPathStack: [String?] = []
 
+    internal var elementDefinitions: [String: (elementName: String, attributes: [String: String])] = [:]
+    private var useRecursionDepth = 0
+    private let maxUseRecursionDepth = 10
+
     var inkpenMetadata: String? = nil
     private var isInMetadata = false
     private var isInInkpenDocument = false
@@ -70,6 +74,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
 
     func parse(_ xmlString: String) throws -> ParseResult {
+
+
         guard let data = xmlString.data(using: .utf8) else {
             throw VectorImportError.parsingError("Invalid SVG string", line: nil)
         }
@@ -86,6 +92,7 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = self
+
 
         if !xmlParser.parse() {
             if let error = xmlParser.parserError {
@@ -135,7 +142,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
 
+
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
+
 
         return ParseResult(
             shapes: consolidatedShapes,
@@ -153,6 +162,16 @@ class SVGParser: NSObject, XMLParserDelegate {
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElementName = elementName
+
+        // Store elements by ID for <use> references
+        if let id = attributeDict["id"] {
+            switch elementName {
+            case "path", "rect", "circle", "ellipse", "line", "polyline", "polygon":
+                elementDefinitions[id] = (elementName: elementName, attributes: attributeDict)
+            default:
+                break
+            }
+        }
 
         if isParsingClipPath {
             switch elementName {
@@ -244,6 +263,9 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         case "image":
             parseImage(attributes: attributeDict)
+
+        case "use":
+            parseUseElement(attributes: attributeDict)
 
         default:
             break
@@ -399,14 +421,47 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let scaleX = viewBoxScale.x
                 let scaleY = viewBoxScale.y
 
-                // Always apply the viewBox scale transform to map viewBox coordinates
-                // to document coordinates. For 96 DPI SVGs (scale ≈ 4/3), this scales
-                // the artwork up to match the document size, ensuring the imported
-                // SVG appears at 100% when reopened.
-                currentTransform = CGAffineTransform.identity
-                    .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                    .scaledBy(x: scaleX, y: scaleY)
+                // Parse preserveAspectRatio (default: "xMidYMid meet")
+                let par = attributes["preserveAspectRatio"] ?? "xMidYMid meet"
+                let parParts = par.split(separator: " ").map { String($0) }
+                let alignment = parParts.first ?? "xMidYMid"
+                let meetOrSlice = parParts.count > 1 ? parParts[1] : "meet"
 
+                if alignment == "none" {
+                    // Non-uniform scaling (stretch to fill)
+                    currentTransform = CGAffineTransform.identity
+                        .translatedBy(x: -viewBoxX, y: -viewBoxY)
+                        .scaledBy(x: scaleX, y: scaleY)
+                } else {
+                    // Uniform scaling with alignment
+                    let uniformScale = meetOrSlice == "slice" ? max(scaleX, scaleY) : min(scaleX, scaleY)
+                    let scaledWidth = viewBoxWidth * uniformScale
+                    let scaledHeight = viewBoxHeight * uniformScale
+
+                    // X alignment
+                    let translateX: Double
+                    if alignment.hasPrefix("xMin") {
+                        translateX = 0
+                    } else if alignment.hasPrefix("xMax") {
+                        translateX = documentSize.width - scaledWidth
+                    } else { // xMid
+                        translateX = (documentSize.width - scaledWidth) / 2.0
+                    }
+
+                    // Y alignment
+                    let translateY: Double
+                    if alignment.contains("YMin") {
+                        translateY = 0
+                    } else if alignment.contains("YMax") {
+                        translateY = documentSize.height - scaledHeight
+                    } else { // YMid
+                        translateY = (documentSize.height - scaledHeight) / 2.0
+                    }
+
+                    currentTransform = CGAffineTransform.identity
+                        .translatedBy(x: translateX - viewBoxX * uniformScale, y: translateY - viewBoxY * uniformScale)
+                        .scaledBy(x: uniformScale, y: uniformScale)
+                }
             }
         } else {
             viewBoxWidth = documentSize.width
@@ -461,9 +516,50 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
+    private func parseUseElement(attributes: [String: String]) {
+        guard useRecursionDepth < maxUseRecursionDepth else { return }
+
+        let href = attributes["xlink:href"] ?? attributes["href"] ?? ""
+        let refId = href.hasPrefix("#") ? String(href.dropFirst()) : href
+        guard !refId.isEmpty, let def = elementDefinitions[refId] else { return }
+
+        // Merge <use> positioning and style attributes with the referenced element
+        let useX = parseLength(attributes["x"]) ?? 0
+        let useY = parseLength(attributes["y"]) ?? 0
+
+        var mergedAttributes = def.attributes
+        // <use> attributes override referenced element's attributes (except id)
+        for (key, value) in attributes where key != "xlink:href" && key != "href" && key != "id" && key != "x" && key != "y" {
+            mergedAttributes[key] = value
+        }
+
+        // Apply <use> x/y as a translate transform
+        let savedTransform = currentTransform
+        if useX != 0 || useY != 0 {
+            currentTransform = currentTransform.translatedBy(x: useX, y: useY)
+        }
+        if let useTransform = attributes["transform"] {
+            currentTransform = currentTransform.concatenating(parseTransform(useTransform))
+        }
+
+        useRecursionDepth += 1
+        switch def.elementName {
+        case "path":       parsePath(attributes: mergedAttributes)
+        case "rect":       parseRectangle(attributes: mergedAttributes)
+        case "circle":     parseCircle(attributes: mergedAttributes)
+        case "ellipse":    parseEllipse(attributes: mergedAttributes)
+        case "line":       parseLine(attributes: mergedAttributes)
+        case "polyline":   parsePolyline(attributes: mergedAttributes, closed: false)
+        case "polygon":    parsePolyline(attributes: mergedAttributes, closed: true)
+        default: break
+        }
+        useRecursionDepth -= 1
+
+        currentTransform = savedTransform
+    }
+
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
-
         let pathData = parsePathData(d)
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
@@ -480,7 +576,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else {
             shapes.append(shape)
         }
-
     }
 
     private func parseImage(attributes: [String: String]) {
@@ -748,9 +843,16 @@ class SVGParser: NSObject, XMLParserDelegate {
             transform = currentTransform.isIdentity ? .identity : currentTransform
         }
 
+        // Apply fill-rule to the path
+        var resolvedPath = path
+        let fillRuleAttr = mergedAttributes["fill-rule"] ?? "nonzero"
+        if fillRuleAttr == "evenodd" {
+            resolvedPath.fillRule = .evenOdd
+        }
+
         return VectorShape(
             name: name,
-            path: path,
+            path: resolvedPath,
             geometricType: geometricType,
             strokeStyle: stroke,
             fillStyle: fill,

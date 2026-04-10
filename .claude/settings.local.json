@@ -155,7 +155,10 @@
       "Bash(xxd:*)",
       "WebFetch(domain:www.manualslib.com)",
       "Bash(grep:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.rs)",
+      "Read(//Users/toddbruss/Downloads/**)"
     ],
     "deny": [],
     "ask": []

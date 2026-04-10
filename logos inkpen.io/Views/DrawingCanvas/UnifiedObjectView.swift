@@ -912,61 +912,92 @@ struct LayerCanvasView: View {
         // Render gradient based on type
         switch gradient {
         case .linear(let linear):
-            // Pre-calculate common values (O(1))
-            let scale = CGFloat(linear.scaleX)
-            let originX = linear.originPoint.x * scale
-            let originY = linear.originPoint.y * scale
-            let centerX = pathBounds.minX + pathBounds.width * originX
-            let centerY = pathBounds.minY + pathBounds.height * originY
-            let angle = CGFloat(linear.storedAngle * .pi / 180.0)
+            if linear.units == .userSpaceOnUse {
+                // userSpaceOnUse: coordinates are absolute in SVG user space,
+                // pre-resolved with gradientTransform baked in at parse time
+                let start = CGPoint(x: linear.startPoint.x, y: linear.startPoint.y)
+                let end = CGPoint(x: linear.endPoint.x, y: linear.endPoint.y)
 
-            // SIMD-optimized gradient calculations
-            let startVec = SIMD2<Double>(Double(linear.startPoint.x), Double(linear.startPoint.y))
-            let endVec = SIMD2<Double>(Double(linear.endPoint.x), Double(linear.endPoint.y))
-            let delta = endVec - startVec
-            let length = simd_length(delta) * scale * max(pathBounds.width, pathBounds.height)
+                cgContext.drawLinearGradient(
+                    cgGradient,
+                    start: start,
+                    end: end,
+                    options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+                )
+            } else {
+                // objectBoundingBox: coordinates are 0-1 relative to shape bounds
+                let scale = CGFloat(linear.scaleX)
+                let originX = linear.originPoint.x * scale
+                let originY = linear.originPoint.y * scale
+                let centerX = pathBounds.minX + pathBounds.width * originX
+                let centerY = pathBounds.minY + pathBounds.height * originY
+                let angle = CGFloat(linear.storedAngle * .pi / 180.0)
 
-            let halfLength = length / 2
-            let angleVec = SIMD2<Double>(cos(Double(angle)), sin(Double(angle)))
-            let centerVec = SIMD2<Double>(Double(centerX), Double(centerY))
+                let startVec = SIMD2<Double>(Double(linear.startPoint.x), Double(linear.startPoint.y))
+                let endVec = SIMD2<Double>(Double(linear.endPoint.x), Double(linear.endPoint.y))
+                let delta = endVec - startVec
+                let length = simd_length(delta) * scale * max(pathBounds.width, pathBounds.height)
 
-            let startVec2 = centerVec - angleVec * halfLength
-            let endVec2 = centerVec + angleVec * halfLength
+                let halfLength = length / 2
+                let angleVec = SIMD2<Double>(cos(Double(angle)), sin(Double(angle)))
+                let centerVec = SIMD2<Double>(Double(centerX), Double(centerY))
 
-            let start = CGPoint(x: startVec2.x, y: startVec2.y)
-            let end = CGPoint(x: endVec2.x, y: endVec2.y)
+                let startVec2 = centerVec - angleVec * halfLength
+                let endVec2 = centerVec + angleVec * halfLength
 
-            cgContext.drawLinearGradient(
-                cgGradient,
-                start: start,
-                end: end,
-                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
-            )
+                let start = CGPoint(x: startVec2.x, y: startVec2.y)
+                let end = CGPoint(x: endVec2.x, y: endVec2.y)
+
+                cgContext.drawLinearGradient(
+                    cgGradient,
+                    start: start,
+                    end: end,
+                    options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+                )
+            }
 
         case .radial(let radial):
-            let center = CGPoint(
-                x: pathBounds.minX + pathBounds.width * radial.originPoint.x,
-                y: pathBounds.minY + pathBounds.height * radial.originPoint.y
-            )
+            if radial.units == .userSpaceOnUse {
+                // userSpaceOnUse: coordinates are absolute in SVG user space,
+                // pre-resolved with gradientTransform baked in at parse time
+                let center = CGPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
+                let focal = radial.focalPoint ?? center
+                let radius = CGFloat(radial.radius)
 
-            cgContext.saveGState()
-            cgContext.translateBy(x: center.x, y: center.y)
-            cgContext.rotate(by: CGFloat(radial.angle * .pi / 180.0))
-            cgContext.scaleBy(x: CGFloat(radial.scaleX), y: CGFloat(radial.scaleY))
+                cgContext.drawRadialGradient(
+                    cgGradient,
+                    startCenter: focal,
+                    startRadius: 0,
+                    endCenter: center,
+                    endRadius: radius,
+                    options: [.drawsAfterEndLocation]
+                )
+            } else {
+                // objectBoundingBox: coordinates are 0-1 relative to shape bounds
+                let center = CGPoint(
+                    x: pathBounds.minX + pathBounds.width * radial.originPoint.x,
+                    y: pathBounds.minY + pathBounds.height * radial.originPoint.y
+                )
 
-            let focalPoint = radial.focalPoint.map { CGPoint(x: $0.x, y: $0.y) } ?? .zero
-            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+                cgContext.saveGState()
+                cgContext.translateBy(x: center.x, y: center.y)
+                cgContext.rotate(by: CGFloat(radial.angle * .pi / 180.0))
+                cgContext.scaleBy(x: CGFloat(radial.scaleX), y: CGFloat(radial.scaleY))
 
-            cgContext.drawRadialGradient(
-                cgGradient,
-                startCenter: focalPoint,
-                startRadius: 0,
-                endCenter: .zero,
-                endRadius: radius,
-                options: [.drawsAfterEndLocation]
-            )
+                let focalPoint = radial.focalPoint.map { CGPoint(x: $0.x, y: $0.y) } ?? .zero
+                let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
 
-            cgContext.restoreGState()
+                cgContext.drawRadialGradient(
+                    cgGradient,
+                    startCenter: focalPoint,
+                    startRadius: 0,
+                    endCenter: .zero,
+                    endRadius: radius,
+                    options: [.drawsAfterEndLocation]
+                )
+
+                cgContext.restoreGState()
+            }
         }
 
         cgContext.restoreGState()
