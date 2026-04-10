@@ -118,7 +118,7 @@ class PDFCommandParser {
 
         removeDuplicateClippingShapes()
 
-        // Post-processing pass: merge per-word text shapes into per-line text
+        // Post-processing pass #1: merge per-word text shapes into per-line text
         // shapes. The PDF stream-time merge logic is brittle because some PDFs
         // emit a new Tm/Td per word which the stream parser can't always detect
         // as "same line". This pass operates on the final shapes array and
@@ -127,6 +127,13 @@ class PDFCommandParser {
         // visual line. The merged shape goes through the same CTLine rendering
         // pipeline as native-typed InkPen text.
         shapes = mergeTextShapesByLine(shapes)
+
+        // Post-processing pass #2: merge adjacent lines that share the same
+        // paragraph characteristics (same font/size, same left X margin,
+        // consistent line-height vertical spacing) into single multi-line
+        // VectorText objects. NSLayoutManager handles the multi-line layout
+        // via the same CTLine rendering pipeline used for native text.
+        shapes = mergeTextLinesByParagraph(shapes)
 
         if !shapes.isEmpty {
             let artworkBounds = calculateArtworkBounds()
@@ -235,6 +242,117 @@ class PDFCommandParser {
         result.bounds = CGRect(x: originX, y: originY,
                                width: max(measuredWidth, result.bounds.width),
                                height: max(measuredHeight, result.bounds.height))
+        return result
+    }
+
+    // Merges adjacent line-shapes into paragraph-shapes. Two consecutive lines
+    // belong to the same paragraph when:
+    //   • Same font family and font size (within 0.5pt)
+    //   • Same left X start position (within 5pt tolerance)
+    //   • Vertical Y delta is approximately equal to the line-height (within 40%)
+    // A larger vertical gap means a new paragraph or a new section. The merged
+    // shape stores content as "\n"-separated lines; NSLayoutManager handles the
+    // multi-line layout via the existing CTLine rendering pipeline.
+    private func mergeTextLinesByParagraph(_ input: [VectorShape]) -> [VectorShape] {
+        guard !input.isEmpty else { return input }
+        var result: [VectorShape] = []
+        var pending: VectorShape? = nil
+        var pendingLineY: CGFloat = 0  // Y of the last line added to pending
+
+        func isTextShape(_ s: VectorShape) -> Bool {
+            return s.textContent != nil && !(s.textContent ?? "").isEmpty
+        }
+        func textY(_ s: VectorShape) -> CGFloat {
+            return s.textPosition?.y ?? s.bounds.minY
+        }
+        func textX(_ s: VectorShape) -> CGFloat {
+            return s.textPosition?.x ?? s.bounds.minX
+        }
+
+        func canContinueParagraph(_ prev: VectorShape, _ next: VectorShape, prevLineY: CGFloat) -> Bool {
+            guard isTextShape(prev) && isTextShape(next) else { return false }
+            guard let pType = prev.typography, let nType = next.typography else { return false }
+            // Same font family and size
+            guard pType.fontFamily == nType.fontFamily else { return false }
+            guard abs(pType.fontSize - nType.fontSize) < 0.5 else { return false }
+            // Same left margin (X start within tolerance)
+            let xDelta = abs(textX(prev) - textX(next))
+            guard xDelta < 5.0 else { return false }
+            // Y gap ≈ line-height. PDF coordinates — next line's Y should be
+            // greater than prev by roughly one lineHeight (top-left origin after
+            // the Y-flip earlier in the pipeline).
+            let lineHeight = CGFloat(pType.lineHeight > 0 ? pType.lineHeight : pType.fontSize * 1.2)
+            let yGap = textY(next) - prevLineY
+            // Allow a reasonable tolerance — paragraphs can have slightly
+            // varying leading between lines but shouldn't double-space.
+            let minGap = lineHeight * 0.6
+            let maxGap = lineHeight * 1.5
+            return yGap >= minGap && yGap <= maxGap
+        }
+
+        for shape in input {
+            if let prev = pending, canContinueParagraph(prev, shape, prevLineY: pendingLineY) {
+                // Extend pending paragraph with this line.
+                var merged = prev
+                let prevContent = (prev.textContent ?? "")
+                let nextContent = (shape.textContent ?? "")
+                merged.textContent = prevContent + "\n" + nextContent
+                pending = merged
+                pendingLineY = textY(shape)
+            } else {
+                if let prev = pending {
+                    result.append(finalizeParagraphWidth(prev))
+                }
+                pending = shape
+                pendingLineY = textY(shape)
+            }
+        }
+        if let prev = pending {
+            result.append(finalizeParagraphWidth(prev))
+        }
+        return result
+    }
+
+    // Sets a paragraph's areaSize to fit all its lines — width = widest line,
+    // height = total of all line-heights. Uses NSAttributedString measurement
+    // so the result is pixel-correct for the chosen font.
+    private func finalizeParagraphWidth(_ shape: VectorShape) -> VectorShape {
+        guard let content = shape.textContent, !content.isEmpty,
+              let typography = shape.typography else {
+            return shape
+        }
+        var result = shape
+        let nsFont = typography.nsFont
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .kern: typography.letterSpacing
+        ]
+
+        // Measure each line independently, take the max width.
+        let lines = content.components(separatedBy: "\n")
+        var maxLineWidth: CGFloat = 0
+        for line in lines {
+            let w = (line as NSString).size(withAttributes: attrs).width
+            if w > maxLineWidth { maxLineWidth = w }
+        }
+        let padding: CGFloat = 4.0
+        let measuredWidth = ceil(maxLineWidth) + padding
+        let lineHeight = CGFloat(typography.lineHeight > 0 ? typography.lineHeight : typography.fontSize * 1.2)
+        let measuredHeight = ceil(lineHeight * CGFloat(lines.count))
+
+        if var area = result.areaSize {
+            area.width = max(area.width, measuredWidth)
+            area.height = measuredHeight
+            result.areaSize = area
+        } else {
+            result.areaSize = CGSize(width: measuredWidth, height: measuredHeight)
+        }
+
+        let originX = result.textPosition?.x ?? result.bounds.minX
+        let originY = result.textPosition?.y ?? result.bounds.minY
+        result.bounds = CGRect(x: originX, y: originY,
+                               width: measuredWidth,
+                               height: measuredHeight)
         return result
     }
 
