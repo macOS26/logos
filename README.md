@@ -4,52 +4,150 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 
 ![inkpen.io Screenshot](assets/screenshot.jpg)
 
-## Features
-## Features
+---
 
-### Drawing Tools
-- **Pen Tool** - Create precise Bezier paths with full control over anchor points and handles
-- **Direct Selection Tool** - Select and manipulate individual anchor points
-  - Arrow key nudging for selected points
-  - Option + Arrow for 1/10th fine-tuning
-  - Move dialog support for precise point positioning
-- **Selection Tool** - Select and transform entire shapes
-  - Cmd+Click to select behind overlapping objects
-  - Option+Click select behind for direct selection
-  - Auto-select by paint/fill (FreeHand/Illustrator style)
+## ✏️ Drawing & Pen Tools
 
-### Transform & Alignment
-- **Transform Controls** - Scale X, Scale Y, and Rotate fields in toolbar
-- **Alignment Tools** - Align X and Align Y with anchor point preferences
-- **Shift-Constrain** - Hold Shift during drag for constrained movement
-- **Lock Support** - Lock shapes with visual indicator in transform box
+- Full FreeHand-style pen tool with calligraphic ink simulation
+- Embed original inkpen data in Autodesk SVG exports
+- Remove stroke expansion from selection hit test for better performance
+- Pressure-sensitive drawing support
+- Stroke simplification, deduplication, and smoothing filters
 
-### Path Operations
-- **Offset Path** - Create parallel paths with configurable distance
-  - Supports all document units (pixels, points, mm, cm, picas)
-  - Handles negative offsets for inner contours
-- **Bounding Box Rectangle** - Quick rectangle from selection bounds
-- **Corner Radius** - Adjust corner radius on rectangles
+## 🖱️ Selection & Direct Selection
 
-### Groups & Layers
-- **Modern Groups** - Full transform support (rotate, scale, shear)
-- **Layers Panel** - Organize artwork with named layers
-- **Guides Layer** - Dedicated layer for guide management
-- **Rename Support** - Rename objects and groups directly
+- Direct selection tool with paint/fill-based selection (FreeHand/Illustrator style)
+- Option+Click select behind for direct selection tool
+- Direct selection moves individual points; arrow key nudging for selected points
+- Auto-select topmost member when switching to direct select with group
+- Direct selection UI moves with shape during live nudge preview
+- Move dialog support for selected points in direct selection mode
 
-### Export
-- **Native .inkpen Format** - Full-fidelity document format
-- **SVG Export** - With embedded inkpen data for Autodesk compatibility
-- **PDF Export** - High-quality vector PDF output
-- **Image Import** - Support for multiple image formats
+## 📐 Offset Path & Transform
 
-### Precision
-- **Document Units** - Pixels, points, millimeters, centimeters, picas
-- **Snap to Point** - Precise alignment with intelligent snapping
-- **Zoom** - 25% to 16,000% zoom range
-- **Fit to Page** - Quick view fitting with high zoom support
+- Offset Path feature with document units and ±12 picas / ±50px ranges
+- Offset path uses document units with 0.1 precision
+- Clamp offset slider when document units change
+- Scale X, Scale Y, and Rotate fields in toolbar
+- Transform box with direct opacity control
+- Bounding box rectangle button in document toolbar
 
-## Keyboard Shortcuts
+## 📏 Alignment & Anchors
+
+- Align X and Align Y menu items in Object menu
+- Separate X-only and Y-only anchor point alignment buttons
+- Alignment anchor preference with locked item priority
+- Simplified single align button in toolbar
+
+## 📋 Import & Export
+
+- SVG import: shapes added to new layer instead of replacing Guides layer
+- SVG text import preserves UUID and textPosition
+- PDF export fix for groups using memberIDs
+- Autodesk SVG export uses true 96 DPI coordinates
+- PNG export fix (was upside down from File menu)
+- Dynamic format version in SVG and PDF metadata
+
+## 🗂️ Layers & Groups
+
+- Delete layer button in LayersPanel
+- Lock icon as toggle button synced with layers panel
+- Layer panel displays group members using memberIDs
+- Sync direct selection when selecting from layers panel
+- Track selection order in layers panel
+- Copy/paste groups with unique UUIDs for all members
+- Pasted groups keep members inside group
+- Group color/stroke/opacity changes via memberIDs
+- Fix nested group rendering to display sub-groups
+
+## 🎯 Snapping, Zoom & View
+
+- Fit screen on first open, never open minimized
+- Fit to Page max zoom increased to 16,000%
+- Classic Space+Cmd zoom shortcut
+- Auto fit-to-page when window is resized
+- Snap Page to Artwork/Selection captures all object types
+- Show Grid, Snap to Grid, Grid on Top toggles
+- Major grid line interval per unit type
+- Grid renders above background layer
+
+## 🌈 Color, Opacity & Gradients
+
+- CPU SIMD optimization for color + gradient operations
+- Live updates for opacity and width sliders on groups
+- Preserve opacity when changing colors
+- Fix color picker for groups with memberIDs
+- Replace NSColor with PlatformColor and Color.platform* helpers
+- Replace GradientSwatchNSView with SwiftUI Canvas
+- Migrate to CGColor across PDF, cursors, eyedropper
+
+## 🔤 Text & Typography
+
+- Stroke placement support for text (center, inside, outside)
+- Text to outlines with undo support
+- Preserve text stroke and layer positions when converting to outlines
+- Optimize text stroke rendering — outline once per text
+- SVG text import with UUID and textPosition preservation
+
+## ✂️ Path Operations & Clipping
+
+- Combine path operation with unionMultiplePaths support
+- Clipping mask with cross-layer support and undo
+- Fix path operations duplicate IDs and undo count
+- Fix release clipping mask reversing object order
+- Fix clipping mask duplicating objects from other layers
+
+## 📐 Units, Dimensions & Coordinates
+
+- Unit-aware Transform X Y W H coordinates
+- Show drawing dimensions in document unit
+- 3 decimal places for dimension display
+- Unit formats standardized to 2–3 decimal places
+- Fix guide drag speed — canvasDelta already in doc coords
+
+## ⏮️ Undo & Redo
+
+- Selection/deselection in undo/redo
+- Fix undo not available until deselection
+- Undo support for group transforms, nested group drag, and property changes
+- Undo for path operations, clipping masks, and corner radius changes
+- Refactored nudge, text handling, corner radius, and transform controls to use undo helpers
+
+## 🧩 Toolbar & UI
+
+- Interpolation quality popup menu
+- Add onTapGesture for instant button response
+- Optimize LayersPanel reactivity
+- Fix duplicate button actions
+
+## ⚡ Performance — SIMD Optimizations
+
+- SIMD optimize pan and coordinate transforms
+- SIMD optimize Canvas views, GridView, TextCanvas, GPUMathAccelerator
+- SIMD optimize CornerRadiusEditTool, PenPlusMinusTool, UnifiedObjectView gradient
+- SIMD8 batch optimization with type aliases
+- Exponential zoom easing with SIMD
+- Optimize bounding box rectangle for faster response
+- O(1) clipped objects cache
+- Skip guides in layer rendering — use GuidesView only
+- Skip viewport culling for text objects
+
+## 🐛 Bug Fixes & Stability
+
+- Fix tile rendering gaps with pixel-aligned sizes
+- Fix tile culling coordinate conversion
+- Fix Metal texture color space conversion
+- Fix rectangle corner handle directions for cusp conversion
+- Fix grid alignment and mm spacing
+- Fix keyline view not rendering shapes
+- Fix layout recursion warning on startup
+- Fix orphaned objects from offset path operation
+- Fix fitToPage centering calculation
+- Various compile error fixes and warning cleanups
+
+---
+
+## ⌨️ Keyboard Shortcuts
 
 | Action | Shortcut |
 |--------|----------|
@@ -57,24 +155,35 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 | Fine Nudge (1/10th) | Option + Arrow |
 | Select Behind | Cmd + Click |
 | Constrain Drag | Shift + Drag |
+| Zoom | Space + Cmd |
 
-## System Requirements
+---
+
+## 📁 File Formats
+
+| Format | Extension | Description |
+|--------|-----------|-------------|
+| Ink Pen Document | .inkpen | Native format with full editibility |
+| SVG | .svg | Scalable Vector Graphics |
+| PDF | .pdf | Portable Document Format |
+| PNG | .png | Raster image export |
+
+---
+
+## 💻 System Requirements
 
 - macOS (SwiftUI-based)
 - Apple Silicon or Intel Mac
 
-## File Formats
+---
 
-| Format | Extension | Description |
-|--------|-----------|-------------|
-| Ink Pen Document | .inkpen | Native format with full editability |
-| SVG | .svg | Scalable Vector Graphics |
-| PDF | .pdf | Portable Document Format |
+## 📦 Release
 
-## Version
+**v1.0.1** — Initial Public Release · 2,599 commits · Oct 9, 2025 → Apr 9, 2026
 
-- **Version:** 1.0
-- **Build:** 29
+[Download latest release](https://github.com/macOS26/logos/releases/tag/v1.0.1)
+
+---
 
 ## License
 
