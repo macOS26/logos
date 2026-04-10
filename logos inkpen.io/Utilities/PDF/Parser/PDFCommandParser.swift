@@ -183,20 +183,6 @@ class PDFCommandParser {
                     joiner = " "
                 }
                 merged.textContent = prevContent + joiner + nextContent
-                // Expand the bounds to cover both shapes horizontally.
-                let mergedMinX = min(prev.bounds.minX, shape.bounds.minX)
-                let mergedMaxX = max(prev.bounds.maxX, shape.bounds.maxX)
-                let mergedY = prev.bounds.minY
-                let mergedHeight = max(prev.bounds.height, shape.bounds.height)
-                merged.bounds = CGRect(x: mergedMinX, y: mergedY,
-                                       width: mergedMaxX - mergedMinX,
-                                       height: mergedHeight)
-                if var area = merged.areaSize {
-                    area.width = max(area.width, mergedMaxX - mergedMinX)
-                    merged.areaSize = area
-                } else {
-                    merged.areaSize = CGSize(width: mergedMaxX - mergedMinX, height: mergedHeight)
-                }
                 // Anchor the merged text at the leftmost starting position.
                 if let prevPos = prev.textPosition {
                     merged.textPosition = CGPoint(x: min(prevPos.x, shapeX(shape)), y: prevPos.y)
@@ -204,14 +190,51 @@ class PDFCommandParser {
                 pending = merged
             } else {
                 if let prev = pending {
-                    result.append(prev)
+                    result.append(finalizeTextShapeWidth(prev))
                 }
                 pending = shape
             }
         }
         if let prev = pending {
-            result.append(prev)
+            result.append(finalizeTextShapeWidth(prev))
         }
+        return result
+    }
+
+    // After merging, recompute the areaSize width using NSAttributedString layout
+    // so the merged line has enough room for its content to render on ONE line
+    // without wrapping. Mirrors the measurement logic in the export path.
+    private func finalizeTextShapeWidth(_ shape: VectorShape) -> VectorShape {
+        guard let content = shape.textContent, !content.isEmpty,
+              let typography = shape.typography else {
+            return shape
+        }
+        var result = shape
+        let nsFont = typography.nsFont
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .kern: typography.letterSpacing
+        ]
+        let measured = (content as NSString).size(withAttributes: attrs)
+        // Add a small padding so the text doesn't get clipped at the right edge.
+        let padding: CGFloat = 4.0
+        let measuredWidth = ceil(measured.width) + padding
+        let measuredHeight = max(ceil(measured.height), CGFloat(typography.lineHeight))
+
+        if var area = result.areaSize {
+            area.width = max(area.width, measuredWidth)
+            area.height = max(area.height, measuredHeight)
+            result.areaSize = area
+        } else {
+            result.areaSize = CGSize(width: measuredWidth, height: measuredHeight)
+        }
+
+        // Update bounds to match the measured size, anchored at the text position.
+        let originX = result.textPosition?.x ?? result.bounds.minX
+        let originY = result.textPosition?.y ?? result.bounds.minY
+        result.bounds = CGRect(x: originX, y: originY,
+                               width: max(measuredWidth, result.bounds.width),
+                               height: max(measuredHeight, result.bounds.height))
         return result
     }
 
