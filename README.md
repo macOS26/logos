@@ -1,8 +1,8 @@
-# inkpen.io
+# logos inkpen.io 1.0.1 Public Release
 
 A professional vector graphics editor for macOS, inspired by the classic FreeHand workflow. Built with SwiftUI and designed for precision illustration work.
 
-![inkpen.io Screenshot](assets/screenshot.jpg)
+<img width="1579" height="1376" alt="image" src="https://github.com/user-attachments/assets/360b5a32-a7fb-49a3-b095-05d2f0121533" />
 
 ---
 
