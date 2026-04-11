@@ -370,8 +370,8 @@ struct VectorShape: Hashable, Identifiable {
     var linkedImagePath: String? = nil
     var linkedImageBookmarkData: Data? = nil
     var isGroup: Bool
-    var groupedShapes: [VectorShape]  // DEPRECATED: Use memberIDs instead
-    var memberIDs: [UUID]  // NEW: Like Layer.objectIDs - just references, allows nested groups
+    var groupedShapes: [VectorShape]  // DEPRECATED
+    var memberIDs: [UUID]
     var groupTransform: CGAffineTransform
     var isClippingGroup: Bool = false
     var isCompoundPath: Bool
@@ -396,25 +396,21 @@ struct VectorShape: Hashable, Identifiable {
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
 
-    /// Per-object transform origin (9-point selector). Defaults to center if nil.
+    /// 9-point transform origin. Nil = center.
     var transformOrigin: TransformOrigin? = nil
 
-    /// Explicit anchor point types set by user (elementIndex -> type)
-    /// If nil or .auto, geometry-based detection is used
+    /// Explicit anchor types (elementIndex -> type); nil/.auto uses geometry detection.
     var anchorTypes: [Int: AnchorPointType] = [:]
 
-    // Cached CGPath - invalidated when path or transform changes
     private var _cachedCGPath: CGPath?
     private var _cacheUpdateTrigger: UInt = 0
 
-    // Cached CGImage for Metal-rendered images (quality + tileSize baked in)
-    // This prevents re-rendering on every Canvas paint during pan/zoom
+    // Cached rendered CGImage so pan/zoom doesn't re-render each paint.
     var cachedRenderedImage: CGImage? = nil
     var cachedImageQuality: Double = 1.0
     var cachedImageTileSize: Int = 32
 
     func cachedCGPath(updateTrigger: UInt? = nil) -> CGPath {
-        // If trigger provided and different, rebuild cache
         if let trigger = updateTrigger, _cacheUpdateTrigger != trigger {
             return buildCGPath()
         }
@@ -517,7 +513,7 @@ struct VectorShape: Hashable, Identifiable {
             return
         }
 
-        // Groups - bounds managed via recalculateGroupBounds()
+        // Groups use recalculateGroupBounds().
         if isGroup {
             return
         }
@@ -528,12 +524,7 @@ struct VectorShape: Hashable, Identifiable {
         }
     }
 
-    /// Creates a group shape from member shapes
-    /// - Parameters:
-    ///   - shapes: The shapes to include in the group (used for bounds calculation and memberIDs extraction)
-    ///   - name: The name for the group
-    ///   - isClippingGroup: Whether this is a clipping group
-    /// - Returns: A new group shape with memberIDs set to the IDs of the input shapes
+    /// Creates a group shape with memberIDs referencing the input shapes.
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
@@ -541,16 +532,13 @@ struct VectorShape: Hashable, Identifiable {
             if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else if shape.isGroupContainer {
-                // Use groupBounds for nested groups to get their full member bounds
                 shapeBounds = shape.groupBounds.applying(shape.transform)
             } else {
-                // Apply transform to get world-space bounds
                 shapeBounds = shape.bounds.applying(shape.transform)
             }
             calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
         }
 
-        // Extract member IDs from the shapes - these stay in snapshot.objects
         let memberIDs = shapes.map { $0.id }
 
         let groupPath = VectorPath(elements: [], isClosed: false)
@@ -566,8 +554,8 @@ struct VectorShape: Hashable, Identifiable {
             opacity: 1.0,
             blendMode: .normal,
             isGroup: true,
-            groupedShapes: [],  // DEPRECATED - no longer used
-            memberIDs: memberIDs,  // NEW: Just store references like Layer.objectIDs
+            groupedShapes: [],
+            memberIDs: memberIDs,
             groupTransform: .identity,
             isClippingGroup: isClippingGroup
         )
@@ -588,20 +576,17 @@ struct VectorShape: Hashable, Identifiable {
     var groupBounds: CGRect {
         guard isGroupContainer else { return bounds }
 
-        // NEW: For memberIDs groups, bounds were calculated at creation time
-        // The actual member shapes are in snapshot.objects, not embedded here
+        // memberIDs groups: bounds baked at creation; members live in snapshot.objects.
         if !memberIDs.isEmpty {
             return bounds
         }
 
-        // DEPRECATED: For legacy groups with embedded groupedShapes
         var groupBounds = CGRect.null
         for shape in groupedShapes {
             let shapeBounds: CGRect
             if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else {
-                // CRITICAL: Must apply transform to get actual world-space bounds!
                 shapeBounds = shape.bounds.applying(shape.transform)
             }
             groupBounds = groupBounds.union(shapeBounds)
@@ -686,10 +671,8 @@ struct VectorShape: Hashable, Identifiable {
     }
 
     static func from(_ vectorText: VectorText) -> VectorShape {
-        // print("🔵 VectorShape.from() - vectorText.position: \(vectorText.position), vectorText.transform: \(vectorText.transform)")
         let emptyPath = VectorPath(elements: [], isClosed: false)
         let finalTransform = CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform)
-        // print("🔵 VectorShape.from() - finalTransform: \(finalTransform)")
         var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,
@@ -788,12 +771,11 @@ extension VectorShape: Codable {
         if isGroup {
             try container.encode(isGroup, forKey: .isGroup)
 
-            // NEW: Encode memberIDs (preferred)
             if !memberIDs.isEmpty {
                 try container.encode(memberIDs, forKey: .memberIDs)
             }
 
-            // DEPRECATED: Still encode groupedShapes for backwards compatibility
+            // Back-compat: legacy groupedShapes.
             if !groupedShapes.isEmpty {
                 try container.encode(groupedShapes, forKey: .groupedShapes)
             }

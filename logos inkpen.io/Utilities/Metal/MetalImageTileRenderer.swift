@@ -351,10 +351,8 @@ class MetalImageTileRenderer {
         return context.makeImage()
     }
 
-    /// Clear texture cache (no-op - we don't cache textures anymore)
     func clearCache() {
         diskCacheLock.lock()
-        // Delete all cached files
         for (_, path) in diskCachePaths {
             try? FileManager.default.removeItem(atPath: path)
         }
@@ -363,7 +361,6 @@ class MetalImageTileRenderer {
         print("🗑️ MetalImageTileRenderer.clearCache() - cleared disk cache")
     }
 
-    /// Save CGImage to disk in /tmp
     private func saveImageToDisk(image: CGImage, key: String) -> String? {
         let tmpDir = NSTemporaryDirectory()
         let filename = "metal_tile_\(key).png"
@@ -383,7 +380,6 @@ class MetalImageTileRenderer {
         return filePath
     }
 
-    /// Load CGImage from disk
     private func loadImageFromDisk(path: String) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
@@ -393,9 +389,8 @@ class MetalImageTileRenderer {
         return image
     }
 
-    /// Create orthographic projection matrix for 2D rendering
+    /// Pixel coords (0,0 top-left) -> NDC (-1..1).
     private func createOrthographicMatrix(width: Float, height: Float) -> simd_float4x4 {
-        // Convert from pixel coordinates (0,0 at top-left) to NDC (-1,-1 to 1,1)
         let left: Float = 0
         let right = width
         let bottom = height

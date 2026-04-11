@@ -36,15 +36,15 @@ struct ProfessionalTextCanvas: View {
     }
 
     var body: some View {
-        // Read from document directly, not viewModel
+        // Read directly from document, not viewModel
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
         let position = textObject.position
 
-        // SECRET FORMULA: Apply deltas with proportional line height
+        // Apply deltas with proportional line height
         let fontSize = fontSizeDelta ?? textObject.typography.fontSize
 
-        // Line height: explicit delta overrides proportional (ternary to avoid control flow in body)
+        // Explicit lineHeightDelta overrides proportional (ternary avoids control flow in body)
         let lineHeight = lineHeightDelta != nil
             ? CGFloat(lineHeightDelta!)
             : (fontSizeDelta != nil
@@ -54,13 +54,11 @@ struct ProfessionalTextCanvas: View {
         let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
         let lineSpacing = lineSpacingDelta ?? textObject.typography.lineSpacing
 
-        // Read font directly from document, not viewModel!
         let fontFamily = textObject.typography.fontFamily
         let fontVariant = textObject.typography.fontVariant
-        // Include fill color so view updates when it changes
+        // Included so view updates when fill color changes
         let fillColor = textObject.typography.fillColor
 
-        // SIMD optimization for transform calculations
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let zoom = Float(zoomLevel)
         let dragDelta = SIMD2<Float>(Float(dragPreviewDelta.x), Float(dragPreviewDelta.y))
@@ -165,7 +163,7 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            // Use SAME font logic as CTLine rendering
+            // Match CTLine rendering font logic
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
@@ -180,17 +178,15 @@ struct ProfessionalTextCanvas: View {
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
-            // Set text first
             textView.string = viewModel.text
 
-            // Now apply letter spacing to all text
             if !viewModel.text.isEmpty {
                 let range = NSRange(location: 0, length: viewModel.text.count)
                 textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
-                // Invalidate layout to force redraw with kern attribute
+                // Force redraw with kern attribute
                 textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                 textView.layoutManager?.ensureLayout(for: textView.textContainer!)
             }
@@ -223,8 +219,7 @@ struct ProfessionalTextCanvas: View {
             }
 
 
-            // Always apply font (comparing PlatformFont objects doesn't work reliably)
-            // Use SAME font logic as CTLine rendering
+            // Always apply font; comparing PlatformFont objects is unreliable
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
@@ -275,13 +270,12 @@ struct ProfessionalTextCanvas: View {
             if viewMode == .keyline {
                 cursorColor = CGColor.black.platformColor
             } else {
-                // Use fill color but with full opacity for cursor visibility
+                // Use fill color with full opacity for cursor visibility
                 let fillCGColor = fillColor.cgColor
                 if let components = fillCGColor.components, components.count >= 3 {
                     let colorWithOpacity = CGColor(red: components[0], green: components[1], blue: components[2], alpha: 1.0)
                     cursorColor = colorWithOpacity.platformColor
                 } else {
-                    // Fallback to the original color with its opacity if we can't extract components
                     cursorColor = fillCGColor.platformColor
                 }
             }
@@ -294,7 +288,6 @@ struct ProfessionalTextCanvas: View {
             paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
 
-            // Use SAME font logic as CTLine rendering
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
@@ -319,7 +312,6 @@ struct ProfessionalTextCanvas: View {
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
-                // Force immediate layout update
                 if let textContainer = textView.textContainer {
                     textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                     textView.layoutManager?.ensureLayout(for: textContainer)
@@ -342,7 +334,6 @@ struct ProfessionalTextCanvas: View {
 
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
-                // Store the initial text content for undo
                 self.originalText = parent.viewModel.text
             }
 
@@ -360,17 +351,15 @@ struct ProfessionalTextCanvas: View {
                     self.parent.viewModel.text = newText
                     self.parent.viewModel.updateLastTypingTime()
 
-                    // Update delta immediately for live preview (like fontSizeDelta)
+                    // Delta for live preview, like fontSizeDelta
                     self.parent.textContentDelta = (textObjectId, newText)
 
-                    // Cancel existing timer
                     self.updateTimer?.invalidate()
 
-                    // Set new timer to commit after 500ms of no typing
+                    // Commit after 500ms idle
                     self.updateTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
                         guard let self = self else { return }
 
-                        // Create undo command if text actually changed
                         if let originalText = self.originalText, originalText != newText {
                             let command = TextContentCommand(
                                 textID: textObjectId,
@@ -378,15 +367,11 @@ struct ProfessionalTextCanvas: View {
                                 newContent: newText
                             )
                             self.parent.viewModel.document.executeCommand(command)
-
-                            // Update original text for next potential change
                             self.originalText = newText
                         } else {
-                            // Just update without undo if no real change
                             self.parent.viewModel.document.updateTextContent(textObjectId, content: newText)
                         }
 
-                        // Clear delta after committing
                         self.parent.textContentDelta = nil
                     }
                 }
@@ -400,7 +385,7 @@ struct ProfessionalTextCanvas: View {
                 guard !isRestoringSelection, let textView = notification.object as? NSTextView else { return }
                 let selectedRange = textView.selectedRange()
 
-                // Update typing attributes to include kern at current cursor position
+                // Include kern at current cursor position in typing attributes
                 if textView.string.count > 0, selectedRange.location < textView.string.count {
                     if let attrs = textView.textStorage?.attributes(at: selectedRange.location, effectiveRange: nil) {
                         textView.typingAttributes = attrs
@@ -413,16 +398,13 @@ struct ProfessionalTextCanvas: View {
                 let textFrame = parent.viewModel.textBoxFrame
                 let textObjectId = parent.viewModel.textObject.id
 
-                // Cancel any pending timer
                 updateTimer?.invalidate()
                 updateTimer = nil
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    // Clear delta first
                     self.parent.textContentDelta = nil
 
-                    // Create undo command if text actually changed
                     if let originalText = self.originalText, originalText != finalText {
                         let command = TextContentCommand(
                             textID: textObjectId,
@@ -432,11 +414,8 @@ struct ProfessionalTextCanvas: View {
                             newBounds: textFrame
                         )
                         self.parent.viewModel.document.executeCommand(command)
-
-                        // Reset original text for next edit session
                         self.originalText = finalText
                     } else {
-                        // Just update without undo if no real change
                         self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
                     }
 

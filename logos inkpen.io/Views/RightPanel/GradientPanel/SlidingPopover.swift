@@ -6,8 +6,7 @@ import UIKit
 #endif
 
 // MARK: - Cross-Platform Popover Manager
-/// A popover manager that reuses a single popover instance and repositions it when the anchor changes
-/// Works on both macOS (NSPopover) and iOS/iPadOS (UIPopoverPresentationController)
+/// Reuses a single popover instance, sliding between anchors on macOS/iOS.
 class SlidingPopoverManager: NSObject {
     #if os(macOS)
     private var popover: NSPopover?
@@ -20,17 +19,11 @@ class SlidingPopoverManager: NSObject {
 
     private var dismissCallback: (() -> Void)?
 
-    /// Shows the popover or slides it to a new anchor if already visible
-    /// - Parameters:
-    ///   - content: SwiftUI view to display in the popover
-    ///   - anchorView: The view to anchor the popover to
-    ///   - edge: Preferred edge for the popover arrow
-    ///   - onDismiss: Optional callback when popover is dismissed
+    /// Shows the popover or slides it to a new anchor if already visible.
     #if os(macOS)
     func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
         if let existingPopover = popover, existingPopover.isShown {
-            // Popover is already shown - update content and slide to new anchor
             slideToNewAnchor(anchorView: anchorView, edge: edge, updateContent: {
                 if let hostingController = existingPopover.contentViewController as? NSHostingController<Content> {
                     hostingController.rootView = content
@@ -41,7 +34,6 @@ class SlidingPopoverManager: NSObject {
                 }
             })
         } else {
-            // Create and show new popover with vibrancy
             let hostingController = NSHostingController(rootView: content)
             hostingController.sizingOptions = [.intrinsicContentSize]
 
@@ -51,13 +43,12 @@ class SlidingPopoverManager: NSObject {
             newPopover.animates = true
             newPopover.delegate = self
 
-            // Add vibrancy/translucent effect
+            // Translucent background for vibrancy
             if let popoverView = newPopover.contentViewController?.view {
                 popoverView.wantsLayer = true
                 popoverView.layer?.backgroundColor = PlatformColor.clear.cgColor
             }
 
-            // Calculate positioning rect and convert Edge to NSRectEdge
             let nsRectEdge = edge.toNSRectEdge()
             let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
             newPopover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
@@ -70,7 +61,6 @@ class SlidingPopoverManager: NSObject {
     func show<Content: View>(content: Content, anchorView: UIView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
 
-        // Find the presenting view controller from the anchor view
         if presentingViewController == nil {
             presentingViewController = anchorView.viewController
         }
@@ -78,18 +68,16 @@ class SlidingPopoverManager: NSObject {
         guard let presentingVC = presentingViewController else { return }
 
         if let existingController = popoverController, existingController.presentingViewController != nil {
-            // Popover is already shown - update content and reposition to new anchor
             if let hostingController = existingController as? UIHostingController<Content> {
                 hostingController.rootView = content
             } else {
-                // Different content type - dismiss and re-present
+                // Different content type: dismiss and re-present
                 existingController.dismiss(animated: false) {
                     self.showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
                 }
                 return
             }
 
-            // Update popover presentation to new anchor
             if let popover = existingController.popoverPresentationController {
                 popover.sourceView = anchorView
                 popover.sourceRect = calculatePositioningRect(for: anchorView, edge: edge)
@@ -98,7 +86,6 @@ class SlidingPopoverManager: NSObject {
 
             self.currentAnchorView = anchorView
         } else {
-            // Show new popover
             showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
         }
     }
@@ -121,19 +108,16 @@ class SlidingPopoverManager: NSObject {
     #endif
 
     #if os(macOS)
-    /// Slides the popover to a new anchor view with animation and optionally updates content
     private func slideToNewAnchor(anchorView: NSView, edge: Edge, updateContent: () -> Void) {
         guard let popover = popover, popover.isShown else { return }
 
-        // Update content first (without recreating the NSPopover)
+        // Update content without recreating the NSPopover
         updateContent()
 
-        // Animate the position change
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
-            // Reposition the popover to the new anchor
             let nsRectEdge = edge.toNSRectEdge()
             let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
             popover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
@@ -142,11 +126,10 @@ class SlidingPopoverManager: NSObject {
         self.currentAnchorView = anchorView
     }
 
-    /// Calculate tight positioning rect for the given edge
     private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
         let bounds = anchorView.bounds
 
-        // Shift positioning rect 17px to the right
+        // Shift 17px right
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -155,11 +138,10 @@ class SlidingPopoverManager: NSObject {
         )
     }
     #else
-    /// Calculate tight positioning rect for the given edge
     private func calculatePositioningRect(for anchorView: UIView, edge: Edge) -> CGRect {
         let bounds = anchorView.bounds
 
-        // Shift positioning rect 17px to the right (same behavior as macOS)
+        // Shift 17px right (matches macOS)
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -169,9 +151,8 @@ class SlidingPopoverManager: NSObject {
     }
     #endif
 
-    /// Dismisses the popover
     func dismiss() {
-        // Clear callback BEFORE closing to prevent double-dismiss
+        // Clear callback BEFORE close to prevent double-dismiss
         dismissCallback = nil
         #if os(macOS)
         popover?.performClose(nil)
@@ -183,7 +164,6 @@ class SlidingPopoverManager: NSObject {
         currentAnchorView = nil
     }
 
-    /// Returns true if the popover is currently shown
     var isShown: Bool {
         #if os(macOS)
         return popover?.isShown ?? false
@@ -225,7 +205,6 @@ extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
 
 // MARK: - Edge Conversion Extensions
 #if os(macOS)
-/// Extension to convert SwiftUI Edge to NSRectEdge
 extension Edge {
     func toNSRectEdge() -> NSRectEdge {
         switch self {
@@ -237,7 +216,6 @@ extension Edge {
     }
 }
 #else
-/// Extension to convert SwiftUI Edge to UIPopoverArrowDirection
 extension Edge {
     func toUIPopoverArrowDirection() -> UIPopoverArrowDirection {
         switch self {
@@ -249,7 +227,6 @@ extension Edge {
     }
 }
 
-/// Helper extension to find UIViewController from UIView
 extension UIView {
     var viewController: UIViewController? {
         var responder: UIResponder? = self
@@ -264,7 +241,6 @@ extension UIView {
 }
 #endif
 
-/// A reusable glass close button for popovers
 struct GlassCloseButton: View {
     let action: () -> Void
 
@@ -300,7 +276,6 @@ struct GlassCloseButton: View {
 
 // MARK: - Cross-Platform Anchor View
 #if os(macOS)
-/// A view representable that provides an NSView for popover anchoring
 struct PopoverAnchorView: NSViewRepresentable {
     let onViewCreated: (NSView) -> Void
 
@@ -317,7 +292,6 @@ struct PopoverAnchorView: NSViewRepresentable {
     }
 }
 #else
-/// A view representable that provides a UIView for popover anchoring
 struct PopoverAnchorView: UIViewRepresentable {
     let onViewCreated: (UIView) -> Void
 

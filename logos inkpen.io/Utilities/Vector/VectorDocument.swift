@@ -5,11 +5,10 @@ final class VectorDocument: ObservableObject, Codable {
     // MARK: - New Structure
     var snapshot: DocumentSnapshot = DocumentSnapshot()
 
-    // MARK: - Legacy Structure (to be migrated) 
-    // View-only state (doesn't trigger document saves)
+    // MARK: - Legacy Structure (to be migrated)
     var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings = DocumentSettings()
-    var layerIndex: Int = 0  // DEPRECATED - tracks active layer for operations
+    var layerIndex: Int = 0  // DEPRECATED
     var selectedLayerIndex: Int?
     
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
@@ -31,15 +30,12 @@ final class VectorDocument: ObservableObject, Codable {
     var processedLayersDuringDrag: Set<Int> = []
     var processedObjectsDuringDrag: Set<UUID> = []
 
-    // Track active layer during object drag for performance optimization
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
 
-    // Lightweight change notifier
     let changeNotifier = DocumentChangeNotifier()
 
-    // Combine subscriptions for nested ObservableObjects
     private var cancellables = Set<AnyCancellable>()
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
@@ -62,11 +58,11 @@ final class VectorDocument: ObservableObject, Codable {
         return manager
     }()
 
-    // Per-document image storage (isolated from other documents)
+    // Per-document image storage.
     internal var imageStorage: [UUID: CGImage] = [:]
     internal var baseDirectoryURL: URL? = nil
 
-    // Track hash of last drawn CGImage per shape - if same hash, skip cgContext.draw() call
+    // Per-shape hash of last drawn CGImage; skips cgContext.draw() when unchanged.
     internal var lastDrawnImageHash: [UUID: Int] = [:]
 
     @Published var fontManager: FontManager = FontManager()
@@ -152,7 +148,6 @@ final class VectorDocument: ObservableObject, Codable {
         snapshot = decodedSnapshot
         layerIndex = snapshot.layers.count
 
-        // Rebuild parent group cache after loading
         rebuildParentGroupCache()
 
         documentColorDefaults = ColorDefaults()
@@ -164,7 +159,6 @@ final class VectorDocument: ObservableObject, Codable {
         viewState.selectedObjectIDs = []
         isHandleScalingActive = false
 
-        // Initialize UI state with defaults (not saved)
         viewState.currentTool = .selection
         viewState.scalingAnchor = .center
         viewState.rotationAnchor = .center
@@ -174,7 +168,6 @@ final class VectorDocument: ObservableObject, Codable {
         currentDragOffset = .zero
         cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
-        // NOTE: scalePreviewDimensions removed - now using liveScaleDimensions as @State
         viewState.warpEnvelopeCorners = [:]
         viewState.warpBounds = [:]
 
@@ -321,7 +314,7 @@ final class VectorDocument: ObservableObject, Codable {
         return nil
     }
 
-    /// Updates a child shape in its parent group's groupedShapes array
+    /// Updates a child shape within its parent group's groupedShapes array.
     func updateChildInParentGroup(childID: UUID, updatedShape: VectorShape) {
         guard let parentGroup = findParentGroup(for: childID) else { return }
 
@@ -329,21 +322,18 @@ final class VectorDocument: ObservableObject, Codable {
         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childID }) {
             parentShape.groupedShapes[childIndex] = updatedShape
 
-            // Recalculate parent group's bounding box
             parentShape.updateBounds()
 
-            // Update the parent group in snapshot.objects
             let updatedParent = VectorObject(shape: parentShape, layerIndex: parentGroup.layerIndex)
             snapshot.objects[parentGroup.id] = updatedParent
 
-            // Trigger layer update
             triggerLayerUpdate(for: parentGroup.layerIndex)
         }
     }
 
     // MARK: - Image Management
 
-    /// Regenerates all cached images from source data when quality/tile settings change
+    /// Drop cached images so they regenerate from source on next render.
     func regenerateAllImages() {
         imageStorage.removeAll()
         lastDrawnImageHash.removeAll()

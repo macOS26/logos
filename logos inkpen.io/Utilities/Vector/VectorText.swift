@@ -400,7 +400,7 @@ class FontManager: ObservableObject {
     var googleFonts: [String] = []
 
     private var fontVariantsCache: [String: [String]] = [:]
-    private var postScriptNameCache: [String: String] = [:]  // "family-variant" -> PostScript name
+    private var postScriptNameCache: [String: String] = [:]
 
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"
@@ -592,16 +592,14 @@ class FontManager: ObservableObject {
         return sortedVariants
     }
 
-    /// Get PostScript font name for a specific family and variant (O(1) cached lookup)
+    /// O(1) cached lookup of PostScript name by family+variant.
     func getPostScriptName(family: String, variant: String) -> String? {
         let cacheKey = "\(family)-\(variant)"
 
-        // O(1) cache lookup
         if let cached = postScriptNameCache[cacheKey] {
             return cached
         }
 
-        // Cache miss - do the expensive lookup once
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
 
@@ -609,7 +607,6 @@ class FontManager: ObservableObject {
             if let postScriptName = member[0] as? String,
                let displayName = member[1] as? String,
                displayName == variant {
-                // Cache the result for O(1) future lookups
                 postScriptNameCache[cacheKey] = postScriptName
                 return postScriptName
             }
@@ -633,7 +630,6 @@ extension VectorText {
             opacity: typography.strokeOpacity
         ) : nil
 
-        // Use transform for position, not textPosition
         var finalTransform = transform
         finalTransform.tx = position.x
         finalTransform.ty = position.y
@@ -646,7 +642,6 @@ extension VectorText {
             transform: finalTransform
         )
 
-        // Preserve the VectorText's UUID so it's recognized as the same object
         shape.id = self.id
 
         shape.textContent = content

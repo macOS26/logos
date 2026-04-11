@@ -1,39 +1,34 @@
 import Foundation
 import CoreGraphics
 
-/// Axis options for alignment operations
 enum AlignmentAxis {
-    case both      // Align X and Y
-    case xOnly     // Align X axis only (horizontal)
-    case yOnly     // Align Y axis only (vertical)
+    case both
+    case xOnly
+    case yOnly
 }
 
 extension VectorDocument {
 
-    /// Align selected objects by their individual transform origins (both axes).
-    /// The first selected object stays in place; other objects move to align.
+    /// Align selected objects by transform origin (both axes). Anchor stays put.
     func alignSelectedObjectsByOrigin() {
         alignSelectedObjectsByOrigin(axis: .both)
     }
 
-    /// Align selected objects horizontally by their transform origins (X axis only).
-    /// The first selected object stays in place; other objects move horizontally to align.
+    /// X-axis alignment by transform origin.
     func alignSelectedObjectsByOriginX() {
         alignSelectedObjectsByOrigin(axis: .xOnly)
     }
 
-    /// Align selected objects vertically by their transform origins (Y axis only).
-    /// The first selected object stays in place; other objects move vertically to align.
+    /// Y-axis alignment by transform origin.
     func alignSelectedObjectsByOriginY() {
         alignSelectedObjectsByOrigin(axis: .yOnly)
     }
 
-    /// Internal helper for alignment with axis control
     private func alignSelectedObjectsByOrigin(axis: AlignmentAxis) {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
 
-        // Determine anchor object - LOCKED items ALWAYS trump preferences
+        // Locked items always trump the preference.
         let anchorID = determineAlignmentAnchor(from: orderedIDs)
         guard let anchorObj = snapshot.objects[anchorID] else { return }
 
@@ -41,13 +36,11 @@ extension VectorDocument {
         let anchorOrigin = anchorShape.transformOrigin ?? .center
         let anchorBounds = anchorShape.isGroupContainer ? anchorShape.groupBounds : anchorShape.bounds
 
-        // Calculate anchor point position
         let anchorPoint = CGPoint(
             x: anchorBounds.minX + anchorBounds.width * anchorOrigin.point.x,
             y: anchorBounds.minY + anchorBounds.height * anchorOrigin.point.y
         )
 
-        // Move other objects to align their origins with anchor point
         modifySelectedShapesWithUndo(
             preCapture: {
                 for objectID in orderedIDs where objectID != anchorID {
@@ -56,13 +49,11 @@ extension VectorDocument {
                     let shapeOrigin = shape.transformOrigin ?? .center
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
-                    // Calculate current origin point position
                     let currentOriginPoint = CGPoint(
                         x: shapeBounds.minX + shapeBounds.width * shapeOrigin.point.x,
                         y: shapeBounds.minY + shapeBounds.height * shapeOrigin.point.y
                     )
 
-                    // Calculate offset needed to align based on axis
                     let offsetX: CGFloat
                     let offsetY: CGFloat
 
@@ -78,18 +69,13 @@ extension VectorDocument {
                         offsetY = anchorPoint.y - currentOriginPoint.y
                     }
 
-                    // Skip if no movement needed
                     guard abs(offsetX) > 0.001 || abs(offsetY) > 0.001 else { continue }
 
-                    // Move the shape by translating all path points
                     if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-                        // Modern groups with memberIDs - use applyTransformToGroup
                         let translationTransform = CGAffineTransform(translationX: offsetX, y: offsetY)
                         applyTransformToGroup(groupID: shape.id, transform: translationTransform)
-                        // applyTransformToGroup handles all updates, so continue
                         continue
                     } else if shape.isGroupContainer {
-                        // Legacy groups with embedded groupedShapes
                         for i in shape.groupedShapes.indices {
                             var groupedShape = shape.groupedShapes[i]
                             translateShapePath(&groupedShape, dx: offsetX, dy: offsetY)
@@ -97,17 +83,14 @@ extension VectorDocument {
                         }
                         shape.updateBounds()
                     } else if shape.typography != nil {
-                        // Move text by updating position
                         if let pos = shape.textPosition {
                             shape.textPosition = CGPoint(x: pos.x + offsetX, y: pos.y + offsetY)
                             shape.transform = CGAffineTransform(translationX: pos.x + offsetX, y: pos.y + offsetY)
                         }
                     } else {
-                        // Move regular shape
                         translateShapePath(&shape, dx: offsetX, dy: offsetY)
                     }
 
-                    // Update in document (for legacy groups, text, and regular shapes)
                     updateShapeByID(objectID, silent: false) { s in
                         s = shape
                     }
@@ -116,10 +99,8 @@ extension VectorDocument {
         )
     }
 
-    /// Determine which object should be the anchor (stay in place) during alignment.
-    /// LOCKED items ALWAYS trump the preference setting.
+    /// Anchor selection: locked items always win, otherwise use preference.
     private func determineAlignmentAnchor(from orderedIDs: [UUID]) -> UUID {
-        // First priority: find any locked item - locked ALWAYS wins
         for objectID in orderedIDs {
             guard let obj = snapshot.objects[objectID] else { continue }
             let shape = obj.shape
@@ -128,7 +109,6 @@ extension VectorDocument {
             }
         }
 
-        // No locked items - use preference setting
         let mode = ApplicationSettings.shared.alignmentAnchorMode
 
         switch mode {
@@ -170,7 +150,6 @@ extension VectorDocument {
         }
     }
 
-    /// Helper to translate all points in a shape's path
     private func translateShapePath(_ shape: inout VectorShape, dx: CGFloat, dy: CGFloat) {
         var translatedElements: [PathElement] = []
         for element in shape.path.elements {

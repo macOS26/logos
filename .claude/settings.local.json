@@ -163,7 +163,11 @@
       "Bash(git clone:*)",
       "Bash(curl -sL \"https://www.cte.iup.edu/cte/Resources/PDF_TestPage.pdf\" -o /tmp/PDF_TestPage.pdf)",
       "Read(//tmp/**)",
-      "Bash(swift:*)"
+      "Bash(swift:*)",
+      "Bash(brew info:*)",
+      "Bash(autoconf --version)",
+      "Bash(automake --version)",
+      "Bash(cmake --version)"
     ],
     "deny": [],
     "ask": []

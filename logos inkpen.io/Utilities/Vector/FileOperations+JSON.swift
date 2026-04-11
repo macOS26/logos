@@ -18,7 +18,6 @@ extension FileOperations {
     }
 
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
-        // Encode VectorDocument directly - no snapshot copy needed
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
@@ -38,12 +37,9 @@ extension FileOperations {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        // Try to decode as current format first
         if let document = try? decoder.decode(VectorDocument.self, from: jsonData) {
-            // Log version for migration tracking
             Log.fileOperation("📦 Opened inkpen document version: \(document.snapshot.formatVersion)", level: .info)
 
-            // Remove legacy background objects
             removeLegacyBackgroundObjects(from: document)
 
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
@@ -55,7 +51,6 @@ extension FileOperations {
             return document
         }
 
-        // Fallback: Try migration from legacy format
         Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
         if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: jsonData) {
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: migratedDocument)
@@ -76,16 +71,12 @@ extension FileOperations {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        // Try to decode as current format first
         if let document = try? decoder.decode(VectorDocument.self, from: data) {
-            // Remove legacy background objects
             removeLegacyBackgroundObjects(from: document)
 
-            // Set base directory for image hydration
             let baseDirectory = sourceURL?.deletingLastPathComponent()
             ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
 
-            // Hydrate all images
             for obj in document.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
@@ -96,14 +87,11 @@ extension FileOperations {
             return document
         }
 
-        // Fallback: Try migration from legacy format
         Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
         if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: data) {
-            // Set base directory for image hydration
             let baseDirectory = sourceURL?.deletingLastPathComponent()
             ImageContentRegistry.setBaseDirectory(baseDirectory, for: migratedDocument)
 
-            // Hydrate all images (including legacy linked images)
             for obj in migratedDocument.snapshot.objects.values {
                 if case .shape(let shape) = obj.objectType {
                     ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
@@ -118,17 +106,15 @@ extension FileOperations {
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
 
-    /// Remove legacy "Canvas Background" and "Pasteboard Background" objects from layers
+    /// Remove legacy "Canvas Background" / "Pasteboard Background" objects from layers.
     static func removeLegacyBackgroundObjects(from document: VectorDocument) {
         for layerIndex in 0..<document.snapshot.layers.count {
             var layer = document.snapshot.layers[layerIndex]
 
-            // Find objects named "Canvas Background" or "Pasteboard Background"
             var objectsToRemove: [UUID] = []
             for objectID in layer.objectIDs {
                 guard let obj = document.snapshot.objects[objectID] else { continue }
 
-                // Extract shape from objectType
                 let shapeName: String?
                 switch obj.objectType {
                 case .shape(let shape), .text(let shape), .image(let shape),
@@ -145,12 +131,10 @@ extension FileOperations {
                 }
             }
 
-            // Remove from layer
             if !objectsToRemove.isEmpty {
                 layer.objectIDs.removeAll { objectsToRemove.contains($0) }
                 document.snapshot.layers[layerIndex] = layer
 
-                // Remove from objects dictionary
                 for objectID in objectsToRemove {
                     document.snapshot.objects.removeValue(forKey: objectID)
                 }

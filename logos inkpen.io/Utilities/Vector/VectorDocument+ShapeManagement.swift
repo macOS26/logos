@@ -44,7 +44,6 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        // Pass UUIDs only - command will snapshot from document.snapshot.objects
         if !viewState.selectedObjectIDs.isEmpty {
             let command = DeleteObjectCommand(objectIDs: Array(viewState.selectedObjectIDs), document: self)
             executeCommand(command)
@@ -70,23 +69,18 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        // Filter UUIDs directly - no temporary VectorObject array
         let objectIDsToDelete = viewState.selectedObjectIDs.filter { uuid in
             guard let object = snapshot.objects[uuid] else { return false }
 
-            // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
-            // Skip objects on locked layers
             if object.layerIndex < snapshot.layers.count && snapshot.layers[object.layerIndex].isLocked {
                 return false
             }
 
-            // Skip objects on Canvas or Pasteboard layers (indices 0, 1)
-            // Allow deletion of guides on Guides layer (index 2)
+            // Protect Canvas (0) and Pasteboard (1); guides layer (2) is deletable.
             if object.layerIndex <= 1 {
                 return false
             }
 
-            // Skip background shapes
             switch object.objectType {
             case .shape(let shape),
                  .text(let shape),
@@ -181,17 +175,13 @@ extension VectorDocument {
     }
 
     func getObjectsInStackingOrder() -> [VectorObject] {
-        // Iterate layers in stack order, then objects in draw order
         var result: [VectorObject] = []
 
         for layer in snapshot.layers {
-            // Skip invisible layers
             guard layer.isVisible else { continue }
 
-            // Get objects for this layer in draw order
             for objectID in layer.objectIDs {
                 guard let object = snapshot.objects[objectID] else { continue }
-                // Skip invisible objects
                 guard object.isVisible else { continue }
 
                 result.append(object)
@@ -202,12 +192,10 @@ extension VectorDocument {
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
-        // Iterate layers in stack order, then objects in draw order
         var result: [VectorShape] = []
 
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
-                // Only include selected objects
                 guard viewState.selectedObjectIDs.contains(objectID) else { continue }
                 guard let object = snapshot.objects[objectID] else { continue }
 
@@ -230,12 +218,11 @@ extension VectorDocument {
 
     // MARK: - Selection with Undo Support
 
-    /// Changes selection with undo/redo support
+    /// Changes selection with undo/redo support.
     func setSelectionWithUndo(_ newSelectedIDs: Set<UUID>, ordered: [UUID]? = nil) {
         let oldSelectedIDs = viewState.selectedObjectIDs
         let oldOrderedIDs = viewState.orderedSelectedObjectIDs
 
-        // Don't create command if nothing changed
         guard newSelectedIDs != oldSelectedIDs else { return }
 
         let newOrderedIDs = ordered ?? Array(newSelectedIDs)
@@ -303,7 +290,6 @@ extension VectorDocument {
     }
 
     func selectAll() {
-        // Build set of object IDs that are actually in layers (not orphaned)
         var objectIDsInLayers = Set<UUID>()
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
@@ -312,24 +298,16 @@ extension VectorDocument {
         }
 
         let visibleObjects = snapshot.objects.values.filter { object in
-            // Skip orphaned objects not in any layer
             guard objectIDsInLayers.contains(object.id) else { return false }
-
-            // Skip invisible or locked objects
             guard object.isVisible && !object.isLocked else { return false }
-
-            // Skip if layer doesn't exist
             guard object.layerIndex < snapshot.layers.count else { return false }
 
             let layer = snapshot.layers[object.layerIndex]
-
-            // Skip objects on invisible or locked layers
             guard layer.isVisible && !layer.isLocked else { return false }
 
-            // Skip objects on Canvas, Pasteboard, or Guides layers (layer indices 0, 1, 2)
+            // Skip Canvas/Pasteboard/Guides layers.
             guard object.layerIndex > 2 else { return false }
 
-            // Skip background shapes
             switch object.objectType {
             case .shape(let shape),
                  .text(let shape),
@@ -348,7 +326,6 @@ extension VectorDocument {
         }
 
         if !visibleObjects.isEmpty {
-            // Sort by area (largest to smallest) so largest object is selection #1
             let sortedByArea = visibleObjects.sorted { obj1, obj2 in
                 let bounds1 = obj1.shape.isGroupContainer ? obj1.shape.groupBounds : obj1.shape.bounds
                 let bounds2 = obj2.shape.isGroupContainer ? obj2.shape.groupBounds : obj2.shape.bounds
@@ -368,7 +345,6 @@ extension VectorDocument {
 
         var newShapeIDs: Set<UUID> = []
 
-        // Iterate directly over UUIDs and lookup from snapshot - O(1) per lookup
         for objectID in viewState.selectedObjectIDs {
             guard let obj = snapshot.objects[objectID],
                   obj.layerIndex == layerIndex else { continue }
@@ -417,15 +393,12 @@ extension VectorDocument {
 
     // MARK: - Guide Management
 
-    /// Creates a guide shape and adds it to the Guides layer (index 2)
+    /// Adds a guide line to the Guides layer (index 2).
     func addGuideShape(position: CGFloat, orientation: Guide.Orientation) {
-        // Guides layer is at index 2
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return }
 
-        // Create a line path for the guide
-        // For guides, we use a very long line that extends beyond typical canvas bounds
-        let lineLength: CGFloat = 100000 // Long enough to cover any reasonable canvas
+        let lineLength: CGFloat = 100000
 
         let path: VectorPath
         switch orientation {
@@ -441,8 +414,7 @@ extension VectorDocument {
             ], isClosed: false)
         }
 
-        // Create the guide shape with non-photo blue stroke
-        // Non-photo blue: RGB(164, 221, 237) / #a4dded
+        // Non-photo blue #a4dded.
         let nonPhotoBlue = VectorColor.rgb(RGBColor(red: 164/255, green: 221/255, blue: 237/255))
         var guideShape = VectorShape(
             name: "Guide",
@@ -459,15 +431,12 @@ extension VectorDocument {
         guideShape.isGuide = true
         guideShape.guideOrientation = orientation
 
-        // Add to Guides layer
         addShape(guideShape, to: guidesLayerIndex)
 
-        // Don't select guides after creation
         viewState.selectedObjectIDs.removeAll()
         viewState.orderedSelectedObjectIDs.removeAll()
     }
 
-    /// Removes all guides from the Guides layer
     func clearGuides() {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return }
@@ -480,7 +449,6 @@ extension VectorDocument {
         }
     }
 
-    /// Gets all guide shapes from the Guides layer
     func getGuideShapes() -> [VectorShape] {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return [] }

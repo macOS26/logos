@@ -5,7 +5,6 @@ extension VectorDocument {
     internal func createCanvasAndWorkingLayers() {
         snapshot.layers.removeAll()
 
-        // Create Pasteboard layer
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Pasteboard",
@@ -17,7 +16,6 @@ extension VectorDocument {
             color: .gray
         ))
 
-        // Create Canvas layer
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Canvas",
@@ -29,7 +27,7 @@ extension VectorDocument {
             color: .blue
         ))
 
-        // Create Guides layer (index 2)
+        // Guides layer (index 2)
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Guides",
@@ -41,7 +39,7 @@ extension VectorDocument {
             color: .cyan
         ))
 
-        // Create default working layer (index 3)
+        // Default working layer (index 3)
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Layer 1",
@@ -75,15 +73,13 @@ extension VectorDocument {
     }
 
     func onSettingsChanged() {
-        // Sync gridSettings from settings when unit or grid spacing changes
         gridSettings.gridSpacing = settings.gridSpacing
     }
 
-    /// Migrate old documents that have background shapes to new Canvas-based rendering
+    /// Remove legacy background shapes; Canvas now renders them.
     func migrateBackgroundShapesToCanvas() {
         var needsMigration = false
 
-        // Check if Pasteboard layer (index 0) has a background shape
         if snapshot.layers.count > 0 && snapshot.layers[0].name == "Pasteboard" {
             let pasteboardShapes = getShapesForLayer(0)
             if let bgShape = pasteboardShapes.first(where: { $0.name == "Pasteboard Background" }) {
@@ -93,7 +89,6 @@ extension VectorDocument {
             }
         }
 
-        // Check if Canvas layer (index 1) has a background shape
         if snapshot.layers.count > 1 && snapshot.layers[1].name == "Canvas" {
             let canvasShapes = getShapesForLayer(1)
             if let bgShape = canvasShapes.first(where: { $0.name == "Canvas Background" }) {

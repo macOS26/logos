@@ -2,19 +2,16 @@ import SwiftUI
 
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        // Direct selection tool with points selected: ONLY nudge points, never whole shapes
+        // Direct selection tool: always nudge points when any are selected.
         if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return
         }
 
-        // For other tools, check if points are selected
         if !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return
         }
-
-        // No points selected - move whole shapes (works for all tools including direct selection)
 
         guard !viewState.selectedObjectIDs.isEmpty else { return }
 
@@ -32,11 +29,9 @@ extension VectorDocument {
                              .clipGroup(var shape),
                              .clipMask(var shape),
                              .guide(var shape):
-                            // For groups with memberIDs (new system), use applyTransformToGroup
                             if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                                 applyTransformToGroup(groupID: shape.id, transform: translationTransform)
                             } else if shape.isGroupContainer {
-                                // Old groupedShapes system
                                 var nudgedGroupedShapes: [VectorShape] = []
                                 for var groupedShape in shape.groupedShapes {
                                     groupedShape.path = nudgePath(groupedShape.path, by: nudgeAmount)
@@ -50,7 +45,6 @@ extension VectorDocument {
                                     updatedShape = shape
                                 }
                             } else {
-                                // Regular shape
                                 shape.path = nudgePath(shape.path, by: nudgeAmount)
                                 shape.updateBounds()
 
@@ -69,7 +63,6 @@ extension VectorDocument {
         )
     }
 
-    /// Helper to nudge all points in a path by the given amount
     private func nudgePath(_ path: VectorPath, by nudgeAmount: CGVector) -> VectorPath {
         var nudgedElements: [PathElement] = []
         for element in path.elements {
@@ -96,17 +89,14 @@ extension VectorDocument {
         return VectorPath(elements: nudgedElements, isClosed: path.isClosed)
     }
 
-    /// Nudge only the selected points (direct selection mode)
     private func nudgeSelectedPoints(by nudgeAmount: CGVector) {
         guard !viewState.selectedPoints.isEmpty else { return }
 
-        // Group points by shape for efficient processing
         var pointsByShape: [UUID: [PointID]] = [:]
         for pointID in viewState.selectedPoints {
             pointsByShape[pointID.shapeID, default: []].append(pointID)
         }
 
-        // Collect old shapes for undo
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
@@ -117,7 +107,6 @@ extension VectorDocument {
             }
         }
 
-        // Move each selected point
         for (shapeID, pointIDs) in pointsByShape {
             guard var shape = findShape(by: shapeID) else { continue }
 
@@ -132,7 +121,6 @@ extension VectorDocument {
                 case .line(let to):
                     elements[pointID.elementIndex] = .line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy))
                 case .curve(let to, let c1, let c2):
-                    // Move the anchor point and its control handles together
                     elements[pointID.elementIndex] = .curve(
                         to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
                         control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),
@@ -156,7 +144,6 @@ extension VectorDocument {
             }
         }
 
-        // Collect new shapes for undo
         var newShapes: [UUID: VectorShape] = [:]
         for shapeID in objectIDs {
             if let shape = findShape(by: shapeID) {
@@ -164,7 +151,6 @@ extension VectorDocument {
             }
         }
 
-        // Create undo command
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             executeCommand(command)

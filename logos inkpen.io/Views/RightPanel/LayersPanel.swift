@@ -61,17 +61,14 @@ struct LayersPanel: View {
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
 
-    // Get selected layer index from settings.selectedLayerId
-    // Defaults to first editable layer (index 2, "Layer 1") if no layer is selected
+    // Defaults to Layer 1 (index 2) when nothing is selected
     private var selectedIndex: Int? {
         if let selectedLayerId = document.settings.selectedLayerId {
             return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
         }
-        // Default to Layer 1 (index 2) when no layer is selected
         return document.snapshot.layers.count > 2 ? 2 : nil
     }
 
-    // Enable overlays when there are visible rows
     private var overlaysEnabled: Bool {
         return !visibleRows.isEmpty
     }
@@ -85,7 +82,6 @@ struct LayersPanel: View {
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
 
-        // Helper function to recursively add nested group children
         func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID) {
             guard childShape.isGroupContainer else { return }
 
@@ -93,11 +89,9 @@ struct LayersPanel: View {
             guard isChildGroupExpanded else { return }
 
             let nestedMembers = document.resolveGroupMembers(childShape)
-            // Reverse to match NestedGroupChildrenView display order
+            // Reversed to match NestedGroupChildrenView display order
             for nestedChild in nestedMembers.reversed() {
                 rows.append(.childObject(layerIndex: layerIndex, parentObjectId: childShape.id, childShapeId: nestedChild.id))
-
-                // Recursively handle deeper nesting
                 addNestedGroupChildren(childShape: nestedChild, layerIndex: layerIndex, parentObjectId: nestedChild.id)
             }
         }
@@ -112,25 +106,20 @@ struct LayersPanel: View {
             }
 
             if isExpanded {
-                // Use the layer's objectIDs array from snapshot
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
 
                 for objectID in objectIDs.reversed() {
                     if let object = document.snapshot.objects[objectID] {
                         rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
-                        // Check if this is an expanded group or clipGroup
                         let isGroupExpanded = document.settings.groupExpansionState[object.id] ?? false
                         if isGroupExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
-                                // Resolve members using memberIDs (or fallback to groupedShapes)
                                 let memberShapes = document.resolveGroupMembers(shape)
-                                // Display reversed to match layer objectIDs display order
+                                // Reversed to match layer objectIDs display order
                                 for childShape in memberShapes.reversed() {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
-
-                                    // Recursively add nested group children
                                     addNestedGroupChildren(childShape: childShape, layerIndex: layerIndex, parentObjectId: childShape.id)
                                 }
                             default:
@@ -146,7 +135,6 @@ struct LayersPanel: View {
     }
 
     var body: some View {
-        // Subscribe to changes - SwiftUI will automatically recompute when these change
         //let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
         // let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
 

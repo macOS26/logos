@@ -161,7 +161,6 @@ class GeometricShapes {
         for i in 0..<(points * 2) {
             let angle = Double(i) * angleStep + Double(orientation) - .pi / 2
             let radius = i % 2 == 0 ? Double(outerRadius) : Double(innerRadius)
-            // SIMD-optimized trig and vector operations
             let offset = SIMD2<Double>(cos(angle), sin(angle)) * radius
             let point = centerVec + offset
 
@@ -238,7 +237,6 @@ class GeometricShapes {
     }
 
     static func createArrow(start: CGPoint, end: CGPoint, headLength: CGFloat = 20, headWidth: CGFloat = 10) -> VectorPath {
-        // SIMD-optimized vector operations
         let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
         let endVec = SIMD2<Double>(Double(end.x), Double(end.y))
         let direction = endVec - startVec
@@ -247,7 +245,7 @@ class GeometricShapes {
         if length == 0 { return VectorPath() }
 
         let unit = simd_normalize(direction)
-        let perpendicular = SIMD2<Double>(-unit.y, unit.x)  // SIMD swizzle for perpendicular
+        let perpendicular = SIMD2<Double>(-unit.y, unit.x)
 
         let headStartVec = endVec - unit * Double(headLength)
         let headStart = CGPoint(x: headStartVec.x, y: headStartVec.y)
@@ -309,7 +307,6 @@ class GeometricShapes {
 
         for i in 0..<sides {
             let angle = Double(i) * angleStep + Double(orientation) - .pi / 2
-            // SIMD-optimized trig and vector operations
             let offset = SIMD2<Double>(cos(angle), sin(angle)) * Double(radius)
             let point = centerVec + offset
             points.append(CGPoint(x: point.x, y: point.y))
@@ -333,7 +330,6 @@ class GeometricShapes {
             let innerAngle1 = baseAngle - angleStep / 2
             let innerAngle2 = baseAngle + angleStep / 2
 
-            // SIMD-optimized trig and vector operations
             let outerOffset1 = SIMD2<Double>(cos(outerAngle1), sin(outerAngle1)) * outerRad
             let outerPoint1 = centerVec + outerOffset1
 
@@ -373,7 +369,6 @@ class GeometricShapes {
             let t = Double(i) / Double(steps - 1)
             let angle = t * turns * 2 * .pi
             let radius = startRad + (endRad - startRad) * t
-            // SIMD-optimized trig and vector operations
             let offset = SIMD2<Double>(cos(angle), sin(angle)) * radius
             let point = centerVec + offset
 

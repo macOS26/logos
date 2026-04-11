@@ -161,7 +161,7 @@ extension FileOperations {
                         continue
                     }
 
-                    // Skip shapes that are members of a group - they'll be exported via their parent group
+                    // Skip group members — exported via parent group.
                     if document.snapshot.parentGroupCache[shape.id] != nil {
                         continue
                     }
@@ -297,7 +297,6 @@ extension FileOperations {
         }
 
         if let doc = document, let cgImage = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
-            // Convert CGImage to PNG data
             let mutableData = NSMutableData()
             if let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) {
                 CGImageDestinationAddImage(destination, cgImage, nil)
@@ -348,7 +347,6 @@ extension FileOperations {
 
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
 
-        // Create CGImage directly from data (cross-platform)
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             Log.error("Failed to create CGImage from embedded data", category: .error)

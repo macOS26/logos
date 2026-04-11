@@ -2,7 +2,7 @@ import SwiftUI
 
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
-    let layerIndex: Int  // DEPRECATED: Layer membership now tracked via Layer.objectIDs
+    let layerIndex: Int  // DEPRECATED: use Layer.objectIDs
     let objectType: ObjectType
 
     enum ObjectType: Hashable {
@@ -16,14 +16,12 @@ struct VectorObject: Identifiable, Hashable {
         case guide(VectorShape)
     }
 
-    // New explicit initializer - preferred
     init(id: UUID, layerIndex: Int, objectType: ObjectType) {
         self.id = id
         self.layerIndex = layerIndex
         self.objectType = objectType
     }
 
-    // Helper to determine object type from shape properties
     static func determineType(for shape: VectorShape) -> ObjectType {
         if shape.isGuide {
             return .guide(shape)
@@ -44,7 +42,6 @@ struct VectorObject: Identifiable, Hashable {
         }
     }
 
-    // Legacy initializer - kept for compatibility, will be removed later
     init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
         self.layerIndex = layerIndex
@@ -106,7 +103,6 @@ extension VectorObject: Codable {
 
         var objectContainer = container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
 
-        // Encode both the type string and the shape
         switch objectType {
         case .shape(let shape):
             try objectContainer.encode("shape", forKey: .type)
@@ -144,20 +140,16 @@ extension VectorObject: Codable {
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
 
-        // MIGRATION: Fix old text objects that have textPosition instead of transform
-        // Keep textPosition intact - it's used by spatial index and hit testing
+        // MIGRATION: old text objects stored position in textPosition; copy to transform but keep textPosition (spatial index needs it).
         if shape.typography != nil, let textPosition = shape.textPosition {
             if shape.transform.tx == 0 && shape.transform.ty == 0 {
-                // Old format - copy textPosition to transform for compatibility
                 var newTransform = shape.transform
                 newTransform.tx = textPosition.x
                 newTransform.ty = textPosition.y
                 shape.transform = newTransform
-                // DO NOT clear textPosition - spatial index needs it
             }
         }
 
-        // Try to decode the explicit type first (for new files)
         if let typeString = try? objectContainer.decode(String.self, forKey: .type) {
             switch typeString {
             case "shape":
@@ -177,10 +169,9 @@ extension VectorObject: Codable {
             case "guide":
                 objectType = .guide(shape)
             default:
-                objectType = .shape(shape) // Fallback
+                objectType = .shape(shape)
             }
         } else {
-            // Fallback for old files - infer from shape properties
             if shape.isGuide {
                 objectType = .guide(shape)
             } else if shape.typography != nil {

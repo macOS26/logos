@@ -642,12 +642,9 @@ extension PDFCommandParser {
     }
 
     private func createVectorTextFromAccumulated() {
-        // Strip leading/trailing whitespace (including NBSP from TT1-style space
-        // fonts) and skip entirely if only whitespace remains. This prevents the
-        // blank text boxes that previously appeared for every <0003>Tj operator.
+        // Trim whitespace (incl. NBSP from TT1-style space fonts) to avoid blank text boxes for <0003>Tj.
         let trimmed = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        // Normalize: replace NBSPs in the middle with regular spaces and collapse runs.
         let normalized = trimmed
             .replacingOccurrences(of: "\u{00A0}", with: " ")
             .replacingOccurrences(of: "  ", with: " ")
@@ -665,26 +662,13 @@ extension PDFCommandParser {
             pdfY = currentTransformMatrix.ty
         }
 
-        // PDF user space has origin at the bottom-left with Y increasing upward
-        // (PDF 1.7 §8.3.2.3). InkPen's canvas uses top-left origin with Y
-        // increasing downward. We always need to flip Y.
-        //
-        // PDF text position is the baseline; InkPen text position is the top-left
-        // of the text box. Subtract one font-size to go from baseline to top.
-        //
-        // Reference: Mozilla pdf.js src/display/canvas.js (showText) maps PDF text
-        // into canvas coordinates via the same flip via the page's transform.
+        // Flip Y (PDF 1.7 §8.3.2.3) and shift baseline → top-left by one font-size.
         let flippedY = pageSize.height - pdfY
         let finalY = flippedY - actualFontSize
 
         let position = CGPoint(x: pdfX, y: finalY)
         let fullFontName = currentFontName ?? "Helvetica"
 
-        // Resolve the PDF PostScript name into a (family, variant) pair that
-        // InkPen's NSFontManager-backed text rendering pipeline can render.
-        // All lookups are runtime — no hardcoded mapping tables. If the exact
-        // font isn't installed, we fall back to the closest family AND closest
-        // variant so bold/italic hints are preserved.
         let (fontFamily, fontVariant) = resolveMacOSFont(postScriptName: fullFontName)
 
         let fontSize = actualFontSize

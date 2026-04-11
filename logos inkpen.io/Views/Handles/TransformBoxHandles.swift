@@ -25,18 +25,16 @@ struct TransformBoxHandles: View {
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
 
-    /// Check if this is a single item selection (show lock button only for single selection)
     private var isSingleSelection: Bool {
         document.viewState.selectedObjectIDs.count == 1
     }
 
-    /// Check if the single selected shape/group is locked
     private var isSingleSelectionLocked: Bool {
         guard isSingleSelection else { return false }
         return shape.isLocked
     }
 
-    // Helper method for curved scaling below 100% zoom
+    // Curved scaling below 100% zoom for gradual handle size reduction
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -44,7 +42,6 @@ struct TransformBoxHandles: View {
         return baseSize
     }
 
-    // Scale handles down below 100% zoom using a curve for gradual scaling
     private var scaledHandleSize: CGFloat {
         scaleForZoom(10, zoom: zoomLevel)
     }
@@ -56,25 +53,20 @@ struct TransformBoxHandles: View {
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
-        // Determine final opacity: use explicit opacity if hiding during drag preference is enabled
         let finalOpacity = settings.hideTransformBoxDuringDrag ? transformBoxOpacity : 1.0
 
         ZStack {
-            // Render transform box outline using Canvas (like direct selection)
-            // Always render to keep it ready, but make invisible if hiding during drag
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
-                
+
                 _ = finalOpacity
-                
-                // Apply preview transform to bounds if scaling
+
                 let displayBounds = (isScaling && !previewTransform.isIdentity)
                     ? transformedBounds.applying(previewTransform)
                     : transformedBounds
 
-                // Convert bounds to screen coordinates
-                // dragPreviewDelta is applied in canvas space, so scale it by zoom
+                // dragPreviewDelta is applied in canvas space, scale it by zoom
                 let screenRect = CGRect(
                     x: displayBounds.origin.x * zoom + offset.x + (dragPreviewDelta.x * zoom),
                     y: displayBounds.origin.y * zoom + offset.y + (dragPreviewDelta.y * zoom),
@@ -88,21 +80,18 @@ struct TransformBoxHandles: View {
             .allowsHitTesting(false)
             .opacity(finalOpacity)
 
-            // Only show red preview lines if live preview is disabled
+            // Red preview lines shown only when live preview is disabled
             if isScaling && !previewTransform.isIdentity && !settings.liveScalingPreview {
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
 
-                    // Check if this is multi-selection (Combined Selection)
                     if shape.name == "Combined Selection" {
-                        // Render preview for all selected objects
                         for objectID in document.viewState.selectedObjectIDs {
                             if let obj = document.snapshot.objects[objectID] {
                                 let objShape = obj.shape
 
                                 if objShape.typography != nil {
-                                    // Text object preview
                                     if let originalPosition = objShape.textPosition, let originalAreaSize = objShape.areaSize {
                                         let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                                         let transformedBounds = originalBounds.applying(previewTransform)
@@ -116,7 +105,6 @@ struct TransformBoxHandles: View {
                                         context.stroke(Path(screenRect), with: .color(.red), lineWidth: 1.0)
                                     }
                                 } else {
-                                    // Regular shape preview
                                     let combinedTransform = objShape.transform.concatenating(previewTransform)
                                     var path = Path()
                                     for element in objShape.path.elements {
@@ -233,12 +221,10 @@ struct TransformBoxHandles: View {
                 .allowsHitTesting(false)
             }
 
-            // Apply preview transform to bounds for handle positioning if scaling
             let displayBounds = (isScaling && !previewTransform.isIdentity)
                 ? transformedBounds.applying(previewTransform)
                 : transformedBounds
 
-            // Always render handles to keep them ready, but make invisible if hiding during drag
             ForEach(0..<9) { index in
                 let pt = handlePosition(index: index, in: displayBounds)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
@@ -286,16 +272,15 @@ struct TransformBoxHandles: View {
             .opacity(finalOpacity)
             }
 
-            // Lock/unlock button near anchor point for single shape/group selection
             if isSingleSelection {
                 let anchorPt = handlePosition(index: 8, in: displayBounds)
-                let lockOffset: CGFloat = 16 / zoomLevel  // Offset from anchor point
+                let lockOffset: CGFloat = 16 / zoomLevel
                 let isLocked = shape.isLocked
                 Button(action: {
                     toggleShapeLock()
                 }) {
                     Image(systemName: isLocked ? "lock.fill" : "lock.open")
-                        .font(.system(size: max(13, 16 / zoomLevel)))  // 33% larger
+                        .font(.system(size: max(13, 16 / zoomLevel)))
                         .foregroundColor(.gray)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -397,7 +382,6 @@ struct TransformBoxHandles: View {
         document.updateShapeByID(objectID, silent: false) { shape in
             shape.isLocked.toggle()
         }
-        // Trigger layer update to sync with layers panel
         if let obj = document.snapshot.objects[objectID] {
             document.triggerLayerUpdate(for: obj.layerIndex)
         }
@@ -413,7 +397,6 @@ struct TransformBoxHandles: View {
         if index < handleToOrigin.count {
             let newOrigin = handleToOrigin[index]
             document.viewState.transformOrigin = newOrigin
-            // Also save to each selected object
             for objectID in document.viewState.selectedObjectIDs {
                 document.updateShapeByID(objectID, silent: false) { shape in
                     shape.transformOrigin = newOrigin
@@ -428,7 +411,6 @@ struct TransformBoxHandles: View {
         initialTransform = .identity
         document.isHandleScalingActive = true
 
-        // Reset live scale transform when live preview is enabled
         if settings.liveScalingPreview {
             liveScaleTransform = .identity
         }
@@ -455,8 +437,6 @@ struct TransformBoxHandles: View {
                 sy = 1.0 + u
             }
 
-            // No min/max constraints - allow free scaling
-
             let scaleTransform = CGAffineTransform.identity
                 .translatedBy(x: anchor.x, y: anchor.y)
                 .scaledBy(x: sx, y: sy)
@@ -465,10 +445,9 @@ struct TransformBoxHandles: View {
             previewTransform = scaleTransform
             document.isHandleScalingActive = true
 
-            // Update live scale transform when live preview is enabled
             if settings.liveScalingPreview {
                 liveScaleTransform = scaleTransform
-                // DON'T trigger layer updates during preview - causes spatial index rebuild on every frame
+                // Don't trigger layer updates during preview: spatial index rebuild per frame
             }
             return
         }
@@ -498,7 +477,7 @@ struct TransformBoxHandles: View {
             scaleY = abs(startDistance.y) > 0 ? currentDistance.y / startDistance.y : 1.0
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                // For uniform scaling, use the one with larger absolute value but preserve sign
+                // Uniform scale uses the larger magnitude, preserving sign
                 let absScaleX = abs(scaleX)
                 let absScaleY = abs(scaleY)
                 let uniformScale = absScaleX >= absScaleY ? scaleX : scaleY
@@ -511,8 +490,6 @@ struct TransformBoxHandles: View {
             scaleX = abs(startDistance.x) > 0 ? currentDistance.x / startDistance.x : 1.0
         }
 
-        // No min/max constraints - allow free scaling
-
         let scaleTransform = CGAffineTransform.identity
             .translatedBy(x: anchor.x, y: anchor.y)
             .scaledBy(x: scaleX, y: scaleY)
@@ -521,10 +498,9 @@ struct TransformBoxHandles: View {
         previewTransform = scaleTransform
         document.isHandleScalingActive = true
 
-        // Update live scale transform when live preview is enabled
         if settings.liveScalingPreview {
             liveScaleTransform = scaleTransform
-            // DON'T trigger layer updates during preview - causes spatial index rebuild on every frame
+            // Don't trigger layer updates during preview: spatial index rebuild per frame
         }
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -538,12 +514,10 @@ struct TransformBoxHandles: View {
         document.isHandleScalingActive = false
         liveScaleDimensions = .zero
 
-        // Reset live scale transform
         if settings.liveScalingPreview {
             liveScaleTransform = .identity
         }
 
-        // Check if this is multi-selection (virtual combined shape)
         if shape.name == "Combined Selection" {
             applyMultiSelectionScaling()
             previewTransform = .identity
@@ -560,7 +534,7 @@ struct TransformBoxHandles: View {
 
         if oldShape.typography != nil {
             // print("🟢 Processing text box reflow")
-            // Text boxes: reflow text to new size instead of transforming
+            // Text boxes reflow to new size instead of transforming
             if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
                 let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                 let transformedBounds = originalBounds.applying(previewTransform)
@@ -573,14 +547,12 @@ struct TransformBoxHandles: View {
                 document.updateTextBoundsInUnified(id: oldShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
                 document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
 
-                // Trigger layer update for text reflow
                 if let obj = document.snapshot.objects[oldShape.id] {
                     document.triggerLayerUpdates(for: [obj.layerIndex])
                 }
             }
         } else {
             // print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
-            // Regular shapes: apply transform to path coordinates
             applyTransformToPath(shapeID: shape.id, transform: previewTransform)
             // print("🟢 Applied transform to path")
         }
@@ -622,7 +594,6 @@ struct TransformBoxHandles: View {
 
         if targetShape.typography != nil {
             // print("🔵 Text object, skipping path transform")
-            // Text objects don't use path transforms
             return
         }
 

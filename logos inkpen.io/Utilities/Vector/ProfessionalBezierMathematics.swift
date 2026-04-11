@@ -23,7 +23,6 @@ struct ProfessionalBezierMathematics {
         }
 
         static func smoothPoint(at location: VectorPoint, handleLength: Double, angle: Double) -> BezierPoint {
-            // SIMD-optimized trig and vector operations
             let handleVector = SIMD2<Double>(cos(angle), sin(angle)) * handleLength
             return BezierPoint(
                 point: location,
@@ -95,7 +94,6 @@ case independent = "Independent"
         }
     }
 
-    // SIMD-optimized de Casteljau algorithm using vector interpolation
     static func deCasteljauEvaluation(points: [VectorPoint], t: Double) -> VectorPoint {
         guard !points.isEmpty else { return VectorPoint(0, 0) }
         guard points.count > 1 else { return points[0] }
@@ -108,7 +106,6 @@ case independent = "Independent"
             for i in 0..<(currentPoints.count - 1) {
                 let p0 = currentPoints[i].simdPoint
                 let p1 = currentPoints[i + 1].simdPoint
-                // SIMD mix for linear interpolation
                 let interpolated = simd_mix(p0, p1, SIMD2<Double>(repeating: t))
                 nextLevel.append(VectorPoint(simd: interpolated))
             }
@@ -150,7 +147,6 @@ case independent = "Independent"
         return binomialLookup[n][k]
     }
 
-    // SIMD-optimized cubic Bezier evaluation
     static func evaluateCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
@@ -158,7 +154,6 @@ case independent = "Independent"
         let t2 = t * t
         let t3 = t2 * t
 
-        // SIMD vector operations
         let result = u3 * p0.simdPoint +
                      3 * u2 * t * p1.simdPoint +
                      3 * u * t2 * p2.simdPoint +
@@ -167,13 +162,11 @@ case independent = "Independent"
         return VectorPoint(simd: result)
     }
 
-    // SIMD-optimized quadratic Bezier evaluation
     static func evaluateQuadraticBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
         let t2 = t * t
 
-        // SIMD vector operations
         let result = u2 * p0.simdPoint +
                      2 * u * t * p1.simdPoint +
                      t2 * p2.simdPoint
@@ -183,7 +176,6 @@ case independent = "Independent"
 
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-        // SIMD-optimized derivative calculation
         let term1 = u * u * (p1.simdPoint - p0.simdPoint)
         let term2 = 2.0 * u * t * (p2.simdPoint - p1.simdPoint)
         let term3 = t * t * (p3.simdPoint - p2.simdPoint)
@@ -193,7 +185,6 @@ case independent = "Independent"
 
     static func cubicBezierSecondDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-        // SIMD-optimized second derivative calculation
         let term1 = u * (p2.simdPoint - 2.0 * p1.simdPoint + p0.simdPoint)
         let term2 = t * (p3.simdPoint - 2.0 * p2.simdPoint + p1.simdPoint)
         let result = 6.0 * (term1 + term2)
@@ -204,10 +195,9 @@ case independent = "Independent"
         let firstDeriv = cubicBezierFirstDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
         let secondDeriv = cubicBezierSecondDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
 
-        // SIMD-optimized cross product (2D cross product is z-component of 3D cross)
+        // 2D cross product = z-component of 3D cross.
         let crossProduct = firstDeriv.x * secondDeriv.y - firstDeriv.y * secondDeriv.x
 
-        // SIMD-optimized length calculation
         let speedSquared = simd_length_squared(firstDeriv.simdPoint)
         let speed = sqrt(speedSquared)
 
@@ -235,7 +225,6 @@ case independent = "Independent"
         var outgoingHandle: VectorPoint?
 
         if let prev = previousPoint, let next = nextPoint {
-            // SIMD-optimized vector operations
             let direction = next.simdPoint - prev.simdPoint
             let directionLength = simd_length(direction)
 
@@ -254,7 +243,6 @@ case independent = "Independent"
             incomingHandle = VectorPoint(simd: currentPoint.simdPoint - normalizedDirection * incomingLength)
             outgoingHandle = VectorPoint(simd: currentPoint.simdPoint + normalizedDirection * outgoingLength)
         } else if let prev = previousPoint {
-            // SIMD-optimized vector operations
             let direction = currentPoint.simdPoint - prev.simdPoint
             let directionLength = simd_length(direction)
 
@@ -266,7 +254,6 @@ case independent = "Independent"
                 outgoingHandle = VectorPoint(simd: currentPoint.simdPoint + normalizedDirection * handleLength)
             }
         } else if let next = nextPoint {
-            // SIMD-optimized vector operations
             let direction = next.simdPoint - currentPoint.simdPoint
             let directionLength = simd_length(direction)
 
@@ -297,11 +284,9 @@ case independent = "Independent"
         let p2 = curve1[2], p3 = curve1[3]
         let q0 = curve2[0], q1 = curve2[1]
 
-        // SIMD-optimized position difference
         let positionDiff = simd_length(p3.simdPoint - q0.simdPoint)
         guard positionDiff < tolerance else { return .none }
 
-        // SIMD-optimized tangent calculations
         let curve1EndTangent = p3.simdPoint - p2.simdPoint
         let curve2StartTangent = q1.simdPoint - q0.simdPoint
         let tangent1Length = simd_length(curve1EndTangent)
@@ -309,7 +294,6 @@ case independent = "Independent"
 
         guard tangent1Length > tolerance && tangent2Length > tolerance else { return .c0 }
 
-        // SIMD-optimized normalization
         let normalizedTangent1 = simd_normalize(curve1EndTangent)
         let normalizedTangent2 = simd_normalize(curve2StartTangent)
         let tangentDiff = simd_length(normalizedTangent1 - normalizedTangent2)
@@ -346,7 +330,6 @@ case independent = "Independent"
             let t2 = Double(i + 1) * dt
             let point1 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t1)
             let point2 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t2)
-            // SIMD-optimized distance calculation
             let segmentLength = simd_length(point2.simdPoint - point1.simdPoint)
             totalLength += segmentLength
         }
@@ -357,7 +340,6 @@ case independent = "Independent"
 
 extension VectorPoint {
     static func lerp(_ a: VectorPoint, _ b: VectorPoint, _ t: Double) -> VectorPoint {
-        // SIMD-optimized linear interpolation
         let result = simd_mix(a.simdPoint, b.simdPoint, SIMD2<Double>(repeating: t))
         return VectorPoint(simd: result)
     }
@@ -380,7 +362,6 @@ extension VectorPoint {
     }
 
     func distance(to other: VectorPoint) -> Double {
-        // SIMD-optimized distance calculation
         return simd_length(self.simdPoint - other.simdPoint)
     }
 
@@ -406,7 +387,6 @@ extension VectorPoint {
     }
 
     var normalized: VectorPoint {
-        // SIMD-optimized normalization
         let length = simd_length(simdPoint)
         guard length > 1e-10 else { return VectorPoint(0, 0) }
         return VectorPoint(simd: simd_normalize(simdPoint))
@@ -428,7 +408,6 @@ extension VectorPoint {
 struct ProfessionalBezierFactory {
 
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
-        // SIMD-optimized direction calculation
         let direction = endPoint.simdPoint - startPoint.simdPoint
         let control1 = VectorPoint(simd: startPoint.simdPoint + direction * tension)
         let control2 = VectorPoint(simd: endPoint.simdPoint - direction * tension)
@@ -439,7 +418,6 @@ struct ProfessionalBezierFactory {
     static func createCircularArc(center: VectorPoint, radius: Double, startAngle: Double, endAngle: Double) -> [VectorPoint] {
         let kappa = 0.5522847498307935
 
-        // SIMD-optimized trig and vector operations
         let startVec = SIMD2<Double>(cos(startAngle), sin(startAngle)) * radius
         let startPoint = VectorPoint(simd: center.simdPoint + startVec)
 

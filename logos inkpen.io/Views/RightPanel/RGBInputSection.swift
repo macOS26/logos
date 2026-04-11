@@ -312,84 +312,72 @@ struct RGBInputSection: View {
     private func onUpdateRed(_ value: Double) {
         redValue = value
 
-        // Always update sharedColor for gradient stops
         sharedColor = VectorColor.rgb(currentColor)
 
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Set delta for live preview rendering
+            colorDeltaColor = previewColor
 
-            // Also set opacity delta if not already set
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
 
-            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // Actual snapshot updates happen on drag end in onRedEditingChanged
     }
 
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
 
-        // Always update sharedColor for gradient stops
         sharedColor = VectorColor.rgb(currentColor)
 
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Set delta for live preview rendering
+            colorDeltaColor = previewColor
 
-            // Also set opacity delta if not already set
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
 
-            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // Actual snapshot updates happen on drag end in onGreenEditingChanged
     }
 
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
 
-        // Always update sharedColor for gradient stops
         sharedColor = VectorColor.rgb(currentColor)
 
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
-            colorDeltaColor = previewColor  // Set delta for live preview rendering
+            colorDeltaColor = previewColor
 
-            // Also set opacity delta if not already set
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
 
-            // Update defaultFillColor/defaultStrokeColor for toolbar preview
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
                 defaultStrokeColor = previewColor
             }
         }
-        // Actual snapshot updates happen on drag end in onBlueEditingChanged
     }
 
     private func onRedEditingChanged(_ isEditing: Bool) {
         if isEditing {
-            // Start of drag - set opacity for preview from selected object or default
+            // Drag start: seed opacity from selected object or default
             let currentOpacity: Double
             if let firstSelectedID = selectedObjectIDs.first,
                let object = snapshot.objects[firstSelectedID] {
@@ -404,11 +392,9 @@ struct RGBInputSection: View {
             colorDeltaOpacity = currentOpacity
         } else {
             // print("HELLO")
-            // Clear colorDelta and actually update objects
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorRed(
             //     normalizedValue,
@@ -417,17 +403,14 @@ struct RGBInputSection: View {
             //     defaultStrokeColor: &defaultStrokeColor
             // )
 
-            // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects by applying the complete color
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
 
-                    // Update the object's fill or stroke color
                     var shape = object.shape
 
                     if activeColorTarget == .fill {
@@ -444,29 +427,25 @@ struct RGBInputSection: View {
                         }
                     }
 
-                    // Create new VectorObject with updated shape
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Update sharedColor to sync with other color sections (HSB, etc.)
+            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
 
     private func onGreenEditingChanged(_ isEditing: Bool) {
         if isEditing {
-            // Start of drag - set opacity for preview
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            // Clear colorDelta and actually update objects
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorGreen(
             //     normalizedValue,
@@ -475,17 +454,14 @@ struct RGBInputSection: View {
             //     defaultStrokeColor: &defaultStrokeColor
             // )
 
-            // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects by applying the complete color
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
 
-                    // Update the object's fill or stroke color
                     var shape = object.shape
 
                     if activeColorTarget == .fill {
@@ -502,29 +478,25 @@ struct RGBInputSection: View {
                         }
                     }
 
-                    // Create new VectorObject with updated shape
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Update sharedColor to sync with other color sections (HSB, etc.)
+            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
 
     private func onBlueEditingChanged(_ isEditing: Bool) {
         if isEditing {
-            // Start of drag - set opacity for preview
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
             colorDeltaOpacity = currentOpacity
         } else {
-            // Clear colorDelta and actually update objects
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // Update defaults
             // TODO: Re-enable when RGB methods are available
             // PaintSelectionOperations.updateDefaultColorBlue(
             //     normalizedValue,
@@ -533,17 +505,14 @@ struct RGBInputSection: View {
             //     defaultStrokeColor: &defaultStrokeColor
             // )
 
-            // Update active color (toolbar display)
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
-            // Update selected objects by applying the complete color
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
 
-                    // Update the object's fill or stroke color
                     var shape = object.shape
 
                     if activeColorTarget == .fill {
@@ -560,14 +529,13 @@ struct RGBInputSection: View {
                         }
                     }
 
-                    // Create new VectorObject with updated shape
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Update sharedColor to sync with other color sections (HSB, etc.)
+            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }

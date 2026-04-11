@@ -37,7 +37,6 @@ class MetalComputeEngine {
     private var pathHitTestPipeline: MTLComputePipelineState?
     private var findNearestSnapPointPipeline: MTLComputePipelineState?
 
-    // Brush optimization pipelines
     private var removeCoincidentPointsPipeline: MTLComputePipelineState?
     private var smoothBrushStrokePipeline: MTLComputePipelineState?
 
@@ -155,8 +154,7 @@ class MetalComputeEngine {
             findNearestSnapPointPipeline = try device.makeComputePipelineState(function: function)
         }
 
-        // Brush optimization pipelines
-        if let function = library.makeFunction(name: "remove_coincident_points") {
+            if let function = library.makeFunction(name: "remove_coincident_points") {
             removeCoincidentPointsPipeline = try device.makeComputePipelineState(function: function)
         }
         if let function = library.makeFunction(name: "smooth_brush_stroke") {
@@ -1260,7 +1258,6 @@ class MetalComputeEngine {
 
     // MARK: - Path Hit Testing (GPU-Accelerated)
 
-    /// GPU-accelerated path hit test - tests if a point is within tolerance of a path
     func pathHitTestGPU(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
         guard let pipeline = pathHitTestPipeline,
               let commandBuffer = commandQueue.makeCommandBuffer(),
@@ -1268,7 +1265,6 @@ class MetalComputeEngine {
             fatalError("Metal GPU path hit test pipeline not available")
         }
 
-        // Convert CGPath to PathSegment array
         var segments: [MetalPathSegment] = []
 
         path.applyWithBlock { element in
@@ -1276,35 +1272,35 @@ class MetalComputeEngine {
             switch element.pointee.type {
             case .moveToPoint:
                 segments.append(MetalPathSegment(
-                    type: 0,  // PATH_MOVE
+                    type: 0,
                     point: simd_float2(Float(points[0].x), Float(points[0].y)),
                     control1: simd_float2(0, 0),
                     control2: simd_float2(0, 0)
                 ))
             case .addLineToPoint:
                 segments.append(MetalPathSegment(
-                    type: 1,  // PATH_LINE
+                    type: 1,
                     point: simd_float2(Float(points[0].x), Float(points[0].y)),
                     control1: simd_float2(0, 0),
                     control2: simd_float2(0, 0)
                 ))
             case .addQuadCurveToPoint:
                 segments.append(MetalPathSegment(
-                    type: 3,  // PATH_QUAD
+                    type: 3,
                     point: simd_float2(Float(points[1].x), Float(points[1].y)),
                     control1: simd_float2(Float(points[0].x), Float(points[0].y)),
                     control2: simd_float2(0, 0)
                 ))
             case .addCurveToPoint:
                 segments.append(MetalPathSegment(
-                    type: 2,  // PATH_CURVE
+                    type: 2,
                     point: simd_float2(Float(points[2].x), Float(points[2].y)),
                     control1: simd_float2(Float(points[0].x), Float(points[0].y)),
                     control2: simd_float2(Float(points[1].x), Float(points[1].y))
                 ))
             case .closeSubpath:
                 segments.append(MetalPathSegment(
-                    type: 4,  // PATH_CLOSE
+                    type: 4,
                     point: simd_float2(0, 0),
                     control1: simd_float2(0, 0),
                     control2: simd_float2(0, 0)
@@ -1322,7 +1318,6 @@ class MetalComputeEngine {
             fatalError("Failed to create Metal buffers for path hit test")
         }
 
-        // Initialize result to 0 (no hit)
         hitResultBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee = 0
 
         var segmentCount = UInt32(segments.count)
@@ -1351,7 +1346,6 @@ class MetalComputeEngine {
 
     // MARK: - Snap-to-Point (GPU-Accelerated)
 
-    /// GPU-accelerated snap point detection - finds nearest snap point within threshold
     func findNearestSnapPointGPU(snapPoints: [CGPoint], objectIDs: [UUID], mousePoint: CGPoint, threshold: CGFloat) -> (index: Int, objectID: UUID, point: CGPoint)? {
         guard let pipeline = findNearestSnapPointPipeline,
               !snapPoints.isEmpty,
@@ -1364,7 +1358,6 @@ class MetalComputeEngine {
             return nil
         }
 
-        // Convert to Metal-compatible formats
         let snapFloat2Array = snapPoints.map { simd_float2(Float($0.x), Float($0.y)) }
 
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
@@ -1393,7 +1386,6 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Read distances back and find minimum (still faster than CPU nested loops)
         let distancesPtr = distancesBuffer.contents().bindMemory(to: Float.self, capacity: snapPoints.count)
         var nearestIndex: Int?
         var nearestDist = Float(threshold)
@@ -1415,7 +1407,6 @@ class MetalComputeEngine {
 
     // MARK: - Brush Optimization with SIMD
 
-    /// Remove coincident points from a brush stroke using GPU acceleration
     func removeCoincidentPointsGPU(_ points: [CGPoint], pressures: [Float]? = nil, tolerance: Float = 1.0) -> Result<([CGPoint], [Float]?), MetalError> {
         guard !points.isEmpty else {
             return .success(([], nil))
@@ -1433,14 +1424,12 @@ class MetalComputeEngine {
         let pointCount = points.count
         let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
 
-        // Create buffers
         guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
               let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
               let outputCountBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
 
-        // Initialize output count to 0
         outputCountBuffer.contents().assumingMemoryBound(to: UInt32.self).pointee = 0
 
         var pressureInputBuffer: MTLBuffer?
@@ -1464,7 +1453,7 @@ class MetalComputeEngine {
         var tol = tolerance
         computeEncoder.setBytes(&tol, length: MemoryLayout<Float>.stride, index: 6)
 
-        // Run as single thread to ensure sequential processing (matches CPU logic)
+        // Single thread for sequential processing (matches CPU logic).
         let threadsPerGroup = MTLSize(width: 1, height: 1, depth: 1)
         let groupsPerGrid = MTLSize(width: 1, height: 1, depth: 1)
 
@@ -1474,7 +1463,6 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Read results
         let outputCount = Int(outputCountBuffer.contents().assumingMemoryBound(to: UInt32.self).pointee)
         let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
 
@@ -1493,7 +1481,7 @@ class MetalComputeEngine {
         return .success((resultPoints, resultPressures))
     }
 
-    /// Smooth brush stroke using Catmull-Rom splines with GPU acceleration
+    /// Catmull-Rom spline smoothing on GPU.
     func smoothBrushStrokeGPU(_ points: [CGPoint], pressures: [Float]? = nil, smoothingFactor: Float = 0.7, subdivisions: Int = 4) -> Result<([CGPoint], [Float]?), MetalError> {
         guard points.count >= 2 else {
             return .success((points, pressures))
@@ -1512,7 +1500,6 @@ class MetalComputeEngine {
         let outputCount = (inputCount - 1) * subdivisions + 1
         let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
 
-        // Create buffers
         guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: inputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
               let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
@@ -1550,20 +1537,16 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Read results
         let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
         var resultPoints: [CGPoint] = []
 
-        // Copy first point
         resultPoints.append(points[0])
 
-        // Copy subdivided points
         for i in 0..<totalThreads {
             let simdPoint = resultPointer[i]
             resultPoints.append(CGPoint(x: CGFloat(simdPoint.x), y: CGFloat(simdPoint.y)))
         }
 
-        // Add last point
         if let lastPoint = points.last {
             resultPoints.append(lastPoint)
         }
@@ -1578,7 +1561,6 @@ class MetalComputeEngine {
     }
 }
 
-// Metal-compatible struct for path segments
 struct MetalPathSegment {
     let type: UInt32
     let point: simd_float2

@@ -30,7 +30,6 @@ struct CurveSmoothing {
         return smoothedPoints
     }
 
-    // SIMD-optimized Chaikin smoothing using simd_mix
     private static func applySingleChaikinIteration(points: [CGPoint], ratio: Double) -> [CGPoint] {
         guard points.count >= 2 else { return points }
 
@@ -41,7 +40,6 @@ struct CurveSmoothing {
             let p0 = points[i].simd
             let p1 = points[i + 1].simd
 
-            // SIMD linear interpolation
             let q = p0 + (p1 - p0) * ratio
             let r = p0 + (p1 - p0) * (1.0 - ratio)
 
@@ -130,7 +128,6 @@ struct CurveSmoothing {
         return elements
     }
 
-    // SIMD-optimized perpendicular distance using simd_dot and simd_length
     private static func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
         let pointVec = point.simd - lineStart.simd
         let lineVec = lineEnd.simd - lineStart.simd
@@ -153,7 +150,6 @@ struct CurveSmoothing {
         return simd_length(point.simd - closest)
     }
 
-    // SIMD-optimized curvature using simd_normalize and simd_dot
     private static func calculateCurvature(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> Double {
         let v1 = p1.simd - p0.simd
         let v2 = p2.simd - p1.simd
@@ -164,7 +160,6 @@ struct CurveSmoothing {
             return 0
         }
 
-        // SIMD normalize and dot product
         let n1 = simd_normalize(v1)
         let n2 = simd_normalize(v2)
         let dotProduct = simd_dot(n1, n2)

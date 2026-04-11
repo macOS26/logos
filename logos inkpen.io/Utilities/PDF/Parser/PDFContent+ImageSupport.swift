@@ -109,7 +109,6 @@ extension PDFCommandParser {
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
                 try? rgbaData.write(to: URL(fileURLWithPath: rgbaDebugPath))
 
-                // Create PNG using Core Graphics (cross-platform)
                 if let pngData = createPNGData(from: rgbaData, width: width, height: height, hasAlpha: hasSMask) {
                     imageShape.embeddedImageData = pngData
 
@@ -153,7 +152,6 @@ extension PDFCommandParser {
                     let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
                     try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
 
-                    // Create PNG using Core Graphics (cross-platform)
                     if let pngData = createPNGData(from: rgbaData as Data, width: width, height: height, hasAlpha: hasSMask) {
                         imageShape.embeddedImageData = pngData
 
@@ -175,7 +173,6 @@ extension PDFCommandParser {
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
                 try? rgbaData.write(to: URL(fileURLWithPath: rgbaDebugPath))
 
-                // Create PNG using Core Graphics (cross-platform)
                 if let pngData = createPNGData(from: rgbaData, width: width, height: height, hasAlpha: hasSMask) {
                     imageShape.embeddedImageData = pngData
 
@@ -210,7 +207,6 @@ extension PDFCommandParser {
                     let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
                     try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
 
-                    // Create PNG using Core Graphics (cross-platform)
                     if let pngData = createPNGData(from: rgbaData as Data, width: width, height: height, hasAlpha: hasSMask) {
                         imageShape.embeddedImageData = pngData
 
@@ -234,7 +230,6 @@ extension PDFCommandParser {
                     bitmapInfo: bitmapInfo.rawValue
                 ) {
                     if let cgImage = context.makeImage() {
-                        // Create PNG using CGImageDestination (cross-platform)
                         let pngData = NSMutableData()
                         if let destination = CGImageDestinationCreateWithData(
                             pngData as CFMutableData,
@@ -258,7 +253,6 @@ extension PDFCommandParser {
                     imageShape.embeddedImageData = nsData as Data
                 }
             } else {
-                // Validate image data using CGImageSource (cross-platform)
                 if let imageSource = CGImageSourceCreateWithData(nsData as CFData, nil),
                    CGImageSourceCreateImageAtIndex(imageSource, 0, nil) != nil {
                     imageShape.embeddedImageData = nsData as Data
@@ -578,7 +572,7 @@ extension PDFCommandParser {
 
 // MARK: - Cross-platform Image Helpers
 
-/// Helper to create PNG data from RGBA bitmap data using Core Graphics (cross-platform)
+/// Create PNG data from RGBA bitmap via Core Graphics.
 fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, hasAlpha: Bool) -> Data? {
     let bytesPerPixel = 4
     let bitsPerComponent = 8
@@ -588,12 +582,10 @@ fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, has
         return nil
     }
 
-    // Create data provider from RGBA data
     guard let provider = CGDataProvider(data: rgbaData as CFData) else {
         return nil
     }
 
-    // Create CGImage from RGBA data
     guard let cgImage = CGImage(
         width: width,
         height: height,
@@ -610,7 +602,6 @@ fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, has
         return nil
     }
 
-    // Create PNG data using CGImageDestination
     let pngData = NSMutableData()
     guard let destination = CGImageDestinationCreateWithData(
         pngData as CFMutableData,

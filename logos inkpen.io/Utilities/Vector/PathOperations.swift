@@ -361,7 +361,7 @@ class ProfessionalPathOperations {
         case .separate:
             return !paths.isEmpty
         case .combine:
-            return paths.count >= 2  // Combines any number of shapes >= 2
+            return paths.count >= 2
         }
     }
 
@@ -588,12 +588,10 @@ class PathOperations {
         let bounds = path.boundingBoxOfPath.insetBy(dx: -tolerance, dy: -tolerance)
         guard bounds.contains(point) else { return false }
 
-        // Quick fill check first
         if path.contains(point) {
             return true
         }
 
-        // Use GPU-accelerated path hit test for stroke detection
         return MetalComputeEngine.shared.pathHitTestGPU(path, point: point, tolerance: tolerance)
     }
 
@@ -678,8 +676,7 @@ extension ProfessionalPathOperations {
             }
         }
 
-        // Only check adjacent (consecutive) points - this is "mergeADJACENTCoincidentPoints"
-        // Rebuild pointData after each removal to properly handle stacked points
+        // Adjacent-only merging; rebuild pointData after each removal to handle stacked points.
         var currentPointData = pointData
         var indicesToRemove: Set<Int> = []
 
@@ -691,7 +688,6 @@ extension ProfessionalPathOperations {
                 let currentData = currentPointData[i]
                 let nextData = currentPointData[i + 1]
 
-                // Only merge if they are adjacent in the actual path
                 if nextData.index == currentData.index + 1 {
                     let distance = currentData.position.distance(to: nextData.position)
 
@@ -703,7 +699,6 @@ extension ProfessionalPathOperations {
                             indicesToRemove.insert(actualElementIndex)
                             Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
 
-                            // Remove from currentPointData and retry
                             currentPointData.remove(at: i + 1)
                             changed = true
                             break

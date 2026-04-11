@@ -327,12 +327,8 @@ extension VectorDocument {
         }
     }
 
-    /// Resolves member shapes for a group using memberIDs
-    /// Falls back to groupedShapes for backwards compatibility with old groups
-    /// - Parameter groupShape: The group shape to resolve members for
-    /// - Returns: Array of member shapes in order
+    /// Resolves group members via memberIDs; falls back to groupedShapes for legacy groups.
     func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
-        // NEW: Use memberIDs if available
         if !groupShape.memberIDs.isEmpty {
             let resolved = groupShape.memberIDs.compactMap { findShape(by: $0) }
             if resolved.count != groupShape.memberIDs.count {
@@ -345,13 +341,10 @@ extension VectorDocument {
             }
             return resolved
         }
-        // DEPRECATED: Fallback to groupedShapes for old groups
         return groupShape.groupedShapes
     }
 
-    /// Recursively resolves all shapes in a group, including nested groups
-    /// - Parameter groupShape: The group shape to resolve
-    /// - Returns: Flat array of all leaf shapes (non-group shapes)
+    /// Flat array of all leaf shapes, recursing into nested groups.
     func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
         let members = resolveGroupMembers(groupShape)
         var result: [VectorShape] = []
@@ -367,9 +360,7 @@ extension VectorDocument {
         return result
     }
 
-    /// Calculate bounds for a group by resolving its member shapes
-    /// - Parameter groupShape: The group shape to calculate bounds for
-    /// - Returns: The combined bounds of all member shapes in document coordinates
+    /// Combined bounds of group members in document coordinates.
     func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
         guard groupShape.isGroupContainer else { return groupShape.bounds }
 
@@ -381,7 +372,6 @@ extension VectorDocument {
             if member.typography != nil, let textPosition = member.textPosition, let areaSize = member.areaSize {
                 memberBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else if member.isGroupContainer {
-                // Recursively calculate bounds for nested groups
                 memberBounds = calculateGroupBounds(member).applying(member.transform)
             } else {
                 memberBounds = member.bounds.applying(member.transform)
@@ -393,7 +383,6 @@ extension VectorDocument {
     }
 
     func findText(by id: UUID) -> VectorText? {
-        // O(1) lookup in snapshot.objects
         if let object = snapshot.objects[id] {
             if case .text(let shape) = object.objectType,
                var vectorText = VectorText.from(shape) {
@@ -402,7 +391,7 @@ extension VectorDocument {
             }
         }
 
-        // Not a top-level text object - search inside groups using memberIDs
+        // Search inside groups using memberIDs.
         for object in snapshot.objects.values {
             if case .group(let shape) = object.objectType {
                 let members = resolveGroupMembers(shape)
@@ -418,7 +407,6 @@ extension VectorDocument {
     }
 
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
-        // Iterate through layers to preserve order
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
                 guard let object = snapshot.objects[objectID] else { continue }

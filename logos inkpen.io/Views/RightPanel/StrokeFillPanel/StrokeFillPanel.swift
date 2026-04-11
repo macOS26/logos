@@ -302,9 +302,8 @@ struct StrokeFillPanel: View {
 
         var layersToUpdate = Set<Int>()
 
-        // Group selected points by shape and spatial location to handle coincident points
-        // This prevents processing the same anchor location multiple times
-        var processedAnchors: [UUID: Set<Int>] = [:] // shapeID -> processed element indices
+        // Dedup coincident anchor locations to avoid double-processing
+        var processedAnchors: [UUID: Set<Int>] = [:]
 
         for pointID in selectedPoints {
             guard var object = snapshot.objects[pointID.shapeID],
@@ -313,21 +312,17 @@ struct StrokeFillPanel: View {
                 continue
             }
 
-            // Skip if we've already processed this element index for this shape
             if processedAnchors[pointID.shapeID]?.contains(pointID.elementIndex) == true {
                 continue
             }
 
-            // Check if this is a coincident point (element 0 and last element at same location)
             let elementIndex = pointID.elementIndex
             var elements = shape.path.elements
 
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
 
-            // Find coincident element (if any)
             var coincidentIndex: Int? = nil
             if elementIndex == 0 {
-                // Check if last element is at same position
                 let lastIndex = elements.count - 1
                 if lastIndex > 0, let lastPos = getAnchorPosition(from: elements[lastIndex]) {
                     if abs(lastPos.x - anchorPosCG.x) < 0.1 && abs(lastPos.y - anchorPosCG.y) < 0.1 {
@@ -335,7 +330,6 @@ struct StrokeFillPanel: View {
                     }
                 }
             } else {
-                // Check if element 0 is at same position
                 if let firstPos = getAnchorPosition(from: elements[0]) {
                     if abs(firstPos.x - anchorPosCG.x) < 0.1 && abs(firstPos.y - anchorPosCG.y) < 0.1 {
                         coincidentIndex = 0
@@ -343,7 +337,6 @@ struct StrokeFillPanel: View {
                 }
             }
 
-            // Mark both this element and its coincident partner as processed
             if processedAnchors[pointID.shapeID] == nil {
                 processedAnchors[pointID.shapeID] = []
             }
@@ -358,17 +351,11 @@ struct StrokeFillPanel: View {
 
 
 
-            // Get anchor position
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
             let anchorPos = VectorPoint(anchorPosCG.x, anchorPosCG.y)
 
-            // Convert line element to curve if needed (for rectangles/polygons)
-            // control1 = outgoing from PREVIOUS anchor, so collapse it AT the previous anchor
-            // control2 = incoming to THIS anchor, so collapse it AT this anchor
+            // Convert line to curve: collapse control1 at prev anchor, control2 at this anchor
             if case .line = elements[elementIndex] {
-
-
-                // Get previous point position (where control1 should be collapsed)
                 var prevPoint = anchorPos
                 if elementIndex > 0 {
                     switch elements[elementIndex - 1] {
@@ -379,9 +366,6 @@ struct StrokeFillPanel: View {
                     }
                 }
 
-                // Convert to curve with:
-                // - control1 collapsed at PREVIOUS anchor (not this anchor!)
-                // - control2 collapsed at THIS anchor
                 elements[elementIndex] = .curve(to: anchorPos, control1: prevPoint, control2: anchorPos)
 
 
@@ -392,39 +376,27 @@ struct StrokeFillPanel: View {
 
 
 
-            // Modify the element and next element based on type
             switch type {
             case .corner:
-
-                // Collapse handles to anchor (corner = no visible handles)
-                // Collapse incoming handle (control2 of current element)
+                // Collapse both handles to the anchor
                 if case .curve(_, let control1, _) = elements[elementIndex] {
                     elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: anchorPos)
-
                 }
-                // Collapse outgoing handle (control1 of next element)
                 if elementIndex + 1 < elements.count {
                     if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                         elements[elementIndex + 1] = .curve(to: to, control1: anchorPos, control2: control2)
-
                     }
                 }
 
             case .cusp:
-                // For cusp: create 2 independent handles at this anchor
                 let handleLength: Double = 40.0
-
-                // Determine if this is a coincident point
                 let isCoincidentPoint = coincidentIndex != nil
 
-                // Get previous and next anchor positions for angle calculation
                 var prevPos: CGPoint?
                 var nextPos: CGPoint?
 
                 if isCoincidentPoint {
-                    // For coincident point:
-                    // - prev = second-to-last element's position
-                    // - next = element 1's position
+                    // Coincident: prev = second-to-last, next = element 1
                     let lastIndex = elements.count - 1
                     if lastIndex > 1 {
                         prevPos = getAnchorPosition(from: elements[lastIndex - 1])
@@ -439,7 +411,7 @@ struct StrokeFillPanel: View {
                     }
                 }
 
-                // Calculate angles - handles point away from path direction
+                // Handles point away from path direction
                 var incomingAngle: Double = .pi
                 var outgoingAngle: Double = 0
 
@@ -458,7 +430,6 @@ struct StrokeFillPanel: View {
 
 
 
-                // Create handle positions
                 let incomingHandle = VectorPoint(
                     anchorPosCG.x + cos(incomingAngle) * handleLength,
                     anchorPosCG.y + sin(incomingAngle) * handleLength
@@ -469,17 +440,13 @@ struct StrokeFillPanel: View {
                 )
 
                 if isCoincidentPoint {
-                    // For coincident points, only set 2 handles total:
-                    // - Incoming handle = control2 of last element
-                    // - Outgoing handle = control1 of element 1
+                    // Incoming = control2 of last element; outgoing = control1 of element 1
                     let lastIndex = elements.count - 1
 
-                    // Update incoming handle (control2 of last element)
                     if case .curve(let to, let control1, _) = elements[lastIndex] {
                         elements[lastIndex] = .curve(to: to, control1: control1, control2: incomingHandle)
                     }
 
-                    // Update outgoing handle (control1 of element 1)
                     if elements.count > 1 {
                         if case .curve(let to, _, let control2) = elements[1] {
                             elements[1] = .curve(to: to, control1: outgoingHandle, control2: control2)
@@ -488,13 +455,10 @@ struct StrokeFillPanel: View {
                         }
                     }
                 } else {
-                    // Regular (non-coincident) point
-                    // Update incoming handle (control2 of this element)
                     if case .curve(_, let control1, _) = elements[elementIndex] {
                         elements[elementIndex] = .curve(to: anchorPos, control1: control1, control2: incomingHandle)
                     }
 
-                    // Update outgoing handle (control1 of next element)
                     if elementIndex + 1 < elements.count {
                         if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                             elements[elementIndex + 1] = .curve(to: to, control1: outgoingHandle, control2: control2)
@@ -510,49 +474,40 @@ struct StrokeFillPanel: View {
                 }
 
             case .smooth:
-
                 // Make handles collinear (180° aligned through anchor)
                 var incomingHandle: CGPoint?
                 var outgoingHandle: CGPoint?
 
-                // Get incoming handle (control2 from this element)
                 if case .curve(_, _, let control2) = elements[elementIndex] {
                     incomingHandle = control2.cgPoint
                 }
 
-                // Get outgoing handle (control1 from next element) - only if it's a curve
                 if elementIndex + 1 < elements.count,
                    case .curve(_, let control1, _) = elements[elementIndex + 1] {
                     outgoingHandle = control1.cgPoint
                 }
-                // If next is a line, we don't have an outgoing handle to align
 
-                // If both handles exist, align them
                 if let incoming = incomingHandle, let outgoing = outgoingHandle {
-                    // Calculate vectors from anchor to each handle
                     let inVec = CGPoint(x: incoming.x - anchorPosCG.x, y: incoming.y - anchorPosCG.y)
                     let outVec = CGPoint(x: outgoing.x - anchorPosCG.x, y: outgoing.y - anchorPosCG.y)
 
                     let inLen = sqrt(inVec.x * inVec.x + inVec.y * inVec.y)
                     let outLen = sqrt(outVec.x * outVec.x + outVec.y * outVec.y)
 
-                    // Use the longer handle to determine the direction
+                    // Use the longer handle as the reference direction
                     let useIncoming = inLen > outLen
 
                     if useIncoming && inLen > 0.1 {
-                        // Align outgoing to be opposite of incoming
                         let norm = CGPoint(x: inVec.x / inLen, y: inVec.y / inLen)
                         let newControl1 = VectorPoint(
                             anchorPosCG.x - norm.x * outLen,
                             anchorPosCG.y - norm.y * outLen
                         )
-                        // Update ONLY if next element is already a curve
+                        // Only update if next element is already a curve (don't touch lines)
                         if case .curve(let to, _, let control2) = elements[elementIndex + 1] {
                             elements[elementIndex + 1] = .curve(to: to, control1: newControl1, control2: control2)
                         }
-                        // Don't touch line elements
                     } else if outLen > 0.1 {
-                        // Align incoming to be opposite of outgoing
                         let norm = CGPoint(x: outVec.x / outLen, y: outVec.y / outLen)
                         let newControl2 = VectorPoint(
                             anchorPosCG.x - norm.x * inLen,
@@ -565,27 +520,13 @@ struct StrokeFillPanel: View {
                 }
 
             case .auto:
-                // Auto mode - remove stored type to use geometry detection
+                // Auto uses geometry detection; remove any stored override
                 shape.anchorTypes.removeValue(forKey: elementIndex)
             }
 
-            // Store the explicit anchor type (except for .auto which uses geometry)
             if type != .auto {
                 shape.anchorTypes[elementIndex] = type
-
-            } else {
-
             }
-
-            // Log all stored anchor types for this shape
-
-
-
-
-
-
-
-            // Update the shape
             shape.path = VectorPath(elements: elements)
             shape.updateBounds()
             object = VectorObject(shape: shape, layerIndex: object.layerIndex)
@@ -593,11 +534,8 @@ struct StrokeFillPanel: View {
             layersToUpdate.insert(object.layerIndex)
         }
 
-        // Trigger updates for affected layers
         if !layersToUpdate.isEmpty {
             onTriggerLayerUpdates(layersToUpdate)
-
-            // Trigger handle refresh in DrawingCanvas
             document.viewState.handleRefreshTrigger.toggle()
         }
     }
@@ -914,7 +852,7 @@ struct StrokeFillPanel: View {
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
                             fillDeltaOpacity = value
-                            onUpdateFillOpacityLive(value, true)  // Live update during drag
+                            onUpdateFillOpacityLive(value, true)
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
@@ -950,12 +888,12 @@ struct StrokeFillPanel: View {
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             strokeDeltaWidth = value
-                            onUpdateStrokeWidthLive(value, true)  // Live update during drag
+                            onUpdateStrokeWidthLive(value, true)
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
                             strokeDeltaOpacity = value
-                            onUpdateStrokeOpacityLive(value, true)  // Live update during drag
+                            onUpdateStrokeOpacityLive(value, true)
                         },
                         onUpdateStrokePlacement: { value in
                             strokePlacementState = value
