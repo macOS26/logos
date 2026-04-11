@@ -895,9 +895,10 @@ struct LayerCanvasView: View {
         }
         let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
 
-        // Create gradient once (O(n) where n = stops)
+        // Interpolate in sRGB to match browser SVG rendering (CGColorSpaceCreateDeviceRGB
+        // resolves to displayP3 on P3 displays, producing different midtones than the spec).
         guard let cgGradient = CGGradient(
-            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colorsSpace: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
             colors: colors as CFArray,
             locations: locations
         ) else {

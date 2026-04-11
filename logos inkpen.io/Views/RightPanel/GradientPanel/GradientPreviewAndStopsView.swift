@@ -150,7 +150,7 @@ struct GradientPreviewAndStopsView: View {
             }
         }
         let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
-        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
             context.restoreGState()
             return
         }

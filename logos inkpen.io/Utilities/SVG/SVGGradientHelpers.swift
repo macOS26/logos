@@ -67,21 +67,6 @@ extension SVGParser {
         return radians * 180.0 / .pi
     }
 
-    internal func parseGradientTransformFromAttributes(_ attributes: [String: String]) -> (angle: Double, scaleX: Double, scaleY: Double) {
-        var gradientAngle: Double = 0.0
-        var gradientScaleX: Double = 1.0
-        var gradientScaleY: Double = 1.0
-
-        if let gradientTransformRaw = attributes["gradientTransform"] {
-            let transforms = parseGradientTransform(gradientTransformRaw)
-            gradientAngle = transforms.angle
-            gradientScaleX = transforms.scaleX
-            gradientScaleY = transforms.scaleY
-        }
-
-        return (angle: gradientAngle, scaleX: gradientScaleX, scaleY: gradientScaleY)
-    }
-
     internal func parseGradientStop(attributes: [String: String]) {
         guard isParsingGradient else { return }
 
@@ -110,50 +95,6 @@ extension SVGParser {
         let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
         currentGradientStops.append(gradientStop)
 
-    }
-
-    internal func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
-        var angle: Double = 0.0
-        var scaleX: Double = 1.0
-        var scaleY: Double = 1.0
-
-        if let rotateMatch = transform.range(of: #"rotate\(([^)]+)\)"#, options: .regularExpression) {
-            let rotateSubstring = String(transform[rotateMatch])
-            let numbers = extractNumbers(from: rotateSubstring)
-            if let rotateAngle = numbers.first {
-                angle = -rotateAngle
-            }
-        }
-
-        if let scaleMatch = transform.range(of: #"scale\(([^)]+)\)"#, options: .regularExpression) {
-            let scaleSubstring = String(transform[scaleMatch])
-            let numbers = extractNumbers(from: scaleSubstring)
-            if numbers.count >= 2 {
-                scaleX = numbers[0]
-                scaleY = numbers[1]
-            } else if numbers.count == 1 {
-                scaleX = numbers[0]
-                scaleY = numbers[0]
-            }
-        }
-
-        return (angle: angle, scaleX: scaleX, scaleY: scaleY)
-    }
-
-    internal func extractNumbers(from string: String) -> [Double] {
-        let pattern = #"-?\d*\.?\d+"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return []
-        }
-        let range = NSRange(string.startIndex..<string.endIndex, in: string)
-        let matches = regex.matches(in: string, range: range)
-
-        return matches.compactMap { match in
-            if let range = Range(match.range, in: string) {
-                return Double(String(string[range]))
-            }
-            return nil
-        }
     }
 
     internal func clamp(_ value: Double, _ minValue: Double, _ maxValue: Double) -> Double {

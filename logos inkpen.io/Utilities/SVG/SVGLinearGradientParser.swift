@@ -88,30 +88,15 @@ extension SVGParser {
             return VectorGradient.linear(linearGradient)
         }
 
-        // objectBoundingBox: existing angle/scale decomposition behavior
-        let transformInfo = parseGradientTransformFromAttributes(attributes)
+        // objectBoundingBox: bake the full gradientTransform into start/end points via
+        // parseTransform (supports translate/matrix/skew, not just rotate/scale).
+        let gradTransform = attributes["gradientTransform"].map { parseTransform($0) } ?? .identity
+        let transformedStart = startPoint.applying(gradTransform)
+        let transformedEnd = endPoint.applying(gradTransform)
 
-        var deltaX = x2 - x1
-        var deltaY = y2 - y1
-
-        if transformInfo.scaleX != 1.0 || transformInfo.scaleY != 1.0 {
-            deltaX *= transformInfo.scaleX
-            deltaY *= transformInfo.scaleY
-        }
-
-        var computedAngle = radiansToDegrees(atan2(deltaY, deltaX))
-
-        if transformInfo.angle != 0.0 {
-            computedAngle += transformInfo.angle
-        }
-
-        let angleDegrees = computedAngle
-
-        let originX = clamp((startPoint.x + endPoint.x) / 2.0, 0.0, 1.0)
-        let originY = clamp((startPoint.y + endPoint.y) / 2.0, 0.0, 1.0)
         var linearGradient = LinearGradient(
-            startPoint: startPoint,
-            endPoint: endPoint,
+            startPoint: transformedStart,
+            endPoint: transformedEnd,
             stops: currentGradientStops,
             spreadMethod: spreadMethod,
             units: gradientUnits
@@ -122,8 +107,10 @@ extension SVGParser {
             if attributes["spreadMethod"] == nil { linearGradient.spreadMethod = inh.spreadMethod }
         }
 
-        linearGradient.originPoint = CGPoint(x: originX, y: originY)
-        linearGradient.angle = angleDegrees
+        linearGradient.originPoint = CGPoint(
+            x: (transformedStart.x + transformedEnd.x) / 2.0,
+            y: (transformedStart.y + transformedEnd.y) / 2.0
+        )
 
         return VectorGradient.linear(linearGradient)
     }

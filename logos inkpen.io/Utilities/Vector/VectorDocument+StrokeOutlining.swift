@@ -105,9 +105,9 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex else { return 0 }
 
         return getShapesForLayer(layerIndex).filter { shape in
-            viewState.selectedObjectIDs.contains(shape.id) &&
-            shape.strokeStyle != nil &&
-            PathOperations.canOutlineStroke(path: shape.path.cgPath, strokeStyle: shape.strokeStyle!)
+            guard viewState.selectedObjectIDs.contains(shape.id),
+                  let strokeStyle = shape.strokeStyle else { return false }
+            return PathOperations.canOutlineStroke(path: shape.path.cgPath, strokeStyle: strokeStyle)
         }.count
     }
 }

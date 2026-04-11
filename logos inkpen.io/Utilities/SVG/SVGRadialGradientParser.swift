@@ -142,14 +142,24 @@ extension SVGParser {
             return VectorGradient.radial(radialGradient)
         }
 
-        // objectBoundingBox: existing angle/scale decomposition behavior
-        let (gradientAngle, gradientScaleX, gradientScaleY) = parseGradientTransformFromAttributes(attributes)
+        // Decompose gradientTransform into (angle, scaleX, scaleY, translation) so the
+        // canvas's translate→rotate→scaleBy render path reproduces the exact ellipse.
+        let gradTransform = attributes["gradientTransform"].map { parseTransform($0) } ?? .identity
+        let decompScaleX = sqrt(gradTransform.a * gradTransform.a + gradTransform.b * gradTransform.b)
+        let decompScaleY = sqrt(gradTransform.c * gradTransform.c + gradTransform.d * gradTransform.d)
+        let decompAngleDeg = atan2(gradTransform.b, gradTransform.a) * 180.0 / .pi
+        let transformedCenter = centerPoint.applying(gradTransform)
+        let transformedFocal = focalPoint.applying(gradTransform)
+
+        let focalDx = transformedFocal.x - transformedCenter.x
+        let focalDy = transformedFocal.y - transformedCenter.y
+        let resolvedFocal: CGPoint? = (abs(focalDx) < 1e-9 && abs(focalDy) < 1e-9) ? nil : CGPoint(x: focalDx, y: focalDy)
 
         var radialGradient = RadialGradient(
-            centerPoint: centerPoint,
+            centerPoint: transformedCenter,
             radius: max(0.001, finalRadius),
             stops: currentGradientStops,
-            focalPoint: focalPoint,
+            focalPoint: resolvedFocal,
             spreadMethod: spreadMethod,
             units: gradientUnits
         )
@@ -161,10 +171,10 @@ extension SVGParser {
             if attributes["spreadMethod"] == nil { radialGradient.spreadMethod = inh.spreadMethod }
         }
 
-        radialGradient.originPoint = centerPoint
-        radialGradient.angle = gradientAngle
-        radialGradient.scaleX = abs(gradientScaleX)
-        radialGradient.scaleY = abs(gradientScaleY)
+        radialGradient.originPoint = transformedCenter
+        radialGradient.angle = decompAngleDeg
+        radialGradient.scaleX = decompScaleX
+        radialGradient.scaleY = decompScaleY
 
         return VectorGradient.radial(radialGradient)
     }

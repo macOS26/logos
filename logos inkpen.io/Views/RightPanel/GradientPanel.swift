@@ -857,8 +857,8 @@ struct GradientFillSection: View {
         }
     }
 
-    // Returns the selected shape's gradient in an editable form: radial userSpaceOnUse
-    // gradients (produced by SVG import with absolute coordinates) are converted to
+    // Returns the selected shape's gradient in an editable form: userSpaceOnUse gradients
+    // produced by SVG import (absolute document-space coordinates) are converted to
     // objectBoundingBox using the shape's own path bounds. The conversion is lossless and
     // pixel-identical when rendered, so editing sliders/drag/preview can all use the single
     // objectBoundingBox code path without workarounds.
@@ -866,16 +866,21 @@ struct GradientFillSection: View {
         guard let gradient = getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) else {
             return nil
         }
-        guard case .radial(let radial) = gradient, radial.units == .userSpaceOnUse else {
-            return gradient
-        }
         guard let firstID = selectedObjectIDs.first,
               let obj = snapshot.objects[firstID] else {
             return gradient
         }
         let shapeBounds = obj.shape.cachedCGPath.boundingBoxOfPath
         guard shapeBounds.width > 0 && shapeBounds.height > 0 else { return gradient }
-        return .radial(convertRadialUserSpaceToObjectBoundingBox(radial, shapeBounds: shapeBounds))
+
+        switch gradient {
+        case .radial(let radial) where radial.units == .userSpaceOnUse:
+            return .radial(convertRadialUserSpaceToObjectBoundingBox(radial, shapeBounds: shapeBounds))
+        case .linear(let linear) where linear.units == .userSpaceOnUse:
+            return .linear(convertLinearUserSpaceToObjectBoundingBox(linear, shapeBounds: shapeBounds))
+        default:
+            return gradient
+        }
     }
 
     // Lossless conversion of a pre-resolved userSpaceOnUse radial gradient into the
@@ -906,6 +911,43 @@ struct GradientFillSection: View {
                 y: focal.y - radial.centerPoint.y
             )
         }
+
+        return converted
+    }
+
+    // Lossless conversion of a pre-resolved userSpaceOnUse linear gradient into the
+    // objectBoundingBox representation. See UnifiedObjectView.swift:927-957 for the target
+    // math. With scaleX=scaleY=1, center maps from absolute midpoint → 0-1 originPoint,
+    // direction → storedAngle, and |B-A|/maxDim is stored as the unit-vector endpoint so
+    // that canvas's length = |end-start| * scale * maxDim = pixelLength.
+    static func convertLinearUserSpaceToObjectBoundingBox(_ linear: LinearGradient, shapeBounds: CGRect) -> LinearGradient {
+        let maxDim = max(shapeBounds.width, shapeBounds.height)
+        guard maxDim > 0, shapeBounds.width > 0, shapeBounds.height > 0 else { return linear }
+
+        var converted = linear
+        converted.units = .objectBoundingBox
+        converted.scale = 1.0
+        converted.scaleX = 1.0
+        converted.scaleY = 1.0
+
+        let a = linear.startPoint
+        let b = linear.endPoint
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let pixelLength = sqrt(dx * dx + dy * dy)
+
+        let centerX = (a.x + b.x) / 2.0
+        let centerY = (a.y + b.y) / 2.0
+        converted.originPoint = CGPoint(
+            x: (centerX - shapeBounds.minX) / shapeBounds.width,
+            y: (centerY - shapeBounds.minY) / shapeBounds.height
+        )
+
+        converted.storedAngle = atan2(dy, dx) * 180.0 / .pi
+
+        let normalizedLength = pixelLength / maxDim
+        converted.startPoint = CGPoint(x: 0, y: 0)
+        converted.endPoint = CGPoint(x: normalizedLength, y: 0)
 
         return converted
     }
