@@ -213,20 +213,13 @@ struct ObjectRow: View {
         Binding(
             get: {
                 if let childObject = document.snapshot.objects[childShapeId] {
-                    print("🔵 childVisibilityBinding GET: childShapeId=\(childShapeId), isVisible=\(childObject.shape.isVisible)")
                     return childObject.shape.isVisible
                 }
-                print("🔴 childVisibilityBinding GET: childShapeId=\(childShapeId) NOT FOUND in snapshot.objects")
                 return true
             },
             set: { newValue in
-                print("🟡 childVisibilityBinding SET: childShapeId=\(childShapeId), newValue=\(newValue)")
-                guard let childObject = document.snapshot.objects[childShapeId] else {
-                    print("🔴 childVisibilityBinding SET: childShapeId=\(childShapeId) NOT FOUND in snapshot.objects")
-                    return
-                }
+                guard let childObject = document.snapshot.objects[childShapeId] else { return }
                 var shape = childObject.shape
-                print("🟡 childVisibilityBinding SET: oldValue=\(shape.isVisible), newValue=\(newValue)")
                 if shape.isVisible != newValue {
                     shape.isVisible = newValue
                     let updatedObject = VectorObject(
@@ -237,7 +230,6 @@ struct ObjectRow: View {
                     document.snapshot.objects[childShapeId] = updatedObject
                     document.changeNotifier.notifyObjectChanged(childShapeId)
                     document.triggerLayerUpdate(for: layerIndex)
-                    print("🟢 childVisibilityBinding SET: Updated successfully")
                 }
             }
         )

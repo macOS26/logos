@@ -282,39 +282,29 @@ class VectorImportManager {
 
     private func importFreeHand(from url: URL) async -> VectorImportResult {
         do {
-            let svgString = try FreeHandImporter.parseToSVG(url: url)
-            Self.dumpFreeHandSVG(svgString, sourceURL: url)
-            guard let svgData = svgString.data(using: .utf8) else {
-                return VectorImportResult(
-                    success: false,
-                    shapes: [],
-                    metadata: createDefaultMetadata(),
-                    errors: [.parsingError("FreeHand import produced non-UTF8 output", line: nil)],
-                    warnings: []
-                )
-            }
-            let svgContent = try parseSVGContent(svgData, useExtremeValueHandling: false)
+            let direct = try FreeHandDirectImporter.parseToShapes(url: url)
+            Log.info("🪶 FH direct: \(direct.shapes.count) top, page \(Int(direct.pageSize.width))×\(Int(direct.pageSize.height)) | paths=\(direct.stats.paths) grp=\(direct.stats.groups) clipGrp=\(direct.stats.clipGroups) comp=\(direct.stats.compositePaths) blend=\(direct.stats.newBlends) sym=\(direct.stats.symbolInstances) contentId=\(direct.stats.contentIdPaths)", category: .general)
             let metadata = VectorImportMetadata(
                 originalFormat: .svg,
-                documentSize: svgContent.documentSize,
-                viewBoxSize: svgContent.viewBoxSize,
-                colorSpace: svgContent.colorSpace,
-                units: svgContent.units,
-                dpi: svgContent.dpi,
+                documentSize: direct.pageSize,
+                viewBoxSize: nil,
+                colorSpace: "RGB",
+                units: .points,
+                dpi: 72.0,
                 layerCount: 1,
-                shapeCount: svgContent.shapes.count,
+                shapeCount: direct.shapes.count,
                 textObjectCount: 0,
                 importDate: Date(),
-                sourceApplication: "FreeHand (via libfreehand)",
+                sourceApplication: "FreeHand (direct)",
                 documentVersion: nil,
                 inkpenMetadata: nil
             )
             return VectorImportResult(
                 success: true,
-                shapes: svgContent.shapes,
+                shapes: direct.shapes,
                 metadata: metadata,
                 errors: [],
-                warnings: svgContent.missingFonts.isEmpty ? [] : ["Missing fonts: \(svgContent.missingFonts.joined(separator: ", "))"]
+                warnings: []
             )
         } catch FreeHandImportError.notSupported {
             return VectorImportResult(

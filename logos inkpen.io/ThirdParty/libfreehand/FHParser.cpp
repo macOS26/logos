@@ -85,6 +85,18 @@ libfreehand::FHParser::~FHParser()
 
 bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter)
 {
+  FHCollector contentCollector;
+  if (!parse(input, &contentCollector))
+    return false;
+  contentCollector.outputDrawing(painter);
+  return true;
+}
+
+bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
+{
+  if (!collector)
+    return false;
+
   long dataOffset = input->tell();
   unsigned agd = readU32(input);
   if (((agd >> 24) & 0xff) == 'A' && ((agd >> 16) & 0xff) == 'G' && ((agd >> 8) & 0xff) == 'D')
@@ -101,16 +113,13 @@ bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, librevenge
   input->seek(dataOffset+dataLength, librevenge::RVNG_SEEK_SET);
 
   parseDictionary(input);
-
   parseRecordList(input);
 
   input->seek(dataOffset+12, librevenge::RVNG_SEEK_SET);
 
   FHInternalStream dataStream(input, dataLength-12, m_version >= 9);
   dataStream.seek(0, librevenge::RVNG_SEEK_SET);
-  FHCollector contentCollector;
-  parseDocument(&dataStream, &contentCollector);
-  contentCollector.outputDrawing(painter);
+  parseDocument(&dataStream, collector);
 
   return true;
 }

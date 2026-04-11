@@ -1157,6 +1157,43 @@ void libfreehand::FHCollector::_outputSymbolInstance(const libfreehand::FHSymbol
     m_currentTransforms.pop();
 }
 
+void libfreehand::FHCollector::inkpenBuildView(libfreehand::InkpenCollectorView &view)
+{
+  view.pageInfo = &m_pageInfo;
+  view.fhTail = &m_fhTail;
+  view.block = &m_block;
+  view.lists = &m_lists;
+  view.layers = &m_layers;
+  view.paths = &m_paths;
+  view.groups = &m_groups;
+  view.clipGroups = &m_clipGroups;
+  view.compositePaths = &m_compositePaths;
+  view.transforms = &m_transforms;
+  view.graphicStyles = &m_graphicStyles;
+  view.propertyLists = &m_propertyLists;
+  view.basicFills = &m_basicFills;
+  view.linearFills = &m_linearFills;
+  view.radialFills = &m_radialFills;
+  view.lensFills = &m_lensFills;
+  view.tileFills = &m_tileFills;
+  view.patternFills = &m_patternFills;
+  view.basicLines = &m_basicLines;
+  view.patternLines = &m_patternLines;
+  view.linePatterns = &m_linePatterns;
+  view.rgbColors = &m_rgbColors;
+  view.tints = &m_tints;
+  view.multiColorLists = &m_multiColorLists;
+  view.attributeHolders = &m_attributeHolders;
+  view.filterAttributeHolders = &m_filterAttributeHolders;
+  view.opacityFilters = &m_opacityFilters;
+  view.newBlends = &m_newBlends;
+  view.symbolClasses = &m_symbolClasses;
+  view.symbolInstances = &m_symbolInstances;
+  view.fillId = m_fillId;
+  view.strokeId = m_strokeId;
+  view.contentId = m_contentId;
+}
+
 void libfreehand::FHCollector::outputDrawing(librevenge::RVNGDrawingInterface *painter)
 {
 

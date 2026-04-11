@@ -134,5 +134,12 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(alignmentAnchorMode.rawValue, forKey: "alignmentAnchorMode") }
     }
 
+    // MARK: - FreeHand Import Settings
+    /// When true, FH tile/pattern/lens fills import as solid dominant-color fallback.
+    /// When false, shapes with unresolvable effect fills are dropped entirely (no hairline bbox).
+    @Published var importFreeHandEffects: Bool = UserDefaults.standard.object(forKey: "importFreeHandEffects") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(importFreeHandEffects, forKey: "importFreeHandEffects") }
+    }
+
     private init() {}
 }

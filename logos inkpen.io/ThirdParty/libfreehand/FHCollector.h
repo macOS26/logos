@@ -18,6 +18,7 @@
 #include "FHTransform.h"
 #include "FHTypes.h"
 #include "FHPath.h"
+#include "InkpenCollectorView.h"
 
 namespace libfreehand
 {
@@ -85,6 +86,10 @@ public:
   void collectSymbolInstance(unsigned recordId, const FHSymbolInstance &symbolInstance);
 
   void outputDrawing(librevenge::RVNGDrawingInterface *painter);
+
+  /* Populates view with const pointers to private maps so the InkPen direct
+     translator can walk FreeHand records without running the SVG generator. */
+  void inkpenBuildView(InkpenCollectorView &view);
 
 private:
   FHCollector(const FHCollector &);

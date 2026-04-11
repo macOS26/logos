@@ -462,7 +462,30 @@ struct LayerCanvasView: View {
                                 // Apply content transform and render content
                                 layerContext.transform = contentTransform
 
-                                if VectorText.from(liveContentColorMode) != nil {
+                                /* Recursive leaf-first renderer used inside the clip layer
+                                   so nested groups (FreeHand imports) actually render their
+                                   leaf paths instead of drawing an empty container shape. */
+                                func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
+                                    guard shape.isVisible else { return }
+                                    if shape.isGroupContainer {
+                                        let members = document.resolveGroupMembers(shape)
+                                        for m in members {
+                                            renderClippedContent(m, into: &lctx)
+                                        }
+                                        return
+                                    }
+                                    if VectorText.from(shape) != nil {
+                                        renderText(shape, context: &lctx, isSelected: false, liveScaleTransform: .identity, fontSizeDelta: 0, lineSpacingDelta: 0, lineHeightDelta: 0, letterSpacingDelta: 0, fillDeltaOpacity: 0, textContentDelta: nil, maskShape: nil)
+                                    } else if hasImageData(shape) {
+                                        renderImage(shape, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil, canvasSize: size)
+                                    } else {
+                                        renderShape(shape, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
+                                    }
+                                }
+
+                                if liveContentColorMode.isGroupContainer {
+                                    renderClippedContent(liveContentColorMode, into: &layerContext)
+                                } else if VectorText.from(liveContentColorMode) != nil {
                                     renderText(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
                                 } else if hasImageData(liveContentColorMode) {
                                     renderImage(liveContentColorMode, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
@@ -514,7 +537,38 @@ struct LayerCanvasView: View {
 
                             let liveChildShape = applyLiveCornerRadii(to: applyLivePositions(to: childShape))
 
-                            // If child is a nested group, recursively render its members
+                            /* Nested clip group: clip child is itself a clipping container.
+                               Apply its mask-then-clipped-content render inline so nested
+                               clip groups (e.g. FreeHand gradient-in-shape patterns) actually
+                               clip instead of flattening into the parent group. */
+                            if liveChildShape.isClippingGroup {
+                                let nestedMembers = document.resolveGroupMembers(liveChildShape)
+                                guard let maskShape = nestedMembers.first else { continue }
+                                let contentShapes = Array(nestedMembers.dropFirst())
+                                let savedTransform = context.transform
+                                let liveMaskForClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
+                                let maskPath = liveMaskForClip.cachedCGPath
+                                for contentShape in contentShapes {
+                                    guard contentShape.isVisible else { continue }
+                                    let isContentSelected = selectedObjectIDs.contains(contentShape.id)
+                                    let contentScale = (isContentSelected && contentShape.typography == nil) ? liveScaleTransform : .identity
+                                    let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
+                                    context.drawLayer { layerContext in
+                                        layerContext.transform = savedTransform
+                                        layerContext.clip(to: Path(maskPath))
+                                        if VectorText.from(liveContent) != nil {
+                                            renderText(liveContent, context: &layerContext, isSelected: isContentSelected, liveScaleTransform: isContentSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
+                                        } else if hasImageData(liveContent) {
+                                            renderImage(liveContent, context: &layerContext, isSelected: isContentSelected, scaleTransform: contentScale, maskShape: nil, canvasSize: size)
+                                        } else {
+                                            renderShape(liveContent, context: &layerContext, isSelected: isContentSelected, scaleTransform: contentScale, maskShape: nil)
+                                        }
+                                    }
+                                }
+                                continue
+                            }
+
+                            // If child is a nested non-clip group, recursively render its members
                             if liveChildShape.isGroupContainer {
                                 let nestedMembers = document.resolveGroupMembers(liveChildShape)
                                 renderGroupMembers(nestedMembers, parentXform: context.transform)

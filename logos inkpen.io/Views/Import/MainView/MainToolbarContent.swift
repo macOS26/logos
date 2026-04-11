@@ -190,7 +190,12 @@ struct MainToolbarContent: ToolbarContent {
             .help("Align X+Y by Anchor Points - Full alignment")
 
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
+        }
 
+        /* Trailing icon cluster lives in its own group so SwiftUI can overflow
+           it independently when the window narrows — keeps X/Y/W/H/SX/SY visible
+           as long as possible and truncates these lower-priority icons first. */
+        ToolbarItemGroup(placement: .automatic) {
             Button {
                 createRectangleFromBoundingBox()
             } label: {
