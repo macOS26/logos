@@ -46,14 +46,14 @@ extension PDFCommandParser {
                 }
 
             } else if CGPDFObjectGetValue(functionObj!, .stream, &functionStream),
-                      let stream = functionStream {
-                let streamDict = CGPDFStreamGetDictionary(stream)
+                      let stream = functionStream,
+                      let streamDict = CGPDFStreamGetDictionary(stream) {
 
-                let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict!)
+                let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict)
                 if allColors.count > 2 {
                     stops = createGradientStopsFromColors(allColors)
                 } else {
-                    let (startColor, endColor) = extractColorsFromFunction(streamDict!)
+                    let (startColor, endColor) = extractColorsFromFunction(streamDict)
                     stops = [
                         GradientStop(position: 0.0, color: startColor, opacity: 1.0),
                         GradientStop(position: 1.0, color: endColor, opacity: 1.0)

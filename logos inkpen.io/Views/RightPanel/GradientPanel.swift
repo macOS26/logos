@@ -55,7 +55,7 @@ struct GradientFillSection: View {
         self._activeGradientDelta = activeGradientDelta
         self._activeColorTarget = activeColorTarget
 
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget.wrappedValue) {
+        if let selectedGradient = Self.getEditableSelectedGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget.wrappedValue) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
             case .linear:
@@ -223,7 +223,7 @@ struct GradientFillSection: View {
 
     private func updateSelectedGradient() {
 
-        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
+        if let selectedGradient = Self.getEditableSelectedGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear:
@@ -855,6 +855,59 @@ struct GradientFillSection: View {
             }
             return gradient
         }
+    }
+
+    // Returns the selected shape's gradient in an editable form: radial userSpaceOnUse
+    // gradients (produced by SVG import with absolute coordinates) are converted to
+    // objectBoundingBox using the shape's own path bounds. The conversion is lossless and
+    // pixel-identical when rendered, so editing sliders/drag/preview can all use the single
+    // objectBoundingBox code path without workarounds.
+    static func getEditableSelectedGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, activeColorTarget: ColorTarget) -> VectorGradient? {
+        guard let gradient = getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) else {
+            return nil
+        }
+        guard case .radial(let radial) = gradient, radial.units == .userSpaceOnUse else {
+            return gradient
+        }
+        guard let firstID = selectedObjectIDs.first,
+              let obj = snapshot.objects[firstID] else {
+            return gradient
+        }
+        let shapeBounds = obj.shape.cachedCGPath.boundingBoxOfPath
+        guard shapeBounds.width > 0 && shapeBounds.height > 0 else { return gradient }
+        return .radial(convertRadialUserSpaceToObjectBoundingBox(radial, shapeBounds: shapeBounds))
+    }
+
+    // Lossless conversion of a pre-resolved userSpaceOnUse radial gradient into the
+    // objectBoundingBox representation. Produces pixel-identical rendering via the existing
+    // objectBoundingBox render path in UnifiedObjectView and GradientPreviewAndStopsView.
+    static func convertRadialUserSpaceToObjectBoundingBox(_ radial: RadialGradient, shapeBounds: CGRect) -> RadialGradient {
+        let maxDim = max(shapeBounds.width, shapeBounds.height)
+        guard maxDim > 0 else { return radial }
+
+        var converted = radial
+        converted.units = .objectBoundingBox
+        converted.angle = 0.0
+        converted.scaleX = 1.0
+        converted.scaleY = 1.0
+
+        let relX = (radial.centerPoint.x - shapeBounds.minX) / shapeBounds.width
+        let relY = (radial.centerPoint.y - shapeBounds.minY) / shapeBounds.height
+        converted.originPoint = CGPoint(x: relX, y: relY)
+        converted.centerPoint = converted.originPoint
+
+        converted.radius = radial.radius / maxDim
+
+        if let focal = radial.focalPoint {
+            // objectBoundingBox focalPoint is drawn as an offset from center in local
+            // (post-translate, pre-scale) space. With scaleX=scaleY=1 that's absolute pixels.
+            converted.focalPoint = CGPoint(
+                x: focal.x - radial.centerPoint.x,
+                y: focal.y - radial.centerPoint.y
+            )
+        }
+
+        return converted
     }
 
     @MainActor static func createDefaultGradient(type: GradientType) -> VectorGradient {

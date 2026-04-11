@@ -48,13 +48,10 @@ class PressureManager: ObservableObject {
             recentPressureValues.removeFirst()
         }
 
-        if recentPressureValues.count >= pressureHistorySize && !isPressureConstant() {
-            if !hasRealPressureInput {
-                hasRealPressureInput = true
-            }
-        } else if recentPressureValues.count >= pressureHistorySize && isPressureConstant() {
-            if hasRealPressureInput {
-                hasRealPressureInput = false
+        if recentPressureValues.count >= pressureHistorySize {
+            let shouldHaveReal = !isPressureConstant()
+            if hasRealPressureInput != shouldHaveReal {
+                updatePressureSupport(shouldHaveReal)
             }
         }
 

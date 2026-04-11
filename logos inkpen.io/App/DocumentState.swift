@@ -266,9 +266,10 @@ class DocumentState: ObservableObject {
         panel.title = "Import"
         panel.begin { response in
             guard response == .OK, let url = panel.urls.first else { return }
-            Task {
+            Task { [weak self] in
                 let result = await VectorImportManager.shared.importVectorFile(from: url)
                 await MainActor.run {
+                    guard let self else { return }
                     if result.success {
                         if let layerIndex = document.selectedLayerIndex ?? (document.snapshot.layers.indices.first) {
                             var newObjectIDs: Set<UUID> = []

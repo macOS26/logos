@@ -67,8 +67,8 @@ enum ImageContentRegistry {
             } else {
                 print("❌ [Registry] Failed to resolve bookmark for shape: \(shape.id)")
             }
-        } else if shape.linkedImagePath != nil {
-            print("❌ [Registry] Shape has linkedImagePath but NO bookmark: \(shape.linkedImagePath!)")
+        } else if let linkedImagePath = shape.linkedImagePath {
+            print("❌ [Registry] Shape has linkedImagePath but NO bookmark: \(linkedImagePath)")
         }
 
         if let cgImage = loadedCGImage {

@@ -432,7 +432,7 @@ class SVGExporter {
 
                 for i in 0..<lineString.count {
                     let char = (lineString as NSString).character(at: i)
-                    let isWhitespace = CharacterSet.whitespaces.contains(UnicodeScalar(char)!)
+                    let isWhitespace = UnicodeScalar(char).map { CharacterSet.whitespaces.contains($0) } ?? false
 
                     if !isWhitespace && !inWord {
                         currentWordStart = i
