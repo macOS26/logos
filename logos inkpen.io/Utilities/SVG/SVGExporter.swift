@@ -21,8 +21,7 @@ class SVGExporter {
         let originalSize = document.settings.sizeInPoints
         let scaledWidth = originalSize.width * dpiScale
         let scaledHeight = originalSize.height * dpiScale
-        // For Autodesk, use scaled viewBox to match width/height (96 DPI)
-        // This ensures Autodesk reads the document at the correct size
+        // Autodesk uses scaled viewBox matching width/height (96 DPI).
         let viewBoxWidth = isAutoDesk ? scaledWidth : originalSize.width
         let viewBoxHeight = isAutoDesk ? scaledHeight : originalSize.height
         let widthStr = formatSVGNumber(scaledWidth)

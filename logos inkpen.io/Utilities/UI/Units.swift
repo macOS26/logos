@@ -31,8 +31,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         }
     }
 
-    /// Default grid spacing in the unit's native measurement (not points)
-    /// Returns the appropriate grid spacing when switching to this unit
+    /// Default grid spacing in the unit's native measurement (not points).
     var defaultGridSpacing: Double {
         switch self {
         case .inches: return 0.125      // 1/8 inch

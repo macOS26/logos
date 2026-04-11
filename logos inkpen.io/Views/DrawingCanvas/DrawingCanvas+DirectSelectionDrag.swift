@@ -1009,9 +1009,7 @@ extension DrawingCanvas {
         // Now extract the control handles for curves
         guard case .curve(_, let control1, let control2) = element else { return }
 
-        // For curve from A to B at elementIndex:
-        // - control1 is A's outgoing handle (what we drag)
-        // - control2 is B's incoming handle (what we drag)
+        // curve A->B: control1 = A outgoing, control2 = B incoming
 
         let control1HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
         let control2HandleID = HandleID(shapeID: shapeID, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)

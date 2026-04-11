@@ -461,9 +461,7 @@ extension SVGParser {
     }
 
     // MARK: - SVG Arc Parameter Parsing
-    // Arc flags (large-arc and sweep) are single digits (0 or 1) that SVG allows
-    // to be concatenated without separators: "a130 130 0 014.981 3.3" means
-    // flags=0,1 x=4.981 y=3.3. The tokenizer sees "014.981" as one token.
+    // Arc flags can be concatenated without separators (e.g. "014.981" = flags 0,1 x=4.981).
 
     private func expandArcTokens(_ tokens: [String], from start: Int) -> [String] {
         var result: [String] = []
@@ -508,8 +506,7 @@ extension SVGParser {
     }
 
     // MARK: - SVG Arc to Cubic Bezier Conversion
-    // Converts SVG elliptical arc parameters to cubic bezier curves.
-    // Implements the SVG spec endpoint-to-center parameterization algorithm.
+    // SVG spec endpoint-to-center parameterization algorithm.
 
     func arcToBezierCurves(from p1: CGPoint, to p2: CGPoint, rx inputRx: Double, ry inputRy: Double, xRotation: Double, largeArc: Bool, sweep: Bool) -> [PathElement] {
         // Degenerate cases

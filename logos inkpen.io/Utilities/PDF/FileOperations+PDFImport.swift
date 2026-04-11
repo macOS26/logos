@@ -64,14 +64,11 @@ extension FileOperations {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 
-            // Try to decode as current format first
             if let inkpenDocument = try? decoder.decode(VectorDocument.self, from: inkpenData) {
-                // Log version for migration tracking
                 Log.fileOperation("📦 Opened inkpen document from PDF, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
                 return inkpenDocument
             }
 
-            // Fallback: Try migration from legacy format
             Log.fileOperation("⚠️ Current format failed, attempting legacy migration from PDF...", level: .warning)
             if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: inkpenData) {
                 return migratedDocument
@@ -90,9 +87,7 @@ extension FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
-        // Create a dedicated "Imported PDF" layer so PDF content doesn't
-        // pollute the Guides layer. Matches the SVG import pattern in
-        // FileOperations+SVGImport.swift lines 116-128.
+        // Dedicated "Imported PDF" layer — mirrors FileOperations+SVGImport.swift lines 116-128.
         let importedLayer = Layer(
             id: UUID(),
             name: "Imported PDF",
@@ -112,9 +107,7 @@ extension FileOperations {
             importedShape.isLocked = false
             importedShape.isVisible = true
 
-            // Image data is already embedded in shape - will be hydrated when needed
             if let imageData = importedShape.embeddedImageData {
-                // Validate image data using CGImageSource (cross-platform)
                 if let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
                    CGImageSourceCreateImageAtIndex(imageSource, 0, nil) == nil {
                     Log.error("PDF IMPORT: ❌ Failed to create CGImage from \(imageData.count) bytes of data", category: .error)

@@ -70,9 +70,8 @@ class GPUMathAcceleratorSimple {
     }
 
     private func perpendicularDistanceOptimized(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Float {
-        // SIMD-optimized perpendicular distance
         let lineVec = SIMD2<Float>(Float(lineEnd.x - lineStart.x), Float(lineEnd.y - lineStart.y))
-        let normal = SIMD2<Float>(lineVec.y, -lineVec.x)  // perpendicular
+        let normal = SIMD2<Float>(lineVec.y, -lineVec.x)
         let pointVec = SIMD2<Float>(Float(point.x - lineStart.x), Float(point.y - lineStart.y))
 
         let numerator = abs(simd_dot(normal, pointVec))

@@ -41,8 +41,7 @@ enum ImageContentRegistry {
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
                    let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                    // Force image into memory to break file reference
-                    // This prevents Core Graphics from trying to access the file later without bookmark
+                    // Force to memory — prevents CG from re-accessing file without bookmark.
                     let width = sourceCGImage.width
                     let height = sourceCGImage.height
                     let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()

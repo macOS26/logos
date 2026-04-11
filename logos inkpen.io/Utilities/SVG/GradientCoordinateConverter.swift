@@ -38,7 +38,6 @@ struct GradientCoordinateConverter {
             return gradient
         }
 
-        // SIMD-optimized gradient coordinate transformation
         let center = SIMD2<Double>(gradient.cx, gradient.cy)
         let bboxOrigin = SIMD2<Double>(boundingBox.x, boundingBox.y)
         let bboxSize = SIMD2<Double>(boundingBox.width, boundingBox.height)
@@ -50,7 +49,6 @@ struct GradientCoordinateConverter {
         let newFy: Double?
 
         if let fx = gradient.fx, let fy = gradient.fy {
-            // SIMD-optimized focal point transformation
             let focal = SIMD2<Double>(fx, fy)
             let newFocal = bboxOrigin + focal * bboxSize
             newFx = newFocal.x
@@ -80,7 +78,6 @@ struct GradientCoordinateConverter {
             return gradient
         }
 
-        // SIMD-optimized reverse gradient coordinate transformation
         let center = SIMD2<Double>(gradient.cx, gradient.cy)
         let bboxOrigin = SIMD2<Double>(boundingBox.x, boundingBox.y)
         let bboxSize = SIMD2<Double>(boundingBox.width, boundingBox.height)
@@ -92,7 +89,6 @@ struct GradientCoordinateConverter {
         let newFy: Double?
 
         if let fx = gradient.fx, let fy = gradient.fy {
-            // SIMD-optimized focal point reverse transformation
             let focal = SIMD2<Double>(fx, fy)
             let normalizedFocal = (focal - bboxOrigin) / bboxSize
             newFx = normalizedFocal.x

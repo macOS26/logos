@@ -56,11 +56,9 @@ struct StrokeFillPanel: View {
     @State private var selectedImageOpacityState: Double = 1.0
     @State private var isDragging: Bool = false
 
-    // Detect current anchor type from selected points or handles
     private var currentAnchorType: AnchorPointType {
         var detectedTypes = Set<AnchorPointType>()
 
-        // First check selected points
         for pointID in selectedPoints {
             guard let object = snapshot.objects[pointID.shapeID],
                   case .shape(let shape) = object.objectType,
@@ -72,7 +70,6 @@ struct StrokeFillPanel: View {
             detectedTypes.insert(type)
         }
 
-        // If no points selected, check handles and get their parent anchor types
         if selectedPoints.isEmpty {
             for handleID in selectedHandles {
                 guard let object = snapshot.objects[handleID.shapeID],
@@ -80,14 +77,11 @@ struct StrokeFillPanel: View {
                     continue
                 }
 
-                // Find the anchor point this handle belongs to
+                // control2 belongs to this element's anchor; control1 to previous
                 let anchorElementIndex: Int
                 if handleID.handleType == .control2 {
-                    // control2 belongs to this element's anchor
                     anchorElementIndex = handleID.elementIndex
                 } else {
-                    // control1 belongs to previous element's anchor
-                    // For element 1's control1, it belongs to element 0 (start point)
                     anchorElementIndex = handleID.elementIndex - 1
                 }
 
@@ -101,12 +95,9 @@ struct StrokeFillPanel: View {
             }
         }
 
-        // If all have the same type, return it
         if detectedTypes.count == 1, let type = detectedTypes.first {
             return type
         }
-
-        // Mixed types - return auto
         return .auto
     }
 
@@ -117,14 +108,12 @@ struct StrokeFillPanel: View {
 
         let elements = shape.path.elements
 
-        // Check if this is a closed path endpoint (element 0 or last element)
         if let closedType = detectClosedPathEndpointType(pointID: pointID, elements: elements) {
             return closedType
         }
 
         let element = elements[pointID.elementIndex]
 
-        // Check incoming handle (control2 from this element)
         var incomingControl: CGPoint?
         var anchorPoint: CGPoint?
 
@@ -143,7 +132,6 @@ struct StrokeFillPanel: View {
             break
         }
 
-        // Check outgoing handle (control1 from next element)
         var outgoingControl: CGPoint?
 
         if pointID.elementIndex + 1 < elements.count {
@@ -158,17 +146,13 @@ struct StrokeFillPanel: View {
             }
         }
 
-        // Determine type based on handles
         guard let anchor = anchorPoint else { return .auto }
 
-        // Corner: no visible handles
         if incomingControl == nil && outgoingControl == nil {
             return .corner
         }
 
-        // Smooth or Cusp: both handles visible
         if let incoming = incomingControl, let outgoing = outgoingControl {
-            // Use dot product method (same as existing app logic)
             let vec1 = CGPoint(x: incoming.x - anchor.x, y: incoming.y - anchor.y)
             let vec2 = CGPoint(x: outgoing.x - anchor.x, y: outgoing.y - anchor.y)
 

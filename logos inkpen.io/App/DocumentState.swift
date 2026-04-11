@@ -978,8 +978,7 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
-    /// Align selected objects by their individual transform origins.
-    /// First selected object stays in place; others move to align.
+    /// Align selected objects by their transform origins; first stays, others move.
     func alignByOrigin() {
         document?.alignSelectedObjectsByOrigin()
         updateAllStates()

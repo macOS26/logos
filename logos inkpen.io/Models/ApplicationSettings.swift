@@ -1,8 +1,7 @@
 import SwiftUI
 import Combine
 
-/// Options for determining which object stays in place during alignment
-/// Note: Locked items ALWAYS trump this setting
+/// Alignment anchor options (locked items always trump this).
 enum AlignmentAnchorMode: String, CaseIterable {
     case firstSelected = "firstSelected"
     case lastSelected = "lastSelected"
@@ -127,8 +126,7 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
 
-    // Image settings now use @AppStorage in views directly for better performance
-    // No need for @Published or didSet - onChange in views handles cache clearing
+    // Image settings use @AppStorage in views directly; onChange handles cache clearing.
 
     // MARK: - Alignment Settings
     /// How to determine which object stays in place during alignment (locked items always trump this)

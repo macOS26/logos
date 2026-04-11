@@ -187,9 +187,7 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // For direct selection: find the actual shape under the cursor
-        // This drills into groups to find the specific member shape clicked
-        // (like FreeHand/Illustrator - select by what paint/fill is clicked)
+        // Drill into groups to find the specific member shape clicked (FreeHand/Illustrator style)
 
         guard let hitShape = findShapeAtLocationForDirectSelect(at: location) else {
             return false

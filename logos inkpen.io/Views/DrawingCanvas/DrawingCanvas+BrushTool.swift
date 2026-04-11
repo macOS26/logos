@@ -350,9 +350,7 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
 
-            // Skip CPU coincident point removal if Metal already handled it
-            // This prevents the duplicate processing that was causing artifacts
-            // Metal has already done the simplification
+            // Metal already simplified - skip CPU coincident removal to avoid duplicate processing artifacts
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)

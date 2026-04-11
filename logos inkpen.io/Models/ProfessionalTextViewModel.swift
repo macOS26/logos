@@ -176,7 +176,6 @@ class ProfessionalTextViewModel: ObservableObject {
     }
 
     func updateDocumentTextBounds(_ frame: CGRect) {
-        // Batch all three updates into ONE to avoid multiple layer panel refreshes
         document.updateShapeByID(textObject.id) { shape in
             shape.transform = CGAffineTransform(translationX: frame.minX, y: frame.minY)
             shape.textPosition = CGPoint(x: frame.minX, y: frame.minY)
@@ -288,7 +287,6 @@ class ProfessionalTextViewModel: ObservableObject {
     }
 
     private func convertUsingNSLayoutManager() {
-        // Use shared CTLine converter (same as Canvas rendering for WYSIWYG)
         linePaths = CTLineTextConverter.convertTextToPaths(
             text: text,
             font: selectedFont,
@@ -444,10 +442,8 @@ class ProfessionalTextViewModel: ObservableObject {
                 continue
             }
 
-            // For a smooth curve, incoming and outgoing handles must be 180° apart from the anchor
-            // Vector from anchor to incoming handle
+            // Smooth curve: incoming and outgoing handles must be 180° apart from anchor.
             let incomingVec = CGVector(dx: incomingHandle.x - anchor.x, dy: incomingHandle.y - anchor.y)
-            // Vector from anchor to outgoing handle
             let outgoingVec = CGVector(dx: outgoingHandle.x - anchor.x, dy: outgoingHandle.y - anchor.y)
 
             let incomingAngle = atan2(incomingVec.dy, incomingVec.dx)

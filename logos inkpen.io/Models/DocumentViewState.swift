@@ -1,8 +1,7 @@
 import SwiftUI
 import Combine
 
-/// View-only state that should NOT trigger document saves
-/// These properties affect UI rendering but are not part of the saved document
+/// View-only state that must not trigger document saves.
 class DocumentViewState: ObservableObject {
 
     // MARK: - Tool State
@@ -23,8 +22,7 @@ class DocumentViewState: ObservableObject {
     @Published var zoomRequest: ZoomRequest? = nil
     @Published var handleRefreshTrigger: Bool = false
 
-    // NOTE: zoomLevel and canvasOffset removed - now managed as @State in DocumentBasedMainView
-    // and passed as @Binding to child views (same pattern as fillDeltaOpacity, etc.)
+    // NOTE: zoomLevel/canvasOffset now @State in DocumentBasedMainView, passed as @Binding.
 
     // MARK: - Color UI State
     @Published var activeColorTarget: ColorTarget = .fill
@@ -62,8 +60,7 @@ class DocumentViewState: ObservableObject {
 
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
 
-    /// Ordered list of selected object IDs - first selected object is first in array
-    /// Used for alignment operations where first selected object stays in place
+    /// Ordered selection: first-selected stays in place during alignment.
     var orderedSelectedObjectIDs: [UUID] = []
 
     // Point selection for direct selection tool

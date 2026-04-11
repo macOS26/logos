@@ -3,11 +3,7 @@ import SwiftUI
 class PDFCommandParser {
     var commands: [PathCommand] = []
     var currentPoint = CGPoint.zero
-    // PDF 1.7 spec §8.6.8 Table 52: the initial colour in both the fill and stroke
-    // colour parameters is black. Reference: pdf.js src/core/operator_list.js sets
-    // fillColor = "#000000" as the default. The blue default here was a bug causing
-    // all text to render blue when the PDF's `g` (set-gray) operator fired before
-    // text extraction but the initial state carried through.
+    // PDF 1.7 §8.6.8 Table 52: initial fill/stroke color is black (bug ref: blue default caused text to render blue).
     var currentFillColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentStrokeColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentFillGradient: VectorGradient?
@@ -118,21 +114,10 @@ class PDFCommandParser {
 
         removeDuplicateClippingShapes()
 
-        // Post-processing pass #1: merge per-word text shapes into per-line text
-        // shapes. The PDF stream-time merge logic is brittle because some PDFs
-        // emit a new Tm/Td per word which the stream parser can't always detect
-        // as "same line". This pass operates on the final shapes array and
-        // groups adjacent text shapes by visual line (Y within tolerance), then
-        // concatenates their content with single spaces into one VectorText per
-        // visual line. The merged shape goes through the same CTLine rendering
-        // pipeline as native-typed InkPen text.
+        // Pass #1: merge per-word text shapes into per-line (stream-time merge is unreliable for some PDFs).
         shapes = mergeTextShapesByLine(shapes)
 
-        // Post-processing pass #2: merge adjacent lines that share the same
-        // paragraph characteristics (same font/size, same left X margin,
-        // consistent line-height vertical spacing) into single multi-line
-        // VectorText objects. NSLayoutManager handles the multi-line layout
-        // via the same CTLine rendering pipeline used for native text.
+        // Pass #2: merge adjacent lines sharing paragraph characteristics into multi-line VectorText.
         shapes = mergeTextLinesByParagraph(shapes)
 
         if !shapes.isEmpty {
@@ -143,10 +128,7 @@ class PDFCommandParser {
         return shapes
     }
 
-    // Merges consecutive text shapes on the same visual line into single text
-    // shapes with space-separated content. Preserves order — runs through the
-    // shapes array linearly and only merges adjacent text shapes whose Y
-    // baselines are within 2pt of each other.
+    // Merges consecutive text shapes on the same visual line (Y within 2pt) with space-separated content.
     private func mergeTextShapesByLine(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
@@ -157,7 +139,6 @@ class PDFCommandParser {
         }
 
         func shapeY(_ s: VectorShape) -> CGFloat {
-            // Prefer textPosition (the anchor point), fall back to bounds.
             return s.textPosition?.y ?? s.bounds.minY
         }
         func shapeX(_ s: VectorShape) -> CGFloat {
@@ -166,12 +147,8 @@ class PDFCommandParser {
 
         func canMerge(_ a: VectorShape, _ b: VectorShape) -> Bool {
             guard isTextShape(a) && isTextShape(b) else { return false }
-            // Same visual line: Y baseline within tolerance
             let yDelta = abs(shapeY(a) - shapeY(b))
             guard yDelta < 2.0 else { return false }
-            // Same typography family — if font families differ by more than
-            // the basics, keep them separate (e.g., a bold heading word next
-            // to regular body text should stay separate).
             guard a.typography?.fontFamily == b.typography?.fontFamily else { return false }
             guard abs((a.typography?.fontSize ?? 0) - (b.typography?.fontSize ?? 0)) < 0.5 else { return false }
             return true
@@ -179,7 +156,6 @@ class PDFCommandParser {
 
         for shape in input {
             if let prev = pending, canMerge(prev, shape) {
-                // Merge shape into prev: concatenate content with a single space.
                 var merged = prev
                 let prevContent = (prev.textContent ?? "")
                 let nextContent = (shape.textContent ?? "")
@@ -190,7 +166,6 @@ class PDFCommandParser {
                     joiner = " "
                 }
                 merged.textContent = prevContent + joiner + nextContent
-                // Anchor the merged text at the leftmost starting position.
                 if let prevPos = prev.textPosition {
                     merged.textPosition = CGPoint(x: min(prevPos.x, shapeX(shape)), y: prevPos.y)
                 }
@@ -208,9 +183,7 @@ class PDFCommandParser {
         return result
     }
 
-    // After merging, recompute the areaSize width using NSAttributedString layout
-    // so the merged line has enough room for its content to render on ONE line
-    // without wrapping. Mirrors the measurement logic in the export path.
+    // Recomputes areaSize width via NSAttributedString layout so merged line renders on one line without wrapping.
     private func finalizeTextShapeWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {
@@ -223,7 +196,6 @@ class PDFCommandParser {
             .kern: typography.letterSpacing
         ]
         let measured = (content as NSString).size(withAttributes: attrs)
-        // Add a small padding so the text doesn't get clipped at the right edge.
         let padding: CGFloat = 4.0
         let measuredWidth = ceil(measured.width) + padding
         let measuredHeight = max(ceil(measured.height), CGFloat(typography.lineHeight))
@@ -236,7 +208,6 @@ class PDFCommandParser {
             result.areaSize = CGSize(width: measuredWidth, height: measuredHeight)
         }
 
-        // Update bounds to match the measured size, anchored at the text position.
         let originX = result.textPosition?.x ?? result.bounds.minX
         let originY = result.textPosition?.y ?? result.bounds.minY
         result.bounds = CGRect(x: originX, y: originY,
@@ -245,19 +216,12 @@ class PDFCommandParser {
         return result
     }
 
-    // Merges adjacent line-shapes into paragraph-shapes. Two consecutive lines
-    // belong to the same paragraph when:
-    //   • Same font family and font size (within 0.5pt)
-    //   • Same left X start position (within 5pt tolerance)
-    //   • Vertical Y delta is approximately equal to the line-height (within 40%)
-    // A larger vertical gap means a new paragraph or a new section. The merged
-    // shape stores content as "\n"-separated lines; NSLayoutManager handles the
-    // multi-line layout via the existing CTLine rendering pipeline.
+    // Merges adjacent lines into paragraphs (same font/size, same left X, Y delta ≈ lineHeight).
     private func mergeTextLinesByParagraph(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
         var pending: VectorShape? = nil
-        var pendingLineY: CGFloat = 0  // Y of the last line added to pending
+        var pendingLineY: CGFloat = 0
 
         func isTextShape(_ s: VectorShape) -> Bool {
             return s.textContent != nil && !(s.textContent ?? "").isEmpty
@@ -272,19 +236,12 @@ class PDFCommandParser {
         func canContinueParagraph(_ prev: VectorShape, _ next: VectorShape, prevLineY: CGFloat) -> Bool {
             guard isTextShape(prev) && isTextShape(next) else { return false }
             guard let pType = prev.typography, let nType = next.typography else { return false }
-            // Same font family and size
             guard pType.fontFamily == nType.fontFamily else { return false }
             guard abs(pType.fontSize - nType.fontSize) < 0.5 else { return false }
-            // Same left margin (X start within tolerance)
             let xDelta = abs(textX(prev) - textX(next))
             guard xDelta < 5.0 else { return false }
-            // Y gap ≈ line-height. PDF coordinates — next line's Y should be
-            // greater than prev by roughly one lineHeight (top-left origin after
-            // the Y-flip earlier in the pipeline).
             let lineHeight = CGFloat(pType.lineHeight > 0 ? pType.lineHeight : pType.fontSize * 1.2)
             let yGap = textY(next) - prevLineY
-            // Allow a reasonable tolerance — paragraphs can have slightly
-            // varying leading between lines but shouldn't double-space.
             let minGap = lineHeight * 0.6
             let maxGap = lineHeight * 1.5
             return yGap >= minGap && yGap <= maxGap
@@ -292,7 +249,6 @@ class PDFCommandParser {
 
         for shape in input {
             if let prev = pending, canContinueParagraph(prev, shape, prevLineY: pendingLineY) {
-                // Extend pending paragraph with this line.
                 var merged = prev
                 let prevContent = (prev.textContent ?? "")
                 let nextContent = (shape.textContent ?? "")
@@ -313,9 +269,7 @@ class PDFCommandParser {
         return result
     }
 
-    // Sets a paragraph's areaSize to fit all its lines — width = widest line,
-    // height = total of all line-heights. Uses NSAttributedString measurement
-    // so the result is pixel-correct for the chosen font.
+    // Sets paragraph areaSize to fit all lines via NSAttributedString measurement.
     private func finalizeParagraphWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {
@@ -328,7 +282,6 @@ class PDFCommandParser {
             .kern: typography.letterSpacing
         ]
 
-        // Measure each line independently, take the max width.
         let lines = content.components(separatedBy: "\n")
         var maxLineWidth: CGFloat = 0
         for line in lines {

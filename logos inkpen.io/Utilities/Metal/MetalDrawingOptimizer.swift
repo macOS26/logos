@@ -67,7 +67,6 @@ class MetalDrawingOptimizer {
     }
 
     private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> CGFloat {
-        // SIMD-optimized perpendicular distance calculation
         let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
         let startVec = SIMD2<Double>(Double(lineStart.x), Double(lineStart.y))
         let endVec = SIMD2<Double>(Double(lineEnd.x), Double(lineEnd.y))

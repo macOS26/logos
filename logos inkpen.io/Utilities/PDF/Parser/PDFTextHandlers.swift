@@ -100,29 +100,9 @@ extension PDFCommandParser {
         }
     }
 
-    // Line-grouping strategy: mirrors the EXPORT path in reverse.
-    //
-    // Export (renderTextToPDF_Lines) takes ONE VectorText and uses NSLayoutManager
-    // to break it into visual lines, creating one CTLine per line.
-    //
-    // Import should be the reverse: group PDF text operators by visual line
-    // (same baseline Y), accumulate into ONE content string with spaces between
-    // words, and produce ONE VectorText per visual line. That VectorText then
-    // flows through the existing CTLine rendering pipeline in UnifiedObjectView.
-    //
-    // Rules:
-    //   - Td/TD with significant ty change   → FINALIZE (new visual line)
-    //   - Td/TD with ty ≈ 0 (horizontal move) → append " " (inter-word spacing)
-    //   - Tm with ty change from current     → FINALIZE (new visual line)
-    //   - Tm with same ty but different tx   → append " " (inter-word spacing)
-    //   - Tj / TJ                            → append decoded chars to content
-    //   - T* (next line)                     → FINALIZE
-    //   - ET                                 → FINALIZE
-    //   - Tf (font change)                   → do NOT finalize, just update state
+    // Line-grouping: reverse of EXPORT's per-line CTLine split. Groups PDF text ops by baseline Y into one VectorText per line.
 
-    // Append a space to the current content if it's not already whitespace-terminated.
-    // Treats NBSP and other Unicode whitespace as already-spaced so we don't double up
-    // (PDFs with TT1-style "space fonts" decode to NBSP via the ToUnicode CMap).
+    // Append a space if content isn't already whitespace-terminated (NBSP counted, TT1-style "space fonts" decode to NBSP).
     private func appendInterWordSpaceIfNeeded() {
         guard !currentTextContent.isEmpty else { return }
         let last = currentTextContent.unicodeScalars.last
@@ -151,7 +131,7 @@ extension PDFCommandParser {
                 }
                 currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
             } else {
-                // Horizontal-only move — treat as inter-word space, keep accumulating.
+                // Horizontal-only move → inter-word space.
                 appendInterWordSpaceIfNeeded()
             }
         }
@@ -197,21 +177,16 @@ extension PDFCommandParser {
            CGPDFScannerPopNumber(scanner, &b),
            CGPDFScannerPopNumber(scanner, &a) {
 
-            // Decide whether this Tm is a new visual line or same-line reposition.
-            // Compare the new Y to the CURRENT line matrix Y — if they're close,
-            // it's a same-line move (treat like inter-word spacing). If Y changes
-            // by more than a pixel, it's a new line and we finalize.
+            // New line if Y delta > 1pt, else same-line reposition (inter-word space).
             let oldF = CGFloat(simdTextMatrix.ty)
             let newF = CGFloat(f)
             let yDelta = abs(newF - oldF)
 
             if !currentTextContent.isEmpty && isInTextObject {
                 if yDelta > 1.0 {
-                    // New visual line → finalize current content
                     createVectorTextFromAccumulated()
                     currentTextContent = ""
                 } else {
-                    // Same-line Tm reposition → treat as inter-word space
                     appendInterWordSpaceIfNeeded()
                 }
             }
@@ -363,19 +338,8 @@ extension PDFCommandParser {
         return ""
     }
 
-    // Decode PDF text using the font's ToUnicode CMap.
-    //
-    // Reference: Mozilla pdf.js src/core/cmap.js — CMap.readCharCode (lines 320-341).
-    // https://github.com/mozilla/pdf.js/blob/master/src/core/cmap.js
-    //
-    // Per PDF 1.7 spec §9.10.3, a ToUnicode CMap defines how to decode character
-    // codes (1-4 bytes) into Unicode. CID (Type 0) fonts use 2-byte character
-    // codes — a hex string like <0003> is ONE code, not two separate bytes.
-    //
-    // pdf.js detects the code length from the CMap's codespace ranges and shifts
-    // bytes left by 8 per additional byte: `c = ((c << 8) | nextByte) >>> 0`
-    // (cmap.js:326). We use a simpler heuristic: if the map has any key > 0xFF,
-    // we know 2-byte codes are in use and read the string in 2-byte chunks.
+    // Decode PDF text via ToUnicode CMap (PDF 1.7 §9.10.3). Ref: pdf.js cmap.js CMap.readCharCode.
+    // 2-byte CID detection via any key > 0xFF.
     private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
         var toUnicodeStream: CGPDFStreamRef?
         guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
@@ -401,8 +365,6 @@ extension PDFCommandParser {
             return nil
         }
 
-        // Determine code length from the map's keys. If any key > 0xFF, the font
-        // uses 2-byte CIDs (typical for Type 0 CID fonts). Otherwise 1-byte.
         let isTwoByteFont = isCIDFont(fontDict) || codeToUnicode.keys.contains(where: { $0 > 0xFF })
         let stride = isTwoByteFont ? 2 : 1
 
@@ -411,7 +373,6 @@ extension PDFCommandParser {
         while i < length {
             let charCode: UInt16
             if stride == 2 && i + 1 < length {
-                // Big-endian 2-byte code (pdf.js cmap.js:326 pattern)
                 charCode = (UInt16(bytes[i]) << 8) | UInt16(bytes[i + 1])
             } else {
                 charCode = UInt16(bytes[i])
@@ -420,8 +381,7 @@ extension PDFCommandParser {
             if let unicodeString = codeToUnicode[charCode] {
                 result += unicodeString
             } else if stride == 1 {
-                // Only fall back to raw byte for 1-byte fonts — for CID fonts
-                // an unmapped code should be skipped, not output as NULL garbage.
+                // 1-byte fonts fall back to raw byte; CID fonts skip unmapped codes.
                 let scalar = UnicodeScalar(UInt8(charCode))
                 result += String(scalar)
             }
@@ -432,8 +392,7 @@ extension PDFCommandParser {
         return result.isEmpty ? nil : result
     }
 
-    // Detect a Type 0 (CID) font via its /Subtype entry. CID fonts always use
-    // multi-byte character codes per the PDF spec.
+    // Detect Type 0 (CID) font via /Subtype; CID fonts use multi-byte codes.
     private func isCIDFont(_ fontDict: CGPDFDictionaryRef) -> Bool {
         var subtype: UnsafePointer<CChar>?
         if CGPDFDictionaryGetName(fontDict, "Subtype", &subtype),
@@ -525,10 +484,7 @@ extension PDFCommandParser {
         return mapping
     }
 
-    // Strips the subset prefix (e.g. "ABCDEF+FontName" → "FontName") from a raw
-    // PDF BaseFont and returns the raw PostScript name. Font-to-macOS mapping is
-    // NOT done here — that's handled by resolveMacOSFont at text-creation time
-    // using runtime NSFontManager lookups.
+    // Strips subset prefix (e.g. "ABCDEF+FontName" → "FontName"). macOS mapping handled by resolveMacOSFont.
     private func cleanPDFFontName(_ fontName: String) -> String {
         if let plusIndex = fontName.firstIndex(of: "+") {
             return String(fontName[fontName.index(after: plusIndex)...])
@@ -577,34 +533,13 @@ extension PDFCommandParser {
     }
 
     // MARK: - PDF Font → macOS Font Resolution (runtime, no hardcoded mappings)
-    //
-    // Resolves a PDF PostScript font name (e.g. "TimesNewRomanPS-BoldMT",
-    // "Arial-Black", "Calibri", "HelveticaNeue-Light") into a (family, variant)
-    // pair that InkPen's TypographyProperties + NSFontManager can render via
-    // the existing CTLine pipeline in UnifiedObjectView.renderText.
-    //
-    // Everything is looked up at runtime via NSFontManager — there are no
-    // hardcoded family→family mappings. If the exact font isn't installed, we
-    // substitute the closest AVAILABLE family and then pick the closest AVAILABLE
-    // variant within that family (matching requested bold/italic/weight).
-    //
-    // Strategy:
-    //   1. Try the raw name as a PostScript name via PlatformFont(name:) — macOS
-    //      does a system-wide PostScript name lookup
-    //   2. If that fails, strip common PS/TrueType suffixes (PSMT, MT, PS) and retry
-    //   3. If still not found, parse family+variant from the name with a dash split
-    //      and check if that family exists via NSFontManager.availableFontFamilies
-    //   4. Fall back to "Helvetica Neue" (same default SVGTextHelpers.normalizeFontFamily
-    //      uses), choosing the CLOSEST variant that matches the requested bold/italic
-    //      characteristics — never losing the weight hint.
+    // Runtime NSFontManager resolution; on miss, substitutes closest family AND closest variant (preserves weight hint).
     private func resolveMacOSFont(postScriptName rawName: String) -> (family: String, variant: String?) {
-        // Step 1: direct PostScript name lookup against the system font cache.
         if let result = macOSFontFromPostScriptName(rawName) {
             return result
         }
 
-        // Step 2: strip common PostScript/TrueType suffixes and retry.
-        // Order matters: try longest suffix first so "PSMT" wins over "MT".
+        // Strip PS/TrueType suffixes — longest first so "PSMT" wins over "MT".
         let suffixesToStrip = ["PSMT", "PS", "MT"]
         var stripped = rawName
         for suffix in suffixesToStrip {
@@ -619,16 +554,13 @@ extension PDFCommandParser {
             }
         }
 
-        // Step 3: parse the cleaned name as family-variant and check if the
-        // family exists in NSFontManager.availableFontFamilies (runtime list).
         let (rawFamily, rawVariant) = dashSplitFamilyVariant(stripped)
         let availableFamilies = NSFontManager.shared.availableFontFamilies
         if let exactFamily = availableFamilies.first(where: { $0.caseInsensitiveCompare(rawFamily) == .orderedSame }) {
             return (family: exactFamily, variant: closestVariantDisplayName(in: exactFamily, requested: rawVariant))
         }
 
-        // Step 4: substitute to default fallback family, preserving the requested
-        // variant characteristics (bold/italic/weight) as closely as possible.
+        // Fallback: Helvetica Neue, closest variant preserves bold/italic/weight.
         let fallbackFamily = availableFamilies.first(where: { $0 == "Helvetica Neue" })
             ?? availableFamilies.first(where: { $0 == "Helvetica" })
             ?? availableFamilies.first
@@ -636,18 +568,12 @@ extension PDFCommandParser {
         return (family: fallbackFamily, variant: closestVariantDisplayName(in: fallbackFamily, requested: rawVariant))
     }
 
-    // Attempts a PostScript-name lookup via macOS's font system. If successful,
-    // returns the font's actual family name and the matching variant display name
-    // from NSFontManager.availableMembers(ofFontFamily:).
+    // PostScript-name lookup; PlatformFont may return system default for unknown names so we verify.
     private func macOSFontFromPostScriptName(_ name: String) -> (family: String, variant: String?)? {
         guard let font = PlatformFont(name: name, size: 12) else { return nil }
-        // PlatformFont(name:) sometimes returns the system default for unknown
-        // names — verify the returned font's PostScript name matches.
         let returnedPS = font.fontName
         let family = font.familyName ?? name
         let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
-        // Look for a member whose PostScript name matches what we asked for (or
-        // what the returned font reports).
         for member in members {
             if let postScript = member[0] as? String,
                let displayName = member[1] as? String,

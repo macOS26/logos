@@ -231,14 +231,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             defsDepth += 1
 
         case "symbol":
-            // Symbol body shapes get collected and stored under the symbol's id
-            // for later <use> reference. Mark current shapes count as the start.
+            // Collect symbol body shapes under the symbol id for <use> reference.
             symbolStack.append((id: attributeDict["id"], startIndex: shapes.count))
 
         case "marker":
-            // Marker body shapes are collected so they can be instantiated at
-            // path endpoints. For now we parse and store them but full instantiation
-            // (positioning + rotation at path vertices) is not yet implemented.
+            // Marker instantiation at path endpoints not yet implemented.
             markerStack.append((id: attributeDict["id"], startIndex: shapes.count, attrs: attributeDict))
 
         case "style":
@@ -313,9 +310,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseClipPath(attributes: attributeDict)
 
         case "mask":
-            // Treat <mask> like <clipPath> — collect child shapes as a path,
-            // store under the mask's id in the same dictionary so clip-path
-            // and mask attributes both resolve through one lookup.
+            // Treat <mask> like <clipPath> — stored in same dictionary for unified lookup.
             isParsingClipPath = true
             currentClipPathId = attributeDict["id"]
             currentClipPath = nil
@@ -397,9 +392,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             currentClipPath = nil
 
         case "defs":
-            // Shapes parsed inside <defs> should not render. Remove anything
-            // added during the defs block from the main shapes array.
-            // (Gradients, clipPaths, etc. are stored in their own dictionaries.)
+            // Shapes inside <defs> should not render; gradients/clipPaths live in their own dicts.
             defsDepth = max(0, defsDepth - 1)
 
         case "symbol":
@@ -993,10 +986,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             resolvedPath.fillRule = .evenOdd
         }
 
-        // Bake the transform into path coordinates so imported shapes
-        // behave identically to native InkPen objects (identity transform,
-        // coordinates in document space). This ensures point editing,
-        // selection, and hit testing work correctly.
+        // Bake transform into path coordinates so imported shapes match native objects.
         if !transform.isIdentity {
             let flattenedElements = resolvedPath.elements.map { element -> PathElement in
                 switch element {

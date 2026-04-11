@@ -2,21 +2,17 @@ import MetalKit
 import simd
 import UniformTypeIdentifiers
 
-/// GPU-accelerated image tile renderer using Metal
 class MetalImageTileRenderer {
     static let shared = MetalImageTileRenderer()
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
-    // NOTE: No texture cache - render directly from CGImage to SwiftUI Canvas
-    // Metal is fast enough that we don't need to cache textures in VRAM
+    // No texture cache - Metal is fast enough to render directly from CGImage.
 
-    // Disk cache for rendered CGImages (stores paths, not images in RAM)
     private var diskCachePaths: [String: String] = [:] // [renderKey: /tmp/path]
     private let diskCacheLock = NSLock()
 
-    // Get cached CGImage from disk
     func getCachedImage(for key: String) -> CGImage? {
         diskCacheLock.lock()
         defer { diskCacheLock.unlock() }
@@ -38,36 +34,29 @@ class MetalImageTileRenderer {
         self.device = device
         self.commandQueue = commandQueue
 
-        // Load Metal shaders
         guard let library = device.makeDefaultLibrary(),
               let vertexFunction = library.makeFunction(name: "tileVertexShader"),
               let fragmentFunction = library.makeFunction(name: "tileFragmentShader") else {
             return nil
         }
 
-        // Create render pipeline
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
 
-        // Setup vertex descriptor to match shader attributes
         let vertexDescriptor = MTLVertexDescriptor()
-        // Position: float2 at attribute(0)
         vertexDescriptor.attributes[0].format = .float2
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-        // TexCoord: float2 at attribute(1)
         vertexDescriptor.attributes[1].format = .float2
         vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.size * 2
         vertexDescriptor.attributes[1].bufferIndex = 0
-        // Layout stride (4 floats per vertex: x, y, u, v)
+        // 4 floats per vertex: x, y, u, v
         vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.size * 4
         vertexDescriptor.layouts[0].stepFunction = .perVertex
 
         pipelineDescriptor.vertexDescriptor = vertexDescriptor
-
-        // Disable blending - straight copy
         pipelineDescriptor.colorAttachments[0].isBlendingEnabled = false
 
         do {
@@ -78,15 +67,11 @@ class MetalImageTileRenderer {
         }
     }
 
-    /// Convert CGImage to Metal texture (no caching - render directly)
     func getTexture(from cgImage: CGImage) -> MTLTexture? {
-        // Don't use MTKTextureLoader - it always converts to BGRA
-        // Instead, manually create texture with correct RGBA format
-
+        // Avoid MTKTextureLoader because it always converts to BGRA; manually build an RGBA texture.
         let width = cgImage.width
         let height = cgImage.height
 
-        // Create RGBA context to normalize the image
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
@@ -103,31 +88,27 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Draw image into RGBA context
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
 
-        // Get RGBA pixel data
         guard let data = context.data else {
             print("❌ Failed to get context data")
             return nil
         }
 
-        // Create RGBA Metal texture descriptor (.shared so we can upload data directly)
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .rgba8Unorm,  // Use RGBA, not BGRA
+            pixelFormat: .rgba8Unorm,
             width: width,
             height: height,
             mipmapped: false
         )
         textureDescriptor.usage = [.shaderRead]
-        textureDescriptor.storageMode = .shared  // Must be .shared to upload from CPU
+        textureDescriptor.storageMode = .shared  // Required for CPU upload
 
         guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
             print("❌ Failed to create Metal texture")
             return nil
         }
 
-        // Upload RGBA data to texture
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: width * 4)
 
@@ -136,7 +117,6 @@ class MetalImageTileRenderer {
         return texture
     }
 
-    /// Render image tiles to an offscreen texture and return as CGImage using INSTANCED RENDERING
     func compositeImageTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -145,7 +125,6 @@ class MetalImageTileRenderer {
     ) -> CGImage? {
         let cacheKey = shapeID.uuidString
 
-        // Check disk cache first
         diskCacheLock.lock()
         if let cachedPath = diskCachePaths[cacheKey],
            FileManager.default.fileExists(atPath: cachedPath),
@@ -163,7 +142,6 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Create offscreen render target
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
             width: Int(outputSize.width),
@@ -176,7 +154,6 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Setup render pass
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = renderTarget
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
@@ -190,57 +167,48 @@ class MetalImageTileRenderer {
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setFragmentTexture(sourceTexture, index: 0)
 
-        // Create orthographic projection matrix for the output size
         var mvpMatrix = createOrthographicMatrix(width: Float(outputSize.width), height: Float(outputSize.height))
         renderEncoder.setVertexBytes(&mvpMatrix, length: MemoryLayout<simd_float4x4>.size, index: 1)
 
-        // Calculate scale factors
         let scaleX = Float(outputSize.width / CGFloat(image.width))
         let scaleY = Float(outputSize.height / CGFloat(image.height))
         let imageWidth = Float(image.width)
         let imageHeight = Float(image.height)
 
-        // Build instance data for ALL tiles (one quad per tile)
         var vertices: [Float] = []
         var indices: [UInt16] = []
 
         for (index, (_, tileRect)) in tiles.enumerated() {
             let baseVertex = UInt16(index * 4)
 
-            // Calculate destination rect
             let destX = Float(tileRect.minX) * scaleX
             let destY = Float(tileRect.minY) * scaleY
             let destW = Float(tileRect.width) * scaleX
             let destH = Float(tileRect.height) * scaleY
 
-            // Texture coordinates (normalized 0-1)
             let texMinX = Float(tileRect.minX / CGFloat(imageWidth))
             let texMinY = Float(tileRect.minY / CGFloat(imageHeight))
             let texMaxX = Float(tileRect.maxX / CGFloat(imageWidth))
             let texMaxY = Float(tileRect.maxY / CGFloat(imageHeight))
 
-            // Quad vertices for this tile (position + texCoord)
             vertices.append(contentsOf: [
-                destX,        destY,        texMinX, texMinY,  // Bottom-left
-                destX + destW, destY,        texMaxX, texMinY,  // Bottom-right
-                destX,        destY + destH, texMinX, texMaxY,  // Top-left
-                destX + destW, destY + destH, texMaxX, texMaxY   // Top-right
+                destX,        destY,        texMinX, texMinY,
+                destX + destW, destY,        texMaxX, texMinY,
+                destX,        destY + destH, texMinX, texMaxY,
+                destX + destW, destY + destH, texMaxX, texMaxY
             ])
 
-            // Two triangles per tile
             indices.append(contentsOf: [
                 baseVertex + 0, baseVertex + 1, baseVertex + 2,
                 baseVertex + 2, baseVertex + 1, baseVertex + 3
             ])
         }
 
-        // Upload vertex and index buffers to GPU
         guard let vertexBuffer = device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Float>.size, options: []),
               let indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: []) else {
             return nil
         }
 
-        // ONE DRAW CALL for ALL tiles
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         renderEncoder.drawIndexedPrimitives(
             type: .triangle,

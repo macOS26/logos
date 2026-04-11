@@ -162,7 +162,8 @@
       "Bash(ls:*)",
       "Bash(git clone:*)",
       "Bash(curl -sL \"https://www.cte.iup.edu/cte/Resources/PDF_TestPage.pdf\" -o /tmp/PDF_TestPage.pdf)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(swift:*)"
     ],
     "deny": [],
     "ask": []
