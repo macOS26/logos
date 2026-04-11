@@ -4,6 +4,7 @@
 
 Replace the `libfreehand → librevenge SVG text → SVGParser → VectorShape` pipeline with a direct C++ walker over `FHCollector`'s private member maps that produces `[VectorShape]` via the existing C bridge boundary (`FreeHandBridge.h/.mm`). The translator preserves FreeHand structural intent (clip groups as real clipping, composite paths as compound paths, tile fills as resolved nested shape trees, text as `TypographyProperties`, raster images as `embeddedImageData`) without ever emitting a `data:image/svg+xml` round-trip.
 
+Output matches what `DocumentBasedMainView.importVectorFile` already consumes: a flat `[VectorShape]` where groups/clip-groups are containers with `isGroup = true` and `memberIDs = [...]` referring to peer shapes in the same array.
 
 ## Architecture
 
