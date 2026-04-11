@@ -581,12 +581,10 @@ extension PDFCommandParser {
                 return (family: family, variant: displayName)
             }
         }
-        // Font resolved but we couldn't find its display name — return family only.
         return (family: family, variant: nil)
     }
 
-    // Splits a name like "Times-BoldItalic" into ("Times", "BoldItalic") or
-    // "Arial" into ("Arial", nil). No mapping — pure string split.
+    // Splits "Times-BoldItalic" → ("Times", "BoldItalic"); pure string split.
     private func dashSplitFamilyVariant(_ name: String) -> (family: String, variant: String?) {
         if let dashIdx = name.lastIndex(of: "-") {
             return (family: String(name[..<dashIdx]),
@@ -595,30 +593,22 @@ extension PDFCommandParser {
         return (family: name, variant: nil)
     }
 
-    // Picks the closest display-name variant for a family given a requested
-    // variant string. Exact match first, then case-insensitive, then fuzzy
-    // match based on bold/italic/weight characteristics so the closest weight
-    // is preserved even when a substitute family is used.
+    // Closest variant: exact → case-insensitive → fuzzy bold/italic/weight score.
     private func closestVariantDisplayName(in family: String, requested: String?) -> String? {
         let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
         let displayNames: [String] = members.compactMap { $0[1] as? String }
         guard !displayNames.isEmpty else { return nil }
 
-        // No variant hint → prefer "Regular" if it exists.
         guard let req = requested, !req.isEmpty else {
             return displayNames.first(where: { $0 == "Regular" }) ?? displayNames.first
         }
 
-        // Exact match
         if displayNames.contains(req) { return req }
-        // Case-insensitive match
         if let match = displayNames.first(where: { $0.caseInsensitiveCompare(req) == .orderedSame }) {
             return match
         }
 
-        // Fuzzy: score each available variant by how well its weight/italic
-        // characteristics match the requested variant. Matching bold is most
-        // important, then italic, then light/medium modifiers.
+        // Fuzzy score: bold (8) > italic (4) > light (2) > medium (1).
         let reqLower = req.lowercased()
         let wantBold = reqLower.contains("bold") || reqLower.contains("heavy") || reqLower.contains("black")
         let wantItalic = reqLower.contains("italic") || reqLower.contains("oblique")
@@ -636,8 +626,7 @@ extension PDFCommandParser {
             if isItalic == wantItalic { s += 4 }
             if isLight == wantLight { s += 2 }
             if isMedium == wantMedium { s += 1 }
-            // Slight preference for shorter names — avoid "Condensed Bold" when
-            // plain "Bold" is present.
+            // Prefer shorter names so plain "Bold" beats "Condensed Bold".
             s -= name.count / 20
             return s
         }

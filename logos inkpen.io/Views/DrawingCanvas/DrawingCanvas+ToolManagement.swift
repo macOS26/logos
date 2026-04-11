@@ -156,9 +156,7 @@ extension DrawingCanvas {
         }
 
         else if newTool == .bezierPen {
-            // Preserve selectedPoints when switching to bezier pen (for path continuation)
-            // Don't clear selectedPoints, selectedHandles, or selectedObjectIDs
-            // Keep everything as-is for path continuation feature
+            // Preserve selections for bezier pen path continuation feature
             print("🔧 Preserving selections for bezier pen: points=\(selectedPoints.count), handles=\(selectedHandles.count)")
 
             // If a point is selected, automatically load the path for continuation

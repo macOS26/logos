@@ -170,25 +170,21 @@ struct StrokeFillPanel: View {
             return dot < -0.9962 ? .smooth : .cusp
         }
 
-        // One handle only (or both collapsed) = corner
         return .corner
     }
 
     private func detectClosedPathEndpointType(pointID: PointID, elements: [PathElement]) -> AnchorPointType? {
         guard elements.count >= 2 else { return nil }
 
-        // Get first and last element indices
         var lastElementIndex = elements.count - 1
         if case .close = elements[lastElementIndex] {
             lastElementIndex -= 1
         }
 
-        // Only check if this is element 0 or the last element
         guard pointID.elementIndex == 0 || pointID.elementIndex == lastElementIndex else {
             return nil
         }
 
-        // Get first and last points
         guard case .move(let firstTo) = elements[0] else { return nil }
         let firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
 
@@ -200,12 +196,10 @@ struct StrokeFillPanel: View {
             return nil
         }
 
-        // Check if first and last are coincident
         guard abs(firstPoint.x - lastPoint.x) < 0.1 && abs(firstPoint.y - lastPoint.y) < 0.1 else {
             return nil
         }
 
-        // Get both handles
         var handle1: CGPoint?
         var handle2: CGPoint?
 
@@ -217,12 +211,10 @@ struct StrokeFillPanel: View {
             handle2 = CGPoint(x: lastControl2.x, y: lastControl2.y)
         }
 
-        // Both handles missing = corner
         guard let h1 = handle1, let h2 = handle2 else {
             return .corner
         }
 
-        // Check if handles are collapsed
         let dist1 = h1.distance(to: firstPoint)
         let dist2 = h2.distance(to: firstPoint)
 
@@ -234,7 +226,6 @@ struct StrokeFillPanel: View {
             return .cusp
         }
 
-        // Calculate vectors from anchor to handles
         let vec1 = CGPoint(x: h1.x - firstPoint.x, y: h1.y - firstPoint.y)
         let vec2 = CGPoint(x: h2.x - firstPoint.x, y: h2.y - firstPoint.y)
 

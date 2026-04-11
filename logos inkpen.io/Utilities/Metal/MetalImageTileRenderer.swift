@@ -222,12 +222,10 @@ class MetalImageTileRenderer {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Convert Metal texture back to CGImage
         guard let resultImage = cgImage(from: renderTarget) else {
             return nil
         }
 
-        // Save to disk cache
         if let diskPath = saveImageToDisk(image: resultImage, key: cacheKey) {
             diskCacheLock.lock()
             diskCachePaths[cacheKey] = diskPath
@@ -238,7 +236,7 @@ class MetalImageTileRenderer {
         return resultImage
     }
 
-    /// Render image tiles to a Metal drawable (legacy - for direct screen rendering)
+    /// Legacy direct-to-drawable path for screen rendering.
     func renderTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -267,15 +265,12 @@ class MetalImageTileRenderer {
         var opacityBuffer = opacity
         renderEncoder.setFragmentBytes(&opacityBuffer, length: MemoryLayout<Float>.size, index: 0)
 
-        // Create orthographic projection matrix for the viewport
         var mvpMatrix = createOrthographicMatrix(width: Float(viewportSize.width), height: Float(viewportSize.height))
         renderEncoder.setVertexBytes(&mvpMatrix, length: MemoryLayout<simd_float4x4>.size, index: 1)
 
-        // Calculate scale factors
         let scaleX = Float(renderBounds.width / CGFloat(image.width))
         let scaleY = Float(renderBounds.height / CGFloat(image.height))
 
-        // Render each tile as a quad
         for (_, tileRect) in tiles {
             renderTileQuad(
                 encoder: renderEncoder,
@@ -300,28 +295,24 @@ class MetalImageTileRenderer {
         scaleX: Float,
         scaleY: Float
     ) {
-        // Calculate destination rect in screen space
         let destX = Float(tileRect.minX) * scaleX
         let destY = Float(tileRect.minY) * scaleY
         let destW = Float(tileRect.width) * scaleX
         let destH = Float(tileRect.height) * scaleY
 
-        // Texture coordinates (normalized 0-1)
         let texMinX = Float(tileRect.minX / imageSize.width)
         let texMinY = Float(tileRect.minY / imageSize.height)
         let texMaxX = Float(tileRect.maxX / imageSize.width)
         let texMaxY = Float(tileRect.maxY / imageSize.height)
 
-        // Quad vertices (position + texCoord)
         let vertices: [Float] = [
-            // Position (x, y)     TexCoord (u, v)
-            destX,        destY,        texMinX, texMinY,  // Bottom-left
-            destX + destW, destY,        texMaxX, texMinY,  // Bottom-right
-            destX,        destY + destH, texMinX, texMaxY,  // Top-left
-            destX + destW, destY + destH, texMaxX, texMaxY   // Top-right
+            destX,        destY,        texMinX, texMinY,
+            destX + destW, destY,        texMaxX, texMinY,
+            destX,        destY + destH, texMinX, texMaxY,
+            destX + destW, destY + destH, texMaxX, texMaxY
         ]
 
-        let indices: [UInt16] = [0, 1, 2, 2, 1, 3]  // Two triangles
+        let indices: [UInt16] = [0, 1, 2, 2, 1, 3]
 
         encoder.setVertexBytes(vertices, length: vertices.count * MemoryLayout<Float>.size, index: 0)
         encoder.drawIndexedPrimitives(
@@ -333,12 +324,10 @@ class MetalImageTileRenderer {
         )
     }
 
-    /// Convert Metal texture to CGImage
     private func cgImage(from texture: MTLTexture) -> CGImage? {
         let width = texture.width
         let height = texture.height
 
-        // Metal texture is RGBA, CGImage expects RGBA - direct copy!
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
@@ -354,7 +343,6 @@ class MetalImageTileRenderer {
             return nil
         }
 
-        // Read RGBA data from Metal texture
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.getBytes(context.data!, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
 
