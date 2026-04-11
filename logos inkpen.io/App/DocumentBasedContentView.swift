@@ -36,49 +36,62 @@ struct DocumentBasedContentView: View {
 
         var imagesHydrated = 0
         var imagesMissing = 0
+        var imagesDeleted = 0
         var missingPaths: [String] = []
+        var shapesToDelete: [UUID] = []
 
-        for obj in inkpenDocument.document.snapshot.objects.values {
+        for (id, obj) in inkpenDocument.document.snapshot.objects {
             var shape: VectorShape? = nil
+            if case .shape(let s) = obj.objectType { shape = s }
+            else if case .image(let s) = obj.objectType { shape = s }
 
-            if case .shape(let s) = obj.objectType {
-                shape = s
-            } else if case .image(let s) = obj.objectType {
-                shape = s
+            guard let shape = shape else { continue }
+            let hasImageData = shape.embeddedImageData != nil ||
+                               shape.linkedImagePath != nil ||
+                               shape.linkedImageBookmarkData != nil
+            guard hasImageData else { continue }
+
+            // Drop shapes whose embedded payload is XML/SVG text or obviously too small to be a raster.
+            if let data = shape.embeddedImageData,
+               shape.linkedImagePath == nil,
+               shape.linkedImageBookmarkData == nil,
+               (data.count < 16 || SVGParser.looksLikeXML(data)) {
+                shapesToDelete.append(id)
+                continue
             }
 
-            if let shape = shape {
-                // Check if this shape has image data
-                let hasImageData = shape.embeddedImageData != nil ||
-                                   shape.linkedImagePath != nil ||
-                                   shape.linkedImageBookmarkData != nil
-
-                if hasImageData {
-                    if let _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: inkpenDocument.document) {
-                        imagesHydrated += 1
-                    } else {
-                        imagesMissing += 1
-                        if let path = shape.linkedImagePath {
-                            missingPaths.append(path)
-                            Log.fileOperation("  ⚠️ Missing linked image: \(path)", level: .warning)
-                        } else if shape.linkedImageBookmarkData != nil {
-                            missingPaths.append("<bookmark data>")
-                            Log.fileOperation("  ⚠️ Missing linked image (from bookmark)", level: .warning)
-                        } else {
-                            Log.fileOperation("  ⚠️ Failed to load embedded image for shape: \(shape.id)", level: .warning)
-                        }
-                    }
-                }
+            if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: inkpenDocument.document) != nil {
+                imagesHydrated += 1
+                continue
             }
+
+            if let path = shape.linkedImagePath {
+                imagesMissing += 1
+                missingPaths.append(path)
+                Log.fileOperation("  ⚠️ Missing linked image: \(path)", level: .warning)
+            } else if shape.linkedImageBookmarkData != nil {
+                imagesMissing += 1
+                missingPaths.append("<bookmark data>")
+                Log.fileOperation("  ⚠️ Missing linked image (from bookmark)", level: .warning)
+            } else {
+                shapesToDelete.append(id)
+            }
+        }
+
+        for id in shapesToDelete {
+            inkpenDocument.document.removeShapeFromUnifiedSystem(id: id)
+            imagesDeleted += 1
         }
 
         if imagesHydrated > 0 {
             Log.fileOperation("  🖼️ Hydrated \(imagesHydrated) linked image(s) from \(baseDirectory.path)", level: .info)
         }
-
+        if imagesDeleted > 0 {
+            Log.fileOperation("  🗑️ Deleted \(imagesDeleted) broken/empty image shape(s)", level: .info)
+        }
         if imagesMissing > 0 {
-            Log.fileOperation("  ❌ Failed to load \(imagesMissing) image(s)", level: .error)
-            Log.fileOperation("  Missing paths: \(missingPaths.joined(separator: ", "))", level: .error)
+            Log.fileOperation("  ❌ Missing linked files: \(imagesMissing)", level: .error)
+            Log.fileOperation("  Paths: \(missingPaths.joined(separator: ", "))", level: .error)
         }
     }
 }

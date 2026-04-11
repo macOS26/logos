@@ -116,6 +116,31 @@ extension SVGParser {
             if components.count >= 4 {
                 return .rgb(convertSRGBToP3(red: components[0]/255.0, green: components[1]/255.0, blue: components[2]/255.0, alpha: components[3]))
             }
+        } else if color.hasPrefix("device-cmyk(") {
+            let content = color.dropFirst(12).dropLast()
+            let parts = content.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "/" }).compactMap { part -> Double? in
+                let s = part.trimmingCharacters(in: .whitespaces)
+                if s.hasSuffix("%"), let v = Double(s.dropLast()) { return v / 100.0 }
+                return Double(s)
+            }
+            if parts.count >= 4 {
+                let c = max(0, min(1, parts[0]))
+                let m = max(0, min(1, parts[1]))
+                let y = max(0, min(1, parts[2]))
+                let k = max(0, min(1, parts[3]))
+                let a = parts.count >= 5 ? max(0, min(1, parts[4])) : 1.0
+                return .cmyk(CMYKColor(cyan: c, magenta: m, yellow: y, black: k, alpha: a))
+            }
+        } else if color.hasPrefix("spot(") {
+            let name = String(color.dropFirst(5).dropLast()).trimmingCharacters(in: .whitespaces)
+            let normalized = name.lowercased()
+            if let pantone = PantoneLibrary.shared.allColors.first(where: {
+                $0.pantone.lowercased() == normalized ||
+                $0.name.lowercased() == normalized ||
+                $0.name.lowercased() == "pantone \(normalized)"
+            }) {
+                return .pantone(pantone)
+            }
         } else if let (r, g, b) = Self.svgNamedColors[color.lowercased()] {
             if color.lowercased() == "black" { return .black }
             if color.lowercased() == "white" { return .white }

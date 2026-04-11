@@ -58,6 +58,24 @@
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeIconFile</key>
+			<string>apple</string>
+			<key>CFBundleTypeIconSystemGenerated</key>
+			<true/>
+			<key>CFBundleTypeName</key>
+			<string>FreeHand Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>io.logos.logos-inkpen-io.freehand</string>
+			</array>
+			<key>NSDocumentClass</key>
+			<string>NSDocument</string>
+		</dict>
 	</array>
 	<key>CFBundleHelpBookFolder</key>
 	<string>LogosInkPenHelp.help</string>
@@ -204,6 +222,43 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>di</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>FreeHand Document</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>FH</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.logos.logos-inkpen-io.freehand</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>fh</string>
+					<string>fh3</string>
+					<string>fh5</string>
+					<string>fh6</string>
+					<string>fh7</string>
+					<string>fh8</string>
+					<string>fh9</string>
+					<string>fh10</string>
+					<string>fh11</string>
+					<string>fhmx</string>
+					<string>ft11</string>
+					<string>ftmx</string>
 				</array>
 			</dict>
 		</dict>

@@ -8,7 +8,12 @@ extension SVGParser {
             return cached
         }
 
-        let nsFont = PlatformFont(name: family, size: size) ?? PlatformFont.systemFont(ofSize: size)
+        let byPostScriptName = PlatformFont(name: family, size: size)
+        let byFamily: PlatformFont? = {
+            let descriptor = NSFontDescriptor(fontAttributes: [.family: family])
+            return NSFont(descriptor: descriptor, size: size)
+        }()
+        let nsFont = byPostScriptName ?? byFamily ?? PlatformFont.systemFont(ofSize: size)
         fontCache[cacheKey] = nsFont
         return nsFont
     }
@@ -181,18 +186,6 @@ extension SVGParser {
                 let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ??
                                  currentTextSpans.first?.attributes["text-anchor"]?.lowercased() ??
                                  "start"
-                var adjustedX = baseX
-
-                if textAnchor == "middle" || textAnchor == "end" {
-                    let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
-                    let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
-
-                    if textAnchor == "middle" {
-                        adjustedX -= maxLineWidth / 2.0
-                    } else if textAnchor == "end" {
-                        adjustedX -= maxLineWidth
-                    }
-                }
 
                 let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
                 let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
@@ -201,12 +194,21 @@ extension SVGParser {
                     actualWidth = pendingRect.width
                     pendingTextBoxRect = nil
                 } else {
-                    let twoCharWidth = calculateTextWidth(for: "  ", font: nsFont, alignment: textAlignment)
-                    actualWidth = maxLineWidth + twoCharWidth
+                    actualWidth = maxLineWidth
+                }
+
+                // Text renders center/right-aligned INSIDE the box, so offset by the
+                // box width (not the raw glyph width) so the box's center/right edge
+                // lands on the SVG anchor x.
+                var adjustedX = baseX
+                if textAnchor == "middle" {
+                    adjustedX -= actualWidth / 2.0
+                } else if textAnchor == "end" {
+                    adjustedX -= actualWidth
                 }
 
                 maxTextWidth = max(maxTextWidth, actualWidth)
-                let actualHeight = lineHeight
+                let actualHeight = lineHeight * Double(max(1, combinedContent.count))
                 let finalY = baseY - (firstFontSize)
 
                 var textObject = VectorText(
@@ -270,22 +272,20 @@ extension SVGParser {
                 actualWidth = pendingRect.width
                 pendingTextBoxRect = nil
             } else {
-                let twoCharWidth = calculateTextWidth(for: "  ", font: nsFont, alignment: textAlignment)
-                actualWidth = textWidth + twoCharWidth
+                actualWidth = textWidth
             }
 
             maxTextWidth = max(maxTextWidth, actualWidth)
 
             var adjustedX = x
-            if textAnchor == "middle" || textAnchor == "end" {
-                if textAnchor == "middle" {
-                    adjustedX -= textWidth / 2.0
-                } else if textAnchor == "end" {
-                    adjustedX -= textWidth
-                }
+            if textAnchor == "middle" {
+                adjustedX -= actualWidth / 2.0
+            } else if textAnchor == "end" {
+                adjustedX -= actualWidth
             }
 
-            let actualHeight = lineHeight
+            let lineCount = max(1, trimmedContent.components(separatedBy: "\n").count)
+            let actualHeight = lineHeight * Double(lineCount)
             let finalY = y - (fontSize)
 
             var textObject = VectorText(

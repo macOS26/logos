@@ -151,7 +151,16 @@ extension FileOperations {
                         case .text:
                             let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                             return textContent.isEmpty
-                        case .shape, .image, .warp, .group, .clipGroup, .clipMask, .guide:
+                        case .group, .clipGroup:
+                            return shape.memberIDs.isEmpty && shape.groupedShapes.isEmpty
+                        case .image:
+                            if let data = shape.embeddedImageData {
+                                if data.count < 16 || SVGParser.looksLikeXML(data) { return true }
+                                return false
+                            }
+                            if shape.linkedImagePath != nil { return false }
+                            return true
+                        case .shape, .warp, .clipMask, .guide:
                             return shape.path.elements.isEmpty
                         }
                     }()
@@ -165,7 +174,7 @@ extension FileOperations {
 
         for shape in standaloneShapes {
             autoreleasepool {
-                document.addShapeToUnifiedSystem(shape, layerIndex: targetLayer)
+                installShapeRespectingGroups(shape, layerIndex: targetLayer, document: document)
             }
         }
 
@@ -188,5 +197,41 @@ extension FileOperations {
         FileOperations.removeLegacyBackgroundObjects(from: document)
 
         return document
+    }
+
+    /// Unpacks SVGParser <g> carriers into native memberIDs-style groups.
+    @MainActor
+    private static func installShapeRespectingGroups(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
+        if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
+            var container = shape
+            var memberIDs: [UUID] = container.memberIDs
+            for child in container.groupedShapes {
+                installGroupMemberIntoSnapshot(child, layerIndex: layerIndex, document: document)
+                memberIDs.append(child.id)
+            }
+            container.memberIDs = memberIDs
+            container.groupedShapes = []
+            document.addShapeToUnifiedSystem(container, layerIndex: layerIndex)
+        } else {
+            document.addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        }
+    }
+
+    /// Writes a group child into snapshot.objects without touching the layer.
+    @MainActor
+    private static func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
+        var toInstall = shape
+        if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {
+            var memberIDs: [UUID] = toInstall.memberIDs
+            for child in toInstall.groupedShapes {
+                installGroupMemberIntoSnapshot(child, layerIndex: layerIndex, document: document)
+                memberIDs.append(child.id)
+            }
+            toInstall.memberIDs = memberIDs
+            toInstall.groupedShapes = []
+        }
+        let objectType = VectorObject.determineType(for: toInstall)
+        let vectorObject = VectorObject(id: toInstall.id, layerIndex: layerIndex, objectType: objectType)
+        document.snapshot.objects[toInstall.id] = vectorObject
     }
 }

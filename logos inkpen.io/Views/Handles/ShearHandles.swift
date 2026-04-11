@@ -51,7 +51,6 @@ struct ShearHandles: View {
     var body: some View {
 
         ZStack {
-            // Render shape outline using Canvas
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
@@ -160,7 +159,6 @@ struct ShearHandles: View {
                     let zoom = zoomLevel
                     let offset = canvasOffset
 
-                    // Transform the cached path to screen coordinates
                     let transform = CGAffineTransform.identity
                         .translatedBy(x: offset.x, y: offset.y)
                         .scaledBy(x: zoom, y: zoom)
@@ -202,7 +200,6 @@ struct ShearHandles: View {
                 return
             }
 
-            // Build cached transformed path
             var path = Path()
             for element in shape.path.elements {
                 switch element {
@@ -249,7 +246,7 @@ struct ShearHandles: View {
         isShearing = false
         document.isHandleScalingActive = false
 
-        // Collect ALL shape IDs that will be modified (group + all members recursively)
+        // Collect all modified IDs (group + members recursively)
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
@@ -269,7 +266,6 @@ struct ShearHandles: View {
 
             document.updateTransformPanelValues()
 
-            // Capture new state of ALL modified shapes
             var newShapes: [UUID: VectorShape] = [:]
             for shapeID in allShapeIDs {
                 if let transformedShape = document.findShape(by: shapeID) {
@@ -286,7 +282,6 @@ struct ShearHandles: View {
                 document.executeCommand(command)
             }
 
-            // Force UI refresh
             document.triggerLayerUpdate(for: layerIndex)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -446,23 +441,18 @@ struct ShearHandles: View {
         let deltaX = currentDistance.x - startDistance.x
         let deltaY = currentDistance.y - startDistance.y
 
-        // Adobe Illustrator behavior:
-        // - Drag horizontally (deltaX) → horizontal shear (shearX)
-        // - Drag vertically (deltaY) → vertical shear (shearY)
-        let shearFactorX = deltaX * sensitivity  // Horizontal drag = horizontal shear
-        let shearFactorY = deltaY * sensitivity  // Vertical drag = vertical shear
+        // Illustrator: horizontal drag shears X, vertical drag shears Y
+        let shearFactorX = deltaX * sensitivity
+        let shearFactorY = deltaY * sensitivity
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
 
-        // Shift key: constrain to pure horizontal OR pure vertical shear
-        // Check shift key in real-time during drag
+        // Shift constrains to pure horizontal or vertical shear
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             if abs(deltaX) > abs(deltaY) {
-                // Dragging more horizontally → pure horizontal shear, zero vertical
                 finalShearY = 0
             } else {
-                // Dragging more vertically → pure vertical shear, zero horizontal
                 finalShearX = 0
             }
         }

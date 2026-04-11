@@ -91,26 +91,21 @@ struct MoveObjectDialog: View {
             return
         }
 
-        // Convert from document units to points
         let deltaX = currentUnit.toPoints(xValue)
         let deltaY = currentUnit.toPoints(yValue)
 
-        // Skip if no movement
         guard deltaX != 0 || deltaY != 0 else {
             isPresented = false
             return
         }
 
-        // Check if there are selected points (direct selection mode)
         if !document.viewState.selectedPoints.isEmpty {
             applyMoveToSelectedPoints(deltaX: deltaX, deltaY: deltaY)
             isPresented = false
             return
         }
 
-        // Apply movement with undo support
         document.modifySelectedShapesWithUndo { shape in
-            // Move all path points
             var transformedElements: [PathElement] = []
             for element in shape.path.elements {
                 switch element {
@@ -139,7 +134,6 @@ struct MoveObjectDialog: View {
             shape.path = VectorPath(elements: transformedElements)
             shape.updateBounds()
 
-            // Also move grouped shapes if this is a group container
             if shape.isGroupContainer {
                 var movedGroupedShapes: [VectorShape] = []
                 for var groupedShape in shape.groupedShapes {
@@ -175,7 +169,6 @@ struct MoveObjectDialog: View {
                 shape.groupedShapes = movedGroupedShapes
             }
 
-            // Move text position if this is a text object
             if shape.typography != nil {
                 if let textPos = shape.textPosition {
                     shape.textPosition = CGPoint(x: textPos.x + deltaX, y: textPos.y + deltaY)
@@ -192,13 +185,11 @@ struct MoveObjectDialog: View {
     private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
         let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
 
-        // Group points by shape for efficient processing
         var pointsByShape: [UUID: [PointID]] = [:]
         for pointID in document.viewState.selectedPoints {
             pointsByShape[pointID.shapeID, default: []].append(pointID)
         }
 
-        // Collect old shapes for undo
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
@@ -209,7 +200,6 @@ struct MoveObjectDialog: View {
             }
         }
 
-        // Move each selected point
         for (shapeID, pointIDs) in pointsByShape {
             guard var shape = document.findShape(by: shapeID) else { continue }
 
@@ -248,7 +238,6 @@ struct MoveObjectDialog: View {
             }
         }
 
-        // Collect new shapes for undo
         var newShapes: [UUID: VectorShape] = [:]
         for shapeID in objectIDs {
             if let shape = document.findShape(by: shapeID) {
@@ -256,7 +245,6 @@ struct MoveObjectDialog: View {
             }
         }
 
-        // Create undo command
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             document.executeCommand(command)

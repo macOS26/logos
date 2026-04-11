@@ -6,29 +6,26 @@ extension VectorDocument {
             return
         }
 
-        // Get shapes in stacking order - these will become group members
         let selectedShapes = getSelectedShapesInStackingOrder()
 
-        // Use the layer of the first selected object, not selectedLayerIndex
+        // Use the first selected object's layer, not selectedLayerIndex.
         guard let firstObjectID = viewState.orderedSelectedObjectIDs.first ?? viewState.selectedObjectIDs.first,
               let firstObject = snapshot.objects[firstObjectID] else {
             return
         }
         let layerIndex = firstObject.layerIndex
 
-        // Create group with memberIDs - shapes stay in snapshot.objects
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
-        // The member IDs that will be removed from layer.objectIDs (but stay in snapshot.objects)
         let memberObjectIDs = selectedShapes.map { $0.id }
 
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
-            removedObjectIDs: memberObjectIDs,  // Remove from layer.objectIDs only
-            removedShapes: [:],  // Don't remove shapes from snapshot.objects - they're now group members
+            removedObjectIDs: memberObjectIDs,
+            removedShapes: [:],
             addedObjectIDs: [groupShape.id],
             addedShapes: [groupShape.id: groupShape],
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
@@ -124,11 +121,8 @@ extension VectorDocument {
                         removedShapes[objectID] = shape
                         groupsToRemove.append(objectID)
 
-                        // NEW: Use memberIDs if available, fallback to groupedShapes for old groups
                         if !shape.memberIDs.isEmpty {
-                            // For clipping groups, memberIDs is [mask, content1, content2, ...]
-                            // but original stacking order was [content1, content2, ..., mask]
-                            // So we need to move the mask (first) to the end
+                            // Clipping groups store [mask, content...]; restore to [content..., mask].
                             var idsInStackingOrder = Array(shape.memberIDs)
                             if shape.isClippingGroup && idsInStackingOrder.count > 1 {
                                 let maskID = idsInStackingOrder.removeFirst()
@@ -139,9 +133,7 @@ extension VectorDocument {
                                 newSelectedShapeIDs.insert(memberID)
                             }
                         } else {
-                            // DEPRECATED: Fallback for old groups with groupedShapes
-                            // Legacy groups have embedded shapes that don't exist in snapshot.objects
-                            // We need to extract them and add them as new objects
+                            // Legacy groupedShapes: extract embedded shapes as new objects.
                             for groupedShape in shape.groupedShapes {
                                 memberIDsToRestore.append(groupedShape.id)
                                 newSelectedShapeIDs.insert(groupedShape.id)
@@ -160,10 +152,10 @@ extension VectorDocument {
         let command = GroupCommand(
             operation: .ungroup,
             layerIndex: layerIndex,
-            removedObjectIDs: groupsToRemove,  // Groups to remove from layer.objectIDs and snapshot.objects
+            removedObjectIDs: groupsToRemove,
             removedShapes: removedShapes,
-            addedObjectIDs: memberIDsToRestore,  // Member IDs to restore to layer.objectIDs
-            addedShapes: addedShapes,  // For legacy groups, contains the embedded shapes to create
+            addedObjectIDs: memberIDsToRestore,
+            addedShapes: addedShapes,
             oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedShapeIDs
         )

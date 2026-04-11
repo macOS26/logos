@@ -3,6 +3,24 @@ import AppKit
 import ImageIO
 
 enum ImageContentRegistry {
+    /// True if bytes look like XML/SVG text rather than a raster.
+    private static func isXMLPayload(_ data: Data) -> Bool {
+        guard data.count >= 5 else { return false }
+        var offset = 0
+        if data.count >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+            offset = 3
+        }
+        while offset < data.count && (data[offset] == 0x20 || data[offset] == 0x09 || data[offset] == 0x0A || data[offset] == 0x0D) {
+            offset += 1
+        }
+        guard offset + 1 < data.count else { return false }
+        if data[offset] == 0x3C {
+            let next = data[offset + 1]
+            return next == 0x3F || next == 0x73 || next == 0x53 || next == 0x21
+        }
+        return false
+    }
+
     static func register(image: CGImage, for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage[shapeID] = image
     }
@@ -24,7 +42,7 @@ enum ImageContentRegistry {
         var loadedCGImage: CGImage? = nil
 
         // Try embedded image first
-        if let data = shape.embeddedImageData,
+        if let data = shape.embeddedImageData, !isXMLPayload(data),
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage

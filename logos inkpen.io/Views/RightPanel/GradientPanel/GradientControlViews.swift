@@ -78,26 +78,40 @@ struct GradientTypePickerView: View {
     let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
     let onGradientChange: () -> Void
+
+    // A segmented Picker only fires onChange when the selection *changes*, so
+    // on a fresh selection where currentGradient == nil, tapping the already-
+    // highlighted Linear button is inert — the user has to tap Radial then
+    // Linear to populate the controls. Explicit Buttons apply the gradient
+    // unconditionally on every tap.
+    private func select(_ newType: GradientFillSection.GradientType) {
+        gradientType = newType
+        if let existing = currentGradient {
+            let preservedStops = getGradientStops(existing)
+            currentGradient = createGradientPreservingProperties(newType, preservedStops, existing)
+        } else {
+            currentGradient = createDefaultGradient(newType)
+        }
+        gradientId = UUID()
+        onGradientChange()
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type")
                 .gradientLabel()
 
-            Picker("Gradient Type", selection: $gradientType) {
+            HStack(spacing: 4) {
                 ForEach(GradientFillSection.GradientType.allCases, id: \.self) { type in
-                    Text(type.rawValue).tag(type)
+                    Button {
+                        select(type)
+                    } label: {
+                        Text(type.rawValue)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(gradientType == type ? Color.accentColor : Color.gray.opacity(0.3))
                 }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .onChange(of: gradientType) { _, newValue in
-                if let currentGradient = currentGradient {
-                    let preservedStops = getGradientStops(currentGradient)
-                    self.currentGradient = createGradientPreservingProperties(newValue, preservedStops, currentGradient)
-                } else {
-                    currentGradient = createDefaultGradient(newValue)
-                }
-                gradientId = UUID()
-                onGradientChange()
             }
         }
     }

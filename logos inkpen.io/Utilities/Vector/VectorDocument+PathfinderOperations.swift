@@ -301,7 +301,6 @@ extension VectorDocument {
             resultShapes = [resultShape]
 
         case .combine:
-            // Union all selected objects regardless of color
             if let unionPath = ProfessionalPathOperations.union(paths) {
                 guard let topmostShape = selectedShapes.last else {
                     Log.error("❌ COMBINE: No topmost shape found", category: .general)
@@ -324,15 +323,12 @@ extension VectorDocument {
             return false
         }
 
-        // Don't call removeSelectedShapes() - let GroupCommand handle it
-        // Build new shapes dictionary
+        // GroupCommand removes old shapes; don't call removeSelectedShapes() here.
         var newShapes: [UUID: VectorShape] = [:]
         for shape in resultShapes {
             newShapes[shape.id] = shape
         }
 
-        // Create command with old and new shapes
-        // Use .pathOperation to properly remove old shapes from snapshot.objects
         let command = GroupCommand(
             operation: .pathOperation,
             layerIndex: layerIndex,

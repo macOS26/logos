@@ -663,7 +663,8 @@ struct LayerCanvasView: View {
                         } else {
                             effectiveFillColor = fillStyle.color
                         }
-                        layerContext.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)))
+                        let useEvenOdd = shape.path.fillRule.cgPathFillRule == .evenOdd
+                        layerContext.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)), style: SwiftUI.FillStyle(eoFill: useEvenOdd))
                     }
                 }
 
@@ -761,7 +762,8 @@ struct LayerCanvasView: View {
                     let effectiveFillColor = (colorDeltaColor != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill)
                         ? colorDeltaColor!
                         : fillStyle.color
-                    context.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)))
+                    let useEvenOdd = shape.path.fillRule.cgPathFillRule == .evenOdd
+                    context.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)), style: SwiftUI.FillStyle(eoFill: useEvenOdd))
                 }
             }
 

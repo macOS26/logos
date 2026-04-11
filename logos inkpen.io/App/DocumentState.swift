@@ -244,12 +244,38 @@ class DocumentState: ObservableObject {
 
     }
 
+    private func hydrateGroupImagesRecursively(_ shape: VectorShape, document: VectorDocument, count: inout Int) {
+        if shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+            if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
+                count += 1
+            }
+        }
+        if shape.isGroup || shape.isClippingGroup {
+            for child in shape.groupedShapes {
+                hydrateGroupImagesRecursively(child, document: document, count: &count)
+            }
+            for memberID in shape.memberIDs {
+                if let obj = document.snapshot.objects[memberID] {
+                    let childShape: VectorShape
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .warp(let s), .group(let s), .clipGroup(let s), .clipMask(let s), .guide(let s):
+                        childShape = s
+                    case .text(let s):
+                        childShape = s
+                    }
+                    hydrateGroupImagesRecursively(childShape, document: document, count: &count)
+                }
+            }
+        }
+    }
+
     func showImportDialog() {
         guard let document = document else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [
             .svg,
             .pdf,
+            .freehandDocument,
             .png,
             .jpeg,
             .tiff,
@@ -273,11 +299,31 @@ class DocumentState: ObservableObject {
                     if result.success {
                         if let layerIndex = document.selectedLayerIndex ?? (document.snapshot.layers.indices.first) {
                             var newObjectIDs: Set<UUID> = []
+                            var imagesHydrated = 0
+                            var imagesDropped = 0
                             for shape in result.shapes {
-                                document.addShape(shape, to: layerIndex)
+                                let shouldDrop: Bool = {
+                                    let tempObj = VectorObject(shape: shape, layerIndex: 0)
+                                    if case .image = tempObj.objectType {
+                                        if let data = shape.embeddedImageData {
+                                            return data.count < 16 || SVGParser.looksLikeXML(data)
+                                        }
+                                        return shape.linkedImagePath == nil && shape.linkedImageBookmarkData == nil
+                                    }
+                                    return false
+                                }()
+                                if shouldDrop {
+                                    imagesDropped += 1
+                                    continue
+                                }
+                                document.addImportedShape(shape, to: layerIndex)
                                 newObjectIDs.insert(shape.id)
+                                self.hydrateGroupImagesRecursively(shape, document: document, count: &imagesHydrated)
                             }
                             document.viewState.selectedObjectIDs = newObjectIDs
+                            if imagesHydrated > 0 || imagesDropped > 0 {
+                                print("🖼️ Import: hydrated=\(imagesHydrated) dropped=\(imagesDropped)")
+                            }
                         }
                         self.updateAllStates()
                     } else {

@@ -17,6 +17,9 @@ class MetalSpatialIndex {
 
     // Per-layer spatial indices
     private var layerIndices: [UUID: LayerSpatialIndex] = [:]
+    // Static so multiple DrawingCanvas instances share one dedupe cache.
+    private static let fingerprintLock = NSLock()
+    private static var sharedLayerFingerprints: [UUID: Int] = [:]
 
     // Per-layer index structure
     fileprivate struct LayerSpatialIndex {
@@ -102,10 +105,49 @@ class MetalSpatialIndex {
         }
 
         var totalObjectsRebuilt = 0
+        var layersActuallyRebuilt = 0
 
         // Rebuild only the specified layers
         for layer in snapshot.layers {
             guard layerIDs.contains(layer.id) else { continue }
+
+            // Cheap fingerprint of the layer inputs that affect the spatial index.
+            // When the caller asks to rebuild unchanged layers (startup + multiple
+            // SwiftUI onChange/onAppear callbacks), this lets us no-op per-layer.
+            var fp = Hasher()
+            fp.combine(layer.isVisible)
+            fp.combine(includeStrokesInBounds)
+            for id in layer.objectIDs {
+                fp.combine(id)
+                if let obj = snapshot.objects[id] {
+                    fp.combine(obj.isVisible)
+                    let b: CGRect
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .warp(let s), .clipMask(let s), .guide(let s):
+                        b = s.bounds.applying(s.transform)
+                    case .text(let s):
+                        b = CGRect(x: s.transform.tx, y: s.transform.ty, width: s.bounds.width, height: s.bounds.height)
+                    case .group(let g), .clipGroup(let g):
+                        b = g.groupBounds
+                    }
+                    fp.combine(b.origin.x); fp.combine(b.origin.y)
+                    fp.combine(b.size.width); fp.combine(b.size.height)
+                }
+            }
+            let fingerprint = fp.finalize()
+            let fingerprintUnchanged: Bool = {
+                Self.fingerprintLock.lock()
+                defer { Self.fingerprintLock.unlock() }
+                if Self.sharedLayerFingerprints[layer.id] == fingerprint {
+                    return true
+                }
+                Self.sharedLayerFingerprints[layer.id] = fingerprint
+                return false
+            }()
+            if fingerprintUnchanged {
+                continue
+            }
+            layersActuallyRebuilt += 1
 
             // Collect bounds data for this layer only
             var boundsData: [(UUID, CGRect)] = []
@@ -276,7 +318,17 @@ class MetalSpatialIndex {
             layerIndices[layer.id] = layerIndex
         }
 
-        print("🔷 Rebuilt \(layerIDs.count) layer(s), \(totalObjectsRebuilt) objects")
+        if layersActuallyRebuilt > 0 {
+            print("🔷 Rebuilt \(layersActuallyRebuilt) layer(s), \(totalObjectsRebuilt) objects")
+        }
+    }
+
+    /// Invalidate cached fingerprints so the next rebuildLayers call is forced to rebuild.
+    /// Call this when the caller knows its cached state is stale (e.g. document replaced).
+    func invalidateFingerprints() {
+        Self.fingerprintLock.lock()
+        Self.sharedLayerFingerprints.removeAll(keepingCapacity: true)
+        Self.fingerprintLock.unlock()
     }
 
     /// Get candidate objects at a specific point (GPU query)

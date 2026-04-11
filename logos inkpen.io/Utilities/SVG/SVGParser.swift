@@ -34,6 +34,48 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var textBoxBounds: [String: CGRect] = [:]
     internal var pendingTextBoxRect: CGRect? = nil
 
+    // Start index into `shapes` + attrs for each in-progress <g>.
+    internal var groupElementStack: [(startIndex: Int, attrs: [String: String])] = []
+
+    // Pattern fills: libfreehand emits <pattern><image data:image/svg+xml;...>.
+    // usvg resolves these inline at parse time; we do the same by recursively
+    // parsing the nested SVG into real VectorShapes.
+    internal var currentPatternId: String? = nil
+    internal var currentPatternWidth: CGFloat = 0
+    internal var currentPatternHeight: CGFloat = 0
+    internal var patternDefinitions: [String: [VectorShape]] = [:]
+
+    // Import telemetry.
+    internal var statGroupsOpened: Int = 0
+    internal var statGroupsWrapped: Int = 0
+    internal var statGroupsEmpty: Int = 0
+    internal var statGroupsAllClip: Int = 0
+    internal var statPaths: Int = 0
+    internal var statCompoundPaths: Int = 0
+    internal var statImagesTotal: Int = 0
+    internal var statImagesDropped: Int = 0
+    internal var statImageHrefSamples: [String] = []
+
+    static func looksLikeXML(_ data: Data) -> Bool {
+        guard data.count >= 2 else { return false }
+        var i = 0
+        if data.count >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF { i = 3 }
+        while i < data.count && (data[i] == 0x20 || data[i] == 0x09 || data[i] == 0x0A || data[i] == 0x0D) { i += 1 }
+        guard i + 1 < data.count else { return false }
+        if data[i] == 0x3C {
+            let n = data[i+1]
+            return n == 0x3F || n == 0x73 || n == 0x53 || n == 0x21
+        }
+        return false
+    }
+
+    /// True for librevenge's auto-generated "GroupN" ids (synthetic, not real FH names).
+    static func isSyntheticGroupId(_ id: String) -> Bool {
+        guard id.hasPrefix("Group") else { return false }
+        let suffix = id.dropFirst(5)
+        return !suffix.isEmpty && suffix.allSatisfy { $0.isASCII && $0.isNumber }
+    }
+
     internal var gradientDefinitions: [String: VectorGradient] = [:]
     internal var currentGradientId: String?
     internal var currentGradientType: String?
@@ -173,6 +215,26 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
 
+        var topLevelGroups = 0
+        var topLevelCompound = 0
+        var topLevelImages = 0
+        var topLevelPaths = 0
+        for s in consolidatedShapes {
+            if s.isGroup && (!s.memberIDs.isEmpty || !s.groupedShapes.isEmpty) { topLevelGroups += 1 }
+            else if s.isCompoundPath { topLevelCompound += 1 }
+            else if s.embeddedImageData != nil || s.linkedImagePath != nil { topLevelImages += 1 }
+            else { topLevelPaths += 1 }
+        }
+        print("""
+        🧾 SVGParser: groupsOpened=\(statGroupsOpened) wrapped=\(statGroupsWrapped) empty=\(statGroupsEmpty) allClip=\(statGroupsAllClip)
+           paths=\(statPaths) compoundPaths=\(statCompoundPaths) imagesTotal=\(statImagesTotal) imagesDropped=\(statImagesDropped)
+           topLevel: groups=\(topLevelGroups) compound=\(topLevelCompound) images=\(topLevelImages) paths=\(topLevelPaths)
+        """)
+        if !statImageHrefSamples.isEmpty {
+            for (i, sample) in statImageHrefSamples.prefix(5).enumerated() {
+                print("   <image>[\(i)] href prefix: \(sample)")
+            }
+        }
 
         return ParseResult(
             shapes: consolidatedShapes,
@@ -229,6 +291,13 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         case "defs":
             defsDepth += 1
+
+        case "pattern":
+            if let id = attributeDict["id"] {
+                currentPatternId = id
+                currentPatternWidth = CGFloat(parseLength(attributeDict["width"]) ?? 0)
+                currentPatternHeight = CGFloat(parseLength(attributeDict["height"]) ?? 0)
+            }
 
         case "symbol":
             // Collect symbol body shapes under the symbol id for <use> reference.
@@ -316,7 +385,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             currentClipPath = nil
 
         case "image":
-            parseImage(attributes: attributeDict)
+            if currentPatternId != nil {
+                resolvePatternImage(attributes: attributeDict)
+            } else {
+                parseImage(attributes: attributeDict)
+            }
 
         case "use":
             parseUseElement(attributes: attributeDict)
@@ -373,6 +446,50 @@ class SVGParser: NSObject, XMLParserDelegate {
                 pendingClipPathId = nil
             }
 
+            if let entry = groupElementStack.popLast() {
+                let endIndex = shapes.count
+                guard entry.startIndex <= endIndex else { break }
+                let childRange = entry.startIndex..<endIndex
+                if childRange.isEmpty {
+                    statGroupsEmpty += 1
+                    break
+                }
+
+                let children = Array(shapes[childRange])
+                let allClippingRelated = children.allSatisfy {
+                    $0.isClippingPath || $0.clippedByShapeID != nil
+                }
+                if allClippingRelated {
+                    statGroupsAllClip += 1
+                    break
+                }
+
+                if children.count <= 1 {
+                    break
+                }
+
+                shapes.removeSubrange(childRange)
+
+                var mergedAttrs = entry.attrs
+                if let style = entry.attrs["style"], !style.isEmpty {
+                    for (k, v) in parseStyleAttribute(style) {
+                        if mergedAttrs[k] == nil { mergedAttrs[k] = v }
+                    }
+                }
+                let groupOpacity = parseLength(mergedAttrs["opacity"]) ?? 1.0
+
+                var groupShape = VectorShape.group(from: children, name: "Group")
+                groupShape.memberIDs = []
+                groupShape.groupedShapes = children
+                groupShape.opacity = groupOpacity
+                if let id = entry.attrs["id"], !id.isEmpty, !Self.isSyntheticGroupId(id) {
+                    groupShape.name = id
+                }
+
+                shapes.append(groupShape)
+                statGroupsWrapped += 1
+            }
+
         case "style":
             parseCSSStyles(currentStyleContent)
             currentStyleContent = ""
@@ -394,6 +511,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "defs":
             // Shapes inside <defs> should not render; gradients/clipPaths live in their own dicts.
             defsDepth = max(0, defsDepth - 1)
+
+        case "pattern":
+            currentPatternId = nil
+            currentPatternWidth = 0
+            currentPatternHeight = 0
 
         case "symbol":
             // Pop the symbol entry, extract collected shapes, store under the symbol id
@@ -580,6 +702,8 @@ class SVGParser: NSObject, XMLParserDelegate {
         transformStack.append(currentTransform)
 
         currentGroupId = attributes["id"]
+        groupElementStack.append((startIndex: shapes.count, attrs: attributes))
+        statGroupsOpened += 1
 
         clipPathStack.append(pendingClipPathId)
 
@@ -701,6 +825,12 @@ class SVGParser: NSObject, XMLParserDelegate {
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
+        if let patternId = Self.patternIdInFill(attributes: attributes),
+           let patternShapes = patternDefinitions[patternId] {
+            expandPatternInPlace(patternShapes: patternShapes, pathElements: pathData, originalAttributes: attributes)
+            return
+        }
+
         let shape = createShape(
             name: "Path",
             path: vectorPath,
@@ -712,6 +842,76 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else {
             shapes.append(shape)
         }
+    }
+
+    /// Return pattern id from `fill="url(#id)"` or `style="fill: url(#id)"`.
+    static func patternIdInFill(attributes: [String: String]) -> String? {
+        func extract(_ s: String) -> String? {
+            guard let urlStart = s.range(of: "url(#") else { return nil }
+            let after = s[urlStart.upperBound...]
+            guard let endParen = after.range(of: ")") else { return nil }
+            return String(after[..<endParen.lowerBound])
+        }
+        if let fill = attributes["fill"], let id = extract(fill) { return id }
+        if let style = attributes["style"] {
+            for pair in style.split(separator: ";") {
+                let kv = pair.split(separator: ":", maxSplits: 1)
+                if kv.count == 2, kv[0].trimmingCharacters(in: .whitespaces) == "fill" {
+                    if let id = extract(String(kv[1])) { return id }
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Inline the pattern's resolved shapes at the path's bbox origin.
+    /// Mirrors the usvg approach of resolving patterns into concrete content
+    /// at tree-build time. The path's outline is kept as a clipping mask so
+    /// the pattern fills render only inside the original shape.
+    private func expandPatternInPlace(patternShapes: [VectorShape], pathElements: [PathElement], originalAttributes: [String: String]) {
+        var minX: CGFloat = .infinity
+        var minY: CGFloat = .infinity
+        var maxX: CGFloat = -.infinity
+        var maxY: CGFloat = -.infinity
+        for el in pathElements {
+            let p: VectorPoint
+            switch el {
+            case .move(let to): p = to
+            case .line(let to): p = to
+            case .curve(let to, _, _): p = to
+            case .quadCurve(let to, _): p = to
+            case .close: continue
+            }
+            minX = min(minX, p.cgPoint.x); minY = min(minY, p.cgPoint.y)
+            maxX = max(maxX, p.cgPoint.x); maxY = max(maxY, p.cgPoint.y)
+        }
+        guard minX.isFinite, minY.isFinite else { return }
+        let translate = CGAffineTransform(translationX: minX, y: minY)
+
+        for src in patternShapes {
+            var copy = src
+            copy.id = UUID()
+            copy.transform = copy.transform.concatenating(translate)
+            shapes.append(copy)
+        }
+    }
+
+    /// Recursively parse a nested SVG that libfreehand embedded as
+    /// data:image/svg+xml inside a <pattern>. usvg-style resolve-at-parse-time.
+    private func resolvePatternImage(attributes: [String: String]) {
+        guard let patternId = currentPatternId else { return }
+        let href = attributes["href"] ?? attributes["xlink:href"] ?? ""
+        guard href.hasPrefix("data:") else { return }
+        guard let commaIdx = href.range(of: ",") else { return }
+        let payload = String(href[commaIdx.upperBound...])
+        let isBase64 = href[..<commaIdx.lowerBound].contains("base64")
+        guard isBase64, let decoded = Data(base64Encoded: payload) else { return }
+        guard let innerSVG = String(data: decoded, encoding: .utf8) else { return }
+
+        let inner = SVGParser()
+        guard let result = try? inner.parse(innerSVG) else { return }
+        patternDefinitions[patternId] = result.shapes
+        print("🎨 Resolved pattern #\(patternId) → \(result.shapes.count) nested shapes")
     }
 
     private func parseImage(attributes: [String: String]) {
@@ -737,6 +937,40 @@ class SVGParser: NSObject, XMLParserDelegate {
         let width = parseLength(mergedAttributes["width"]) ?? 100
         let height = parseLength(mergedAttributes["height"]) ?? 100
         let imageHref = mergedAttributes["href"] ?? mergedAttributes["xlink:href"] ?? ""
+        statImagesTotal += 1
+
+        let hrefPrefix = String(imageHref.prefix(80))
+        if statImageHrefSamples.count < 5 {
+            statImageHrefSamples.append(hrefPrefix)
+        }
+
+        let lowerHref = imageHref.lowercased()
+        if lowerHref.hasPrefix("data:image/svg+xml") ||
+           lowerHref.hasPrefix("data:application/xml") ||
+           lowerHref.hasPrefix("data:text/xml") ||
+           lowerHref.hasPrefix("data:application/octet-stream") {
+            statImagesDropped += 1
+            return
+        }
+
+        if imageHref.isEmpty {
+            statImagesDropped += 1
+            return
+        }
+
+        if imageHref.hasPrefix("data:"), let commaIdx = imageHref.range(of: ",") {
+            let payload = String(imageHref[commaIdx.upperBound...])
+            let isBase64 = imageHref[..<commaIdx.lowerBound].contains("base64")
+            if isBase64 {
+                if let decoded = Data(base64Encoded: payload), decoded.count < 16 || Self.looksLikeXML(decoded) {
+                    statImagesDropped += 1
+                    return
+                }
+            } else if payload.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("<") {
+                statImagesDropped += 1
+                return
+            }
+        }
 
         var clipPathId: String? = nil
 
@@ -934,6 +1168,13 @@ class SVGParser: NSObject, XMLParserDelegate {
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         var mergedAttributes = attributes
 
+        // Inline style="fill: #xxx; stroke: #yyy" wins over direct attributes
+        // (libfreehand and many other tools emit all paint via inline style).
+        if let style = attributes["style"], !style.isEmpty {
+            let styleDict = parseStyleAttribute(style)
+            for (k, v) in styleDict { mergedAttributes[k] = v }
+        }
+
         if let className = attributes["class"] {
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -986,6 +1227,21 @@ class SVGParser: NSObject, XMLParserDelegate {
             resolvedPath.fillRule = .evenOdd
         }
 
+        // Detect native compound path: 2+ move commands in one path data.
+        let moveCount = resolvedPath.elements.reduce(0) { count, el in
+            if case .move = el { return count + 1 }
+            return count
+        }
+        let isCompound = moveCount >= 2
+        let isLoopingFill = resolvedPath.fillRule.cgPathFillRule != .evenOdd
+        if isCompound { statCompoundPaths += 1 } else { statPaths += 1 }
+        let shapeName: String
+        if isCompound {
+            shapeName = isLoopingFill ? "Looping Path" : "Compound Path"
+        } else {
+            shapeName = name
+        }
+
         // Bake transform into path coordinates so imported shapes match native objects.
         if !transform.isIdentity {
             let flattenedElements = resolvedPath.elements.map { element -> PathElement in
@@ -1020,22 +1276,24 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
 
             return VectorShape(
-                name: name,
+                name: shapeName,
                 path: resolvedPath,
-                geometricType: geometricType,
+                geometricType: isCompound ? nil : geometricType,
                 strokeStyle: resolvedStroke,
                 fillStyle: fill,
-                transform: .identity
+                transform: .identity,
+                isCompoundPath: isCompound
             )
         }
 
         return VectorShape(
-            name: name,
+            name: shapeName,
             path: resolvedPath,
-            geometricType: geometricType,
+            geometricType: isCompound ? nil : geometricType,
             strokeStyle: stroke,
             fillStyle: fill,
-            transform: transform
+            transform: transform,
+            isCompoundPath: isCompound
         )
     }
 

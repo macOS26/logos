@@ -212,7 +212,6 @@ struct ObjectRow: View {
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                // Members are now in snapshot.objects with their own UUIDs
                 if let childObject = document.snapshot.objects[childShapeId] {
                     print("🔵 childVisibilityBinding GET: childShapeId=\(childShapeId), isVisible=\(childObject.shape.isVisible)")
                     return childObject.shape.isVisible
@@ -222,7 +221,6 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 print("🟡 childVisibilityBinding SET: childShapeId=\(childShapeId), newValue=\(newValue)")
-                // Update the child object directly in snapshot.objects
                 guard let childObject = document.snapshot.objects[childShapeId] else {
                     print("🔴 childVisibilityBinding SET: childShapeId=\(childShapeId) NOT FOUND in snapshot.objects")
                     return
@@ -248,14 +246,12 @@ struct ObjectRow: View {
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
-                // Members are now in snapshot.objects with their own UUIDs
                 if let childObject = document.snapshot.objects[childShapeId] {
                     return childObject.shape.isLocked
                 }
                 return false
             },
             set: { newValue in
-                // Update the child object directly in snapshot.objects
                 guard let childObject = document.snapshot.objects[childShapeId] else { return }
                 var shape = childObject.shape
                 if shape.isLocked != newValue {
@@ -473,9 +469,8 @@ struct ObjectRow: View {
             }
             
             if objectType == .group, isGroupExpanded, !memberIDs.isEmpty {
-                // Resolve member shapes from snapshot.objects using memberIDs
                 let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-                // Reverse for regular groups to match layer display order, but not for clip groups (mask must be first)
+                // Reverse for regular groups; clip groups keep order (mask must be first)
                 let displayShapes = document.snapshot.objects[objectId].map { obj -> [VectorShape] in
                     if case .clipGroup = obj.objectType {
                         return memberShapes

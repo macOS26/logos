@@ -4,13 +4,11 @@ import Combine
 extension VectorDocument {
 
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
                 if !shape.memberIDs.isEmpty {
                     print("🎨 Updating fill color for group \(id) with \(shape.memberIDs.count) members")
-                    // Modern group: update each member shape
                     for memberID in shape.memberIDs {
                         print("🎨   Updating member \(memberID)")
                         updateShapeFillColorInUnified(id: memberID, color: color)
@@ -25,14 +23,12 @@ extension VectorDocument {
         print("🎨 Updating fill color for non-group shape \(id)")
 
         updateShapeByID(id) { shape in
-            // Update the shape itself
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
             } else {
                 shape.fillStyle?.color = color
             }
 
-            // If this is a legacy group with embedded children, update them
             if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
@@ -49,12 +45,10 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
                 if !shape.memberIDs.isEmpty {
-                    // Modern group: update each member shape
                     for memberID in shape.memberIDs {
                         updateShapeStrokeColorInUnified(id: memberID, color: color)
                     }
@@ -66,14 +60,12 @@ extension VectorDocument {
         }
 
         updateShapeByID(id) { shape in
-            // Update the shape itself
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
             } else {
                 shape.strokeStyle?.color = color
             }
 
-            // If this is a legacy group with embedded children, update them
             if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
@@ -90,7 +82,6 @@ extension VectorDocument {
     }
 
     func updateShapeFillOpacityInUnified(id: UUID, opacity: Double) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
@@ -115,7 +106,6 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeWidthInUnified(id: UUID, width: Double) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
@@ -164,7 +154,6 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeOpacityInUnified(id: UUID, opacity: Double) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
@@ -189,7 +178,6 @@ extension VectorDocument {
     }
 
     func updateShapeOpacityInUnified(id: UUID, opacity: Double) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):
@@ -209,7 +197,7 @@ extension VectorDocument {
         }
     }
 
-    /// Applies a transform to a group by transforming all member shapes and recalculating bounds
+    /// Applies transform to group members then recalculates bounds.
     func applyTransformToGroup(groupID: UUID, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 
@@ -225,22 +213,18 @@ extension VectorDocument {
 
         guard !memberIDs.isEmpty else { return }
 
-        // Transform each member shape's path coordinates
         for memberID in memberIDs {
             applyTransformToMemberShape(memberID: memberID, transform: transform)
         }
 
-        // Recalculate group bounds from transformed members
         recalculateGroupBounds(groupID: groupID)
     }
 
-    /// Applies transform to a member shape (handles nested groups recursively)
     private func applyTransformToMemberShape(memberID: UUID, transform: CGAffineTransform) {
         guard let object = snapshot.objects[memberID] else { return }
 
         switch object.objectType {
         case .group(let shape), .clipGroup(let shape):
-            // Nested group - recurse
             if !shape.memberIDs.isEmpty {
                 for nestedMemberID in shape.memberIDs {
                     applyTransformToMemberShape(memberID: nestedMemberID, transform: transform)
@@ -248,7 +232,6 @@ extension VectorDocument {
                 recalculateGroupBounds(groupID: memberID)
             }
         case .shape, .image, .warp, .clipMask, .guide:
-            // Regular shape - transform path coordinates
             updateShapeByID(memberID) { shape in
                 let combinedTransform = shape.transform.concatenating(transform)
                 var transformedElements: [PathElement] = []
@@ -287,7 +270,6 @@ extension VectorDocument {
                 shape.updateBounds()
             }
         case .text:
-            // Text - transform position
             updateShapeByID(memberID) { shape in
                 if let textPosition = shape.textPosition {
                     let transformedPosition = textPosition.applying(transform)
@@ -297,7 +279,6 @@ extension VectorDocument {
         }
     }
 
-    /// Recalculates group bounds from its member shapes
     func recalculateGroupBounds(groupID: UUID) {
         guard let object = snapshot.objects[groupID] else {
             Log.error("❌ recalculateGroupBounds: Group \(groupID) not found in snapshot.objects", category: .error)
@@ -331,13 +312,11 @@ extension VectorDocument {
                 shapeBounds = memberShape.bounds.applying(memberShape.transform)
             }
 
-            // Validate bounds before union
             if !shapeBounds.isNull && !shapeBounds.isInfinite && shapeBounds.width > 0 && shapeBounds.height > 0 {
                 calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
             }
         }
 
-        // Only update if we found valid bounds
         if !calculatedGroupBounds.isNull && !calculatedGroupBounds.isInfinite && foundMembers > 0 {
             updateShapeByID(groupID) { shape in
                 shape.bounds = calculatedGroupBounds
@@ -348,7 +327,6 @@ extension VectorDocument {
     }
 
     func updateShapeStrokePlacementInUnified(id: UUID, placement: StrokePlacement) {
-        // Check if this is a group with memberIDs - update members separately
         if let object = snapshot.objects[id] {
             switch object.objectType {
             case .group(let shape), .clipGroup(let shape):

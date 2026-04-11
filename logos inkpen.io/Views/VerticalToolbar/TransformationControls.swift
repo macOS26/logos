@@ -86,9 +86,7 @@ struct TransformationControls: View {
         Binding(
             get: { document.viewState.transformOrigin },
             set: { newOrigin in
-                // Update viewState (for UI reactivity)
                 document.viewState.transformOrigin = newOrigin
-                // Also save to each selected object
                 for objectID in document.viewState.selectedObjectIDs {
                     document.updateShapeByID(objectID, silent: false) { shape in
                         shape.transformOrigin = newOrigin
@@ -351,7 +349,6 @@ struct TransformationControls: View {
             updateValuesFromSelection()
         }
         .onChange(of: document.viewState.PublishedSelectedObjectIDs) { _, _ in
-            // Sync transform origin from selected object to viewState
             syncTransformOriginFromSelection()
             updateValuesFromSelection()
         }
@@ -377,13 +374,12 @@ struct TransformationControls: View {
         }
     }
 
-    /// Sync transform origin from the first selected object to viewState
     private func syncTransformOriginFromSelection() {
         guard let firstID = document.viewState.selectedObjectIDs.first,
               let obj = document.snapshot.objects[firstID] else {
             return
         }
-        // Only sync if object has a saved transform origin - don't reset user's choice
+        // Only sync if the object has a saved origin; don't override user's choice
         if let objectOrigin = obj.shape.transformOrigin {
             if document.viewState.transformOrigin != objectOrigin {
                 document.viewState.transformOrigin = objectOrigin
@@ -457,8 +453,7 @@ struct TransformationControls: View {
 
         var combinedBounds: CGRect?
 
-        // Iterate through all objects to find selected ones
-        // This is more reliable than direct lookup by ID
+        // Iterate all objects; more reliable than ID lookup
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
             case .text(let shape):
@@ -498,7 +493,6 @@ struct TransformationControls: View {
               newWidthInUnit > 0,
               newHeightInUnit > 0 else { return }
 
-        // Convert user input from document units to points
         let newX = currentUnit.toPoints(newXInUnit)
         let newY = currentUnit.toPoints(newYInUnit)
         let newWidth = currentUnit.toPoints(newWidthInUnit)
@@ -679,7 +673,6 @@ struct TransformationControls: View {
         let scaleFactorX = scaleX / 100.0
         let scaleFactorY = scaleY / 100.0
 
-        // Skip if no scaling needed
         guard abs(scaleFactorX - 1.0) > 0.001 || abs(scaleFactorY - 1.0) > 0.001 else { return }
 
         let originOffset = document.viewState.transformOrigin.point
@@ -790,7 +783,6 @@ struct TransformationControls: View {
         guard let angle = Double(rotationValue),
               let currentBounds = getSelectionBounds() else { return }
 
-        // Skip if no rotation needed
         guard abs(angle) > 0.001 else { return }
 
         let radians = angle * .pi / 180.0

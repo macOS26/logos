@@ -630,9 +630,8 @@ extension VectorText {
             opacity: typography.strokeOpacity
         ) : nil
 
-        var finalTransform = transform
-        finalTransform.tx = position.x
-        finalTransform.ty = position.y
+        let positionTranslation = CGAffineTransform(translationX: position.x, y: position.y)
+        let finalTransform = positionTranslation.concatenating(transform)
 
         var shape = VectorShape(
             name: "Text: \(content.prefix(20))",

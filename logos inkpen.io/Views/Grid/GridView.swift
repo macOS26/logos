@@ -12,29 +12,22 @@ struct GridCanvasView: View {
 
     var body: some View {
         Canvas { context, size in
-            // At 25% zoom or less, only show major grid lines
-            // At 50% zoom, make major lines same thickness as minor
-            // Above 50%, use normal major line thickness
-
+            // <=25% zoom: major only. 25-50%: both, same thickness. >50%: normal.
             let minorLineWidth: CGFloat = 0.5
             let majorLineWidth: CGFloat
             let shouldShowMinor: Bool
 
             if zoomLevel <= 0.25 {
-                // 25% or less: hide minor lines, show only major
                 shouldShowMinor = false
                 majorLineWidth = minorLineWidth
             } else if zoomLevel <= 0.5 {
-                // Between 25% and 50%: show both, but major same as minor
                 shouldShowMinor = true
                 majorLineWidth = minorLineWidth
             } else {
-                // Above 50%: normal thickness difference
                 shouldShowMinor = true
                 majorLineWidth = 1.0
             }
 
-            // Draw minor grid lines (if visible at this zoom)
             if shouldShowMinor {
                 drawGridLines(
                     context: context,
@@ -49,7 +42,6 @@ struct GridCanvasView: View {
                 )
             }
 
-            // Draw major grid lines
             drawGridLines(
                 context: context,
                 gridSpacing: gridSpacing,
@@ -76,7 +68,6 @@ struct GridCanvasView: View {
         zoomLevel: Double,
         canvasOffset: CGPoint
     ) {
-        // SIMD optimization for grid transform calculations
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
         let zoom = Float(zoomLevel)
@@ -86,7 +77,6 @@ struct GridCanvasView: View {
 
         var path = Path()
 
-        // Draw vertical lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
@@ -102,7 +92,6 @@ struct GridCanvasView: View {
             }
         }
 
-        // Draw horizontal lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
@@ -118,15 +107,11 @@ struct GridCanvasView: View {
             }
         }
 
-        // Smart line width scaling:
-        // - When zoomed out (< 100%): divide by zoom to keep lines from getting thick
-        // - When zoomed in (> 100%): clamp minimum so lines don't disappear
+        // Scale line width: divide by zoom when zoomed out, clamp when zoomed in
         let adjustedLineWidth: CGFloat
         if zoomLevel < 1.0 {
-            // Zoomed out - scale down to prevent thick lines
             adjustedLineWidth = lineWidth / zoomLevel
         } else {
-            // Zoomed in - use minimum to keep visible, max at base width
             adjustedLineWidth = max(lineWidth / zoomLevel, lineWidth * 0.75)
         }
 

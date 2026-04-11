@@ -26,7 +26,6 @@ struct EnvelopeHandles: View {
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
         ZStack {
-            // Render shape outline using Canvas
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
@@ -101,12 +100,11 @@ struct EnvelopeHandles: View {
 
             envelopeCornerHandles()
 
-            // Show grid during dragging for performance
             if document.viewState.currentTool == .warp && warpedCorners.count == 4 && isWarping {
                 envelopeGridPreview()
             }
 
-            // Only show the warped preview after drag ends
+            // Warped preview only shown after drag ends
             if previewPath != nil && !isWarping {
                 warpedShapePreview()
             }
@@ -226,7 +224,6 @@ struct EnvelopeHandles: View {
             let offset = canvasOffset
             let gridLines = 4
 
-            // Draw horizontal grid lines
             for row in 0..<4 {
                 let t = CGFloat(row) / CGFloat(gridLines - 1)
                 let startPoint = bilinearInterpolation(
@@ -252,7 +249,6 @@ struct EnvelopeHandles: View {
                 context.stroke(path, with: .color(.blue.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
 
-            // Draw vertical grid lines
             for col in 0..<4 {
                 let u = CGFloat(col) / CGFloat(gridLines - 1)
                 let startPoint = bilinearInterpolation(
@@ -339,7 +335,6 @@ struct EnvelopeHandles: View {
         }
 
         if shape.path.elements.count <= 4 || shape.isGroup {
-            // Calculate bounding box corners
             let bounds = shape.path.cgPath.boundingBoxOfPath
             let newOriginalCorners = [
                 CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
@@ -406,11 +401,8 @@ struct EnvelopeHandles: View {
             y: (currentLocation.y - canvasOffset.y) / preciseZoom
         )
 
-        // Only update local @State - don't touch document during drag
+        // Local @State only; document updates happen in finishEnvelopeWarp() (drag perf)
         warpedCorners[cornerIndex] = canvasLocation
-
-        // Don't update document.viewState during drag - causes slowdown
-        // These will be updated in finishEnvelopeWarp()
     }
 
     private func startEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
@@ -555,7 +547,6 @@ struct EnvelopeHandles: View {
         let det = rightVector.x * downVector.y - rightVector.y * downVector.x
 
         if abs(det) < 1e-10 {
-            // SIMD-optimized vector length calculation
             let rightLength = simd_length(SIMD2(Double(rightVector.x), Double(rightVector.y)))
             let downLength = simd_length(SIMD2(Double(downVector.x), Double(downVector.y)))
             let u: CGFloat = rightLength > 0 ?
@@ -636,7 +627,6 @@ struct EnvelopeHandles: View {
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
 
-        // Calculate the warp preview now that dragging is done
         calculateEnvelopeWarpPreview()
 
         guard let oldObject = document.findObject(by: shape.id) else { return }

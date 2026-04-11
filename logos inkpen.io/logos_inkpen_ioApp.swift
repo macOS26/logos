@@ -57,6 +57,14 @@ struct logos_inken_ioApp: App {
                     // Enable state restoration for window frame and document
                     window.isRestorable = true
 
+                    // Route File>New and File>Open into the existing window's
+                    // tab group. Without this, SwiftUI DocumentGroup spawns a
+                    // fresh NSWindow for every document and ignores the system
+                    // "Prefer tabs" setting. A shared tabbingIdentifier lets
+                    // AppKit merge them automatically.
+                    window.tabbingMode = .preferred
+                    window.tabbingIdentifier = "InkpenDocumentTabGroup"
+
                     // Use unique autosave name per document to preserve individual window positions
                     let autosaveName: String
                     if let fileURL = file.fileURL {
@@ -74,8 +82,11 @@ struct logos_inken_ioApp: App {
                         window.setFrameAutosaveName(autosaveName)
                     }
 
-                    // If no saved frame, fill the screen
-                    if !hadSavedFrame, let screen = window.screen ?? NSScreen.main {
+                    // If no saved frame, fill the screen — but only for the
+                    // first document window. Reframing a subsequent new doc
+                    // detaches it from its tab group under "Prefer Tabs" mode.
+                    let isFirstDocumentWindow = NSDocumentController.shared.documents.count <= 1
+                    if !hadSavedFrame, isFirstDocumentWindow, let screen = window.screen ?? NSScreen.main {
                         let visibleFrame = screen.visibleFrame
                         // Defer to avoid layout recursion during view hierarchy setup
                         DispatchQueue.main.async {
