@@ -366,6 +366,25 @@ struct LayerCanvasView: View {
                                 let liveContentShape = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                 let liveMaskForClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
 
+                                /* Recursively render leaf outlines inside the clip
+                                   region so nested-group content still appears. */
+                                func renderKeylineClippedLeaf(_ shape: VectorShape, into lctx: inout GraphicsContext) {
+                                    guard shape.isVisible else { return }
+                                    if shape.isGroupContainer {
+                                        for m in document.resolveGroupMembers(shape) {
+                                            renderKeylineClippedLeaf(m, into: &lctx)
+                                        }
+                                        return
+                                    }
+                                    if VectorText.from(shape) != nil {
+                                        renderText(shape, context: &lctx, isSelected: false, liveScaleTransform: .identity, fontSizeDelta: 0, lineSpacingDelta: 0, lineHeightDelta: 0, letterSpacingDelta: 0, fillDeltaOpacity: 0, textContentDelta: nil, maskShape: nil)
+                                    } else if hasImageData(shape) {
+                                        renderImage(shape, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil, canvasSize: size)
+                                    } else {
+                                        renderShape(shape, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
+                                    }
+                                }
+
                                 // Render with separate mask and content transforms
                                 context.drawLayer { layerContext in
                                     // Apply mask transform and create clipping region
@@ -376,7 +395,9 @@ struct LayerCanvasView: View {
                                     // Apply content transform and render content
                                     layerContext.transform = contentTransform
 
-                                    if VectorText.from(liveContentShape) != nil {
+                                    if liveContentShape.isGroupContainer {
+                                        renderKeylineClippedLeaf(liveContentShape, into: &layerContext)
+                                    } else if VectorText.from(liveContentShape) != nil {
                                         renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
                                     } else if hasImageData(liveContentShape) {
                                         renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)

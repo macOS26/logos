@@ -219,17 +219,15 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let childObject = document.snapshot.objects[childShapeId] else { return }
-                var shape = childObject.shape
-                if shape.isVisible != newValue {
-                    shape.isVisible = newValue
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObject.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
+                let currentVisibility = childObject.shape.isVisible
+                if currentVisibility != newValue {
+                    let command = VisibilityCommand(
+                        objectIDs: [childShapeId],
+                        property: .visibility,
+                        oldValues: [childShapeId: currentVisibility],
+                        newValues: [childShapeId: newValue]
                     )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    document.changeNotifier.notifyObjectChanged(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
+                    document.commandManager.execute(command)
                 }
             }
         )
@@ -245,17 +243,15 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let childObject = document.snapshot.objects[childShapeId] else { return }
-                var shape = childObject.shape
-                if shape.isLocked != newValue {
-                    shape.isLocked = newValue
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObject.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
+                let currentLock = childObject.shape.isLocked
+                if currentLock != newValue {
+                    let command = VisibilityCommand(
+                        objectIDs: [childShapeId],
+                        property: .locked,
+                        oldValues: [childShapeId: currentLock],
+                        newValues: [childShapeId: newValue]
                     )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    document.changeNotifier.notifyObjectChanged(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
+                    document.commandManager.execute(command)
                 }
             }
         )
@@ -470,7 +466,12 @@ struct ObjectRow: View {
                         return Array(memberShapes.reversed())
                     }
                 } ?? memberShapes
-                ForEach(Array(displayShapes.enumerated()), id: \.element.id) { index, childShape in
+                /* Use index-based identity so SwiftUI doesn't confuse rows when
+                   the same shape UUID appears in multiple places in the view
+                   hierarchy (e.g., nested group children resolving to objects
+                   that are also rendered elsewhere). */
+                ForEach(displayShapes.indices, id: \.self) { index in
+                    let childShape = displayShapes[index]
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
@@ -493,7 +494,24 @@ struct ObjectRow: View {
 
                         HStack(spacing: 2) {
                             Button(action: {
-                                childVisBinding.wrappedValue.toggle()
+                                /* Inline read to dodge any closure-capture staleness:
+                                   re-resolve displayShapes[index] at click time. */
+                                let clickedShape = displayShapes[index]
+                                print("🎯 EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
+                                guard let obj = document.snapshot.objects[clickedShape.id] else {
+                                    print("   ❌ no object found in snapshot")
+                                    return
+                                }
+                                let currentVisibility = obj.shape.isVisible
+                                let newValue = !currentVisibility
+                                let command = VisibilityCommand(
+                                    objectIDs: [clickedShape.id],
+                                    property: .visibility,
+                                    oldValues: [clickedShape.id: currentVisibility],
+                                    newValues: [clickedShape.id: newValue]
+                                )
+                                document.commandManager.execute(command)
+                                print("   ✅ toggled \(clickedShape.name) to isVisible=\(newValue)")
                             }) {
                                 Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
                                     .visibilityButton(isVisible: childVisBinding.wrappedValue)
@@ -599,6 +617,7 @@ struct ObjectRow: View {
                             NestedGroupChildrenView(
                                 memberIDs: nestedMemberIDs,
                                 layerIndex: layerIndex,
+                                parentObjectId: childShape.id,
                                 document: document
                             )
                         }
@@ -613,6 +632,9 @@ struct ObjectRow: View {
 struct NestedGroupChildrenView: View {
     let memberIDs: [UUID]
     let layerIndex: Int
+    /// UUID of the parent container — used to look up its objectType so the
+    /// first row can show the scissors icon when the parent is a clip group.
+    let parentObjectId: UUID
     @ObservedObject var document: VectorDocument
 
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
@@ -625,17 +647,15 @@ struct NestedGroupChildrenView: View {
             },
             set: { newValue in
                 guard let childObject = document.snapshot.objects[childShapeId] else { return }
-                var shape = childObject.shape
-                if shape.isVisible != newValue {
-                    shape.isVisible = newValue
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObject.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
+                let currentVisibility = childObject.shape.isVisible
+                if currentVisibility != newValue {
+                    let command = VisibilityCommand(
+                        objectIDs: [childShapeId],
+                        property: .visibility,
+                        oldValues: [childShapeId: currentVisibility],
+                        newValues: [childShapeId: newValue]
                     )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    document.changeNotifier.notifyObjectChanged(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
+                    document.commandManager.execute(command)
                 }
             }
         )
@@ -651,17 +671,15 @@ struct NestedGroupChildrenView: View {
             },
             set: { newValue in
                 guard let childObject = document.snapshot.objects[childShapeId] else { return }
-                var shape = childObject.shape
-                if shape.isLocked != newValue {
-                    shape.isLocked = newValue
-                    let updatedObject = VectorObject(
-                        id: childShapeId,
-                        layerIndex: childObject.layerIndex,
-                        objectType: VectorObject.determineType(for: shape)
+                let currentLock = childObject.shape.isLocked
+                if currentLock != newValue {
+                    let command = VisibilityCommand(
+                        objectIDs: [childShapeId],
+                        property: .locked,
+                        oldValues: [childShapeId: currentLock],
+                        newValues: [childShapeId: newValue]
                     )
-                    document.snapshot.objects[childShapeId] = updatedObject
-                    document.changeNotifier.notifyObjectChanged(childShapeId)
-                    document.triggerLayerUpdate(for: layerIndex)
+                    document.commandManager.execute(command)
                 }
             }
         )
@@ -669,9 +687,19 @@ struct NestedGroupChildrenView: View {
 
     var body: some View {
         let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-        let displayShapes = Array(memberShapes.reversed())
+        /* Clip groups render mask-first (memberShapes[0] is the mask and must
+           stay in position 0 so the scissors icon lands on the right row).
+           Regular groups reverse so top-of-stack appears at the top of the list. */
+        let parentIsClip: Bool = {
+            if let parent = document.snapshot.objects[parentObjectId],
+               case .clipGroup = parent.objectType { return true }
+            return false
+        }()
+        let displayShapes = parentIsClip ? memberShapes : Array(memberShapes.reversed())
 
-        ForEach(Array(displayShapes.enumerated()), id: \.element.id) { index, childShape in
+        /* Use index-based identity — see the same pattern in ObjectRow above. */
+        ForEach(displayShapes.indices, id: \.self) { index in
+            let childShape = displayShapes[index]
             let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
             let childVisBinding = childVisibilityBinding(for: childShape.id)
             let childLockBinding = childLockBinding(for: childShape.id)
@@ -693,7 +721,22 @@ struct NestedGroupChildrenView: View {
 
                 HStack(spacing: 2) {
                     Button(action: {
-                        childVisBinding.wrappedValue.toggle()
+                        let clickedShape = displayShapes[index]
+                        print("🎯 NESTED EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
+                        guard let obj = document.snapshot.objects[clickedShape.id] else {
+                            print("   ❌ no object found in snapshot")
+                            return
+                        }
+                        let currentVisibility = obj.shape.isVisible
+                        let newValue = !currentVisibility
+                        let command = VisibilityCommand(
+                            objectIDs: [clickedShape.id],
+                            property: .visibility,
+                            oldValues: [clickedShape.id: currentVisibility],
+                            newValues: [clickedShape.id: newValue]
+                        )
+                        document.commandManager.execute(command)
+                        print("   ✅ toggled \(clickedShape.name) to isVisible=\(newValue)")
                     }) {
                         Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
                             .visibilityButton(isVisible: childVisBinding.wrappedValue)
@@ -728,9 +771,10 @@ struct NestedGroupChildrenView: View {
                             Color.clear.frame(width: 12, height: 12)
                         }
 
-                        Image(systemName: childShape.isGroupContainer ? "folder" : "square")
+                        let isClipMask = parentIsClip && index == 0
+                        Image(systemName: childShape.isGroupContainer ? "folder" : (isClipMask ? "scissors" : "square"))
                             .font(.system(size: 10))
-                            .foregroundColor(childShape.isGroupContainer ? .purple : .blue)
+                            .foregroundColor(childShape.isGroupContainer ? .purple : (isClipMask ? .orange : .blue))
                             .frame(width: 12)
 
                         Circle()
@@ -793,6 +837,7 @@ struct NestedGroupChildrenView: View {
                     NestedGroupChildrenView(
                         memberIDs: nestedMemberIDs,
                         layerIndex: layerIndex,
+                        parentObjectId: childShape.id,
                         document: document
                     )
                 }

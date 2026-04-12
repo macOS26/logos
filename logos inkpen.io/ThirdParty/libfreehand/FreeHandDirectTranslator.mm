@@ -536,14 +536,17 @@ struct WalkContext
           statNewBlends(0), statSymbolInstances(0), statContentIdPaths(0) {}
 };
 
-/* Forward decls for the mutually-recursive walkers. */
-void walkSomething(unsigned id, WalkContext &ctx);
+/* Forward decls for the mutually-recursive walkers. Each walker returns the
+   index of the TOP-LEVEL emitted shape (a container or leaf) it produced, or
+   SIZE_MAX if nothing was emitted. Callers collecting children should push
+   only that return value, not every shape emitted into ctx.result.shapes. */
+size_t walkSomething(unsigned id, WalkContext &ctx);
 size_t walkPath(const libfreehand::FHPath *path, WalkContext &ctx);
 size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asClipGroup);
 size_t walkCompositePath(const libfreehand::FHCompositePath *cp, WalkContext &ctx);
 size_t walkNewBlend(const libfreehand::FHNewBlend *nb, WalkContext &ctx);
 size_t walkSymbolInstance(const libfreehand::FHSymbolInstance *sym, WalkContext &ctx);
-void walkListElements(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx);
+void walkListElementsTopLevel(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx);
 void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &out, WalkContext &ctx);
 
 size_t emitPathShape(const libfreehand::FHPath *path, WalkContext &ctx, bool forceCompound)
@@ -744,34 +747,15 @@ size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asCli
     }
     else
     {
-        /* Regular group: walk children in document order and keep them nested,
-           including clip-group children, so the resulting z-order matches the
-           original FreeHand file. Leaves owned by a clip-group child must NOT
-           also be added as peers of this regular group — that would duplicate
-           them, render the content unclipped underneath the clipped copy, and
-           confuse the Layers panel's UUID lookup. */
+        /* Regular group: walk each child in document order and take ONLY its
+           top-level emitted index. Nested leaves belong to their immediate
+           container; this group references only the top-level containers or
+           leaves directly, never duplicating the nested content. */
         for (unsigned elemId : listIt->second.m_elements)
         {
-            size_t before = ctx.result.shapes.size();
-            walkSomething(elemId, ctx);
-            size_t after = ctx.result.shapes.size();
-
-            /* Mark everything a nested clip group owns so we skip those indices. */
-            std::set<size_t> ownedByClipGroup;
-            for (size_t k = before; k < after; ++k)
-            {
-                if (ctx.result.shapes[k].kind == FH_SHAPE_KIND_CLIP_GROUP)
-                {
-                    for (size_t m : ctx.result.shapes[k].memberIndices)
-                        ownedByClipGroup.insert(m);
-                }
-            }
-
-            for (size_t k = before; k < after; ++k)
-            {
-                if (ownedByClipGroup.count(k)) continue;
-                childIndices.push_back(k);
-            }
+            size_t topIdx = walkSomething(elemId, ctx);
+            if (topIdx != SIZE_MAX)
+                childIndices.push_back(topIdx);
         }
     }
 
@@ -790,74 +774,81 @@ size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asCli
     return ctx.result.shapes.size() - 1;
 }
 
-void walkSomething(unsigned id, WalkContext &ctx)
+size_t walkSomething(unsigned id, WalkContext &ctx)
 {
-    if (!id) return;
-    if (ctx.visited.find(id) != ctx.visited.end()) return;
+    if (!id) return SIZE_MAX;
+    if (ctx.visited.find(id) != ctx.visited.end()) return SIZE_MAX;
     ctx.visited.insert(id);
 
+    size_t topIdx = SIZE_MAX;
     if (ctx.view.paths)
     {
         auto it = ctx.view.paths->find(id);
-        if (it != ctx.view.paths->end()) { walkPath(&it->second, ctx); goto done; }
+        if (it != ctx.view.paths->end()) { topIdx = walkPath(&it->second, ctx); goto done; }
     }
     if (ctx.view.groups)
     {
         auto it = ctx.view.groups->find(id);
-        if (it != ctx.view.groups->end()) { walkGroup(&it->second, ctx, false); goto done; }
+        if (it != ctx.view.groups->end()) { topIdx = walkGroup(&it->second, ctx, false); goto done; }
     }
     if (ctx.view.clipGroups)
     {
         auto it = ctx.view.clipGroups->find(id);
-        if (it != ctx.view.clipGroups->end()) { walkGroup(&it->second, ctx, true); goto done; }
+        if (it != ctx.view.clipGroups->end()) { topIdx = walkGroup(&it->second, ctx, true); goto done; }
     }
     if (ctx.view.compositePaths)
     {
         auto it = ctx.view.compositePaths->find(id);
-        if (it != ctx.view.compositePaths->end()) { walkCompositePath(&it->second, ctx); goto done; }
+        if (it != ctx.view.compositePaths->end()) { topIdx = walkCompositePath(&it->second, ctx); goto done; }
     }
     if (ctx.view.newBlends)
     {
         auto it = ctx.view.newBlends->find(id);
-        if (it != ctx.view.newBlends->end()) { walkNewBlend(&it->second, ctx); goto done; }
+        if (it != ctx.view.newBlends->end()) { topIdx = walkNewBlend(&it->second, ctx); goto done; }
     }
     if (ctx.view.symbolInstances)
     {
         auto it = ctx.view.symbolInstances->find(id);
-        if (it != ctx.view.symbolInstances->end()) { walkSymbolInstance(&it->second, ctx); goto done; }
+        if (it != ctx.view.symbolInstances->end()) { topIdx = walkSymbolInstance(&it->second, ctx); goto done; }
     }
     /* Text / images / pathText / displayText come in Phase 3. */
 done:
     ctx.visited.erase(id);
+    return topIdx;
 }
 
-/* Helper: walk every element in a given FHList, collecting child indices. */
-void walkListElements(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx)
+/* Walks each element of a list and pushes only the TOP-LEVEL emitted index
+   per element (the walker's return value) — never the intermediate children
+   that the walker emitted into ctx.result.shapes. Prevents the same leaves
+   being referenced by both their immediate parent container AND an enclosing
+   container (which caused the duplicate-UUID ForEach bug). */
+void walkListElementsTopLevel(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx)
 {
     if (!listId || !ctx.view.lists) return;
     auto listIt = ctx.view.lists->find(listId);
     if (listIt == ctx.view.lists->end()) return;
     for (unsigned elemId : listIt->second.m_elements)
     {
-        size_t before = ctx.result.shapes.size();
-        walkSomething(elemId, ctx);
-        for (size_t k = before; k < ctx.result.shapes.size(); ++k)
-            childIndices.push_back(k);
+        size_t topIdx = walkSomething(elemId, ctx);
+        if (topIdx != SIZE_MAX)
+            childIndices.push_back(topIdx);
     }
 }
 
 /* FHNewBlend: libfreehand doesn't interpolate — it just emits the three source
    lists as a group. We replicate that: walk list1 + list2 + list3, wrap the
-   resulting shapes in a group container. */
+   resulting shapes in a group container. Uses walkListElementsTopLevel so
+   the childIndices contain ONLY top-level container/leaf indices, never
+   intermediate nested leaves that would otherwise end up double-referenced. */
 size_t walkNewBlend(const libfreehand::FHNewBlend *nb, WalkContext &ctx)
 {
     if (!nb) return SIZE_MAX;
     ctx.statNewBlends++;
 
     std::vector<size_t> childIndices;
-    walkListElements(nb->m_list1Id, childIndices, ctx);
-    walkListElements(nb->m_list2Id, childIndices, ctx);
-    walkListElements(nb->m_list3Id, childIndices, ctx);
+    walkListElementsTopLevel(nb->m_list1Id, childIndices, ctx);
+    walkListElementsTopLevel(nb->m_list2Id, childIndices, ctx);
+    walkListElementsTopLevel(nb->m_list3Id, childIndices, ctx);
 
     if (childIndices.empty()) return SIZE_MAX;
     if (childIndices.size() == 1) return childIndices.back();
@@ -883,23 +874,17 @@ size_t walkSymbolInstance(const libfreehand::FHSymbolInstance *sym, WalkContext 
 
     ctx.xformStack.push_back(sym->m_xForm);
 
-    size_t before = ctx.result.shapes.size();
-    walkSomething(classIt->second.m_groupId, ctx);
-    std::vector<size_t> childIndices;
-    for (size_t k = before; k < ctx.result.shapes.size(); ++k)
-        childIndices.push_back(k);
+    /* Walk the symbol class's top-level group and take ONLY its return value
+       as the result — never enumerate intermediate emitted leaves. */
+    size_t topIdx = walkSomething(classIt->second.m_groupId, ctx);
 
     ctx.xformStack.pop_back();
 
-    if (childIndices.empty()) return SIZE_MAX;
-    if (childIndices.size() == 1) return childIndices.back();
+    if (topIdx == SIZE_MAX) return SIZE_MAX;
 
-    FHResultShape container;
-    container.kind = FH_SHAPE_KIND_GROUP;
-    container.memberIndices = childIndices;
-    container.opacity = resolveOpacity(ctx.view, sym->m_graphicStyleId);
-    ctx.result.shapes.push_back(container);
-    return ctx.result.shapes.size() - 1;
+    /* The symbol's root group has already been emitted with the instance xform
+       applied via ctx.xformStack. Just return its top index — no extra wrapper. */
+    return topIdx;
 }
 
 void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &result)
@@ -922,8 +907,12 @@ void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &resu
 
                 auto elemListIt = view.lists->find(layerIt->second.m_elementsId);
                 if (elemListIt == view.lists->end()) continue;
+                /* Each layer element's walk emits its top-level index via the
+                   walker return, but this level doesn't need to collect them —
+                   top-level layer shapes float via the consumed-set dedupe in
+                   Swift. Just drive the walk so the shapes land in result. */
                 for (unsigned elemId : elemListIt->second.m_elements)
-                    walkSomething(elemId, ctx);
+                    (void)walkSomething(elemId, ctx);
             }
         }
     }

@@ -89,8 +89,14 @@ struct LayersPanel: View {
             guard isChildGroupExpanded else { return }
 
             let nestedMembers = document.resolveGroupMembers(childShape)
-            // Reversed to match NestedGroupChildrenView display order
-            for nestedChild in nestedMembers.reversed() {
+            /* Regular groups reverse (topmost-z at top of panel), clip groups
+               keep order so the mask at memberIDs[0] stays at position 0 to
+               match NestedGroupChildrenView's display order. */
+            let orderedNested: [VectorShape] = {
+                if childShape.isClippingGroup { return nestedMembers }
+                return Array(nestedMembers.reversed())
+            }()
+            for nestedChild in orderedNested {
                 rows.append(.childObject(layerIndex: layerIndex, parentObjectId: childShape.id, childShapeId: nestedChild.id))
                 addNestedGroupChildren(childShape: nestedChild, layerIndex: layerIndex, parentObjectId: nestedChild.id)
             }
@@ -117,8 +123,14 @@ struct LayersPanel: View {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
                                 let memberShapes = document.resolveGroupMembers(shape)
-                                // Reversed to match layer objectIDs display order
-                                for childShape in memberShapes.reversed() {
+                                /* Regular groups reverse (topmost-z at top),
+                                   clip groups keep order so the mask at index 0
+                                   matches ObjectRow's display and scissors icon. */
+                                let ordered: [VectorShape] = {
+                                    if case .clipGroup = object.objectType { return memberShapes }
+                                    return Array(memberShapes.reversed())
+                                }()
+                                for childShape in ordered {
                                     rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
                                     addNestedGroupChildren(childShape: childShape, layerIndex: layerIndex, parentObjectId: childShape.id)
                                 }
