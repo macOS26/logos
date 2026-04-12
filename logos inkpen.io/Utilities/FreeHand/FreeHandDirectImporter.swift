@@ -45,6 +45,16 @@ enum FreeHandDirectImporter {
     }
 
     static func parseToShapes(data: Data) throws -> Result {
+        // FreeHand 2 has a completely different format — route to dedicated parser
+        if data.count >= 4,
+           data[data.startIndex] == 0x46, // 'F'
+           data[data.startIndex + 1] == 0x48, // 'H'
+           data[data.startIndex + 2] == 0x44, // 'D'
+           data[data.startIndex + 3] == 0x32  // '2'
+        {
+            return try FreeHand2Parser.parseToShapes(data: data)
+        }
+
         let fhData = stripIPTCWrapper(data)
         return try fhData.withUnsafeBytes { bytes -> Result in
             guard let base = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else {

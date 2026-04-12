@@ -67,34 +67,41 @@ enum FreeHand2Parser {
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Scan for path records
+        // Scan for 0x151C path records by searching for the type marker.
+        // The encoding tables before graphic records have a different structure,
+        // so we scan for the type code and validate the size field 2 bytes before.
         var shapes: [VectorShape] = []
         var offset = headerSize
 
         while offset + 4 <= data.count {
-            // Check for terminator
+            // Check for file terminator
             if readUInt32BE(data, offset: offset) == terminator {
                 break
             }
 
-            let recordSize = Int(readUInt16BE(data, offset: offset))
+            let word = readUInt16BE(data, offset: offset)
 
-            // Sanity: record size must be at least 4 bytes (size + type)
-            guard recordSize >= 4, offset + recordSize <= data.count else {
-                break
-            }
-
-            let recordType = readUInt16BE(data, offset: offset + 2)
-
-            if recordType == pathRecordType {
-                if let shape = parsePathRecord(data: data, recordOffset: offset,
-                                               recordSize: recordSize,
-                                               pageHeight: pageHeight) {
-                    shapes.append(shape)
+            // Look for a path record type at offset+2 (size at offset)
+            if offset + 44 <= data.count {
+                let rtype = readUInt16BE(data, offset: offset + 2)
+                if rtype == pathRecordType && word >= 44 && offset + Int(word) <= data.count {
+                    let recordSize = Int(word)
+                    let pointCount = Int(readUInt16BE(data, offset: offset + 28))
+                    let expectedSize = 44 + pointCount * 16
+                    if recordSize == expectedSize {
+                        if let shape = parsePathRecord(data: data, recordOffset: offset,
+                                                       recordSize: recordSize,
+                                                       pageHeight: pageHeight) {
+                            shapes.append(shape)
+                        }
+                        offset += recordSize
+                        continue
+                    }
                 }
             }
 
-            offset += recordSize
+            // Not a recognized record — advance by 2 bytes and keep scanning
+            offset += 2
         }
 
         guard !shapes.isEmpty else {
