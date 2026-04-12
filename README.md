@@ -131,8 +131,16 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 - Search and filter SF Symbols by name
 - Insert SF Symbols as vector objects in documents
 
-## ⚡ Performance — SIMD Optimizations
+## ⚡ Performance & Memory
 
+- **Tab suspension** — background tabs drop their full view tree; only the active tab builds DrawingCanvas, RightPanel, and toolbars. Switching tabs rebuilds instantly. Cuts multi-tab memory by ~50%.
+- **Memory leak fixes** — Combine subscriptions now cancelled on tab close; document resources (images, objects, undo stack) released when tabs close. Previously leaked entire VectorDocument per closed tab.
+- **Removed .drawingGroup() overhead** — grid, rulers, and background views no longer allocate full Retina backing bitmaps (~33MB each). Saves ~130MB per open document.
+- **Shared Metal pipelines** — MetalSpatialIndex shares device, command queue, and compiled compute pipelines across all tabs instead of duplicating per document.
+- **Shared font list** — system font catalog loaded once, shared across all FontManager instances.
+- **Spatial index safety** — guards against inf/NaN bounds from degenerate shapes; caps grid at 10K cells to prevent multi-GB Metal buffer allocations.
+- **Shape detection fix** — SVG rectangles (move + 3 lines + close) no longer misclassified as triangles.
+- **Image import undo** — addImportedShape wraps all objects in AddObjectCommand for proper Cmd+Z support.
 - SIMD optimize pan and coordinate transforms
 - SIMD optimize Canvas views, GridView, TextCanvas, GPUMathAccelerator
 - SIMD optimize CornerRadiusEditTool, PenPlusMinusTool, UnifiedObjectView gradient
