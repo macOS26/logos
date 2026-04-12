@@ -315,11 +315,15 @@ class MetalImageTileRenderer {
         let indices: [UInt16] = [0, 1, 2, 2, 1, 3]
 
         encoder.setVertexBytes(vertices, length: vertices.count * MemoryLayout<Float>.size, index: 0)
+        guard let indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: []) else {
+            print("❌ Failed to create index buffer")
+            return
+        }
         encoder.drawIndexedPrimitives(
             type: .triangle,
             indexCount: indices.count,
             indexType: .uint16,
-            indexBuffer: device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: [])!,
+            indexBuffer: indexBuffer,
             indexBufferOffset: 0
         )
     }
@@ -344,7 +348,11 @@ class MetalImageTileRenderer {
         }
 
         let region = MTLRegionMake2D(0, 0, width, height)
-        texture.getBytes(context.data!, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
+        guard let data = context.data else {
+            print("❌ MetalImageTileRenderer: context.data is nil")
+            return nil
+        }
+        texture.getBytes(data, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
 
         print("📊 Reading texture format: \(texture.pixelFormat.rawValue) - should be 10 (RGBA)")
 

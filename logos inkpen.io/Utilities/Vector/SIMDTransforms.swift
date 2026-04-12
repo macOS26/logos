@@ -79,10 +79,10 @@ extension VectorShape {
 
 extension Array where Element == VectorPoint {
     func simdBounds() -> CGRect? {
-        guard !isEmpty else { return nil }
+        guard let first = first else { return nil }
 
-        var minPoint = first!.simdPoint
-        var maxPoint = first!.simdPoint
+        var minPoint = first.simdPoint
+        var maxPoint = first.simdPoint
 
         for point in self.dropFirst() {
             minPoint = simd_min(minPoint, point.simdPoint)

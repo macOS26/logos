@@ -243,10 +243,10 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         switch constraint.continuityType {
         case .g1:
             if let outgoing = currentPoint.outgoingHandle,
-               nextPoint.incomingHandle != nil {
+               let incoming = nextPoint.incomingHandle {
 
                 let direction = currentPoint.point.angle(to: outgoing)
-                let incomingLength = nextPoint.point.distance(to: nextPoint.incomingHandle!)
+                let incomingLength = nextPoint.point.distance(to: incoming)
 
                 points[index + 1].incomingHandle = VectorPoint(
                     nextPoint.point.x - cos(direction) * incomingLength,

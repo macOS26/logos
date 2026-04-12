@@ -41,9 +41,10 @@ extension DrawingCanvas {
             ? FillStyle(color: fillColor, opacity: getCurrentFillOpacity())
             : nil
 
+        guard let freehandPath = freehandPath else { return }
         activeFreehandShape = VectorShape(
             name: "Freehand Path",
-            path: freehandPath!,
+            path: freehandPath,
             geometricType: .brushStroke,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle

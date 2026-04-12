@@ -798,7 +798,7 @@ struct LayerCanvasView: View {
                                 miterLimit: strokeStyle.miterLimit,
                                 opacity: effectiveStrokeOpacity
                             )
-                            renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
+                            renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if let gradient = strokeStyle.gradient {
                             // Use gradient from snapshot
                             let effectiveStrokeStyle = StrokeStyle(
@@ -813,9 +813,12 @@ struct LayerCanvasView: View {
                             renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
                             // Check for colorDeltaColor for live preview during drag
-                            let effectiveStrokeColor = (colorDeltaColor != nil && isSelected && activeColorTarget == .stroke)
-                                ? colorDeltaColor!
-                                : strokeStyle.color
+                            let effectiveStrokeColor: VectorColor
+                            if let delta = colorDeltaColor, isSelected, activeColorTarget == .stroke {
+                                effectiveStrokeColor = delta
+                            } else {
+                                effectiveStrokeColor = strokeStyle.color
+                            }
                             layerContext.stroke(
                                 Path(cgPath),
                                 with: .color(effectiveStrokeColor.color.opacity(effectiveStrokeOpacity)),
@@ -841,24 +844,29 @@ struct LayerCanvasView: View {
             // Render fill (O(1) for solid, O(n) for gradient where n = stops)
             if viewMode == .color, let fillStyle = shape.fillStyle {
                 // Use delta opacity if available and shape is selected
-                let effectiveFillOpacity = (fillDeltaOpacity != nil && selectedObjectIDs.contains(shape.id))
-                    ? fillDeltaOpacity!
-                    : fillStyle.opacity
+                let effectiveFillOpacity: Double
+                if let delta = fillDeltaOpacity, selectedObjectIDs.contains(shape.id) {
+                    effectiveFillOpacity = delta
+                } else {
+                    effectiveFillOpacity = fillStyle.opacity
+                }
 
                 // Check for activeGradientDelta FIRST (for live preview during drag)
-                if activeGradientDelta != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill {
-                    // Create a fillStyle with activeGradientDelta and opacity
-                    let effectiveFillStyle = FillStyle(gradient: activeGradientDelta!, opacity: effectiveFillOpacity)
-                    renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
+                if let gradientDelta = activeGradientDelta, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
+                    let effectiveFillStyle = FillStyle(gradient: gradientDelta, opacity: effectiveFillOpacity)
+                    renderGradientToContext(gradient: gradientDelta, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if let gradient = fillStyle.gradient {
                     // Use gradient from snapshot
                     let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if fillStyle.color != .clear {
                     // Check for colorDeltaColor for live preview during drag
-                    let effectiveFillColor = (colorDeltaColor != nil && selectedObjectIDs.contains(shape.id) && activeColorTarget == .fill)
-                        ? colorDeltaColor!
-                        : fillStyle.color
+                    let effectiveFillColor: VectorColor
+                    if let delta = colorDeltaColor, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
+                        effectiveFillColor = delta
+                    } else {
+                        effectiveFillColor = fillStyle.color
+                    }
                     let useEvenOdd = shape.path.fillRule.cgPathFillRule == .evenOdd
                     context.fill(Path(cgPath), with: .color(effectiveFillColor.color.opacity(effectiveFillOpacity)), style: SwiftUI.FillStyle(eoFill: useEvenOdd))
                 }
@@ -871,20 +879,26 @@ struct LayerCanvasView: View {
             } else if let strokeStyle = shape.strokeStyle {
                 // Use delta values if available and shape is selected
                 let isSelected = selectedObjectIDs.contains(shape.id)
-                let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
-                    ? strokeDeltaOpacity!
-                    : strokeStyle.opacity
-                let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
-                    ? strokeDeltaWidth!
-                    : strokeStyle.width
+                let effectiveStrokeOpacity: Double
+                if let delta = strokeDeltaOpacity, isSelected {
+                    effectiveStrokeOpacity = delta
+                } else {
+                    effectiveStrokeOpacity = strokeStyle.opacity
+                }
+                let effectiveStrokeWidth: Double
+                if let delta = strokeDeltaWidth, isSelected {
+                    effectiveStrokeWidth = delta
+                } else {
+                    effectiveStrokeWidth = strokeStyle.width
+                }
 
                 if strokeStyle.placement == .center {
                     // Check for activeGradientDelta FIRST (for live preview during drag)
-                    if activeGradientDelta != nil && isSelected && activeColorTarget == .stroke {
+                    if let gradientDelta = activeGradientDelta, isSelected, activeColorTarget == .stroke {
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                         effectiveStrokeStyle.width = effectiveStrokeWidth
-                        renderGradientToContext(gradient: activeGradientDelta!, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
+                        renderGradientToContext(gradient: gradientDelta, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if let gradient = strokeStyle.gradient {
                         // Create a strokeStyle with effective values for gradients
                         var effectiveStrokeStyle = strokeStyle
@@ -893,9 +907,12 @@ struct LayerCanvasView: View {
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if strokeStyle.color != .clear {
                         // Check for colorDeltaColor for live preview during drag
-                        let effectiveStrokeColor = (colorDeltaColor != nil && isSelected && activeColorTarget == .stroke)
-                            ? colorDeltaColor!
-                            : strokeStyle.color
+                        let effectiveStrokeColor: VectorColor
+                        if let delta = colorDeltaColor, isSelected, activeColorTarget == .stroke {
+                            effectiveStrokeColor = delta
+                        } else {
+                            effectiveStrokeColor = strokeStyle.color
+                        }
                         context.stroke(
                             Path(cgPath),
                             with: .color(effectiveStrokeColor.color.opacity(effectiveStrokeOpacity)),
@@ -1132,9 +1149,12 @@ struct LayerCanvasView: View {
             }
 
             // Apply live fill opacity delta if dragging and selected
-            let effectiveFillOpacity = (fillDeltaOpacity != nil && isSelected)
-                ? fillDeltaOpacity!
-                : vectorText.typography.fillOpacity
+            let effectiveFillOpacity: Double
+            if let delta = fillDeltaOpacity, isSelected {
+                effectiveFillOpacity = delta
+            } else {
+                effectiveFillOpacity = vectorText.typography.fillOpacity
+            }
 
             cgContext.setAlpha(CGFloat(effectiveFillOpacity))
 
@@ -1307,8 +1327,9 @@ struct LayerCanvasView: View {
                         CTRunGetPositions(run, CFRangeMake(0, glyphCount), positions)
 
                         let attributes = CTRunGetAttributes(run) as NSDictionary
-                        if let fontRef = attributes[kCTFontAttributeName] {
-                            let font = fontRef as! CTFont
+                        if let rawFont = attributes[kCTFontAttributeName],
+                           CFGetTypeID(rawFont as CFTypeRef) == CTFontGetTypeID() {
+                            let font = rawFont as! CTFont
                             for i in 0..<glyphCount {
                                 if let glyphPath = CTFontCreatePathForGlyph(font, glyphs[i], nil) {
                                     let transform = CGAffineTransform(translationX: positions[i].x, y: positions[i].y)
@@ -1322,12 +1343,18 @@ struct LayerCanvasView: View {
                     }
 
                     // Apply deltas if selected
-                    let effectiveStrokeWidth = (strokeDeltaWidth != nil && isSelected)
-                        ? strokeDeltaWidth!
-                        : vectorText.typography.strokeWidth
-                    let effectiveStrokeOpacity = (strokeDeltaOpacity != nil && isSelected)
-                        ? strokeDeltaOpacity!
-                        : vectorText.typography.strokeOpacity
+                    let effectiveStrokeWidth: Double
+                    if let delta = strokeDeltaWidth, isSelected {
+                        effectiveStrokeWidth = delta
+                    } else {
+                        effectiveStrokeWidth = vectorText.typography.strokeWidth
+                    }
+                    let effectiveStrokeOpacity: Double
+                    if let delta = strokeDeltaOpacity, isSelected {
+                        effectiveStrokeOpacity = delta
+                    } else {
+                        effectiveStrokeOpacity = vectorText.typography.strokeOpacity
+                    }
 
                     // Draw the path with fill and stroke
                     cgContext.saveGState()

@@ -40,9 +40,11 @@ extension DrawingCanvas {
             opacity: getCurrentFillOpacity()
         )
 
+        guard let brushPath = brushPath else { return }
+
         activeBrushShape = VectorShape(
             name: "Brush Stroke",
-            path: brushPath!,
+            path: brushPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )

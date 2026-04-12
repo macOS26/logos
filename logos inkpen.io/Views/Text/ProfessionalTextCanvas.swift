@@ -45,11 +45,14 @@ struct ProfessionalTextCanvas: View {
         let fontSize = fontSizeDelta ?? textObject.typography.fontSize
 
         // Explicit lineHeightDelta overrides proportional (ternary avoids control flow in body)
-        let lineHeight = lineHeightDelta != nil
-            ? CGFloat(lineHeightDelta!)
-            : (fontSizeDelta != nil
-                ? (CGFloat(fontSizeDelta!) * (textObject.typography.lineHeight / textObject.typography.fontSize))
-                : textObject.typography.lineHeight)
+        let lineHeight: CGFloat
+        if let delta = lineHeightDelta {
+            lineHeight = CGFloat(delta)
+        } else if let delta = fontSizeDelta {
+            lineHeight = CGFloat(delta) * (textObject.typography.lineHeight / textObject.typography.fontSize)
+        } else {
+            lineHeight = textObject.typography.lineHeight
+        }
 
         let letterSpacing = letterSpacingDelta ?? textObject.typography.letterSpacing
         let lineSpacing = lineSpacingDelta ?? textObject.typography.lineSpacing
@@ -188,7 +191,9 @@ struct ProfessionalTextCanvas: View {
 
                 // Force redraw with kern attribute
                 textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
-                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+                if let textContainer = textView.textContainer {
+                    textView.layoutManager?.ensureLayout(for: textContainer)
+                }
             }
 
             context.coordinator.textView = textView
