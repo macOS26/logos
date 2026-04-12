@@ -268,9 +268,9 @@ extension PDFCommandParser {
         }
 
         let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
-        let pdfRect = unitRect.applying(currentTransform)
+        let pdfRect = unitRect.applying(currentTransform).standardized
         let flippedY = pageSize.height - pdfRect.maxY
-        let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: abs(pdfRect.width), height: abs(pdfRect.height))
+        let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: pdfRect.width, height: pdfRect.height)
 
         if hasUpcomingTransparentImage {
             transparentImageBounds = finalRect
