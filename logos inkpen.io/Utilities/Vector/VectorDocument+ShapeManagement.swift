@@ -78,30 +78,7 @@ extension VectorDocument {
     }
 
     func removeSelectedShapes() {
-        guard let layerIndex = selectedLayerIndex else { return }
-
-        if !viewState.selectedObjectIDs.isEmpty {
-            let command = DeleteObjectCommand(objectIDs: Array(viewState.selectedObjectIDs), document: self)
-            executeCommand(command)
-        }
-
-        let shapesToRemove = getShapesForLayer(layerIndex).filter { shape in
-            if viewState.selectedObjectIDs.contains(shape.id) {
-                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
-                    Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
-                    return false
-                }
-                return true
-            }
-            return false
-        }
-
-        for shape in shapesToRemove {
-            removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
-        }
-
-        viewState.selectedObjectIDs.removeAll()
-
+        removeSelectedObjects()
     }
 
     func removeSelectedObjects() {

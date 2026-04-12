@@ -50,16 +50,22 @@ extension VectorDocument {
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
         var removedObjects: [UUID: VectorObject] = [:]
+        var removedPositions: [UUID: Int] = [:]
 
         for objectID in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[objectID],
                case .text = obj.objectType {
                 removedObjects[objectID] = obj
+                let layerIdx = obj.layerIndex
+                if layerIdx >= 0 && layerIdx < snapshot.layers.count,
+                   let pos = snapshot.layers[layerIdx].objectIDs.firstIndex(of: objectID) {
+                    removedPositions[objectID] = pos
+                }
             }
         }
 
         let command = TextManagementCommand(
-            operation: .removeText(textIDs: Array(viewState.selectedObjectIDs), removedObjects: removedObjects),
+            operation: .removeText(textIDs: Array(viewState.selectedObjectIDs), removedObjects: removedObjects, removedPositions: removedPositions),
             oldSelection: oldSelection,
             newSelection: []
         )

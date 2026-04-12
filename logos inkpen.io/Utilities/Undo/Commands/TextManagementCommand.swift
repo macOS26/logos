@@ -4,7 +4,7 @@ import Combine
 class TextManagementCommand: BaseCommand {
     enum Operation {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
-        case removeText(textIDs: [UUID], removedObjects: [UUID: VectorObject])
+        case removeText(textIDs: [UUID], removedObjects: [UUID: VectorObject], removedPositions: [UUID: Int])
         case duplicateText(originalIDs: [UUID], duplicatedObjects: [UUID: VectorObject])
         case convertToOutlines(removedTextIDs: [UUID], removedObjects: [UUID: VectorObject], removedPositions: [UUID: Int], addedShapeIDs: [UUID], addedObjects: [UUID: VectorObject])
     }
@@ -29,7 +29,7 @@ class TextManagementCommand: BaseCommand {
             }
             document.viewState.selectedObjectIDs = [textID]
 
-        case .removeText(let textIDs, _):
+        case .removeText(let textIDs, _, _):
             for textID in textIDs {
                 if let obj = document.snapshot.objects[textID] {
                     document.snapshot.objects.removeValue(forKey: textID)
@@ -75,11 +75,20 @@ class TextManagementCommand: BaseCommand {
             }
             document.viewState.selectedObjectIDs = oldSelection
 
-        case .removeText(_, let removedObjects):
-            for (uuid, obj) in removedObjects {
+        case .removeText(_, let removedObjects, let removedPositions):
+            // Restore in sorted position order so insertions don't shift indices
+            let sorted = removedObjects.sorted { a, b in
+                (removedPositions[a.key] ?? Int.max) < (removedPositions[b.key] ?? Int.max)
+            }
+            for (uuid, obj) in sorted {
                 document.snapshot.objects[uuid] = obj
                 if obj.layerIndex < document.snapshot.layers.count {
-                    document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
+                    if let originalPosition = removedPositions[uuid] {
+                        let clampedPos = min(originalPosition, document.snapshot.layers[obj.layerIndex].objectIDs.count)
+                        document.snapshot.layers[obj.layerIndex].objectIDs.insert(uuid, at: clampedPos)
+                    } else {
+                        document.snapshot.layers[obj.layerIndex].objectIDs.append(uuid)
+                    }
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection

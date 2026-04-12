@@ -594,7 +594,12 @@ struct LayerCanvasView: View {
                                 for contentShape in contentShapes {
                                     guard contentShape.isVisible else { continue }
                                     let isContentSelected = selectedObjectIDs.contains(contentShape.id)
-                                    let contentScale = (isContentSelected && contentShape.typography == nil) ? liveScaleTransform : .identity
+                                    let contentScale: CGAffineTransform
+                                    if isContentSelected, case .none = contentShape.typography {
+                                        contentScale = liveScaleTransform
+                                    } else {
+                                        contentScale = .identity
+                                    }
                                     let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                     context.drawLayer { layerContext in
                                         layerContext.transform = savedTransform
