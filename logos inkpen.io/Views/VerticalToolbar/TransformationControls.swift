@@ -114,216 +114,233 @@ struct TransformationControls: View {
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
 
-            HStack(spacing: 1) {
-                Text("X:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .fixedSize()
-                TextField("", text: $xValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 55)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        applyTransformation()
-                    }
-                Text(unitSuffix)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 20, alignment: .leading)
-            }
-
-            HStack(spacing: 1) {
-                Text("Y:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .fixedSize()
-                TextField("", text: $yValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 55)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        applyTransformation()
-                    }
-                Text(unitSuffix)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 20, alignment: .leading)
-            }
-
-            HStack(spacing: 1) {
-                Text("W:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .fixedSize()
-                TextField("", text: $widthValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 55)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        if keepProportions {
-                            updateHeightProportionally()
+            // Position & Size group
+            HStack(spacing: 6) {
+                HStack(spacing: 1) {
+                    Text("X:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .fixedSize()
+                    TextField("", text: $xValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 55)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            applyTransformation()
                         }
-                        applyTransformation()
-                    }
-                    .onChange(of: widthValue) { _, _ in
-                        if keepProportions && !widthValue.isEmpty {
-                            updateHeightProportionally()
-                        }
-                    }
-                Text(unitSuffix)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 20, alignment: .leading)
-            }
+                    Text(unitSuffix)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 20, alignment: .leading)
+                }
 
-            HStack(spacing: 1) {
-                Text("H:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .fixedSize()
-                TextField("", text: $heightValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 55)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        if keepProportions {
-                            updateWidthProportionally()
+                HStack(spacing: 1) {
+                    Text("Y:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .fixedSize()
+                    TextField("", text: $yValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 55)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            applyTransformation()
                         }
-                        applyTransformation()
-                    }
-                    .onChange(of: heightValue) { _, _ in
-                        if keepProportions && !heightValue.isEmpty {
-                            updateWidthProportionally()
-                        }
-                    }
-                Text(unitSuffix)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 20, alignment: .leading)
-            }
+                    Text(unitSuffix)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 20, alignment: .leading)
+                }
 
-            Button(action: {
-                keepProportions.toggle()
-            }) {
-                Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 12, height: 12)
-                    .foregroundColor(keepProportions ? .orange : Color(PlatformColor.systemBlue))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
+                HStack(spacing: 1) {
+                    Text("W:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .fixedSize()
+                    TextField("", text: $widthValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 55)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            if keepProportions {
+                                updateHeightProportionally()
+                            }
+                            applyTransformation()
+                        }
+                        .onChange(of: widthValue) { _, _ in
+                            if keepProportions && !widthValue.isEmpty {
+                                updateHeightProportionally()
+                            }
+                        }
+                    Text(unitSuffix)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 20, alignment: .leading)
+                }
+
+                HStack(spacing: 1) {
+                    Text("H:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .fixedSize()
+                    TextField("", text: $heightValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 55)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            if keepProportions {
+                                updateWidthProportionally()
+                            }
+                            applyTransformation()
+                        }
+                        .onChange(of: heightValue) { _, _ in
+                            if keepProportions && !heightValue.isEmpty {
+                                updateWidthProportionally()
+                            }
+                        }
+                    Text(unitSuffix)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 20, alignment: .leading)
+                }
+
+                Button(action: {
+                    keepProportions.toggle()
+                }) {
+                    Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(keepProportions ? .orange : Color(PlatformColor.systemBlue))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.platformControlBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(keepProportions ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .shadow(color: keepProportions ?
+                    Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3) :
+                    Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3),
+                    radius: 2)
+                .disabled(!hasSelection)
+                .opacity(hasSelection ? 1.0 : 0.3)
+                .help(keepProportions ? "⚠️ Proportions LOCKED - Width/Height ratio maintained" : "✓ Proportions UNLOCKED - Free resize")
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.platformControlBackground)
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(0.04))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .strokeBorder(keepProportions ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
                     )
             )
-            .shadow(color: keepProportions ?
-                Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3) :
-                Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3),
-                radius: 2)
-            .disabled(!hasSelection)
-            .opacity(hasSelection ? 1.0 : 0.3)
-            .help(keepProportions ? "⚠️ Proportions LOCKED - Width/Height ratio maintained" : "✓ Proportions UNLOCKED - Free resize")
 
-            Divider()
-                .frame(height: 24)
-
-            // Scale X
-            HStack(spacing: 2) {
-                Text("SX:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                TextField("", text: $scaleXValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 40)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        applyScale()
-                    }
-                    .onChange(of: scaleXValue) { _, newValue in
-                        if linkScale, let scale = Double(newValue) {
-                            scaleYValue = String(format: "%.1f", scale)
+            // Scale group
+            HStack(spacing: 6) {
+                HStack(spacing: 2) {
+                    Text("SX:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                    TextField("", text: $scaleXValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 40)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            applyScale()
                         }
-                    }
-                Text("%")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 12, alignment: .leading)
-            }
-
-            // Scale Y
-            HStack(spacing: 2) {
-                Text("SY:")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                TextField("", text: $scaleYValue)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 40)
-                    .font(.system(size: 11))
-                    .multilineTextAlignment(.trailing)
-                    .disabled(!hasSelection)
-                    .onSubmit {
-                        applyScale()
-                    }
-                    .onChange(of: scaleYValue) { _, newValue in
-                        if linkScale, let scale = Double(newValue) {
-                            scaleXValue = String(format: "%.1f", scale)
+                        .onChange(of: scaleXValue) { _, newValue in
+                            if linkScale, let scale = Double(newValue) {
+                                scaleYValue = String(format: "%.1f", scale)
+                            }
                         }
-                    }
-                Text("%")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .frame(width: 12, alignment: .leading)
-            }
+                    Text("%")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 12, alignment: .leading)
+                }
 
-            // Link Scale button
-            Button(action: {
-                linkScale.toggle()
-            }) {
-                Image(systemName: linkScale ? "link" : "link.badge.plus")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 12, height: 12)
-                    .foregroundColor(linkScale ? .orange : Color(PlatformColor.systemBlue))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
+                HStack(spacing: 2) {
+                    Text("SY:")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                    TextField("", text: $scaleYValue)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .frame(width: 40)
+                        .font(.system(size: 11))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(!hasSelection)
+                        .onSubmit {
+                            applyScale()
+                        }
+                        .onChange(of: scaleYValue) { _, newValue in
+                            if linkScale, let scale = Double(newValue) {
+                                scaleXValue = String(format: "%.1f", scale)
+                            }
+                        }
+                    Text("%")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .frame(width: 12, alignment: .leading)
+                }
+
+                Button(action: {
+                    linkScale.toggle()
+                }) {
+                    Image(systemName: linkScale ? "link" : "link.badge.plus")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(linkScale ? .orange : Color(PlatformColor.systemBlue))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.platformControlBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(linkScale ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .shadow(color: linkScale ?
+                    Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3) :
+                    Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3),
+                    radius: 2)
+                .disabled(!hasSelection)
+                .opacity(hasSelection ? 1.0 : 0.3)
+                .help(linkScale ? "⚠️ Scale LINKED - X and Y scale together" : "✓ Scale UNLINKED - Independent X/Y scaling")
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.platformControlBackground)
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(0.04))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .strokeBorder(linkScale ? Color.orange.opacity(0.4) : Color.accentColor.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
                     )
             )
-            .shadow(color: linkScale ?
-                Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3) :
-                Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3),
-                radius: 2)
-            .disabled(!hasSelection)
-            .opacity(hasSelection ? 1.0 : 0.3)
-            .help(linkScale ? "⚠️ Scale LINKED - X and Y scale together" : "✓ Scale UNLINKED - Independent X/Y scaling")
 
-            Divider()
-                .frame(height: 24)
-
-            // Rotation
+            // Rotation group
             HStack(spacing: 2) {
                 Text("R:")
                     .font(.system(size: 10, weight: .medium))
@@ -342,6 +359,16 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 12, alignment: .leading)
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+                    )
+            )
         }
         .padding(.horizontal, 8)
         .onAppear {
