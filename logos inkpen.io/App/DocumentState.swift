@@ -64,11 +64,15 @@ class DocumentState: ObservableObject {
     }
 
     deinit {
+        cleanup()
         if let observer = missingImageObserver {
             NotificationCenter.default.removeObserver(observer)
         }
         pasteboardTimer?.invalidate()
         pasteboardTimer = nil
+        #if DEBUG
+        print("🧹 DocumentState.deinit — fully released")
+        #endif
     }
 
     func setDocument(_ document: VectorDocument) {

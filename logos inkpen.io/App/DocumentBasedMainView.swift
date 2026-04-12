@@ -44,9 +44,66 @@ struct DocumentBasedMainView: View {
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
     @State private var viewWindow: NSWindow? = nil
+    @State private var isTabActive: Bool = false  // Starts suspended — activated when window becomes key
 
 
     var body: some View {
+        Group {
+            if isTabActive {
+                fullDocumentView
+            } else {
+                // Suspended tab — lightweight placeholder, no view tree overhead
+                Color(nsColor: .windowBackgroundColor)
+            }
+        }
+        .background(HostingWindowFinder(callback: { window in
+            self.viewWindow = window
+            // Activate on first window discovery if this is the key/main window
+            if !isTabActive, let w = window, (w.isKeyWindow || w.isMainWindow) {
+                isTabActive = true
+                MemoryDiag.checkpoint("Tab ACTIVATED (first appear)")
+            }
+        }))
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeMainNotification)) { notification in
+            guard let window = notification.object as? NSWindow,
+                  let vw = viewWindow else { return }
+            if window === vw {
+                if !isTabActive {
+                    isTabActive = true
+                    MemoryDiag.checkpoint("Tab RESUMED")
+                }
+                AppEventMonitor.shared.setActiveDocument(document)
+            } else if window.tabbingIdentifier == vw.tabbingIdentifier {
+                // A sibling tab became main — suspend this one
+                if isTabActive {
+                    isTabActive = false
+                    MemoryDiag.checkpoint("Tab SUSPENDED")
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+            guard let window = notification.object as? NSWindow,
+                  let vw = viewWindow, window === vw else { return }
+            if !isTabActive {
+                isTabActive = true
+                MemoryDiag.checkpoint("Tab RESUMED (key)")
+            }
+            AppEventMonitor.shared.setActiveDocument(document)
+        }
+        .onDisappear {
+            // Tab truly closed — release heavy resources
+            documentState.cleanup()
+            document.imageStorage.removeAll()
+            document.lastDrawnImageHash.removeAll()
+            document.snapshot.objects.removeAll()
+            document.snapshot.layers.removeAll()
+            document.commandManager.clear()
+            document.commandManager.document = nil
+            MemoryDiag.checkpoint("Tab CLOSED")
+        }
+    }
+
+    private var fullDocumentView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 VerticalToolbar(
@@ -302,29 +359,10 @@ struct DocumentBasedMainView: View {
                 appState.pendingNewDocument = nil
             }
         }
-        .background(HostingWindowFinder(callback: { window in
-            self.viewWindow = window
-        }))
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
-            // Update active document ONLY when THIS view's window becomes key
-            guard let window = notification.object as? NSWindow,
-                  let viewWindow = viewWindow,
-                  window === viewWindow else { return }
-            print("🪟 Window became key for document \(ObjectIdentifier(document))")
-            AppEventMonitor.shared.setActiveDocument(document)
-        }
         .onDisappear {
-            documentState.cleanup()
-            // DocumentGroup retains InkpenDocument (and its VectorDocument) for
-            // state restoration even after the tab closes. Release heavy resources
-            // so the retained shell is lightweight.
-            document.imageStorage.removeAll()
-            document.lastDrawnImageHash.removeAll()
-            document.snapshot.objects.removeAll()
-            document.snapshot.layers.removeAll()
-            document.commandManager.clear()
-            document.commandManager.document = nil
-            MemoryDiag.checkpoint("DocumentBasedMainView.onDisappear DONE")
+            // Tab suspension just drops the views — don't clear document data.
+            // Data cleanup only happens when the tab is actually closed
+            // (detected by the outer body's onDisappear, not fullDocumentView's).
         }
         .focusedSceneObject(documentState)
     }
