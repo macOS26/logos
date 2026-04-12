@@ -25,27 +25,19 @@ enum FreeHandDirectImporter {
         let stats: Stats
     }
 
-    /// Find the AGD, FH3 or FHD2 magic offset, stripping any IPTC wrapper (e.g. FH10).
+    /// Find the AGD or FH3 magic offset, stripping any IPTC wrapper (e.g. FH10).
     private static func stripIPTCWrapper(_ data: Data) -> Data {
         guard data.count >= 4 else { return data }
         let b0 = data[data.startIndex]
-        // Already starts with AGD, FH3, or FHD2 — no wrapper
+        // Already starts with AGD or FH3 — no wrapper
         if b0 == UInt8(ascii: "A") || b0 == UInt8(ascii: "F") { return data }
-        // Scan for "AGD" or "FHD2" signature
+        // Scan for "AGD" signature
         let a = UInt8(ascii: "A"), g = UInt8(ascii: "G"), d = UInt8(ascii: "D")
-        let f = UInt8(ascii: "F"), h = UInt8(ascii: "H"), two = UInt8(ascii: "2")
         let end = data.count - 3
         for i in 1..<end {
             if data[data.startIndex + i] == a,
                data[data.startIndex + i + 1] == g,
                data[data.startIndex + i + 2] == d {
-                return data.suffix(from: data.startIndex + i)
-            }
-            if i < data.count - 4,
-               data[data.startIndex + i] == f,
-               data[data.startIndex + i + 1] == h,
-               data[data.startIndex + i + 2] == d,
-               data[data.startIndex + i + 3] == two {
                 return data.suffix(from: data.startIndex + i)
             }
         }

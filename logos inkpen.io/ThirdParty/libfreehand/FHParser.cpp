@@ -94,8 +94,6 @@ bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, libfreehan
     m_version = (agd & 0xff) - 0x30 + 5;
   else if (((agd >> 24) & 0xff) == 'F' && ((agd >> 16) & 0xff) == 'H' && ((agd >> 8) & 0xff) == '3')
     m_version = 3;
-  else if (((agd >> 24) & 0xff) == 'F' && ((agd >> 16) & 0xff) == 'H' && ((agd >> 8) & 0xff) == 'D' && (agd & 0xff) == '2')
-    m_version = 2;
   else
     return false;
 
