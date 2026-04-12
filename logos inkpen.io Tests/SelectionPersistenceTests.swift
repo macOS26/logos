@@ -3,7 +3,7 @@ import XCTest
 
 class SelectionPersistenceTests: XCTestCase {
 
-    var document: VectorDocument!
+    var document = VectorDocument()
 
     override func setUp() {
         super.setUp()
@@ -11,7 +11,6 @@ class SelectionPersistenceTests: XCTestCase {
     }
 
     override func tearDown() {
-        document = nil
         super.tearDown()
     }
 

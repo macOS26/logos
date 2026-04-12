@@ -3,7 +3,7 @@ import SwiftUI
 @testable import logos_inkpen_io
 
 final class TextLivePreviewTests: XCTestCase {
-    var document: VectorDocument!
+    var document = VectorDocument()
 
     override func setUpWithError() throws {
         document = VectorDocument()
@@ -12,7 +12,6 @@ final class TextLivePreviewTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        document = nil
     }
 
     func testTextPreviewTypographyStorage() throws {

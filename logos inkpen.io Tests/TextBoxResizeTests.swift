@@ -3,8 +3,8 @@ import SwiftUI
 @testable import logos_inkpen_io
 
 final class TextBoxResizeTests: XCTestCase {
-    var document: VectorDocument!
-    var viewModel: ProfessionalTextViewModel!
+    var document = VectorDocument()
+    var viewModel: ProfessionalTextViewModel?
 
     override func setUpWithError() throws {
         document = VectorDocument()
@@ -28,11 +28,11 @@ final class TextBoxResizeTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        document = nil
         viewModel = nil
     }
 
     func testTextBoxPositionStableWithoutResize() throws {
+        guard let viewModel else { XCTFail("viewModel not initialized"); return }
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize.zero
@@ -44,6 +44,7 @@ final class TextBoxResizeTests: XCTestCase {
     }
 
     func testTextBoxPositionStableDuringResize() throws {
+        guard let viewModel else { XCTFail("viewModel not initialized"); return }
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: 50, height: 30)
@@ -57,6 +58,7 @@ final class TextBoxResizeTests: XCTestCase {
     }
 
     func testTextBoxResizeFromBottomRight() throws {
+        guard let viewModel else { XCTFail("viewModel not initialized"); return }
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: 100, height: 50)
@@ -72,6 +74,7 @@ final class TextBoxResizeTests: XCTestCase {
     }
 
     func testTextBoxResizeWithNegativeOffset() throws {
+        guard let viewModel else { XCTFail("viewModel not initialized"); return }
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: -50, height: -30)
@@ -87,6 +90,7 @@ final class TextBoxResizeTests: XCTestCase {
     }
 
     func testTextBoxResizeWithDragOffset() throws {
+        guard let viewModel else { XCTFail("viewModel not initialized"); return }
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize(width: 30, height: 20)
         let resizeOffset = CGSize(width: 50, height: 40)

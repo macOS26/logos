@@ -3,8 +3,8 @@ import XCTest
 
 class PDFExportTests: XCTestCase {
 
-    var document: VectorDocument!
-    var tempDirectory: URL!
+    var document = VectorDocument()
+    var tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("PDFExportTests", isDirectory: true)
 
     override func setUp() {
         super.setUp()
@@ -40,9 +40,6 @@ class PDFExportTests: XCTestCase {
         super.tearDown()
 
         try? FileManager.default.removeItem(at: tempDirectory)
-
-        document = nil
-        tempDirectory = nil
     }
 
     func testGeneratePDFData() throws {

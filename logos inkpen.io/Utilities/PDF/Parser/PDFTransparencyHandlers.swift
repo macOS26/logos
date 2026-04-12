@@ -112,7 +112,12 @@ extension PDFCommandParser {
             return
         }
 
-        let name = String(cString: namePtr!)
+        guard let namePtr else {
+            Log.error("PDF: XObject name pointer was nil", category: .error)
+            return
+        }
+
+        let name = String(cString: namePtr)
         var savedFillOpacity: Double
         var savedStrokeOpacity: Double
 

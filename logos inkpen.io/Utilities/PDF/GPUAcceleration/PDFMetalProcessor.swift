@@ -64,9 +64,12 @@ class PDFMetalProcessor {
         let rgbSize = pixelCount * 3
         let rgbaSize = pixelCount * 4
 
-        guard let rgbBuffer = device.makeBuffer(bytes: rgbData.withUnsafeBytes { $0.baseAddress! },
-                                                 length: rgbSize,
-                                                 options: .storageModeShared),
+        let rgbBuffer: MTLBuffer? = rgbData.withUnsafeBytes { ptr in
+            guard let base = ptr.baseAddress else { return nil }
+            return device.makeBuffer(bytes: base, length: rgbSize, options: .storageModeShared)
+        }
+
+        guard let rgbBuffer,
               let rgbaBuffer = device.makeBuffer(length: rgbaSize,
                                                   options: .storageModeShared) else {
             Log.error("❌ Failed to allocate Metal buffers for image conversion", category: .error)
@@ -76,9 +79,10 @@ class PDFMetalProcessor {
         var maskBuffer: MTLBuffer?
         var hasMaskValue: UInt32 = 0
         if let mask = maskData {
-            maskBuffer = device.makeBuffer(bytes: mask.withUnsafeBytes { $0.baseAddress! },
-                                          length: pixelCount,
-                                          options: .storageModeShared)
+            maskBuffer = mask.withUnsafeBytes { ptr in
+                guard let base = ptr.baseAddress else { return nil }
+                return device.makeBuffer(bytes: base, length: pixelCount, options: .storageModeShared)
+            }
             hasMaskValue = 1
         }
 
@@ -126,12 +130,18 @@ class PDFMetalProcessor {
         let rgbaSize = pixelCount * 4
         let paletteEntries = paletteData.count / 3
 
-        guard let indexBuffer = device.makeBuffer(bytes: indexData.withUnsafeBytes { $0.baseAddress! },
-                                                   length: pixelCount,
-                                                   options: .storageModeShared),
-              let paletteBuffer = device.makeBuffer(bytes: paletteData.withUnsafeBytes { $0.baseAddress! },
-                                                     length: paletteData.count,
-                                                     options: .storageModeShared),
+        let indexBuffer: MTLBuffer? = indexData.withUnsafeBytes { ptr in
+            guard let base = ptr.baseAddress else { return nil }
+            return device.makeBuffer(bytes: base, length: pixelCount, options: .storageModeShared)
+        }
+
+        let paletteBuffer: MTLBuffer? = paletteData.withUnsafeBytes { ptr in
+            guard let base = ptr.baseAddress else { return nil }
+            return device.makeBuffer(bytes: base, length: paletteData.count, options: .storageModeShared)
+        }
+
+        guard let indexBuffer,
+              let paletteBuffer,
               let rgbaBuffer = device.makeBuffer(length: rgbaSize,
                                                   options: .storageModeShared) else {
             return nil
@@ -140,9 +150,10 @@ class PDFMetalProcessor {
         var maskBuffer: MTLBuffer?
         var hasMaskValue: UInt32 = 0
         if let mask = maskData {
-            maskBuffer = device.makeBuffer(bytes: mask.withUnsafeBytes { $0.baseAddress! },
-                                          length: pixelCount,
-                                          options: .storageModeShared)
+            maskBuffer = mask.withUnsafeBytes { ptr in
+                guard let base = ptr.baseAddress else { return nil }
+                return device.makeBuffer(bytes: base, length: pixelCount, options: .storageModeShared)
+            }
             hasMaskValue = 1
         }
 
@@ -201,9 +212,12 @@ class PDFMetalProcessor {
         let actualSamples = min(totalSamples, maxSamples)
         let outputSize = actualSamples * 3 * MemoryLayout<Float>.size
 
-        guard let sampleBuffer = device.makeBuffer(bytes: sampleData.withUnsafeBytes { $0.baseAddress! },
-                                                    length: sampleData.count,
-                                                    options: .storageModeShared),
+        let sampleBuffer: MTLBuffer? = sampleData.withUnsafeBytes { ptr in
+            guard let base = ptr.baseAddress else { return nil }
+            return device.makeBuffer(bytes: base, length: sampleData.count, options: .storageModeShared)
+        }
+
+        guard let sampleBuffer,
               let colorBuffer = device.makeBuffer(length: outputSize,
                                                   options: .storageModeShared),
               let rangeMinBuffer = device.makeBuffer(bytes: rangeMin,

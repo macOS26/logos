@@ -127,6 +127,10 @@ extension PDFCommandParser {
 
                     let indexBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
                     let paletteBytes = palette.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
+                    guard let paletteBase = paletteBytes.baseAddress else {
+                        Log.error("PDF: Failed to get palette base address", category: .error)
+                        return
+                    }
                     let paletteEntries = palette.count / 3
 
                     for i in 0..<(width * height) {
@@ -134,7 +138,7 @@ extension PDFCommandParser {
 
                         if paletteIndex < paletteEntries {
                             let paletteOffset = paletteIndex * 3
-                            rgbaData.append(paletteBytes.baseAddress! + paletteOffset, length: 3)
+                            rgbaData.append(paletteBase + paletteOffset, length: 3)
                         } else {
                             var black: [UInt8] = [0, 0, 0]
                             rgbaData.append(&black, length: 3)
@@ -266,7 +270,7 @@ extension PDFCommandParser {
         let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
         let pdfRect = unitRect.applying(currentTransform)
         let flippedY = pageSize.height - pdfRect.maxY
-        let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: pdfRect.width, height: pdfRect.height)
+        let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: abs(pdfRect.width), height: abs(pdfRect.height))
 
         if hasUpcomingTransparentImage {
             transparentImageBounds = finalRect
@@ -321,7 +325,12 @@ extension PDFCommandParser {
             return
         }
 
-        let name = String(cString: namePtr!)
+        guard let namePtr else {
+            Log.error("PDF: XObject name pointer was nil", category: .error)
+            return
+        }
+
+        let name = String(cString: namePtr)
         processXObjectWithImageSupport(name: name)
     }
 

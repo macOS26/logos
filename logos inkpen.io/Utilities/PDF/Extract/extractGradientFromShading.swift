@@ -96,16 +96,17 @@ extension PDFCommandParser {
             return nil
         }
 
-        var shadingDict: CGPDFDictionaryRef?
-        if !CGPDFObjectGetValue(pdfShading, .dictionary, &shadingDict) || shadingDict == nil {
+        var shadingDictRef: CGPDFDictionaryRef?
+        guard CGPDFObjectGetValue(pdfShading, .dictionary, &shadingDictRef),
+              let shadingDict = shadingDictRef else {
             Log.error("PDF: ❌ Could not extract shading dictionary for '\(shadingName)'", category: .error)
             return nil
         }
 
-        let extractedStops = extractGradientStopsFromPDFStream(shadingDict: shadingDict!)
+        let extractedStops = extractGradientStopsFromPDFStream(shadingDict: shadingDict)
 
         if !extractedStops.isEmpty {
-            let gradient = parseGradientFromDictionary(shadingDict!)
+            let gradient = parseGradientFromDictionary(shadingDict)
             if let linearGradient = gradient, case .linear(var linear) = linearGradient {
                 linear.stops = extractedStops
                 return .linear(linear)
@@ -114,7 +115,7 @@ extension PDFCommandParser {
             Log.error("PDF: ❌ FAILED to extract gradient stops from PDF stream for '\(shadingName)'", category: .error)
         }
 
-        let gradient = parseGradientFromDictionary(shadingDict!)
+        let gradient = parseGradientFromDictionary(shadingDict)
         return gradient
     }
 }

@@ -7,41 +7,46 @@ class PDFMetalAccelerator {
 
     static let shared = PDFMetalAccelerator()
 
-    private var device: MTLDevice!
-    private var commandQueue: MTLCommandQueue!
-    private var library: MTLLibrary!
+    private let device: MTLDevice
+    private let commandQueue: MTLCommandQueue
+    private let library: MTLLibrary
 
-    private var transformPointsPipeline: MTLComputePipelineState!
-    private var batchTransformPipeline: MTLComputePipelineState!
-    private var multiplyMatricesPipeline: MTLComputePipelineState!
-    private var calculateBoundsPipeline: MTLComputePipelineState!
-    private var mergeBoundsPipeline: MTLComputePipelineState!
-    private var batchDistancesPipeline: MTLComputePipelineState!
-    private var perpendicularDistancesPipeline: MTLComputePipelineState!
-    private var evaluateBezierPipeline: MTLComputePipelineState!
-    private var curveFlatnessPipeline: MTLComputePipelineState!
-    private var collinearityPipeline: MTLComputePipelineState!
-    private var rectIntersectionsPipeline: MTLComputePipelineState!
-    private var parallelMaxPipeline: MTLComputePipelineState!
-    private var parallelMaxIndexPipeline: MTLComputePipelineState!
-    private var interpolatePipeline: MTLComputePipelineState!
+    private let transformPointsPipeline: MTLComputePipelineState
+    private let batchTransformPipeline: MTLComputePipelineState
+    private let multiplyMatricesPipeline: MTLComputePipelineState
+    private let calculateBoundsPipeline: MTLComputePipelineState
+    private let mergeBoundsPipeline: MTLComputePipelineState
+    private let batchDistancesPipeline: MTLComputePipelineState
+    private let perpendicularDistancesPipeline: MTLComputePipelineState
+    private let evaluateBezierPipeline: MTLComputePipelineState
+    private let curveFlatnessPipeline: MTLComputePipelineState
+    private let collinearityPipeline: MTLComputePipelineState
+    private let rectIntersectionsPipeline: MTLComputePipelineState
+    private let parallelMaxPipeline: MTLComputePipelineState
+    private let parallelMaxIndexPipeline: MTLComputePipelineState
+    private let interpolatePipeline: MTLComputePipelineState
 
     private init() {
-        setupMetal()
-    }
-
-    private func setupMetal() {
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("Metal GPU not available")
         }
 
-        self.device = device
         guard let commandQueue = device.makeCommandQueue(),
               let library = device.makeDefaultLibrary() else {
             fatalError("Failed to create Metal command queue or library")
         }
+
+        self.device = device
         self.commandQueue = commandQueue
         self.library = library
+
+        func createPipeline(named functionName: String) throws -> MTLComputePipelineState {
+            guard let function = library.makeFunction(name: functionName) else {
+                throw NSError(domain: "PDFMetalAccelerator", code: 1,
+                             userInfo: [NSLocalizedDescriptionKey: "Function \(functionName) not found"])
+            }
+            return try device.makeComputePipelineState(function: function)
+        }
 
         do {
             transformPointsPipeline = try createPipeline(named: "transformPoints")
@@ -58,18 +63,9 @@ class PDFMetalAccelerator {
             parallelMaxPipeline = try createPipeline(named: "parallelMax")
             parallelMaxIndexPipeline = try createPipeline(named: "parallelMaxWithIndex")
             interpolatePipeline = try createPipeline(named: "batchInterpolate")
-
         } catch {
             fatalError("Failed to create Metal pipelines: \(error)")
         }
-    }
-
-    private func createPipeline(named functionName: String) throws -> MTLComputePipelineState {
-        guard let function = library.makeFunction(name: functionName) else {
-            throw NSError(domain: "PDFMetalAccelerator", code: 1,
-                         userInfo: [NSLocalizedDescriptionKey: "Function \(functionName) not found"])
-        }
-        return try device.makeComputePipelineState(function: function)
     }
 
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {

@@ -4,7 +4,7 @@ import SwiftUI
 
 class ShearHandlesTests: XCTestCase {
 
-    var document: VectorDocument!
+    var document = VectorDocument()
 
     override func setUp() {
         super.setUp()
@@ -13,7 +13,6 @@ class ShearHandlesTests: XCTestCase {
     }
 
     override func tearDown() {
-        document = nil
         super.tearDown()
     }
 

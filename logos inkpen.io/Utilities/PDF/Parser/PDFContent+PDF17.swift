@@ -11,7 +11,12 @@ extension PDFCommandParser {
             return
         }
 
-        let name = String(cString: namePtr!)
+        guard let namePtr else {
+            Log.error("\(detectedPDFVersion): XObject name pointer was nil", category: .error)
+            return
+        }
+
+        let name = String(cString: namePtr)
         processXObjectPDF17(name: name)
     }
 

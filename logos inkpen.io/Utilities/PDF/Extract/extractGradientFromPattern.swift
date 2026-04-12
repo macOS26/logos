@@ -9,11 +9,12 @@ extension PDFCommandParser {
             return nil
         }
 
-        var patternDict: CGPDFDictionaryRef?
-        if !CGPDFObjectGetValue(pdfPage, .dictionary, &patternDict) || patternDict == nil {
+        var patternDictRef: CGPDFDictionaryRef?
+        guard CGPDFObjectGetValue(pdfPage, .dictionary, &patternDictRef),
+              let patternDict = patternDictRef else {
             return nil
         }
 
-        return parseGradientFromDictionary(patternDict!)
+        return parseGradientFromDictionary(patternDict)
     }
 }

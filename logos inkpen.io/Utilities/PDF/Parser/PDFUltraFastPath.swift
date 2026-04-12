@@ -137,18 +137,18 @@ struct PDFUltraFastPath {
         guard !segments.isEmpty else { return [] }
 
         let segmentResults = segments.map { segment -> [CGPoint] in
-            if segment.cp2 != nil {
+            if let cp1 = segment.cp1, let cp2 = segment.cp2 {
                 return tessellateCubicSIMD(
                     start: segment.start,
-                    cp1: segment.cp1!,
-                    cp2: segment.cp2!,
+                    cp1: cp1,
+                    cp2: cp2,
                     end: segment.end,
                     flatness: Float(flatness)
                 )
-            } else if segment.cp1 != nil {
+            } else if let cp = segment.cp1 {
                 return tessellateQuadraticSIMD(
                     start: segment.start,
-                    cp: segment.cp1!,
+                    cp: cp,
                     end: segment.end,
                     flatness: Float(flatness)
                 )

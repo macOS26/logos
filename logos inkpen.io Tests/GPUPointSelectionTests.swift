@@ -3,7 +3,7 @@ import XCTest
 
 final class GPUPointSelectionTests: XCTestCase {
 
-    var metalEngine: MetalComputeEngine!
+    var metalEngine = MetalComputeEngine.shared
 
     override func setUp() {
         super.setUp()
@@ -11,7 +11,6 @@ final class GPUPointSelectionTests: XCTestCase {
     }
 
     override func tearDown() {
-        metalEngine = nil
         super.tearDown()
     }
 

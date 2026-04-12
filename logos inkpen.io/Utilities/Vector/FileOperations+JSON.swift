@@ -127,7 +127,7 @@ extension FileOperations {
 
                 if shapeName == "Canvas Background" || shapeName == "Pasteboard Background" {
                     objectsToRemove.append(objectID)
-                    print("✅ Marked for removal: '\(shapeName!)'")
+                    print("✅ Marked for removal: '\(shapeName ?? "Unknown")'")
                 }
             }
 

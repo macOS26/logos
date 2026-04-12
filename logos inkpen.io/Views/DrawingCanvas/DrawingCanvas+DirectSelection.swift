@@ -255,7 +255,7 @@ extension DrawingCanvas {
 
                             if performPathOnlyHitTest(shape: memberShape, at: location) {
                                 let zOrder = layerIndex * 100000 + objIndex * 1000 + memberIdx
-                                if bestHit == nil || zOrder > bestHit!.zOrder {
+                                if bestHit.map({ zOrder > $0.zOrder }) ?? true {
                                     bestHit = (memberShape, zOrder)
                                 }
                             }
@@ -269,7 +269,7 @@ extension DrawingCanvas {
 
                         if performPathOnlyHitTest(shape: groupedShape, at: location) {
                             let zOrder = layerIndex * 100000 + objIndex * 1000 + idx
-                            if bestHit == nil || zOrder > bestHit!.zOrder {
+                            if bestHit.map({ zOrder > $0.zOrder }) ?? true {
                                 bestHit = (groupedShape, zOrder)
                             }
                         }
@@ -278,7 +278,7 @@ extension DrawingCanvas {
                     // Regular shape - check directly
                     if performPathOnlyHitTest(shape: shape, at: location) {
                         let zOrder = layerIndex * 100000 + objIndex * 1000
-                        if bestHit == nil || zOrder > bestHit!.zOrder {
+                        if bestHit.map({ zOrder > $0.zOrder }) ?? true {
                             bestHit = (shape, zOrder)
                         }
                     }

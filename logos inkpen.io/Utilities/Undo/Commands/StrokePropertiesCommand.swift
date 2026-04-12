@@ -112,30 +112,50 @@ class StrokePropertiesCommand: BaseCommand {
     override func execute(on document: VectorDocument) {
         switch propertyType {
         case .placement:
-            applyPlacements(newPlacements!, to: document)
+            if let placements = newPlacements {
+                applyPlacements(placements, to: document)
+            }
         case .lineJoin:
-            applyLineJoins(newLineJoins!, to: document)
+            if let lineJoins = newLineJoins {
+                applyLineJoins(lineJoins, to: document)
+            }
         case .lineCap:
-            applyLineCaps(newLineCaps!, to: document)
+            if let lineCaps = newLineCaps {
+                applyLineCaps(lineCaps, to: document)
+            }
         case .miterLimit:
-            applyMiterLimits(newMiterLimits!, to: document)
+            if let miterLimits = newMiterLimits {
+                applyMiterLimits(miterLimits, to: document)
+            }
         case .imageOpacity:
-            applyImageOpacities(newOpacities!, to: document)
+            if let opacities = newOpacities {
+                applyImageOpacities(opacities, to: document)
+            }
         }
     }
 
     override func undo(on document: VectorDocument) {
         switch propertyType {
         case .placement:
-            applyPlacements(oldPlacements!, to: document)
+            if let placements = oldPlacements {
+                applyPlacements(placements, to: document)
+            }
         case .lineJoin:
-            applyLineJoins(oldLineJoins!, to: document)
+            if let lineJoins = oldLineJoins {
+                applyLineJoins(lineJoins, to: document)
+            }
         case .lineCap:
-            applyLineCaps(oldLineCaps!, to: document)
+            if let lineCaps = oldLineCaps {
+                applyLineCaps(lineCaps, to: document)
+            }
         case .miterLimit:
-            applyMiterLimits(oldMiterLimits!, to: document)
+            if let miterLimits = oldMiterLimits {
+                applyMiterLimits(miterLimits, to: document)
+            }
         case .imageOpacity:
-            applyImageOpacities(oldOpacities!, to: document)
+            if let opacities = oldOpacities {
+                applyImageOpacities(opacities, to: document)
+            }
         }
     }
 

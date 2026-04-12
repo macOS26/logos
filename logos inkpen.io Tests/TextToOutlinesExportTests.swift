@@ -3,8 +3,8 @@ import XCTest
 
 class TextToOutlinesExportTests: XCTestCase {
 
-    var document: VectorDocument!
-    var documentState: DocumentState!
+    var document = VectorDocument()
+    var documentState = DocumentState()
 
     override func setUp() {
         super.setUp()
@@ -31,8 +31,6 @@ class TextToOutlinesExportTests: XCTestCase {
     }
 
     override func tearDown() {
-        document = nil
-        documentState = nil
         super.tearDown()
     }
 
