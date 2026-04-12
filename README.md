@@ -41,6 +41,7 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 
 ## 📋 Import & Export
 
+- FreeHand single page document import (.fh, .fh3, .fh5–.fh11/.fhmx) — supports reading FreeHand objects and masked gradients
 - SVG import: shapes added to new layer instead of replacing Guides layer
 - SVG text import preserves UUID and textPosition
 - PDF export fix for groups using memberIDs
@@ -164,6 +165,7 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 | Format | Extension | Description |
 |--------|-----------|-------------|
 | Ink Pen Document | .inkpen | Native format with full editibility |
+| FreeHand Document | .fh, .fh3, .fh5–.fh11/.fhmx | Single page import — FreeHand objects and masked gradients |
 | SVG | .svg | Scalable Vector Graphics |
 | PDF | .pdf | Portable Document Format |
 | PNG | .png | Raster image export |
@@ -187,4 +189,4 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 
 ## License
 
-Copyright (c) inkpen.io. All rights reserved.
+Copyright (c) 2025-2026 inkpen.io. All rights reserved.
