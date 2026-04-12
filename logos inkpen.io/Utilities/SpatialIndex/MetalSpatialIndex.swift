@@ -183,6 +183,9 @@ class MetalSpatialIndex {
                                 let strokeExpansion = strokeStyle.width / 2.0
                                 childBounds = childBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
                             }
+                            guard childBounds.minX.isFinite && childBounds.minY.isFinite
+                                    && childBounds.maxX.isFinite && childBounds.maxY.isFinite
+                                    && childBounds.width > 0 && childBounds.height > 0 else { continue }
                             boundsData.append((childShape.id, childBounds))
                             minX = min(minX, childBounds.minX)
                             minY = min(minY, childBounds.minY)
@@ -207,6 +210,10 @@ class MetalSpatialIndex {
                     case .group, .clipGroup:
                         continue
                     }
+                    // Skip shapes with non-finite or empty bounds (degenerate transforms)
+                    guard bounds.minX.isFinite && bounds.minY.isFinite
+                            && bounds.maxX.isFinite && bounds.maxY.isFinite
+                            && bounds.width > 0 && bounds.height > 0 else { continue }
                     boundsData.append((objectID, bounds))
                     minX = min(minX, bounds.minX)
                     minY = min(minY, bounds.minY)
@@ -224,13 +231,24 @@ class MetalSpatialIndex {
             }
 
             var layerIndex = LayerSpatialIndex()
-            layerIndex.gridMinX = Int32(floor(minX / CGFloat(gridSize)))
-            layerIndex.gridMinY = Int32(floor(minY / CGFloat(gridSize)))
-            layerIndex.gridMaxX = Int32(floor(maxX / CGFloat(gridSize)))
-            layerIndex.gridMaxY = Int32(floor(maxY / CGFloat(gridSize)))
+            // Guard against inf/NaN from degenerate transforms — skip layer if bounds are non-finite
+            guard minX.isFinite && minY.isFinite && maxX.isFinite && maxY.isFinite else {
+                layerIndices[layer.id] = LayerSpatialIndex()
+                continue
+            }
+            layerIndex.gridMinX = Int32(clamping: Int(floor(minX / CGFloat(gridSize))))
+            layerIndex.gridMinY = Int32(clamping: Int(floor(minY / CGFloat(gridSize))))
+            layerIndex.gridMaxX = Int32(clamping: Int(floor(maxX / CGFloat(gridSize))))
+            layerIndex.gridMaxY = Int32(clamping: Int(floor(maxY / CGFloat(gridSize))))
 
             let gridWidth = Int(layerIndex.gridMaxX - layerIndex.gridMinX + 1)
             let gridHeight = Int(layerIndex.gridMaxY - layerIndex.gridMinY + 1)
+            // Cap grid to prevent memory explosion from huge/degenerate bounds
+            let maxGridCells = 10_000
+            guard gridWidth > 0 && gridHeight > 0 && gridWidth * gridHeight <= maxGridCells else {
+                layerIndices[layer.id] = LayerSpatialIndex()
+                continue
+            }
             layerIndex.totalCells = gridWidth * gridHeight
 
             layerIndex.objectIDs = boundsData.map { $0.0 }
@@ -439,11 +457,12 @@ class MetalSpatialIndex {
                 continue
             }
 
-            // Calculate query region dimensions
-            let minCellX = Int32(floor(rect.minX / CGFloat(gridSize)))
-            let maxCellX = Int32(floor(rect.maxX / CGFloat(gridSize)))
-            let minCellY = Int32(floor(rect.minY / CGFloat(gridSize)))
-            let maxCellY = Int32(floor(rect.maxY / CGFloat(gridSize)))
+            // Calculate query region dimensions — guard non-finite rects
+            guard rect.minX.isFinite && rect.minY.isFinite && rect.maxX.isFinite && rect.maxY.isFinite else { continue }
+            let minCellX = Int32(clamping: Int(floor(rect.minX / CGFloat(gridSize))))
+            let maxCellX = Int32(clamping: Int(floor(rect.maxX / CGFloat(gridSize))))
+            let minCellY = Int32(clamping: Int(floor(rect.minY / CGFloat(gridSize))))
+            let maxCellY = Int32(clamping: Int(floor(rect.maxY / CGFloat(gridSize))))
 
             let cellWidth = max(1, maxCellX - minCellX + 1)
             let cellHeight = max(1, maxCellY - minCellY + 1)

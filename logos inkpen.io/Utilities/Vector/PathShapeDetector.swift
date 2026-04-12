@@ -34,38 +34,50 @@ enum PathShapeDetector {
                 }
             }
 
-            /* Triangle: move + 3 lines (first line goes to the second vertex,
-               next two close out the triangle). */
-            if body.count == 3 {
+            /* Triangle: 3 vertices. Either move + 2 lines (+ implicit close),
+               or move + 3 lines where the last point returns to start. */
+            if body.count == 2 {
+                return (.triangle, "Triangle")
+            }
+            if body.count == 3, approxEqual(points[0], points[3]) {
                 return (.triangle, "Triangle")
             }
 
-            /* Rectangle / square: 4 lines where the last point coincides with
-               the first (path closed back to start), and adjacent edges are
-               axis-aligned (or at least 90° to each other). */
-            if body.count == 4, points.count == 5 {
-                let closed = approxEqual(points[0], points[4])
-                if closed {
-                    let isAxisAligned = points[0...4].enumerated().allSatisfy { (i, _) in
-                        if i == 4 { return true }
-                        let a = points[i]
-                        let b = points[i + 1]
-                        return approxEqual(a.x, b.x) || approxEqual(a.y, b.y)
-                    }
-                    if isAxisAligned {
-                        let minX = points.map { $0.x }.min() ?? 0
-                        let maxX = points.map { $0.x }.max() ?? 0
-                        let minY = points.map { $0.y }.min() ?? 0
-                        let maxY = points.map { $0.y }.max() ?? 0
-                        let w = maxX - minX
-                        let h = maxY - minY
-                        if w > 0 && h > 0 {
-                            let ratio = w / h
-                            if approxEqual(ratio, 1.0, tolerance: 0.02) {
-                                return (.square, "Square")
-                            }
-                            return (.rectangle, "Rectangle")
+            /* Rectangle / square: 4 vertices with axis-aligned edges.
+               body.count == 3 means move + 3 lines + implicit close (4 vertices).
+               body.count == 4 means move + 4 lines where last returns to start. */
+            let rectPoints: [CGPoint]
+            let isRect: Bool
+            if body.count == 3 {
+                // Implicit close: 4 vertices = start + 3 line endpoints
+                rectPoints = points + [points[0]]  // append start for edge checking
+                isRect = true
+            } else if body.count == 4, points.count == 5, approxEqual(points[0], points[4]) {
+                rectPoints = points
+                isRect = true
+            } else {
+                rectPoints = []
+                isRect = false
+            }
+            if isRect && rectPoints.count == 5 {
+                let isAxisAligned = (0..<4).allSatisfy { i in
+                    let a = rectPoints[i]
+                    let b = rectPoints[i + 1]
+                    return approxEqual(a.x, b.x) || approxEqual(a.y, b.y)
+                }
+                if isAxisAligned {
+                    let minX = rectPoints.map { $0.x }.min() ?? 0
+                    let maxX = rectPoints.map { $0.x }.max() ?? 0
+                    let minY = rectPoints.map { $0.y }.min() ?? 0
+                    let maxY = rectPoints.map { $0.y }.max() ?? 0
+                    let w = maxX - minX
+                    let h = maxY - minY
+                    if w > 0 && h > 0 {
+                        let ratio = w / h
+                        if approxEqual(ratio, 1.0, tolerance: 0.02) {
+                            return (.square, "Square")
                         }
+                        return (.rectangle, "Rectangle")
                     }
                 }
             }

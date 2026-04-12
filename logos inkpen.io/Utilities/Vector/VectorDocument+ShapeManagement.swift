@@ -37,38 +37,45 @@ extension VectorDocument {
 
     /// Import-facing add. Unpacks <g>-carrier groups (inline groupedShapes)
     /// into the native memberIDs model so children live in snapshot.objects.
+    /// Wraps all added objects in a single AddObjectCommand for undo support.
     func addImportedShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        var allObjects: [VectorObject] = []
 
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
             var container = shape
             var memberIDs = container.memberIDs
             for child in container.groupedShapes {
-                installGroupMemberIntoSnapshot(child, layerIndex: layerIndex)
+                collectGroupMembers(child, layerIndex: layerIndex, into: &allObjects)
                 memberIDs.append(child.id)
             }
             container.memberIDs = memberIDs
             container.groupedShapes = []
-            addShapeToUnifiedSystem(container, layerIndex: layerIndex)
+            let objectType = VectorObject.determineType(for: container)
+            allObjects.append(VectorObject(id: container.id, layerIndex: layerIndex, objectType: objectType))
         } else {
-            addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+            let objectType = VectorObject.determineType(for: shape)
+            allObjects.append(VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType))
         }
+
+        let command = AddObjectCommand(objects: allObjects)
+        executeCommand(command)
     }
 
-    private func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int) {
+    private func collectGroupMembers(_ shape: VectorShape, layerIndex: Int, into objects: inout [VectorObject]) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {
             var memberIDs = toInstall.memberIDs
             for child in toInstall.groupedShapes {
-                installGroupMemberIntoSnapshot(child, layerIndex: layerIndex)
+                collectGroupMembers(child, layerIndex: layerIndex, into: &objects)
                 memberIDs.append(child.id)
             }
             toInstall.memberIDs = memberIDs
             toInstall.groupedShapes = []
         }
         let objectType = VectorObject.determineType(for: toInstall)
-        let vectorObject = VectorObject(id: toInstall.id, layerIndex: layerIndex, objectType: objectType)
-        snapshot.objects[toInstall.id] = vectorObject
+        objects.append(VectorObject(id: toInstall.id, layerIndex: layerIndex, objectType: objectType))
     }
 
     func addShapeWithoutUndo(_ shape: VectorShape, to layerIndex: Int) {
