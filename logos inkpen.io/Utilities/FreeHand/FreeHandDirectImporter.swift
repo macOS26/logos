@@ -25,13 +25,33 @@ enum FreeHandDirectImporter {
         let stats: Stats
     }
 
+    /// Find the AGD or FH3 magic offset, stripping any IPTC wrapper (e.g. FH10).
+    private static func stripIPTCWrapper(_ data: Data) -> Data {
+        guard data.count >= 4 else { return data }
+        let b0 = data[data.startIndex]
+        // Already starts with AGD or FH3 — no wrapper
+        if b0 == UInt8(ascii: "A") || b0 == UInt8(ascii: "F") { return data }
+        // Scan for "AGD" signature
+        let a = UInt8(ascii: "A"), g = UInt8(ascii: "G"), d = UInt8(ascii: "D")
+        let end = data.count - 3
+        for i in 1..<end {
+            if data[data.startIndex + i] == a,
+               data[data.startIndex + i + 1] == g,
+               data[data.startIndex + i + 2] == d {
+                return data.suffix(from: data.startIndex + i)
+            }
+        }
+        return data
+    }
+
     static func parseToShapes(data: Data) throws -> Result {
-        return try data.withUnsafeBytes { bytes -> Result in
+        let fhData = stripIPTCWrapper(data)
+        return try fhData.withUnsafeBytes { bytes -> Result in
             guard let base = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
                 throw FreeHandImportError.notSupported
             }
             var handle: OpaquePointer? = nil
-            let rc = freehand_parse_to_shapes(base, data.count, &handle)
+            let rc = freehand_parse_to_shapes(base, fhData.count, &handle)
             guard rc == 0, let result = handle else {
                 switch rc {
                 case 2: throw FreeHandImportError.notSupported
