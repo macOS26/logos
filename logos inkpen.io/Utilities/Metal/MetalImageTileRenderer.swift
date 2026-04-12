@@ -112,7 +112,7 @@ class MetalImageTileRenderer {
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: width * 4)
 
-        print("📊 Created Metal texture format: \(texture.pixelFormat.rawValue) (10=RGBA8Unorm, 80=BGRA8Unorm)")
+        // print("📊 Created Metal texture format: \(texture.pixelFormat.rawValue)")
 
         return texture
     }
@@ -130,12 +130,12 @@ class MetalImageTileRenderer {
            FileManager.default.fileExists(atPath: cachedPath),
            let cachedImage = loadImageFromDisk(path: cachedPath) {
             diskCacheLock.unlock()
-            print("✅ MetalImageTileRenderer: DISK CACHE HIT for \(cacheKey)")
+            // print("✅ MetalImageTileRenderer: DISK CACHE HIT for \(cacheKey)")
             return cachedImage
         }
         diskCacheLock.unlock()
 
-        print("❌ MetalImageTileRenderer: DISK CACHE MISS for \(cacheKey), compositing...")
+        // print("❌ MetalImageTileRenderer: DISK CACHE MISS for \(cacheKey), compositing...")
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let sourceTexture = getTexture(from: image) else {

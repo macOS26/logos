@@ -152,6 +152,8 @@ struct InkpenDocument: FileDocument {
 
         // Clean up any orphaned objects left by buggy operations
         self.document.cleanupOrphanedObjects()
+        MemoryDiag.checkpoint("InkpenDocument.init DONE (\(configuration.file.preferredFilename ?? "?"))")
+        MemoryDiag.dumpObjects(self.document)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {

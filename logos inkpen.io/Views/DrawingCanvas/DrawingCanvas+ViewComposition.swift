@@ -320,7 +320,10 @@ extension DrawingCanvas {
         }
 
         // Pass objectIDs so IsolatedLayerView can fetch fresh objects on every render
-        if !layer.objectIDs.isEmpty {
+        // Skip Canvas creation entirely for empty layers — each Canvas allocates a
+        // full Retina backing store (~33 MB on a 1080p display), so empty layers waste
+        // hundreds of MB across documents.
+        if !layer.objectIDs.isEmpty && layer.isVisible {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
             // Only pass selectedObjectIDs that are actually in this layer to avoid unnecessary redraws

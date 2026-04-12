@@ -6,7 +6,7 @@ final class AppEventMonitor {
     static let shared = AppEventMonitor()
     private var keyEventMonitor: Any?
     private let lock = NSLock()
-    private(set) var activeDocument: VectorDocument?
+    private(set) weak var activeDocument: VectorDocument?
     private var isSpacebarPressed = false
 
     private init() {

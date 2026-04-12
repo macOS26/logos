@@ -89,6 +89,8 @@ enum ImageContentRegistry {
         }
 
         if let cgImage = loadedCGImage {
+            let mb = cgImage.width * cgImage.height * 4 / (1024 * 1024)
+            print("🖼️ [MemDiag] imageStorage[\(shape.id)] = \(cgImage.width)x\(cgImage.height) (\(mb)MB uncompressed), total stored: \(document.imageStorage.count + 1)")
             document.imageStorage[shape.id] = cgImage
             return cgImage
         }

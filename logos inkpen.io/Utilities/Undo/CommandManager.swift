@@ -8,6 +8,7 @@ class CommandManager: ObservableObject {
     private var undoStack: [Command] = []
     private var redoStack: [Command] = []
     private let maxStackSize: Int
+    var undoCount: Int { undoStack.count }
 
     weak var document: VectorDocument?
 

@@ -11,11 +11,13 @@ struct DocumentBasedContentView: View {
     var body: some View {
         DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
             .onAppear {
+                MemoryDiag.report("DocumentBasedContentView.onAppear (before hydrate)", document: inkpenDocument.document)
                 // Hydrate linked images on first appear
                 if !hasHydratedImages, let fileURL = fileURL {
                     hydrateLinkedImages(from: fileURL)
                     hasHydratedImages = true
                 }
+                MemoryDiag.report("DocumentBasedContentView.onAppear (after hydrate)", document: inkpenDocument.document)
             }
             .onChange(of: imagePreviewQuality) { _, _ in
                 // Clear image caches when quality changes

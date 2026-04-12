@@ -224,6 +224,7 @@ struct DrawingCanvas: View {
                     spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                     rebuildLockedObjectsCache()
                     hasSpatialIndexInitialized = true
+                    MemoryDiag.report("DrawingCanvas.onAppear", document: document)
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
                     // Skip rebuild during initial load
@@ -254,6 +255,7 @@ struct DrawingCanvas: View {
                             layerObjectCount += layer.objectIDs.count
                         }
                         print("🔷 Spatial index rebuild: \(String(format: "%.1f", duration))ms for \(changedLayerIDs.count) layer(s), \(layerObjectCount) layer objects")
+                        MemoryDiag.report("spatialIndex.rebuild", document: document)
                         rebuildLockedObjectsCache()
                     }
                 }

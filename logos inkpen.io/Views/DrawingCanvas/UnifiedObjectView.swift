@@ -9,30 +9,17 @@ struct PasteboardBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
-        //let _ = Self._printChanges()
-        Canvas { context, size in
-            // SIMD optimization for transform calculations
-            let originVec = SIMD2<Float>(Float(pasteboardOrigin.x), Float(pasteboardOrigin.y))
-            let sizeVec = SIMD2<Float>(Float(pasteboardSize.width), Float(pasteboardSize.height))
-            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
-            let zoom = Float(zoomLevel)
-
-            let scaledOrigin = originVec * zoom + offsetVec
-            let scaledSize = sizeVec * zoom
-
-            let scaledRect = CGRect(
-                x: CGFloat(scaledOrigin.x),
-                y: CGFloat(scaledOrigin.y),
-                width: CGFloat(scaledSize.x),
-                height: CGFloat(scaledSize.y)
+        Rectangle()
+            .fill(Color.black.opacity(0.2))
+            .frame(
+                width: pasteboardSize.width * zoomLevel,
+                height: pasteboardSize.height * zoomLevel
             )
-
-            context.fill(
-                Path(roundedRect: scaledRect, cornerRadius: 0),
-                with: .color(.black.opacity(0.2))
+            .offset(
+                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
+                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y
             )
-        }
-        .drawingGroup()
+            .allowsHitTesting(false)
     }
 }
 
@@ -43,27 +30,14 @@ struct CanvasBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
-        Canvas { context, size in
-            // SIMD optimization for transform calculations
-            let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
-            let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
-            let zoom = Float(zoomLevel)
-
-            let scaledSize = sizeVec * zoom
-
-            let scaledRect = CGRect(
-                x: CGFloat(offsetVec.x),
-                y: CGFloat(offsetVec.y),
-                width: CGFloat(scaledSize.x),
-                height: CGFloat(scaledSize.y)
+        Rectangle()
+            .fill(backgroundColor)
+            .frame(
+                width: canvasSize.width * zoomLevel,
+                height: canvasSize.height * zoomLevel
             )
-
-            context.fill(
-                Path(roundedRect: scaledRect, cornerRadius: 0),
-                with: .color(backgroundColor)
-            )
-        }
-        .drawingGroup()
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .allowsHitTesting(false)
     }
 }
 
@@ -275,7 +249,6 @@ struct LayerCanvasView: View {
 
             // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
-            //let _ = print("📊 LayerCanvasView \(layerInfo): culled \(objectIDs.count) → \(visibleObjects.count) objects")
 
             // Cheap SwiftUI layer update
             _ = layerUpdateTrigger
@@ -1443,7 +1416,18 @@ struct LayerCanvasView: View {
         return sourceCGImage
     }
 
+    private static var renderImageCallCount = 0
+    private static var lastRenderImageMemMB = 0
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
+        Self.renderImageCallCount += 1
+        if Self.renderImageCallCount % 60 == 1 {
+            let mb = MemoryDiag.processMemoryMB()
+            let delta = mb - Self.lastRenderImageMemMB
+            if Self.lastRenderImageMemMB > 0 && delta > 5 {
+                print("🚨 [MemDiag] renderImage #\(Self.renderImageCallCount): \(mb)MB (+\(delta)MB!) embeddedData=\(shape.embeddedImageData?.count ?? 0)B cached=\(document.imageStorage[shape.id] != nil)")
+            }
+            Self.lastRenderImageMemMB = mb
+        }
         // Get render bounds
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
         var renderBounds = pathBounds
@@ -1519,8 +1503,11 @@ struct LayerCanvasView: View {
             }
 
             // Cache the image (with quality applied)
+            let beforeMB = MemoryDiag.processMemoryMB()
             document.imageStorage[shape.id] = finalImage
             image = finalImage
+            let afterMB = MemoryDiag.processMemoryMB()
+            print("🚨 [MemDiag] IMAGE CACHE MISS: \(finalImage.width)x\(finalImage.height) stored for \(shape.id), mem \(beforeMB)→\(afterMB)MB (+\(afterMB - beforeMB)MB)")
         }
 
         // Check hash for debugging, but ALWAYS draw (Canvas clears every frame)
