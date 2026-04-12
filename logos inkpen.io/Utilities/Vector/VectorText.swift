@@ -62,8 +62,7 @@ struct TypographyProperties: Codable, Hashable {
     var fillColor: VectorColor
     var fillOpacity: Double
 
-    // Nonisolated Equatable conformance for TypographyProperties to resolve Swift 6 error.
-    nonisolated static func == (lhs: TypographyProperties, rhs: TypographyProperties) -> Bool {
+    static func == (lhs: TypographyProperties, rhs: TypographyProperties) -> Bool {
         return lhs.fontFamily == rhs.fontFamily
             && lhs.fontVariant == rhs.fontVariant
             && lhs.fontSize == rhs.fontSize
