@@ -41,6 +41,11 @@ bool findAGD(librevenge::RVNGInputStream *input)
     FH_DEBUG_MSG(("Found FH3 at offset 0x%lx (FreeHand version %c.%c)\n", input->tell(), (agd >> 8) & 0xff, agd & 0xff));
     return true;
   }
+  else if (((agd >> 24) & 0xff) == 'F' && ((agd >> 16) & 0xff) == 'H' && ((agd >> 8) & 0xff) == 'D' && (agd & 0xff) == '2')
+  {
+    FH_DEBUG_MSG(("Found FHD2 at offset 0x%lx (FreeHand version 2)\n", input->tell()));
+    return true;
+  }
   else
   {
     // parse the document for AGD block
