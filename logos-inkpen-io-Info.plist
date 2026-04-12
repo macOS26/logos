@@ -36,6 +36,7 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>io.logos.logos-inkpen-io.svg</string>
+				<string>public.svg-image</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
@@ -136,6 +137,7 @@
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
+				<string>public.svg-image</string>
 				<string>public.data</string>
 				<string>public.content</string>
 			</array>
