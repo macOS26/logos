@@ -591,7 +591,16 @@ fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, has
         return nil
     }
 
-    guard let provider = CGDataProvider(data: rgbaData as CFData) else {
+    // PDF pixel data is bottom-to-top; CGImage expects top-to-bottom.
+    // Reverse rows so the stored PNG has correct orientation.
+    let flippedData = NSMutableData(length: rgbaData.count)!
+    let src = (rgbaData as NSData).bytes.bindMemory(to: UInt8.self, capacity: rgbaData.count)
+    let dst = flippedData.mutableBytes.bindMemory(to: UInt8.self, capacity: rgbaData.count)
+    for row in 0..<height {
+        memcpy(dst + row * bytesPerRow, src + (height - 1 - row) * bytesPerRow, bytesPerRow)
+    }
+
+    guard let provider = CGDataProvider(data: flippedData as CFData) else {
         return nil
     }
 
