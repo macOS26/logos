@@ -2,6 +2,10 @@
 
 A professional vector graphics editor for macOS, inspired by the classic FreeHand workflow. Built with SwiftUI and designed for precision illustration work.
 
+<a href="https://www.paypal.com/ncp/payment/3DTH3S7XARK98"><img src="https://img.shields.io/badge/Tip_Jar-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Tip Jar" /></a>
+
+Donations are greatly appreciated and help keep this project alive!
+
 <img width="1579" height="1376" alt="image" src="https://github.com/user-attachments/assets/360b5a32-a7fb-49a3-b095-05d2f0121533" />
 
 ---
