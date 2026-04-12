@@ -2,20 +2,31 @@ import Metal
 import MetalKit
 import SwiftUI
 
-/// GPU-accelerated spatial index using Metal compute shaders
+/// GPU-accelerated spatial index using Metal compute shaders.
+/// Pipelines are shared across all instances (static); only per-document
+/// layer data is per-instance — saves ~20MB per additional tab.
 class MetalSpatialIndex {
-    private let device: MTLDevice
-    private let commandQueue: MTLCommandQueue
-    private let pipelineState: MTLComputePipelineState
-    private let queryPointPipeline: MTLComputePipelineState
-    private let queryRectPipeline: MTLComputePipelineState
-    private let clearGridPipeline: MTLComputePipelineState
+    // Shared Metal resources (initialized once, reused across all tabs)
+    private static var sharedDevice: MTLDevice?
+    private static var sharedCommandQueue: MTLCommandQueue?
+    private static var sharedBuildPipeline: MTLComputePipelineState?
+    private static var sharedQueryPointPipeline: MTLComputePipelineState?
+    private static var sharedQueryRectPipeline: MTLComputePipelineState?
+    private static var sharedClearGridPipeline: MTLComputePipelineState?
+    private static var sharedInitialized = false
+
+    private var device: MTLDevice { Self.sharedDevice! }
+    private var commandQueue: MTLCommandQueue { Self.sharedCommandQueue! }
+    private var pipelineState: MTLComputePipelineState { Self.sharedBuildPipeline! }
+    private var queryPointPipeline: MTLComputePipelineState { Self.sharedQueryPointPipeline! }
+    private var queryRectPipeline: MTLComputePipelineState { Self.sharedQueryRectPipeline! }
+    private var clearGridPipeline: MTLComputePipelineState { Self.sharedClearGridPipeline! }
 
     // Grid parameters
     private let gridSize: Float = 50.0  // 50x50 pixel cells
     private let maxObjectsPerCell: UInt32 = 256  // Max objects per cell
 
-    // Per-layer spatial indices
+    // Per-layer spatial indices (instance data — unique per document)
     private var layerIndices: [UUID: LayerSpatialIndex] = [:]
     // Static so multiple DrawingCanvas instances share one dedupe cache.
     private static let fingerprintLock = NSLock()
@@ -37,54 +48,40 @@ class MetalSpatialIndex {
     }
 
     init?() {
-        guard let metalDevice = MTLCreateSystemDefaultDevice() else {
-            print("❌ Metal device not available")
-            return nil
+        // Initialize shared Metal resources exactly once
+        if !Self.sharedInitialized {
+            guard let metalDevice = MTLCreateSystemDefaultDevice() else {
+                print("❌ Metal device not available")
+                return nil
+            }
+            guard let cmdQueue = metalDevice.makeCommandQueue() else {
+                print("❌ Failed to create command queue")
+                return nil
+            }
+            guard let library = metalDevice.makeDefaultLibrary() else {
+                print("❌ Failed to load Metal library")
+                return nil
+            }
+            guard let buildFunction = library.makeFunction(name: "build_spatial_index"),
+                  let buildPipeline = try? metalDevice.makeComputePipelineState(function: buildFunction),
+                  let queryPointFunction = library.makeFunction(name: "query_point"),
+                  let qpPipeline = try? metalDevice.makeComputePipelineState(function: queryPointFunction),
+                  let queryRectFunction = library.makeFunction(name: "query_rect"),
+                  let qrPipeline = try? metalDevice.makeComputePipelineState(function: queryRectFunction),
+                  let clearGridFunction = library.makeFunction(name: "clear_grid"),
+                  let cgPipeline = try? metalDevice.makeComputePipelineState(function: clearGridFunction) else {
+                print("❌ Failed to create Metal pipelines")
+                return nil
+            }
+            Self.sharedDevice = metalDevice
+            Self.sharedCommandQueue = cmdQueue
+            Self.sharedBuildPipeline = buildPipeline
+            Self.sharedQueryPointPipeline = qpPipeline
+            Self.sharedQueryRectPipeline = qrPipeline
+            Self.sharedClearGridPipeline = cgPipeline
+            Self.sharedInitialized = true
         }
-
-        guard let cmdQueue = metalDevice.makeCommandQueue() else {
-            print("❌ Failed to create command queue")
-            return nil
-        }
-
-        self.device = metalDevice
-        self.commandQueue = cmdQueue
-
-        // Load shader library
-        guard let library = metalDevice.makeDefaultLibrary() else {
-            print("❌ Failed to load Metal library")
-            return nil
-        }
-
-        // Create compute pipelines
-        guard let buildFunction = library.makeFunction(name: "build_spatial_index"),
-              let buildPipeline = try? metalDevice.makeComputePipelineState(function: buildFunction) else {
-            print("❌ Failed to create build_spatial_index pipeline")
-            return nil
-        }
-
-        guard let queryPointFunction = library.makeFunction(name: "query_point"),
-              let queryPointPipeline = try? metalDevice.makeComputePipelineState(function: queryPointFunction) else {
-            print("❌ Failed to create query_point pipeline")
-            return nil
-        }
-
-        guard let queryRectFunction = library.makeFunction(name: "query_rect"),
-              let queryRectPipeline = try? metalDevice.makeComputePipelineState(function: queryRectFunction) else {
-            print("❌ Failed to create query_rect pipeline")
-            return nil
-        }
-
-        guard let clearGridFunction = library.makeFunction(name: "clear_grid"),
-              let clearGridPipeline = try? metalDevice.makeComputePipelineState(function: clearGridFunction) else {
-            print("❌ Failed to create clear_grid pipeline")
-            return nil
-        }
-
-        self.pipelineState = buildPipeline
-        self.queryPointPipeline = queryPointPipeline
-        self.queryRectPipeline = queryRectPipeline
-        self.clearGridPipeline = clearGridPipeline
+        guard Self.sharedInitialized else { return nil }
     }
 
     /// Rebuild spatial index for specific layers only
