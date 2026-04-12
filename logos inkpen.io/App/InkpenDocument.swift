@@ -37,6 +37,8 @@ struct InkpenDocument: FileDocument {
             // "AGD" for FH5+, "FH3" for FH3
             if b0 == UInt8(ascii: "A"), b1 == UInt8(ascii: "G"), b2 == UInt8(ascii: "D") { return true }
             if b0 == UInt8(ascii: "F"), b1 == UInt8(ascii: "H"), b2 == UInt8(ascii: "3") { return true }
+            // 0x1c IPTC wrapper used by some FH versions (e.g. FH10)
+            if b0 == 0x1c { return true }
             return false
         }()
 
