@@ -413,8 +413,13 @@ struct VectorText: Identifiable, Codable, Hashable {
 }
 
 class FontManager: ObservableObject {
-    var availableFonts: [String] = []
-    var systemFonts: [String] = []
+    // Font list is shared — system fonts don't change between documents.
+    private static var sharedAvailableFonts: [String] = []
+    private static var sharedSystemFonts: [String] = []
+    private static var sharedFontsLoaded = false
+
+    var availableFonts: [String] { Self.sharedAvailableFonts }
+    var systemFonts: [String] { Self.sharedSystemFonts }
     var googleFonts: [String] = []
 
     private var fontVariantsCache: [String: [String]] = [:]
@@ -428,7 +433,10 @@ class FontManager: ObservableObject {
     @Published var selectedTextAlignment: TextAlignment = .center
 
     init() {
-        loadAvailableFonts()
+        if !Self.sharedFontsLoaded {
+            loadAvailableFonts()
+            Self.sharedFontsLoaded = true
+        }
     }
 
     func clearVariantsCache() {
@@ -438,7 +446,7 @@ class FontManager: ObservableObject {
 
     private func loadAvailableFonts() {
         let fontManager = NSFontManager.shared
-        systemFonts = fontManager.availableFontFamilies.sorted()
+        Self.sharedSystemFonts = fontManager.availableFontFamilies.sorted()
 
         let excludedFontPrefixes = [
             "Noto ",
@@ -487,7 +495,7 @@ class FontManager: ObservableObject {
             }
         }
 
-        availableFonts = orderedFonts
+        Self.sharedAvailableFonts = orderedFonts
     }
 
     private func getWeightOrder(_ variantName: String) -> Int {

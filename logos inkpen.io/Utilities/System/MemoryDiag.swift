@@ -93,15 +93,41 @@ enum MemoryDiag {
         }
     }
 
+    /// Print heap size of key objects to find what's bloated.
+    static func measureObjectSizes(_ doc: VectorDocument) {
+        let mb = processMemoryMB()
+        print("📊 [MemSize] process=\(mb)MB")
+        print("  VectorDocument: \(malloc_size(Unmanaged.passUnretained(doc).toOpaque()))B")
+        print("  snapshot.objects: \(doc.snapshot.objects.count) entries")
+        print("  viewState: \(malloc_size(Unmanaged.passUnretained(doc.viewState).toOpaque()))B")
+        print("  commandManager: \(malloc_size(Unmanaged.passUnretained(doc.commandManager).toOpaque()))B")
+        print("  changeNotifier: \(malloc_size(Unmanaged.passUnretained(doc.changeNotifier).toOpaque()))B")
+        print("  fontManager: \(malloc_size(Unmanaged.passUnretained(doc.fontManager).toOpaque()))B")
+        // Metal singletons (shared, but expensive)
+        if let tileRenderer = MetalImageTileRenderer.shared {
+            print("  MetalImageTileRenderer.shared: \(malloc_size(Unmanaged.passUnretained(tileRenderer).toOpaque()))B")
+        }
+        print("  MetalComputeEngine.shared: \(malloc_size(Unmanaged.passUnretained(MetalComputeEngine.shared).toOpaque()))B")
+        print("  GPUCoordinateTransform.shared: \(malloc_size(Unmanaged.passUnretained(GPUCoordinateTransform.shared).toOpaque()))B")
+        print("  GPUMathAcceleratorSimple.shared: \(malloc_size(Unmanaged.passUnretained(GPUMathAcceleratorSimple.shared).toOpaque()))B")
+        print("  MetalDrawingOptimizer.shared: \(malloc_size(Unmanaged.passUnretained(MetalDrawingOptimizer.shared).toOpaque()))B")
+        print("  PDFMetalProcessor.shared: \(malloc_size(Unmanaged.passUnretained(PDFMetalProcessor.shared).toOpaque()))B")
+        print("  PDFMetalAccelerator.shared: \(malloc_size(Unmanaged.passUnretained(PDFMetalAccelerator.shared).toOpaque()))B")
+        print("  PDFHybridProcessor.shared: \(malloc_size(Unmanaged.passUnretained(PDFHybridProcessor.shared).toOpaque()))B")
+        // After measuring singletons (first access triggers init)
+        print("  process AFTER singleton access: \(processMemoryMB())MB")
+    }
+
+    /// Returns phys_footprint — same metric Xcode's memory gauge shows.
     static func processMemoryMB() -> Int {
-        var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
         let result = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
             }
         }
         guard result == KERN_SUCCESS else { return 0 }
-        return Int(info.resident_size) / (1024 * 1024)
+        return Int(info.phys_footprint) / (1024 * 1024)
     }
 }

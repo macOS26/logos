@@ -217,14 +217,20 @@ struct DrawingCanvas: View {
                     }
                 }
                 .onAppear {
-                    // Initial setup only
+                    MemoryDiag.checkpoint("DrawingCanvas.onAppear START")
                     selectedObjectIDs = document.viewState.selectedObjectIDs
                     cachedObjectCount = document.snapshot.objects.count
                     let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
                     spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                     rebuildLockedObjectsCache()
                     hasSpatialIndexInitialized = true
-                    MemoryDiag.report("DrawingCanvas.onAppear", document: document)
+                    MemoryDiag.report("DrawingCanvas.onAppear END", document: document)
+                    // Delayed: catch SwiftUI's post-layout allocations
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak document] in
+                        guard let document else { return }
+                        MemoryDiag.checkpoint("DrawingCanvas +2s (after SwiftUI layout)")
+                        MemoryDiag.report("DrawingCanvas +2s", document: document)
+                    }
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
                     // Skip rebuild during initial load

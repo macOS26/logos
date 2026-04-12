@@ -18,6 +18,7 @@ struct DocumentBasedContentView: View {
                     hasHydratedImages = true
                 }
                 MemoryDiag.report("DocumentBasedContentView.onAppear (after hydrate)", document: inkpenDocument.document)
+                MemoryDiag.measureObjectSizes(inkpenDocument.document)
             }
             .onChange(of: imagePreviewQuality) { _, _ in
                 // Clear image caches when quality changes

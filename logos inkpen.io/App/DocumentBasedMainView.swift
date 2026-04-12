@@ -69,6 +69,7 @@ struct DocumentBasedMainView: View {
                 .contentShape(Rectangle())
                 .background(Color.black.opacity(0.8))
                 .zIndex(100)
+                .onAppear { MemoryDiag.checkpoint("VerticalToolbar.onAppear") }
 
                 GeometryReader { geometry in
                     ZStack {
@@ -130,6 +131,7 @@ struct DocumentBasedMainView: View {
                 .frame(width: 280)
                 .frame(minWidth: 280)
                 .zIndex(100)
+                .onAppear { MemoryDiag.checkpoint("RightPanel.onAppear") }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400)
