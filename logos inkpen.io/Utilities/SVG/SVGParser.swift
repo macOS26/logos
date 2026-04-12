@@ -460,7 +460,36 @@ class SVGParser: NSObject, XMLParserDelegate {
                     $0.isClippingPath || $0.clippedByShapeID != nil
                 }
                 if allClippingRelated {
-                    statGroupsAllClip += 1
+                    /* Build a native Clipping Group container from the flat
+                       [masked, clip, masked, clip, ...] produced by per-shape
+                       applyClipPathToShape. The native format needs ONE mask at
+                       memberIDs[0] and every content shape following it without
+                       the clippedByShapeID flag (native renderer reads mask
+                       positionally from memberShapes[0]). */
+                    let maskShape = children.first { $0.isClippingPath }
+                    let contentShapes = children.filter { !$0.isClippingPath }
+                        .map { shape -> VectorShape in
+                            var cleaned = shape
+                            cleaned.clippedByShapeID = nil
+                            return cleaned
+                        }
+                    if let mask = maskShape, !contentShapes.isEmpty {
+                        var cleanedMask = mask
+                        cleanedMask.isClippingPath = false
+                        let members = [cleanedMask] + contentShapes
+                        var clipGroup = VectorShape.group(
+                            from: members,
+                            name: "Clipping Group",
+                            isClippingGroup: true
+                        )
+                        clipGroup.memberIDs = []
+                        clipGroup.groupedShapes = members
+                        shapes.removeSubrange(childRange)
+                        shapes.append(clipGroup)
+                        statGroupsWrapped += 1
+                    } else {
+                        statGroupsAllClip += 1
+                    }
                     break
                 }
 
@@ -831,10 +860,14 @@ class SVGParser: NSObject, XMLParserDelegate {
             return
         }
 
-        let shape = createShape(
-            name: "Path",
+        /* Detect common geometric types from generic <path d="..."> data. */
+        let detected = PathShapeDetector.detect(elements: pathData)
+
+        var shape = createShape(
+            name: detected?.name ?? "Path",
             path: vectorPath,
-            attributes: attributes
+            attributes: attributes,
+            geometricType: detected?.type
         )
 
         if shouldClip, let clipId = clipPathId {
@@ -1325,6 +1358,13 @@ class SVGParser: NSObject, XMLParserDelegate {
                     return (true, clipPathId)
                 }
             }
+        }
+
+        /* Fall back to the enclosing <g clip-path="url(#...)">'s pending id.
+           Without this, child rects/paths/circles inside a clipping group never
+           pick up the clip — only <image> did, which had its own fallback. */
+        if let pending = pendingClipPathId {
+            return (true, pending)
         }
 
         return (false, nil)

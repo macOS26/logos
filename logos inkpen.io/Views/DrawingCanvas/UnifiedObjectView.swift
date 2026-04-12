@@ -419,6 +419,26 @@ struct LayerCanvasView: View {
                                 let liveMaskShapeNoClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                                 renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
+                            /* Recursively draw leaf outlines for nested groups in
+                               the keyline "no clipping" fallback so grouped
+                               content inside a clip group still shows. */
+                            func renderKeylineLeafOutline(_ shape: VectorShape) {
+                                guard shape.isVisible else { return }
+                                if shape.isGroupContainer {
+                                    for m in document.resolveGroupMembers(shape) {
+                                        renderKeylineLeafOutline(m)
+                                    }
+                                    return
+                                }
+                                if VectorText.from(shape) != nil {
+                                    renderText(shape, context: &context, isSelected: false, liveScaleTransform: .identity, fontSizeDelta: 0, lineSpacingDelta: 0, lineHeightDelta: 0, letterSpacingDelta: 0, fillDeltaOpacity: 0, textContentDelta: nil)
+                                } else if hasImageData(shape) {
+                                    renderImage(shape, context: &context, isSelected: false, scaleTransform: .identity, canvasSize: size)
+                                } else {
+                                    renderShape(shape, context: &context, isSelected: false, scaleTransform: .identity)
+                                }
+                            }
+
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
@@ -433,7 +453,9 @@ struct LayerCanvasView: View {
 
                                 let liveContentNoClip = applyLivePositions(to: contentShape)
 
-                                if VectorText.from(liveContentNoClip) != nil {
+                                if liveContentNoClip.isGroupContainer {
+                                    renderKeylineLeafOutline(liveContentNoClip)
+                                } else if VectorText.from(liveContentNoClip) != nil {
                                     renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta)
                                 } else if hasImageData(liveContentNoClip) {
                                     renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, canvasSize: size)

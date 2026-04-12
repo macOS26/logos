@@ -17,6 +17,7 @@ struct DocumentBasedMainView: View {
     @State var showingImportProgress = false
     @State var showingSVGTestHarness = false
     @State var showingPressureCalibration = false
+    @State var showingSFSymbolsPicker = false
     @State var hasInitializedTool = false
     @State var layerPreviewOpacities: [UUID: Double] = [:]
     @State var liveDragOffset: CGPoint = .zero
@@ -152,6 +153,7 @@ struct DocumentBasedMainView: View {
                 showingImportProgress: $showingImportProgress,
                 showingSVGTestHarness: $showingSVGTestHarness,
                 showingPressureCalibration: $showingPressureCalibration,
+                showingSFSymbolsPicker: $showingSFSymbolsPicker,
                 liveDragOffset: $liveDragOffset,
                 liveScaleDimensions: $liveScaleDimensions,
                 onRunDiagnostics: runPasteboardDiagnostics
@@ -260,6 +262,22 @@ struct DocumentBasedMainView: View {
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
                 .frame(width: 1200, height: 800)
+        }
+        .sheet(isPresented: $showingSFSymbolsPicker) {
+            SFSymbolsPickerView(
+                isPresented: $showingSFSymbolsPicker,
+                onImport: { tempURL in
+                    /* Route the picked symbol's SVG through the standard import
+                       path so it lands on the current layer exactly like a
+                       File → Open of an SVG file would. */
+                    let result = await VectorImportManager.shared.importVectorFile(from: tempURL)
+                    if result.success, let layerIndex = document.selectedLayerIndex ?? document.snapshot.layers.indices.first {
+                        for shape in result.shapes {
+                            document.addImportedShape(shape, to: layerIndex)
+                        }
+                    }
+                }
+            )
         }
         .onAppear {
             if !hasInitializedTool {

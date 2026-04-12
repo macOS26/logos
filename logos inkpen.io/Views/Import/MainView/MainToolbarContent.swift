@@ -11,6 +11,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingImportProgress: Bool
     @Binding var showingSVGTestHarness: Bool
     @Binding var showingPressureCalibration: Bool
+    @Binding var showingSFSymbolsPicker: Bool
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     let onRunDiagnostics: () -> Void
@@ -134,6 +135,13 @@ struct MainToolbarContent: ToolbarContent {
                     showingPressureCalibration = true
                 }
                 .help("Calibrate pressure-sensitive input devices")
+
+                Divider()
+
+                Button("Insert SF Symbol…") {
+                    showingSFSymbolsPicker = true
+                }
+                .help("Browse ~6000 bundled SF Symbols and insert one as SVG vector content")
 
                 Divider()
 

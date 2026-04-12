@@ -1194,63 +1194,6 @@ void libfreehand::FHCollector::inkpenBuildView(libfreehand::InkpenCollectorView 
   view.contentId = m_contentId;
 }
 
-void libfreehand::FHCollector::outputDrawing(librevenge::RVNGDrawingInterface *painter)
-{
-
-#if DUMP_BINARY_OBJECTS
-  for (std::map<unsigned, FHImageImport>::const_iterator iterImage = m_images.begin(); iterImage != m_images.end(); ++iterImage)
-  {
-    librevenge::RVNGBinaryData data = getImageData(iterImage->second.m_dataListId);
-    librevenge::RVNGString filename;
-    filename.sprintf("freehanddump%.4x.%s", iterImage->first, iterImage->second.m_format.empty() ? "bin" : iterImage->second.m_format.cstr());
-    FILE *f = fopen(filename.cstr(), "wb");
-    if (f)
-    {
-      const unsigned char *tmpBuffer = data.getDataBuffer();
-      for (unsigned long k = 0; k < data.size(); k++)
-        fprintf(f, "%c",tmpBuffer[k]);
-      fclose(f);
-    }
-  }
-#endif
-
-  if (!painter)
-    return;
-
-  if (!m_fhTail.m_blockId || m_fhTail.m_blockId != m_block.first)
-  {
-    FH_DEBUG_MSG(("WARNING: FHTail points to an invalid Block ID\n"));
-    m_fhTail.m_blockId = m_block.first;
-  }
-  if (!m_fhTail.m_blockId)
-  {
-    FH_DEBUG_MSG(("ERROR: Block record is absent from this file\n"));
-    return;
-  }
-
-  if (FH_UNINITIALIZED(m_pageInfo))
-    m_pageInfo = m_fhTail.m_pageInfo;
-
-  painter->startDocument(librevenge::RVNGPropertyList());
-  librevenge::RVNGPropertyList propList;
-  propList.insert("svg:height", m_pageInfo.m_maxY - m_pageInfo.m_minY);
-  propList.insert("svg:width", m_pageInfo.m_maxX - m_pageInfo.m_minX);
-  painter->startPage(propList);
-
-  unsigned layerListId = m_block.second.m_layerListId;
-
-  const std::vector<unsigned> *elements = _findListElements(layerListId);
-  if (elements)
-  {
-    for (unsigned int element : *elements)
-    {
-      _outputLayer(element, painter);
-    }
-  }
-  painter->endPage();
-  painter->endDocument();
-}
-
 void libfreehand::FHCollector::_outputLayer(unsigned layerId, librevenge::RVNGDrawingInterface *painter)
 {
   if (!painter)

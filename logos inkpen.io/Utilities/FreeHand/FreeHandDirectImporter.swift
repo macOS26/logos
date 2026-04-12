@@ -1,6 +1,13 @@
 import Foundation
 import CoreGraphics
 
+enum FreeHandImportError: Error {
+    case notSupported
+    case parseFailed(code: Int)
+    case emptyOutput
+    case allocationFailed
+}
+
 enum FreeHandDirectImporter {
     struct Stats {
         let paths: Int
@@ -192,11 +199,21 @@ enum FreeHandDirectImporter {
         }
 
         let opacity = fh_result_shape_opacity(result, index)
-        let baseName = isCompound ? "Compound Path" : "Path"
+
+        /* Detect simple geometric types (rect, square, circle, ellipse,
+           triangle, pentagon, etc.) so imports show the right icon and
+           name instead of a generic "Path". Compound paths skip detection. */
+        var detectedType: GeometricShapeType? = nil
+        var baseName = isCompound ? "Compound Path" : "Path"
+        if !isCompound, let detected = PathShapeDetector.detect(elements: elements) {
+            detectedType = detected.type
+            baseName = detected.name
+        }
 
         return VectorShape(
             name: baseName,
             path: path,
+            geometricType: detectedType,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
             opacity: opacity,
@@ -273,17 +290,23 @@ enum FreeHandDirectImporter {
         }
         guard !peerIndices.isEmpty else { return nil }
 
-        /* Native InkPen clipping groups (see VectorDocument+ClippingMasks.swift:16
-           and saved ClippingGroup.inkpen.json) use the simplest possible model:
+        /* Native InkPen clipping groups use the simplest possible model:
            - Container: isGroup=true, isClippingGroup=true, memberIDs=[mask, ...content]
            - Members: plain .shape — NO isClippingPath, NO clippedByShapeID
-           The renderer reads `memberShapes[0]` positionally as the mask. Don't set
-           any extra flags or determineType will reclassify the mask as .clipMask
-           and break the position-based lookup. */
+           The renderer reads `memberShapes[0]` positionally as the mask. */
         var memberShapes: [VectorShape] = []
         memberShapes.reserveCapacity(peerIndices.count)
         for peerIdx in peerIndices {
             if let shape = built[peerIdx] { memberShapes.append(shape) }
+        }
+
+        /* Match SVG clip-group naming convention: mask = "Clip Path",
+           content shapes get a "Masked " prefix (e.g. "Masked Rectangle"). */
+        if isClip && !memberShapes.isEmpty {
+            memberShapes[0].name = "Clip Path"
+            for i in 1..<memberShapes.count {
+                memberShapes[i].name = "Masked " + memberShapes[i].name
+            }
         }
 
         let name = isClip ? "Clipping Group" : "Group"

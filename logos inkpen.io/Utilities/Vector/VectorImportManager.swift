@@ -8,59 +8,9 @@ class VectorImportManager {
     private init() {}
 
     private static let freehandExtensions: Set<String> = [
-        "fh", "fh3", "fh5", "fh6", "fh7", "fh8", "fh9",
+        "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
         "fh10", "fh11", "fhmx", "ft11", "ftmx"
     ]
-
-    /// Dump fh2svg output to ~/Downloads/FH2SVGDumps/ and open in Safari.
-    static func dumpFreeHandSVG(_ svg: String, sourceURL: URL) {
-        let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
-        let dir = downloads.appendingPathComponent("FH2SVGDumps", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let filename = sourceURL.deletingPathExtension().lastPathComponent + ".fh2svg.svg"
-        let dest = dir.appendingPathComponent(filename)
-        do {
-            try svg.data(using: .utf8)?.write(to: dest)
-        } catch {
-            print("📦 FH2SVG dump FAILED: \(error)")
-            return
-        }
-
-        let gOpens = svg.components(separatedBy: "<g ").count - 1 + svg.components(separatedBy: "<g>").count - 1
-        let gCloses = svg.components(separatedBy: "</g>").count - 1
-        let pathCount = svg.components(separatedBy: "<path ").count - 1
-        let imageCount = svg.components(separatedBy: "<image ").count - 1
-        let patternCount = svg.components(separatedBy: "<pattern ").count - 1
-        let textCount = svg.components(separatedBy: "<text ").count - 1
-
-        let multiMovePaths = svg.components(separatedBy: "<path ").dropFirst().filter { chunk in
-            guard let end = chunk.range(of: "/>") ?? chunk.range(of: "</path>") else { return false }
-            let head = chunk[chunk.startIndex..<end.lowerBound]
-            if let dRange = head.range(of: "d=\"") {
-                let tail = head[dRange.upperBound...]
-                if let dEnd = tail.range(of: "\"") {
-                    let pathData = tail[tail.startIndex..<dEnd.lowerBound]
-                    let moves = pathData.lowercased().filter { $0 == "m" }.count
-                    return moves >= 2
-                }
-            }
-            return false
-        }.count
-
-        print("""
-        📦 FH2SVG dump: \(dest.path)
-           bytes=\(svg.utf8.count)  <g>=\(gOpens)/\(gCloses)  <path>=\(pathCount)  multi-M-paths=\(multiMovePaths)  <image>=\(imageCount)  <pattern>=\(patternCount)  <text>=\(textCount)
-        """)
-
-        if let safari = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari") {
-            let cfg = NSWorkspace.OpenConfiguration()
-            cfg.activates = false
-            NSWorkspace.shared.open([dest], withApplicationAt: safari, configuration: cfg) { _, _ in }
-        } else {
-            NSWorkspace.shared.open(dest)
-        }
-    }
 
     func importVectorFile(from url: URL) async -> VectorImportResult {
 

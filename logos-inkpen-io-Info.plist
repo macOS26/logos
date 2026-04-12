@@ -248,7 +248,10 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>fh</string>
+					<string>fh1</string>
+					<string>fh2</string>
 					<string>fh3</string>
+					<string>fh4</string>
 					<string>fh5</string>
 					<string>fh6</string>
 					<string>fh7</string>
