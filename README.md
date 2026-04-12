@@ -1,10 +1,8 @@
 # logos inkpen.io
 
+<a href="https://www.paypal.com/ncp/payment/3DTH3S7XARK98"><img src="https://img.shields.io/badge/Tip_Jar-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Tip Jar" /></a> Donations are greatly appreciated!
+
 Native FreeHand import (FH3 through FH11 & MX) — opened directly, no intermediate formats. Improved PDF & SVG parsing for Xcode UI, SpriteKit, web graphics, and Linux icons. Apple Pencil support via Luna Display or Sidecar. Built on SwiftUI, Metal & CoreGraphics for macOS 14, 15 & 26. GPU-accelerated vector rendering with real-time previews and instant zoom at any scale.
-
-<a href="https://www.paypal.com/ncp/payment/3DTH3S7XARK98"><img src="https://img.shields.io/badge/Tip_Jar-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Tip Jar" /></a>
-
-Donations are greatly appreciated and help keep this project alive!
 
 <img width="1579" height="1376" alt="image" src="https://github.com/user-attachments/assets/360b5a32-a7fb-49a3-b095-05d2f0121533" />
 
