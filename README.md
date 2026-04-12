@@ -1,4 +1,4 @@
-# logos inkpen.io 1.0.1 Public Release
+# logos inkpen.io 1.0.2 Public Release
 
 A professional vector graphics editor for macOS, inspired by the classic FreeHand workflow. Built with SwiftUI and designed for precision illustration work.
 
@@ -41,13 +41,17 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 
 ## 📋 Import & Export
 
-- FreeHand single page document import (.fh, .fh3–.fh11/.fhmx) — supports reading FreeHand objects and masked gradients
+- FreeHand document import (`.fh`, `.fh3`, `.fh5`, `.fh6`, `.fh7`, `.fh8`, `.fh9`, `.fh10`, `.fh11`, `.fhmx`) — imports directly from libFreeHand, skipping SVG code generation and reading straight to InkPen objects
+- FreeHand `.fh10+` import support improved (IPTC metadata wrapper fix) — tested with `.fh10`; same fix applies to `.fh11` and `.fhmx`
+- PDF vector graphic support with single and multiline text box generation
+- Closest font substitution for accurate PDF text rendering
 - SVG import: shapes added to new layer instead of replacing Guides layer
 - SVG text import preserves UUID and textPosition
-- PDF export fix for groups using memberIDs
+- PDF and SVG export fixes for groups using memberIDs
 - Autodesk SVG export uses true 96 DPI coordinates
 - PNG export fix (was upside down from File menu)
 - Dynamic format version in SVG and PDF metadata
+- Support for additional image formats
 
 ## 🗂️ Layers & Groups
 
@@ -121,6 +125,12 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 - Optimize LayersPanel reactivity
 - Fix duplicate button actions
 
+## 🖼️ SF Symbols
+
+- SF Symbols integration for browsing and inserting Apple's symbol library
+- Search and filter SF Symbols by name
+- Insert SF Symbols as vector objects in documents
+
 ## ⚡ Performance — SIMD Optimizations
 
 - SIMD optimize pan and coordinate transforms
@@ -165,7 +175,7 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 | Format | Extension | Description |
 |--------|-----------|-------------|
 | Ink Pen Document | .inkpen | Native format with full editibility |
-| FreeHand Document | .fh, .fh3–.fh11/.fhmx | Single page import — FreeHand objects and masked gradients |
+| FreeHand Document | .fh, .fh3–.fh11/.fhmx | Import — FreeHand objects and masked gradients (`.fh10+` IPTC fix) |
 | SVG | .svg | Scalable Vector Graphics |
 | PDF | .pdf | Portable Document Format |
 | PNG | .png | Raster image export |
@@ -181,9 +191,15 @@ A professional vector graphics editor for macOS, inspired by the classic FreeHan
 
 ## 📦 Release
 
-**v1.0.1** — Initial Public Release · 2,599 commits · Oct 9, 2025 → Apr 9, 2026
+**v1.0.2** — Tribute to FreeHand · Oct 9, 2025 → Apr 9, 2026
 
-[Download latest release](https://github.com/macOS26/logos/releases/tag/v1.0.1)
+- FreeHand `.fh10+` import support improved (IPTC metadata wrapper fix)
+- PDF vector graphic support with text box generation and font substitution
+- SF Symbols integration for browsing and inserting Apple's symbol library
+- PDF and SVG export fixes for groups using memberIDs
+- Additional image format support
+
+[Download latest release](https://github.com/macOS26/logos/releases/tag/1.0.2)
 
 ---
 
