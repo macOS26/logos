@@ -9,17 +9,13 @@ struct PasteboardBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
-        Rectangle()
-            .fill(Color.black.opacity(0.2))
-            .frame(
-                width: pasteboardSize.width * zoomLevel,
-                height: pasteboardSize.height * zoomLevel
-            )
-            .offset(
-                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
-                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y
-            )
-            .allowsHitTesting(false)
+        Canvas { context, size in
+            let x = pasteboardOrigin.x * zoomLevel + canvasOffset.x
+            let y = pasteboardOrigin.y * zoomLevel + canvasOffset.y
+            let w = pasteboardSize.width * zoomLevel
+            let h = pasteboardSize.height * zoomLevel
+            context.fill(Path(CGRect(x: x, y: y, width: w, height: h)), with: .color(.black.opacity(0.2)))
+        }
     }
 }
 
@@ -30,14 +26,11 @@ struct CanvasBackgroundView: View {
     let canvasOffset: CGPoint
 
     var body: some View {
-        Rectangle()
-            .fill(backgroundColor)
-            .frame(
-                width: canvasSize.width * zoomLevel,
-                height: canvasSize.height * zoomLevel
-            )
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .allowsHitTesting(false)
+        Canvas { context, size in
+            let w = canvasSize.width * zoomLevel
+            let h = canvasSize.height * zoomLevel
+            context.fill(Path(CGRect(x: canvasOffset.x, y: canvasOffset.y, width: w, height: h)), with: .color(backgroundColor))
+        }
     }
 }
 

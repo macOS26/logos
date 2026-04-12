@@ -313,6 +313,16 @@ struct DocumentBasedMainView: View {
         }
         .onDisappear {
             documentState.cleanup()
+            // DocumentGroup retains InkpenDocument (and its VectorDocument) for
+            // state restoration even after the tab closes. Release heavy resources
+            // so the retained shell is lightweight.
+            document.imageStorage.removeAll()
+            document.lastDrawnImageHash.removeAll()
+            document.snapshot.objects.removeAll()
+            document.snapshot.layers.removeAll()
+            document.commandManager.clear()
+            document.commandManager.document = nil
+            MemoryDiag.checkpoint("DocumentBasedMainView.onDisappear DONE")
         }
         .focusedSceneObject(documentState)
     }

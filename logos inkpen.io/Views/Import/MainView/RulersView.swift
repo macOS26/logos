@@ -33,7 +33,7 @@ struct RulersView: View {
 
                     drawHorizontalRuler(context: context, size: size, document: document)
                 }
-                .drawingGroup()
+                // .drawingGroup() removed — saves ~33MB per ruler
                 .frame(height: rulerThickness)
                 .position(x: geometry.size.width / 2, y: rulerThickness / 2)
                 .contentShape(Path { path in
@@ -87,7 +87,7 @@ struct RulersView: View {
                     ctx.translateBy(x: 0, y: 0.5)
                     drawVerticalRuler(context: ctx, size: size, document: document)
                 }
-                .drawingGroup()
+                // .drawingGroup() removed — saves ~33MB per ruler
                 .frame(width: rulerThickness)
                 .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 .contentShape(Path { path in

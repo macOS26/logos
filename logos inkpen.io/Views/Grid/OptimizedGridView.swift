@@ -93,7 +93,7 @@ struct OptimizedGridView: View {
             }
           
         }
-        .drawingGroup()
+        // .drawingGroup() removed — saves ~33MB Retina backing store per doc
     }
 
     private func createTilePatterns(

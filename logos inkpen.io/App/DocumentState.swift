@@ -81,6 +81,23 @@ class DocumentState: ObservableObject {
     }
 
     func cleanup() {
+        // Cancel Combine subscriptions FIRST — they hold refs to document.viewState/commandManager
+        selectionCancellable?.cancel()
+        selectionCancellable = nil
+        commandManagerCancellable?.cancel()
+        commandManagerCancellable = nil
+        pasteboardTimer?.invalidate()
+        pasteboardTimer = nil
+
+        // Purge caches tied to this document
+        if let doc = document {
+            let docShapeIDs = Set(doc.snapshot.objects.keys)
+            for id in docShapeIDs {
+                SVGToInkPenImporter.svgShapeRegistry.removeValue(forKey: id)
+            }
+            doc.imageStorage.removeAll()
+        }
+        MemoryDiag.checkpoint("DocumentState.cleanup")
         document = nil
     }
 

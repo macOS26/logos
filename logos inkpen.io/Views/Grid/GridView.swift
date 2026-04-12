@@ -54,7 +54,7 @@ struct GridCanvasView: View {
                 canvasOffset: canvasOffset
             )
         }
-        .drawingGroup()
+        // .drawingGroup() removed — saves ~33MB Retina backing store per doc
     }
 
     private func drawGridLines(

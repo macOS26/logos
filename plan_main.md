@@ -1,21 +1,13 @@
-# fix-force-unwraps
+# inkpen-memory-leak-investigation
 
-- [ ] 1. Fix force unwraps in:
-- [ ] 2. 1. SIMDTransforms.swift (lines 84-85)
-- [ ] 3. 2. DrawingCanvas+FreehandTool.swift (line 46)
-- [ ] 4. 3. DrawingCanvas+BrushTool.swift (line 45)
-- [ ] 5. 4. ProfessionalVectorPath.swift (line 249)
-- [ ] 6. 5. MetalImageTileRenderer.swift (line 347)
-- [ ] 7. 6. PDFContent+ImageSupport.swift (line 324)
-- [ ] 8. 7. PDFContent+PDF17.swift (line 14)
-- [ ] 9. 8. PDFTransparencyHandlers.swift (line 115)
-- [ ] 10. 9. extractGradientFromPattern.swift (line 17)
-- [ ] 11. 10. extractGradientFromShading.swift (line 105)
-- [ ] 12. 11. extractGradientStops.swift (lines 19, 30, 34, 48)
-- [ ] 13. 12. ProfessionalTextCanvas.swift (lines 49, 51, 191)
-- [ ] 14. 13. UnifiedObjectView.swift (many lines)
-- [ ] 15. 14. PDFMetalAccelerator.swift (lines 10-27 IUO properties)
-- [ ] 16. 15. Build and verify
+- [⏳] 1. Step 1: Examine InkpenDocument.swift — document lifecycle, tab close, cleanup
+- [ ] 2. Step 2: Examine DocumentBasedContentView.swift and DocumentBasedMainView.swift — tab management, view lifecycle
+- [ ] 3. Step 3: Examine DocumentState.swift and DocumentStateRegistry.swift — shared state between tabs
+- [ ] 4. Step 4: Examine DrawingCanvasRegistry.swift — canvas/image caching
+- [ ] 5. Step 5: Examine AppState.swift — global shared state, image caches
+- [ ] 6. Step 6: Examine Image handling — NSImage caching, bitmap contexts, rasterized layers
+- [ ] 7. Step 7: Search for strong reference cycles (closures, delegates)
+- [ ] 8. Step 8: Compile findings and fix leaks
 
 ---
-*Status: 16 steps pending*
+*Status: 0 done, 1 in progress, 0 failed, 7 pending*
