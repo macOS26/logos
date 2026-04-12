@@ -331,6 +331,24 @@ class MetalSpatialIndex {
         Self.fingerprintLock.unlock()
     }
 
+    /// Drop cached per-layer indices for layers that no longer exist in the snapshot.
+    /// Without this, removed layers keep contributing phantom hit-test candidates.
+    func purgeRemovedLayers(from snapshot: DocumentSnapshot) {
+        let currentIDs = Set(snapshot.layers.map { $0.id })
+        let staleIDs = Set(layerIndices.keys).subtracting(currentIDs)
+        guard !staleIDs.isEmpty else { return }
+
+        for staleID in staleIDs {
+            layerIndices.removeValue(forKey: staleID)
+        }
+
+        Self.fingerprintLock.lock()
+        for staleID in staleIDs {
+            Self.sharedLayerFingerprints.removeValue(forKey: staleID)
+        }
+        Self.fingerprintLock.unlock()
+    }
+
     /// Get candidate objects at a specific point (GPU query)
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
         var result = Set<UUID>()

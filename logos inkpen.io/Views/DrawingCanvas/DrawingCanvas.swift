@@ -268,6 +268,13 @@ struct DrawingCanvas: View {
                         rebuildLockedObjectsCache()
                     }
                 }
+                .onChange(of: document.snapshot.layers.count) { _, _ in
+                    guard hasSpatialIndexInitialized else { return }
+                    spatialIndex.purgeRemovedLayers(from: document.snapshot)
+                    let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
+                    spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
+                    rebuildLockedObjectsCache()
+                }
                 .onChange(of: ApplicationSettings.shared.boundingBoxIncludesStrokes) { _, _ in
                     // Skip rebuild during initial load
                     guard hasSpatialIndexInitialized else { return }

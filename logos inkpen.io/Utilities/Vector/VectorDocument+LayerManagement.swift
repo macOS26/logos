@@ -206,7 +206,23 @@ extension VectorDocument {
 
         let removingSelectedLayer = settings.selectedLayerId == snapshot.layers[index].id
 
+        for objectID in snapshot.layers[index].objectIDs {
+            snapshot.objects.removeValue(forKey: objectID)
+            ImageContentRegistry.remove(for: objectID, in: self)
+            viewState.selectedObjectIDs.remove(objectID)
+        }
+
         snapshot.layers.remove(at: index)
+
+        for layerIdx in index..<snapshot.layers.count {
+            for objectID in snapshot.layers[layerIdx].objectIDs {
+                if let object = snapshot.objects[objectID] {
+                    let updatedObject = VectorObject(id: object.id, layerIndex: layerIdx, objectType: object.objectType)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
+        }
+
         if selectedLayerIndex == index {
             selectedLayerIndex = min(index, snapshot.layers.count - 1)
         } else if let selected = selectedLayerIndex, selected > index {
