@@ -45,6 +45,7 @@ enum TextAlignment: String, CaseIterable, Codable {
     }
 }
 
+
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
     var fontVariant: String?
@@ -60,6 +61,24 @@ struct TypographyProperties: Codable, Hashable {
     var strokeLineJoin: LineJoin
     var fillColor: VectorColor
     var fillOpacity: Double
+
+    // Nonisolated Equatable conformance for TypographyProperties to resolve Swift 6 error.
+    nonisolated static func == (lhs: TypographyProperties, rhs: TypographyProperties) -> Bool {
+        return lhs.fontFamily == rhs.fontFamily
+            && lhs.fontVariant == rhs.fontVariant
+            && lhs.fontSize == rhs.fontSize
+            && lhs.lineHeight == rhs.lineHeight
+            && lhs.lineSpacing == rhs.lineSpacing
+            && lhs.letterSpacing == rhs.letterSpacing
+            && lhs.alignment == rhs.alignment
+            && lhs.hasStroke == rhs.hasStroke
+            && lhs.strokeColor == rhs.strokeColor
+            && lhs.strokeWidth == rhs.strokeWidth
+            && lhs.strokeOpacity == rhs.strokeOpacity
+            && lhs.strokeLineJoin == rhs.strokeLineJoin
+            && lhs.fillColor == rhs.fillColor
+            && lhs.fillOpacity == rhs.fillOpacity
+    }
 
     init(
         fontFamily: String = "Helvetica",

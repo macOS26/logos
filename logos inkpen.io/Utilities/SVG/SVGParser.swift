@@ -863,7 +863,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         /* Detect common geometric types from generic <path d="..."> data. */
         let detected = PathShapeDetector.detect(elements: pathData)
 
-        var shape = createShape(
+        let shape = createShape(
             name: detected?.name ?? "Path",
             path: vectorPath,
             attributes: attributes,

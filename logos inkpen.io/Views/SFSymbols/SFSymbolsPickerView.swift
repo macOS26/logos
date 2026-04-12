@@ -133,7 +133,7 @@ struct SFSymbolsPickerView: View {
 
     private func loadLibrary() async {
         let names = await Task.detached(priority: .userInitiated) {
-            SFSymbolsLibrary.shared.allNames()
+            await SFSymbolsLibrary.shared.allNames()
         }.value
         allNames = names
         results = filteredResults(for: query)

@@ -124,8 +124,8 @@ struct MainToolbarContent: ToolbarContent {
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
-#if DEBUG
             Menu {
+#if DEBUG
                 Button("SVG Test Harness") {
                     showingSVGTestHarness = true
                 }
@@ -137,25 +137,27 @@ struct MainToolbarContent: ToolbarContent {
                 .help("Calibrate pressure-sensitive input devices")
 
                 Divider()
+#endif
 
                 Button("Insert SF Symbol…") {
                     showingSFSymbolsPicker = true
                 }
                 .help("Browse ~6000 bundled SF Symbols and insert one as SVG vector content")
 
+#if DEBUG
                 Divider()
 
                 Button("Run Diagnostics") {
                     onRunDiagnostics()
                 }
                 .help("Run pasteboard diagnostics")
+#endif
 
             } label: {
                 Image(systemName: "doc.text")
                     .offset(y: 1)
             }
             .help("Development Tools")
-#endif
 
             // Align by anchor points buttons
             Button {
