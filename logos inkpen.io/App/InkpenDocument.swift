@@ -116,6 +116,9 @@ struct InkpenDocument: FileDocument {
                 for shape in parsed.shapes {
                     newDoc.addImportedShape(shape, to: layerIndex)
                 }
+                // Trigger layer updates so spatial index rebuilds for hit testing
+                let allLayerIndices = Set(0..<newDoc.snapshot.layers.count)
+                newDoc.triggerLayerUpdates(for: allLayerIndices)
                 self.document = newDoc
             } catch {
                 Log.error("❌ Failed to load FreeHand document: \(error) filename=\(configuration.file.preferredFilename ?? "?") ext=\(fileExtension ?? "nil") bytes=\(data.count)", category: .error)
