@@ -33,6 +33,8 @@ class FreeHandDocument
 public:
 
   static FHAPI bool isSupported(librevenge::RVNGInputStream *input);
+
+  static FHAPI bool parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter);
 };
 
 } // namespace libfreehand

@@ -9,6 +9,10 @@ extern "C" {
 
 int freehand_is_supported(const unsigned char *data, size_t length);
 
+int freehand_parse_to_svg(const unsigned char *data, size_t length, char **out_svg);
+
+void freehand_free_svg(char *svg);
+
 /* Direct FH → InkPen translator (Phase 1). Returns opaque result handle via out param.
    0 on success, nonzero rc: 1 bad args, 2 not supported, 3 parse failed, 5 OOM.
    Result must be released with fh_result_free. */

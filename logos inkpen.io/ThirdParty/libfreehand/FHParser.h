@@ -26,9 +26,9 @@ class FHParser
 public:
   explicit FHParser();
   virtual ~FHParser();
-  /* Parses the FH document into an externally-owned collector. The only
-     parse entry point — the painter overload was removed with the SVG
-     generator debug path. */
+  bool parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter);
+  /* Parses the FH document into an externally-owned collector. Does NOT call
+     outputDrawing. Used by the InkPen direct translator. */
   bool parse(librevenge::RVNGInputStream *input, FHCollector *collector);
 private:
   FHParser(const FHParser &);

@@ -102,6 +102,38 @@ FHAPI bool FreeHandDocument::isSupported(librevenge::RVNGInputStream *input)
 
 }
 
+/**
+Parses the input stream content. It will make callbacks to the functions provided by a
+librevenge::RVNGDrawingInterface class implementation when needed. This is often commonly called the
+'main parsing routine'.
+\param input The input stream
+\param painter A librevenge::RVNGDrawingerInterface implementation
+\return A value that indicates whether the parsing was successful
+*/
+FHAPI bool FreeHandDocument::parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter)
+{
+  if (!input)
+    return false;
+
+  try
+  {
+    input->seek(0, librevenge::RVNG_SEEK_SET);
+    if (findAGD(input))
+    {
+      FHParser parser;
+      if (!parser.parse(input, painter))
+        return false;
+    }
+    else
+      return false;
+    return true;
+  }
+  catch (...)
+  {
+  }
+  return false;
+}
+
 }
 
 /* vim:set shiftwidth=2 softtabstop=2 expandtab: */

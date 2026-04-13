@@ -83,6 +83,15 @@ libfreehand::FHParser::~FHParser()
     cmsDeleteTransform(m_colorTransform);
 }
 
+bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter)
+{
+  FHCollector contentCollector;
+  if (!parse(input, &contentCollector))
+    return false;
+  contentCollector.outputDrawing(painter);
+  return true;
+}
+
 bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (!collector)
