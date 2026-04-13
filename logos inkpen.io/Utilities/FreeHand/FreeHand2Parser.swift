@@ -49,6 +49,143 @@ enum FreeHand2Parser {
              | UInt32(data[base + 3])
     }
 
+    // MARK: - Color Table
+
+    /// Record entry in the sequential ID table
+    private struct RecordEntry {
+        let offset: Int
+        let type: UInt16
+        let size: Int
+    }
+
+    /// Build sequential ID → record offset table and extract colors
+    private static func buildColorTable(data: Data) -> [Int: VectorColor] {
+        var colorTable: [Int: VectorColor] = [:]
+
+        // Known record signatures: (size, type)
+        let knownSizes: [(Int, UInt16)] = [
+            (60, rectRecordType), (56, ovalRecordType), (48, lineRecordType),
+            (30, 0x1452), (30, 0x1453), (32, 0x1454),
+            (22, 0x14B5), (34, 0x14B6), (28, 0x14B7), (30, 0x14B8)
+        ]
+
+        // Find where records start (after encoding tables, first shape/color record)
+        // Look for the first 0x1519/0x151A/0x151C/0x151D record
+        var recordStart = headerSize
+        for i in stride(from: headerSize, to: min(data.count - 4, headerSize + 2000), by: 1) {
+            let rtype = readUInt16BE(data, offset: i + 2)
+            let size = readUInt16BE(data, offset: i)
+            if (rtype == rectRecordType && size == 60) ||
+               (rtype == ovalRecordType && size == 56) ||
+               (rtype == lineRecordType && size == 48) {
+                recordStart = i
+                break
+            }
+            if rtype == pathRecordType && size >= 44 {
+                let pts = Int(readUInt16BE(data, offset: i + 28))
+                if size == 44 + pts * 16 && pts > 0 {
+                    recordStart = i
+                    break
+                }
+            }
+        }
+
+        // Find the second 0x0005 table to get the starting sequential ID
+        var startID = 36 // default
+        var tableCount = 0
+        for i in stride(from: headerSize, to: recordStart, by: 1) {
+            if i + 6 <= data.count && readUInt16BE(data, offset: i + 2) == 0x0005 {
+                let size = Int(readUInt16BE(data, offset: i))
+                if size >= 16 && size < 200 {
+                    tableCount += 1
+                    if tableCount == 2 {
+                        let count = Int(readUInt16BE(data, offset: i + 4))
+                        if count > 0 && i + 10 < data.count {
+                            startID = Int(readUInt16BE(data, offset: i + 10))
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        // Scan all records sequentially and assign IDs
+        var seqID = startID
+        var entries: [Int: RecordEntry] = [:]
+        var offset = recordStart
+
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+
+            var matched = false
+            // Check path records (variable size)
+            if rtype == pathRecordType && size >= 44 && offset + size <= data.count {
+                let pts = Int(readUInt16BE(data, offset: offset + 28))
+                if size == 44 + pts * 16 {
+                    entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
+                    seqID += 1
+                    matched = true
+                }
+            }
+            // Check fixed-size records
+            if !matched {
+                for (expectedSize, expectedType) in knownSizes {
+                    if rtype == expectedType && size == expectedSize && offset + size <= data.count + 20 {
+                        entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
+                        seqID += 1
+                        matched = true
+                        break
+                    }
+                }
+            }
+
+            offset += 1
+        }
+
+        // Now extract colors from 0x1452 and 0x1453 records
+        for (id, entry) in entries {
+            if entry.type == 0x1452 && entry.offset + 12 <= data.count {
+                // Process color: inverted CMY at +6,+8,+10
+                let c = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 6)) / 65535.0
+                let m = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 8)) / 65535.0
+                let y = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 10)) / 65535.0
+                let r = (1 - c); let g = (1 - m); let b = (1 - y)
+                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
+            }
+            if entry.type == 0x1454 && entry.offset + 22 <= data.count {
+                // Color def: try CMYK at +14,+16,+18,+20 (inverted)
+                let c = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 14)) / 65535.0
+                let m = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 16)) / 65535.0
+                let y = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 18)) / 65535.0
+                let k = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 20)) / 65535.0
+                let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
+                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
+            }
+        }
+
+        // Trace 0x14B5 style refs to find colors
+        for (id, entry) in entries {
+            if entry.type == 0x14B5 && entry.offset + 12 <= data.count {
+                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
+                if let color = colorTable[innerRef] {
+                    colorTable[id] = color
+                }
+            }
+        }
+        // Trace 0x14B6 style refs
+        for (id, entry) in entries {
+            if entry.type == 0x14B6 && entry.offset + 12 <= data.count {
+                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
+                if let color = colorTable[innerRef] {
+                    colorTable[id] = color
+                }
+            }
+        }
+
+        return colorTable
+    }
+
     // MARK: - Public API
 
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
@@ -69,9 +206,10 @@ enum FreeHand2Parser {
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Scan for 0x151C path records by searching for the type marker.
-        // The encoding tables before graphic records have a different structure,
-        // so we scan for the type code and validate the size field 2 bytes before.
+        // Build color lookup table from sequential record IDs
+        let colorTable = buildColorTable(data: data)
+
+        // Scan for shape records
         var shapes: [VectorShape] = []
         var offset = headerSize
 
@@ -89,23 +227,27 @@ enum FreeHand2Parser {
                     if recordSize == expectedSize {
                         if let shape = parsePathRecord(data: data, recordOffset: offset,
                                                        recordSize: recordSize,
-                                                       pageHeight: pageHeight) {
+                                                       pageHeight: pageHeight,
+                                                       colorTable: colorTable) {
                             shapes.append(shape)
                         }
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
                     if let shape = parseOvalRecord(data: data, recordOffset: offset,
-                                                    pageHeight: pageHeight) {
+                                                    pageHeight: pageHeight,
+                                                    colorTable: colorTable) {
                         shapes.append(shape)
                     }
                 } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
                     if let shape = parseRectRecord(data: data, recordOffset: offset,
-                                                    pageHeight: pageHeight) {
+                                                    pageHeight: pageHeight,
+                                                    colorTable: colorTable) {
                         shapes.append(shape)
                     }
                 } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
                     if let shape = parseLineRecord(data: data, recordOffset: offset,
-                                                    pageHeight: pageHeight) {
+                                                    pageHeight: pageHeight,
+                                                    colorTable: colorTable) {
                         shapes.append(shape)
                     }
                 }
@@ -140,7 +282,8 @@ enum FreeHand2Parser {
 
     private static func parsePathRecord(data: Data, recordOffset: Int,
                                         recordSize: Int,
-                                        pageHeight: Double) -> VectorShape? {
+                                        pageHeight: Double,
+                                        colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
         // Minimum path record: 44 bytes header + 0 points
         guard recordSize >= 44 else { return nil }
 
@@ -213,33 +356,9 @@ enum FreeHand2Parser {
             fillRule: .winding
         )
 
-        // Decode attributes from record header
-        // +12: fill gray byte (0=white, 0x7F=black — Mac convention, inverted from PostScript)
-        // +14: stroke gray byte (same scale)
-        let fillGrayByte = data[recordOffset + 12]
-        let strokeGrayByte = data[recordOffset + 14]
-
-        // Convert from Mac gray (0=white, 127=black) to RGB (0=black, 1=white)
-        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
-        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-
-        // +26: closed/filled flag (1 = closed path with fill)
-        let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
-
-        // Build stroke style — use thin stroke, color from gray byte
-        let strokeColor = VectorColor.rgb(RGBColor(
-            red: strokeGray, green: strokeGray, blue: strokeGray
-        ))
-        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
-
-        // Build fill style — only for closed filled paths
-        var fillStyle: FillStyle? = nil
-        if filledFlag == 1 && isClosed {
-            let fillColor = VectorColor.rgb(RGBColor(
-                red: fillGray, green: fillGray, blue: fillGray
-            ))
-            fillStyle = FillStyle(color: fillColor)
-        }
+        // Extract fill and stroke colors from color table
+        let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
+                                                          colorTable: colorTable, isClosed: isClosed)
 
         // Detect geometric shape type
         var detectedType: GeometricShapeType?
@@ -259,10 +378,33 @@ enum FreeHand2Parser {
         )
     }
 
+    // MARK: - Color Extraction from Record Attributes
+
+    private static func extractFillStroke(data: Data, recordOffset: Int,
+                                           colorTable: [Int: VectorColor],
+                                           isClosed: Bool) -> (fill: FillStyle?, stroke: StrokeStyle?) {
+        let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
+        let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
+        let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
+
+        // Look up fill color from color table
+        var fillStyle: FillStyle? = nil
+        if isClosed && filledFlag == 1, let fillColor = colorTable[fillRef] {
+            fillStyle = FillStyle(color: fillColor)
+        }
+
+        // Look up stroke color from color table, default to black
+        let strokeColor = colorTable[strokeRef] ?? .black
+        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+
+        return (fillStyle, strokeStyle)
+    }
+
     // MARK: - Rectangle Record Parsing (0x1519)
 
     private static func parseRectRecord(data: Data, recordOffset: Int,
-                                         pageHeight: Double) -> VectorShape? {
+                                         pageHeight: Double,
+                                         colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
         // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -317,20 +459,11 @@ enum FreeHand2Parser {
         }
 
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
-
-        let fillGrayByte = data[recordOffset + 12]
-        let strokeGrayByte = data[recordOffset + 14]
-        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
-        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-
-        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
-        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
-
-        let fillColor = VectorColor.rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray))
-        let fillStyle = FillStyle(color: fillColor)
+        let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
+                                                          colorTable: colorTable, isClosed: true)
 
         return VectorShape(
-            name: "Rectangle",
+            name: cr > 0.1 ? "Rounded Rectangle" : "Rectangle",
             path: path,
             geometricType: .rectangle,
             strokeStyle: strokeStyle,
@@ -342,7 +475,8 @@ enum FreeHand2Parser {
     // MARK: - Line Record Parsing (0x151D)
 
     private static func parseLineRecord(data: Data, recordOffset: Int,
-                                          pageHeight: Double) -> VectorShape? {
+                                          pageHeight: Double,
+                                          colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
         // Line endpoints at +26 to +33 (4 × Int16 BE): x1, y1, x2, y2
         let x1 = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -355,12 +489,8 @@ enum FreeHand2Parser {
         ]
 
         let path = VectorPath(elements: elements, isClosed: false, fillRule: .winding)
-
-        let strokeGrayByte = data[recordOffset + 14]
-        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-
-        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
-        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+        let (_, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
+                                                  colorTable: colorTable, isClosed: false)
 
         return VectorShape(
             name: "Line",
@@ -375,7 +505,8 @@ enum FreeHand2Parser {
     // MARK: - Oval Record Parsing
 
     private static func parseOvalRecord(data: Data, recordOffset: Int,
-                                         pageHeight: Double) -> VectorShape? {
+                                         pageHeight: Double,
+                                         colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
         // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -413,17 +544,8 @@ enum FreeHand2Parser {
 
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
 
-        // Decode colors same as path records
-        let fillGrayByte = data[recordOffset + 12]
-        let strokeGrayByte = data[recordOffset + 14]
-        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
-        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-
-        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
-        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
-
-        let fillColor = VectorColor.rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray))
-        let fillStyle = FillStyle(color: fillColor)
+        let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
+                                                          colorTable: colorTable, isClosed: true)
 
         return VectorShape(
             name: "Ellipse",
