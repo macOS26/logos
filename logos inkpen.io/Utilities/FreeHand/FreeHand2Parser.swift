@@ -182,6 +182,43 @@ enum FreeHand2Parser {
         return (colorTable, widthTable, gradientTable)
     }
 
+    // MARK: - Layer Parsing
+
+    /// Parse 0x138A records into layer → [shapeID] mapping
+    private static func parseLayers(data: Data) -> [[Int]] {
+        var layers: [[Int]] = []
+        var offset = headerSize
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            if rtype == 0x138A && size >= 20 && size <= 200 {
+                // Read values after 6-byte header
+                var vals: [Int] = []
+                var j = offset + 6
+                while j + 1 < offset + size && j + 1 < data.count {
+                    vals.append(Int(readUInt16BE(data, offset: j)))
+                    j += 2
+                }
+                // Find count + child IDs: first non-zero value after header zeros (skip '16')
+                var children: [Int] = []
+                for (idx, v) in vals.enumerated() {
+                    if idx > 0 && v > 0 && v != 16 && v < 10000 {
+                        let count = v
+                        for k in (idx+1)..<min(idx+1+count, vals.count) {
+                            if vals[k] > 0 { children.append(vals[k]) }
+                        }
+                        break
+                    }
+                }
+                if !children.isEmpty {
+                    layers.append(children)
+                }
+            }
+            offset += 1
+        }
+        return layers
+    }
+
     // MARK: - Debug
 
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
@@ -217,8 +254,40 @@ enum FreeHand2Parser {
         // Build color, width, and gradient lookup tables from sequential record IDs
         let (colorTable, widthTable, gradientTable) = buildColorAndWidthTables(data: data)
 
+        // Parse layer definitions (0x138A records → child shape ID lists)
+        let layerShapeIDs = parseLayers(data: data)
+
+        // Pre-scan: build offset → absID map (count all records except 0x138A, starting at DOC=2)
+        var offsetToAbsID: [Int: Int] = [:]
+        var preAbsID = 2
+        var preOff = headerSize
+        while preOff + 4 <= data.count {
+            let sz = Int(readUInt16BE(data, offset: preOff))
+            let rt = readUInt16BE(data, offset: preOff + 2)
+            var found = false
+            // Match any known record type EXCEPT 0x138A
+            if rt == 0x138A { /* skip */ }
+            else if rt == 0x1389 && sz == 56 { found = true }
+            else if rt == 0x0005 && sz >= 16 && sz < 300 { found = true }
+            else if rt == pathRecordType && sz >= 44 && preOff + sz <= data.count && preOff + 29 < data.count {
+                if sz == 44 + Int(readUInt16BE(data, offset: preOff + 28)) * 16 { found = true }
+            }
+            else if (rt == rectRecordType && sz == 60) || (rt == ovalRecordType && sz == 56) ||
+                    (rt == lineRecordType && sz == 48) { found = true }
+            else if (rt >= 0x1452 && rt <= 0x1454 && sz >= 30 && sz <= 32) { found = true }
+            else if (rt >= 0x14B0 && rt <= 0x14FF && sz >= 10 && sz <= 100) { found = true }
+            else if (rt == 0x157D && sz >= 10 && sz <= 100) { found = true }
+            else if (rt == 0x13ED && sz == 56) { found = true }
+            if found {
+                offsetToAbsID[preOff] = preAbsID
+                preAbsID += 1
+            }
+            preOff += 1
+        }
+
         // Scan for shape records
         var shapes: [VectorShape] = []
+        var shapeAbsIDs: [Int] = []
         var offset = headerSize
 
         while offset + 4 <= data.count {
@@ -238,6 +307,7 @@ enum FreeHand2Parser {
                                                        pageHeight: pageHeight,
                                                        colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                             shapes.append(shape)
+                            shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
                         }
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
@@ -245,24 +315,38 @@ enum FreeHand2Parser {
                                                     pageHeight: pageHeight,
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
+                        shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
                     }
                 } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
                     if let shape = parseRectRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight,
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
+                        shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
                     }
                 } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
                     if let shape = parseLineRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight,
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
+                        shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
                     }
                 }
             }
 
             // Not a recognized record — advance by 1 byte (records can be at odd offsets)
             offset += 1
+        }
+
+        // Debug: show layer → shape mapping
+        if !layerShapeIDs.isEmpty {
+            let shapeIDSet = Set(shapeAbsIDs)
+            for (layerIdx, layerIDs) in layerShapeIDs.enumerated() {
+                let matched = layerIDs.filter { shapeIDSet.contains($0) }
+                if !matched.isEmpty {
+                    print("Layer \(layerIdx): \(matched.count) shapes (IDs \(matched))")
+                }
+            }
         }
 
         guard !shapes.isEmpty else {
