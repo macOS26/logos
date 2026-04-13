@@ -74,11 +74,6 @@ enum FreeHand2Parser {
         var offset = headerSize
 
         while offset + 4 <= data.count {
-            // Check for file terminator
-            if readUInt32BE(data, offset: offset) == terminator {
-                break
-            }
-
             let word = readUInt16BE(data, offset: offset)
 
             // Look for a path record type at offset+2 (size at offset)
