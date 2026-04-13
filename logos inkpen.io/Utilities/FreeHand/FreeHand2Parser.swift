@@ -140,8 +140,9 @@ enum FreeHand2Parser {
         let expectedSize = 44 + pointCount * 16
         guard recordSize >= expectedSize else { return nil }
 
-        // Parse points
-        let pointDataStart = recordOffset + 32
+        // Parse points — data starts at +30 (the 0000 pad after point count
+        // serves as the first point's leading separator)
+        let pointDataStart = recordOffset + 30
         var fh2Points: [FH2Point] = []
         fh2Points.reserveCapacity(pointCount)
 
