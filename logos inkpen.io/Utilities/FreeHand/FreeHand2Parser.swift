@@ -273,17 +273,48 @@ enum FreeHand2Parser {
         let height = top - bottom  // FH2 Y-up
         guard width > 0.1 && height > 0.1 else { return nil }
 
-        // Convert to screen coords (Y flip)
-        let screenLeft = left
-        let screenTop = pageHeight - top
+        // Corner radius at +38 and +40 (Int16 BE, FH2 units)
+        let cornerRadiusX = Double(readUInt16BE(data, offset: recordOffset + 38)) / unitsPerPoint
+        let cornerRadiusY = Double(readUInt16BE(data, offset: recordOffset + 40)) / unitsPerPoint
+        let cr = min(cornerRadiusX, cornerRadiusY, width / 2, height / 2)
 
-        let elements: [PathElement] = [
-            .move(to: VectorPoint(screenLeft, screenTop)),
-            .line(to: VectorPoint(screenLeft + width, screenTop)),
-            .line(to: VectorPoint(screenLeft + width, screenTop + height)),
-            .line(to: VectorPoint(screenLeft, screenTop + height)),
-            .close
-        ]
+        // Convert to screen coords (Y flip)
+        let x = left
+        let y = pageHeight - top
+
+        let elements: [PathElement]
+        if cr > 0.1 {
+            // Rounded rectangle
+            let k: Double = 0.5522847498
+            elements = [
+                .move(to: VectorPoint(x + cr, y)),
+                .line(to: VectorPoint(x + width - cr, y)),
+                .curve(to: VectorPoint(x + width, y + cr),
+                       control1: VectorPoint(x + width - cr + cr * k, y),
+                       control2: VectorPoint(x + width, y + cr - cr * k)),
+                .line(to: VectorPoint(x + width, y + height - cr)),
+                .curve(to: VectorPoint(x + width - cr, y + height),
+                       control1: VectorPoint(x + width, y + height - cr + cr * k),
+                       control2: VectorPoint(x + width - cr + cr * k, y + height)),
+                .line(to: VectorPoint(x + cr, y + height)),
+                .curve(to: VectorPoint(x, y + height - cr),
+                       control1: VectorPoint(x + cr - cr * k, y + height),
+                       control2: VectorPoint(x, y + height - cr + cr * k)),
+                .line(to: VectorPoint(x, y + cr)),
+                .curve(to: VectorPoint(x + cr, y),
+                       control1: VectorPoint(x, y + cr - cr * k),
+                       control2: VectorPoint(x + cr - cr * k, y)),
+                .close
+            ]
+        } else {
+            elements = [
+                .move(to: VectorPoint(x, y)),
+                .line(to: VectorPoint(x + width, y)),
+                .line(to: VectorPoint(x + width, y + height)),
+                .line(to: VectorPoint(x, y + height)),
+                .close
+            ]
+        }
 
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
 
