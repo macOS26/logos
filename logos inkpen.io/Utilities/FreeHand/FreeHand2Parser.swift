@@ -169,11 +169,28 @@ enum FreeHand2Parser {
             }
         }
 
-        // Trace style refs: 0x14B5 and 0x14B6 have inner color ref at +10
+        // Build eid → color lookup from color records (0x1452/0x1453 have RGB at +6,+8,+10)
+        var colorByEid: [Int: VectorColor] = [:]
+        for (_, entry) in entries {
+            let off = entry.offset
+            if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
+                let eid = Int(readUInt16BE(data, offset: off + 4))
+                if eid > 0 {
+                    let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                    let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                    let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                    colorByEid[eid] = .rgb(RGBColor(red: r, green: g, blue: b))
+                }
+            }
+        }
+
+        // Trace style refs: style record's eid at +4 references a color record's eid
         for (id, entry) in entries {
-            if (entry.type == 0x14B5 || entry.type == 0x14B6) && entry.offset + 12 <= data.count {
-                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
-                if let color = colorTable[innerRef] {
+            let isStyle = entry.type == 0x14B5 || entry.type == 0x14B6
+                       || entry.type == 0x14B7 || entry.type == 0x14B8
+            if isStyle && entry.offset + 6 <= data.count {
+                let eid = Int(readUInt16BE(data, offset: entry.offset + 4))
+                if eid > 0, let color = colorByEid[eid] {
                     colorTable[id] = color
                 }
             }
