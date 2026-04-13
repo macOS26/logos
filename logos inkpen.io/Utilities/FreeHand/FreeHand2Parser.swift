@@ -123,46 +123,34 @@ enum FreeHand2Parser {
                 let explicitID = Int(readUInt16BE(data, offset: off + 4))
                 if explicitID > 0 { colorTable[explicitID] = color }
             }
-            // 0x1454: store by sequential ID ONLY (not by eid — their +6,+8,+10
-            // values work as colors when referenced via inner_ref, but storing by
-            // eid pollutes the table with gradient parametric data)
-            if entry.type == 0x1454 && off + 12 <= data.count {
+        }
+
+        // Build a SEPARATE table for 0x1454 gradient colors (by seqID only).
+        // These must NOT be in the main colorTable — shape refs that happen to
+        // match a 0x1454 seqID would get wrong gradient parametric data as color.
+        var gradientColors: [Int: VectorColor] = [:]
+        for (id, entry) in entries {
+            if entry.type == 0x1454 && entry.offset + 12 <= data.count {
+                let off = entry.offset
                 let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
                 let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
                 let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
+                gradientColors[id] = .rgb(RGBColor(red: r, green: g, blue: b))
             }
         }
 
-        // Build eid → color lookup from color records (0x1452/0x1453 have RGB at +6,+8,+10)
-        var colorByEid: [Int: VectorColor] = [:]
-        for (_, entry) in entries {
-            let off = entry.offset
-            if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
-                let eid = Int(readUInt16BE(data, offset: off + 4))
-                if eid > 0 {
-                    let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
-                    let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
-                    let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                    colorByEid[eid] = .rgb(RGBColor(red: r, green: g, blue: b))
-                }
-            }
-        }
-
-        // Trace style refs: use inner_ref at +10 as sequential ID → color lookup
+        // Trace style refs: inner_ref at +10 → look up in colorTable first, then gradientColors
         for (id, entry) in entries {
             let isStyle = entry.type == 0x14B5 || entry.type == 0x14B6
                        || entry.type == 0x14B7 || entry.type == 0x14B8
             if isStyle && entry.offset + 12 <= data.count {
-                // inner_ref at +10 is a sequential ID pointing to a color record
                 let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
-                if innerRef > 0, let color = colorTable[innerRef] {
-                    colorTable[id] = color
-                }
-                // Also try eid at +4 → colorByEid
-                let eid = Int(readUInt16BE(data, offset: entry.offset + 4))
-                if eid > 0, colorTable[id] == nil, let color = colorByEid[eid] {
-                    colorTable[id] = color
+                if innerRef > 0 {
+                    if let color = colorTable[innerRef] {
+                        colorTable[id] = color
+                    } else if let color = gradientColors[innerRef] {
+                        colorTable[id] = color
+                    }
                 }
             }
         }
