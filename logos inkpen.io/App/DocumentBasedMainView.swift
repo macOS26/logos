@@ -44,7 +44,7 @@ struct DocumentBasedMainView: View {
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
     @State private var viewWindow: NSWindow? = nil
-    @State private var isTabActive: Bool = false  // Starts suspended — activated when window becomes key
+    @State private var isTabActive: Bool = true  // Starts active — suspended only when a sibling tab steals focus
 
 
     var body: some View {
