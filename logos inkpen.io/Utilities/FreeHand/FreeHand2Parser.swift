@@ -7,6 +7,7 @@ enum FreeHand2Parser {
     private static let headerSize = 256
     private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32] // "FHD2"
     private static let pathRecordType: UInt16 = 0x151C
+    private static let ovalRecordType: UInt16 = 0x151A
     private static let terminator: UInt32 = 0xFFFFFFFF
     private static let unitsPerPoint: Double = 10.0 // 720 DPI / 72 DPI
 
@@ -79,6 +80,7 @@ enum FreeHand2Parser {
             // Look for a path record type at offset+2 (size at offset)
             if offset + 44 <= data.count {
                 let rtype = readUInt16BE(data, offset: offset + 2)
+
                 if rtype == pathRecordType && word >= 44 && offset + Int(word) <= data.count {
                     let recordSize = Int(word)
                     let pointCount = Int(readUInt16BE(data, offset: offset + 28))
@@ -89,8 +91,11 @@ enum FreeHand2Parser {
                                                        pageHeight: pageHeight) {
                             shapes.append(shape)
                         }
-                        // Don't jump by recordSize — records overlap by 12 bytes,
-                        // so advancing by size skips the next record. Always scan +1.
+                    }
+                } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
+                    if let shape = parseOvalRecord(data: data, recordOffset: offset,
+                                                    pageHeight: pageHeight) {
+                        shapes.append(shape)
                     }
                 }
             }
@@ -237,6 +242,69 @@ enum FreeHand2Parser {
             name: baseName,
             path: path,
             geometricType: detectedType,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle,
+            opacity: 1.0
+        )
+    }
+
+    // MARK: - Oval Record Parsing
+
+    private static func parseOvalRecord(data: Data, recordOffset: Int,
+                                         pageHeight: Double) -> VectorShape? {
+        // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
+        let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
+        let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
+        let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+        let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
+
+        let width = right - left
+        let height = top - bottom  // FH2 Y-up: top > bottom
+        guard width > 0.1 && height > 0.1 else { return nil }
+
+        // Convert to screen coords (Y flip)
+        let cx = left + width / 2.0
+        let cy = pageHeight - (bottom + height / 2.0)
+        let rx = width / 2.0
+        let ry = height / 2.0
+
+        // Approximate ellipse with 4 cubic Bézier segments
+        let k: Double = 0.5522847498  // kappa for circular arc
+        let elements: [PathElement] = [
+            .move(to: VectorPoint(cx + rx, cy)),
+            .curve(to: VectorPoint(cx, cy - ry),
+                   control1: VectorPoint(cx + rx, cy - ry * k),
+                   control2: VectorPoint(cx + rx * k, cy - ry)),
+            .curve(to: VectorPoint(cx - rx, cy),
+                   control1: VectorPoint(cx - rx * k, cy - ry),
+                   control2: VectorPoint(cx - rx, cy - ry * k)),
+            .curve(to: VectorPoint(cx, cy + ry),
+                   control1: VectorPoint(cx - rx, cy + ry * k),
+                   control2: VectorPoint(cx - rx * k, cy + ry)),
+            .curve(to: VectorPoint(cx + rx, cy),
+                   control1: VectorPoint(cx + rx * k, cy + ry),
+                   control2: VectorPoint(cx + rx, cy + ry * k)),
+            .close
+        ]
+
+        let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+
+        // Decode colors same as path records
+        let fillGrayByte = data[recordOffset + 12]
+        let strokeGrayByte = data[recordOffset + 14]
+        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
+        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
+
+        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
+        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+
+        let fillColor = VectorColor.rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray))
+        let fillStyle = FillStyle(color: fillColor)
+
+        return VectorShape(
+            name: "Ellipse",
+            path: path,
+            geometricType: .ellipse,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
             opacity: 1.0
