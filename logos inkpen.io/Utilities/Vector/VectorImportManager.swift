@@ -9,7 +9,7 @@ class VectorImportManager {
 
     private static let freehandExtensions: Set<String> = [
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
-        "fh10", "fh11", "fhmx", "ft11", "ftmx"
+        "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
     ]
 
     func importVectorFile(from url: URL) async -> VectorImportResult {
