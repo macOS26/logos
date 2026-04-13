@@ -163,12 +163,21 @@ enum FreeHandEPSParser {
             case "radialfill", "eoradialfill":
                 // Radial gradient: stack has x y radius, pendingGradient has colors
                 if let grad = pendingGradient, !elements.isEmpty {
+                    // Read center and radius from stack (in page coordinates)
+                    var cx = 0.5, cy = 0.5, rad = 0.5
+                    if stack.count >= 3 {
+                        rad = stack.removeLast()
+                        let rawY = stack.removeLast()
+                        let rawX = stack.removeLast()
+                        cx = rawX - originX
+                        cy = pageHeight - (rawY - originY)
+                    }
                     let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
                     let stop1 = GradientStop(position: 0, color: grad.color2)
                     let stop2 = GradientStop(position: 1, color: grad.color1)
                     let radial = RadialGradient(
-                        centerPoint: CGPoint(x: 0.5, y: 0.5),
-                        radius: 0.5,
+                        centerPoint: CGPoint(x: cx, y: cy),
+                        radius: rad,
                         stops: [stop1, stop2]
                     )
                     let fillStyle = FillStyle(color: .gradient(.radial(radial)))
