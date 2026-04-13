@@ -160,6 +160,26 @@ enum FreeHandEPSParser {
                     currentColor = color
                 }
 
+            case "radialfill", "eoradialfill":
+                // Radial gradient: stack has x y radius, pendingGradient has colors
+                if let grad = pendingGradient, !elements.isEmpty {
+                    let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+                    let stop1 = GradientStop(position: 0, color: grad.color2)
+                    let stop2 = GradientStop(position: 1, color: grad.color1)
+                    let radial = RadialGradient(
+                        centerPoint: CGPoint(x: 0.5, y: 0.5),
+                        radius: 0.5,
+                        stops: [stop1, stop2]
+                    )
+                    let fillStyle = FillStyle(color: .gradient(.radial(radial)))
+                    shapes.append(VectorShape(
+                        name: "Path", path: path, geometricType: nil,
+                        strokeStyle: nil, fillStyle: fillStyle, opacity: 1.0
+                    ))
+                    pendingGradient = nil
+                }
+                stack.removeAll()
+
             case "rectfill":
                 print("RECTFILL: pendingGradient=\(pendingGradient != nil) elements=\(elements.count)")
                 if let grad = pendingGradient, !elements.isEmpty {
@@ -322,6 +342,8 @@ enum FreeHandEPSParser {
                         "stroke","fill","clip","def","vms","vmr","end"]
         var processed = text
         // Protect compound keywords first by using placeholders
+        processed = processed.replacingOccurrences(of: "eoradialfill", with: " §EORADIALFILL§ ")
+        processed = processed.replacingOccurrences(of: "radialfill", with: " §RADIALFILL§ ")
         processed = processed.replacingOccurrences(of: "rectfill", with: " §RECTFILL§ ")
         processed = processed.replacingOccurrences(of: "eofill", with: " §EOFILL§ ")
         processed = processed.replacingOccurrences(of: "eoclip", with: " §EOCLIP§ ")
@@ -330,6 +352,8 @@ enum FreeHandEPSParser {
             processed = processed.replacingOccurrences(of: kw, with: " \(kw) ")
         }
         // Restore compound keywords
+        processed = processed.replacingOccurrences(of: "§EORADIALFILL§", with: "eoradialfill")
+        processed = processed.replacingOccurrences(of: "§RADIALFILL§", with: "radialfill")
         processed = processed.replacingOccurrences(of: "§RECTFILL§", with: "rectfill")
         processed = processed.replacingOccurrences(of: "§EOFILL§", with: "eofill")
         processed = processed.replacingOccurrences(of: "§EOCLIP§", with: "eoclip")
