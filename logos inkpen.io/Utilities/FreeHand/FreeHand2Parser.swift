@@ -198,25 +198,23 @@ enum FreeHand2Parser {
         )
 
         // Decode attributes from record header
-        // +8: line width in FH2 units (720/inch)
-        let lineWidthRaw = Double(readUInt16BE(data, offset: recordOffset + 8))
-        let lineWidth = max(lineWidthRaw / unitsPerPoint, 0.25) // min 0.25pt for visibility
-
-        // +12: fill gray (0=black, 0x7F=white)
-        // +14: stroke gray (0=black, 0x7F=white)
+        // +12: fill gray byte (0=white, 0x7F=black — Mac convention, inverted from PostScript)
+        // +14: stroke gray byte (same scale)
         let fillGrayByte = data[recordOffset + 12]
         let strokeGrayByte = data[recordOffset + 14]
-        let fillGray = Double(fillGrayByte) / 127.0
-        let strokeGray = Double(strokeGrayByte) / 127.0
+
+        // Convert from Mac gray (0=white, 127=black) to RGB (0=black, 1=white)
+        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
+        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
 
         // +26: closed/filled flag (1 = closed path with fill)
         let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
 
-        // Build stroke style
+        // Build stroke style — use thin stroke, color from gray byte
         let strokeColor = VectorColor.rgb(RGBColor(
             red: strokeGray, green: strokeGray, blue: strokeGray
         ))
-        let strokeStyle = StrokeStyle(color: strokeColor, width: lineWidth)
+        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
 
         // Build fill style — only for closed filled paths
         var fillStyle: FillStyle? = nil
