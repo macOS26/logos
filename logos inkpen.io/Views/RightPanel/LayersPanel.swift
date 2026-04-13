@@ -229,7 +229,7 @@ struct LayersPanel: View {
                         value: $layerOpacityState,
                         in: 0...1,
                         onEditingChanged: { isEditing in
-                            if !isEditing {
+                            if !isEditing, layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
                                 document.snapshot.layers[layerIndex].opacity = layerOpacityState
                                 layerPreviewOpacities.removeValue(forKey: document.snapshot.layers[layerIndex].id)
                                 document.triggerLayerUpdate(for: layerIndex)
@@ -237,10 +237,12 @@ struct LayersPanel: View {
                         }
                     )
                     .onChange(of: layerOpacityState) { _, newValue in
-                        let currentPercentage = Int(newValue * 100)
-                        if currentPercentage != lastSentPercentage {
-                            lastSentPercentage = currentPercentage
-                            layerPreviewOpacities[document.snapshot.layers[layerIndex].id] = newValue
+                        if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
+                            let currentPercentage = Int(newValue * 100)
+                            if currentPercentage != lastSentPercentage {
+                                lastSentPercentage = currentPercentage
+                                layerPreviewOpacities[document.snapshot.layers[layerIndex].id] = newValue
+                            }
                         }
                     }
                  
@@ -258,8 +260,12 @@ struct LayersPanel: View {
                     .layerText(width: kLayerControlLabelWidth)
                 
                 Picker("", selection: Binding(
-                    get: { document.snapshot.layers[layerIndex].blendMode },
-                    set: { newValue in
+                    get: {
+                        guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return BlendMode.normal }
+                        return document.snapshot.layers[layerIndex].blendMode
+                    },
+                    set: { (newValue: BlendMode) in
+                        guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
                         var updatedLayer = document.snapshot.layers[layerIndex]
                         updatedLayer.blendMode = newValue
                         document.snapshot.layers[layerIndex] = updatedLayer
