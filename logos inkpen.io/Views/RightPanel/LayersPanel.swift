@@ -279,10 +279,12 @@ struct LayersPanel: View {
                 ColorSwatchButton(
                     color: Binding(
                         get: {
+                            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return .blue }
                             let colorName = document.snapshot.layers[layerIndex].color.name
                             return Color.layerColorPalette.first { $0.name == colorName }?.color ?? .blue
                         },
                         set: { newColor in
+                            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
                             if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
                                 document.snapshot.layers[layerIndex].color = LayerColor(name: match.name)
                                 document.triggerLayerUpdate(for: layerIndex)
