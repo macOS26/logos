@@ -263,11 +263,11 @@ enum FreeHand2Parser {
 
     private static func parseRectRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double) -> VectorShape? {
-        // Bounding box at +24 to +31 (4 × Int16 BE): left, top, right, bottom
-        let left = Double(readInt16BE(data, offset: recordOffset + 24)) / unitsPerPoint
-        let top = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
-        let right = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
-        let bottom = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+        // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
+        let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
+        let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
+        let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+        let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
 
         let width = right - left
         let height = top - bottom  // FH2 Y-up
@@ -312,11 +312,11 @@ enum FreeHand2Parser {
 
     private static func parseLineRecord(data: Data, recordOffset: Int,
                                           pageHeight: Double) -> VectorShape? {
-        // Line endpoints at +24 to +31 (4 × Int16 BE): x1, y1, x2, y2
-        let x1 = Double(readInt16BE(data, offset: recordOffset + 24)) / unitsPerPoint
-        let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
-        let x2 = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
-        let y2 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+        // Line endpoints at +26 to +33 (4 × Int16 BE): x1, y1, x2, y2
+        let x1 = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
+        let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
+        let x2 = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+        let y2 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
 
         let elements: [PathElement] = [
             .move(to: VectorPoint(x1, y1)),
