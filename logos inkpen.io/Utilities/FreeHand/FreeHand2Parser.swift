@@ -8,7 +8,8 @@ enum FreeHand2Parser {
     private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32] // "FHD2"
     private static let pathRecordType: UInt16 = 0x151C
     private static let ovalRecordType: UInt16 = 0x151A
-    private static let terminator: UInt32 = 0xFFFFFFFF
+    private static let rectRecordType: UInt16 = 0x1519
+    private static let lineRecordType: UInt16 = 0x151D
     private static let unitsPerPoint: Double = 10.0 // 720 DPI / 72 DPI
 
     // Point type codes
@@ -94,6 +95,16 @@ enum FreeHand2Parser {
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
                     if let shape = parseOvalRecord(data: data, recordOffset: offset,
+                                                    pageHeight: pageHeight) {
+                        shapes.append(shape)
+                    }
+                } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
+                    if let shape = parseRectRecord(data: data, recordOffset: offset,
+                                                    pageHeight: pageHeight) {
+                        shapes.append(shape)
+                    }
+                } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
+                    if let shape = parseLineRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight) {
                         shapes.append(shape)
                     }
@@ -244,6 +255,88 @@ enum FreeHand2Parser {
             geometricType: detectedType,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
+            opacity: 1.0
+        )
+    }
+
+    // MARK: - Rectangle Record Parsing (0x1519)
+
+    private static func parseRectRecord(data: Data, recordOffset: Int,
+                                         pageHeight: Double) -> VectorShape? {
+        // Bounding box at +24 to +31 (4 × Int16 BE): left, top, right, bottom
+        let left = Double(readInt16BE(data, offset: recordOffset + 24)) / unitsPerPoint
+        let top = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
+        let right = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
+        let bottom = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+
+        let width = right - left
+        let height = top - bottom  // FH2 Y-up
+        guard width > 0.1 && height > 0.1 else { return nil }
+
+        // Convert to screen coords (Y flip)
+        let screenLeft = left
+        let screenTop = pageHeight - top
+
+        let elements: [PathElement] = [
+            .move(to: VectorPoint(screenLeft, screenTop)),
+            .line(to: VectorPoint(screenLeft + width, screenTop)),
+            .line(to: VectorPoint(screenLeft + width, screenTop + height)),
+            .line(to: VectorPoint(screenLeft, screenTop + height)),
+            .close
+        ]
+
+        let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+
+        let fillGrayByte = data[recordOffset + 12]
+        let strokeGrayByte = data[recordOffset + 14]
+        let fillGray = 1.0 - Double(fillGrayByte) / 127.0
+        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
+
+        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
+        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+
+        let fillColor = VectorColor.rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray))
+        let fillStyle = FillStyle(color: fillColor)
+
+        return VectorShape(
+            name: "Rectangle",
+            path: path,
+            geometricType: .rectangle,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle,
+            opacity: 1.0
+        )
+    }
+
+    // MARK: - Line Record Parsing (0x151D)
+
+    private static func parseLineRecord(data: Data, recordOffset: Int,
+                                          pageHeight: Double) -> VectorShape? {
+        // Line endpoints at +24 to +31 (4 × Int16 BE): x1, y1, x2, y2
+        let x1 = Double(readInt16BE(data, offset: recordOffset + 24)) / unitsPerPoint
+        let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
+        let x2 = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
+        let y2 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
+
+        let elements: [PathElement] = [
+            .move(to: VectorPoint(x1, y1)),
+            .line(to: VectorPoint(x2, y2))
+        ]
+
+        let path = VectorPath(elements: elements, isClosed: false, fillRule: .winding)
+
+        let strokeGrayByte = data[recordOffset + 14]
+        let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
+
+        let strokeColor = VectorColor.rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray))
+        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+
+        return VectorShape(
+            name: "Line",
+            path: path,
+            geometricType: nil,
+            strokeStyle: strokeStyle,
+            fillStyle: nil,
             opacity: 1.0
         )
     }
