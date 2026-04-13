@@ -151,13 +151,19 @@ enum FreeHand2Parser {
             }
         }
 
-        // Trace style refs: style record's eid at +4 references a color record's eid
+        // Trace style refs: use inner_ref at +10 as sequential ID → color lookup
         for (id, entry) in entries {
             let isStyle = entry.type == 0x14B5 || entry.type == 0x14B6
                        || entry.type == 0x14B7 || entry.type == 0x14B8
-            if isStyle && entry.offset + 6 <= data.count {
+            if isStyle && entry.offset + 12 <= data.count {
+                // inner_ref at +10 is a sequential ID pointing to a color record
+                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
+                if innerRef > 0, let color = colorTable[innerRef] {
+                    colorTable[id] = color
+                }
+                // Also try eid at +4 → colorByEid
                 let eid = Int(readUInt16BE(data, offset: entry.offset + 4))
-                if eid > 0, let color = colorByEid[eid] {
+                if eid > 0, colorTable[id] == nil, let color = colorByEid[eid] {
                     colorTable[id] = color
                 }
             }
