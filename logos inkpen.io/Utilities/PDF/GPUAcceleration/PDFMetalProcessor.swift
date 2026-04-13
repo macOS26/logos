@@ -3,7 +3,23 @@ import Metal
 
 class PDFMetalProcessor {
 
-    static let shared = PDFMetalProcessor()
+    private static var _shared: PDFMetalProcessor?
+    private static let lock = NSLock()
+
+    static var shared: PDFMetalProcessor {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _shared { return existing }
+        let instance = PDFMetalProcessor()
+        _shared = instance
+        return instance
+    }
+
+    static func releaseShared() {
+        lock.lock()
+        _shared = nil
+        lock.unlock()
+    }
 
     private var device: MTLDevice?
     private var commandQueue: MTLCommandQueue?
@@ -18,30 +34,21 @@ class PDFMetalProcessor {
     }
 
     private func setupMetal() {
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            Log.error("❌ Metal is not supported on this device", category: .error)
-            return
-        }
-
-        self.device = device
-        self.commandQueue = device.makeCommandQueue()
-
-        guard let library = device.makeDefaultLibrary() else {
-            Log.error("❌ Failed to load Metal shader library", category: .error)
-            return
-        }
+        let metal = SharedMetalDevice.shared
+        self.device = metal.device
+        self.commandQueue = metal.makeCommandQueue()
 
         do {
-            if let rgbToRGBAFunction = library.makeFunction(name: "rgbToRGBA") {
-                rgbToRGBAPipeline = try device.makeComputePipelineState(function: rgbToRGBAFunction)
+            if let rgbToRGBAFunction = metal.library.makeFunction(name: "rgbToRGBA") {
+                rgbToRGBAPipeline = try metal.device.makeComputePipelineState(function: rgbToRGBAFunction)
             }
 
-            if let indexedToRGBAFunction = library.makeFunction(name: "indexedToRGBA") {
-                indexedToRGBAPipeline = try device.makeComputePipelineState(function: indexedToRGBAFunction)
+            if let indexedToRGBAFunction = metal.library.makeFunction(name: "indexedToRGBA") {
+                indexedToRGBAPipeline = try metal.device.makeComputePipelineState(function: indexedToRGBAFunction)
             }
 
-            if let extractGradientFunction = library.makeFunction(name: "extractGradientColors8Bit") {
-                extractGradientColorsPipeline = try device.makeComputePipelineState(function: extractGradientFunction)
+            if let extractGradientFunction = metal.library.makeFunction(name: "extractGradientColors8Bit") {
+                extractGradientColorsPipeline = try metal.device.makeComputePipelineState(function: extractGradientFunction)
             }
 
             isInitialized = true

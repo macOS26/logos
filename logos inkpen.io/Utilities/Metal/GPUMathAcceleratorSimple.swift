@@ -1,20 +1,11 @@
-import MetalKit
 import simd
+import CoreGraphics
 
 class GPUMathAcceleratorSimple {
 
-    private let device: MTLDevice?
-    private let commandQueue: MTLCommandQueue?
-    private var isMetalAvailable: Bool = false
-
     static let shared = GPUMathAcceleratorSimple()
 
-    private init() {
-        self.device = MTLCreateSystemDefaultDevice()
-        self.commandQueue = device?.makeCommandQueue()
-        self.isMetalAvailable = (device != nil && commandQueue != nil)
-
-    }
+    private init() {}
 
     func douglasPeuckerSimplifyGPUReady(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         return douglasPeuckerOptimized(points: points, tolerance: Float(tolerance))
@@ -89,15 +80,11 @@ class GPUMathAcceleratorSimple {
     }
 
     var isGPUReady: Bool {
-        return isMetalAvailable
+        return true
     }
 
     func getPerformanceInfo() -> String {
-        if isMetalAvailable {
-            return "Phase 1: GPU Ready (\(device?.name ?? "Unknown"))"
-        } else {
-            return "Phase 1: CPU Only"
-        }
+        return "SIMD CPU Accelerated"
     }
 
 }

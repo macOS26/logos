@@ -100,6 +100,14 @@ struct DocumentBasedMainView: View {
             document.commandManager.clear()
             document.commandManager.document = nil
             MemoryDiag.checkpoint("Tab CLOSED")
+
+            // Release Metal GPU singletons when no documents remain
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if NSDocumentController.shared.documents.isEmpty {
+                    SharedMetalDevice.releaseAll()
+                    MemoryDiag.checkpoint("Metal singletons released (no documents)")
+                }
+            }
         }
     }
 

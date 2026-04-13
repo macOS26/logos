@@ -5,11 +5,26 @@ import simd
 
 class PDFMetalAccelerator {
 
-    static let shared = PDFMetalAccelerator()
+    private static var _shared: PDFMetalAccelerator?
+    private static let lock = NSLock()
+
+    static var shared: PDFMetalAccelerator {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _shared { return existing }
+        let instance = PDFMetalAccelerator()
+        _shared = instance
+        return instance
+    }
+
+    static func releaseShared() {
+        lock.lock()
+        _shared = nil
+        lock.unlock()
+    }
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
-    private let library: MTLLibrary
 
     private let transformPointsPipeline: MTLComputePipelineState
     private let batchTransformPipeline: MTLComputePipelineState
@@ -27,25 +42,20 @@ class PDFMetalAccelerator {
     private let interpolatePipeline: MTLComputePipelineState
 
     private init() {
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            fatalError("Metal GPU not available")
-        }
+        let metal = SharedMetalDevice.shared
+        self.device = metal.device
 
-        guard let commandQueue = device.makeCommandQueue(),
-              let library = device.makeDefaultLibrary() else {
-            fatalError("Failed to create Metal command queue or library")
+        guard let commandQueue = metal.makeCommandQueue() else {
+            fatalError("Failed to create Metal command queue")
         }
-
-        self.device = device
         self.commandQueue = commandQueue
-        self.library = library
 
         func createPipeline(named functionName: String) throws -> MTLComputePipelineState {
-            guard let function = library.makeFunction(name: functionName) else {
+            guard let function = metal.library.makeFunction(name: functionName) else {
                 throw NSError(domain: "PDFMetalAccelerator", code: 1,
                              userInfo: [NSLocalizedDescriptionKey: "Function \(functionName) not found"])
             }
-            return try device.makeComputePipelineState(function: function)
+            return try metal.device.makeComputePipelineState(function: function)
         }
 
         do {

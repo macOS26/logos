@@ -107,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         DocumentStateRegistry.shared.forceCleanupAll()
+        SharedMetalDevice.releaseAll()
 
         return .terminateNow
     }

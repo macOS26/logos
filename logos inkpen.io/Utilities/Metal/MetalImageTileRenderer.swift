@@ -3,12 +3,32 @@ import simd
 import UniformTypeIdentifiers
 
 class MetalImageTileRenderer {
-    static let shared = MetalImageTileRenderer()
+    private static var _shared: MetalImageTileRenderer?
+    private static let lock = NSLock()
+    private static var initialized = false
+
+    static var shared: MetalImageTileRenderer? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _shared { return existing }
+        if initialized { return nil }
+        initialized = true
+        let instance = MetalImageTileRenderer()
+        _shared = instance
+        return instance
+    }
+
+    static func releaseShared() {
+        lock.lock()
+        _shared?.clearCache()
+        _shared = nil
+        initialized = false
+        lock.unlock()
+    }
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
-    // No texture cache - Metal is fast enough to render directly from CGImage.
 
     private var diskCachePaths: [String: String] = [:] // [renderKey: /tmp/path]
     private let diskCacheLock = NSLock()
@@ -26,17 +46,17 @@ class MetalImageTileRenderer {
     }
 
     private init?() {
-        guard let device = MTLCreateSystemDefaultDevice(),
-              let commandQueue = device.makeCommandQueue() else {
+        let metal = SharedMetalDevice.shared
+
+        guard let commandQueue = metal.makeCommandQueue() else {
             return nil
         }
 
-        self.device = device
+        self.device = metal.device
         self.commandQueue = commandQueue
 
-        guard let library = device.makeDefaultLibrary(),
-              let vertexFunction = library.makeFunction(name: "tileVertexShader"),
-              let fragmentFunction = library.makeFunction(name: "tileFragmentShader") else {
+        guard let vertexFunction = metal.library.makeFunction(name: "tileVertexShader"),
+              let fragmentFunction = metal.library.makeFunction(name: "tileFragmentShader") else {
             return nil
         }
 

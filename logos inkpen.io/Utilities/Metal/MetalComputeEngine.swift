@@ -40,35 +40,34 @@ class MetalComputeEngine {
     private var removeCoincidentPointsPipeline: MTLComputePipelineState?
     private var smoothBrushStrokePipeline: MTLComputePipelineState?
 
-    static let shared: MetalComputeEngine = {
-        do {
-            return try MetalComputeEngine()
-        } catch {
-            fatalError("Failed to initialize Metal Compute Engine: \(error)")
-        }
-    }()
+    private static var _shared: MetalComputeEngine?
+    private static let lock = NSLock()
+
+    static var shared: MetalComputeEngine {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _shared { return existing }
+        let instance = try! MetalComputeEngine()
+        _shared = instance
+        return instance
+    }
+
+    static func releaseShared() {
+        lock.lock()
+        _shared = nil
+        lock.unlock()
+    }
 
     private init() throws {
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            throw MetalError.deviceNotAvailable
-        }
+        let metal = SharedMetalDevice.shared
+        self.device = metal.device
+        self.library = metal.library
 
-        self.device = device
-
-        guard let commandQueue = device.makeCommandQueue() else {
+        guard let commandQueue = metal.makeCommandQueue() else {
             throw MetalError.commandBufferCreationFailed
         }
         self.commandQueue = commandQueue
 
-        let compileOptions = MTLCompileOptions()
-        compileOptions.fastMathEnabled = true
-        compileOptions.languageVersion = .version3_1
-        compileOptions.preserveInvariance = false
-
-        guard let library = device.makeDefaultLibrary() else {
-            throw MetalError.libraryCreationFailed
-        }
-        self.library = library
         try setupComputePipelines()
     }
 
@@ -1158,21 +1157,11 @@ class MetalComputeEngine {
     }
 
     static func testMetalEngine() -> Bool {
-
-        guard let device = MTLCreateSystemDefaultDevice() else {
+        guard MTLCreateSystemDefaultDevice() != nil else {
             return false
         }
 
-        guard device.makeCommandQueue() != nil else {
-            return false
-        }
-
-        let engine: MetalComputeEngine
-        do {
-            engine = try MetalComputeEngine()
-        } catch {
-            return false
-        }
+        let engine = MetalComputeEngine.shared
 
         let testPoint1 = CGPoint(x: 0, y: 0)
         let testPoint2 = CGPoint(x: 3, y: 4)
@@ -1181,11 +1170,7 @@ class MetalComputeEngine {
 
         switch distanceResult {
         case .success(let distance):
-            if abs(distance - expectedDistance) < 0.1 {
-                return true
-            } else {
-                return false
-            }
+            return abs(distance - expectedDistance) < 0.1
         case .failure:
             return false
         }

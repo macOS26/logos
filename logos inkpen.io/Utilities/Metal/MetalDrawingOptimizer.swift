@@ -1,35 +1,18 @@
-import MetalKit
 import simd
+import CoreGraphics
 
 class MetalDrawingOptimizer {
 
-    private let device: MTLDevice?
-    private let commandQueue: MTLCommandQueue?
-    private var isMetalAvailable: Bool = false
-
     static let shared = MetalDrawingOptimizer()
 
-    private init() {
-        self.device = MTLCreateSystemDefaultDevice()
-        self.commandQueue = device?.makeCommandQueue()
-        self.isMetalAvailable = (device != nil && commandQueue != nil)
-
-    }
+    private init() {}
 
     func optimizePathSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
-        if isMetalAvailable && points.count > 100 {
-            return metalAcceleratedSimplification(points, tolerance: tolerance)
-        } else {
-            return cpuOptimizedSimplification(points, tolerance: tolerance)
-        }
+        return cpuOptimizedSimplification(points, tolerance: tolerance)
     }
 
     func optimizeRealTimeDrawing(enabled: Bool) {
         // Optimization logic removed
-    }
-
-    private func metalAcceleratedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
-        return cpuOptimizedSimplification(points, tolerance: tolerance)
     }
 
     private func cpuOptimizedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {

@@ -1,41 +1,16 @@
 import Foundation
 import CoreGraphics
-import Metal
 import simd
 
 class PDFHybridProcessor {
 
     static let shared = PDFHybridProcessor()
 
-    private let gpuThreshold = 100
     private let simdBatchSize = 4
 
-    private var device: MTLDevice?
-    private var commandQueue: MTLCommandQueue?
-    private var matrixMultiplyPipeline: MTLComputePipelineState?
-    private var pointTransformPipeline: MTLComputePipelineState?
-    private var boundsCalculationPipeline: MTLComputePipelineState?
-
-    private init() {
-        setupMetal()
-    }
-
-    private func setupMetal() {
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            Log.warning("⚠️ Metal GPU not available - using SIMD CPU only", category: .general)
-            return
-        }
-
-        self.device = device
-        self.commandQueue = device.makeCommandQueue()
-
-    }
+    private init() {}
 
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
-        if points.count >= gpuThreshold, let gpuResult = transformPointsGPU(points, with: matrix) {
-            return gpuResult
-        }
-
         return transformPointsSIMD(points, with: matrix)
     }
 
@@ -74,17 +49,8 @@ class PDFHybridProcessor {
         return results
     }
 
-    private func transformPointsGPU(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint]? {
-        return nil
-    }
-
     func calculateBounds(for shapes: [VectorShape]) -> CGRect? {
         guard !shapes.isEmpty else { return nil }
-
-        if shapes.count >= gpuThreshold, let gpuResult = calculateBoundsGPU(for: shapes) {
-            return gpuResult
-        }
-
         return calculateBoundsSIMD(for: shapes)
     }
 
@@ -92,17 +58,8 @@ class PDFHybridProcessor {
         return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: .zero)
     }
 
-    private func calculateBoundsGPU(for shapes: [VectorShape]) -> CGRect? {
-        return nil
-    }
-
     func batchMultiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
-
-        if matrices.count >= gpuThreshold, let gpuResult = batchMultiplyMatricesGPU(matrices) {
-            return gpuResult
-        }
-
         return batchMultiplyMatricesSIMD(matrices)
     }
 
@@ -118,10 +75,6 @@ class PDFHybridProcessor {
         return results
     }
 
-    private func batchMultiplyMatricesGPU(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix]? {
-        return nil
-    }
-
     enum ProcessingMethod {
         case gpu
         case simdCPU
@@ -129,10 +82,6 @@ class PDFHybridProcessor {
     }
 
     func chooseProcessingMethod(itemCount: Int) -> ProcessingMethod {
-        if device != nil && itemCount >= gpuThreshold {
-            return .gpu
-        }
-
         if itemCount >= simdBatchSize {
             return .simdCPU
         }

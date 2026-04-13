@@ -3,30 +3,35 @@ import simd
 
 class GPUCoordinateTransform {
 
-    private let device: MTLDevice?
+    private let device: MTLDevice
     private let commandQueue: MTLCommandQueue?
     private let computePipeline: MTLComputePipelineState?
     private var isMetalAvailable: Bool = false
 
-    static let shared = GPUCoordinateTransform()
+    private static var _shared: GPUCoordinateTransform?
+    private static let lock = NSLock()
+
+    static var shared: GPUCoordinateTransform {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _shared { return existing }
+        let instance = GPUCoordinateTransform()
+        _shared = instance
+        return instance
+    }
+
+    static func releaseShared() {
+        lock.lock()
+        _shared = nil
+        lock.unlock()
+    }
 
     private init() {
-        self.device = MTLCreateSystemDefaultDevice()
-        self.commandQueue = device?.makeCommandQueue()
-
-        if let device = device {
-            let library = device.makeDefaultLibrary()
-            if let kernelFunction = library?.makeFunction(name: "coordinate_transform") {
-                self.computePipeline = try? device.makeComputePipelineState(function: kernelFunction)
-                self.isMetalAvailable = (computePipeline != nil)
-            } else {
-                self.computePipeline = nil
-                self.isMetalAvailable = false
-            }
-        } else {
-            self.computePipeline = nil
-            self.isMetalAvailable = false
-        }
+        let metal = SharedMetalDevice.shared
+        self.device = metal.device
+        self.commandQueue = metal.makeCommandQueue()
+        self.computePipeline = metal.makePipeline(named: "coordinate_transform")
+        self.isMetalAvailable = (computePipeline != nil)
     }
 
     /// Must match Metal shader struct CoordinateTransformParams
@@ -70,8 +75,7 @@ class GPUCoordinateTransform {
     }
 
     private func transformPointsGPU(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
-        guard let device = device,
-              let commandQueue = commandQueue,
+        guard let commandQueue = commandQueue,
               let pipeline = computePipeline else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
@@ -130,7 +134,7 @@ class GPUCoordinateTransform {
 
     func getDeviceInfo() -> String {
         if isMetalAvailable {
-            return "GPU Transform: \(device?.name ?? "Unknown")"
+            return "GPU Transform: \(device.name)"
         } else {
             return "GPU Transform: CPU SIMD Fallback"
         }

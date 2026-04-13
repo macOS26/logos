@@ -103,9 +103,11 @@ enum MemoryDiag {
         print("  commandManager: \(malloc_size(Unmanaged.passUnretained(doc.commandManager).toOpaque()))B")
         print("  changeNotifier: \(malloc_size(Unmanaged.passUnretained(doc.changeNotifier).toOpaque()))B")
         print("  fontManager: \(malloc_size(Unmanaged.passUnretained(doc.fontManager).toOpaque()))B")
-        // Metal singletons (shared, but expensive)
+        // Metal singletons (shared, releasable)
         if let tileRenderer = MetalImageTileRenderer.shared {
             print("  MetalImageTileRenderer.shared: \(malloc_size(Unmanaged.passUnretained(tileRenderer).toOpaque()))B")
+        } else {
+            print("  MetalImageTileRenderer.shared: released")
         }
         print("  MetalComputeEngine.shared: \(malloc_size(Unmanaged.passUnretained(MetalComputeEngine.shared).toOpaque()))B")
         print("  GPUCoordinateTransform.shared: \(malloc_size(Unmanaged.passUnretained(GPUCoordinateTransform.shared).toOpaque()))B")
@@ -114,7 +116,6 @@ enum MemoryDiag {
         print("  PDFMetalProcessor.shared: \(malloc_size(Unmanaged.passUnretained(PDFMetalProcessor.shared).toOpaque()))B")
         print("  PDFMetalAccelerator.shared: \(malloc_size(Unmanaged.passUnretained(PDFMetalAccelerator.shared).toOpaque()))B")
         print("  PDFHybridProcessor.shared: \(malloc_size(Unmanaged.passUnretained(PDFHybridProcessor.shared).toOpaque()))B")
-        // After measuring singletons (first access triggers init)
         print("  process AFTER singleton access: \(processMemoryMB())MB")
     }
 
