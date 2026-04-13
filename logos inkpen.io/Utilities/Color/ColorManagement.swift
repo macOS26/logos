@@ -20,6 +20,7 @@ class ColorManagement {
     }
 
     static func loadPantoneColors() -> [PantoneLibraryColor] {
+        PantoneLibrary.shared.ensureLoaded()
         return PantoneLibrary.shared.allColors
     }
 }

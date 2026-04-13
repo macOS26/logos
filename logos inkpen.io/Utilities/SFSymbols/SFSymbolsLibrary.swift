@@ -32,6 +32,14 @@ final class SFSymbolsLibrary {
         return ensureLoaded()?.count ?? 0
     }
 
+    /// Release the decompressed SVG cache to free ~15-25MB.
+    /// The cache will be reloaded on next access.
+    func releaseCache() {
+        loadLock.lock()
+        cache = nil
+        loadLock.unlock()
+    }
+
     private func ensureLoaded() -> [String: String]? {
         loadLock.lock()
         defer { loadLock.unlock() }

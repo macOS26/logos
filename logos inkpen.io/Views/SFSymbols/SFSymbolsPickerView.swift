@@ -35,6 +35,9 @@ struct SFSymbolsPickerView: View {
         .task {
             await loadLibrary()
         }
+        .onDisappear {
+            SFSymbolsLibrary.shared.releaseCache()
+        }
     }
 
     private var header: some View {

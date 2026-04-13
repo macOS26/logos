@@ -134,6 +134,7 @@ extension SVGParser {
         } else if color.hasPrefix("spot(") {
             let name = String(color.dropFirst(5).dropLast()).trimmingCharacters(in: .whitespaces)
             let normalized = name.lowercased()
+            PantoneLibrary.shared.ensureLoaded()
             if let pantone = PantoneLibrary.shared.allColors.first(where: {
                 $0.pantone.lowercased() == normalized ||
                 $0.name.lowercased() == normalized ||

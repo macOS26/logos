@@ -65,9 +65,20 @@ class PantoneLibrary: ObservableObject {
     static let shared = PantoneLibrary()
 
     @Published var allColors: [PantoneLibraryColor] = []
+    private var isLoaded = false
 
-    private init() {
+    private init() {}
+
+    /// Ensure colors are loaded. Call before accessing allColors.
+    func ensureLoaded() {
+        guard !isLoaded else { return }
         loadPantoneColors()
+    }
+
+    /// Release loaded colors to free memory. Reloads on next access.
+    func releaseColors() {
+        allColors = []
+        isLoaded = false
     }
 
     private func loadPantoneColors() {
@@ -81,15 +92,18 @@ class PantoneLibrary: ObservableObject {
                 PantoneLibraryColor(pantone: "Yellow C", hex: "#fedd00"),
                 PantoneLibraryColor(pantone: "Process Black C", hex: "#2d2926")
             ]
+            isLoaded = true
             return
         }
 
         allColors = pantoneData.map { rawColor in
             PantoneLibraryColor(pantone: rawColor.pms, hex: rawColor.hex)
         }
+        isLoaded = true
     }
 
     func findClosestMatch(to hsb: HSBColorModel) -> PantoneLibraryColor? {
+        ensureLoaded()
         guard !allColors.isEmpty else { return nil }
 
         var closestColor = allColors[0]
@@ -107,6 +121,7 @@ class PantoneLibrary: ObservableObject {
     }
 
     func searchColors(query: String) -> [PantoneLibraryColor] {
+        ensureLoaded()
         let lowercaseQuery = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let exactMatches = allColors.filter { color in
             color.pantone.lowercased().starts(with: lowercaseQuery) ||
