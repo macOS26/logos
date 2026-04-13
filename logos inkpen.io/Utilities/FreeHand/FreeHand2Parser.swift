@@ -202,8 +202,35 @@ enum FreeHand2Parser {
             fillRule: .winding
         )
 
-        // Default black 0.5pt stroke
-        let strokeStyle = StrokeStyle(color: .black, width: 0.5)
+        // Decode attributes from record header
+        // +8: line width in FH2 units (720/inch)
+        let lineWidthRaw = Double(readUInt16BE(data, offset: recordOffset + 8))
+        let lineWidth = max(lineWidthRaw / unitsPerPoint, 0.25) // min 0.25pt for visibility
+
+        // +12: fill gray (0=black, 0x7F=white)
+        // +14: stroke gray (0=black, 0x7F=white)
+        let fillGrayByte = data[recordOffset + 12]
+        let strokeGrayByte = data[recordOffset + 14]
+        let fillGray = Double(fillGrayByte) / 127.0
+        let strokeGray = Double(strokeGrayByte) / 127.0
+
+        // +26: closed/filled flag (1 = closed path with fill)
+        let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
+
+        // Build stroke style
+        let strokeColor = VectorColor.rgb(RGBColor(
+            red: strokeGray, green: strokeGray, blue: strokeGray
+        ))
+        let strokeStyle = StrokeStyle(color: strokeColor, width: lineWidth)
+
+        // Build fill style — only for closed filled paths
+        var fillStyle: FillStyle? = nil
+        if filledFlag == 1 && isClosed {
+            let fillColor = VectorColor.rgb(RGBColor(
+                red: fillGray, green: fillGray, blue: fillGray
+            ))
+            fillStyle = FillStyle(color: fillColor)
+        }
 
         // Detect geometric shape type
         var detectedType: GeometricShapeType?
@@ -218,7 +245,7 @@ enum FreeHand2Parser {
             path: path,
             geometricType: detectedType,
             strokeStyle: strokeStyle,
-            fillStyle: nil,
+            fillStyle: fillStyle,
             opacity: 1.0
         )
     }
