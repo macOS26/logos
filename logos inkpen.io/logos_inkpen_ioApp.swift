@@ -54,8 +54,9 @@ struct logos_inken_ioApp: App {
                         window.deminiaturize(nil)
                     }
 
-                    // Enable state restoration for window frame and document
-                    window.isRestorable = true
+                    // Disable state restoration — it creates duplicate windows on launch,
+                    // each consuming ~150MB. Frame position is handled by autosave name.
+                    window.isRestorable = false
 
                     // Route File>New and File>Open into the existing window's
                     // tab group. Without this, SwiftUI DocumentGroup spawns a
