@@ -143,39 +143,35 @@ enum FreeHand2Parser {
             offset += 1
         }
 
-        // Now extract colors from 0x1452 and 0x1453 records
+        // Extract RGB colors from color records (stored as 3 × UInt16 at +6,+8,+10)
+        // Both sequential IDs and explicit IDs (at record +4) are stored
         for (id, entry) in entries {
-            if entry.type == 0x1452 && entry.offset + 12 <= data.count {
-                // Process color: inverted CMY at +6,+8,+10
-                let c = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 6)) / 65535.0
-                let m = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 8)) / 65535.0
-                let y = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 10)) / 65535.0
-                let r = (1 - c); let g = (1 - m); let b = (1 - y)
-                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
+            let off = entry.offset
+            if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
+                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                colorTable[id] = color
+                // Also store by explicit ID at +4
+                let explicitID = Int(readUInt16BE(data, offset: off + 4))
+                if explicitID > 0 { colorTable[explicitID] = color }
             }
-            if entry.type == 0x1454 && entry.offset + 22 <= data.count {
-                // Color def: try CMYK at +14,+16,+18,+20 (inverted)
-                let c = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 14)) / 65535.0
-                let m = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 16)) / 65535.0
-                let y = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 18)) / 65535.0
-                let k = 1.0 - Double(readUInt16BE(data, offset: entry.offset + 20)) / 65535.0
-                let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
-                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
+            if entry.type == 0x1454 && off + 12 <= data.count {
+                // Gradient color def — RGB at +6,+8,+10 is the dominant color
+                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                colorTable[id] = color
+                let explicitID = Int(readUInt16BE(data, offset: off + 4))
+                if explicitID > 0 { colorTable[explicitID] = color }
             }
         }
 
-        // Trace 0x14B5 style refs to find colors
+        // Trace style refs: 0x14B5 and 0x14B6 have inner color ref at +10
         for (id, entry) in entries {
-            if entry.type == 0x14B5 && entry.offset + 12 <= data.count {
-                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
-                if let color = colorTable[innerRef] {
-                    colorTable[id] = color
-                }
-            }
-        }
-        // Trace 0x14B6 style refs
-        for (id, entry) in entries {
-            if entry.type == 0x14B6 && entry.offset + 12 <= data.count {
+            if (entry.type == 0x14B5 || entry.type == 0x14B6) && entry.offset + 12 <= data.count {
                 let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
                 if let color = colorTable[innerRef] {
                     colorTable[id] = color
