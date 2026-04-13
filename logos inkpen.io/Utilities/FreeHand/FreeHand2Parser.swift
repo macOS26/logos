@@ -110,9 +110,7 @@ enum FreeHand2Parser {
             offset += 1
         }
 
-        // Extract RGB colors from process color (0x1452) and color component (0x1453)
-        // records. These store flat colors as 3 × UInt16 RGB at +6,+8,+10.
-        // NOTE: 0x1454 gradient records have parametric data at +6,+8,+10, NOT flat colors.
+        // Extract RGB colors from color records (3 × UInt16 at +6,+8,+10)
         for (id, entry) in entries {
             let off = entry.offset
             if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
@@ -121,8 +119,18 @@ enum FreeHand2Parser {
                 let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
                 let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
                 colorTable[id] = color
+                // Also store by explicit ID for PROC/COMP (safe, these are flat colors)
                 let explicitID = Int(readUInt16BE(data, offset: off + 4))
                 if explicitID > 0 { colorTable[explicitID] = color }
+            }
+            // 0x1454: store by sequential ID ONLY (not by eid — their +6,+8,+10
+            // values work as colors when referenced via inner_ref, but storing by
+            // eid pollutes the table with gradient parametric data)
+            if entry.type == 0x1454 && off + 12 <= data.count {
+                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                colorTable[id] = .rgb(RGBColor(red: r, green: g, blue: b))
             }
         }
 
