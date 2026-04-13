@@ -14,6 +14,9 @@ struct SFSymbolsPickerView: View {
     @State private var results: [String] = []
     @State private var loading: Bool = true
 
+    @AppStorage("recentSFSymbols") private var recentSymbolsData: Data = Data()
+    private static let maxRecents: Int = 30
+
     private static let gridColumns = [GridItem(.adaptive(minimum: 72), spacing: 8)]
     private static let tileSize: CGFloat = 56
     private static let maxResults: Int = 300
@@ -79,8 +82,51 @@ struct SFSymbolsPickerView: View {
                         .padding(.top, 8)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if query.isEmpty {
+                let recents = recentSymbols
+                if recents.isEmpty {
+                    Text("Start typing to search.")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Recently Used")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.top, 8)
+                        ScrollView {
+                            LazyVGrid(columns: Self.gridColumns, spacing: 8) {
+                                ForEach(recents, id: \.self) { name in
+                                    Button {
+                                        Task { await importSymbol(named: name) }
+                                    } label: {
+                                        VStack(spacing: 4) {
+                                            Image(systemName: name)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: Self.tileSize, height: Self.tileSize)
+                                                .foregroundColor(.primary)
+                                            Text(name)
+                                                .font(.system(size: 9))
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                                .truncationMode(.middle)
+                                                .frame(maxWidth: 80)
+                                        }
+                                        .padding(6)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help(name)
+                                }
+                            }
+                            .padding(10)
+                        }
+                    }
+                }
             } else if results.isEmpty {
-                Text(query.isEmpty ? "Start typing to search." : "No symbols match \"\(query)\".")
+                Text("No symbols match \"\(query)\".")
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -118,9 +164,16 @@ struct SFSymbolsPickerView: View {
 
     private var footer: some View {
         HStack {
-            Text("\(results.count) result\(results.count == 1 ? "" : "s")")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            if query.isEmpty {
+                let count = recentSymbols.count
+                Text(count > 0 ? "\(count) recent" : "")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("\(results.count) result\(results.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             Spacer()
             Text("Tap a symbol to import")
                 .font(.caption)
@@ -142,13 +195,25 @@ struct SFSymbolsPickerView: View {
 
     private func filteredResults(for q: String) -> [String] {
         let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if trimmed.isEmpty {
-            /* Without a query, show the first N names so the grid isn't empty but
-               also doesn't try to render 6000 tiles at once. */
-            return Array(allNames.prefix(Self.maxResults))
-        }
+        if trimmed.isEmpty { return [] }
         let matches = allNames.filter { $0.lowercased().contains(trimmed) }
         return Array(matches.prefix(Self.maxResults))
+    }
+
+    // MARK: - Recents
+
+    private var recentSymbols: [String] {
+        (try? JSONDecoder().decode([String].self, from: recentSymbolsData)) ?? []
+    }
+
+    private func addToRecents(_ name: String) {
+        var recents = recentSymbols
+        recents.removeAll { $0 == name }
+        recents.insert(name, at: 0)
+        if recents.count > Self.maxRecents {
+            recents = Array(recents.prefix(Self.maxRecents))
+        }
+        recentSymbolsData = (try? JSONEncoder().encode(recents)) ?? Data()
     }
 
     // MARK: - Import
@@ -158,6 +223,7 @@ struct SFSymbolsPickerView: View {
             NSSound.beep()
             return
         }
+        addToRecents(name)
 
         /* Round-trip through a temp file so the symbol goes through the same
            VectorImportManager SVG path as File → Open. */
