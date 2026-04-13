@@ -385,17 +385,29 @@ enum FreeHand2Parser {
                                            isClosed: Bool) -> (fill: FillStyle?, stroke: StrokeStyle?) {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
-        let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
 
         // Look up fill color from color table
         var fillStyle: FillStyle? = nil
-        if isClosed && filledFlag == 1, let fillColor = colorTable[fillRef] {
-            fillStyle = FillStyle(color: fillColor)
+        if isClosed && fillRef > 0 {
+            if let fillColor = colorTable[fillRef] {
+                fillStyle = FillStyle(color: fillColor)
+            } else {
+                // Fallback: use grayscale from +12 byte
+                let fillGrayByte = data[recordOffset + 12]
+                let fillGray = 1.0 - Double(fillGrayByte) / 127.0
+                fillStyle = FillStyle(color: .rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray)))
+            }
         }
 
-        // Look up stroke color from color table, default to black
-        let strokeColor = colorTable[strokeRef] ?? .black
-        let strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+        // Look up stroke color from color table, fallback to grayscale from +14
+        let strokeStyle: StrokeStyle
+        if let strokeColor = colorTable[strokeRef] {
+            strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+        } else {
+            let strokeGrayByte = data[recordOffset + 14]
+            let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
+            strokeStyle = StrokeStyle(color: .rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray)), width: 0.5)
+        }
 
         return (fillStyle, strokeStyle)
     }
