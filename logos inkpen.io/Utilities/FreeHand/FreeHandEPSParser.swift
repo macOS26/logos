@@ -78,10 +78,30 @@ enum FreeHandEPSParser {
 
     // MARK: - PostScript Parser
 
+    private struct Transform {
+        var a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0
+
+        func apply(_ x: Double, _ y: Double) -> (Double, Double) {
+            (a * x + c * y + tx, b * x + d * y + ty)
+        }
+
+        func concat(_ other: Transform) -> Transform {
+            Transform(
+                a: a * other.a + c * other.b,
+                b: b * other.a + d * other.b,
+                c: a * other.c + c * other.d,
+                d: b * other.c + d * other.d,
+                tx: a * other.tx + c * other.ty + tx,
+                ty: b * other.tx + d * other.ty + ty
+            )
+        }
+    }
+
     private struct GraphicsState {
         var fillColor: VectorColor = .black
         var strokeColor: VectorColor = .black
         var lineWidth: Double = 1.0
+        var transform: Transform = Transform()
     }
 
     private static func parsePostScript(_ text: String, pageHeight: Double, originX: Double = 0, originY: Double = 0) -> [VectorShape] {
@@ -103,16 +123,16 @@ enum FreeHandEPSParser {
             switch token {
             case "moveto":
                 if stack.count >= 2 {
-                    let y = stack.removeLast()
-                    let x = stack.removeLast()
-                    elements.append(.move(to: VectorPoint(x - originX, pageHeight - (y - originY))))
+                    let y = stack.removeLast(); let x = stack.removeLast()
+                    let (tx, ty) = state.transform.apply(x, y)
+                    elements.append(.move(to: VectorPoint(tx - originX, pageHeight - (ty - originY))))
                 }
 
             case "lineto":
                 if stack.count >= 2 {
-                    let y = stack.removeLast()
-                    let x = stack.removeLast()
-                    elements.append(.line(to: VectorPoint(x - originX, pageHeight - (y - originY))))
+                    let y = stack.removeLast(); let x = stack.removeLast()
+                    let (tx, ty) = state.transform.apply(x, y)
+                    elements.append(.line(to: VectorPoint(tx - originX, pageHeight - (ty - originY))))
                 }
 
             case "curveto":
@@ -120,10 +140,13 @@ enum FreeHandEPSParser {
                     let y3 = stack.removeLast(); let x3 = stack.removeLast()
                     let y2 = stack.removeLast(); let x2 = stack.removeLast()
                     let y1 = stack.removeLast(); let x1 = stack.removeLast()
+                    let (tx1, ty1) = state.transform.apply(x1, y1)
+                    let (tx2, ty2) = state.transform.apply(x2, y2)
+                    let (tx3, ty3) = state.transform.apply(x3, y3)
                     elements.append(.curve(
-                        to: VectorPoint(x3 - originX, pageHeight - (y3 - originY)),
-                        control1: VectorPoint(x1 - originX, pageHeight - (y1 - originY)),
-                        control2: VectorPoint(x2 - originX, pageHeight - (y2 - originY))
+                        to: VectorPoint(tx3 - originX, pageHeight - (ty3 - originY)),
+                        control1: VectorPoint(tx1 - originX, pageHeight - (ty1 - originY)),
+                        control2: VectorPoint(tx2 - originX, pageHeight - (ty2 - originY))
                     ))
                 }
 
@@ -132,6 +155,17 @@ enum FreeHandEPSParser {
 
             case "newpath":
                 elements = []
+
+            case "concat":
+                // Apply transform matrix from stack: [a b c d tx ty]
+                // These were pushed as 6 numbers before "concat"
+                if stack.count >= 6 {
+                    let ty = stack.removeLast(); let tx = stack.removeLast()
+                    let dd = stack.removeLast(); let cc = stack.removeLast()
+                    let bb = stack.removeLast(); let aa = stack.removeLast()
+                    let newT = Transform(a: aa, b: bb, c: cc, d: dd, tx: tx, ty: ty)
+                    state.transform = state.transform.concat(newT)
+                }
 
             case "gsave":
                 stateStack.append(state)
@@ -169,8 +203,9 @@ enum FreeHandEPSParser {
                         rad = stack.removeLast()
                         let rawY = stack.removeLast()
                         let rawX = stack.removeLast()
-                        cx = rawX - originX
-                        cy = pageHeight - (rawY - originY)
+                        let (tcx, tcy) = state.transform.apply(rawX, rawY)
+                        cx = tcx - originX
+                        cy = pageHeight - (tcy - originY)
                     }
                     let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
                     let stop1 = GradientStop(position: 0, color: grad.color2)
@@ -348,7 +383,7 @@ enum FreeHandEPSParser {
         let keywords = ["rectfill","eoclip","closepath","moveto","lineto","curveto",
                         "newpath","gsave","grestore","setlinewidth","setcolor","setcmykcolor",
                         "setlinecap","setlinejoin","setmiterlimit","eofill","setflat",
-                        "stroke","fill","clip","def","vms","vmr","end"]
+                        "concat","stroke","fill","clip","def","vms","vmr","end"]
         var processed = text
         // Protect compound keywords first by using placeholders
         processed = processed.replacingOccurrences(of: "eoradialfill", with: " §EORADIALFILL§ ")
