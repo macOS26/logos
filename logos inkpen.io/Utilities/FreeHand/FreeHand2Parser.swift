@@ -95,8 +95,8 @@ enum FreeHand2Parser {
                 }
             }
 
-            // Not a recognized record — advance by 2 bytes and keep scanning
-            offset += 2
+            // Not a recognized record — advance by 1 byte (records can be at odd offsets)
+            offset += 1
         }
 
         guard !shapes.isEmpty else {
