@@ -26,10 +26,13 @@ struct ProfessionalLayerRow: View {
         cachedObjectIDs.compactMap { document.snapshot.objects[$0] }
     }
 
+    private var layerInBounds: Bool { layerIndex >= 0 && layerIndex < document.snapshot.layers.count }
+
     private var isVisibleBinding: Binding<Bool> {
         Binding(
-            get: { document.snapshot.layers[layerIndex].isVisible },
+            get: { guard layerInBounds else { return true }; return document.snapshot.layers[layerIndex].isVisible },
             set: { newValue in
+                guard layerInBounds else { return }
                 if document.snapshot.layers[layerIndex].isVisible != newValue {
                     document.snapshot.layers[layerIndex].isVisible = newValue
                     document.changeNotifier.notifyLayersChanged()
@@ -40,8 +43,9 @@ struct ProfessionalLayerRow: View {
 
     private var isLockedBinding: Binding<Bool> {
         Binding(
-            get: { document.snapshot.layers[layerIndex].isLocked },
+            get: { guard layerInBounds else { return false }; return document.snapshot.layers[layerIndex].isLocked },
             set: { newValue in
+                guard layerInBounds else { return }
                 if document.snapshot.layers[layerIndex].isLocked != newValue {
                     document.snapshot.layers[layerIndex].isLocked = newValue
                     document.changeNotifier.notifyLayersChanged()
@@ -81,10 +85,12 @@ struct ProfessionalLayerRow: View {
     private var layerColor: Binding<Color> {
         Binding(
             get: {
+                guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return .blue }
                 let colorName = document.snapshot.layers[layerIndex].color.name
                 return Color.layerColorPalette.first { $0.name == colorName }?.color ?? .blue
             },
             set: { newColor in
+                guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
                 if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
                     document.snapshot.layers[layerIndex].color = LayerColor(name: match.name)
                     document.changeNotifier.notifyLayersChanged()
