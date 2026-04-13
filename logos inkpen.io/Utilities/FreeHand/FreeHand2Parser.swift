@@ -59,7 +59,7 @@ enum FreeHand2Parser {
     }
 
     /// Build sequential ID → record offset table and extract colors
-    private static func buildColorTable(data: Data) -> [Int: VectorColor] {
+    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double]) {
         var colorTable: [Int: VectorColor] = [:]
 
         // Known record signatures: (size, type)
@@ -169,7 +169,18 @@ enum FreeHand2Parser {
             }
         }
 
-        return colorTable
+        // Build stroke width table from 0x14B6 style records (+18 = width in tenths of pt)
+        var widthTable: [Int: Double] = [:]
+        for (id, entry) in entries {
+            if entry.type == 0x14B6 && entry.offset + 20 <= data.count {
+                let rawWidth = Int(readUInt16BE(data, offset: entry.offset + 18))
+                if rawWidth > 0 {
+                    widthTable[id] = Double(rawWidth) / 10.0
+                }
+            }
+        }
+
+        return (colorTable, widthTable)
     }
 
     // MARK: - Public API
@@ -192,8 +203,8 @@ enum FreeHand2Parser {
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Build color lookup table from sequential record IDs
-        let colorTable = buildColorTable(data: data)
+        // Build color and stroke width lookup tables from sequential record IDs
+        let (colorTable, widthTable) = buildColorAndWidthTables(data: data)
 
         // Scan for shape records
         var shapes: [VectorShape] = []
@@ -214,26 +225,26 @@ enum FreeHand2Parser {
                         if let shape = parsePathRecord(data: data, recordOffset: offset,
                                                        recordSize: recordSize,
                                                        pageHeight: pageHeight,
-                                                       colorTable: colorTable) {
+                                                       colorTable: colorTable, widthTable: widthTable) {
                             shapes.append(shape)
                         }
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
                     if let shape = parseOvalRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight,
-                                                    colorTable: colorTable) {
+                                                    colorTable: colorTable, widthTable: widthTable) {
                         shapes.append(shape)
                     }
                 } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
                     if let shape = parseRectRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight,
-                                                    colorTable: colorTable) {
+                                                    colorTable: colorTable, widthTable: widthTable) {
                         shapes.append(shape)
                     }
                 } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
                     if let shape = parseLineRecord(data: data, recordOffset: offset,
                                                     pageHeight: pageHeight,
-                                                    colorTable: colorTable) {
+                                                    colorTable: colorTable, widthTable: widthTable) {
                         shapes.append(shape)
                     }
                 }
@@ -269,7 +280,7 @@ enum FreeHand2Parser {
     private static func parsePathRecord(data: Data, recordOffset: Int,
                                         recordSize: Int,
                                         pageHeight: Double,
-                                        colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
+                                        colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:]) -> VectorShape? {
         // Minimum path record: 44 bytes header + 0 points
         guard recordSize >= 44 else { return nil }
 
@@ -344,7 +355,7 @@ enum FreeHand2Parser {
 
         // Extract fill and stroke colors from color table
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
-                                                          colorTable: colorTable, isClosed: isClosed)
+                                                          colorTable: colorTable, widthTable: widthTable, isClosed: isClosed)
 
         // Detect geometric shape type
         var detectedType: GeometricShapeType?
@@ -368,6 +379,7 @@ enum FreeHand2Parser {
 
     private static func extractFillStroke(data: Data, recordOffset: Int,
                                            colorTable: [Int: VectorColor],
+                                           widthTable: [Int: Double],
                                            isClosed: Bool) -> (fill: FillStyle?, stroke: StrokeStyle?) {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
@@ -385,14 +397,15 @@ enum FreeHand2Parser {
             }
         }
 
-        // Look up stroke color from color table, fallback to grayscale from +14
+        // Look up stroke color and width from tables
+        let strokeWidth = widthTable[strokeRef] ?? 0.5
         let strokeStyle: StrokeStyle
         if let strokeColor = colorTable[strokeRef] {
-            strokeStyle = StrokeStyle(color: strokeColor, width: 0.5)
+            strokeStyle = StrokeStyle(color: strokeColor, width: strokeWidth)
         } else {
             let strokeGrayByte = data[recordOffset + 14]
             let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-            strokeStyle = StrokeStyle(color: .rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray)), width: 0.5)
+            strokeStyle = StrokeStyle(color: .rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray)), width: strokeWidth)
         }
 
         return (fillStyle, strokeStyle)
@@ -402,7 +415,7 @@ enum FreeHand2Parser {
 
     private static func parseRectRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
-                                         colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
+                                         colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:]) -> VectorShape? {
         // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -458,7 +471,7 @@ enum FreeHand2Parser {
 
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
-                                                          colorTable: colorTable, isClosed: true)
+                                                          colorTable: colorTable, widthTable: widthTable, isClosed: true)
 
         return VectorShape(
             name: cr > 0.1 ? "Rounded Rectangle" : "Rectangle",
@@ -474,7 +487,7 @@ enum FreeHand2Parser {
 
     private static func parseLineRecord(data: Data, recordOffset: Int,
                                           pageHeight: Double,
-                                          colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
+                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:]) -> VectorShape? {
         // Line endpoints at +26 to +33 (4 × Int16 BE): x1, y1, x2, y2
         let x1 = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -488,7 +501,7 @@ enum FreeHand2Parser {
 
         let path = VectorPath(elements: elements, isClosed: false, fillRule: .winding)
         let (_, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
-                                                  colorTable: colorTable, isClosed: false)
+                                                  colorTable: colorTable, widthTable: widthTable, isClosed: false)
 
         return VectorShape(
             name: "Line",
@@ -504,7 +517,7 @@ enum FreeHand2Parser {
 
     private static func parseOvalRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
-                                         colorTable: [Int: VectorColor] = [:]) -> VectorShape? {
+                                         colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:]) -> VectorShape? {
         // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
@@ -543,7 +556,7 @@ enum FreeHand2Parser {
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
 
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
-                                                          colorTable: colorTable, isClosed: true)
+                                                          colorTable: colorTable, widthTable: widthTable, isClosed: true)
 
         return VectorShape(
             name: "Ellipse",
