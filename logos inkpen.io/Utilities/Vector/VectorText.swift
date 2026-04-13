@@ -422,8 +422,8 @@ class FontManager: ObservableObject {
     var systemFonts: [String] { Self.sharedSystemFonts }
     var googleFonts: [String] = []
 
-    private var fontVariantsCache: [String: [String]] = [:]
-    private var postScriptNameCache: [String: String] = [:]
+    private static var sharedFontVariantsCache: [String: [String]] = [:]
+    private static var sharedPostScriptNameCache: [String: String] = [:]
 
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"
@@ -440,8 +440,8 @@ class FontManager: ObservableObject {
     }
 
     func clearVariantsCache() {
-        fontVariantsCache.removeAll()
-        postScriptNameCache.removeAll()
+        Self.sharedFontVariantsCache.removeAll()
+        Self.sharedPostScriptNameCache.removeAll()
     }
 
     private func loadAvailableFonts() {
@@ -560,7 +560,7 @@ class FontManager: ObservableObject {
     }
 
     func getAvailableVariantNames(for family: String) -> [String] {
-        if let cached = fontVariantsCache[family] {
+        if let cached = Self.sharedFontVariantsCache[family] {
             return cached
         }
 
@@ -607,7 +607,7 @@ class FontManager: ObservableObject {
             }
         }.map { $0.name }
 
-        fontVariantsCache[family] = sortedVariants
+        Self.sharedFontVariantsCache[family] = sortedVariants
 
         // print("🔤 FONT VARIANTS FOR \(family):")
         // for (index, variant) in sortedVariants.enumerated() {
@@ -622,7 +622,7 @@ class FontManager: ObservableObject {
     func getPostScriptName(family: String, variant: String) -> String? {
         let cacheKey = "\(family)-\(variant)"
 
-        if let cached = postScriptNameCache[cacheKey] {
+        if let cached = Self.sharedPostScriptNameCache[cacheKey] {
             return cached
         }
 
@@ -633,7 +633,7 @@ class FontManager: ObservableObject {
             if let postScriptName = member[0] as? String,
                let displayName = member[1] as? String,
                displayName == variant {
-                postScriptNameCache[cacheKey] = postScriptName
+                Self.sharedPostScriptNameCache[cacheKey] = postScriptName
                 return postScriptName
             }
         }

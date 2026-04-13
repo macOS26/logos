@@ -50,30 +50,19 @@ class MetalSpatialIndex {
     init?() {
         // Initialize shared Metal resources exactly once
         if !Self.sharedInitialized {
-            guard let metalDevice = MTLCreateSystemDefaultDevice() else {
-                print("❌ Metal device not available")
-                return nil
-            }
-            guard let cmdQueue = metalDevice.makeCommandQueue() else {
+            let metal = SharedMetalDevice.shared
+            guard let cmdQueue = metal.makeCommandQueue() else {
                 print("❌ Failed to create command queue")
                 return nil
             }
-            guard let library = metalDevice.makeDefaultLibrary() else {
-                print("❌ Failed to load Metal library")
-                return nil
-            }
-            guard let buildFunction = library.makeFunction(name: "build_spatial_index"),
-                  let buildPipeline = try? metalDevice.makeComputePipelineState(function: buildFunction),
-                  let queryPointFunction = library.makeFunction(name: "query_point"),
-                  let qpPipeline = try? metalDevice.makeComputePipelineState(function: queryPointFunction),
-                  let queryRectFunction = library.makeFunction(name: "query_rect"),
-                  let qrPipeline = try? metalDevice.makeComputePipelineState(function: queryRectFunction),
-                  let clearGridFunction = library.makeFunction(name: "clear_grid"),
-                  let cgPipeline = try? metalDevice.makeComputePipelineState(function: clearGridFunction) else {
+            guard let buildPipeline = metal.makePipeline(named: "build_spatial_index"),
+                  let qpPipeline = metal.makePipeline(named: "query_point"),
+                  let qrPipeline = metal.makePipeline(named: "query_rect"),
+                  let cgPipeline = metal.makePipeline(named: "clear_grid") else {
                 print("❌ Failed to create Metal pipelines")
                 return nil
             }
-            Self.sharedDevice = metalDevice
+            Self.sharedDevice = metal.device
             Self.sharedCommandQueue = cmdQueue
             Self.sharedBuildPipeline = buildPipeline
             Self.sharedQueryPointPipeline = qpPipeline
@@ -82,6 +71,19 @@ class MetalSpatialIndex {
             Self.sharedInitialized = true
         }
         guard Self.sharedInitialized else { return nil }
+    }
+
+    static func releaseSharedPipelines() {
+        sharedBuildPipeline = nil
+        sharedQueryPointPipeline = nil
+        sharedQueryRectPipeline = nil
+        sharedClearGridPipeline = nil
+        sharedCommandQueue = nil
+        sharedDevice = nil
+        sharedInitialized = false
+        fingerprintLock.lock()
+        sharedLayerFingerprints.removeAll()
+        fingerprintLock.unlock()
     }
 
     /// Rebuild spatial index for specific layers only
