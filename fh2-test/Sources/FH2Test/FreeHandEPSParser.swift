@@ -10,15 +10,23 @@ enum FreeHandEPSParser {
             throw FreeHandImportError.notSupported
         }
 
-        // Extract BoundingBox for page dimensions
+        // Extract BoundingBox for page dimensions and origin offset
         var pageWidth: Double = 612
         var pageHeight: Double = 792
+        var bbOriginX: Double = 0
+        var bbOriginY: Double = 0
         if let bbRange = text.range(of: "%%BoundingBox:") {
             let bbLine = text[bbRange.upperBound...]
-            let nums = bbLine.prefix(100).split(separator: " ").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            let nums = bbLine.prefix(100)
+                .split { $0 == " " || $0 == "\n" || $0 == "\r" || $0 == "%" }
+                .prefix(4)
+                .compactMap { Double($0) }
             if nums.count >= 4 {
+                bbOriginX = nums[0]
+                bbOriginY = nums[1]
                 pageWidth = nums[2] - nums[0]
                 pageHeight = nums[3] - nums[1]
+                print("BBox: \(nums) → page \(pageWidth)×\(pageHeight) origin (\(bbOriginX),\(bbOriginY))")
             }
         }
 
@@ -36,7 +44,21 @@ enum FreeHandEPSParser {
         let drawingText = String(afterDef[vmsRange.upperBound...])
 
         // Tokenize and parse
-        let shapes = parsePostScript(drawingText, pageHeight: pageHeight)
+        // Debug: show first 30 tokens
+        let debugTokens = tokenize(drawingText)
+        print("Drawing text length: \(drawingText.count)")
+        print("Token count: \(debugTokens.count)")
+        print("First 30 tokens: \(debugTokens.prefix(30))")
+        // Show tokens 155-175 (gradient area)
+        if debugTokens.count > 175 {
+            print("Tokens 155-175: \(Array(debugTokens[155..<175]))")
+        }
+
+        let rawShapes = parsePostScript(drawingText, pageHeight: pageHeight, originX: bbOriginX, originY: bbOriginY)
+
+        // Merge consecutive fill+stroke pairs that share the same path into single shapes
+        let shapes = mergeFillStrokePairs(rawShapes)
+        print("Shapes: \(rawShapes.count) raw → \(shapes.count) merged")
 
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
@@ -56,13 +78,33 @@ enum FreeHandEPSParser {
 
     // MARK: - PostScript Parser
 
+    private struct Transform {
+        var a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0
+
+        func apply(_ x: Double, _ y: Double) -> (Double, Double) {
+            (a * x + c * y + tx, b * x + d * y + ty)
+        }
+
+        func concat(_ other: Transform) -> Transform {
+            Transform(
+                a: a * other.a + c * other.b,
+                b: b * other.a + d * other.b,
+                c: a * other.c + c * other.d,
+                d: b * other.c + d * other.d,
+                tx: a * other.tx + c * other.ty + tx,
+                ty: b * other.tx + d * other.ty + ty
+            )
+        }
+    }
+
     private struct GraphicsState {
         var fillColor: VectorColor = .black
         var strokeColor: VectorColor = .black
         var lineWidth: Double = 1.0
+        var transform: Transform = Transform()
     }
 
-    private static func parsePostScript(_ text: String, pageHeight: Double) -> [VectorShape] {
+    private static func parsePostScript(_ text: String, pageHeight: Double, originX: Double = 0, originY: Double = 0) -> [VectorShape] {
         var shapes: [VectorShape] = []
         var stack: [Double] = []
         var elements: [PathElement] = []
@@ -81,16 +123,16 @@ enum FreeHandEPSParser {
             switch token {
             case "moveto":
                 if stack.count >= 2 {
-                    let y = stack.removeLast()
-                    let x = stack.removeLast()
-                    elements.append(.move(to: VectorPoint(x, pageHeight - y)))
+                    let y = stack.removeLast(); let x = stack.removeLast()
+                    let (px, py) = state.transform.apply(x, y)
+                    elements.append(.move(to: VectorPoint(px - originX, (originY + pageHeight) - py)))
                 }
 
             case "lineto":
                 if stack.count >= 2 {
-                    let y = stack.removeLast()
-                    let x = stack.removeLast()
-                    elements.append(.line(to: VectorPoint(x, pageHeight - y)))
+                    let y = stack.removeLast(); let x = stack.removeLast()
+                    let (px, py) = state.transform.apply(x, y)
+                    elements.append(.line(to: VectorPoint(px - originX, (originY + pageHeight) - py)))
                 }
 
             case "curveto":
@@ -98,10 +140,13 @@ enum FreeHandEPSParser {
                     let y3 = stack.removeLast(); let x3 = stack.removeLast()
                     let y2 = stack.removeLast(); let x2 = stack.removeLast()
                     let y1 = stack.removeLast(); let x1 = stack.removeLast()
+                    let (px1, py1) = state.transform.apply(x1, y1)
+                    let (px2, py2) = state.transform.apply(x2, y2)
+                    let (px3, py3) = state.transform.apply(x3, y3)
                     elements.append(.curve(
-                        to: VectorPoint(x3, pageHeight - y3),
-                        control1: VectorPoint(x1, pageHeight - y1),
-                        control2: VectorPoint(x2, pageHeight - y2)
+                        to: VectorPoint(px3 - originX, (originY + pageHeight) - py3),
+                        control1: VectorPoint(px1 - originX, (originY + pageHeight) - py1),
+                        control2: VectorPoint(px2 - originX, (originY + pageHeight) - py2)
                     ))
                 }
 
@@ -110,6 +155,20 @@ enum FreeHandEPSParser {
 
             case "newpath":
                 elements = []
+
+            case "concat":
+                // Apply transform matrix from stack: [a b c d tx ty]
+                if stack.count >= 6 {
+                    let ty = stack.removeLast(); let tx = stack.removeLast()
+                    let dd = stack.removeLast(); let cc = stack.removeLast()
+                    let bb = stack.removeLast(); let aa = stack.removeLast()
+                    let newT = Transform(a: aa, b: bb, c: cc, d: dd, tx: tx, ty: ty)
+                    state.transform = state.transform.concat(newT)
+                }
+
+            case "vms":
+                // FreeHand save — often follows concat. Reset stack for drawing.
+                stack.removeAll()
 
             case "gsave":
                 stateStack.append(state)
@@ -138,28 +197,57 @@ enum FreeHandEPSParser {
                     currentColor = color
                 }
 
-            case "rectfill", "rectfillgrestore", "rectfillgrestoregsave1":
-                // Gradient: preceding tokens had two color arrays and parameters
-                if let grad = pendingGradient {
-                    if !elements.isEmpty {
-                        let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
-                        let stop1 = GradientStop(position: 0, color: grad.color1)
-                        let stop2 = GradientStop(position: 1, color: grad.color2)
-                        let linear = LinearGradient(
-                            startPoint: CGPoint(x: 0, y: 0.5),
-                            endPoint: CGPoint(x: 1, y: 0.5),
-                            stops: [stop1, stop2]
-                        )
-                        let fillStyle = FillStyle(color: .gradient(.linear(linear)))
-                        shapes.append(VectorShape(
-                            name: "Path", path: path, geometricType: nil,
-                            strokeStyle: nil, fillStyle: fillStyle, opacity: 1.0
-                        ))
+            case "radialfill", "eoradialfill":
+                // Radial gradient: stack has x y radius, pendingGradient has colors
+                if let grad = pendingGradient, !elements.isEmpty {
+                    // Read center and radius from stack (in page coordinates)
+                    var cx = 0.5, cy = 0.5, rad = 0.5
+                    if stack.count >= 3 {
+                        rad = stack.removeLast()
+                        let rawY = stack.removeLast()
+                        let rawX = stack.removeLast()
+                        let (tcx, tcy) = state.transform.apply(rawX, rawY)
+                        cx = tcx - originX
+                        cy = pageHeight - (tcy - originY)
                     }
+                    let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+                    let stop1 = GradientStop(position: 0, color: grad.color2)
+                    let stop2 = GradientStop(position: 1, color: grad.color1)
+                    let radial = RadialGradient(
+                        centerPoint: CGPoint(x: cx, y: cy),
+                        radius: rad,
+                        stops: [stop1, stop2]
+                    )
+                    let fillStyle = FillStyle(color: .gradient(.radial(radial)))
+                    shapes.append(VectorShape(
+                        name: "Path", path: path, geometricType: nil,
+                        strokeStyle: nil, fillStyle: fillStyle, opacity: 1.0
+                    ))
                     pendingGradient = nil
                 }
+                stack.removeAll()
 
-            case "{fill}":
+            case "rectfill":
+                print("RECTFILL: pendingGradient=\(pendingGradient != nil) elements=\(elements.count)")
+                if let grad = pendingGradient, !elements.isEmpty {
+                    let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+                    let stop1 = GradientStop(position: 0, color: grad.color2)
+                    let stop2 = GradientStop(position: 1, color: grad.color1)
+                    let linear = LinearGradient(
+                        startPoint: CGPoint(x: 0, y: 0.5),
+                        endPoint: CGPoint(x: 1, y: 0.5),
+                        stops: [stop1, stop2]
+                    )
+                    let fillStyle = FillStyle(color: .gradient(.linear(linear)))
+                    shapes.append(VectorShape(
+                        name: "Path", path: path, geometricType: nil,
+                        strokeStyle: nil, fillStyle: fillStyle, opacity: 1.0
+                    ))
+                    pendingGradient = nil
+                }
+                stack.removeAll()
+
+            case "{fill}", "{ fill }", "{fill }", "{ fill}":
                 if !elements.isEmpty {
                     let isClosed = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
                     let path = VectorPath(elements: elements, isClosed: isClosed, fillRule: .winding)
@@ -170,7 +258,7 @@ enum FreeHandEPSParser {
                     ))
                 }
 
-            case "{stroke}":
+            case "{stroke}", "{ stroke }", "{stroke }", "{ stroke}":
                 if !elements.isEmpty {
                     let isClosed = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
                     let path = VectorPath(elements: elements, isClosed: isClosed, fillRule: .winding)
@@ -251,6 +339,37 @@ enum FreeHandEPSParser {
         return shapes
     }
 
+    // MARK: - Merge Fill+Stroke Pairs
+
+    private static func mergeFillStrokePairs(_ shapes: [VectorShape]) -> [VectorShape] {
+        var merged: [VectorShape] = []
+        var i = 0
+        while i < shapes.count {
+            let current = shapes[i]
+            // Check if next shape has the same path and complements fill/stroke
+            if i + 1 < shapes.count {
+                let next = shapes[i + 1]
+                let samePath = current.path.elements.count == next.path.elements.count
+                if samePath && current.fillStyle != nil && current.strokeStyle == nil
+                    && next.fillStyle == nil && next.strokeStyle != nil {
+                    // Merge: fill from current, stroke from next
+                    merged.append(VectorShape(
+                        name: current.name, path: current.path,
+                        geometricType: current.geometricType,
+                        strokeStyle: next.strokeStyle,
+                        fillStyle: current.fillStyle,
+                        opacity: current.opacity
+                    ))
+                    i += 2
+                    continue
+                }
+            }
+            merged.append(current)
+            i += 1
+        }
+        return merged
+    }
+
     // MARK: - Helpers
 
     private static func cmykToColor(_ c: Double, _ m: Double, _ y: Double, _ k: Double) -> VectorColor {
@@ -263,14 +382,28 @@ enum FreeHandEPSParser {
     private static func tokenize(_ text: String) -> [String] {
         // Pre-process: add spaces around PostScript keywords so they tokenize correctly
         // even when concatenated without whitespace (common in FreeHand EPS)
-        let keywords = ["moveto","lineto","curveto","closepath","newpath","gsave","grestore",
-                        "setlinewidth","setcolor","setcmykcolor","setlinecap","setlinejoin",
-                        "setmiterlimit","fill","stroke","rectfill","eofill","clip","eoclip",
-                        "setflat","def","vms","vmr","end"]
+        // Order matters: longer keywords first to avoid partial matches
+        let keywords = ["rectfill","eoclip","closepath","moveto","lineto","curveto",
+                        "newpath","gsave","grestore","setlinewidth","setcolor","setcmykcolor",
+                        "setlinecap","setlinejoin","setmiterlimit","eofill","setflat",
+                        "concat","stroke","fill","clip","def","vms","vmr","end"]
         var processed = text
+        // Protect compound keywords first by using placeholders
+        processed = processed.replacingOccurrences(of: "eoradialfill", with: " §EORADIALFILL§ ")
+        processed = processed.replacingOccurrences(of: "radialfill", with: " §RADIALFILL§ ")
+        processed = processed.replacingOccurrences(of: "rectfill", with: " §RECTFILL§ ")
+        processed = processed.replacingOccurrences(of: "eofill", with: " §EOFILL§ ")
+        processed = processed.replacingOccurrences(of: "eoclip", with: " §EOCLIP§ ")
         for kw in keywords {
+            if kw == "rectfill" || kw == "eofill" || kw == "eoclip" { continue }
             processed = processed.replacingOccurrences(of: kw, with: " \(kw) ")
         }
+        // Restore compound keywords
+        processed = processed.replacingOccurrences(of: "§EORADIALFILL§", with: "eoradialfill")
+        processed = processed.replacingOccurrences(of: "§RADIALFILL§", with: "radialfill")
+        processed = processed.replacingOccurrences(of: "§RECTFILL§", with: "rectfill")
+        processed = processed.replacingOccurrences(of: "§EOFILL§", with: "eofill")
+        processed = processed.replacingOccurrences(of: "§EOCLIP§", with: "eoclip")
         // Also split around [ and ]
         processed = processed.replacingOccurrences(of: "[", with: " [")
         processed = processed.replacingOccurrences(of: "]", with: "] ")

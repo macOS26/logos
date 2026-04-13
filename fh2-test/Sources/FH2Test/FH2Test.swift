@@ -28,8 +28,9 @@ struct FH2Test {
 
             // Generate SVG
             let svg = generateSVG(shapes: result.shapes, pageSize: result.pageSize, data: data, gradients: gradients)
-            let outPath = path.replacingOccurrences(of: ".fh2", with: "_parsed.svg")
-                .replacingOccurrences(of: ".fh", with: "_parsed.svg")
+            // Always write to Downloads with a safe name — never overwrite input
+            let baseName = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            let outPath = "/Users/toddbruss/Downloads/\(baseName)_parsed.svg"
             try svg.write(toFile: outPath, atomically: true, encoding: .utf8)
             print("SVG written: \(outPath)")
 
@@ -99,19 +100,29 @@ struct FH2Test {
 
         for (i, shape) in shapes.enumerated() {
             var fillStr: String
-            // Check if this shape has a gradient fill
-            let fillRef = (i < shapeOffsets.count) ? u16(data, shapeOffsets[i] + 18) : 0
-            if let grad = gradients[fillRef] {
-                let gid = "grad\(i)"
-                let (r1,g1,b1) = grad.color1.rgbValues
-                let (r2,g2,b2) = grad.color2.rgbValues
-                let c1 = String(format: "rgb(%d,%d,%d)", Int(r1*255), Int(g1*255), Int(b1*255))
-                let c2 = String(format: "rgb(%d,%d,%d)", Int(r2*255), Int(g2*255), Int(b2*255))
-                defs.append("<linearGradient id=\"\(gid)\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"><stop offset=\"0%\" stop-color=\"\(c1)\"/><stop offset=\"100%\" stop-color=\"\(c2)\"/></linearGradient>")
-                fillStr = "url(#\(gid))"
-            } else if let f = shape.fillStyle {
-                let (r,g,b) = f.color.rgbValues
-                fillStr = String(format: "rgb(%d,%d,%d)", Int(r*255), Int(g*255), Int(b*255))
+            if let f = shape.fillStyle {
+                // Check for gradient fill
+                if case .gradient(let vg) = f.color {
+                    let gid = "grad\(i)"
+                    switch vg {
+                    case .linear(let lg):
+                        let stops = lg.stops.map { s -> String in
+                            let (r,g,b) = s.color.rgbValues
+                            return "<stop offset=\"\(Int(s.position*100))%\" stop-color=\"rgb(\(Int(r*255)),\(Int(g*255)),\(Int(b*255)))\"/>"
+                        }.joined()
+                        defs.append("<linearGradient id=\"\(gid)\" x1=\"\(lg.startPoint.x)\" y1=\"\(lg.startPoint.y)\" x2=\"\(lg.endPoint.x)\" y2=\"\(lg.endPoint.y)\">\(stops)</linearGradient>")
+                    case .radial(let rg):
+                        let stops = rg.stops.map { s -> String in
+                            let (r,g,b) = s.color.rgbValues
+                            return "<stop offset=\"\(Int(s.position*100))%\" stop-color=\"rgb(\(Int(r*255)),\(Int(g*255)),\(Int(b*255)))\"/>"
+                        }.joined()
+                        defs.append("<radialGradient id=\"\(gid)\" cx=\"\(rg.centerPoint.x)\" cy=\"\(rg.centerPoint.y)\" r=\"\(rg.radius)\">\(stops)</radialGradient>")
+                    }
+                    fillStr = "url(#\(gid))"
+                } else {
+                    let (r,g,b) = f.color.rgbValues
+                    fillStr = String(format: "rgb(%d,%d,%d)", Int(r*255), Int(g*255), Int(b*255))
+                }
             } else {
                 fillStr = "none"
             }
