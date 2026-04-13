@@ -66,61 +66,28 @@ enum FreeHand2Parser {
         let knownSizes: [(Int, UInt16)] = [
             (60, rectRecordType), (56, ovalRecordType), (48, lineRecordType),
             (30, 0x1452), (30, 0x1453), (32, 0x1454),
-            (22, 0x14B5), (34, 0x14B6), (28, 0x14B7), (30, 0x14B8)
+            (22, 0x14B5), (34, 0x14B6), (28, 0x14B7), (30, 0x14B8),
+            (56, 0x1389), (48, 0x138A)
         ]
 
-        // Find where records start (after encoding tables, first shape/color record)
-        // Look for the first 0x1519/0x151A/0x151C/0x151D record
-        var recordStart = headerSize
-        for i in stride(from: headerSize, to: min(data.count - 4, headerSize + 2000), by: 1) {
-            let rtype = readUInt16BE(data, offset: i + 2)
-            let size = readUInt16BE(data, offset: i)
-            if (rtype == rectRecordType && size == 60) ||
-               (rtype == ovalRecordType && size == 56) ||
-               (rtype == lineRecordType && size == 48) {
-                recordStart = i
-                break
-            }
-            if rtype == pathRecordType && size >= 44 {
-                let pts = Int(readUInt16BE(data, offset: i + 28))
-                if size == 44 + pts * 16 && pts > 0 {
-                    recordStart = i
-                    break
-                }
-            }
-        }
-
-        // Find the second 0x0005 table to get the starting sequential ID
-        var startID = 36 // default
-        var tableCount = 0
-        for i in stride(from: headerSize, to: recordStart, by: 1) {
-            if i + 6 <= data.count && readUInt16BE(data, offset: i + 2) == 0x0005 {
-                let size = Int(readUInt16BE(data, offset: i))
-                if size >= 16 && size < 200 {
-                    tableCount += 1
-                    if tableCount == 2 {
-                        let count = Int(readUInt16BE(data, offset: i + 4))
-                        if count > 0 && i + 10 < data.count {
-                            startID = Int(readUInt16BE(data, offset: i + 10))
-                        }
-                        break
-                    }
-                }
-            }
-        }
-
-        // Scan all records sequentially and assign IDs
-        var seqID = startID
+        // Scan ALL records from beginning, sequential IDs starting at 1
+        var seqID = 1
         var entries: [Int: RecordEntry] = [:]
-        var offset = recordStart
+        var offset = headerSize
 
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
 
             var matched = false
+            // Check 0x0005 tables (variable size)
+            if rtype == 0x0005 && size >= 16 && size < 200 && offset + size <= data.count {
+                entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
+                seqID += 1
+                matched = true
+            }
             // Check path records (variable size)
-            if rtype == pathRecordType && size >= 44 && offset + size <= data.count {
+            if !matched && rtype == pathRecordType && size >= 44 && offset + size <= data.count {
                 let pts = Int(readUInt16BE(data, offset: offset + 28))
                 if size == 44 + pts * 16 {
                     entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
