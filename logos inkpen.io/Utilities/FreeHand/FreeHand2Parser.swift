@@ -59,128 +59,123 @@ enum FreeHand2Parser {
     }
 
     /// Build sequential ID → record offset table and extract colors
-    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double]) {
+    struct GradientInfo {
+        let color1: VectorColor
+        let color2: VectorColor
+    }
+
+    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo]) {
         var colorTable: [Int: VectorColor] = [:]
+        var widthTable: [Int: Double] = [:]
+        var gradientTable: [Int: GradientInfo] = [:]
 
-        // Known record signatures: (size, type)
-        let knownSizes: [(Int, UInt16)] = [
-            (60, rectRecordType), (56, ovalRecordType), (48, lineRecordType),
-            (30, 0x1452), (30, 0x1453), (32, 0x1454),
-            (22, 0x14B5), (34, 0x14B6), (28, 0x14B7), (30, 0x14B8),
-            (56, 0x1389), (48, 0x138A)
-        ]
+        // Read starting child ID from first TABLE (0x0005) record
+        var firstChildID = 18
+        for i in stride(from: headerSize, to: min(data.count - 10, headerSize + 2000), by: 1) {
+            guard i + 6 <= data.count else { break }
+            if readUInt16BE(data, offset: i + 2) == 0x0005 {
+                let size = Int(readUInt16BE(data, offset: i))
+                if size >= 16 && size < 200 {
+                    let count = Int(readUInt16BE(data, offset: i + 4))
+                    if count > 0 && i + 10 < data.count {
+                        firstChildID = Int(readUInt16BE(data, offset: i + 10))
+                    }
+                    break
+                }
+            }
+        }
 
-        // Scan ALL records from beginning, sequential IDs starting at 1
-        var seqID = 1
-        var entries: [Int: RecordEntry] = [:]
+        // Scan ALL non-shape records in one pass, assign sequential IDs
+        // Colors (0x1452-0x1454) and styles (0x14B0-0x14FF) share the same ID space
+        var allRecords: [(offset: Int, type: UInt16)] = []
+        let shapeTypes: Set<UInt16> = [rectRecordType, ovalRecordType, pathRecordType, lineRecordType]
         var offset = headerSize
-
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
+            // Match color records
+            if (rtype == 0x1452 && size == 30) ||
+               (rtype == 0x1453 && size == 30) ||
+               (rtype == 0x1454 && size == 32 && offset + 22 <= data.count) {
+                allRecords.append((offset, rtype))
+            }
+            // Match ALL style/attribute records (0x14B0+ and 0x157D)
+            else if (rtype >= 0x14B0 && rtype <= 0x14FF && size >= 10 && size <= 100) ||
+                    (rtype == 0x157D && size >= 10 && size <= 100) {
+                allRecords.append((offset, rtype))
+            }
+            offset += 1
+        }
 
-            var matched = false
-            // Check 0x0005 tables (variable size)
-            if rtype == 0x0005 && size >= 16 && size < 200 && offset + size <= data.count {
-                entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
-                seqID += 1
-                matched = true
+        // Assign sequential IDs and extract data
+        for (idx, rec) in allRecords.enumerated() {
+            let rid = firstChildID + idx
+            let off = rec.offset
+
+            // Color extraction
+            if rec.type == 0x1452 || rec.type == 0x1453 {
+                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                colorTable[rid] = color
+                // Also store by eid for out-of-range ref lookups
+                let eid = Int(readUInt16BE(data, offset: off + 4))
+                if eid > 0 { colorTable[eid] = color }
+            } else if rec.type == 0x1454 {
+                let c = Double(readUInt16BE(data, offset: off + 14)) / 65535.0
+                let m = Double(readUInt16BE(data, offset: off + 16)) / 65535.0
+                let y = Double(readUInt16BE(data, offset: off + 18)) / 65535.0
+                let k = Double(readUInt16BE(data, offset: off + 20)) / 65535.0
+                let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
+                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                colorTable[rid] = color
+                let eid = Int(readUInt16BE(data, offset: off + 4))
+                if eid > 0 { colorTable[eid] = color }
             }
-            // Check path records (variable size)
-            if !matched && rtype == pathRecordType && size >= 44 && offset + size <= data.count {
-                let pts = Int(readUInt16BE(data, offset: offset + 28))
-                if size == 44 + pts * 16 {
-                    entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
-                    seqID += 1
-                    matched = true
-                }
-            }
-            // Check fixed-size records
-            if !matched {
-                for (expectedSize, expectedType) in knownSizes {
-                    if rtype == expectedType && size == expectedSize && offset + size <= data.count + 20 {
-                        entries[seqID] = RecordEntry(offset: offset, type: rtype, size: size)
-                        seqID += 1
-                        matched = true
-                        break
+
+            // Style: follow inner_ref to color
+            if rec.type >= 0x14B0 && off + 12 <= data.count {
+                let innerRef = Int(readUInt16BE(data, offset: off + 10))
+
+                // SC (0x14B7): gradient with TWO color refs at +10 and +12
+                if rec.type == 0x14B7 && off + 14 <= data.count {
+                    let ref2 = Int(readUInt16BE(data, offset: off + 12))
+                    if let c1 = colorTable[innerRef], let c2 = colorTable[ref2] {
+                        gradientTable[rid] = GradientInfo(color1: c2, color2: c1)
+                        colorTable[rid] = c1 // flat fallback = first color
+                    }
+                } else if innerRef > 0, let color = colorTable[innerRef] {
+                    colorTable[rid] = color
+                } else if innerRef == 0 {
+                    if let black = colorTable[firstChildID] {
+                        colorTable[rid] = black
                     }
                 }
             }
 
-            offset += 1
-        }
-
-        // Extract RGB colors from color records (stored as 3 × UInt16 at +6,+8,+10)
-        // Both sequential IDs and explicit IDs (at record +4) are stored
-        for (id, entry) in entries {
-            let off = entry.offset
-            if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
-                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
-                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
-                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
-                colorTable[id] = color
-                // Also store by explicit ID at +4
-                let explicitID = Int(readUInt16BE(data, offset: off + 4))
-                if explicitID > 0 { colorTable[explicitID] = color }
-            }
-            if entry.type == 0x1454 && off + 12 <= data.count {
-                // Gradient color def — RGB at +6,+8,+10 is the dominant color
-                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
-                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
-                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
-                colorTable[id] = color
-                let explicitID = Int(readUInt16BE(data, offset: off + 4))
-                if explicitID > 0 { colorTable[explicitID] = color }
-            }
-        }
-
-        // Build eid → color lookup from color records (0x1452/0x1453 have RGB at +6,+8,+10)
-        var colorByEid: [Int: VectorColor] = [:]
-        for (_, entry) in entries {
-            let off = entry.offset
-            if (entry.type == 0x1452 || entry.type == 0x1453) && off + 12 <= data.count {
-                let eid = Int(readUInt16BE(data, offset: off + 4))
-                if eid > 0 {
-                    let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
-                    let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
-                    let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                    colorByEid[eid] = .rgb(RGBColor(red: r, green: g, blue: b))
-                }
-            }
-        }
-
-        // Trace style refs: use inner_ref at +10 as sequential ID → color lookup
-        for (id, entry) in entries {
-            let isStyle = entry.type == 0x14B5 || entry.type == 0x14B6
-                       || entry.type == 0x14B7 || entry.type == 0x14B8
-            if isStyle && entry.offset + 12 <= data.count {
-                // inner_ref at +10 is a sequential ID pointing to a color record
-                let innerRef = Int(readUInt16BE(data, offset: entry.offset + 10))
-                if innerRef > 0, let color = colorTable[innerRef] {
-                    colorTable[id] = color
-                }
-                // Also try eid at +4 → colorByEid
-                let eid = Int(readUInt16BE(data, offset: entry.offset + 4))
-                if eid > 0, colorTable[id] == nil, let color = colorByEid[eid] {
-                    colorTable[id] = color
-                }
-            }
-        }
-
-        // Build stroke width table from 0x14B6 style records (+18 = width in tenths of pt)
-        var widthTable: [Int: Double] = [:]
-        for (id, entry) in entries {
-            if entry.type == 0x14B6 && entry.offset + 20 <= data.count {
-                let rawWidth = Int(readUInt16BE(data, offset: entry.offset + 18))
+            // SB (0x14B6): stroke width at +18
+            if rec.type == 0x14B6 && off + 20 <= data.count {
+                let rawWidth = Int(readUInt16BE(data, offset: off + 18))
                 if rawWidth > 0 {
-                    widthTable[id] = Double(rawWidth) / 10.0
+                    widthTable[rid] = Double(rawWidth) / 10.0
                 }
             }
         }
 
-        return (colorTable, widthTable)
+        return (colorTable, widthTable, gradientTable)
+    }
+
+    // MARK: - Debug
+
+    static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
+        let (ct, wt, _) = buildColorAndWidthTables(data: data)
+        return (ct, wt)
+    }
+
+    static func debugGradientTable(data: Data) -> [Int: GradientInfo] {
+        let (_, _, gt) = buildColorAndWidthTables(data: data)
+        return gt
     }
 
     // MARK: - Public API
@@ -203,8 +198,8 @@ enum FreeHand2Parser {
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Build color and stroke width lookup tables from sequential record IDs
-        let (colorTable, widthTable) = buildColorAndWidthTables(data: data)
+        // Build color, width, and gradient lookup tables from sequential record IDs
+        let (colorTable, widthTable, gradientTable) = buildColorAndWidthTables(data: data)
 
         // Scan for shape records
         var shapes: [VectorShape] = []
@@ -384,9 +379,14 @@ enum FreeHand2Parser {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
 
+        // Check +13 byte: 0x80 flag means "white/paper fill" (CMYK 0,0,0,0)
+        let whiteFillFlag = data[recordOffset + 13] & 0x80 != 0
+
         // Look up fill color from color table
         var fillStyle: FillStyle? = nil
-        if isClosed && fillRef > 0 {
+        if isClosed && whiteFillFlag {
+            fillStyle = FillStyle(color: .white)
+        } else if isClosed && fillRef > 0 {
             if let fillColor = colorTable[fillRef] {
                 fillStyle = FillStyle(color: fillColor)
             } else {
