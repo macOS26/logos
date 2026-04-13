@@ -88,10 +88,7 @@ struct logos_inken_ioApp: App {
                     let isFirstDocumentWindow = NSDocumentController.shared.documents.count <= 1
                     if !hadSavedFrame, isFirstDocumentWindow, let screen = window.screen ?? NSScreen.main {
                         let visibleFrame = screen.visibleFrame
-                        // Defer to avoid layout recursion during view hierarchy setup
-                        DispatchQueue.main.async {
-                            window.setFrame(visibleFrame, display: true)
-                        }
+                        window.setFrame(visibleFrame, display: false)
                     }
                 })
                 .onAppear {
