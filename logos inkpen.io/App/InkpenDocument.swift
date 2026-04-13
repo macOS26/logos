@@ -9,7 +9,7 @@ struct InkpenDocument: FileDocument {
 
     private static let freehandExtensions: Set<String> = [
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
-        "fh10", "fh11", "fhmx", "ft11", "ftmx"
+        "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
     ]
 
     init() {
@@ -38,6 +38,8 @@ struct InkpenDocument: FileDocument {
             if b0 == UInt8(ascii: "A"), b1 == UInt8(ascii: "G"), b2 == UInt8(ascii: "D") { return true }
             if b0 == UInt8(ascii: "F"), b1 == UInt8(ascii: "H"), b2 == UInt8(ascii: "3") { return true }
             if b0 == UInt8(ascii: "F"), b1 == UInt8(ascii: "H"), b2 == UInt8(ascii: "D") { return true }
+            // EPS (PostScript) exported from FreeHand
+            if b0 == UInt8(ascii: "%"), b1 == UInt8(ascii: "!"), b2 == UInt8(ascii: "P") { return true }
             // 0x1c IPTC wrapper used by some FH versions (e.g. FH10)
             if b0 == 0x1c { return true }
             return false

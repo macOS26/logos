@@ -55,6 +55,16 @@ enum FreeHandDirectImporter {
             return try FreeHand2Parser.parseToShapes(data: data)
         }
 
+        // FreeHand EPS export — route to EPS parser
+        if data.count >= 10,
+           data[data.startIndex] == 0x25, // '%'
+           data[data.startIndex + 1] == 0x21, // '!'
+           data[data.startIndex + 2] == 0x50, // 'P'
+           data[data.startIndex + 3] == 0x53  // 'S'
+        {
+            return try FreeHandEPSParser.parseToShapes(data: data)
+        }
+
         let fhData = stripIPTCWrapper(data)
         return try fhData.withUnsafeBytes { bytes -> Result in
             guard let base = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
