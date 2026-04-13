@@ -89,8 +89,8 @@ enum FreeHand2Parser {
                                                        pageHeight: pageHeight) {
                             shapes.append(shape)
                         }
-                        offset += recordSize
-                        continue
+                        // Don't jump by recordSize — records overlap by 12 bytes,
+                        // so advancing by size skips the next record. Always scan +1.
                     }
                 }
             }
