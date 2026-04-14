@@ -44,13 +44,13 @@ class VectorImportManager {
 
         switch format {
         case .svg:
-            return await importSVG(from: url)
+            return importSVG(from: url)
         case .pdf:
             return await importPDF(from: url)
         }
     }
 
-    func importSVGWithExtremeValueHandling(from url: URL) async -> VectorImportResult {
+    func importSVGWithExtremeValueHandling(from url: URL) -> VectorImportResult {
 
         guard let format = detectFormat(from: url) else {
             return VectorImportResult(
@@ -74,9 +74,15 @@ class VectorImportManager {
 
         switch format {
         case .svg:
-            return await importSVG(from: url, useExtremeValueHandling: true)
+            return importSVG(from: url, useExtremeValueHandling: true)
         case .pdf:
-            return await importPDF(from: url)
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.unsupportedFormat(.pdf)],
+                warnings: ["PDF import not available on SVG path"]
+            )
         }
     }
 
@@ -129,7 +135,7 @@ class VectorImportManager {
         return nil
     }
 
-    private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) async -> VectorImportResult {
+    private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) -> VectorImportResult {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []

@@ -9,41 +9,10 @@ extension FileOperations {
             try? FileManager.default.removeItem(at: tempURL)
         }
 
-        let document = try runBlocking {
-            try await openSVGFile(url: tempURL)
-        }
-
-        return document
+        return try openSVGFile(url: tempURL)
     }
 
-    private static func runBlocking<T>(_ asyncWork: @escaping () async throws -> T) throws -> T {
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: Result<T, Error>?
-
-        Task {
-            do {
-                let value = try await asyncWork()
-                result = .success(value)
-            } catch {
-                result = .failure(error)
-            }
-            semaphore.signal()
-        }
-
-        semaphore.wait()
-
-        switch result {
-        case .success(let value):
-            return value
-        case .failure(let error):
-            throw error
-        case .none:
-            throw VectorImportError.parsingError("Failed to import SVG", line: nil)
-        }
-    }
-
-    @MainActor
-    static func openSVGFile(url: URL) async throws -> VectorDocument {
+    static func openSVGFile(url: URL) throws -> VectorDocument {
 
         let document = VectorDocument(settings: DocumentSettings())
         // Keep only Canvas and Pasteboard background objects
@@ -55,7 +24,7 @@ extension FileOperations {
         }
         document.snapshot.objects = objectsToKeep
 
-        let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
+        let result = VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
 
         if !result.success {
             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
@@ -200,7 +169,6 @@ extension FileOperations {
     }
 
     /// Unpacks SVGParser <g> carriers into native memberIDs-style groups.
-    @MainActor
     private static func installShapeRespectingGroups(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
             var container = shape
@@ -218,7 +186,6 @@ extension FileOperations {
     }
 
     /// Writes a group child into snapshot.objects without touching the layer.
-    @MainActor
     private static func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {

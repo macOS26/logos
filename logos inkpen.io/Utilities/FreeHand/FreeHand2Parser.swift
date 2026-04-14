@@ -96,7 +96,6 @@ enum FreeHand2Parser {
         // Scan ALL non-shape records in one pass, assign sequential IDs
         // Colors (0x1452-0x1454) and styles (0x14B0-0x14FF) share the same ID space
         var allRecords: [(offset: Int, type: UInt16)] = []
-        let shapeTypes: Set<UInt16> = [rectRecordType, ovalRecordType, pathRecordType, lineRecordType]
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
