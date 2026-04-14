@@ -1071,8 +1071,28 @@ class ClipboardManager {
         document.removeSelectedObjects()
     }
 
+    /// Recursively collects a shape and all of its group/clipGroup members into `out`.
+    /// De-duplicates via `visited` so a shape referenced by multiple selected parents isn't copied twice.
+    private func collectShapeAndMembers(
+        _ shape: VectorShape,
+        from document: VectorDocument,
+        into out: inout [VectorShape],
+        visited: inout Set<UUID>
+    ) {
+        guard !visited.contains(shape.id) else { return }
+        visited.insert(shape.id)
+        out.append(shape)
+
+        for memberID in shape.memberIDs {
+            if let memberObj = document.snapshot.objects[memberID] {
+                collectShapeAndMembers(memberObj.shape, from: document, into: &out, visited: &visited)
+            }
+        }
+    }
+
     func copy(from document: VectorDocument) {
         var shapesToCopy: [VectorShape] = []
+        var copiedShapeIDs: Set<UUID> = []
         var textToCopy: [VectorText] = []
 
         for objectID in document.viewState.selectedObjectIDs {
@@ -1106,16 +1126,7 @@ class ClipboardManager {
                      .clipGroup(let shape),
                      .clipMask(let shape),
                      .guide(let shape):
-                    shapesToCopy.append(shape)
-
-                    // For groups with memberIDs, also copy member shapes
-                    if !shape.memberIDs.isEmpty {
-                        for memberID in shape.memberIDs {
-                            if let memberObj = document.snapshot.objects[memberID] {
-                                shapesToCopy.append(memberObj.shape)
-                            }
-                        }
-                    }
+                    collectShapeAndMembers(shape, from: document, into: &shapesToCopy, visited: &copiedShapeIDs)
                 }
             }
         }
