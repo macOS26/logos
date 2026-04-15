@@ -56,9 +56,19 @@ enum FreeHandEPSParser {
 
         let rawShapes = parsePostScript(drawingText, pageHeight: pageHeight, originX: bbOriginX, originY: bbOriginY)
 
-        // Merge consecutive fill+stroke pairs that share the same path into single shapes
-        var shapes = mergeFillStrokePairs(rawShapes)
-        print("Shapes: \(rawShapes.count) raw → \(shapes.count) merged")
+        // Infer groups from `gsave ... grestore` blocks containing 2+ shapes,
+        // then wrap members into native group VectorShapes WITH bounds set
+        // (otherwise the spatial index reads zero bounds and treats the group
+        // as invisible — see VectorShape.swift:580-582).
+        let groupRanges = inferGroupRanges(from: drawingText, totalShapes: rawShapes.count)
+        let (preTextShapes, groupIDs): ([VectorShape], [UUID]) = {
+            if groupRanges.isEmpty {
+                return (mergeFillStrokePairs(rawShapes), [])
+            }
+            return wrapShapesIntoGroups(rawShapes, ranges: groupRanges)
+        }()
+        var shapes = preTextShapes
+        print("Shapes: \(rawShapes.count) raw → \(shapes.count) top-level (\(groupIDs.count) groups)")
 
         // Parse text runs — FreeHand EPS emits: `/fN [size 0 0 size tx ty] makesetfont
         //                                        x y moveto ... (text) ts`
@@ -85,7 +95,7 @@ enum FreeHandEPSParser {
         )
 
         let stats = FreeHandDirectImporter.Stats(
-            paths: shapes.count, groups: 0, clipGroups: 0,
+            paths: rawShapes.count, groups: groupIDs.count, clipGroups: 0,
             compositePaths: 0, newBlends: 0, symbolInstances: 0, contentIdPaths: 0
         )
 
@@ -94,8 +104,115 @@ enum FreeHandEPSParser {
             pageSize: CGSize(width: pageWidth, height: pageHeight),
             stats: stats,
             layers: [layer],
-            groupShapeIDs: []
+            groupShapeIDs: groupIDs
         )
+    }
+
+    // MARK: - Group Inference
+
+    /// Walk the tokenized PostScript, recording shape-index ranges for each
+    /// `gsave ... grestore` block that contains 2+ shape-creating operators.
+    /// Returns the deepest non-overlapping cover (so an outer block whose
+    /// children are themselves multi-shape groups gets dropped).
+    static func inferGroupRanges(from drawingText: String, totalShapes: Int) -> [Range<Int>] {
+        let tokens = tokenize(drawingText)
+
+        struct Frame { let startShapeIdx: Int }
+        var stack: [Frame] = []
+        var raw: [Range<Int>] = []
+        var shapeIdx = 0
+
+        for token in tokens {
+            switch token {
+            case "gsave":
+                stack.append(Frame(startShapeIdx: shapeIdx))
+            case "grestore":
+                if let frame = stack.popLast() {
+                    let count = shapeIdx - frame.startShapeIdx
+                    if count >= 2 {
+                        raw.append(frame.startShapeIdx..<shapeIdx)
+                    }
+                }
+            case "{fill}", "{ fill }", "{fill }", "{ fill}",
+                 "{stroke}", "{ stroke }", "{stroke }", "{ stroke}",
+                 "rectfill", "radialfill", "eoradialfill":
+                shapeIdx += 1
+            default:
+                break
+            }
+        }
+
+        // Deepest-first dedup: smallest ranges win, ranges whose shapes are
+        // entirely inside an already-claimed smaller range get dropped.
+        let sortedSmallestFirst = raw.sorted {
+            ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound)
+        }
+        var covered = [Bool](repeating: false, count: totalShapes)
+        var kept: [Range<Int>] = []
+        for r in sortedSmallestFirst {
+            guard r.lowerBound >= 0, r.upperBound <= totalShapes else { continue }
+            let hasUncovered = (r.lowerBound..<r.upperBound).contains { !covered[$0] }
+            if hasUncovered {
+                for i in r.lowerBound..<r.upperBound { covered[i] = true }
+                kept.append(r)
+            }
+        }
+        return kept.sorted { $0.lowerBound < $1.lowerBound }
+    }
+
+    /// Replace shapes inside a group range with one native group VectorShape.
+    /// Each group container has its own UUID (default VectorShape init) and
+    /// `bounds` is set to the union of member bounds so the spatial index
+    /// can hit-test it.
+    static func wrapShapesIntoGroups(_ shapes: [VectorShape], ranges: [Range<Int>])
+        -> (topLevel: [VectorShape], groupIDs: [UUID])
+    {
+        guard !ranges.isEmpty else { return (shapes, []) }
+
+        var shapeToRange: [Int: Int] = [:]
+        for (rIdx, r) in ranges.enumerated() {
+            for i in r where i >= 0 && i < shapes.count { shapeToRange[i] = rIdx }
+        }
+
+        var output: [VectorShape] = []
+        var groupIDs: [UUID] = []
+        var rangeEmitted = Set<Int>()
+
+        for (idx, shape) in shapes.enumerated() {
+            if let rIdx = shapeToRange[idx] {
+                if !rangeEmitted.contains(rIdx) {
+                    rangeEmitted.insert(rIdx)
+                    let r = ranges[rIdx]
+                    let members = Array(shapes[r])
+
+                    // Union of member bounds (transformed). Spatial index reads
+                    // shape.bounds for memberID-style groups.
+                    var union = CGRect.null
+                    for m in members {
+                        let b = m.bounds.applying(m.transform)
+                        union = union.union(b)
+                    }
+
+                    var group = VectorShape(
+                        name: "Group",
+                        path: VectorPath(elements: [], isClosed: false),
+                        strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
+                        fillStyle: nil,
+                        transform: .identity
+                    )
+                    group.isGroup = true
+                    group.memberIDs = members.map { $0.id }
+                    group.groupedShapes = members
+                    group.bounds = union.isNull ? .zero : union
+                    output.append(group)
+                    groupIDs.append(group.id)
+                }
+                // Individual shape is consumed by the group; don't emit standalone.
+            } else {
+                output.append(shape)
+            }
+        }
+        return (output, groupIDs)
     }
 
     // MARK: - Text Extraction
