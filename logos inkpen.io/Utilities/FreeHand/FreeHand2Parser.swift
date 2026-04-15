@@ -567,13 +567,43 @@ enum FreeHand2Parser {
             contentIdPaths: 0
         )
 
+        // Crop the page to the drawing's bbox (like EPS BBox). FH2 always
+        // stores 612×792 portrait in the header even when the drawing is
+        // small/landscape; opening at the native page size leaves the content
+        // tucked in a corner of a giant portrait canvas.
+        let effectiveSize = drawingBBoxPageSize(shapes: shapes, fallback: pageSize)
+
         return FreeHandDirectImporter.Result(
             shapes: shapes,
-            pageSize: pageSize,
+            pageSize: effectiveSize,
             stats: stats,
             layers: nativeLayers,
             groupShapeIDs: []
         )
+    }
+
+    /// Compute a page size that tightly contains the parsed shapes, with a
+    /// small margin. Returns `fallback` if the union is degenerate.
+    private static func drawingBBoxPageSize(shapes: [VectorShape], fallback: CGSize) -> CGSize {
+        var union = CGRect.null
+        for s in shapes {
+            let b: CGRect
+            if s.typography != nil, let tp = s.textPosition, let sz = s.areaSize {
+                b = CGRect(origin: tp, size: sz)
+            } else {
+                b = s.bounds.applying(s.transform)
+            }
+            if !b.isNull && !b.isInfinite && b.width > 0 && b.height > 0 {
+                union = union.union(b)
+            }
+        }
+        guard !union.isNull, union.width > 0, union.height > 0 else { return fallback }
+        // Page origin is (0, 0); include the shape's top-left so the drawing
+        // isn't clipped at the edge. Add a 1-inch (72pt) margin on all sides.
+        let margin: CGFloat = 72
+        let w = union.maxX + margin
+        let h = union.maxY + margin
+        return CGSize(width: w, height: h)
     }
 
     // MARK: - Record Parsing
