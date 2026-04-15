@@ -400,14 +400,15 @@ struct DocumentBasedMainView: View {
                 if result.success {
                     guard let fallbackLayer = document.selectedLayerIndex else { return }
 
-                    // Append any parsed layers and map parsed-index → doc-index.
+                    // Pre-compute where parsed layers will land after the command appends
+                    // them, so we can route each shape to its correct target layer index.
                     var parsedToDocLayer: [Int: Int] = [:]
+                    let baseCount = document.snapshot.layers.count
                     if result.layers.isEmpty {
                         parsedToDocLayer[0] = fallbackLayer
                     } else {
-                        for (idx, parsedLayer) in result.layers.enumerated() {
-                            document.snapshot.layers.append(parsedLayer)
-                            parsedToDocLayer[idx] = document.snapshot.layers.count - 1
+                        for (idx, _) in result.layers.enumerated() {
+                            parsedToDocLayer[idx] = baseCount + idx
                         }
                     }
                     let defaultTarget = parsedToDocLayer[0] ?? fallbackLayer
@@ -417,62 +418,56 @@ struct DocumentBasedMainView: View {
                         for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
                     }
 
-                    // Mirror the paste path (logos_inkpen_ioApp.swift:1207): install
-                    // group members directly into snapshot.objects, then batch the
-                    // top-level VectorObjects through AddObjectCommand so Cmd+Z
-                    // undoes the whole import in one step.
-                    var topLevelObjects: [VectorObject] = []
+                    // Build the three inputs to ImportCommand:
+                    //   - newLayers: parsed layers to append (command handles add/undo)
+                    //   - topLevel: VectorObjects that live on a layer's objectIDs
+                    //   - members: VectorObjects that live only in snapshot.objects
+                    //     (group children, targeted at their container's layer)
+                    var topLevel: [VectorObject] = []
+                    var members: [VectorObject] = []
                     var newShapeIDs: Set<UUID> = []
 
                     @MainActor
-                    func install(_ shape: VectorShape, layer: Int) {
-                        var toInstall = shape
-                        if (toInstall.isGroup || toInstall.isClippingGroup)
-                            && !toInstall.groupedShapes.isEmpty {
-                            var memberIDs = toInstall.memberIDs
-                            for child in toInstall.groupedShapes {
-                                install(child, layer: layer)
-                                memberIDs.append(child.id)
+                    func collectMembers(of shape: VectorShape, layer: Int, intoMemberIDs: inout [UUID]) {
+                        for child in shape.groupedShapes {
+                            var childMemberIDs = child.memberIDs
+                            if (child.isGroup || child.isClippingGroup) && !child.groupedShapes.isEmpty {
+                                collectMembers(of: child, layer: layer, intoMemberIDs: &childMemberIDs)
                             }
-                            toInstall.memberIDs = memberIDs
-                            toInstall.groupedShapes = []
+                            var resolvedChild = child
+                            resolvedChild.memberIDs = childMemberIDs
+                            resolvedChild.groupedShapes = []
+                            let type = VectorObject.determineType(for: resolvedChild)
+                            members.append(VectorObject(id: resolvedChild.id, layerIndex: layer, objectType: type))
+                            intoMemberIDs.append(resolvedChild.id)
                         }
-                        let objectType = VectorObject.determineType(for: toInstall)
-                        let obj = VectorObject(id: toInstall.id, layerIndex: layer, objectType: objectType)
-                        document.snapshot.objects[toInstall.id] = obj
                     }
 
                     for shape in result.shapes {
                         let target = shapeIDToParsedLayer[shape.id]
                             .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
 
-                        if (shape.isGroup || shape.isClippingGroup)
-                            && !shape.groupedShapes.isEmpty {
+                        if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
                             var container = shape
                             var memberIDs = container.memberIDs
-                            for child in container.groupedShapes {
-                                install(child, layer: target)
-                                memberIDs.append(child.id)
-                            }
+                            collectMembers(of: container, layer: target, intoMemberIDs: &memberIDs)
                             container.memberIDs = memberIDs
                             container.groupedShapes = []
                             let type = VectorObject.determineType(for: container)
-                            topLevelObjects.append(VectorObject(id: container.id, layerIndex: target, objectType: type))
+                            topLevel.append(VectorObject(id: container.id, layerIndex: target, objectType: type))
                         } else {
                             let type = VectorObject.determineType(for: shape)
-                            topLevelObjects.append(VectorObject(id: shape.id, layerIndex: target, objectType: type))
+                            topLevel.append(VectorObject(id: shape.id, layerIndex: target, objectType: type))
                         }
                         newShapeIDs.insert(shape.id)
                     }
 
-                    if !topLevelObjects.isEmpty {
-                        let command = AddObjectCommand(objects: topLevelObjects)
-                        document.commandManager.execute(command)
-                    }
+                    let command = ImportCommand(newLayers: result.layers,
+                                                topLevel: topLevel,
+                                                members: members)
+                    document.commandManager.execute(command)
 
                     document.viewState.selectedObjectIDs = newShapeIDs
-                    let updatedLayers = Set(0..<document.snapshot.layers.count)
-                    document.triggerLayerUpdates(for: updatedLayers)
                     calculateInitialZoom()
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
