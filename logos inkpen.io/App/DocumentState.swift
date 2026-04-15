@@ -319,15 +319,9 @@ class DocumentState: ObservableObject {
                 await MainActor.run {
                     guard let self else { return }
                     if result.success {
-                        guard let fallbackLayer = document.selectedLayerIndex
-                                ?? document.snapshot.layers.indices.first else {
-                            self.updateAllStates()
-                            return
-                        }
-
-                        // Drop empty image shapes before they hit the command — keeps the
-                        // undo payload accurate and avoids registering invisible objects.
-                        let usableShapes: [VectorShape] = result.shapes.filter { shape in
+                        // Drop empty image shapes before they hit the command — keeps
+                        // the undo payload accurate and avoids invisible objects.
+                        let isUsable: VectorImportResult.ShapeFilter = { shape in
                             let tempObj = VectorObject(shape: shape, layerIndex: 0)
                             if case .image = tempObj.objectType {
                                 if let data = shape.embeddedImageData {
@@ -337,80 +331,21 @@ class DocumentState: ObservableObject {
                             }
                             return true
                         }
-
-                        // Pre-compute target layer indexes (layers will land at `count + idx`
-                        // once ImportCommand appends them).
-                        let baseCount = document.snapshot.layers.count
-                        var parsedToDocLayer: [Int: Int] = [:]
-                        if result.layers.isEmpty {
-                            parsedToDocLayer[0] = fallbackLayer
-                        } else {
-                            for (idx, _) in result.layers.enumerated() {
-                                parsedToDocLayer[idx] = baseCount + idx
-                            }
-                        }
-                        let defaultTarget = parsedToDocLayer[0] ?? fallbackLayer
-
-                        var shapeIDToParsedLayer: [UUID: Int] = [:]
-                        for (idx, parsedLayer) in result.layers.enumerated() {
-                            for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
-                        }
-
-                        var topLevel: [VectorObject] = []
-                        var members: [VectorObject] = []
-                        var newObjectIDs: Set<UUID> = []
-
-                        @MainActor
-                        func collectMembers(of shape: VectorShape, layer: Int, into ids: inout [UUID]) {
-                            for child in shape.groupedShapes {
-                                var childMemberIDs = child.memberIDs
-                                if (child.isGroup || child.isClippingGroup) && !child.groupedShapes.isEmpty {
-                                    collectMembers(of: child, layer: layer, into: &childMemberIDs)
-                                }
-                                var resolved = child
-                                resolved.memberIDs = childMemberIDs
-                                resolved.groupedShapes = []
-                                let type = VectorObject.determineType(for: resolved)
-                                members.append(VectorObject(id: resolved.id, layerIndex: layer, objectType: type))
-                                ids.append(resolved.id)
-                            }
-                        }
-
-                        for shape in usableShapes {
-                            let target = shapeIDToParsedLayer[shape.id]
-                                .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
-
-                            if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
-                                var container = shape
-                                var memberIDs = container.memberIDs
-                                collectMembers(of: container, layer: target, into: &memberIDs)
-                                container.memberIDs = memberIDs
-                                container.groupedShapes = []
-                                let type = VectorObject.determineType(for: container)
-                                topLevel.append(VectorObject(id: container.id, layerIndex: target, objectType: type))
-                            } else {
-                                let type = VectorObject.determineType(for: shape)
-                                topLevel.append(VectorObject(id: shape.id, layerIndex: target, objectType: type))
-                            }
-                            newObjectIDs.insert(shape.id)
-                        }
-
-                        let command = ImportCommand(newLayers: result.layers,
-                                                    topLevel: topLevel,
-                                                    members: members)
-                        document.commandManager.execute(command)
+                        let usableShapes = result.shapes.filter(isUsable)
+                        let dispatched = result.dispatchAsImportCommand(into: document, filter: isUsable) != nil
 
                         // Hydrate any image shapes after they're in snapshot.objects.
-                        var imagesHydrated = 0
-                        for shape in usableShapes {
-                            self.hydrateGroupImagesRecursively(shape, document: document, count: &imagesHydrated)
+                        if dispatched {
+                            var imagesHydrated = 0
+                            for shape in usableShapes {
+                                self.hydrateGroupImagesRecursively(shape, document: document, count: &imagesHydrated)
+                            }
+                            let imagesDropped = result.shapes.count - usableShapes.count
+                            if imagesHydrated > 0 || imagesDropped > 0 {
+                                print("🖼️ Import: hydrated=\(imagesHydrated) dropped=\(imagesDropped)")
+                            }
+                            document.viewState.selectedObjectIDs = Set(usableShapes.map { $0.id })
                         }
-                        let imagesDropped = result.shapes.count - usableShapes.count
-                        if imagesHydrated > 0 || imagesDropped > 0 {
-                            print("🖼️ Import: hydrated=\(imagesHydrated) dropped=\(imagesDropped)")
-                        }
-
-                        document.viewState.selectedObjectIDs = newObjectIDs
                         self.updateAllStates()
                     } else {
                         let alert = NSAlert()

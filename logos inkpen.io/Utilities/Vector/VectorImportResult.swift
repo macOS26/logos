@@ -14,6 +14,98 @@ struct VectorImportResult: Identifiable {
     var groupShapeIDs: [UUID] = []
 }
 
+extension VectorImportResult {
+    /// Shape predicate for the standard import path. Returning false drops the
+    /// shape before it lands in the document — keeps the undo payload clean
+    /// (e.g. empty image placeholders shouldn't enter snapshot.objects).
+    typealias ShapeFilter = (VectorShape) -> Bool
+
+    /// Build an `ImportCommand` for this result and dispatch it through
+    /// `document.commandManager`. Single source of truth for File → Import,
+    /// the in-window `.fileImporter` callback, and the SF Symbols picker.
+    ///
+    /// - Parameter document: the target doc.
+    /// - Parameter fallbackLayer: which layer index to use when the result
+    ///   carries no parsed layer info (defaults to `selectedLayerIndex`,
+    ///   then the first user layer).
+    /// - Parameter filter: optional per-shape predicate. Shapes returning
+    ///   false are dropped.
+    /// - Returns: the dispatched command (already executed and on the undo
+    ///   stack), or nil if the result was unsuccessful or no fallback
+    ///   layer was available.
+    @MainActor
+    @discardableResult
+    func dispatchAsImportCommand(into document: VectorDocument,
+                                 fallbackLayer: Int? = nil,
+                                 filter: ShapeFilter? = nil) -> ImportCommand? {
+        guard success else { return nil }
+        guard let target = fallbackLayer
+                            ?? document.selectedLayerIndex
+                            ?? document.snapshot.layers.indices.first else { return nil }
+
+        let usable: [VectorShape]
+        if let filter = filter { usable = shapes.filter(filter) } else { usable = shapes }
+
+        // Pre-compute where parsed layers will land once the command appends them.
+        let baseCount = document.snapshot.layers.count
+        var parsedToDocLayer: [Int: Int] = [:]
+        if layers.isEmpty {
+            parsedToDocLayer[0] = target
+        } else {
+            for (idx, _) in layers.enumerated() {
+                parsedToDocLayer[idx] = baseCount + idx
+            }
+        }
+        let defaultTarget = parsedToDocLayer[0] ?? target
+
+        var shapeIDToParsedLayer: [UUID: Int] = [:]
+        for (idx, parsedLayer) in layers.enumerated() {
+            for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
+        }
+
+        var topLevel: [VectorObject] = []
+        var members: [VectorObject] = []
+
+        @MainActor
+        func collectMembers(of shape: VectorShape, layer: Int, into ids: inout [UUID]) {
+            for child in shape.groupedShapes {
+                var childMemberIDs = child.memberIDs
+                if (child.isGroup || child.isClippingGroup) && !child.groupedShapes.isEmpty {
+                    collectMembers(of: child, layer: layer, into: &childMemberIDs)
+                }
+                var resolved = child
+                resolved.memberIDs = childMemberIDs
+                resolved.groupedShapes = []
+                let type = VectorObject.determineType(for: resolved)
+                members.append(VectorObject(id: resolved.id, layerIndex: layer, objectType: type))
+                ids.append(resolved.id)
+            }
+        }
+
+        for shape in usable {
+            let dest = shapeIDToParsedLayer[shape.id]
+                .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
+
+            if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
+                var container = shape
+                var memberIDs = container.memberIDs
+                collectMembers(of: container, layer: dest, into: &memberIDs)
+                container.memberIDs = memberIDs
+                container.groupedShapes = []
+                let type = VectorObject.determineType(for: container)
+                topLevel.append(VectorObject(id: container.id, layerIndex: dest, objectType: type))
+            } else {
+                let type = VectorObject.determineType(for: shape)
+                topLevel.append(VectorObject(id: shape.id, layerIndex: dest, objectType: type))
+            }
+        }
+
+        let command = ImportCommand(newLayers: layers, topLevel: topLevel, members: members)
+        document.commandManager.execute(command)
+        return command
+    }
+}
+
 struct VectorImportMetadata {
     let originalFormat: VectorFileFormat
     let documentSize: CGSize
