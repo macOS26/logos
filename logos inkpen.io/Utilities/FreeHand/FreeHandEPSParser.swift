@@ -272,13 +272,22 @@ enum FreeHandEPSParser {
                 transform: .identity
             )
             shape.textContent = literal
-            let textOrigin = CGPoint(x: moveX - originX, y: pageHeight - (moveY - originY))
+            // PostScript `moveto` positions the BASELINE-LEFT of the first glyph.
+            // InkPen's textPosition is the TOP-LEFT of the text bounding box, so
+            // shift up by the ascender (~0.8 * fontSize for serif fonts like Times).
+            let ascender = fontSize * 0.8
+            let baselineY = pageHeight - (moveY - originY)
+            let textOrigin = CGPoint(x: moveX - originX, y: baselineY - ascender)
             shape.textPosition = textOrigin
             let fontFamily = fontTable.values.first ?? "Helvetica"
+            // alignment = .left so InkPen treats textPosition.x as the LEFT edge
+            // of the text box (matches PostScript's moveto-X semantics). The
+            // default .center would shift text by half its width to the right.
             shape.typography = TypographyProperties(
                 fontFamily: fontFamily,
                 fontSize: fontSize,
                 lineHeight: fontSize,
+                alignment: .left,
                 strokeColor: .clear,
                 fillColor: .black
             )
@@ -288,8 +297,6 @@ enum FreeHandEPSParser {
             let estWidth = Double(literal.count) * fontSize * 0.55
             let estHeight = fontSize * 1.25
             shape.areaSize = CGSize(width: estWidth, height: estHeight)
-            // Selection bbox uses textPosition + areaSize directly, but also
-            // fall back to `bounds` in other codepaths — seed both.
             shape.bounds = CGRect(origin: textOrigin, size: CGSize(width: estWidth, height: estHeight))
             results.append(shape)
         }
