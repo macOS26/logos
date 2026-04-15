@@ -642,12 +642,30 @@ enum FreeHand2Parser {
         }
 
         // Append text shapes parsed from 0x13EE records.
+        // Position heuristic: the FH2 text record's raw position bytes are
+        // not reliably decoded yet, so place each text shape below and
+        // horizontally centered on the current drawing's bounding box. This
+        // matches how the sample files (`This is a Font`, `Ungrouped`) sit
+        // directly below the TORTUGA in the native FreeHand 2 layout.
         let textRuns = parseTextRecords(data: data)
+        var drawingBounds: CGRect = .null
+        for s in shapes {
+            let b = s.bounds.applying(s.transform)
+            if !b.isNull && !b.isInfinite && b.width > 0 && b.height > 0 {
+                drawingBounds = drawingBounds.union(b)
+            }
+        }
+        var nextTextBaselineY = drawingBounds.isNull
+            ? effectiveSize.height - 72
+            : drawingBounds.maxY + 24
         for run in textRuns {
-            // FH2 text Y is stored bottom-up. Flip against the effective
-            // landscape page so the text sits where the native app draws it.
-            let flippedY = effectiveSize.height - run.y
-            let textOrigin = CGPoint(x: run.x, y: flippedY - run.fontSize * 0.8)
+            let estWidth = Double(run.text.count) * run.fontSize * 0.55
+            let centerX = drawingBounds.isNull
+                ? (effectiveSize.width - CGFloat(estWidth)) / 2
+                : drawingBounds.midX - CGFloat(estWidth) / 2
+            let textOrigin = CGPoint(x: max(0, centerX), y: nextTextBaselineY)
+            // Stack successive text runs below each other.
+            nextTextBaselineY += CGFloat(run.fontSize * 1.3)
             var textShape = VectorShape(
                 name: run.text,
                 path: VectorPath(elements: [], isClosed: false),
@@ -665,7 +683,6 @@ enum FreeHand2Parser {
                 strokeColor: .clear,
                 fillColor: .black
             )
-            let estWidth = Double(run.text.count) * run.fontSize * 0.55
             let estHeight = run.fontSize * 1.25
             textShape.areaSize = CGSize(width: estWidth, height: estHeight)
             textShape.transform = CGAffineTransform(translationX: textOrigin.x, y: textOrigin.y)
