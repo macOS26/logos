@@ -642,30 +642,15 @@ enum FreeHand2Parser {
         }
 
         // Append text shapes parsed from 0x13EE records.
-        // Position heuristic: the FH2 text record's raw position bytes are
-        // not reliably decoded yet, so place each text shape below and
-        // horizontally centered on the current drawing's bounding box. This
-        // matches how the sample files (`This is a Font`, `Ungrouped`) sit
-        // directly below the TORTUGA in the native FreeHand 2 layout.
+        // NOTE: position and font metrics are NOT yet decoded from the record
+        // bytes. `parseTextRecords` returns the literal only. Text is emitted
+        // at its raw stored X/Y (likely wrong) so the content shows up in the
+        // doc and the user can reposition manually. Do NOT add layout
+        // assumptions here — text can be anywhere on the page in FH2.
         let textRuns = parseTextRecords(data: data)
-        var drawingBounds: CGRect = .null
-        for s in shapes {
-            let b = s.bounds.applying(s.transform)
-            if !b.isNull && !b.isInfinite && b.width > 0 && b.height > 0 {
-                drawingBounds = drawingBounds.union(b)
-            }
-        }
-        var nextTextBaselineY = drawingBounds.isNull
-            ? effectiveSize.height - 72
-            : drawingBounds.maxY + 24
         for run in textRuns {
+            let textOrigin = CGPoint(x: run.x, y: run.y)
             let estWidth = Double(run.text.count) * run.fontSize * 0.55
-            let centerX = drawingBounds.isNull
-                ? (effectiveSize.width - CGFloat(estWidth)) / 2
-                : drawingBounds.midX - CGFloat(estWidth) / 2
-            let textOrigin = CGPoint(x: max(0, centerX), y: nextTextBaselineY)
-            // Stack successive text runs below each other.
-            nextTextBaselineY += CGFloat(run.fontSize * 1.3)
             var textShape = VectorShape(
                 name: run.text,
                 path: VectorPath(elements: [], isClosed: false),
