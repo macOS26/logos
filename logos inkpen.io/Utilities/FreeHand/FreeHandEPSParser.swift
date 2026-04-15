@@ -319,10 +319,13 @@ enum FreeHandEPSParser {
                 strokeColor: .clear,
                 fillColor: .black
             )
-            // Estimate the text box so hit-testing, selection bounds, and the
-            // spatial index can see this shape. A character is ≈0.55×fontSize
-            // wide for Times-Bold; add a baseline gap for descenders.
-            let estWidth = Double(literal.count) * fontSize * 0.55
+            // Text box width. InkPen treats areaSize.width as a hard wrap
+            // boundary — if it's too tight, characters reflow to a new line
+            // (e.g. "Ungr" splitting as "Ung" + "r"). Estimate character
+            // advance width, then pad generously so no reflow happens.
+            // A 0.65 advance factor + 2× overhead covers Times-Bold and
+            // most serif faces without reflowing.
+            let estWidth = Double(literal.count) * fontSize * 0.65 * 2.0
             let estHeight = fontSize * 1.25
             shape.areaSize = CGSize(width: estWidth, height: estHeight)
             // MetalSpatialIndex reads text position from `transform.tx/ty` for
