@@ -297,7 +297,13 @@ enum FreeHandEPSParser {
             let estWidth = Double(literal.count) * fontSize * 0.55
             let estHeight = fontSize * 1.25
             shape.areaSize = CGSize(width: estWidth, height: estHeight)
-            shape.bounds = CGRect(origin: textOrigin, size: CGSize(width: estWidth, height: estHeight))
+            // MetalSpatialIndex reads text position from `transform.tx/ty` for
+            // .text-type objects (see MetalSpatialIndex.swift:135), NOT from
+            // bounds.origin. Put the position in the transform and zero the
+            // bounds origin so the index can hit-test the text where it
+            // actually renders.
+            shape.transform = CGAffineTransform(translationX: textOrigin.x, y: textOrigin.y)
+            shape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
             results.append(shape)
         }
         return results
