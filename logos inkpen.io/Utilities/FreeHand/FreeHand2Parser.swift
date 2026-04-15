@@ -572,7 +572,7 @@ enum FreeHand2Parser {
         let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
 
         // Parse layer definitions (0x138A records → child shape ID lists)
-        let layerShapeIDs = parseLayers(data: data)
+        _ = parseLayers(data: data)  // still run for stats/debug, ignore result
 
         // Authoritative per-shape color from 0x138A groups + adjacent 0x14B5
         // style batches. Overrides whatever fillRef lookup produced.
@@ -606,14 +606,21 @@ enum FreeHand2Parser {
             preOff += 1
         }
 
-        // Scan for shape records
+        // Scan for shape records. Each shape record's +8 u16 is its 1-based
+        // layer index (same field that text records use).
         var shapes: [VectorShape] = []
         var shapeAbsIDs: [Int] = []
+        var shapeLayerIdx: [Int] = []
         var offset = headerSize
 
         while offset + 4 <= data.count {
             let word = readUInt16BE(data, offset: offset)
             let rtype = readUInt16BE(data, offset: offset + 2)
+
+            func recordLayerIdx() -> Int {
+                guard offset + 10 <= data.count else { return 1 }
+                return max(1, Int(readUInt16BE(data, offset: offset + 8)))
+            }
 
             // Look for a path record type at offset+2 (size at offset)
             if offset + 44 <= data.count {
@@ -628,6 +635,7 @@ enum FreeHand2Parser {
                                                        colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                             shapes.append(shape)
                             shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                            shapeLayerIdx.append(recordLayerIdx())
                         }
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
@@ -636,6 +644,7 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        shapeLayerIdx.append(recordLayerIdx())
                     }
                 } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
                     if let shape = parseRectRecord(data: data, recordOffset: offset,
@@ -643,6 +652,7 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        shapeLayerIdx.append(recordLayerIdx())
                     }
                 } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
                     if let shape = parseLineRecord(data: data, recordOffset: offset,
@@ -650,6 +660,7 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        shapeLayerIdx.append(recordLayerIdx())
                     }
                 }
             }
@@ -692,25 +703,26 @@ enum FreeHand2Parser {
             }
         }
 
-        // Build native InkPen Layers from 0x138A layer records. Each record lists absolute
-        // shape IDs (pre-scan map); translate back to shape UUIDs.
+        // Build native InkPen Layers from each shape's +8 layer index. The
+        // single 0x138A "all shapes" record is NOT the layer source — per-
+        // shape +8 is (dude2.fh2 has paths with +8=1 and +8=3 mixed in one
+        // 0x138A list). Preserve file order within each layer.
         var nativeLayers: [Layer] = []
-        if !layerShapeIDs.isEmpty {
-            let absIDToShapeID: [Int: UUID] = Dictionary(uniqueKeysWithValues:
-                zip(shapeAbsIDs, shapes.map { $0.id }).filter { $0.0 != 0 })
-            for (layerIdx, absIDs) in layerShapeIDs.enumerated() {
-                let objectIDs = absIDs.compactMap { absIDToShapeID[$0] }
-                guard !objectIDs.isEmpty else { continue }
-                nativeLayers.append(Layer(
-                    name: "Layer \(layerIdx + 1)",
-                    objectIDs: objectIDs,
-                    isVisible: true,
-                    isLocked: false,
-                    opacity: 1.0,
-                    blendMode: .normal,
-                    color: .blue
-                ))
+        let totalLayers = max(1, (shapeLayerIdx + [1]).max() ?? 1)
+        for layer in 1...totalLayers {
+            var objectIDs: [UUID] = []
+            for (i, idx) in shapeLayerIdx.enumerated() where idx == layer {
+                objectIDs.append(shapes[i].id)
             }
+            nativeLayers.append(Layer(
+                name: "Layer \(layer)",
+                objectIDs: objectIDs,
+                isVisible: true,
+                isLocked: false,
+                opacity: 1.0,
+                blendMode: .normal,
+                color: .blue
+            ))
         }
 
         let stats = FreeHandDirectImporter.Stats(
