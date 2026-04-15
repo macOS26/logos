@@ -155,6 +155,19 @@ struct FH2Test {
             parts.append("<path d=\"\(d.trimmingCharacters(in: .whitespaces))\" fill=\"\(fillStr)\" stroke=\"\(strokeStr)\" stroke-width=\"\(strokeWidth)\"/>")
         }
 
+        // Emit decoded text runs (bottom-up EPS y flipped to top-down SVG).
+        let (ct0, _) = FreeHand2Parser.debugColorTable(data: data)
+        let textRuns = FreeHand2Parser.parseTextRecords(data: data, colorTable: ct0)
+        for run in textRuns {
+            let flippedY = pageSize.height - run.y
+            let esc = run.text
+                .replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
+            let (r, g, b) = run.color.rgbValues
+            let fill = String(format: "rgb(%d,%d,%d)", Int(r*255), Int(g*255), Int(b*255))
+            parts.append("<text x=\"\(run.x)\" y=\"\(flippedY)\" dominant-baseline=\"hanging\" font-family=\"\(run.fontFamily)\" font-weight=\"bold\" font-size=\"\(run.fontSize)\" fill=\"\(fill)\">\(esc)</text>")
+        }
         // Insert gradient defs before shapes
         if !defs.isEmpty {
             parts.insert("<defs>\(defs.joined())</defs>", at: 3)

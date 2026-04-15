@@ -270,6 +270,86 @@ enum FreeHand2Parser {
         return result
     }
 
+    /// Scan all 0x0006 named-string records in file order.
+    static func parseNamedStrings(data: Data) -> [String] {
+        var names: [String] = []
+        var offset = headerSize
+        while offset + 6 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            if rtype == 0x0006, size >= 6, size <= 60, offset + size <= data.count {
+                let nameLen = Int(data[offset + 4])
+                if nameLen > 0, offset + 5 + nameLen <= data.count {
+                    let bytes = data[(offset + 5)..<(offset + 5 + nameLen)]
+                    if let str = String(bytes: bytes, encoding: .ascii) {
+                        names.append(str)
+                    }
+                }
+            }
+            offset += 1
+        }
+        return names
+    }
+
+    /// Decode 0x13EE text records. Fields (record-start offsets):
+    ///   +8  u16  1-based font index into 0x0006 name table
+    ///   +30 u16  xAnchor      +32 u16  yAnchor (top-of-line)
+    ///   +58 i16  xDelta       +62 i16  yDelta
+    ///   +92 u16  font size (points)
+    /// Color is resolved via the next 0x14B5 style record's innerRef.
+    static func parseTextRecords(data: Data, colorTable: [Int: VectorColor] = [:])
+        -> [(text: String, x: Double, y: Double, fontSize: Double,
+             fontFamily: String, color: VectorColor)]
+    {
+        let names = parseNamedStrings(data: data)
+        var results: [(String, Double, Double, Double, String, VectorColor)] = []
+        var offset = headerSize
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            guard rtype == 0x13EE, size >= 94, offset + size <= data.count else {
+                offset += 1
+                continue
+            }
+            var ascii = ""
+            var longest = ""
+            for i in (offset + 4)..<(offset + size) {
+                let b = data[i]
+                if b >= 0x20 && b <= 0x7E {
+                    ascii.append(Character(UnicodeScalar(b)))
+                } else {
+                    if ascii.count > longest.count { longest = ascii }
+                    ascii = ""
+                }
+            }
+            if ascii.count > longest.count { longest = ascii }
+            guard !longest.isEmpty else { offset += 1; continue }
+            let fontIdx  = Int(readUInt16BE(data, offset: offset + 8))
+            let xAnchor  = Int(readUInt16BE(data, offset: offset + 30))
+            let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
+            let xDelta   = Int(readInt16BE(data, offset: offset + 58))
+            let yDelta   = Int(readInt16BE(data, offset: offset + 62))
+            let fontSize = Double(readUInt16BE(data, offset: offset + 92))
+            let colorRef = Int(readUInt16BE(data, offset: offset + 104))
+            let epsX = Double(xAnchor + xDelta) / unitsPerPoint
+            let epsY = Double(yAnchor + yDelta) / unitsPerPoint
+            let family: String
+            if fontIdx >= 1, fontIdx <= names.count {
+                family = names[fontIdx - 1]
+            } else {
+                family = names.first ?? ""
+            }
+            let color = colorTable[colorRef]
+                        ?? scanForwardForStyleColor(data: data,
+                                                     startOffset: offset + size,
+                                                     colorTable: colorTable)
+                        ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
+            results.append((longest, epsX, epsY, fontSize, family, color))
+            offset += 1
+        }
+        return results
+    }
+
     // MARK: - Layer Parsing
 
     /// Parse 0x138A records into layer → [shapeID] mapping

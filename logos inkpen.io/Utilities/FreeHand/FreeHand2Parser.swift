@@ -299,18 +299,50 @@ enum FreeHand2Parser {
         return result
     }
 
-    /// Extract text runs from 0x13EE records. `offset` below is from the
-    /// record start (the `size` u16 at +0, type `0x13EE` at +2). Fields:
-    ///   +30 u16be  xAnchor (1/10 pt)
-    ///   +32 u16be  yAnchor (top-of-line, 1/10 pt)
-    ///   +58 i16be  xDelta
-    ///   +62 i16be  yDelta
-    ///   +92 u16be  font size (points)
-    /// Returns the TOP-LEFT of the text block in EPS (bottom-up) points:
-    ///   epsX = (xAnchor + xDelta) / 10
-    ///   epsY = (yAnchor + yDelta) / 10     (top of line, caller flips Y)
-    static func parseTextRecords(data: Data) -> [(text: String, x: Double, y: Double, fontSize: Double)] {
-        var results: [(String, Double, Double, Double)] = []
+    /// Scan all 0x0006 named-string records in file order. Format:
+    ///   u16 size | u16 type=0x0006 | u8 nameLen | name_chars[nameLen] | pad
+    /// FH2 stores font families first (Times, Helvetica, …) followed by
+    /// color names (Black, SpotGreen, Cyan, …). Returns the list of names
+    /// in declaration order; caller indexes by the text record's 1-based
+    /// font index (field +8).
+    static func parseNamedStrings(data: Data) -> [String] {
+        var names: [String] = []
+        var offset = headerSize
+        while offset + 6 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            if rtype == 0x0006, size >= 6, size <= 60, offset + size <= data.count {
+                let nameLen = Int(data[offset + 4])
+                if nameLen > 0, offset + 5 + nameLen <= data.count {
+                    let bytes = data[(offset + 5)..<(offset + 5 + nameLen)]
+                    if let str = String(bytes: bytes, encoding: .ascii) {
+                        names.append(str)
+                    }
+                }
+            }
+            offset += 1
+        }
+        return names
+    }
+
+    /// Decode 0x13EE text records. `offset` = record start (size u16 at +0,
+    /// type 0x13EE at +2). Fields:
+    ///   +8  u16   1-based font index into the file's 0x0006 name table
+    ///   +30 u16   xAnchor (1/10 pt)
+    ///   +32 u16   yAnchor (top-of-line, 1/10 pt)
+    ///   +58 i16   xDelta
+    ///   +62 i16   yDelta
+    ///   +92 u16   font size (points)
+    /// Color: the next 0x14B5 style record after this text record resolves
+    /// via its innerRef through the existing color table, same way path
+    /// groups pick up their fill color.
+    static func parseTextRecords(data: Data,
+                                  colorTable: [Int: VectorColor] = [:])
+        -> [(text: String, x: Double, y: Double, fontSize: Double,
+             fontFamily: String, color: VectorColor)]
+    {
+        let namedStrings = parseNamedStrings(data: data)
+        var results: [(String, Double, Double, Double, String, VectorColor)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
@@ -336,15 +368,32 @@ enum FreeHand2Parser {
                 continue
             }
 
-            let xAnchor = Int(readUInt16BE(data, offset: offset + 30))
-            let yAnchor = Int(readUInt16BE(data, offset: offset + 32))
-            let xDelta  = Int(readInt16BE(data, offset: offset + 58))
-            let yDelta  = Int(readInt16BE(data, offset: offset + 62))
+            let fontIdx  = Int(readUInt16BE(data, offset: offset + 8))
+            let xAnchor  = Int(readUInt16BE(data, offset: offset + 30))
+            let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
+            let xDelta   = Int(readInt16BE(data, offset: offset + 58))
+            let yDelta   = Int(readInt16BE(data, offset: offset + 62))
             let fontSize = Double(readUInt16BE(data, offset: offset + 92))
+            let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
 
-            results.append((longest, epsX, epsY, fontSize))
+            let family: String
+            if fontIdx >= 1, fontIdx <= namedStrings.count {
+                family = namedStrings[fontIdx - 1]
+            } else {
+                family = namedStrings.first ?? ""
+            }
+            // Text color ref lives at +104 — it's the same styleRid slot the
+            // path-fill chain uses, so colorTable has already been populated
+            // at that key by `buildColorAndWidthTables`.
+            let color = colorTable[colorRef]
+                        ?? scanForwardForStyleColor(data: data,
+                                                     startOffset: offset + size,
+                                                     colorTable: colorTable)
+                        ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
+
+            results.append((longest, epsX, epsY, fontSize, family, color))
             offset += 1
         }
         return results
@@ -621,7 +670,7 @@ enum FreeHand2Parser {
         // Parse text up-front so orientation detection can include text extents
         // (e.g. stage.fh2 has text at x=696 which only makes sense on a 792-wide
         // landscape page — paths alone wouldn't reveal the landscape layout).
-        let textRuns = parseTextRecords(data: data)
+        let textRuns = parseTextRecords(data: data, colorTable: colorTable)
 
         // FH2 always stores the page as portrait (e.g. 612×792 for Letter),
         // even when the document was set up landscape. Infer orientation from
@@ -646,18 +695,18 @@ enum FreeHand2Parser {
                 name: run.text,
                 path: VectorPath(elements: [], isClosed: false),
                 strokeStyle: nil,
-                fillStyle: FillStyle(color: .black),
+                fillStyle: FillStyle(color: run.color),
                 transform: .identity
             )
             textShape.textContent = run.text
             textShape.textPosition = textOrigin
             textShape.typography = TypographyProperties(
-                fontFamily: "Times-Bold",
+                fontFamily: run.fontFamily,
                 fontSize: run.fontSize,
                 lineHeight: run.fontSize,
                 alignment: .left,
                 strokeColor: .clear,
-                fillColor: .black
+                fillColor: run.color
             )
             let estHeight = run.fontSize * 1.25
             textShape.areaSize = CGSize(width: estWidth, height: estHeight)
@@ -665,7 +714,6 @@ enum FreeHand2Parser {
             textShape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
             shapes.append(textShape)
             shapeAbsIDs.append(0)
-            // Include in the first layer so it shows up in the panel.
             if !nativeLayers.isEmpty {
                 nativeLayers[0].objectIDs.append(textShape.id)
             }
@@ -685,7 +733,7 @@ enum FreeHand2Parser {
     /// portrait width (e.g. stage.fh2's TopRight at x=696 on a 612-wide page)
     /// which is the giveaway that the layout is landscape.
     private static func inferEffectivePageSize(shapes: [VectorShape],
-                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double)],
+                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor)],
                                                 storedPage: CGSize) -> CGSize {
         var union = CGRect.null
         for s in shapes {
