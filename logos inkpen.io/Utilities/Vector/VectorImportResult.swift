@@ -47,12 +47,30 @@ extension VectorImportResult {
         if let filter = filter { usable = shapes.filter(filter) } else { usable = shapes }
 
         // Pre-compute where parsed layers will land once the command appends them.
+        // Each imported layer gets a FRESH UUID (so the spatial index can key it
+        // separately from any existing layer) and a NAME that doesn't collide
+        // with existing doc layer names (so the user sees them apart in the
+        // layer panel).
+        let existingNames = Set(document.snapshot.layers.map { $0.name })
+        let layersToAppend: [Layer] = layers.map { parsed in
+            Layer(
+                id: UUID(),                                       // fresh UUID
+                name: Self.uniqueName(parsed.name, against: existingNames),
+                objectIDs: parsed.objectIDs,
+                isVisible: parsed.isVisible,
+                isLocked: parsed.isLocked,
+                opacity: parsed.opacity,
+                blendMode: parsed.blendMode,
+                color: parsed.color
+            )
+        }
+
         let baseCount = document.snapshot.layers.count
         var parsedToDocLayer: [Int: Int] = [:]
-        if layers.isEmpty {
+        if layersToAppend.isEmpty {
             parsedToDocLayer[0] = target
         } else {
-            for (idx, _) in layers.enumerated() {
+            for (idx, _) in layersToAppend.enumerated() {
                 parsedToDocLayer[idx] = baseCount + idx
             }
         }
@@ -100,9 +118,18 @@ extension VectorImportResult {
             }
         }
 
-        let command = ImportCommand(newLayers: layers, topLevel: topLevel, members: members)
+        let command = ImportCommand(newLayers: layersToAppend, topLevel: topLevel, members: members)
         document.commandManager.execute(command)
         return command
+    }
+
+    /// Pick a layer name that doesn't collide with `existing`. If `proposed`
+    /// is free, return it. Otherwise append " 2", " 3", ... until unique.
+    private static func uniqueName(_ proposed: String, against existing: Set<String>) -> String {
+        if !existing.contains(proposed) { return proposed }
+        var n = 2
+        while existing.contains("\(proposed) \(n)") { n += 1 }
+        return "\(proposed) \(n)"
     }
 }
 
