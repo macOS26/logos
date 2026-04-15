@@ -73,6 +73,13 @@ class MetalSpatialIndex {
         guard Self.sharedInitialized else { return nil }
     }
 
+    // Explicit nonisolated deinit. Project sets SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor,
+    // so without this the synthesized deinit hops to the main executor via the Swift 6
+    // back-deploy shim — which crashes in swift_getObjectType when SwiftUI releases an
+    // old DrawingCanvas copy from its gesture graph. Stored fields are MTLBuffers and
+    // Sendable value types; they release safely off-main.
+    nonisolated deinit { }
+
     static func releaseSharedPipelines() {
         sharedBuildPipeline = nil
         sharedQueryPointPipeline = nil
