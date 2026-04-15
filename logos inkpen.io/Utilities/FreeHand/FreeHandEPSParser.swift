@@ -196,12 +196,17 @@ enum FreeHandEPSParser {
                     var group = VectorShape(
                         name: "Group",
                         path: VectorPath(elements: [], isClosed: false),
-                        strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
+                        strokeStyle: nil,
                         fillStyle: nil,
                         transform: .identity
                     )
                     group.isGroup = true
-                    group.memberIDs = members.map { $0.id }
+                    // IMPORTANT: addImportedShape unpacks `groupedShapes` and
+                    // APPENDS each child's id onto `memberIDs`. Leave memberIDs
+                    // empty here — otherwise every child ends up listed twice
+                    // and every group transform runs twice (double-transform
+                    // on move/rotate/scale).
+                    group.memberIDs = []
                     group.groupedShapes = members
                     group.bounds = union.isNull ? .zero : union
                     output.append(group)
