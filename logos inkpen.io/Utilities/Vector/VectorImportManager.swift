@@ -260,7 +260,9 @@ class VectorImportManager {
                 shapes: direct.shapes,
                 metadata: metadata,
                 errors: [],
-                warnings: []
+                warnings: [],
+                layers: direct.layers,
+                groupShapeIDs: direct.groupShapeIDs
             )
         } catch FreeHandImportError.notSupported {
             return VectorImportResult(

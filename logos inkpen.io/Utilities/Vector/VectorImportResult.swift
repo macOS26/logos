@@ -7,6 +7,11 @@ struct VectorImportResult: Identifiable {
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
+    /// Native InkPen layers parsed from the source file. `objectIDs` references
+    /// shape UUIDs from `shapes`. Empty when the source has no layer info.
+    var layers: [Layer] = []
+    /// Native group VectorShape IDs within `shapes`. Already included in `shapes`.
+    var groupShapeIDs: [UUID] = []
 }
 
 struct VectorImportMetadata {

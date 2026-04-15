@@ -398,15 +398,38 @@ struct DocumentBasedMainView: View {
                 showingImportProgress = false
 
                 if result.success {
-                    guard let layerIndex = document.selectedLayerIndex else { return }
-                    var newShapeIDs: Set<UUID> = []
+                    guard let fallbackLayer = document.selectedLayerIndex else { return }
 
+                    // Mirror InkpenDocument.init: if the source carries parsed layers,
+                    // append each as a new native Layer and route shapes by objectID.
+                    // Otherwise drop everything onto the currently selected layer.
+                    var parsedToDocLayer: [Int: Int] = [:]
+                    if result.layers.isEmpty {
+                        parsedToDocLayer[0] = fallbackLayer
+                    } else {
+                        for (idx, parsedLayer) in result.layers.enumerated() {
+                            document.snapshot.layers.append(parsedLayer)
+                            parsedToDocLayer[idx] = document.snapshot.layers.count - 1
+                        }
+                    }
+                    let defaultTarget = parsedToDocLayer[0] ?? fallbackLayer
+
+                    var shapeIDToParsedLayer: [UUID: Int] = [:]
+                    for (idx, parsedLayer) in result.layers.enumerated() {
+                        for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
+                    }
+
+                    var newShapeIDs: Set<UUID> = []
                     for shape in result.shapes {
-                        document.addShape(shape, to: layerIndex)
+                        let target = shapeIDToParsedLayer[shape.id]
+                            .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
+                        document.addImportedShape(shape, to: target)
                         newShapeIDs.insert(shape.id)
                     }
 
                     document.viewState.selectedObjectIDs = newShapeIDs
+                    let updatedLayers = Set(0..<document.snapshot.layers.count)
+                    document.triggerLayerUpdates(for: updatedLayers)
                     calculateInitialZoom()
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
