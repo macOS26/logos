@@ -567,11 +567,21 @@ enum FreeHand2Parser {
             contentIdPaths: 0
         )
 
-        // Crop the page to the drawing's bbox (like EPS BBox). FH2 always
-        // stores 612×792 portrait in the header even when the drawing is
-        // small/landscape; opening at the native page size leaves the content
-        // tucked in a corner of a giant portrait canvas.
-        let effectiveSize = drawingBBoxPageSize(shapes: shapes, fallback: pageSize)
+        // FH2 always stores the page as portrait (e.g. 612×792 for Letter),
+        // even when the document was set up landscape. Infer orientation from
+        // the drawing's bbox aspect ratio and swap to landscape when the
+        // content is clearly wider than tall. Y-flip also has to redo because
+        // `parsePathRecord` flipped against the stored (portrait) pageHeight.
+        let effectiveSize = inferEffectivePageSize(shapes: shapes,
+                                                    storedPage: pageSize)
+        if effectiveSize != pageSize {
+            // Re-flip every shape's Y so the drawing sits relative to the
+            // new page height instead of the stored one.
+            let deltaH = pageSize.height - effectiveSize.height
+            for i in 0..<shapes.count {
+                shapes[i] = translateShapeY(shapes[i], by: -deltaH)
+            }
+        }
 
         return FreeHandDirectImporter.Result(
             shapes: shapes,
@@ -582,9 +592,11 @@ enum FreeHand2Parser {
         )
     }
 
-    /// Compute a page size that tightly contains the parsed shapes, with a
-    /// small margin. Returns `fallback` if the union is degenerate.
-    private static func drawingBBoxPageSize(shapes: [VectorShape], fallback: CGSize) -> CGSize {
+    /// Decide whether to swap the stored page dimensions. If the drawing is
+    /// notably wider than tall but the stored page is portrait, return the
+    /// swapped (landscape) size.
+    private static func inferEffectivePageSize(shapes: [VectorShape],
+                                                storedPage: CGSize) -> CGSize {
         var union = CGRect.null
         for s in shapes {
             let b: CGRect
@@ -597,13 +609,28 @@ enum FreeHand2Parser {
                 union = union.union(b)
             }
         }
-        guard !union.isNull, union.width > 0, union.height > 0 else { return fallback }
-        // Page origin is (0, 0); include the shape's top-left so the drawing
-        // isn't clipped at the edge. Add a 1-inch (72pt) margin on all sides.
-        let margin: CGFloat = 72
-        let w = union.maxX + margin
-        let h = union.maxY + margin
-        return CGSize(width: w, height: h)
+        guard !union.isNull, union.width > 0, union.height > 0 else { return storedPage }
+        let drawingIsLandscape = union.width > union.height * 1.05
+        let pageIsPortrait = storedPage.height > storedPage.width
+        if drawingIsLandscape && pageIsPortrait {
+            return CGSize(width: storedPage.height, height: storedPage.width)
+        }
+        return storedPage
+    }
+
+    /// Translate every point + text position by (0, dy).
+    private static func translateShapeY(_ shape: VectorShape, by dy: CGFloat) -> VectorShape {
+        var s = shape
+        let t = CGAffineTransform(translationX: 0, y: dy)
+        s.path = s.path.applying(t)
+        s.bounds = s.bounds.offsetBy(dx: 0, dy: dy)
+        if let tp = s.textPosition {
+            s.textPosition = CGPoint(x: tp.x, y: tp.y + dy)
+        }
+        if !s.transform.isIdentity {
+            s.transform = s.transform.concatenating(t)
+        }
+        return s
     }
 
     // MARK: - Record Parsing
