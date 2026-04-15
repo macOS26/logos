@@ -155,7 +155,8 @@ enum FreeHandEPSParser {
                 transform: .identity
             )
             shape.textContent = literal
-            shape.textPosition = CGPoint(x: moveX - originX, y: pageHeight - (moveY - originY))
+            let textOrigin = CGPoint(x: moveX - originX, y: pageHeight - (moveY - originY))
+            shape.textPosition = textOrigin
             let fontFamily = fontTable.values.first ?? "Helvetica"
             shape.typography = TypographyProperties(
                 fontFamily: fontFamily,
@@ -164,6 +165,15 @@ enum FreeHandEPSParser {
                 strokeColor: .clear,
                 fillColor: .black
             )
+            // Estimate the text box so hit-testing, selection bounds, and the
+            // spatial index can see this shape. A character is ≈0.55×fontSize
+            // wide for Times-Bold; add a baseline gap for descenders.
+            let estWidth = Double(literal.count) * fontSize * 0.55
+            let estHeight = fontSize * 1.25
+            shape.areaSize = CGSize(width: estWidth, height: estHeight)
+            // Selection bbox uses textPosition + areaSize directly, but also
+            // fall back to `bounds` in other codepaths — seed both.
+            shape.bounds = CGRect(origin: textOrigin, size: CGSize(width: estWidth, height: estHeight))
             results.append(shape)
         }
         return results
