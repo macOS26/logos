@@ -334,15 +334,52 @@ struct DocumentBasedMainView: View {
             SFSymbolsPickerView(
                 isPresented: $showingSFSymbolsPicker,
                 onImport: { tempURL in
-                    /* Route the picked symbol's SVG through the standard import
-                       path so it lands on the current layer exactly like a
-                       File → Open of an SVG file would. */
+                    /* Route the picked symbol's SVG through ImportCommand so Cmd+Z
+                       undoes the symbol insertion atomically — same pattern as
+                       File → Import. */
                     let result = await VectorImportManager.shared.importVectorFile(from: tempURL)
-                    if result.success, let layerIndex = document.selectedLayerIndex ?? document.snapshot.layers.indices.first {
-                        for shape in result.shapes {
-                            document.addImportedShape(shape, to: layerIndex)
+                    guard result.success,
+                          let target = document.selectedLayerIndex
+                                       ?? document.snapshot.layers.indices.first else { return }
+
+                    var topLevel: [VectorObject] = []
+                    var members: [VectorObject] = []
+
+                    @MainActor
+                    func collectMembers(of shape: VectorShape, layer: Int, into ids: inout [UUID]) {
+                        for child in shape.groupedShapes {
+                            var childMemberIDs = child.memberIDs
+                            if (child.isGroup || child.isClippingGroup) && !child.groupedShapes.isEmpty {
+                                collectMembers(of: child, layer: layer, into: &childMemberIDs)
+                            }
+                            var resolved = child
+                            resolved.memberIDs = childMemberIDs
+                            resolved.groupedShapes = []
+                            let type = VectorObject.determineType(for: resolved)
+                            members.append(VectorObject(id: resolved.id, layerIndex: layer, objectType: type))
+                            ids.append(resolved.id)
                         }
                     }
+
+                    for shape in result.shapes {
+                        if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
+                            var container = shape
+                            var memberIDs = container.memberIDs
+                            collectMembers(of: container, layer: target, into: &memberIDs)
+                            container.memberIDs = memberIDs
+                            container.groupedShapes = []
+                            let type = VectorObject.determineType(for: container)
+                            topLevel.append(VectorObject(id: container.id, layerIndex: target, objectType: type))
+                        } else {
+                            let type = VectorObject.determineType(for: shape)
+                            topLevel.append(VectorObject(id: shape.id, layerIndex: target, objectType: type))
+                        }
+                    }
+
+                    let command = ImportCommand(newLayers: [],
+                                                topLevel: topLevel,
+                                                members: members)
+                    document.commandManager.execute(command)
                 }
             )
         }
