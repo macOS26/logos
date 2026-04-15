@@ -372,9 +372,15 @@ struct ProfessionalLayerRow: View {
                     guard let content = shape.textContent, !content.isEmpty else {
                         return "Text"
                     }
-                    // Get first word or "Text" if no word found
-                    let firstWord = content.split(separator: " ").first.map(String.init) ?? content.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return firstWord.isEmpty ? "Text" : firstWord
+                    // Show the FIRST LINE so multi-word text (e.g. "This is a Font")
+                    // previews meaningfully. The Text view's .lineLimit(1) +
+                    // truncationMode .tail clip it visually if it overflows.
+                    let firstLine = content
+                        .split(whereSeparator: { $0.isNewline })
+                        .first
+                        .map(String.init) ?? content
+                    let trimmed = firstLine.trimmingCharacters(in: .whitespaces)
+                    return trimmed.isEmpty ? "Text" : trimmed
                 }(),
                 isSelected: document.viewState.selectedObjectIDs.contains(newVectorObject.id),
                 onSelect: { isShiftPressed, isCommandPressed in
