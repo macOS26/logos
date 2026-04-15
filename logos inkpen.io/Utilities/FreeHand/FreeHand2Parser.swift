@@ -299,27 +299,23 @@ enum FreeHand2Parser {
         return result
     }
 
-    /// Extract text runs from 0x13EE records. Each record embeds an ASCII
-    /// literal terminated by 0x0D. Returns (text, epsX, epsY, fontSize) where
-    /// epsX/epsY are in PostScript user-space points (origin bottom-left).
-    ///
-    /// Decoded by comparing ungroup.fh2/stage.fh2 text records against their
-    /// EPS `moveto` positions:
-    ///   +28 u16be  x-origin in FH2 units (1/10 pt)
-    ///   +30 u16be  y-origin in FH2 units (top of line, before ascender)
-    ///   +56 i16be  x-offset in FH2 units
-    ///   +60 i16be  y-offset in FH2 units
-    ///   +90 u16be  font size in points
-    /// Baseline EPS coords:
-    ///   epsX = (+56 + +28) / 10
-    ///   epsY = (+60 + +30 - asc) / 10    where asc = fontSize * 7.583
+    /// Extract text runs from 0x13EE records. `offset` below is from the
+    /// record start (the `size` u16 at +0, type `0x13EE` at +2). Fields:
+    ///   +30 u16be  xAnchor (1/10 pt)
+    ///   +32 u16be  yAnchor (top-of-line, 1/10 pt)
+    ///   +58 i16be  xDelta
+    ///   +62 i16be  yDelta
+    ///   +92 u16be  font size (points)
+    /// Returns the TOP-LEFT of the text block in EPS (bottom-up) points:
+    ///   epsX = (xAnchor + xDelta) / 10
+    ///   epsY = (yAnchor + yDelta) / 10     (top of line, caller flips Y)
     static func parseTextRecords(data: Data) -> [(text: String, x: Double, y: Double, fontSize: Double)] {
         var results: [(String, Double, Double, Double)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
-            guard rtype == 0x13EE, size >= 92, offset + size <= data.count else {
+            guard rtype == 0x13EE, size >= 94, offset + size <= data.count else {
                 offset += 1
                 continue
             }
@@ -340,17 +336,15 @@ enum FreeHand2Parser {
                 continue
             }
 
-            let xOrigin = Int(readUInt16BE(data, offset: offset + 28))
-            let yOrigin = Int(readUInt16BE(data, offset: offset + 30))
-            let xOffset = Int(readInt16BE(data, offset: offset + 56))
-            let yOffset = Int(readInt16BE(data, offset: offset + 60))
-            let fontSize = Double(readUInt16BE(data, offset: offset + 90))
-            let size24 = fontSize > 0 ? fontSize : 24
-            let ascender = size24 * 0.7583
-            let epsX = Double(xOffset + xOrigin) / unitsPerPoint
-            let epsY = Double(yOffset + yOrigin) / unitsPerPoint - ascender
+            let xAnchor = Int(readUInt16BE(data, offset: offset + 30))
+            let yAnchor = Int(readUInt16BE(data, offset: offset + 32))
+            let xDelta  = Int(readInt16BE(data, offset: offset + 58))
+            let yDelta  = Int(readInt16BE(data, offset: offset + 62))
+            let fontSize = Double(readUInt16BE(data, offset: offset + 92))
+            let epsX = Double(xAnchor + xDelta) / unitsPerPoint
+            let epsY = Double(yAnchor + yDelta) / unitsPerPoint
 
-            results.append((longest, epsX, epsY, size24))
+            results.append((longest, epsX, epsY, fontSize))
             offset += 1
         }
         return results
@@ -624,26 +618,26 @@ enum FreeHand2Parser {
             contentIdPaths: 0
         )
 
+        // Parse text up-front so orientation detection can include text extents
+        // (e.g. stage.fh2 has text at x=696 which only makes sense on a 792-wide
+        // landscape page — paths alone wouldn't reveal the landscape layout).
+        let textRuns = parseTextRecords(data: data)
+
         // FH2 always stores the page as portrait (e.g. 612×792 for Letter),
         // even when the document was set up landscape. Infer orientation from
-        // the drawing's bbox aspect ratio and swap to landscape when the
-        // content is clearly wider than tall. Y-flip also has to redo because
-        // `parsePathRecord` flipped against the stored (portrait) pageHeight.
+        // the combined drawing + text bbox.
         let effectiveSize = inferEffectivePageSize(shapes: shapes,
+                                                    textRuns: textRuns,
                                                     storedPage: pageSize)
         if effectiveSize != pageSize {
-            // Re-flip every shape's Y so the drawing sits relative to the
-            // new page height instead of the stored one.
             let deltaH = pageSize.height - effectiveSize.height
             for i in 0..<shapes.count {
                 shapes[i] = translateShapeY(shapes[i], by: -deltaH)
             }
         }
 
-        // Append text shapes parsed from 0x13EE records. parseTextRecords
-        // returns EPS-style bottom-up coords; flip to top-down using the
-        // effective (post-orientation) page height so text aligns with paths.
-        let textRuns = parseTextRecords(data: data)
+        // Emit text shapes. parseTextRecords returns EPS-style bottom-up
+        // coords; flip Y with the effective (post-orientation) page height.
         for run in textRuns {
             let flippedY = effectiveSize.height - CGFloat(run.y)
             let textOrigin = CGPoint(x: CGFloat(run.x), y: flippedY)
@@ -686,27 +680,31 @@ enum FreeHand2Parser {
         )
     }
 
-    /// Decide whether to swap the stored page dimensions. If the drawing is
-    /// notably wider than tall but the stored page is portrait, return the
-    /// swapped (landscape) size.
+    /// Decide whether to swap the stored page dimensions. Considers both
+    /// path shapes AND text runs — text alone may extend past the stored
+    /// portrait width (e.g. stage.fh2's TopRight at x=696 on a 612-wide page)
+    /// which is the giveaway that the layout is landscape.
     private static func inferEffectivePageSize(shapes: [VectorShape],
+                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double)],
                                                 storedPage: CGSize) -> CGSize {
         var union = CGRect.null
         for s in shapes {
-            let b: CGRect
-            if s.typography != nil, let tp = s.textPosition, let sz = s.areaSize {
-                b = CGRect(origin: tp, size: sz)
-            } else {
-                b = s.bounds.applying(s.transform)
-            }
+            let b = s.bounds.applying(s.transform)
             if !b.isNull && !b.isInfinite && b.width > 0 && b.height > 0 {
                 union = union.union(b)
             }
         }
+        for run in textRuns {
+            let estW = CGFloat(Double(run.text.count) * run.fontSize * 0.55)
+            let estH = CGFloat(run.fontSize * 1.25)
+            let b = CGRect(x: CGFloat(run.x), y: CGFloat(run.y - run.fontSize), width: estW, height: estH)
+            union = union.union(b)
+        }
         guard !union.isNull, union.width > 0, union.height > 0 else { return storedPage }
-        let drawingIsLandscape = union.width > union.height * 1.05
         let pageIsPortrait = storedPage.height > storedPage.width
-        if drawingIsLandscape && pageIsPortrait {
+        let contentOverflowsWidth = union.maxX > storedPage.width
+        let drawingIsLandscape = union.width > union.height * 1.05
+        if pageIsPortrait && (contentOverflowsWidth || drawingIsLandscape) {
             return CGSize(width: storedPage.height, height: storedPage.width)
         }
         return storedPage
