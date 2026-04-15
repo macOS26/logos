@@ -400,9 +400,7 @@ struct DocumentBasedMainView: View {
                 if result.success {
                     guard let fallbackLayer = document.selectedLayerIndex else { return }
 
-                    // Mirror InkpenDocument.init: if the source carries parsed layers,
-                    // append each as a new native Layer and route shapes by objectID.
-                    // Otherwise drop everything onto the currently selected layer.
+                    // Append any parsed layers and map parsed-index → doc-index.
                     var parsedToDocLayer: [Int: Int] = [:]
                     if result.layers.isEmpty {
                         parsedToDocLayer[0] = fallbackLayer
@@ -419,12 +417,57 @@ struct DocumentBasedMainView: View {
                         for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
                     }
 
+                    // Mirror the paste path (logos_inkpen_ioApp.swift:1207): install
+                    // group members directly into snapshot.objects, then batch the
+                    // top-level VectorObjects through AddObjectCommand so Cmd+Z
+                    // undoes the whole import in one step.
+                    var topLevelObjects: [VectorObject] = []
                     var newShapeIDs: Set<UUID> = []
+
+                    @MainActor
+                    func install(_ shape: VectorShape, layer: Int) {
+                        var toInstall = shape
+                        if (toInstall.isGroup || toInstall.isClippingGroup)
+                            && !toInstall.groupedShapes.isEmpty {
+                            var memberIDs = toInstall.memberIDs
+                            for child in toInstall.groupedShapes {
+                                install(child, layer: layer)
+                                memberIDs.append(child.id)
+                            }
+                            toInstall.memberIDs = memberIDs
+                            toInstall.groupedShapes = []
+                        }
+                        let objectType = VectorObject.determineType(for: toInstall)
+                        let obj = VectorObject(id: toInstall.id, layerIndex: layer, objectType: objectType)
+                        document.snapshot.objects[toInstall.id] = obj
+                    }
+
                     for shape in result.shapes {
                         let target = shapeIDToParsedLayer[shape.id]
                             .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
-                        document.addImportedShape(shape, to: target)
+
+                        if (shape.isGroup || shape.isClippingGroup)
+                            && !shape.groupedShapes.isEmpty {
+                            var container = shape
+                            var memberIDs = container.memberIDs
+                            for child in container.groupedShapes {
+                                install(child, layer: target)
+                                memberIDs.append(child.id)
+                            }
+                            container.memberIDs = memberIDs
+                            container.groupedShapes = []
+                            let type = VectorObject.determineType(for: container)
+                            topLevelObjects.append(VectorObject(id: container.id, layerIndex: target, objectType: type))
+                        } else {
+                            let type = VectorObject.determineType(for: shape)
+                            topLevelObjects.append(VectorObject(id: shape.id, layerIndex: target, objectType: type))
+                        }
                         newShapeIDs.insert(shape.id)
+                    }
+
+                    if !topLevelObjects.isEmpty {
+                        let command = AddObjectCommand(objects: topLevelObjects)
+                        document.commandManager.execute(command)
                     }
 
                     document.viewState.selectedObjectIDs = newShapeIDs
