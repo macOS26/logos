@@ -217,6 +217,53 @@ enum FreeHand2Parser {
     // MARK: - Layer Parsing
 
     /// Parse 0x138A records into layer → [shapeID] mapping
+    /// For each 0x138A group record, find the adjacent 0x14B5 style record
+    /// batch and map every listed shape absID → that batch's color. Solves
+    /// the "per-shape color is wrong" problem: FH2 stores shapes in a
+    /// different file order than the style records that apply to them, so
+    /// looking up fillRef in isolation assigns the wrong color at batch
+    /// boundaries. Group membership is the authoritative source.
+    private static func parseGroupColorsByAbsID(data: Data,
+                                                 colorTable: [Int: VectorColor]) -> [Int: VectorColor] {
+        var result: [Int: VectorColor] = [:]
+        var offset = headerSize
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            guard rtype == 0x138A, size >= 20, size <= 200,
+                  offset + size <= data.count,
+                  offset + 34 <= data.count else {
+                offset += 1
+                continue
+            }
+            // Count + IDs live at +32 in every shape-carrying 0x138A we've seen.
+            let count = Int(readUInt16BE(data, offset: offset + 32))
+            guard count > 0, count < 100, offset + 34 + count * 2 <= data.count else {
+                offset += 1
+                continue
+            }
+            var shapeIDs: [Int] = []
+            for i in 0..<count {
+                let id = Int(readUInt16BE(data, offset: offset + 34 + i * 2))
+                if id > 0 { shapeIDs.append(id) }
+            }
+            guard !shapeIDs.isEmpty else {
+                offset += 1
+                continue
+            }
+            // Find the next 0x14B5 style record following this 138A and
+            // resolve its innerRef to a color. All members of this group
+            // share that color (FH2 style batches are uniform per group).
+            if let groupColor = scanForwardForStyleColor(data: data,
+                                                         startOffset: offset + size,
+                                                         colorTable: colorTable) {
+                for id in shapeIDs { result[id] = groupColor }
+            }
+            offset += 1
+        }
+        return result
+    }
+
     private static func parseLayers(data: Data) -> [[Int]] {
         var layers: [[Int]] = []
         var offset = headerSize
@@ -288,6 +335,10 @@ enum FreeHand2Parser {
 
         // Parse layer definitions (0x138A records → child shape ID lists)
         let layerShapeIDs = parseLayers(data: data)
+
+        // Authoritative per-shape color from 0x138A groups + adjacent 0x14B5
+        // style batches. Overrides whatever fillRef lookup produced.
+        let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
 
         // Pre-scan: build offset → absID map (count all records except 0x138A, starting at DOC=2)
         var offsetToAbsID: [Int: Int] = [:]
@@ -371,6 +422,18 @@ enum FreeHand2Parser {
 
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
+        }
+
+        // Override each shape's fill with the authoritative group color (from
+        // 0x138A membership) when available. This corrects the per-path color
+        // assignment at batch boundaries.
+        if !groupColorByAbsID.isEmpty {
+            for i in 0..<shapes.count {
+                let absID = shapeAbsIDs[i]
+                if let groupColor = groupColorByAbsID[absID] {
+                    shapes[i].fillStyle = FillStyle(color: groupColor)
+                }
+            }
         }
 
         // Build native InkPen Layers from 0x138A layer records. Each record lists absolute
