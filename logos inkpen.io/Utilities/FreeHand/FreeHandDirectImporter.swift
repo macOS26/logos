@@ -23,6 +23,8 @@ enum FreeHandDirectImporter {
         let shapes: [VectorShape]
         let pageSize: CGSize
         let stats: Stats
+        let layers: [FreeHand2Parser.Layer]
+        let groups: [FreeHand2Parser.Group]
     }
 
     /// Find the AGD or FH3 magic offset, stripping any IPTC wrapper (e.g. FH10).
@@ -96,7 +98,7 @@ enum FreeHandDirectImporter {
                 symbolInstances: Int(fh_result_stat_symbol_instances(result)),
                 contentIdPaths: Int(fh_result_stat_content_id_paths(result))
             )
-            return Result(shapes: shapes, pageSize: pageSize, stats: stats)
+            return Result(shapes: shapes, pageSize: pageSize, stats: stats, layers: [], groups: [])
         }
     }
 

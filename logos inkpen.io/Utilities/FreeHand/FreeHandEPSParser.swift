@@ -57,23 +57,118 @@ enum FreeHandEPSParser {
         let rawShapes = parsePostScript(drawingText, pageHeight: pageHeight, originX: bbOriginX, originY: bbOriginY)
 
         // Merge consecutive fill+stroke pairs that share the same path into single shapes
-        let shapes = mergeFillStrokePairs(rawShapes)
+        var shapes = mergeFillStrokePairs(rawShapes)
         print("Shapes: \(rawShapes.count) raw → \(shapes.count) merged")
+
+        // Parse text runs — FreeHand EPS emits: `/fN [size 0 0 size tx ty] makesetfont
+        //                                        x y moveto ... (text) ts`
+        let textShapes = parseEPSTextRuns(in: drawingText, pageHeight: pageHeight,
+                                          originX: bbOriginX, originY: bbOriginY,
+                                          fontTable: extractFontTable(from: text))
+        shapes.append(contentsOf: textShapes)
 
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
         }
 
+        // Parse layer/group metadata from EPS comments
+        // Example: %%Layer: "Layer 1" visible
+        // Example: %%Group: "Group 1" locked
+        var layers: [FreeHand2Parser.Layer] = []
+        var groups: [FreeHand2Parser.Group] = []
+        for line in text.components(separatedBy: .newlines) {
+            if line.hasPrefix("%%Layer:") {
+                let parts = line.dropFirst(8).trimmingCharacters(in: .whitespacesAndNewlines)
+                    .components(separatedBy: .whitespaces)
+                guard parts.count >= 1 else { continue }
+                let name = parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+                let isVisible = parts.count < 2 || parts[1].lowercased() != "hidden"
+                layers.append(FreeHand2Parser.Layer(name: name, isVisible: isVisible, shapes: []))
+            } else if line.hasPrefix("%%Group:") {
+                let parts = line.dropFirst(8).trimmingCharacters(in: .whitespacesAndNewlines)
+                    .components(separatedBy: .whitespaces)
+                guard parts.count >= 1 else { continue }
+                let name = parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+                let isLocked = parts.count >= 2 && parts[1].lowercased() == "locked"
+                groups.append(FreeHand2Parser.Group(name: name, isLocked: isLocked, children: []))
+            }
+        }
+
         let stats = FreeHandDirectImporter.Stats(
-            paths: shapes.count, groups: 0, clipGroups: 0,
+            paths: shapes.count, groups: groups.count, clipGroups: 0,
             compositePaths: 0, newBlends: 0, symbolInstances: 0, contentIdPaths: 0
         )
 
         return FreeHandDirectImporter.Result(
             shapes: shapes,
             pageSize: CGSize(width: pageWidth, height: pageHeight),
-            stats: stats
+            stats: stats,
+            layers: layers,
+            groups: groups
         )
+    }
+
+    // MARK: - Text Extraction
+
+    /// Parse `%%DocumentFonts:` / `%%+` continuation lines and `/fN /FontName ...` bindings.
+    private static func extractFontTable(from text: String) -> [String: String] {
+        var table: [String: String] = [:]
+        let lines = text.components(separatedBy: .newlines)
+        for line in lines {
+            // Pattern: `/f1 /|______Times-Bold dup RF findfont def`
+            if let fRange = line.range(of: #"/f\d+\s+/"#, options: .regularExpression) {
+                let fName = String(line[fRange])
+                    .dropFirst() // leading '/'
+                    .prefix(while: { !$0.isWhitespace })
+                let rest = line[fRange.upperBound...]
+                let fontName = String(rest.prefix(while: { $0 != " " && $0 != "\t" }))
+                    .replacingOccurrences(of: "|______", with: "")
+                if !fontName.isEmpty {
+                    table[String(fName)] = fontName
+                }
+            }
+        }
+        return table
+    }
+
+    /// Scan drawing text for `... moveto ... (literal) ts` sequences and return text shapes.
+    private static func parseEPSTextRuns(in drawingText: String,
+                                         pageHeight: Double,
+                                         originX: Double, originY: Double,
+                                         fontTable: [String: String]) -> [VectorShape] {
+        var results: [VectorShape] = []
+        // Match: makesetfont X Y moveto 0 0 N 0 0 (LITERAL) ts
+        let pattern = #"\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\]\s*makesetfont\s*(-?[\d.]+)\s+(-?[\d.]+)\s+moveto[^()]*\(([^)]*)\)\s*ts"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else {
+            return results
+        }
+        let ns = drawingText as NSString
+        let matches = regex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length))
+        for m in matches where m.numberOfRanges >= 8 {
+            let fontSize = Double(ns.substring(with: m.range(at: 1))) ?? 12
+            let moveX = Double(ns.substring(with: m.range(at: 6))) ?? 0
+            let moveY = Double(ns.substring(with: m.range(at: 7))) ?? 0
+            let literal = ns.substring(with: m.range(at: 8))
+            var shape = VectorShape(
+                name: literal,
+                path: VectorPath(elements: [], isClosed: false),
+                strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
+                fillStyle: FillStyle(color: .black),
+                transform: .identity
+            )
+            shape.textContent = literal
+            shape.textPosition = CGPoint(x: moveX - originX, y: pageHeight - (moveY - originY))
+            let fontFamily = fontTable.values.first ?? "Helvetica"
+            shape.typography = TypographyProperties(
+                fontFamily: fontFamily,
+                fontSize: fontSize,
+                lineHeight: fontSize,
+                strokeColor: .clear,
+                fillColor: .black
+            )
+            results.append(shape)
+        }
+        return results
     }
 
     // MARK: - PostScript Parser
@@ -272,30 +367,32 @@ enum FreeHandEPSParser {
                 if let num = Double(token) {
                     stack.append(num)
                 }
-                // Check for CMYK array: [C M Y K]
+                // Array: [N N N ...] — 4 numbers = CMYK color, 6 numbers = transform matrix.
                 else if token.hasPrefix("[") {
-                    // Parse color array [C M Y K]
-                    var colorNums: [Double] = []
+                    var nums: [Double] = []
                     var t = token.dropFirst() // remove [
                     if t.hasSuffix("]") { t = t.dropLast() }
-                    if let n = Double(t) { colorNums.append(n) }
+                    if let n = Double(t) { nums.append(n) }
 
                     var j = i + 1
                     while j < tokens.count {
                         var tk = tokens[j]
                         if tk.hasSuffix("]") {
                             tk = String(tk.dropLast())
-                            if let n = Double(tk) { colorNums.append(n) }
+                            if let n = Double(tk) { nums.append(n) }
                             j += 1
                             break
                         }
-                        if let n = Double(tk) { colorNums.append(n) }
+                        if let n = Double(tk) { nums.append(n) }
                         j += 1
                     }
                     i = j - 1
 
-                    if colorNums.count == 4 {
-                        let color = cmykToColor(colorNums[0], colorNums[1], colorNums[2], colorNums[3])
+                    if nums.count == 6 {
+                        // Transform matrix — push to stack so following `concat` / `makesetfont` can use it.
+                        stack.append(contentsOf: nums)
+                    } else if nums.count == 4 {
+                        let color = cmykToColor(nums[0], nums[1], nums[2], nums[3])
                         currentColor = color
                         state.fillColor = color
                         state.strokeColor = color

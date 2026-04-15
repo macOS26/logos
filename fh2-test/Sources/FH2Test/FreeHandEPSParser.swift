@@ -275,30 +275,32 @@ enum FreeHandEPSParser {
                 if let num = Double(token) {
                     stack.append(num)
                 }
-                // Check for CMYK array: [C M Y K]
+                // Array: [N N N ...] — 4 numbers = CMYK color, 6 numbers = transform matrix.
                 else if token.hasPrefix("[") {
-                    // Parse color array [C M Y K]
-                    var colorNums: [Double] = []
+                    var nums: [Double] = []
                     var t = token.dropFirst() // remove [
                     if t.hasSuffix("]") { t = t.dropLast() }
-                    if let n = Double(t) { colorNums.append(n) }
+                    if let n = Double(t) { nums.append(n) }
 
                     var j = i + 1
                     while j < tokens.count {
                         var tk = tokens[j]
                         if tk.hasSuffix("]") {
                             tk = String(tk.dropLast())
-                            if let n = Double(tk) { colorNums.append(n) }
+                            if let n = Double(tk) { nums.append(n) }
                             j += 1
                             break
                         }
-                        if let n = Double(tk) { colorNums.append(n) }
+                        if let n = Double(tk) { nums.append(n) }
                         j += 1
                     }
                     i = j - 1
 
-                    if colorNums.count == 4 {
-                        let color = cmykToColor(colorNums[0], colorNums[1], colorNums[2], colorNums[3])
+                    if nums.count == 6 {
+                        // Transform matrix — push to stack so following `concat` / `makesetfont` can use it.
+                        stack.append(contentsOf: nums)
+                    } else if nums.count == 4 {
+                        let color = cmykToColor(nums[0], nums[1], nums[2], nums[3])
                         currentColor = color
                         state.fillColor = color
                         state.strokeColor = color
