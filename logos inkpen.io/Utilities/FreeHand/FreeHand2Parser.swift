@@ -340,10 +340,7 @@ enum FreeHand2Parser {
         // style batches. Overrides whatever fillRef lookup produced.
         let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
 
-        // Pre-scan: build offset → absID map matching the FH2 file's own
-        // sequential ID scheme (which 0x138A group records reference). Count
-        // EVERY plausible record — 0x138A included — so the IDs line up with
-        // what 0x138A's shape-id list says.
+        // Pre-scan: build offset → absID map (count all records except 0x138A, starting at DOC=2)
         var offsetToAbsID: [Int: Int] = [:]
         var preAbsID = 2
         var preOff = headerSize
@@ -351,7 +348,8 @@ enum FreeHand2Parser {
             let sz = Int(readUInt16BE(data, offset: preOff))
             let rt = readUInt16BE(data, offset: preOff + 2)
             var found = false
-            if rt == 0x138A && sz >= 20 && sz <= 200 { found = true }
+            // Match any known record type EXCEPT 0x138A
+            if rt == 0x138A { /* skip */ }
             else if rt == 0x1389 && sz == 56 { found = true }
             else if rt == 0x0005 && sz >= 16 && sz < 300 { found = true }
             else if rt == pathRecordType && sz >= 44 && preOff + sz <= data.count && preOff + 29 < data.count {
@@ -363,8 +361,6 @@ enum FreeHand2Parser {
             else if (rt >= 0x14B0 && rt <= 0x14FF && sz >= 10 && sz <= 100) { found = true }
             else if (rt == 0x157D && sz >= 10 && sz <= 100) { found = true }
             else if (rt == 0x13ED && sz == 56) { found = true }
-            else if (rt == 0x13EE) { found = true }
-            else if (rt == 0x12C0 && sz == 32) { found = true }
             if found {
                 offsetToAbsID[preOff] = preAbsID
                 preAbsID += 1

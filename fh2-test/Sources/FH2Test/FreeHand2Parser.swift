@@ -331,7 +331,7 @@ enum FreeHand2Parser {
             let rt = readUInt16BE(data, offset: preOff + 2)
             var found = false
             // Match any known record type EXCEPT 0x138A
-            if rt == 0x138A && sz >= 20 && sz <= 200 { found = true }
+            if rt == 0x138A { /* skip */ }
             else if rt == 0x1389 && sz == 56 { found = true }
             else if rt == 0x0005 && sz >= 16 && sz < 300 { found = true }
             else if rt == pathRecordType && sz >= 44 && preOff + sz <= data.count && preOff + 29 < data.count {
