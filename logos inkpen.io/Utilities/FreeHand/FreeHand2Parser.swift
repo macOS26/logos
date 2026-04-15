@@ -72,10 +72,11 @@ enum FreeHand2Parser {
         }
     }
 
-    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo]) {
+    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo], [Int: String]) {
         var colorTable: [Int: VectorColor] = [:]
         var widthTable: [Int: Double] = [:]
         var gradientTable: [Int: GradientInfo] = [:]
+        var nameTable: [Int: String] = [:]
 
         // Read starting child ID from first TABLE (0x0005) record. Also pull
         // the full child-ID list — those are the FH2-native slot IDs for the
@@ -130,6 +131,14 @@ enum FreeHand2Parser {
             // Style/attribute records
             else if (rtype >= 0x14B0 && rtype <= 0x14FF && size >= 10 && size <= 100) ||
                     (rtype == 0x157D && size >= 10 && size <= 100) {
+                allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
+                styleIdx += 1
+                matched = true
+            }
+            // Named-string records (fonts and color names share type 0x0006).
+            // They consume a styleIdx slot so their styleRid lines up with what
+            // text records reference at +90 (font) and color records at +104.
+            else if rtype == 0x0006 && size >= 6 && size <= 60 {
                 allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
                 styleIdx += 1
                 matched = true
@@ -220,6 +229,18 @@ enum FreeHand2Parser {
                     widthTable[gid] = Double(rawWidth) / 10.0
                 }
             }
+
+            // Named-string (0x0006): u8 length at +4, ASCII chars at +5.
+            if rec.type == 0x0006, off + 5 <= data.count {
+                let nameLen = Int(data[off + 4])
+                if nameLen > 0, off + 5 + nameLen <= data.count {
+                    let bytes = data[(off + 5)..<(off + 5 + nameLen)]
+                    if let str = String(bytes: bytes, encoding: .ascii) {
+                        nameTable[rid] = str
+                        nameTable[gid] = str
+                    }
+                }
+            }
         }
 
         // Bind document-declared color slots from the first TABLE record.
@@ -246,7 +267,7 @@ enum FreeHand2Parser {
             }
         }
 
-        return (colorTable, widthTable, gradientTable)
+        return (colorTable, widthTable, gradientTable, nameTable)
     }
 
     // MARK: - Layer Parsing
@@ -327,25 +348,50 @@ enum FreeHand2Parser {
 
     /// Decode 0x13EE text records. `offset` = record start (size u16 at +0,
     /// type 0x13EE at +2). Fields:
-    ///   +8  u16   1-based layer index (confirmed by dude.fh2 where the
-    ///             "On Another Layer Dude" text on Layer 2 has +8=2 and
-    ///             every Layer 1 text has +8=1). Also currently used as
-    ///             the 1-based font index into the 0x0006 name table —
-    ///             that works in dude.fh2 only because font N is declared
-    ///             on layer N; a future file with mixed fonts on one
-    ///             layer will need a separate font-ref field.
-    ///   +30 u16   xAnchor (1/10 pt)
-    ///   +32 u16   yAnchor (top-of-line, 1/10 pt)
-    ///   +58 i16   xDelta
-    ///   +62 i16   yDelta
-    ///   +92 u16   font size (points)
-    ///   +104 u16  color ref (matches styleRid in the color table)
+    ///   +8   u16  1-based layer index
+    ///   +30  u16  xAnchor (1/10 pt)
+    ///   +32  u16  yAnchor (top-of-line, 1/10 pt)
+    ///   +58  i16  xDelta
+    ///   +62  i16  yDelta
+    ///   +90  u16  font-name ref — value is file-specific but the refs sort
+    ///             in the same order as the 0x0006 records are declared
+    ///             (Times first → smallest +90, Helvetica next → larger).
+    ///             Resolve by ranking the distinct +90 values seen in the
+    ///             file and mapping rank N → the Nth 0x0006 name.
+    ///   +92  u16  font size (points)
+    ///   +104 u16  color ref (styleRid of a color/style record)
     static func parseTextRecords(data: Data,
-                                  colorTable: [Int: VectorColor] = [:])
+                                  colorTable: [Int: VectorColor] = [:],
+                                  nameTable: [Int: String] = [:])
         -> [(text: String, x: Double, y: Double, fontSize: Double,
              fontFamily: String, color: VectorColor, layerIndex: Int)]
     {
-        let namedStrings = parseNamedStrings(data: data)
+        // Pass 1: collect distinct font-ref values from every text record.
+        var distinctFontRefs: [Int] = []
+        var seenFontRefs = Set<Int>()
+        var scanOffset = headerSize
+        while scanOffset + 94 <= data.count {
+            let sz = Int(readUInt16BE(data, offset: scanOffset))
+            let rt = readUInt16BE(data, offset: scanOffset + 2)
+            if rt == 0x13EE, sz >= 94, scanOffset + sz <= data.count {
+                let ref = Int(readUInt16BE(data, offset: scanOffset + 90))
+                if !seenFontRefs.contains(ref) {
+                    seenFontRefs.insert(ref)
+                    distinctFontRefs.append(ref)
+                }
+            }
+            scanOffset += 1
+        }
+        // Rank them ascending: smallest → font #0, next → font #1, ...
+        distinctFontRefs.sort()
+        var fontRefToRank: [Int: Int] = [:]
+        for (rank, ref) in distinctFontRefs.enumerated() {
+            fontRefToRank[ref] = rank
+        }
+        // Pass 2: scan 0x0006 records in file order — the first K are fonts
+        // where K == distinctFontRefs.count.
+        let allNames = parseNamedStrings(data: data)
+        let fontNames = Array(allNames.prefix(distinctFontRefs.count))
         var results: [(String, Double, Double, Double, String, VectorColor, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
@@ -373,22 +419,22 @@ enum FreeHand2Parser {
             }
 
             let layerIdx = Int(readUInt16BE(data, offset: offset + 8))
-            let fontIdx  = layerIdx
             let xAnchor  = Int(readUInt16BE(data, offset: offset + 30))
             let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
             let xDelta   = Int(readInt16BE(data, offset: offset + 58))
             let yDelta   = Int(readInt16BE(data, offset: offset + 62))
+            let fontRef  = Int(readUInt16BE(data, offset: offset + 90))
             let fontSize = Double(readUInt16BE(data, offset: offset + 92))
             let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
 
-            let family: String
-            if fontIdx >= 1, fontIdx <= namedStrings.count {
-                family = namedStrings[fontIdx - 1]
-            } else {
-                family = namedStrings.first ?? ""
-            }
+            let family: String = {
+                if let rank = fontRefToRank[fontRef], rank < fontNames.count {
+                    return fontNames[rank]
+                }
+                return ""
+            }()
             // Text color ref lives at +104 — it's the same styleRid slot the
             // path-fill chain uses, so colorTable has already been populated
             // at that key by `buildColorAndWidthTables`.
@@ -488,13 +534,18 @@ enum FreeHand2Parser {
     // MARK: - Debug
 
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
-        let (ct, wt, _) = buildColorAndWidthTables(data: data)
+        let (ct, wt, _, _) = buildColorAndWidthTables(data: data)
         return (ct, wt)
     }
 
     static func debugGradientTable(data: Data) -> [Int: GradientInfo] {
-        let (_, _, gt) = buildColorAndWidthTables(data: data)
+        let (_, _, gt, _) = buildColorAndWidthTables(data: data)
         return gt
+    }
+
+    static func debugNameTable(data: Data) -> [Int: String] {
+        let (_, _, _, nt) = buildColorAndWidthTables(data: data)
+        return nt
     }
 
     // MARK: - Public API
@@ -517,8 +568,8 @@ enum FreeHand2Parser {
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Build color, width, and gradient lookup tables from sequential record IDs
-        let (colorTable, widthTable, gradientTable) = buildColorAndWidthTables(data: data)
+        // Build color, width, gradient, and font-name lookup tables.
+        let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
 
         // Parse layer definitions (0x138A records → child shape ID lists)
         let layerShapeIDs = parseLayers(data: data)
@@ -675,7 +726,7 @@ enum FreeHand2Parser {
         // Parse text up-front so orientation detection can include text extents
         // (e.g. stage.fh2 has text at x=696 which only makes sense on a 792-wide
         // landscape page — paths alone wouldn't reveal the landscape layout).
-        let textRuns = parseTextRecords(data: data, colorTable: colorTable)
+        let textRuns = parseTextRecords(data: data, colorTable: colorTable, nameTable: nameTable)
 
         // FH2 always stores the page as portrait (e.g. 612×792 for Letter),
         // even when the document was set up landscape. Infer orientation from

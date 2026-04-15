@@ -157,7 +157,8 @@ struct FH2Test {
 
         // Emit decoded text runs (bottom-up EPS y flipped to top-down SVG).
         let (ct0, _) = FreeHand2Parser.debugColorTable(data: data)
-        let textRuns = FreeHand2Parser.parseTextRecords(data: data, colorTable: ct0)
+        let nt0 = FreeHand2Parser.debugNameTable(data: data)
+        let textRuns = FreeHand2Parser.parseTextRecords(data: data, colorTable: ct0, nameTable: nt0)
         for run in textRuns {
             let flippedY = pageSize.height - run.y
             let esc = run.text

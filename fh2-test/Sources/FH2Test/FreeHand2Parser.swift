@@ -72,10 +72,11 @@ enum FreeHand2Parser {
         }
     }
 
-    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo]) {
+    private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo], [Int: String]) {
         var colorTable: [Int: VectorColor] = [:]
         var widthTable: [Int: Double] = [:]
         var gradientTable: [Int: GradientInfo] = [:]
+        var nameTable: [Int: String] = [:]
 
         var firstChildID = 18
         var tableChildIDs: [Int] = []
@@ -118,6 +119,11 @@ enum FreeHand2Parser {
             }
             else if (rtype >= 0x14B0 && rtype <= 0x14FF && size >= 10 && size <= 100) ||
                     (rtype == 0x157D && size >= 10 && size <= 100) {
+                allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
+                styleIdx += 1
+                matched = true
+            }
+            else if rtype == 0x0006 && size >= 6 && size <= 60 {
                 allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
                 styleIdx += 1
                 matched = true
@@ -205,6 +211,18 @@ enum FreeHand2Parser {
                     widthTable[gid] = Double(rawWidth) / 10.0
                 }
             }
+
+            // Named-string (0x0006): u8 length at +4, ASCII chars at +5.
+            if rec.type == 0x0006, off + 5 <= data.count {
+                let nameLen = Int(data[off + 4])
+                if nameLen > 0, off + 5 + nameLen <= data.count {
+                    let bytes = data[(off + 5)..<(off + 5 + nameLen)]
+                    if let str = String(bytes: bytes, encoding: .ascii) {
+                        nameTable[rid] = str
+                        nameTable[gid] = str
+                    }
+                }
+            }
         }
 
         // Bind TABLE-declared color slots to the first N color records in file order.
@@ -228,7 +246,7 @@ enum FreeHand2Parser {
             }
         }
 
-        return (colorTable, widthTable, gradientTable)
+        return (colorTable, widthTable, gradientTable, nameTable)
     }
 
     /// Map each 0x138A group's listed shape absIDs to the color of the next
@@ -292,17 +310,41 @@ enum FreeHand2Parser {
     }
 
     /// Decode 0x13EE text records. Fields (record-start offsets):
-    ///   +8  u16  1-based font index into 0x0006 name table
-    ///   +30 u16  xAnchor      +32 u16  yAnchor (top-of-line)
-    ///   +58 i16  xDelta       +62 i16  yDelta
-    ///   +92 u16  font size (points)
-    /// Color is resolved via the next 0x14B5 style record's innerRef.
-    static func parseTextRecords(data: Data, colorTable: [Int: VectorColor] = [:])
+    ///   +8   u16  1-based layer index
+    ///   +30  u16  xAnchor      +32 u16  yAnchor (top-of-line)
+    ///   +58  i16  xDelta       +62 i16  yDelta
+    ///   +90  u16  font-name ref (styleRid of a 0x0006 named-string record)
+    ///   +92  u16  font size (points)
+    ///   +104 u16  color ref (styleRid in the color table)
+    static func parseTextRecords(data: Data,
+                                  colorTable: [Int: VectorColor] = [:],
+                                  nameTable: [Int: String] = [:])
         -> [(text: String, x: Double, y: Double, fontSize: Double,
-             fontFamily: String, color: VectorColor)]
+             fontFamily: String, color: VectorColor, layerIndex: Int)]
     {
-        let names = parseNamedStrings(data: data)
-        var results: [(String, Double, Double, Double, String, VectorColor)] = []
+        // Pass 1: distinct font-refs in rank order.
+        var distinctFontRefs: [Int] = []
+        var seenFontRefs = Set<Int>()
+        var scanOffset = headerSize
+        while scanOffset + 94 <= data.count {
+            let sz = Int(readUInt16BE(data, offset: scanOffset))
+            let rt = readUInt16BE(data, offset: scanOffset + 2)
+            if rt == 0x13EE, sz >= 94, scanOffset + sz <= data.count {
+                let ref = Int(readUInt16BE(data, offset: scanOffset + 90))
+                if !seenFontRefs.contains(ref) {
+                    seenFontRefs.insert(ref)
+                    distinctFontRefs.append(ref)
+                }
+            }
+            scanOffset += 1
+        }
+        distinctFontRefs.sort()
+        var fontRefToRank: [Int: Int] = [:]
+        for (rank, ref) in distinctFontRefs.enumerated() { fontRefToRank[ref] = rank }
+        let allNames = parseNamedStrings(data: data)
+        let fontNames = Array(allNames.prefix(distinctFontRefs.count))
+
+        var results: [(String, Double, Double, Double, String, VectorColor, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
@@ -324,27 +366,28 @@ enum FreeHand2Parser {
             }
             if ascii.count > longest.count { longest = ascii }
             guard !longest.isEmpty else { offset += 1; continue }
-            let fontIdx  = Int(readUInt16BE(data, offset: offset + 8))
+            let layerIdx = Int(readUInt16BE(data, offset: offset + 8))
             let xAnchor  = Int(readUInt16BE(data, offset: offset + 30))
             let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
             let xDelta   = Int(readInt16BE(data, offset: offset + 58))
             let yDelta   = Int(readInt16BE(data, offset: offset + 62))
+            let fontRef  = Int(readUInt16BE(data, offset: offset + 90))
             let fontSize = Double(readUInt16BE(data, offset: offset + 92))
             let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
-            let family: String
-            if fontIdx >= 1, fontIdx <= names.count {
-                family = names[fontIdx - 1]
-            } else {
-                family = names.first ?? ""
-            }
+            let family: String = {
+                if let rank = fontRefToRank[fontRef], rank < fontNames.count {
+                    return fontNames[rank]
+                }
+                return ""
+            }()
             let color = colorTable[colorRef]
                         ?? scanForwardForStyleColor(data: data,
                                                      startOffset: offset + size,
                                                      colorTable: colorTable)
                         ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
-            results.append((longest, epsX, epsY, fontSize, family, color))
+            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx))
             offset += 1
         }
         return results
@@ -419,13 +462,18 @@ enum FreeHand2Parser {
     // MARK: - Debug
 
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
-        let (ct, wt, _) = buildColorAndWidthTables(data: data)
+        let (ct, wt, _, _) = buildColorAndWidthTables(data: data)
         return (ct, wt)
     }
 
     static func debugGradientTable(data: Data) -> [Int: GradientInfo] {
-        let (_, _, gt) = buildColorAndWidthTables(data: data)
+        let (_, _, gt, _) = buildColorAndWidthTables(data: data)
         return gt
+    }
+
+    static func debugNameTable(data: Data) -> [Int: String] {
+        let (_, _, _, nt) = buildColorAndWidthTables(data: data)
+        return nt
     }
 
     // MARK: - Public API
@@ -449,7 +497,7 @@ enum FreeHand2Parser {
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
         // Build color, width, and gradient lookup tables from sequential record IDs
-        let (colorTable, widthTable, gradientTable) = buildColorAndWidthTables(data: data)
+        let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
 
         // Parse layer definitions (0x138A records → child shape ID lists)
         let layerShapeIDs = parseLayers(data: data)
