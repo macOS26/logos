@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
 
-    static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf, .freehandDocument] }
+    static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf, .freehandDocument, .encapsulatedPostScript] }
     static var writableContentTypes: [UTType] { [.inkpen, .svg, .pdf] }
 
     private static let freehandExtensions: Set<String> = [
@@ -50,6 +50,8 @@ struct InkpenDocument: FileDocument {
             if contentType == .freehandDocument { return true }
             if contentType.conforms(to: .freehandDocument) { return true }
             if contentType.identifier.contains("freehand") { return true }
+            if contentType == .encapsulatedPostScript { return true }
+            if contentType.conforms(to: .encapsulatedPostScript) { return true }
             return false
         }()
 

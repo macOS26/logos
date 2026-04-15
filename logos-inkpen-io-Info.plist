@@ -73,6 +73,7 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>io.logos.logos-inkpen-io.freehand</string>
+				<string>com.adobe.encapsulated-postscript</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
