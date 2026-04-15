@@ -85,7 +85,7 @@ enum FreeHandEPSParser {
         // no %%Layer/%%Group comments, so we don't try to infer groups from the
         // PostScript structure here — that belongs to a follow-up.
         let layer = Layer(
-            name: "Layer 1",
+            name: "eps-import",
             objectIDs: shapes.map { $0.id },
             isVisible: true,
             isLocked: false,
