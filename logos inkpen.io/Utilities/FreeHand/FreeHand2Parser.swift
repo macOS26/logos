@@ -327,22 +327,26 @@ enum FreeHand2Parser {
 
     /// Decode 0x13EE text records. `offset` = record start (size u16 at +0,
     /// type 0x13EE at +2). Fields:
-    ///   +8  u16   1-based font index into the file's 0x0006 name table
+    ///   +8  u16   1-based layer index (confirmed by dude.fh2 where the
+    ///             "On Another Layer Dude" text on Layer 2 has +8=2 and
+    ///             every Layer 1 text has +8=1). Also currently used as
+    ///             the 1-based font index into the 0x0006 name table —
+    ///             that works in dude.fh2 only because font N is declared
+    ///             on layer N; a future file with mixed fonts on one
+    ///             layer will need a separate font-ref field.
     ///   +30 u16   xAnchor (1/10 pt)
     ///   +32 u16   yAnchor (top-of-line, 1/10 pt)
     ///   +58 i16   xDelta
     ///   +62 i16   yDelta
     ///   +92 u16   font size (points)
-    /// Color: the next 0x14B5 style record after this text record resolves
-    /// via its innerRef through the existing color table, same way path
-    /// groups pick up their fill color.
+    ///   +104 u16  color ref (matches styleRid in the color table)
     static func parseTextRecords(data: Data,
                                   colorTable: [Int: VectorColor] = [:])
         -> [(text: String, x: Double, y: Double, fontSize: Double,
-             fontFamily: String, color: VectorColor)]
+             fontFamily: String, color: VectorColor, layerIndex: Int)]
     {
         let namedStrings = parseNamedStrings(data: data)
-        var results: [(String, Double, Double, Double, String, VectorColor)] = []
+        var results: [(String, Double, Double, Double, String, VectorColor, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
@@ -368,7 +372,8 @@ enum FreeHand2Parser {
                 continue
             }
 
-            let fontIdx  = Int(readUInt16BE(data, offset: offset + 8))
+            let layerIdx = Int(readUInt16BE(data, offset: offset + 8))
+            let fontIdx  = layerIdx
             let xAnchor  = Int(readUInt16BE(data, offset: offset + 30))
             let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
             let xDelta   = Int(readInt16BE(data, offset: offset + 58))
@@ -393,7 +398,7 @@ enum FreeHand2Parser {
                                                      colorTable: colorTable)
                         ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
 
-            results.append((longest, epsX, epsY, fontSize, family, color))
+            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx))
             offset += 1
         }
         return results
@@ -714,9 +719,22 @@ enum FreeHand2Parser {
             textShape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
             shapes.append(textShape)
             shapeAbsIDs.append(0)
-            if !nativeLayers.isEmpty {
-                nativeLayers[0].objectIDs.append(textShape.id)
+            // Route to the layer encoded in the text record (+8, 1-based).
+            // Create missing layers on the fly so a Layer-2-only text doesn't
+            // disappear when the path-derived layer list only has Layer 1.
+            let targetLayer = max(1, run.layerIndex)
+            while nativeLayers.count < targetLayer {
+                nativeLayers.append(Layer(
+                    name: "Layer \(nativeLayers.count + 1)",
+                    objectIDs: [],
+                    isVisible: true,
+                    isLocked: false,
+                    opacity: 1.0,
+                    blendMode: .normal,
+                    color: .blue
+                ))
             }
+            nativeLayers[targetLayer - 1].objectIDs.append(textShape.id)
         }
 
         return FreeHandDirectImporter.Result(
@@ -733,7 +751,7 @@ enum FreeHand2Parser {
     /// portrait width (e.g. stage.fh2's TopRight at x=696 on a 612-wide page)
     /// which is the giveaway that the layout is landscape.
     private static func inferEffectivePageSize(shapes: [VectorShape],
-                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor)],
+                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor, layerIndex: Int)],
                                                 storedPage: CGSize) -> CGSize {
         var union = CGRect.null
         for s in shapes {
