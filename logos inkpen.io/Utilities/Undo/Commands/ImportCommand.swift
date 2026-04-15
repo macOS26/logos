@@ -18,6 +18,8 @@ final class ImportCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
+        Log.info("📥 ImportCommand.execute: \(newLayers.count) layers, \(topLevel.count) top, \(members.count) members. Doc had \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects", category: .general)
+
         // 1. Append layers (track indexes so undo can pop them).
         appendedLayerIndexes.removeAll(keepingCapacity: true)
         for layer in newLayers {
@@ -34,7 +36,10 @@ final class ImportCommand: BaseCommand {
         var affectedLayers = Set<Int>()
         for obj in topLevel {
             let layerIndex = obj.layerIndex
-            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
+            guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else {
+                Log.error("📥 ImportCommand: SKIPPED top obj \(obj.id) — layerIndex \(layerIndex) out of range (have \(document.snapshot.layers.count) layers)", category: .error)
+                continue
+            }
             document.snapshot.objects[obj.id] = obj
             if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
                 document.snapshot.layers[layerIndex].objectIDs.append(obj.id)
@@ -43,9 +48,12 @@ final class ImportCommand: BaseCommand {
         }
         affectedLayers.formUnion(appendedLayerIndexes)
         document.triggerLayerUpdates(for: affectedLayers)
+        Log.info("📥 ImportCommand.execute DONE: doc has \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects, affectedLayers=\(affectedLayers.sorted())", category: .general)
     }
 
     override func undo(on document: VectorDocument) {
+        Log.info("↩️ ImportCommand.undo: removing \(topLevel.count) top, \(members.count) members, popping layers \(appendedLayerIndexes). Doc has \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects", category: .general)
+
         var affectedLayers = Set<Int>()
 
         // 1. Remove top-level objects from their layers + snapshot.objects.
@@ -71,5 +79,6 @@ final class ImportCommand: BaseCommand {
         appendedLayerIndexes.removeAll(keepingCapacity: true)
 
         document.triggerLayerUpdates(for: affectedLayers)
+        Log.info("↩️ ImportCommand.undo DONE: doc has \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects", category: .general)
     }
 }
