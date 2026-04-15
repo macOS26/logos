@@ -93,78 +93,110 @@ enum FreeHand2Parser {
             }
         }
 
-        // Scan ALL non-shape records in one pass, assign sequential IDs
-        // Colors (0x1452-0x1454) and styles (0x14B0-0x14FF) share the same ID space
-        var allRecords: [(offset: Int, type: UInt16)] = []
+        // Scan EVERY plausible record by byte-walking. Each style/color record
+        // gets TWO IDs:
+        //   - styleRid: firstChildID + index-among-styles-only (matches what
+        //     style records' innerRef points at — black at firstChildID, etc).
+        //   - globalRid: byte-walk seq (matches what path records' fillRef
+        //     indexes into — the file's true global ID space).
+        // We store the color at both IDs in colorTable so both lookup paths work.
+        var allRecords: [(offset: Int, type: UInt16, styleRid: Int, globalRid: Int)] = []
         var offset = headerSize
+        var globalSeq = firstChildID
+        var styleIdx = 0
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
-            // Match color records
+            var matched = false
+            // Color records
             if (rtype == 0x1452 && size == 30) ||
                (rtype == 0x1453 && size == 30) ||
                (rtype == 0x1454 && size == 32 && offset + 22 <= data.count) {
-                allRecords.append((offset, rtype))
+                allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
+                styleIdx += 1
+                matched = true
             }
-            // Match ALL style/attribute records (0x14B0+ and 0x157D)
+            // Style/attribute records
             else if (rtype >= 0x14B0 && rtype <= 0x14FF && size >= 10 && size <= 100) ||
                     (rtype == 0x157D && size >= 10 && size <= 100) {
-                allRecords.append((offset, rtype))
+                allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
+                styleIdx += 1
+                matched = true
             }
+            // Other record types we don't index but still consume a global slot.
+            else if (rtype == 0x1389 && size == 56) ||
+                    (rtype == 0x0005 && size >= 16 && size < 300) ||
+                    (rtype == 0x138A && size >= 20 && size <= 200) ||
+                    (rtype == 0x151C && size >= 44 && offset + size <= data.count
+                        && offset + 30 <= data.count
+                        && size == 44 + Int(readUInt16BE(data, offset: offset + 28)) * 16) ||
+                    (rtype == 0x1519 && size == 60) ||
+                    (rtype == 0x151A && size == 56) ||
+                    (rtype == 0x151D && size == 48) ||
+                    (rtype == 0x13ED && size == 56) ||
+                    (rtype == 0x13EE) ||
+                    (rtype == 0x12C0 && size == 32) {
+                matched = true
+            }
+            if matched { globalSeq += 1 }
             offset += 1
         }
 
-        // Assign sequential IDs and extract data
-        for (idx, rec) in allRecords.enumerated() {
-            let rid = firstChildID + idx
+        // Extract data using BOTH rids recorded during the scan.
+        for rec in allRecords {
+            let rid = rec.styleRid
+            let gid = rec.globalRid
             let off = rec.offset
 
-            // Color extraction
+            // Color extraction — store at both styleRid (for innerRef chain) and
+            // globalRid (for path's fillRef).
+            func storeColor(_ color: VectorColor) {
+                colorTable[rid] = color
+                colorTable[gid] = color
+                let eid = Int(readUInt16BE(data, offset: off + 4))
+                if eid > 0 { colorTable[eid] = color }
+            }
             if rec.type == 0x1452 || rec.type == 0x1453 {
                 let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
                 let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
                 let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
-                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
-                colorTable[rid] = color
-                // Also store by eid for out-of-range ref lookups
-                let eid = Int(readUInt16BE(data, offset: off + 4))
-                if eid > 0 { colorTable[eid] = color }
+                storeColor(VectorColor.rgb(RGBColor(red: r, green: g, blue: b)))
             } else if rec.type == 0x1454 {
                 let c = Double(readUInt16BE(data, offset: off + 14)) / 65535.0
                 let m = Double(readUInt16BE(data, offset: off + 16)) / 65535.0
                 let y = Double(readUInt16BE(data, offset: off + 18)) / 65535.0
                 let k = Double(readUInt16BE(data, offset: off + 20)) / 65535.0
                 let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
-                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
-                colorTable[rid] = color
-                let eid = Int(readUInt16BE(data, offset: off + 4))
-                if eid > 0 { colorTable[eid] = color }
+                storeColor(VectorColor.rgb(RGBColor(red: r, green: g, blue: b)))
             }
 
-            // Style: follow inner_ref to color
+            // Style: follow inner_ref (uses styleRid scheme) to color, then
+            // mirror the resolved color into both rid AND gid slots.
             if rec.type >= 0x14B0 && off + 12 <= data.count {
                 let innerRef = Int(readUInt16BE(data, offset: off + 10))
 
-                // SD (0x14B8): radial gradient — single color fading to white at center
                 if rec.type == 0x14B8 && innerRef > 0 {
-                    print("SD rid=\(rid) innerRef=\(innerRef) colorExists=\(colorTable[innerRef] != nil)")
                     if let edgeColor = colorTable[innerRef] {
                         gradientTable[rid] = GradientInfo(type: .radial, colors: [.white, edgeColor])
-                        colorTable[rid] = edgeColor // flat fallback
+                        gradientTable[gid] = GradientInfo(type: .radial, colors: [.white, edgeColor])
+                        colorTable[rid] = edgeColor
+                        colorTable[gid] = edgeColor
                     }
-                }
-                // SC (0x14B7): linear gradient with TWO color refs at +10 and +12
-                else if rec.type == 0x14B7 && off + 14 <= data.count {
+                } else if rec.type == 0x14B7 && off + 14 <= data.count {
                     let ref2 = Int(readUInt16BE(data, offset: off + 12))
                     if let c1 = colorTable[innerRef], let c2 = colorTable[ref2] {
                         gradientTable[rid] = GradientInfo(color1: c2, color2: c1)
-                        colorTable[rid] = c1 // flat fallback = first color
+                        gradientTable[gid] = GradientInfo(color1: c2, color2: c1)
+                        colorTable[rid] = c1
+                        colorTable[gid] = c1
                     }
                 } else if innerRef > 0, let color = colorTable[innerRef] {
                     colorTable[rid] = color
+                    colorTable[gid] = color
                 } else if innerRef == 0 {
                     if let black = colorTable[firstChildID] {
                         colorTable[rid] = black
+                        colorTable[gid] = black
                     }
                 }
             }
@@ -174,6 +206,7 @@ enum FreeHand2Parser {
                 let rawWidth = Int(readUInt16BE(data, offset: off + 18))
                 if rawWidth > 0 {
                     widthTable[rid] = Double(rawWidth) / 10.0
+                    widthTable[gid] = Double(rawWidth) / 10.0
                 }
             }
         }
