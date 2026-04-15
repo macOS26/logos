@@ -134,11 +134,19 @@ enum FreeHandEPSParser {
         }
         let ns = drawingText as NSString
         let matches = regex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length))
-        for m in matches where m.numberOfRanges >= 8 {
-            let fontSize = Double(ns.substring(with: m.range(at: 1))) ?? 12
-            let moveX = Double(ns.substring(with: m.range(at: 6))) ?? 0
-            let moveY = Double(ns.substring(with: m.range(at: 7))) ?? 0
-            let literal = ns.substring(with: m.range(at: 8))
+        // Groups: 1=fontSize, 2=size-dup, 3=tx, 4=ty, 5=moveX, 6=moveY, 7=literal.
+        // numberOfRanges == 8 (full match + 7 captures); valid indices are 0–7.
+        for m in matches where m.numberOfRanges == 8 {
+            func substr(_ idx: Int) -> String? {
+                let r = m.range(at: idx)
+                guard r.location != NSNotFound, r.length >= 0,
+                      r.location + r.length <= ns.length else { return nil }
+                return ns.substring(with: r)
+            }
+            let fontSize = substr(1).flatMap(Double.init) ?? 12
+            let moveX = substr(5).flatMap(Double.init) ?? 0
+            let moveY = substr(6).flatMap(Double.init) ?? 0
+            guard let literal = substr(7) else { continue }
             var shape = VectorShape(
                 name: literal,
                 path: VectorPath(elements: [], isClosed: false),
