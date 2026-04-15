@@ -205,6 +205,45 @@ enum FreeHand2Parser {
         return (colorTable, widthTable, gradientTable)
     }
 
+    /// Map each 0x138A group's listed shape absIDs to the color of the next
+    /// adjacent 0x14B5 style batch. Authoritative per-shape color for FH2.
+    private static func parseGroupColorsByAbsID(data: Data,
+                                                 colorTable: [Int: VectorColor]) -> [Int: VectorColor] {
+        var result: [Int: VectorColor] = [:]
+        var offset = headerSize
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            guard rtype == 0x138A, size >= 20, size <= 200,
+                  offset + size <= data.count,
+                  offset + 34 <= data.count else {
+                offset += 1
+                continue
+            }
+            let count = Int(readUInt16BE(data, offset: offset + 32))
+            guard count > 0, count < 100, offset + 34 + count * 2 <= data.count else {
+                offset += 1
+                continue
+            }
+            var shapeIDs: [Int] = []
+            for i in 0..<count {
+                let id = Int(readUInt16BE(data, offset: offset + 34 + i * 2))
+                if id > 0 { shapeIDs.append(id) }
+            }
+            guard !shapeIDs.isEmpty else {
+                offset += 1
+                continue
+            }
+            if let groupColor = scanForwardForStyleColor(data: data,
+                                                         startOffset: offset + size,
+                                                         colorTable: colorTable) {
+                for id in shapeIDs { result[id] = groupColor }
+            }
+            offset += 1
+        }
+        return result
+    }
+
     // MARK: - Layer Parsing
 
     /// Parse 0x138A records into layer → [shapeID] mapping
@@ -279,6 +318,9 @@ enum FreeHand2Parser {
 
         // Parse layer definitions (0x138A records → child shape ID lists)
         let layerShapeIDs = parseLayers(data: data)
+
+        // Authoritative per-shape color from 0x138A groups + adjacent 0x14B5 style batches.
+        let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
 
         // Pre-scan: build offset → absID map (count all records except 0x138A, starting at DOC=2)
         var offsetToAbsID: [Int: Int] = [:]
@@ -374,6 +416,24 @@ enum FreeHand2Parser {
 
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
+        }
+
+        // Override each shape's fill with the authoritative group color.
+        if !groupColorByAbsID.isEmpty {
+            for i in 0..<shapes.count {
+                let absID = shapeAbsIDs[i]
+                if let groupColor = groupColorByAbsID[absID] {
+                    let s = shapes[i]
+                    shapes[i] = VectorShape(
+                        name: s.name,
+                        path: s.path,
+                        geometricType: s.geometricType,
+                        strokeStyle: s.strokeStyle,
+                        fillStyle: FillStyle(color: groupColor),
+                        opacity: s.opacity
+                    )
+                }
+            }
         }
 
         let stats = FreeHandDirectImporter.Stats(
