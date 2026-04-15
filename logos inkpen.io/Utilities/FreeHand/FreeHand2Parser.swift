@@ -661,18 +661,15 @@ enum FreeHand2Parser {
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                           colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: isClosed)
 
-        // Detect geometric shape type
-        var detectedType: GeometricShapeType?
-        var baseName = "Path"
-        if let detected = PathShapeDetector.detect(elements: elements) {
-            detectedType = detected.type
-            baseName = detected.name
-        }
-
+        // Don't run PathShapeDetector on FH2-imported paths. FreeHand 2 has
+        // no concept of "octagon" / "rectangle" as a distinct shape kind —
+        // everything is a path of corner/curve points. Auto-classifying them
+        // as Octagons/Rectangles in the layer panel is misleading (e.g. "T"
+        // glyphs were getting tagged as Octagons).
         return VectorShape(
-            name: baseName,
+            name: "Path",
             path: path,
-            geometricType: detectedType,
+            geometricType: nil,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
             opacity: 1.0
