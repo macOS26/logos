@@ -518,6 +518,29 @@ enum FreeHand2Parser {
 
     // MARK: - Color Extraction from Record Attributes
 
+    /// FreeHand writes the style records that apply to a batch of paths right
+    /// after that batch. When a path's `fillRef` misses the color table, scan
+    /// forward from the path's end for the next 0x14B5 style record and
+    /// resolve via its innerRef → colorTable lookup. Capped at 2 KB to bound
+    /// cost.
+    private static func scanForwardForStyleColor(data: Data, startOffset: Int,
+                                                  colorTable: [Int: VectorColor]) -> VectorColor? {
+        let limit = min(startOffset + 2048, data.count - 4)
+        var o = startOffset
+        while o < limit {
+            let size = Int(readUInt16BE(data, offset: o))
+            let rtype = readUInt16BE(data, offset: o + 2)
+            if rtype == 0x14B5, size >= 12, o + 12 <= data.count {
+                let innerRef = Int(readUInt16BE(data, offset: o + 10))
+                if innerRef > 0, let c = colorTable[innerRef] {
+                    return c
+                }
+            }
+            o += 1
+        }
+        return nil
+    }
+
     private static func extractFillStroke(data: Data, recordOffset: Int,
                                            colorTable: [Int: VectorColor],
                                            widthTable: [Int: Double], gradientTable: [Int: GradientInfo] = [:],
@@ -550,8 +573,14 @@ enum FreeHand2Parser {
                 }
             } else if let fillColor = colorTable[fillRef] {
                 fillStyle = FillStyle(color: fillColor)
+            } else if let scanned = Self.scanForwardForStyleColor(data: data, startOffset: recordOffset + 44, colorTable: colorTable) {
+                // When the fillRef doesn't resolve via the ID table, FreeHand's
+                // file convention is that the style record with the intended
+                // color follows shortly after the path. Scan forward for the
+                // next 0x14B5 and use its innerRef.
+                fillStyle = FillStyle(color: scanned)
             } else {
-                // Fallback: use grayscale from +12 byte
+                // Final fallback: grayscale byte at +12.
                 let fillGrayByte = data[recordOffset + 12]
                 let fillGray = 1.0 - Double(fillGrayByte) / 127.0
                 fillStyle = FillStyle(color: .rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray)))
