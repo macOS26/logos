@@ -244,31 +244,54 @@ enum FreeHandEPSParser {
     }
 
     /// Scan drawing text for `... moveto ... (literal) ts` sequences and return text shapes.
+    /// FreeHand EPS can set the font ONCE via `[size 0 0 size tx ty] makesetfont`
+    /// and then emit multiple `moveto (text) ts` lines under that same font —
+    /// "Ungrouped" shows up as `(Ungr) ts` then `(ouped) ts`. Walk in two phases:
+    /// 1. Record every `[... ] makesetfont` font-size setter we see, keyed by
+    ///    drawing-text offset so later `ts` calls can find the last one.
+    /// 2. For each `moveto ... (text) ts`, emit a shape using the most recent
+    ///    font size declared before it.
     private static func parseEPSTextRuns(in drawingText: String,
                                          pageHeight: Double,
                                          originX: Double, originY: Double,
                                          fontTable: [String: String]) -> [VectorShape] {
         var results: [VectorShape] = []
-        // Match: makesetfont X Y moveto 0 0 N 0 0 (LITERAL) ts
-        let pattern = #"\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\]\s*makesetfont\s*(-?[\d.]+)\s+(-?[\d.]+)\s+moveto[^()]*\(([^)]*)\)\s*ts"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else {
-            return results
-        }
         let ns = drawingText as NSString
-        let matches = regex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length))
-        // Groups: 1=fontSize, 2=size-dup, 3=tx, 4=ty, 5=moveX, 6=moveY, 7=literal.
-        // numberOfRanges == 8 (full match + 7 captures); valid indices are 0–7.
-        for m in matches where m.numberOfRanges == 8 {
+
+        // Phase 1: capture each `[size 0 0 size tx ty] makesetfont` with its
+        // ending character offset in the source.
+        guard let fontRegex = try? NSRegularExpression(
+            pattern: #"\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\]\s*makesetfont"#,
+            options: [.dotMatchesLineSeparators]
+        ) else { return results }
+        var fontDeclarations: [(endOffset: Int, fontSize: Double)] = []
+        for m in fontRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
+            let sizeRange = m.range(at: 1)
+            guard sizeRange.location != NSNotFound,
+                  let sz = Double(ns.substring(with: sizeRange)) else { continue }
+            fontDeclarations.append((endOffset: m.range.location + m.range.length, fontSize: sz))
+        }
+
+        // Phase 2: each `moveto (literal) ts` is one text shape.
+        guard let tsRegex = try? NSRegularExpression(
+            pattern: #"(-?[\d.]+)\s+(-?[\d.]+)\s+moveto[^()]*\(([^)]*)\)\s*ts"#,
+            options: [.dotMatchesLineSeparators]
+        ) else { return results }
+
+        for m in tsRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
             func substr(_ idx: Int) -> String? {
                 let r = m.range(at: idx)
                 guard r.location != NSNotFound, r.length >= 0,
                       r.location + r.length <= ns.length else { return nil }
                 return ns.substring(with: r)
             }
-            let fontSize = substr(1).flatMap(Double.init) ?? 12
-            let moveX = substr(5).flatMap(Double.init) ?? 0
-            let moveY = substr(6).flatMap(Double.init) ?? 0
-            guard let literal = substr(7) else { continue }
+            let moveX = substr(1).flatMap(Double.init) ?? 0
+            let moveY = substr(2).flatMap(Double.init) ?? 0
+            guard let literal = substr(3), !literal.isEmpty else { continue }
+            // Pick the most recently declared font size before this ts call.
+            let tsStart = m.range.location
+            let fontSize = fontDeclarations
+                .last(where: { $0.endOffset <= tsStart })?.fontSize ?? 12
             var shape = VectorShape(
                 name: literal,
                 path: VectorPath(elements: [], isClosed: false),
