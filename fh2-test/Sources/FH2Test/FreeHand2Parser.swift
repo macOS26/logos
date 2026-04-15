@@ -320,7 +320,8 @@ enum FreeHand2Parser {
                                   colorTable: [Int: VectorColor] = [:],
                                   nameTable: [Int: String] = [:])
         -> [(text: String, x: Double, y: Double, fontSize: Double,
-             fontFamily: String, color: VectorColor, layerIndex: Int)]
+             fontFamily: String, color: VectorColor, layerIndex: Int,
+             bold: Bool, italic: Bool, alignment: Int)]
     {
         // Pass 1: distinct font-refs in rank order.
         var distinctFontRefs: [Int] = []
@@ -344,7 +345,7 @@ enum FreeHand2Parser {
         let allNames = parseNamedStrings(data: data)
         let fontNames = Array(allNames.prefix(distinctFontRefs.count))
 
-        var results: [(String, Double, Double, Double, String, VectorColor, Int)] = []
+        var results: [(String, Double, Double, Double, String, VectorColor, Int, Bool, Bool, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
@@ -371,8 +372,10 @@ enum FreeHand2Parser {
             let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
             let xDelta   = Int(readInt16BE(data, offset: offset + 58))
             let yDelta   = Int(readInt16BE(data, offset: offset + 62))
+            let alignRaw = Int(readUInt16BE(data, offset: offset + 66))
             let fontRef  = Int(readUInt16BE(data, offset: offset + 90))
             let fontSize = Double(readUInt16BE(data, offset: offset + 92))
+            let styleBits = Int(readUInt16BE(data, offset: offset + 102))
             let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
@@ -382,12 +385,16 @@ enum FreeHand2Parser {
                 }
                 return ""
             }()
+            let bold = (styleBits & 0x1) != 0
+            let italic = (styleBits & 0x2) != 0
+            let alignment = alignRaw / 256
             let color = colorTable[colorRef]
                         ?? scanForwardForStyleColor(data: data,
                                                      startOffset: offset + size,
                                                      colorTable: colorTable)
                         ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
-            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx))
+            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx,
+                             bold, italic, alignment))
             offset += 1
         }
         return results

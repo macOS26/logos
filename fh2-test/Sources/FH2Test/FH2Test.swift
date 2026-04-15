@@ -167,7 +167,16 @@ struct FH2Test {
                 .replacingOccurrences(of: ">", with: "&gt;")
             let (r, g, b) = run.color.rgbValues
             let fill = String(format: "rgb(%d,%d,%d)", Int(r*255), Int(g*255), Int(b*255))
-            parts.append("<text x=\"\(run.x)\" y=\"\(flippedY)\" dominant-baseline=\"hanging\" font-family=\"\(run.fontFamily)\" font-weight=\"bold\" font-size=\"\(run.fontSize)\" fill=\"\(fill)\">\(esc)</text>")
+            let weight = run.bold ? "bold" : "normal"
+            let style  = run.italic ? "italic" : "normal"
+            let anchor: String = {
+                switch run.alignment {
+                case 1: return "middle"      // center
+                case 2: return "end"         // right
+                default: return "start"      // left / justified
+                }
+            }()
+            parts.append("<text x=\"\(run.x)\" y=\"\(flippedY)\" dominant-baseline=\"hanging\" text-anchor=\"\(anchor)\" font-family=\"\(run.fontFamily)\" font-weight=\"\(weight)\" font-style=\"\(style)\" font-size=\"\(run.fontSize)\" fill=\"\(fill)\">\(esc)</text>")
         }
         // Insert gradient defs before shapes
         if !defs.isEmpty {

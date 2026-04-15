@@ -359,12 +359,21 @@ enum FreeHand2Parser {
     ///             Resolve by ranking the distinct +90 values seen in the
     ///             file and mapping rank N → the Nth 0x0006 name.
     ///   +92  u16  font size (points)
+    ///   +102 u16  style bits: bit 0 = Bold, bit 1 = Italic (dude3.fh2
+    ///             confirmed against EPS: Plain Times=0 → Times-Roman,
+    ///             ItalicTimes=2 → Times-Italic, Bold Italic=3 → Times-
+    ///             BoldItalic, Bold labels=1 → Times-Bold).
+    ///   +66  u16  alignment, in units of 256: 0 left, 1 center, 2 right,
+    ///             3 justified. (TopLeft/BtmLeft=0, TopRight/BtmRight=512=
+    ///             right, ItalicTimes=256=center, Bold-Italic-Justified=
+    ///             768=justified.)
     ///   +104 u16  color ref (styleRid of a color/style record)
     static func parseTextRecords(data: Data,
                                   colorTable: [Int: VectorColor] = [:],
                                   nameTable: [Int: String] = [:])
         -> [(text: String, x: Double, y: Double, fontSize: Double,
-             fontFamily: String, color: VectorColor, layerIndex: Int)]
+             fontFamily: String, color: VectorColor, layerIndex: Int,
+             bold: Bool, italic: Bool, alignment: Int)]
     {
         // Pass 1: collect distinct font-ref values from every text record.
         var distinctFontRefs: [Int] = []
@@ -392,7 +401,7 @@ enum FreeHand2Parser {
         // where K == distinctFontRefs.count.
         let allNames = parseNamedStrings(data: data)
         let fontNames = Array(allNames.prefix(distinctFontRefs.count))
-        var results: [(String, Double, Double, Double, String, VectorColor, Int)] = []
+        var results: [(String, Double, Double, Double, String, VectorColor, Int, Bool, Bool, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
@@ -423,8 +432,10 @@ enum FreeHand2Parser {
             let yAnchor  = Int(readUInt16BE(data, offset: offset + 32))
             let xDelta   = Int(readInt16BE(data, offset: offset + 58))
             let yDelta   = Int(readInt16BE(data, offset: offset + 62))
+            let alignRaw = Int(readUInt16BE(data, offset: offset + 66))
             let fontRef  = Int(readUInt16BE(data, offset: offset + 90))
             let fontSize = Double(readUInt16BE(data, offset: offset + 92))
+            let styleBits = Int(readUInt16BE(data, offset: offset + 102))
             let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
@@ -435,6 +446,9 @@ enum FreeHand2Parser {
                 }
                 return ""
             }()
+            let bold = (styleBits & 0x1) != 0
+            let italic = (styleBits & 0x2) != 0
+            let alignment = alignRaw / 256
             // Text color ref lives at +104 — it's the same styleRid slot the
             // path-fill chain uses, so colorTable has already been populated
             // at that key by `buildColorAndWidthTables`.
@@ -444,7 +458,8 @@ enum FreeHand2Parser {
                                                      colorTable: colorTable)
                         ?? VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 0))
 
-            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx))
+            results.append((longest, epsX, epsY, fontSize, family, color, layerIdx,
+                             bold, italic, alignment))
             offset += 1
         }
         return results
@@ -768,11 +783,28 @@ enum FreeHand2Parser {
             )
             textShape.textContent = run.text
             textShape.textPosition = textOrigin
+            let variant: String? = {
+                switch (run.bold, run.italic) {
+                case (true, true): return "BoldItalic"
+                case (true, false): return "Bold"
+                case (false, true): return "Italic"
+                case (false, false): return nil
+                }
+            }()
+            let alignment: TextAlignment = {
+                switch run.alignment {
+                case 1: return .center
+                case 2: return .right
+                case 3: return .justified
+                default: return .left
+                }
+            }()
             textShape.typography = TypographyProperties(
                 fontFamily: run.fontFamily,
+                fontVariant: variant,
                 fontSize: run.fontSize,
                 lineHeight: run.fontSize,
-                alignment: .left,
+                alignment: alignment,
                 strokeColor: .clear,
                 fillColor: run.color
             )
@@ -814,7 +846,7 @@ enum FreeHand2Parser {
     /// portrait width (e.g. stage.fh2's TopRight at x=696 on a 612-wide page)
     /// which is the giveaway that the layout is landscape.
     private static func inferEffectivePageSize(shapes: [VectorShape],
-                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor, layerIndex: Int)],
+                                                textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor, layerIndex: Int, bold: Bool, italic: Bool, alignment: Int)],
                                                 storedPage: CGSize) -> CGSize {
         var union = CGRect.null
         for s in shapes {
