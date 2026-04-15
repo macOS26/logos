@@ -2,20 +2,6 @@ import Foundation
 import CoreGraphics
 
 enum FreeHand2Parser {
-    // MARK: - Layer & Group Support
-
-    public struct Layer {
-        public let name: String
-        public let isVisible: Bool
-        public let shapes: [VectorShape]
-    }
-
-    public struct Group {
-        public let name: String
-        public let isLocked: Bool
-        public let children: [VectorShape]
-    }
-
     // MARK: - Constants
 
     private static let headerSize = 256
@@ -257,10 +243,6 @@ enum FreeHand2Parser {
             }
         }
         
-        // Initialize layers and groups
-        var layers: [Layer] = []
-        var groups: [Group] = []
-
         // Extract page dimensions (720 DPI units -> points)
         let pageWidthRaw = Double(readUInt16BE(data, offset: 8))
         let pageHeightRaw = Double(readUInt16BE(data, offset: 10))
@@ -311,15 +293,6 @@ enum FreeHand2Parser {
             let word = readUInt16BE(data, offset: offset)
             let rtype = readUInt16BE(data, offset: offset + 2)
 
-            // Detect layer/group records (placeholder types: 0x1520, 0x1521)
-            if rtype == 0x1520 || rtype == 0x1521 {
-                let (newLayers, newGroups) = parseLayerGroupRecords(data: data, recordOffset: offset)
-                layers.append(contentsOf: newLayers)
-                groups.append(contentsOf: newGroups)
-                offset += Int(word)
-                continue
-            }
-
             // Look for a path record type at offset+2 (size at offset)
             if offset + 44 <= data.count {
                 if rtype == pathRecordType && word >= 44 && offset + Int(word) <= data.count {
@@ -363,19 +336,29 @@ enum FreeHand2Parser {
             offset += 1
         }
 
-        // Debug: show layer → shape mapping
-        if !layerShapeIDs.isEmpty {
-            let shapeIDSet = Set(shapeAbsIDs)
-            for (layerIdx, layerIDs) in layerShapeIDs.enumerated() {
-                let matched = layerIDs.filter { shapeIDSet.contains($0) }
-                if !matched.isEmpty {
-                    print("Layer \(layerIdx): \(matched.count) shapes (IDs \(matched))")
-                }
-            }
-        }
-
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
+        }
+
+        // Build native InkPen Layers from 0x138A layer records. Each record lists absolute
+        // shape IDs (pre-scan map); translate back to shape UUIDs.
+        var nativeLayers: [Layer] = []
+        if !layerShapeIDs.isEmpty {
+            let absIDToShapeID: [Int: UUID] = Dictionary(uniqueKeysWithValues:
+                zip(shapeAbsIDs, shapes.map { $0.id }).filter { $0.0 != 0 })
+            for (layerIdx, absIDs) in layerShapeIDs.enumerated() {
+                let objectIDs = absIDs.compactMap { absIDToShapeID[$0] }
+                guard !objectIDs.isEmpty else { continue }
+                nativeLayers.append(Layer(
+                    name: "Layer \(layerIdx + 1)",
+                    objectIDs: objectIDs,
+                    isVisible: true,
+                    isLocked: false,
+                    opacity: 1.0,
+                    blendMode: .normal,
+                    color: .blue
+                ))
+            }
         }
 
         let stats = FreeHandDirectImporter.Stats(
@@ -392,8 +375,8 @@ enum FreeHand2Parser {
             shapes: shapes,
             pageSize: pageSize,
             stats: stats,
-            layers: layers,
-            groups: groups
+            layers: nativeLayers,
+            groupShapeIDs: []
         )
     }
 
@@ -772,37 +755,5 @@ enum FreeHand2Parser {
         }
 
         return elements
-    }
-
-    static func parseLayerGroupRecords(data: Data, recordOffset: Int) -> ([Layer], [Group]) {
-        var layers: [Layer] = []
-        var groups: [Group] = []
-
-        guard recordOffset + 12 <= data.count else { return (layers, groups) }
-
-        let rtype = readUInt16BE(data, offset: recordOffset + 2)
-
-        // Read name (skip record header, read Pascal-style name if present)
-        var name = ""
-        if recordOffset + 12 < data.count {
-            let nameLen = Int(data[recordOffset + 10])
-            if nameLen > 0 && recordOffset + 11 + nameLen <= data.count {
-                name = String(data: data[(recordOffset + 11)..<(recordOffset + 11 + nameLen)], encoding: .utf8)
-                    ?? String(data: data[(recordOffset + 11)..<(recordOffset + 11 + nameLen)], encoding: .ascii)
-                    ?? "Layer"
-            }
-        }
-
-        if rtype == 0x1520 {
-            // Layer record
-            let layer = Layer(name: name, isVisible: true, shapes: [])
-            layers.append(layer)
-        } else if rtype == 0x1521 {
-            // Group record
-            let group = Group(name: name, isLocked: false, children: [])
-            groups.append(group)
-        }
-
-        return (layers, groups)
     }
 }

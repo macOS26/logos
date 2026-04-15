@@ -101,25 +101,49 @@ struct InkpenDocument: FileDocument {
         } else if isFreehand {
             do {
                 let parsed = try FreeHandDirectImporter.parseToShapes(data: data)
-                Log.info("📂 FH parsed: \(parsed.shapes.count) shapes, page \(Int(parsed.pageSize.width))×\(Int(parsed.pageSize.height))", category: .general)
+                Log.info("📂 FH parsed: \(parsed.shapes.count) shapes, \(parsed.layers.count) layers, \(parsed.groupShapeIDs.count) groups, page \(Int(parsed.pageSize.width))×\(Int(parsed.pageSize.height))", category: .general)
                 let newDoc = VectorDocument()
-                /* Set the page to the FH document's intrinsic size. */
                 if parsed.pageSize.width > 0 && parsed.pageSize.height > 0 {
                     newDoc.settings.setSizeInPoints(parsed.pageSize)
                     newDoc.onSettingsChanged()
                 }
-                /* Use the user-content layer ("Layer 1"), NOT snapshot.layers[0]
-                   which is the Pasteboard background. selectedLayerIndex points
-                   to the default editable layer in a fresh document. */
-                let layerIndex = newDoc.selectedLayerIndex
-                    ?? newDoc.snapshot.layers.firstIndex(where: { $0.name == "Layer 1" })
+
+                // Map parsed-layer index → target layer index in the new doc. The doc's
+                // default user layer ("Layer 1") is reused for the first parsed layer;
+                // additional parsed layers are appended as new native Layers.
+                let defaultLayerIndex = newDoc.snapshot.layers.firstIndex(where: { $0.name == "Layer 1" })
+                    ?? newDoc.selectedLayerIndex
                     ?? (newDoc.snapshot.layers.count - 1)
-                let layerName = (layerIndex >= 0 && layerIndex < newDoc.snapshot.layers.count) ? newDoc.snapshot.layers[layerIndex].name : "?"
-                Log.info("📂 FH importing into layer \(layerIndex) (\(layerName))", category: .general)
-                for shape in parsed.shapes {
-                    newDoc.addImportedShape(shape, to: layerIndex)
+
+                var parsedToDocLayer: [Int: Int] = [:]
+                if parsed.layers.isEmpty {
+                    parsedToDocLayer[0] = defaultLayerIndex
+                } else {
+                    for (idx, parsedLayer) in parsed.layers.enumerated() {
+                        if idx == 0 {
+                            newDoc.snapshot.layers[defaultLayerIndex].name = parsedLayer.name
+                            parsedToDocLayer[idx] = defaultLayerIndex
+                        } else {
+                            newDoc.snapshot.layers.append(parsedLayer)
+                            parsedToDocLayer[idx] = newDoc.snapshot.layers.count - 1
+                        }
+                    }
                 }
-                // Trigger layer updates so spatial index rebuilds for hit testing
+
+                // For each parsed shape, find which parsed layer owns it (via objectIDs)
+                // and route to the corresponding doc layer. Shapes not owned by any
+                // parsed layer fall back to the first-parsed (or default) layer.
+                let fallbackLayer = parsedToDocLayer[0] ?? defaultLayerIndex
+                var shapeIDToParsedLayer: [UUID: Int] = [:]
+                for (idx, parsedLayer) in parsed.layers.enumerated() {
+                    for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
+                }
+
+                for shape in parsed.shapes {
+                    let target = shapeIDToParsedLayer[shape.id].flatMap { parsedToDocLayer[$0] } ?? fallbackLayer
+                    newDoc.addImportedShape(shape, to: target)
+                }
+
                 let allLayerIndices = Set(0..<newDoc.snapshot.layers.count)
                 newDoc.triggerLayerUpdates(for: allLayerIndices)
                 self.document = newDoc

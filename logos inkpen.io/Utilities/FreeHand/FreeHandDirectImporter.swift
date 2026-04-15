@@ -23,8 +23,12 @@ enum FreeHandDirectImporter {
         let shapes: [VectorShape]
         let pageSize: CGSize
         let stats: Stats
-        let layers: [FreeHand2Parser.Layer]
-        let groups: [FreeHand2Parser.Group]
+        /// Native InkPen layers parsed from the source file. `objectIDs` references
+        /// shape UUIDs from `shapes`. Empty when the source carries no layer info.
+        let layers: [Layer]
+        /// Native InkPen groups as `VectorShape`s with `isGroup = true` and
+        /// `memberIDs` referencing child shapes. Already included in `shapes`.
+        let groupShapeIDs: [UUID]
     }
 
     /// Find the AGD or FH3 magic offset, stripping any IPTC wrapper (e.g. FH10).
@@ -98,7 +102,7 @@ enum FreeHandDirectImporter {
                 symbolInstances: Int(fh_result_stat_symbol_instances(result)),
                 contentIdPaths: Int(fh_result_stat_content_id_paths(result))
             )
-            return Result(shapes: shapes, pageSize: pageSize, stats: stats, layers: [], groups: [])
+            return Result(shapes: shapes, pageSize: pageSize, stats: stats, layers: [], groupShapeIDs: [])
         }
     }
 

@@ -71,41 +71,136 @@ enum FreeHandEPSParser {
             throw FreeHandImportError.emptyOutput
         }
 
-        // Parse layer/group metadata from EPS comments
-        // Example: %%Layer: "Layer 1" visible
-        // Example: %%Group: "Group 1" locked
-        var layers: [FreeHand2Parser.Layer] = []
-        var groups: [FreeHand2Parser.Group] = []
-        for line in text.components(separatedBy: .newlines) {
-            if line.hasPrefix("%%Layer:") {
-                let parts = line.dropFirst(8).trimmingCharacters(in: .whitespacesAndNewlines)
-                    .components(separatedBy: .whitespaces)
-                guard parts.count >= 1 else { continue }
-                let name = parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-                let isVisible = parts.count < 2 || parts[1].lowercased() != "hidden"
-                layers.append(FreeHand2Parser.Layer(name: name, isVisible: isVisible, shapes: []))
-            } else if line.hasPrefix("%%Group:") {
-                let parts = line.dropFirst(8).trimmingCharacters(in: .whitespacesAndNewlines)
-                    .components(separatedBy: .whitespaces)
-                guard parts.count >= 1 else { continue }
-                let name = parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-                let isLocked = parts.count >= 2 && parts[1].lowercased() == "locked"
-                groups.append(FreeHand2Parser.Group(name: name, isLocked: isLocked, children: []))
-            }
-        }
+        // FreeHand EPS has no %%Layer/%%Group comments, but `gsave [matrix] concat ... grestore`
+        // blocks define logical groups (e.g. the Dp Purrr block vs the Brn block for Tortuga).
+        // Wrap each concat-block's shapes in a native group VectorShape.
+        let (groupedShapes, groupIDs) = buildNativeGroupsFromPostScript(
+            drawingText, allShapes: shapes
+        )
+
+        // All top-level shapes go into one native "Layer 1" layer.
+        let topLevelIDs = groupedShapes.map { $0.id }
+        let layer = Layer(
+            name: "Layer 1",
+            objectIDs: topLevelIDs,
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            color: .blue
+        )
 
         let stats = FreeHandDirectImporter.Stats(
-            paths: shapes.count, groups: groups.count, clipGroups: 0,
+            paths: shapes.count, groups: groupIDs.count, clipGroups: 0,
             compositePaths: 0, newBlends: 0, symbolInstances: 0, contentIdPaths: 0
         )
 
         return FreeHandDirectImporter.Result(
-            shapes: shapes,
+            shapes: groupedShapes,
             pageSize: CGSize(width: pageWidth, height: pageHeight),
             stats: stats,
-            layers: layers,
-            groups: groups
+            layers: [layer],
+            groupShapeIDs: groupIDs
         )
+    }
+
+    /// Scans the PostScript drawing text and splits `allShapes` into top-level items plus
+    /// native group VectorShapes, one per `gsave [matrix] concat ... grestore` block.
+    /// Returns (flatShapeList including groups, groupShapeIDs).
+    private static func buildNativeGroupsFromPostScript(_ drawingText: String,
+                                                         allShapes: [VectorShape])
+    -> ([VectorShape], [UUID]) {
+        // Walk the text, counting `{fill}` / `{stroke}` fill-creation markers per gsave block.
+        // Each block is `gsave [... 6-number matrix ...] concat ... grestore`.
+        struct Block { var startShapeIndex: Int; var count: Int = 0 }
+        var blocks: [Block] = []
+        var stack: [Int] = []   // indexes into `blocks`
+        var shapeIndex = 0
+        let ns = drawingText as NSString
+        let scanner = Scanner(string: drawingText)
+        scanner.charactersToBeSkipped = nil
+        while !scanner.isAtEnd {
+            _ = scanner.scanUpToString("gsave")
+            guard scanner.scanString("gsave") != nil else { break }
+            // Peek ahead for `[...] concat` within the next ~120 chars.
+            let peekEnd = min(scanner.currentIndex.utf16Offset(in: drawingText) + 200, ns.length)
+            let snippetRange = NSRange(location: scanner.currentIndex.utf16Offset(in: drawingText),
+                                        length: peekEnd - scanner.currentIndex.utf16Offset(in: drawingText))
+            let snippet = ns.substring(with: snippetRange)
+            let isGroupGsave = snippet.contains("concat") && snippet.contains("[")
+            if isGroupGsave {
+                blocks.append(Block(startShapeIndex: shapeIndex))
+                stack.append(blocks.count - 1)
+            } else {
+                stack.append(-1)
+            }
+            // Advance past this gsave until its matching grestore, counting fills/strokes.
+            var depth = 1
+            while depth > 0, !scanner.isAtEnd {
+                let before = scanner.currentIndex
+                _ = scanner.scanUpToCharacters(from: CharacterSet(charactersIn: "gf{}"))
+                if scanner.isAtEnd { break }
+                if scanner.scanString("gsave") != nil {
+                    depth += 1
+                    stack.append(-1)
+                } else if scanner.scanString("grestore") != nil {
+                    depth -= 1
+                    if let idx = stack.popLast(), idx >= 0, depth >= 0 {
+                        // closing a tracked block — nothing more to do here
+                        _ = idx
+                    }
+                } else if scanner.scanString("{fill}") != nil || scanner.scanString("{stroke}") != nil {
+                    shapeIndex += 1
+                    if let top = stack.last, top >= 0 {
+                        blocks[top].count += 1
+                    }
+                } else {
+                    // advance one char to avoid infinite loop
+                    if scanner.currentIndex == before {
+                        scanner.currentIndex = drawingText.index(after: scanner.currentIndex)
+                    }
+                }
+            }
+        }
+
+        // Build output: flat list of top-level shapes + group wrappers.
+        var consumedByGroup = [Bool](repeating: false, count: allShapes.count)
+        var groups: [VectorShape] = []
+        var groupIDs: [UUID] = []
+        for block in blocks where block.count > 0 {
+            let end = min(block.startShapeIndex + block.count, allShapes.count)
+            guard block.startShapeIndex < end else { continue }
+            let members = Array(allShapes[block.startShapeIndex..<end])
+            for i in block.startShapeIndex..<end { consumedByGroup[i] = true }
+            var group = VectorShape(
+                name: "Group",
+                path: VectorPath(elements: [], isClosed: false),
+                strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
+                fillStyle: nil,
+                transform: .identity
+            )
+            group.isGroup = true
+            group.memberIDs = members.map { $0.id }
+            group.groupedShapes = members
+            groups.append(group)
+            groupIDs.append(group.id)
+        }
+
+        var flat: [VectorShape] = []
+        // Insert groups in their original position; standalone shapes keep their order.
+        var groupIter = groups.makeIterator()
+        var blockIter = blocks.filter { $0.count > 0 }.makeIterator()
+        var nextBlock = blockIter.next()
+        for (i, shape) in allShapes.enumerated() {
+            if let block = nextBlock, i == block.startShapeIndex {
+                if let g = groupIter.next() { flat.append(g) }
+                nextBlock = blockIter.next()
+            }
+            if !consumedByGroup[i] { flat.append(shape) }
+        }
+        // Append any groups at the tail.
+        while let g = groupIter.next() { flat.append(g) }
+        return (flat, groupIDs)
     }
 
     // MARK: - Text Extraction
