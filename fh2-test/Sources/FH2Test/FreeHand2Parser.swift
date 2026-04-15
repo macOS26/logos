@@ -557,15 +557,13 @@ enum FreeHand2Parser {
             }
         }
 
-        // Look up stroke color and width from tables
-        let strokeWidth = widthTable[strokeRef] ?? 0.5
-        let strokeStyle: StrokeStyle
-        if let strokeColor = colorTable[strokeRef] {
+        // strokeRef == 0 means no stroke; don't invent a gray fallback.
+        let strokeStyle: StrokeStyle?
+        if strokeRef > 0, let strokeColor = colorTable[strokeRef] {
+            let strokeWidth = widthTable[strokeRef] ?? 0.5
             strokeStyle = StrokeStyle(color: strokeColor, width: strokeWidth)
         } else {
-            let strokeGrayByte = data[recordOffset + 14]
-            let strokeGray = 1.0 - Double(strokeGrayByte) / 127.0
-            strokeStyle = StrokeStyle(color: .rgb(RGBColor(red: strokeGray, green: strokeGray, blue: strokeGray)), width: strokeWidth)
+            strokeStyle = nil
         }
 
         return (fillStyle, strokeStyle)
