@@ -334,14 +334,16 @@ enum FreeHand2Parser {
                 continue
             }
 
-            // Position: approximate from bytes at +26/+28 in record. Works
-            // for the sample files; refine later if needed.
+            // Position: bytes at +62 (x) and +58 (y) in the record are
+            // identical between torfont.fh2 and ungroup.fh2, and both files
+            // have their text at EXACTLY (333, 210.977) in their EPS exports.
+            // That correspondence makes these the position fields. Values
+            // are in 720-dpi units → points (÷10).
             var x: Double = 0
             var y: Double = 0
-            if offset + 32 <= data.count {
-                // Position (tx, ty) in 720-dpi units → points (÷10).
-                let rawX = readUInt16BE(data, offset: offset + 26)
-                let rawY = readUInt16BE(data, offset: offset + 28)
+            if offset + 64 <= data.count {
+                let rawX = readUInt16BE(data, offset: offset + 62)
+                let rawY = readUInt16BE(data, offset: offset + 58)
                 x = Double(rawX) / unitsPerPoint
                 y = Double(rawY) / unitsPerPoint
             }
