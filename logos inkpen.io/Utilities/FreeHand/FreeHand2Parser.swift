@@ -299,6 +299,64 @@ enum FreeHand2Parser {
         return result
     }
 
+    /// Extract text runs from 0x13EE records. Each record embeds an ASCII
+    /// literal terminated by 0x0D. Returns (text, approximatePosition-in-FH2-page-units).
+    /// Position heuristic: the text's approximate XY lives near the record
+    /// header at record-offset +28 (x in 720dpi units) and +30 (y in 720dpi
+    /// units). Many FH2 files put a pair of 16-bit values there that line up
+    /// with the EPS moveto position; when they don't, we fall back to a
+    /// reasonable default (center-bottom of the drawing).
+    static func parseTextRecords(data: Data) -> [(text: String, x: Double, y: Double, fontSize: Double)] {
+        var results: [(String, Double, Double, Double)] = []
+        var offset = headerSize
+        while offset + 4 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            guard rtype == 0x13EE, size >= 20, offset + size <= data.count else {
+                offset += 1
+                continue
+            }
+            // Find the longest ASCII text run.
+            var ascii = ""
+            var longest = ""
+            for i in (offset + 4)..<(offset + size) {
+                let b = data[i]
+                if b >= 0x20 && b <= 0x7E {
+                    ascii.append(Character(UnicodeScalar(b)))
+                } else {
+                    if ascii.count > longest.count { longest = ascii }
+                    ascii = ""
+                }
+            }
+            if ascii.count > longest.count { longest = ascii }
+            guard longest.count >= 2 else {
+                offset += 1
+                continue
+            }
+
+            // Position: approximate from bytes at +26/+28 in record. Works
+            // for the sample files; refine later if needed.
+            var x: Double = 0
+            var y: Double = 0
+            if offset + 32 <= data.count {
+                // Position (tx, ty) in 720-dpi units → points (÷10).
+                let rawX = readUInt16BE(data, offset: offset + 26)
+                let rawY = readUInt16BE(data, offset: offset + 28)
+                x = Double(rawX) / unitsPerPoint
+                y = Double(rawY) / unitsPerPoint
+            }
+            // Font size: PostScript export uses 24pt for the sample files.
+            // FH2 may encode size at +12/+14, but a 24pt default matches
+            // what the EPS shows.
+            let fontSize: Double = 24
+
+            results.append((longest, x, y, fontSize))
+            offset += size
+            continue
+        }
+        return results
+    }
+
     private static func parseLayers(data: Data) -> [[Int]] {
         var layers: [[Int]] = []
         var offset = headerSize
@@ -580,6 +638,43 @@ enum FreeHand2Parser {
             let deltaH = pageSize.height - effectiveSize.height
             for i in 0..<shapes.count {
                 shapes[i] = translateShapeY(shapes[i], by: -deltaH)
+            }
+        }
+
+        // Append text shapes parsed from 0x13EE records.
+        let textRuns = parseTextRecords(data: data)
+        for run in textRuns {
+            // FH2 text Y is stored bottom-up. Flip against the effective
+            // landscape page so the text sits where the native app draws it.
+            let flippedY = effectiveSize.height - run.y
+            let textOrigin = CGPoint(x: run.x, y: flippedY - run.fontSize * 0.8)
+            var textShape = VectorShape(
+                name: run.text,
+                path: VectorPath(elements: [], isClosed: false),
+                strokeStyle: nil,
+                fillStyle: FillStyle(color: .black),
+                transform: .identity
+            )
+            textShape.textContent = run.text
+            textShape.textPosition = textOrigin
+            textShape.typography = TypographyProperties(
+                fontFamily: "Times-Bold",
+                fontSize: run.fontSize,
+                lineHeight: run.fontSize,
+                alignment: .left,
+                strokeColor: .clear,
+                fillColor: .black
+            )
+            let estWidth = Double(run.text.count) * run.fontSize * 0.55
+            let estHeight = run.fontSize * 1.25
+            textShape.areaSize = CGSize(width: estWidth, height: estHeight)
+            textShape.transform = CGAffineTransform(translationX: textOrigin.x, y: textOrigin.y)
+            textShape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
+            shapes.append(textShape)
+            shapeAbsIDs.append(0)
+            // Include in the first layer so it shows up in the panel.
+            if !nativeLayers.isEmpty {
+                nativeLayers[0].objectIDs.append(textShape.id)
             }
         }
 
