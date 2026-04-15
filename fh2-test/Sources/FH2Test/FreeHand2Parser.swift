@@ -77,8 +77,8 @@ enum FreeHand2Parser {
         var widthTable: [Int: Double] = [:]
         var gradientTable: [Int: GradientInfo] = [:]
 
-        // Read starting child ID from first TABLE (0x0005) record
         var firstChildID = 18
+        var tableChildIDs: [Int] = []
         for i in stride(from: headerSize, to: min(data.count - 10, headerSize + 2000), by: 1) {
             guard i + 6 <= data.count else { break }
             if readUInt16BE(data, offset: i + 2) == 0x0005 {
@@ -87,6 +87,11 @@ enum FreeHand2Parser {
                     let count = Int(readUInt16BE(data, offset: i + 4))
                     if count > 0 && i + 10 < data.count {
                         firstChildID = Int(readUInt16BE(data, offset: i + 10))
+                        for k in 0..<count {
+                            let off = i + 10 + k * 2
+                            guard off + 2 <= data.count, off + 2 <= i + size else { break }
+                            tableChildIDs.append(Int(readUInt16BE(data, offset: off)))
+                        }
                     }
                     break
                 }
@@ -202,6 +207,27 @@ enum FreeHand2Parser {
             }
         }
 
+        // Bind TABLE-declared color slots to the first N color records in file order.
+        let colorRecords = allRecords
+            .filter { $0.type == 0x1452 || $0.type == 0x1453 || $0.type == 0x1454 }
+            .prefix(tableChildIDs.count)
+        for (slotID, colorRec) in zip(tableChildIDs, colorRecords) {
+            let off = colorRec.offset
+            if colorRec.type == 0x1454 {
+                let c = Double(readUInt16BE(data, offset: off + 14)) / 65535.0
+                let m = Double(readUInt16BE(data, offset: off + 16)) / 65535.0
+                let y = Double(readUInt16BE(data, offset: off + 18)) / 65535.0
+                let k = Double(readUInt16BE(data, offset: off + 20)) / 65535.0
+                let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
+                colorTable[slotID] = .rgb(RGBColor(red: r, green: g, blue: b))
+            } else {
+                let r = Double(readUInt16BE(data, offset: off + 6)) / 65535.0
+                let g = Double(readUInt16BE(data, offset: off + 8)) / 65535.0
+                let b = Double(readUInt16BE(data, offset: off + 10)) / 65535.0
+                colorTable[slotID] = .rgb(RGBColor(red: r, green: g, blue: b))
+            }
+        }
+
         return (colorTable, widthTable, gradientTable)
     }
 
@@ -279,6 +305,35 @@ enum FreeHand2Parser {
             offset += 1
         }
         return layers
+    }
+
+    // Positional path→style pairing.
+    private static func parsePathStylesByPosition(data: Data,
+                                                   pathCount: Int,
+                                                   colorTable: [Int: VectorColor])
+        -> [Int: VectorColor]
+    {
+        var pathStyleColors: [VectorColor] = []
+        var offset = headerSize
+        while offset + 22 <= data.count {
+            let size = Int(readUInt16BE(data, offset: offset))
+            let rtype = readUInt16BE(data, offset: offset + 2)
+            if rtype == 0x14B5, size >= 10, size <= 100,
+               offset + 12 <= data.count {
+                let innerRef = Int(readUInt16BE(data, offset: offset + 10))
+                if innerRef > 0, let color = colorTable[innerRef] {
+                    pathStyleColors.append(color)
+                }
+            }
+            offset += 1
+        }
+        guard pathStyleColors.count >= pathCount else { return [:] }
+        let startIdx = pathStyleColors.count - pathCount
+        var result: [Int: VectorColor] = [:]
+        for i in 0..<pathCount {
+            result[i] = pathStyleColors[startIdx + i]
+        }
+        return result
     }
 
     // MARK: - Debug
@@ -435,6 +490,26 @@ enum FreeHand2Parser {
                         geometricType: s.geometricType,
                         strokeStyle: s.strokeStyle,
                         fillStyle: FillStyle(color: groupColor),
+                        opacity: s.opacity
+                    )
+                }
+            }
+        }
+
+        // Positional path→style pairing override.
+        let positionalColors = parsePathStylesByPosition(data: data,
+                                                          pathCount: shapes.count,
+                                                          colorTable: colorTable)
+        if !positionalColors.isEmpty {
+            for i in 0..<shapes.count {
+                if groupColorByAbsID[shapeAbsIDs[i]] == nil, let c = positionalColors[i] {
+                    let s = shapes[i]
+                    shapes[i] = VectorShape(
+                        name: s.name,
+                        path: s.path,
+                        geometricType: s.geometricType,
+                        strokeStyle: s.strokeStyle,
+                        fillStyle: FillStyle(color: c),
                         opacity: s.opacity
                     )
                 }
