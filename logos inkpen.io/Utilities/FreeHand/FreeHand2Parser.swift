@@ -644,14 +644,24 @@ enum FreeHand2Parser {
         }
 
         // Append text shapes parsed from 0x13EE records.
-        // NOTE: position and font metrics are NOT yet decoded from the record
-        // bytes. `parseTextRecords` returns the literal only. Text is emitted
-        // at its raw stored X/Y (likely wrong) so the content shows up in the
-        // doc and the user can reposition manually. Do NOT add layout
-        // assumptions here — text can be anywhere on the page in FH2.
+        // Bytes +62 (x) and +58 (y) are the candidate position fields
+        // (identical across torfont.fh2 and ungroup.fh2, both with text at
+        // EPS (333, 210.977)). Observed: FH2 text coords appear to be
+        // relative to the DRAWING's top-left origin, not the page's.
+        // Offset by the parsed drawing bbox.
         let textRuns = parseTextRecords(data: data)
+        var drawingBounds: CGRect = .null
+        for s in shapes {
+            let b = s.bounds.applying(s.transform)
+            if !b.isNull && !b.isInfinite && b.width > 0 && b.height > 0 {
+                drawingBounds = drawingBounds.union(b)
+            }
+        }
+        let drawingOriginX = drawingBounds.isNull ? 0 : drawingBounds.minX
+        let drawingOriginY = drawingBounds.isNull ? 0 : drawingBounds.minY
         for run in textRuns {
-            let textOrigin = CGPoint(x: run.x, y: run.y)
+            let textOrigin = CGPoint(x: drawingOriginX + CGFloat(run.x),
+                                     y: drawingOriginY + CGFloat(run.y))
             let estWidth = Double(run.text.count) * run.fontSize * 0.55
             var textShape = VectorShape(
                 name: run.text,
