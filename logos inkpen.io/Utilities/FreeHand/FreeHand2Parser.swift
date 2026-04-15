@@ -300,23 +300,29 @@ enum FreeHand2Parser {
     }
 
     /// Extract text runs from 0x13EE records. Each record embeds an ASCII
-    /// literal terminated by 0x0D. Returns (text, approximatePosition-in-FH2-page-units).
-    /// Position heuristic: the text's approximate XY lives near the record
-    /// header at record-offset +28 (x in 720dpi units) and +30 (y in 720dpi
-    /// units). Many FH2 files put a pair of 16-bit values there that line up
-    /// with the EPS moveto position; when they don't, we fall back to a
-    /// reasonable default (center-bottom of the drawing).
+    /// literal terminated by 0x0D. Returns (text, epsX, epsY, fontSize) where
+    /// epsX/epsY are in PostScript user-space points (origin bottom-left).
+    ///
+    /// Decoded by comparing ungroup.fh2/stage.fh2 text records against their
+    /// EPS `moveto` positions:
+    ///   +28 u16be  x-origin in FH2 units (1/10 pt)
+    ///   +30 u16be  y-origin in FH2 units (top of line, before ascender)
+    ///   +56 i16be  x-offset in FH2 units
+    ///   +60 i16be  y-offset in FH2 units
+    ///   +90 u16be  font size in points
+    /// Baseline EPS coords:
+    ///   epsX = (+56 + +28) / 10
+    ///   epsY = (+60 + +30 - asc) / 10    where asc = fontSize * 7.583
     static func parseTextRecords(data: Data) -> [(text: String, x: Double, y: Double, fontSize: Double)] {
         var results: [(String, Double, Double, Double)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
-            guard rtype == 0x13EE, size >= 20, offset + size <= data.count else {
+            guard rtype == 0x13EE, size >= 92, offset + size <= data.count else {
                 offset += 1
                 continue
             }
-            // Find the longest ASCII text run.
             var ascii = ""
             var longest = ""
             for i in (offset + 4)..<(offset + size) {
@@ -329,32 +335,23 @@ enum FreeHand2Parser {
                 }
             }
             if ascii.count > longest.count { longest = ascii }
-            guard longest.count >= 2 else {
+            guard !longest.isEmpty else {
                 offset += 1
                 continue
             }
 
-            // Position: bytes at +62 (x) and +58 (y) in the record are
-            // identical between torfont.fh2 and ungroup.fh2, and both files
-            // have their text at EXACTLY (333, 210.977) in their EPS exports.
-            // That correspondence makes these the position fields. Values
-            // are in 720-dpi units → points (÷10).
-            var x: Double = 0
-            var y: Double = 0
-            if offset + 64 <= data.count {
-                let rawX = readUInt16BE(data, offset: offset + 62)
-                let rawY = readUInt16BE(data, offset: offset + 58)
-                x = Double(rawX) / unitsPerPoint
-                y = Double(rawY) / unitsPerPoint
-            }
-            // Font size: PostScript export uses 24pt for the sample files.
-            // FH2 may encode size at +12/+14, but a 24pt default matches
-            // what the EPS shows.
-            let fontSize: Double = 24
+            let xOrigin = Int(readUInt16BE(data, offset: offset + 28))
+            let yOrigin = Int(readUInt16BE(data, offset: offset + 30))
+            let xOffset = Int(readInt16BE(data, offset: offset + 56))
+            let yOffset = Int(readInt16BE(data, offset: offset + 60))
+            let fontSize = Double(readUInt16BE(data, offset: offset + 90))
+            let size24 = fontSize > 0 ? fontSize : 24
+            let ascender = size24 * 0.7583
+            let epsX = Double(xOffset + xOrigin) / unitsPerPoint
+            let epsY = Double(yOffset + yOrigin) / unitsPerPoint - ascender
 
-            results.append((longest, x, y, fontSize))
-            offset += size
-            continue
+            results.append((longest, epsX, epsY, size24))
+            offset += 1
         }
         return results
     }
@@ -643,18 +640,13 @@ enum FreeHand2Parser {
             }
         }
 
-        // Append text shapes parsed from 0x13EE records.
-        // NOTE: the on-page position of text in FH2 is NOT yet decoded.
-        // I compared shared bytes between torfont.fh2 and ungroup.fh2 (both
-        // of which have text at EPS (333, 210.977)); +62/+58 are the same
-        // across files but using them as (x,y) — with or without a
-        // drawing-origin offset — places text wrong. Likely those values are
-        // dimensions, advance widths, or something else — not a position.
-        // Emitting text at a clearly-visible fallback (0,0) so the shape is
-        // present in the doc and the user can reposition manually.
+        // Append text shapes parsed from 0x13EE records. parseTextRecords
+        // returns EPS-style bottom-up coords; flip to top-down using the
+        // effective (post-orientation) page height so text aligns with paths.
         let textRuns = parseTextRecords(data: data)
         for run in textRuns {
-            let textOrigin = CGPoint(x: CGFloat(run.x), y: CGFloat(run.y))
+            let flippedY = effectiveSize.height - CGFloat(run.y)
+            let textOrigin = CGPoint(x: CGFloat(run.x), y: flippedY)
             let estWidth = Double(run.text.count) * run.fontSize * 0.55
             var textShape = VectorShape(
                 name: run.text,
