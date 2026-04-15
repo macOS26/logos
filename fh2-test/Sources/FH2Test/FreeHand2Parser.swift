@@ -357,8 +357,8 @@ enum FreeHand2Parser {
 
         while offset + 4 <= data.count {
             let word = readUInt16BE(data, offset: offset)
+            var consumed = 0
 
-            // Look for a path record type at offset+2 (size at offset)
             if offset + 44 <= data.count {
                 let rtype = readUInt16BE(data, offset: offset + 2)
 
@@ -373,6 +373,7 @@ enum FreeHand2Parser {
                                                        colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                             shapes.append(shape)
                             shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                            consumed = recordSize
                         }
                     }
                 } else if rtype == ovalRecordType && word == 56 && offset + 40 <= data.count {
@@ -381,6 +382,7 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        consumed = 56
                     }
                 } else if rtype == rectRecordType && word == 60 && offset + 44 <= data.count {
                     if let shape = parseRectRecord(data: data, recordOffset: offset,
@@ -388,6 +390,7 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        consumed = 60
                     }
                 } else if rtype == lineRecordType && word == 48 && offset + 40 <= data.count {
                     if let shape = parseLineRecord(data: data, recordOffset: offset,
@@ -395,11 +398,13 @@ enum FreeHand2Parser {
                                                     colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable) {
                         shapes.append(shape)
                         shapeAbsIDs.append(offsetToAbsID[offset] ?? 0)
+                        consumed = 48
                     }
                 }
             }
 
-            // Not a recognized record — advance by 1 byte (records can be at odd offsets)
+            // FH2 records overlap — always advance one byte.
+            _ = consumed
             offset += 1
         }
 

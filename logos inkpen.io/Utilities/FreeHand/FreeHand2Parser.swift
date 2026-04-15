@@ -416,7 +416,8 @@ enum FreeHand2Parser {
                 }
             }
 
-            // Not a recognized record — advance by 1 byte (records can be at odd offsets)
+            // Records can overlap by design — always advance one byte so the
+            // next record start isn't missed.
             offset += 1
         }
 
