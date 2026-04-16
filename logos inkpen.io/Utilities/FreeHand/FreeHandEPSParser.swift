@@ -244,13 +244,12 @@ enum FreeHandEPSParser {
     }
 
     /// Scan drawing text for `... moveto ... (literal) ts` sequences and return text shapes.
-    /// FreeHand EPS can set the font ONCE via `[size 0 0 size tx ty] makesetfont`
-    /// and then emit multiple `moveto (text) ts` lines under that same font —
-    /// "Ungrouped" shows up as `(Ungr) ts` then `(ouped) ts`. Walk in two phases:
-    /// 1. Record every `[... ] makesetfont` font-size setter we see, keyed by
-    ///    drawing-text offset so later `ts` calls can find the last one.
-    /// 2. For each `moveto ... (text) ts`, emit a shape using the most recent
-    ///    font size declared before it.
+    /// FreeHand EPS emits text inside `{ ... } [colorargs] sts` blocks.
+    /// Inside each block:
+    ///   /fN  [size 0 0 size tx ty] makesetfont    ← active font + size
+    ///   x y moveto 0 0 adv 0 0 (chunk) ts         ← one chunk (can repeat)
+    /// The full text is the concatenation of every `(chunk)` in the block.
+    /// The trailing `[args] sts` sets fill color (CMYK-4 or spot-2).
     private static func parseEPSTextRuns(in drawingText: String,
                                          pageHeight: Double,
                                          originX: Double, originY: Double,
@@ -258,86 +257,136 @@ enum FreeHandEPSParser {
         var results: [VectorShape] = []
         let ns = drawingText as NSString
 
-        // Phase 1: capture each `[size 0 0 size tx ty] makesetfont` with its
-        // ending character offset in the source.
-        guard let fontRegex = try? NSRegularExpression(
-            pattern: #"\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\]\s*makesetfont"#,
+        // Match each `{ ...body... } [ ...colorargs... ] sts` text block.
+        guard let blockRegex = try? NSRegularExpression(
+            pattern: #"\{([^{}]*)\}\s*\[([^\]]*)\]\s*sts"#,
             options: [.dotMatchesLineSeparators]
         ) else { return results }
-        var fontDeclarations: [(endOffset: Int, fontSize: Double)] = []
-        for m in fontRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
-            let sizeRange = m.range(at: 1)
-            guard sizeRange.location != NSNotFound,
-                  let sz = Double(ns.substring(with: sizeRange)) else { continue }
-            fontDeclarations.append((endOffset: m.range.location + m.range.length, fontSize: sz))
+
+        let tsPattern = #"(-?[\d.]+)\s+(-?[\d.]+)\s+moveto(?:[^()]*)\(([^)]*)\)\s*ts"#
+        guard let tsRegex = try? NSRegularExpression(pattern: tsPattern, options: [.dotMatchesLineSeparators]) else {
+            return results
         }
-
-        // Phase 2: each `moveto (literal) ts` is one text shape.
-        guard let tsRegex = try? NSRegularExpression(
-            pattern: #"(-?[\d.]+)\s+(-?[\d.]+)\s+moveto[^()]*\(([^)]*)\)\s*ts"#,
+        let fontRegex = try? NSRegularExpression(
+            pattern: #"(/f\d+)\s+\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)"#,
             options: [.dotMatchesLineSeparators]
-        ) else { return results }
+        )
 
-        for m in tsRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
-            func substr(_ idx: Int) -> String? {
-                let r = m.range(at: idx)
-                guard r.location != NSNotFound, r.length >= 0,
-                      r.location + r.length <= ns.length else { return nil }
-                return ns.substring(with: r)
+        for block in blockRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
+            let bodyRange = block.range(at: 1)
+            let colorRange = block.range(at: 2)
+            guard bodyRange.location != NSNotFound else { continue }
+            let body = ns.substring(with: bodyRange)
+            let bodyNs = body as NSString
+
+            // Font + size: first `/fN [size 0 0 size ...]` in the block.
+            var psFont = "Helvetica-Bold"
+            var fontSize: Double = 12
+            if let fr = fontRegex,
+               let m = fr.firstMatch(in: body, range: NSRange(location: 0, length: bodyNs.length)) {
+                let fKey = bodyNs.substring(with: m.range(at: 1))           // "/f1"
+                let sizeStr = bodyNs.substring(with: m.range(at: 2))
+                if let sz = Double(sizeStr) { fontSize = sz }
+                let key = String(fKey.dropFirst())                           // "f1"
+                if let mapped = fontTable[key] { psFont = mapped }
             }
-            let moveX = substr(1).flatMap(Double.init) ?? 0
-            let moveY = substr(2).flatMap(Double.init) ?? 0
-            guard let literal = substr(3), !literal.isEmpty else { continue }
-            // Pick the most recently declared font size before this ts call.
-            let tsStart = m.range.location
-            let fontSize = fontDeclarations
-                .last(where: { $0.endOffset <= tsStart })?.fontSize ?? 12
+
+            // Collect every `(chunk) ts` in the block, in file order.
+            var chunks: [(x: Double, y: Double, text: String)] = []
+            for tm in tsRegex.matches(in: body, range: NSRange(location: 0, length: bodyNs.length)) {
+                let xs = bodyNs.substring(with: tm.range(at: 1))
+                let ys = bodyNs.substring(with: tm.range(at: 2))
+                let txt = bodyNs.substring(with: tm.range(at: 3))
+                guard let x = Double(xs), let y = Double(ys), !txt.isEmpty else { continue }
+                chunks.append((x, y, txt))
+            }
+            guard let first = chunks.first else { continue }
+            // Keep only chunks on the SAME baseline as the first — trailing
+            // empty-ts lines at y-2, y-4 (from rendering adornments) get
+            // filtered by the .isEmpty check above; this guards against stray
+            // second-line calls.
+            let sameLine = chunks.filter { abs($0.y - first.y) < 0.01 }
+            let literal = sameLine.map { $0.text }.joined()
+            guard !literal.isEmpty else { continue }
+
+            // Split PostScript name "Times-BoldItalic" → family "Times",
+            // bold/italic flags from the variant suffix.
+            let (family, bold, italic) = splitPSFontName(psFont)
+
+            // Color: CMYK if 4 args (`[c m y k] sts`), else default black.
+            // Spot colors (`[1 N]`) would need the `spots` array resolved;
+            // not decoded here — rendered as black until we wire spots.
+            var fill: VectorColor = .black
+            if colorRange.location != NSNotFound {
+                let args = ns.substring(with: colorRange)
+                    .split(whereSeparator: { $0.isWhitespace })
+                    .compactMap { Double($0) }
+                if args.count == 4 {
+                    let c = args[0], m = args[1], y = args[2], k = args[3]
+                    let r = (1 - c) * (1 - k)
+                    let g = (1 - m) * (1 - k)
+                    let b = (1 - y) * (1 - k)
+                    fill = .rgb(RGBColor(red: r, green: g, blue: b))
+                }
+            }
+
+            // PostScript `moveto` sets the baseline-left of the first glyph;
+            // InkPen anchors textPosition at the top-left. Shift up by one
+            // ascender.
+            let ascender = fontSize * 0.8
+            let baselineY = pageHeight - (first.y - originY)
+            let textOrigin = CGPoint(x: first.x - originX, y: baselineY - ascender)
+
             var shape = VectorShape(
                 name: literal,
                 path: VectorPath(elements: [], isClosed: false),
                 strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
-                fillStyle: FillStyle(color: .black),
+                fillStyle: FillStyle(color: fill),
                 transform: .identity
             )
             shape.textContent = literal
-            // PostScript `moveto` positions the BASELINE-LEFT of the first glyph.
-            // InkPen's textPosition is the TOP-LEFT of the text bounding box, so
-            // shift up by the ascender (~0.8 * fontSize for serif fonts like Times).
-            let ascender = fontSize * 0.8
-            let baselineY = pageHeight - (moveY - originY)
-            let textOrigin = CGPoint(x: moveX - originX, y: baselineY - ascender)
             shape.textPosition = textOrigin
-            let fontFamily = fontTable.values.first ?? "Helvetica"
-            // alignment = .left so InkPen treats textPosition.x as the LEFT edge
-            // of the text box (matches PostScript's moveto-X semantics). The
-            // default .center would shift text by half its width to the right.
+            let variant: String? = {
+                switch (bold, italic) {
+                case (true, true):   return "BoldItalic"
+                case (true, false):  return "Bold"
+                case (false, true):  return "Italic"
+                case (false, false): return nil
+                }
+            }()
             shape.typography = TypographyProperties(
-                fontFamily: fontFamily,
+                fontFamily: family,
+                fontVariant: variant,
                 fontSize: fontSize,
                 lineHeight: fontSize,
                 alignment: .left,
                 strokeColor: .clear,
-                fillColor: .black
+                fillColor: fill
             )
-            // Text box width. InkPen treats areaSize.width as a hard wrap
-            // boundary — if it's too tight, characters reflow to a new line
-            // (e.g. "Ungr" splitting as "Ung" + "r"). Estimate character
-            // advance width, then pad generously so no reflow happens.
-            // A 0.65 advance factor + 2× overhead covers Times-Bold and
-            // most serif faces without reflowing.
             let estWidth = Double(literal.count) * fontSize * 0.65 * 2.0
             let estHeight = fontSize * 1.25
             shape.areaSize = CGSize(width: estWidth, height: estHeight)
-            // MetalSpatialIndex reads text position from `transform.tx/ty` for
-            // .text-type objects (see MetalSpatialIndex.swift:135), NOT from
-            // bounds.origin. Put the position in the transform and zero the
-            // bounds origin so the index can hit-test the text where it
-            // actually renders.
             shape.transform = CGAffineTransform(translationX: textOrigin.x, y: textOrigin.y)
             shape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
             results.append(shape)
         }
         return results
+    }
+
+    /// Split a PostScript font name like "Times-BoldItalic" into its family
+    /// name and bold/italic flags. Accepts `Times-Roman`, `Times-Bold`,
+    /// `Times-Italic`, `Times-BoldItalic`, `Helvetica-Bold`, etc. Unknown
+    /// variants are treated as plain.
+    private static func splitPSFontName(_ psName: String) -> (family: String, bold: Bool, italic: Bool) {
+        let parts = psName.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: true)
+        guard let family = parts.first.map(String.init) else {
+            return (psName, false, false)
+        }
+        if parts.count < 2 { return (family, false, false) }
+        let variant = String(parts[1]).lowercased()
+        let bold = variant.contains("bold")
+        let italic = variant.contains("italic") || variant.contains("oblique")
+        return (family, bold, italic)
     }
 
     // MARK: - PostScript Parser

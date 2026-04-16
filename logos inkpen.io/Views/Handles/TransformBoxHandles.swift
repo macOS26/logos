@@ -471,13 +471,22 @@ struct TransformBoxHandles: View {
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
 
+        // If the grabbed handle is within a handful of screen pixels of the
+        // anchor, the ratio currentDistance/startDistance blows up — a 50px
+        // drag divided by a 0.5px start distance becomes 100× scale. Require
+        // at least `minStart` pixels of anchor-to-handle distance on that
+        // axis before computing a scale factor; otherwise leave it at 1.0
+        // (no scaling along that axis).
+        let minStart: CGFloat = 4.0
+        func axisScale(_ cur: CGFloat, _ start: CGFloat) -> CGFloat {
+            abs(start) > minStart ? cur / start : 1.0
+        }
+
         if isCorner {
-            // Allow negative scale for flipping/mirroring
-            scaleX = abs(startDistance.x) > 0 ? currentDistance.x / startDistance.x : 1.0
-            scaleY = abs(startDistance.y) > 0 ? currentDistance.y / startDistance.y : 1.0
+            scaleX = axisScale(currentDistance.x, startDistance.x)
+            scaleY = axisScale(currentDistance.y, startDistance.y)
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                // Uniform scale uses the larger magnitude, preserving sign
                 let absScaleX = abs(scaleX)
                 let absScaleY = abs(scaleY)
                 let uniformScale = absScaleX >= absScaleY ? scaleX : scaleY
@@ -485,9 +494,9 @@ struct TransformBoxHandles: View {
                 scaleY = uniformScale
             }
         } else if isTopBottom {
-            scaleY = abs(startDistance.y) > 0 ? currentDistance.y / startDistance.y : 1.0
+            scaleY = axisScale(currentDistance.y, startDistance.y)
         } else if isLeftRight {
-            scaleX = abs(startDistance.x) > 0 ? currentDistance.x / startDistance.x : 1.0
+            scaleX = axisScale(currentDistance.x, startDistance.x)
         }
 
         let scaleTransform = CGAffineTransform.identity
