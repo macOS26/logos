@@ -238,6 +238,36 @@
 				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
+			<string>Encapsulated PostScript</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>EPS</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.adobe.encapsulated-postscript</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>eps</string>
+					<string>epsf</string>
+					<string>epsi</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/postscript</string>
+					<string>image/x-eps</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
 			<string>FreeHand Document</string>
 			<key>UTTypeIcons</key>
 			<dict>
