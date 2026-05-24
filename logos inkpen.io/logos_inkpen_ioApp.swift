@@ -1057,7 +1057,13 @@ class ClipboardManager {
             let objectsToAdd = topLevelObjects + textObjects
             if !objectsToAdd.isEmpty {
                 let currentTool = document.viewState.currentTool
-                let command = AddObjectCommand(objects: objectsToAdd)
+                let position: AddObjectAtPositionCommand.InsertPosition
+                if !document.viewState.selectedObjectIDs.isEmpty {
+                    position = .beforeSelection(document.viewState.selectedObjectIDs)
+                } else {
+                    position = .back
+                }
+                let command = AddObjectAtPositionCommand(objects: objectsToAdd, position: position)
                 document.commandManager.execute(command)
                 if currentTool != .selection && currentTool != .directSelection {
                     document.viewState.currentTool = .selection

@@ -9,6 +9,7 @@ class AddObjectAtPositionCommand: BaseCommand {
         case front
         case back
         case afterSelection(Set<UUID>)
+        case beforeSelection(Set<UUID>)
     }
 
     init(objects: [VectorObject], position: InsertPosition = .back) {
@@ -34,19 +35,27 @@ class AddObjectAtPositionCommand: BaseCommand {
             let insertIndex: Int
             switch insertPosition {
             case .front:
-                insertIndex = 0
-            case .back:
                 insertIndex = document.snapshot.layers[layerIndex].objectIDs.count
+            case .back:
+                insertIndex = 0
             case .afterSelection(let selectedIDs):
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
-
                 var maxIndex = -1
                 for (index, objID) in objectIDs.enumerated() {
                     if selectedIDs.contains(objID) {
                         maxIndex = max(maxIndex, index)
                     }
                 }
-                insertIndex = maxIndex >= 0 ? maxIndex + 1 : 0
+                insertIndex = maxIndex >= 0 ? maxIndex + 1 : document.snapshot.layers[layerIndex].objectIDs.count
+            case .beforeSelection(let selectedIDs):
+                let objectIDs = document.snapshot.layers[layerIndex].objectIDs
+                var minIndex = Int.max
+                for (index, objID) in objectIDs.enumerated() {
+                    if selectedIDs.contains(objID) {
+                        minIndex = min(minIndex, index)
+                    }
+                }
+                insertIndex = minIndex == Int.max ? 0 : minIndex
             }
             for (uuid, _) in layerObjects.reversed() {
                 if !document.snapshot.layers[layerIndex].objectIDs.contains(uuid) {
