@@ -947,7 +947,9 @@ class SVGExporter {
         var processedClipPaths = Set<UUID>()
 
         for vectorObject in document.snapshot.objects.values {
-            guard case .shape(let candidate) = vectorObject.objectType else { continue }
+            // Clipping groups are wrapped in objectType == .clipGroup, not .shape — use the
+            // accessor that extracts the underlying VectorShape from any case.
+            let candidate = vectorObject.shape
 
             // Legacy: shape explicitly flagged as a clipping path (referenced by clippedByShapeID).
             if candidate.isClippingPath && !processedClipPaths.contains(candidate.id) {
