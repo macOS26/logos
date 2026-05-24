@@ -1,6 +1,3 @@
-/* Apple Help Book Stylesheet for Logos InkPen - Dark/Light Mode Support */
-
-/* Default Light Mode */
 :root {
     --bg-primary: #ffffff;
     --bg-secondary: #f5f5f5;
@@ -15,8 +12,6 @@
     --tip-bg: #f0f0f0;
     --tip-border: #cccccc;
 }
-
-/* Dark Mode */
 @media (prefers-color-scheme: dark) {
     :root {
         --bg-primary: #000000;
@@ -33,7 +28,6 @@
         --tip-border: #555555;
     }
 }
-
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 13px;
@@ -43,7 +37,6 @@ body {
     margin: 0;
     padding: 0;
 }
-
 .banner {
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -51,7 +44,6 @@ body {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
 }
-
 .banner h1 {
     margin: 0;
     font-size: 28px;
@@ -59,7 +51,6 @@ body {
     letter-spacing: 0.5px;
     color: var(--text-primary);
 }
-
 .content {
     max-width: 800px;
     margin: 20px auto;
@@ -68,13 +59,11 @@ body {
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-
 @media (prefers-color-scheme: dark) {
     .content {
         box-shadow: 0 1px 3px rgba(255,255,255,0.1);
     }
 }
-
 .intro {
     font-size: 15px;
     color: var(--text-primary);
@@ -83,7 +72,6 @@ body {
     background: var(--bg-accent);
     border-left: 4px solid var(--border-accent);
 }
-
 .topics h2 {
     font-size: 18px;
     color: var(--text-primary);
@@ -92,17 +80,14 @@ body {
     padding-bottom: 5px;
     border-bottom: 1px solid var(--border-color);
 }
-
 .topics ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .topics li {
     margin: 8px 0;
 }
-
 .topics a {
     color: var(--text-primary);
     text-decoration: none;
@@ -110,12 +95,10 @@ body {
     padding: 4px 0;
     transition: opacity 0.2s;
 }
-
 .topics a:hover {
     opacity: 0.7;
     text-decoration: underline;
 }
-
 .search-tip {
     margin-top: 30px;
     padding: 15px;
@@ -123,49 +106,39 @@ body {
     border: 1px solid var(--tip-border);
     border-radius: 4px;
 }
-
 .search-tip p {
     margin: 0;
     color: var(--text-primary);
 }
-
 .footer {
     display: none;
 }
-
-/* Page-specific styles */
 h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
 }
-
 h2 {
     font-size: 20px;
     color: var(--text-primary);
     margin-top: 20px;
     margin-bottom: 15px;
 }
-
 h3 {
     font-size: 16px;
     color: var(--text-primary);
     margin-top: 15px;
     margin-bottom: 10px;
 }
-
 p {
     margin: 10px 0;
     color: var(--text-primary);
 }
-
 a {
     color: var(--text-primary);
     text-decoration: underline;
 }
-
 a:hover {
     opacity: 0.7;
 }
-
 code {
     font-family: "SF Mono", Monaco, Courier, monospace;
     font-size: 12px;
@@ -174,7 +147,6 @@ code {
     border-radius: 3px;
     color: var(--text-primary);
 }
-
 .note {
     padding: 10px;
     background: var(--bg-accent);
@@ -182,7 +154,6 @@ code {
     margin: 15px 0;
     color: var(--text-primary);
 }
-
 .warning {
     padding: 10px;
     background: var(--bg-secondary);
@@ -190,13 +161,11 @@ code {
     margin: 15px 0;
     color: var(--text-primary);
 }
-
 .step-list {
     counter-reset: step-counter;
     list-style: none;
     padding: 0;
 }
-
 .step-list li {
     counter-increment: step-counter;
     margin-bottom: 15px;
@@ -204,7 +173,6 @@ code {
     padding-left: 40px;
     color: var(--text-primary);
 }
-
 .step-list li::before {
     content: counter(step-counter);
     position: absolute;
@@ -222,35 +190,25 @@ code {
     font-weight: bold;
     font-size: 14px;
 }
-
-/* Ensure all text elements follow the color scheme */
 ul, ol, li, td, th, strong, em {
     color: var(--text-primary);
 }
-
-/* Tables */
 table {
     border-collapse: collapse;
     width: 100%;
 }
-
 td, th {
     padding: 8px 12px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
 }
-
 th {
     background: var(--bg-secondary);
     font-weight: 600;
 }
-
-/* Lists */
 ul li, ol li {
     color: var(--text-primary);
 }
-
-/* Blockquotes */
 blockquote {
     border-left: 4px solid var(--border-accent);
     padding-left: 15px;
