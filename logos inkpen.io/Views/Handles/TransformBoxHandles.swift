@@ -494,6 +494,14 @@ struct TransformBoxHandles: View {
             return
         }
         let oldShape = oldObj.shape
+        var allScaledIDs: [UUID] = []
+        collectShapeAndMembers(shape.id, into: &allScaledIDs)
+        var oldScaledShapes: [UUID: VectorShape] = [:]
+        for id in allScaledIDs {
+            if let s = document.findShape(by: id) {
+                oldScaledShapes[id] = s
+            }
+        }
         if oldShape.typography != nil {
             if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
                 let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
@@ -513,16 +521,31 @@ struct TransformBoxHandles: View {
         }
         previewTransform = .identity
         document.updateTransformPanelValues()
-        guard let newObj = document.snapshot.objects[shape.id] else {
-            return
+        var newScaledShapes: [UUID: VectorShape] = [:]
+        for id in allScaledIDs {
+            if let s = document.findShape(by: id) {
+                newScaledShapes[id] = s
+            }
         }
-        let newShape = newObj.shape
         let command = ShapeModificationCommand(
-            objectIDs: [shape.id],
-            oldShapes: [shape.id: oldShape],
-            newShapes: [shape.id: newShape]
+            objectIDs: allScaledIDs,
+            oldShapes: oldScaledShapes,
+            newShapes: newScaledShapes
         )
         document.executeCommand(command)
+    }
+
+    private func collectShapeAndMembers(_ shapeID: UUID, into ids: inout [UUID]) {
+        guard let object = document.snapshot.objects[shapeID] else { return }
+        ids.append(shapeID)
+        switch object.objectType {
+        case .group(let s), .clipGroup(let s):
+            for memberID in s.memberIDs {
+                collectShapeAndMembers(memberID, into: &ids)
+            }
+        default:
+            break
+        }
     }
 
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
@@ -538,6 +561,10 @@ struct TransformBoxHandles: View {
             return
         }
         if targetShape.isGroupContainer {
+            if !targetShape.memberIDs.isEmpty {
+                document.applyTransformToGroup(groupID: shapeID, transform: t)
+                return
+            }
             var updatedShape = targetShape
             var transformedGroupedShapes: [VectorShape] = []
             for var groupedShape in updatedShape.groupedShapes {
