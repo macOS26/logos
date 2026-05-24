@@ -161,7 +161,7 @@ extension FileOperations {
         context.concatenate(clippingMask.transform)
         let clipPath = convertVectorPathToCGPath(clippingMask.path)
         context.addPath(clipPath)
-        context.clip()
+        context.clip(using: clippingMask.clipFillRule)
         context.concatenate(clippingMask.transform.inverted())
         for shape in clippedShapes {
             try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode, document: document)
@@ -192,7 +192,7 @@ extension FileOperations {
             context.concatenate(mask.transform)
             let clipPath = convertVectorPathToCGPath(mask.path)
             context.addPath(clipPath)
-            context.clip()
+            context.clip(using: mask.clipFillRule)
             context.concatenate(mask.transform.inverted())
             for memberShape in content where memberShape.isVisible {
                 try renderShapeToPDFWithImageSupport(

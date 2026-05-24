@@ -274,7 +274,7 @@ struct LayerCanvasView: View {
                                 context.drawLayer { layerContext in
                                     layerContext.transform = maskTransform
                                     let maskPath = liveMaskForClip.cachedCGPath
-                                    layerContext.clip(to: Path(maskPath))
+                                    layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskForClip.clipFillRule == .evenOdd))
                                     layerContext.transform = contentTransform
                                     if liveContentShape.isGroupContainer {
                                         renderKeylineClippedLeaf(liveContentShape, into: &layerContext)
@@ -363,7 +363,7 @@ struct LayerCanvasView: View {
                             context.drawLayer { layerContext in
                                 layerContext.transform = maskTransform
                                 let maskPath = liveMaskColorMode.cachedCGPath
-                                layerContext.clip(to: Path(maskPath))
+                                layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskColorMode.clipFillRule == .evenOdd))
                                 layerContext.transform = contentTransform
 
                                 func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
@@ -441,7 +441,7 @@ struct LayerCanvasView: View {
                                     let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                     context.drawLayer { layerContext in
                                         layerContext.transform = savedTransform
-                                        layerContext.clip(to: Path(maskPath))
+                                        layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskForClip.clipFillRule == .evenOdd))
                                         if VectorText.from(liveContent) != nil {
                                             renderText(liveContent, context: &layerContext, isSelected: isContentSelected, liveScaleTransform: isContentSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
                                         } else if hasImageData(liveContent) {
@@ -545,7 +545,7 @@ struct LayerCanvasView: View {
         if let maskShape = maskShape {
             context.drawLayer { layerContext in
                 let maskPath = maskShape.cachedCGPath
-                layerContext.clip(to: Path(maskPath))
+                layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: maskShape.clipFillRule == .evenOdd))
                 if viewMode == .color, let fillStyle = shape.fillStyle {
                     let effectiveFillOpacity: Double
                     if let deltaOpacity = fillDeltaOpacity, selectedObjectIDs.contains(shape.id) {
@@ -863,7 +863,7 @@ struct LayerCanvasView: View {
             if let maskShape = maskShape {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
-                cgContext.clip()
+                cgContext.clip(using: maskShape.clipFillRule)
             }
             let effectiveFillOpacity: Double
             if let delta = fillDeltaOpacity, isSelected {
@@ -1184,7 +1184,7 @@ struct LayerCanvasView: View {
             if let maskShape = maskShape {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
-                cgContext.clip()
+                cgContext.clip(using: maskShape.clipFillRule)
             }
             cgContext.setAlpha(CGFloat(shape.opacity))
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)

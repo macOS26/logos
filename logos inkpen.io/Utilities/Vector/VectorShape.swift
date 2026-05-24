@@ -842,6 +842,10 @@ extension VectorShape {
         return isCompoundPath && path.fillRule.cgPathFillRule == .winding
     }
 
+    var clipFillRule: CGPathFillRule {
+        return path.fillRule.cgPathFillRule
+    }
+
     var isTrueCompoundPath: Bool {
         return isEvenOddCompoundPath
     }
