@@ -155,10 +155,16 @@ class ToolGroupManager: ObservableObject {
     }
 
     func getOrderedToolsForGroup(_ groupName: String, defaultTools: [DrawingTool]) -> [DrawingTool] {
-        if let customOrder = customToolOrder[groupName] {
-            return customOrder
+        guard let customOrder = customToolOrder[groupName] else {
+            return defaultTools
         }
-        return defaultTools
+        let defaultSet = Set(defaultTools)
+        var merged = customOrder.filter { defaultSet.contains($0) }
+        for (defaultIndex, tool) in defaultTools.enumerated() where !merged.contains(tool) {
+            let insertIndex = merged.firstIndex { defaultTools.firstIndex(of: $0).map { $0 > defaultIndex } ?? false } ?? merged.count
+            merged.insert(tool, at: insertIndex)
+        }
+        return merged
     }
 
     func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
