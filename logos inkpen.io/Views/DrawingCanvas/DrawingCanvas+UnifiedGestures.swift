@@ -36,7 +36,7 @@ extension DrawingCanvas {
             cancelBezierDrawing()
         }
         switch document.viewState.currentTool {
-        case .selection, .scale, .rotate, .shear, .warp:
+        case .selection, .scale, .rotate, .reflect, .shear, .warp:
             handleSelectionTap(at: canvasLocation)
         case .directSelection:
             handleDirectSelectionTap(at: canvasLocation)
@@ -135,7 +135,7 @@ extension DrawingCanvas {
             handleBrushDragUpdate(at: currentLocation)
         case .marker:
             break
-        case .scale, .rotate, .shear, .warp:
+        case .scale, .rotate, .reflect, .shear, .warp:
             break
         default:
             break

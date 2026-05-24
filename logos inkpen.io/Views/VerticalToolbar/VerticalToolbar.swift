@@ -288,6 +288,8 @@ struct VerticalToolbar: View {
             return "Scale Tool (S) - Scale objects with corner handles"
         case .rotate:
             return "Rotate Tool (R) - Rotate objects around anchor points"
+        case .reflect:
+            return "Reflect Tool - Mirror objects across an interactive axis"
         case .shear:
             return "Shear Tool (X) - Shear/skew objects around anchor points"
         case .directSelection:

@@ -100,6 +100,14 @@ struct SelectionHandlesView: View {
                                             canvasOffset: canvasOffset,
                                             isShiftPressed: isShiftPressed
                                         )
+                                    } else if document.viewState.currentTool == .reflect {
+                                        ReflectHandles(
+                                            document: document,
+                                            shape: shape,
+                                            zoomLevel: zoomLevel,
+                                            canvasOffset: canvasOffset,
+                                            isShiftPressed: isShiftPressed
+                                        )
                                     } else if document.viewState.currentTool == .shear {
                                         ShearHandles(
                                             document: document,
@@ -169,6 +177,14 @@ struct SelectionHandlesView: View {
                     )
                 } else if document.viewState.currentTool == .rotate {
                     RotateHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        isShiftPressed: isShiftPressed
+                    )
+                } else if document.viewState.currentTool == .reflect {
+                    ReflectHandles(
                         document: document,
                         shape: shape,
                         zoomLevel: zoomLevel,

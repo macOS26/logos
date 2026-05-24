@@ -10,7 +10,7 @@ struct ToolGroupConfiguration {
         "polygons": [.pentagon, .hexagon, .heptagon, .octagon, .nonagon],
         "lines": [.bezierPen, .line],
         "brushes": [.brush, .marker, .freehand],
-        "transforms": [.scale, .rotate, .shear, .warp],
+        "transforms": [.scale, .rotate, .reflect, .shear, .warp],
         "stars": [.star],
         "navigation": [.hand, .zoom],
         "utilities": [.eyedropper, .selectSameColor, .gradient]

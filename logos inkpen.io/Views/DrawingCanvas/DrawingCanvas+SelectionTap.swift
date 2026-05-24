@@ -73,6 +73,7 @@ extension DrawingCanvas {
         guard document.viewState.currentTool == .selection ||
               document.viewState.currentTool == .scale ||
               document.viewState.currentTool == .rotate ||
+              document.viewState.currentTool == .reflect ||
               document.viewState.currentTool == .shear ||
               document.viewState.currentTool == .warp else {
             if !isShiftPressed && !isCommandPressed {
