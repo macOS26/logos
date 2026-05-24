@@ -1,5 +1,4 @@
 import Foundation
-
 struct InkPenHelpContent {
     static let pages: [String: HelpPage] = [
         "index": HelpPage(
@@ -34,7 +33,6 @@ struct InkPenHelpContent {
             </ul>
             """
         ),
-
         "getting-started": HelpPage(
             title: "Getting Started",
             content: """
@@ -55,7 +53,6 @@ struct InkPenHelpContent {
             </ol>
             """
         ),
-
         "tools": HelpPage(
             title: "Tools Reference",
             content: """
@@ -89,7 +86,6 @@ struct InkPenHelpContent {
             </ul>
             """
         ),
-
         "shortcuts": HelpPage(
             title: "Keyboard Shortcuts",
             content: """
@@ -134,12 +130,10 @@ struct InkPenHelpContent {
             """
         )
     ]
-
     static func getPage(_ name: String) -> HelpPage? {
         return pages[name]
     }
 }
-
 struct HelpPage {
     let title: String
     let content: String

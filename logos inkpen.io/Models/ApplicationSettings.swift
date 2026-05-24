@@ -1,12 +1,10 @@
 import SwiftUI
 import Combine
-
 enum AlignmentAnchorMode: String, CaseIterable {
     case firstSelected = "firstSelected"
     case lastSelected = "lastSelected"
     case largestArea = "largestArea"
     case smallestArea = "smallestArea"
-
     var displayName: String {
         switch self {
         case .firstSelected: return "First Selected"
@@ -16,10 +14,8 @@ enum AlignmentAnchorMode: String, CaseIterable {
         }
     }
 }
-
 class ApplicationSettings: ObservableObject {
     static let shared = ApplicationSettings()
-
     @Published var currentBrushThickness: Double = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0 {
         didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
     }
@@ -44,14 +40,12 @@ class ApplicationSettings: ObservableObject {
     @Published var brushCoincidentPointPasses: Int = UserDefaults.standard.object(forKey: "brushCoincidentPointPasses") as? Int ?? 1 {
         didSet { UserDefaults.standard.set(brushCoincidentPointPasses, forKey: "brushCoincidentPointPasses") }
     }
-
     @Published var advancedSmoothingEnabled: Bool = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false {
         didSet { UserDefaults.standard.set(advancedSmoothingEnabled, forKey: "advancedSmoothingEnabled") }
     }
     @Published var chaikinSmoothingIterations: Int = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1 {
         didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
     }
-
     @Published var freehandSmoothingTolerance: Double = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0 {
         didSet { UserDefaults.standard.set(freehandSmoothingTolerance, forKey: "freehandSmoothingTolerance") }
     }
@@ -73,7 +67,6 @@ class ApplicationSettings: ObservableObject {
     @Published var freehandClosePath: Bool = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false {
         didSet { UserDefaults.standard.set(freehandClosePath, forKey: "freehandClosePath") }
     }
-
     @Published var currentMarkerSmoothingTolerance: Double = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0 {
         didSet { UserDefaults.standard.set(currentMarkerSmoothingTolerance, forKey: "markerSmoothingTolerance") }
     }
@@ -104,7 +97,6 @@ class ApplicationSettings: ObservableObject {
     @Published var markerRemoveOverlap: Bool = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true {
         didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
     }
-
     @Published var liveScalingPreview: Bool = UserDefaults.standard.object(forKey: "liveScalingPreview") as? Bool ?? false {
         didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
     }
@@ -114,18 +106,14 @@ class ApplicationSettings: ObservableObject {
     @Published var boundingBoxIncludesStrokes: Bool = UserDefaults.standard.object(forKey: "boundingBoxIncludesStrokes") as? Bool ?? true {
         didSet { UserDefaults.standard.set(boundingBoxIncludesStrokes, forKey: "boundingBoxIncludesStrokes") }
     }
-
     @Published var embedImagesByDefault: Bool = UserDefaults.standard.object(forKey: "embedImagesByDefault") as? Bool ?? false {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
-
     @Published var alignmentAnchorMode: AlignmentAnchorMode = AlignmentAnchorMode(rawValue: UserDefaults.standard.string(forKey: "alignmentAnchorMode") ?? "firstSelected") ?? .firstSelected {
         didSet { UserDefaults.standard.set(alignmentAnchorMode.rawValue, forKey: "alignmentAnchorMode") }
     }
-
     @Published var importFreeHandEffects: Bool = UserDefaults.standard.object(forKey: "importFreeHandEffects") as? Bool ?? true {
         didSet { UserDefaults.standard.set(importFreeHandEffects, forKey: "importFreeHandEffects") }
     }
-
     private init() {}
 }

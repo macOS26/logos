@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct CheckerboardPattern: View {
     let size: CGFloat
     var body: some View {
@@ -7,7 +6,6 @@ struct CheckerboardPattern: View {
             let tileSize = self.size
             let rows = Int(geometry.size.height / tileSize) + 1
             let cols = Int(geometry.size.width / tileSize) + 1
-
             ZStack {
                 ForEach(0..<rows, id: \.self) { row in
                     ForEach(0..<cols, id: \.self) { col in
@@ -25,14 +23,12 @@ struct CheckerboardPattern: View {
         }
     }
 }
-
 @ViewBuilder
 func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
     ZStack {
         CheckerboardPattern(size: min(4, width / 4))
             .frame(width: width, height: height)
             .clipped()
-
         if case .clear = color {
             if cornerRadius > 0 {
                 RoundedRectangle(cornerRadius: cornerRadius)
@@ -45,7 +41,6 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
                     .frame(width: width, height: height)
                     .border(Color.gray, width: borderWidth)
             }
-
             Path { path in
                 path.move(to: CGPoint(x: 0, y: 0))
                 path.addLine(to: CGPoint(x: width, y: height))
@@ -86,18 +81,14 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
             }
         }
     }
-
 }
-
 struct GradientSwatchCanvas: View {
     let gradient: VectorGradient
     let size: CGFloat
-
     var body: some View {
         Canvas { context, canvasSize in
             context.withCGContext { cgContext in
                 cgContext.saveGState()
-
                 let pathBounds = CGRect(x: 0, y: 0, width: size, height: size)
                 let path = CGPath(rect: pathBounds, transform: nil)
                 let colors = gradient.stops.map { stop -> CGColor in
@@ -112,22 +103,18 @@ struct GradientSwatchCanvas: View {
                     cgContext.restoreGState()
                     return
                 }
-
                 cgContext.addPath(path)
                 cgContext.clip()
-
                 switch gradient {
                 case .linear(_):
                     let startPoint = CGPoint(x: 0, y: size / 2)
                     let endPoint = CGPoint(x: size, y: size / 2)
                     cgContext.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
-
                 case .radial(_):
                     let center = CGPoint(x: size / 2, y: size / 2)
                     let radius = size / 2
                     cgContext.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
                 }
-
                 cgContext.restoreGState()
             }
         }

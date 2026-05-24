@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct FontPanelHeader: View {
     let selectedText: VectorText?
     let editingText: VectorText?
@@ -11,7 +10,6 @@ struct FontPanelHeader: View {
                     .fontWeight(.medium)
                 Spacer()
             }
-
             if let editingText = editingText {
                 HStack {
                     Text("Editing TextBox UUID:")
@@ -25,11 +23,9 @@ struct FontPanelHeader: View {
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(4)
                         .help("Currently editing text box: \(editingText.id.uuidString)")
-
                     Text("(BLUE - Edit Mode)")
                         .font(.caption2)
                         .foregroundColor(.blue)
-
                     Spacer()
                 }
             } else if let selectedText = selectedText {
@@ -45,11 +41,9 @@ struct FontPanelHeader: View {
                         .background(Color.green.opacity(0.1))
                         .cornerRadius(4)
                         .help("Currently selected text box: \(selectedText.id.uuidString)")
-
                     Text("(GREEN - Selected)")
                         .font(.caption2)
                         .foregroundColor(.green)
-
                     Spacer()
                 }
             } else {
@@ -57,15 +51,12 @@ struct FontPanelHeader: View {
                     Text("No TextBox Selected")
                         .font(.caption)
                         .foregroundColor(.gray)
-
                     Text("(Showing defaults for new text)")
                         .font(.caption2)
                         .foregroundColor(.gray)
-
                     Spacer()
                 }
             }
-
             if selectedText != nil {
                 HStack {
                     Image(systemName: "lock.shield")

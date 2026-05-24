@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-
 struct FontPickerLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -8,7 +7,6 @@ struct FontPickerLabelStyle: ViewModifier {
             .foregroundColor(.secondary)
     }
 }
-
 struct FontPickerPickerStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -17,17 +15,14 @@ struct FontPickerPickerStyle: ViewModifier {
             .padding(.vertical, 4)
     }
 }
-
 extension View {
     func fontPickerLabel() -> some View {
         modifier(FontPickerLabelStyle())
     }
-
     func fontPickerStyle() -> some View {
         modifier(FontPickerPickerStyle())
     }
 }
-
 struct FontPickerView: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
@@ -35,12 +30,10 @@ struct FontPickerView: View {
     let selectedText: VectorText?
     let editingText: VectorText?
     @Binding var fontFamilyUpdateTrigger: Bool
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Font")
                 .fontPickerLabel()
-
             Picker("", selection: Binding(
                 get: {
                     if let textID = selectedObjectIDs.first,
@@ -53,7 +46,6 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontFamily = newFamily
                     let defaultVariant = document.fontManager.getAvailableVariantNames(for: newFamily).first ?? "Regular"
                     document.fontManager.selectedFontVariant = defaultVariant
-
                     for textID in selectedObjectIDs {
                         document.updateShapeByID(textID) { shape in
                             var typography = shape.typography ?? TypographyProperties(
@@ -74,10 +66,8 @@ struct FontPickerView: View {
                 }
             }
             .fontPickerStyle()
-
             Text("Weight")
                 .fontPickerLabel()
-
             Picker("", selection: Binding(
                 get: {
                     if let textID = selectedObjectIDs.first,
@@ -90,7 +80,6 @@ struct FontPickerView: View {
                 },
                 set: { (newVariant: String) in
                     document.fontManager.selectedFontVariant = newVariant
-
                     for textID in selectedObjectIDs {
                         document.updateShapeByID(textID) { shape in
                             var typography = shape.typography ?? TypographyProperties(
@@ -110,22 +99,18 @@ struct FontPickerView: View {
                     }
                     return document.fontManager.selectedFontFamily
                 }()
-
                 ForEach(document.fontManager.getAvailableVariantNames(for: currentFamily), id: \.self) { variant in
                     Text(cleanVariantName(variant))
                         .font(getFontForVariant(family: currentFamily, variantName: variant))
                         .tag(variant)
-
                 }
             }
             .fontPickerStyle()
         }
     }
-
     private func getFontForVariant(family: String, variantName: String) -> Font {
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
         for member in members {
             if let postScriptName = member[0] as? String,
                let displayName = member[1] as? String,
@@ -133,10 +118,8 @@ struct FontPickerView: View {
                 return Font.custom(postScriptName, size: 12)
             }
         }
-
         return Font.system(size: 12)
     }
-
     private func cleanVariantName(_ name: String) -> String {
         let weightMap: [String: String] = [
             "W0": "Ultra Light",
@@ -156,11 +139,9 @@ struct FontPickerView: View {
             "W14": "Extra Black",
             "W15": "Ultra Black"
         ]
-
         if let fullName = weightMap[name] {
             return fullName
         }
-
         for (code, fullWeight) in weightMap {
             if name.hasPrefix(code) {
                 let remainder = name.dropFirst(code.count).trimmingCharacters(in: .whitespaces)
@@ -171,7 +152,6 @@ struct FontPickerView: View {
                 }
             }
         }
-
         return name
     }
 }

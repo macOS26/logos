@@ -1,8 +1,6 @@
 import SwiftUI
 import AppKit
-
 extension DrawingCanvas {
-
     internal func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
         if case .active(let location) = phase {
             currentMouseLocation = location
@@ -21,17 +19,14 @@ extension DrawingCanvas {
                 MagnifyingGlassCursor.set()
             }
             #endif
-
             if isBezierDrawing && document.viewState.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
-
                 if bezierPoints.count >= 3 {
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
                     let baseCloseTolerance: Double = 5.0
                     let zoomLevel = zoomLevel
                     let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel)
-
                     if distance(canvasLocation, firstPointLocation) <= closeTolerance {
                         showClosePathHint = true
                         closePathHintLocation = firstPointLocation
@@ -60,7 +55,6 @@ extension DrawingCanvas {
                 NSCursor.arrow.set()
             }
             #endif
-
         }
     }
 }

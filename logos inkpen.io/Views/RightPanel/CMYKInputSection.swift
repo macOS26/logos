@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct CMYKInputSection: View {
     @Binding var sharedColor: VectorColor
     let activeColorTarget: ColorTarget
@@ -11,7 +10,6 @@ struct CMYKInputSection: View {
     let onColorSelected: ((VectorColor) -> Void)?
     let disableSetActiveColor: Bool
     let onDismiss: (() -> Void)?
-
     init(sharedColor: Binding<VectorColor>, activeColorTarget: ColorTarget, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, colorDeltaColor: Binding<VectorColor?>, onSetActiveColor: @escaping (VectorColor) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, onColorSelected: ((VectorColor) -> Void)? = nil, disableSetActiveColor: Bool = false, onDismiss: (() -> Void)? = nil) {
         self._sharedColor = sharedColor
         self.activeColorTarget = activeColorTarget
@@ -24,7 +22,6 @@ struct CMYKInputSection: View {
         self.disableSetActiveColor = disableSetActiveColor
         self.onDismiss = onDismiss
     }
-
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
     @State private var yellowValue: String = "0"
@@ -35,13 +32,11 @@ struct CMYKInputSection: View {
     @State private var blackSlider: Double = 0
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
-
     private var currentColor: CMYKColor {
         let c = (Double(cyanValue) ?? 0) / 100.0
         let m = (Double(magentaValue) ?? 0) / 100.0
         let y = (Double(yellowValue) ?? 0) / 100.0
         let k = (Double(blackValue) ?? 0) / 100.0
-
         return CMYKColor(
             cyan: max(0, min(1, c)),
             magenta: max(0, min(1, m)),
@@ -49,12 +44,10 @@ struct CMYKInputSection: View {
             black: max(0, min(1, k))
         )
     }
-
     private func swiftUIColorFromCMYK(c: Double, m: Double, y: Double, k: Double) -> Color {
         let cmykColor = CMYKColor(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)
         return cmykColor.color
     }
-
     private var cyanGradient: SwiftUI.LinearGradient {
         let m = Double(magentaValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -68,7 +61,6 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-
     private var magentaGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -82,7 +74,6 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-
     private var yellowGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -96,7 +87,6 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-
     private var blackGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -110,7 +100,6 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 8) {
@@ -118,12 +107,10 @@ struct CMYKInputSection: View {
                     Circle()
                         .fill(Color.cyan)
                         .frame(width: 12, height: 12)
-
                     Text("C")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -132,12 +119,10 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
                         Capsule()
                             .fill(cyanGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-
                         Slider(value: $cyanSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -146,7 +131,6 @@ struct CMYKInputSection: View {
                                 updateSharedColor()
                             }
                     }
-
                     TextField("", text: $cyanValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -159,17 +143,14 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.pink)
                         .frame(width: 12, height: 12)
-
                     Text("M")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -178,12 +159,10 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
                         Capsule()
                             .fill(magentaGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-
                         Slider(value: $magentaSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -192,7 +171,6 @@ struct CMYKInputSection: View {
                                 updateSharedColor()
                             }
                     }
-
                     TextField("", text: $magentaValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -205,17 +183,14 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.yellow)
                         .frame(width: 12, height: 12)
-
                     Text("Y")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -224,12 +199,10 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
                         Capsule()
                             .fill(yellowGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-
                         Slider(value: $yellowSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -238,7 +211,6 @@ struct CMYKInputSection: View {
                                 updateSharedColor()
                             }
                     }
-
                     TextField("", text: $yellowValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -251,17 +223,14 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.black)
                         .frame(width: 12, height: 12)
-
                     Text("K")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -270,12 +239,10 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
                         Capsule()
                             .fill(blackGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-
                         Slider(value: $blackSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -284,7 +251,6 @@ struct CMYKInputSection: View {
                                 updateSharedColor()
                             }
                     }
-
                     TextField("", text: $blackValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -298,7 +264,6 @@ struct CMYKInputSection: View {
                         }
                 }
             }
-
             HStack(spacing: 8) {
                 Button(action: {
                     applyColorToActiveSelection()
@@ -316,19 +281,16 @@ struct CMYKInputSection: View {
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Click to apply color to active fill or stroke")
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text("CMYK(\(Int(currentColor.cyan * 100)), \(Int(currentColor.magenta * 100)), \(Int(currentColor.yellow * 100)), \(Int(currentColor.black * 100)))")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.primary)
-
                     Button("Add Swatch") {
                         addCMYKColorToSwatches()
                     }
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
                 }
-
                 Spacer()
             }
         }
@@ -340,31 +302,24 @@ struct CMYKInputSection: View {
             loadFromSharedColor()
         }
     }
-
     private func updateSharedColor() {
         if isDisplayingGradient {
             return
         }
-
         let cmykColor = VectorColor.cmyk(currentColor)
         sharedColor = cmykColor
-
         if isProgrammaticallyUpdating {
             return
         }
-
         colorDeltaColor = cmykColor
-
         if activeColorTarget == .fill {
             defaultFillColor = cmykColor
         } else {
             defaultStrokeColor = cmykColor
         }
     }
-
     private func loadFromSharedColor() {
         isDisplayingGradient = false
-
         switch sharedColor {
         case .rgb(let rgb):
             let cmyk = ColorManagement.rgbToCMYK(rgb)
@@ -449,9 +404,7 @@ struct CMYKInputSection: View {
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
         }
     }
-
     private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
-
         isProgrammaticallyUpdating = true
         cyanValue = String(cyan)
         magentaValue = String(magenta)
@@ -462,18 +415,14 @@ struct CMYKInputSection: View {
         yellowSlider = Double(yellow)
         blackSlider = Double(black)
         isProgrammaticallyUpdating = false
-
     }
-
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
-
         if !disableSetActiveColor {
             onSetActiveColor(vectorColor)
         }
         onAddColorSwatch(vectorColor)
     }
-
     private func addCMYKColorToSwatches() {
         let vectorColor = VectorColor.cmyk(currentColor)
         onAddColorSwatch(vectorColor)

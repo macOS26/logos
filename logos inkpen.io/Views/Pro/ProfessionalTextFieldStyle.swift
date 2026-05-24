@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ProfessionalTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration

@@ -1,10 +1,8 @@
 import SwiftUI
-
 struct PathOperationsPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -12,7 +10,6 @@ struct PathOperationsPanel: View {
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
-
                 Button {
                 } label: {
                     Image(systemName: "info.circle")
@@ -25,7 +22,6 @@ struct PathOperationsPanel: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 12)
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -34,7 +30,6 @@ struct PathOperationsPanel: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
-
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                     ForEach([PathfinderOperation.union, .minusFront, .intersect, .exclude], id: \.self) { operation in
                         PathfinderOperationButton(
@@ -47,14 +42,12 @@ struct PathOperationsPanel: View {
                 }
                 .padding(.horizontal, 16)
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Path Operations Effects")
                         .font(.caption)
                     .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
-
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                                             ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick, .combine], id: \.self) { operation in
                         PathfinderOperationButton(
@@ -67,19 +60,16 @@ struct PathOperationsPanel: View {
                 }
                 .padding(.horizontal, 16)
             }
-
             ProfessionalOffsetPathSection(
                 selectedObjectIDs: selectedObjectIDs,
                 document: document
             )
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Path Cleanup")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
-
                 VStack(spacing: 8) {
                     Button {
                         mergeCoincidentPointsInSelectedShapes()
@@ -92,7 +82,6 @@ struct PathOperationsPanel: View {
                         mergeCoincidentPointsInSelectedShapes()
                     }
                     .help("Merge coincident points in selected shapes (excluding start and end points)")
-
                     Button {
                         removeOverlapFromSelectedShapes()
                     } label: {
@@ -104,7 +93,6 @@ struct PathOperationsPanel: View {
                         removeOverlapFromSelectedShapes()
                     }
                     .help("Remove self-intersections and overlapping areas within selected shapes")
-
                     Button {
                         removeOverlapFromAllShapes()
                     } label: {
@@ -119,14 +107,12 @@ struct PathOperationsPanel: View {
                 }
                 .padding(.horizontal, 16)
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Clipping Masks")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Allow Content Selection")
@@ -136,9 +122,7 @@ struct PathOperationsPanel: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-
                     Spacer()
-
                     Toggle("", isOn: Binding(
                         get: { AppState.shared.enableClippingMaskContentSelection },
                         set: { AppState.shared.enableClippingMaskContentSelection = $0 }
@@ -147,7 +131,6 @@ struct PathOperationsPanel: View {
                     .controlSize(.small)
                 }
                 .padding(.horizontal, 16)
-
                 VStack(spacing: 8) {
                     Button {
                         document.makeClippingMaskFromSelection()
@@ -159,7 +142,6 @@ struct PathOperationsPanel: View {
                     .onTapGesture {
                         document.makeClippingMaskFromSelection()
                     }
-
                     Button {
                         document.releaseClippingMaskForSelection()
                     } label: {
@@ -173,38 +155,29 @@ struct PathOperationsPanel: View {
                 }
                 .padding(.horizontal, 16)
             }
-
             Spacer()
                 }
             }
         }
     }
-
     private func canPerformOperation(_ operation: PathfinderOperation) -> Bool {
         let selectedShapes = document.getSelectedShapes()
         let paths = selectedShapes.map { $0.path.cgPath }
         return ProfessionalPathOperations.canPerformOperation(operation, on: paths)
     }
-
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
-
         _ = document.performPathfinderOperation(operation)
     }
-
     private func removeOverlapFromSelectedShapes() {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return }
-
         let selectedShapes = document.getSelectedShapes()
         var processedCount = 0
-
         for shape in selectedShapes {
             if removeOverlapFromShape(shape) {
                 processedCount += 1
             }
         }
-
     }
-
     private func removeOverlapFromAllShapes() {
         let allShapes = document.snapshot.objects.values.compactMap { obj -> VectorShape? in
             if case .shape(let shape) = obj.objectType {
@@ -213,67 +186,50 @@ struct PathOperationsPanel: View {
             return nil
         }
         guard !allShapes.isEmpty else { return }
-
         var processedCount = 0
-
         for shape in allShapes {
             if removeOverlapFromShape(shape) {
                 processedCount += 1
             }
         }
-
     }
-
     @discardableResult
     private func removeOverlapFromShape(_ shape: VectorShape) -> Bool {
         let originalPath = shape.path.cgPath
-
         guard !originalPath.isEmpty && !originalPath.boundingBox.isNull && !originalPath.boundingBox.isInfinite else {
             return false
         }
-
         if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
             guard !cleanedPath.isEmpty && !cleanedPath.boundingBox.isNull && !cleanedPath.boundingBox.isInfinite else {
                 return false
             }
-
             if let layerIndex = document.snapshot.layers.firstIndex(where: { layer in
                 document.getShapesForLayer(document.snapshot.layers.firstIndex(of: layer) ?? -1).contains { $0.id == shape.id }
             }),
                document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-
                 document.updateShapePathUnified(id: shape.id, path: VectorPath(cgPath: cleanedPath))
-
                 return true
             }
         }
-
         Log.error("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)", category: .error)
         return false
     }
-
     private func mergeCoincidentPointsInSelectedShapes() {
         guard !document.viewState.selectedObjectIDs.isEmpty else {
             Log.info("No shapes selected", category: .general)
             return
         }
-
         let selectedShapes = document.getSelectedShapes()
         let tolerance: Double = 1.0
-
         Log.info("Merging ALL coincident points in \(selectedShapes.count) shapes (tolerance: \(tolerance))", category: .general)
-
         for shape in selectedShapes {
             let originalCount = shape.path.elements.count
             let cleanedPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: shape.path, tolerance: tolerance)
             let newCount = cleanedPath.elements.count
-
             Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements (removed \(originalCount - newCount))", category: .general)
-
             if newCount != originalCount {
                 document.updateShapePathUnified(id: shape.id, path: cleanedPath)
             }
         }
     }
-
 }

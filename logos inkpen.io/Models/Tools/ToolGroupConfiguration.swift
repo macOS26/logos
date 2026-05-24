@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ToolGroupConfiguration {
     static let toolGroupConfig: [String: [DrawingTool]] = [
         "selection": [.selection, .cornerRadius],
@@ -15,17 +14,14 @@ struct ToolGroupConfiguration {
         "navigation": [.hand, .zoom],
         "utilities": [.eyedropper, .selectSameColor, .gradient]
     ]
-
     static func getToolGroup(for tool: DrawingTool) -> [DrawingTool] {
         for (_, tools) in toolGroupConfig {
             if tools.contains(tool) {
                 return tools
             }
         }
-
         return [tool]
     }
-
     static func getToolGroupName(for tool: DrawingTool) -> String? {
         for (groupName, tools) in toolGroupConfig {
             if tools.contains(tool) {
@@ -34,7 +30,6 @@ struct ToolGroupConfiguration {
         }
         return nil
     }
-
     static func getAllToolGroupsAsArrays() -> [[DrawingTool]] {
         let orderedGroupNames = [
             "selection",
@@ -51,9 +46,7 @@ struct ToolGroupConfiguration {
             "utilities",
             "navigation"
         ]
-
         var allGroups: [[DrawingTool]] = []
-
         for groupName in orderedGroupNames {
             if let group = toolGroupConfig[groupName] {
                 allGroups.append(group)
@@ -61,7 +54,6 @@ struct ToolGroupConfiguration {
                 allGroups.append([.font])
             }
         }
-
         return allGroups
     }
 }

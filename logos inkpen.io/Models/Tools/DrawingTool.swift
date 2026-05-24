@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum DrawingTool: String, CaseIterable, Codable {
     case selection = "Selection"
     case directSelection = "Direct Selection"
@@ -41,7 +40,6 @@ enum DrawingTool: String, CaseIterable, Codable {
     case zoom = "Zoom"
     case gradient = "Gradient"
     case cornerRadius = "Corner Radius"
-
     var iconName: String {
         switch self {
         case .selection: return "arrow.up.left"

@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct FontSizeControls: View {
     let selectedObjectIDs: Set<UUID>
     let selectedFontSize: CGFloat
@@ -12,7 +11,6 @@ struct FontSizeControls: View {
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
     @Binding var letterSpacingDelta: Double?
-
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
     @State private var isDraggingLineHeight = false
@@ -25,7 +23,6 @@ struct FontSizeControls: View {
     @State private var currentLineSpacingState: CGFloat = 0.0
     @State private var currentLineHeightState: CGFloat = 12.0
     @State private var currentLetterSpacingState: CGFloat = 0.0
-
     private var currentFontSize: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.fontSize
@@ -35,7 +32,6 @@ struct FontSizeControls: View {
             return selectedFontSize
         }
     }
-
     private var currentLineSpacing: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.lineSpacing
@@ -45,7 +41,6 @@ struct FontSizeControls: View {
             return selectedLineSpacing
         }
     }
-
     private var currentLineHeight: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.lineHeight
@@ -55,7 +50,6 @@ struct FontSizeControls: View {
             return selectedLineHeight
         }
     }
-
     private var currentLetterSpacing: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.letterSpacing
@@ -65,7 +59,6 @@ struct FontSizeControls: View {
             return 0.0
         }
     }
-
     var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
@@ -79,7 +72,6 @@ struct FontSizeControls: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-
                 Slider(value: Binding(
                     get: { previewFontSize ?? currentFontSizeState },
                     set: { newSize in
@@ -99,7 +91,6 @@ struct FontSizeControls: View {
                 })
                 .controlSize(.regular)
             }
-
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Line Spacing")
@@ -112,7 +103,6 @@ struct FontSizeControls: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-
                 Slider(value: Binding(
                     get: { previewLineSpacing ?? currentLineSpacingState },
                     set: { newSpacing in
@@ -132,7 +122,6 @@ struct FontSizeControls: View {
                 })
                 .controlSize(.regular)
             }
-
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Line Height")
@@ -144,7 +133,6 @@ struct FontSizeControls: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-
                 Slider(value: Binding(
                     get: { previewLineHeight ?? currentLineHeightState },
                     set: { newHeight in
@@ -164,7 +152,6 @@ struct FontSizeControls: View {
                 })
                 .controlSize(.regular)
             }
-
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Letter Spacing")
@@ -177,7 +164,6 @@ struct FontSizeControls: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-
                 Slider(value: Binding(
                     get: { previewLetterSpacing ?? currentLetterSpacingState },
                     set: { newSpacing in
@@ -205,29 +191,23 @@ struct FontSizeControls: View {
             syncFontStates()
         }
         .onChange(of: editingText?.id) { oldID, newID in
-
             syncFontStates()
         }
     }
-
     private func syncFontStates() {
         currentFontSizeState = currentFontSize
         currentLineSpacingState = currentLineSpacing
         currentLineHeightState = currentLineHeight
         currentLetterSpacingState = currentLetterSpacing
     }
-
     private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
-
         var affectedLayerIndices = Set<Int>()
-
         for textID in selectedObjectIDs {
             if let object = document.snapshot.objects[textID] {
                 affectedLayerIndices.insert(object.layerIndex)
             }
-
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -240,23 +220,17 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayerIndices)
-
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
     }
-
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
-
         var affectedLayerIndices = Set<Int>()
-
         for textID in selectedObjectIDs {
             if let object = document.snapshot.objects[textID] {
                 affectedLayerIndices.insert(object.layerIndex)
             }
-
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -266,21 +240,16 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineSpacing = Double(newSpacing)
     }
-
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
-
         var affectedLayerIndices = Set<Int>()
-
         for textID in selectedObjectIDs {
             if let object = document.snapshot.objects[textID] {
                 affectedLayerIndices.insert(object.layerIndex)
             }
-
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -290,21 +259,16 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineHeight = Double(newHeight)
     }
-
     private func updateLetterSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLetterSpacingState = newSpacing
-
         var affectedLayerIndices = Set<Int>()
-
         for textID in selectedObjectIDs {
             if let object = document.snapshot.objects[textID] {
                 affectedLayerIndices.insert(object.layerIndex)
             }
-
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(
                     strokeColor: shape.strokeStyle?.color ?? .black,
@@ -314,7 +278,6 @@ struct FontSizeControls: View {
                 shape.typography = typography
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayerIndices)
     }
 }

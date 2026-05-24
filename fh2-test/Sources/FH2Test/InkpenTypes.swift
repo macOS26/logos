@@ -1,12 +1,10 @@
 import Foundation
 import CoreGraphics
-
 struct VectorPoint {
     let x: Double
     let y: Double
     init(_ x: Double, _ y: Double) { self.x = x; self.y = y }
 }
-
 enum PathElement {
     case move(to: VectorPoint)
     case line(to: VectorPoint)
@@ -14,22 +12,18 @@ enum PathElement {
     case quadCurve(to: VectorPoint, control: VectorPoint)
     case close
 }
-
 struct RGBColor {
     let red: Double, green: Double, blue: Double, alpha: Double
     init(red: Double, green: Double, blue: Double, alpha: Double = 1.0) {
         self.red = red; self.green = green; self.blue = blue; self.alpha = alpha
     }
 }
-
 struct GradientStop {
     let position: Double
     let color: VectorColor
 }
-
 enum GradientUnits { case objectBoundingBox, userSpaceOnUse }
 enum GradientSpreadMethod { case pad, reflect, repeatSpread }
-
 struct LinearGradient {
     var id = UUID()
     var startPoint: CGPoint
@@ -38,25 +32,21 @@ struct LinearGradient {
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
 }
-
 struct RadialGradient {
     var id = UUID()
     var centerPoint: CGPoint
     var radius: Double
     var stops: [GradientStop]
 }
-
 enum VectorGradient {
     case linear(LinearGradient)
     case radial(RadialGradient)
 }
-
 enum VectorColor: Equatable {
     case rgb(RGBColor)
     case black
     case white
     case gradient(VectorGradient)
-
     static func == (lhs: VectorColor, rhs: VectorColor) -> Bool {
         switch (lhs, rhs) {
         case (.black, .black), (.white, .white): return true
@@ -65,7 +55,6 @@ enum VectorColor: Equatable {
         default: return false
         }
     }
-
     var rgbValues: (Double, Double, Double) {
         switch self {
         case .rgb(let c): return (c.red, c.green, c.blue)
@@ -75,19 +64,15 @@ enum VectorColor: Equatable {
         }
     }
 }
-
 enum FillRule { case winding, evenOdd }
-
 struct VectorPath {
     let elements: [PathElement]
     let isClosed: Bool
     let fillRule: FillRule
 }
-
 struct FillStyle {
     let color: VectorColor
 }
-
 struct StrokeStyle {
     let color: VectorColor
     let width: Double
@@ -95,11 +80,9 @@ struct StrokeStyle {
         self.color = color; self.width = width
     }
 }
-
 enum GeometricShapeType {
     case rectangle, square, circle, ellipse, triangle, pentagon, hexagon, line
 }
-
 struct VectorShape {
     var name: String
     let path: VectorPath
@@ -107,7 +90,6 @@ struct VectorShape {
     let strokeStyle: StrokeStyle?
     let fillStyle: FillStyle?
     let opacity: Double
-
     init(name: String, path: VectorPath, geometricType: GeometricShapeType?,
          strokeStyle: StrokeStyle?, fillStyle: FillStyle?, opacity: Double = 1.0,
          isCompoundPath: Bool = false) {
@@ -115,11 +97,9 @@ struct VectorShape {
         self.strokeStyle = strokeStyle; self.fillStyle = fillStyle; self.opacity = opacity
     }
 }
-
 enum FreeHandImportError: Error {
     case notSupported, parseFailed(code: Int), emptyOutput, allocationFailed
 }
-
 enum FreeHandDirectImporter {
     struct Stats {
         let paths, groups, clipGroups, compositePaths, newBlends, symbolInstances, contentIdPaths: Int
@@ -130,12 +110,10 @@ enum FreeHandDirectImporter {
         let stats: Stats
     }
 }
-
 struct PathShapeDetector {
     struct Detection { let type: GeometricShapeType; let name: String }
     static func detect(elements: [PathElement]) -> Detection? { return nil }
 }
-
 struct ApplicationSettings {
     static let shared = ApplicationSettings()
     let importFreeHandEffects = true

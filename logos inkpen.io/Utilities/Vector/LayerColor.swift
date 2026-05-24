@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct LayerColorName {
     static let maroon = "Maroon"
     static let red = "Red"
@@ -27,10 +26,8 @@ struct LayerColorName {
     static let rose = "Rose"
     static let gray = "Gray"
 }
-
 struct LayerColor: Equatable, Codable, Hashable {
     let name: String
-
     static let maroon = LayerColor(name: LayerColorName.maroon)
     static let red = LayerColor(name: LayerColorName.red)
     static let vermillion = LayerColor(name: LayerColorName.vermillion)

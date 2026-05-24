@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct StylusToggleButton: View {
     @Binding var isOn: Bool
     var label: String = ""
@@ -10,7 +9,6 @@ struct StylusToggleButton: View {
                 Text(label)
                     .foregroundColor(.primary)
             }
-
             Button {
                 isOn.toggle()
                 onChange?(isOn)
@@ -19,7 +17,6 @@ struct StylusToggleButton: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(isOn ? Color.accentColor : Color.gray.opacity(0.3))
                         .frame(width: 44, height: 24)
-
                     Circle()
                         .fill(Color.white)
                         .frame(width: 20, height: 20)

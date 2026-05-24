@@ -1,9 +1,7 @@
 import SwiftUI
-
 struct MarkerSettingsSection: View {
     @Environment(AppState.self) private var appState
     @ObservedObject private var settings = ApplicationSettings.shared
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -14,7 +12,6 @@ struct MarkerSettingsSection: View {
                     .foregroundColor(Color.ui.primaryText)
                 Spacer()
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Tip Size")
@@ -26,12 +23,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerTipSize, in: 1...50)
                 .controlSize(.regular)
                 .help("Adjust marker tip thickness (1-50 points)")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -43,12 +38,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerOpacity, in: 0...1)
                 .controlSize(.regular)
                 .help("Adjust marker ink opacity (0-100%)")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Pressure Sensitivity")
@@ -64,7 +57,6 @@ struct MarkerSettingsSection: View {
                 }
                 .help("Enable or disable pressure sensitivity for marker tool")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothing")
@@ -76,12 +68,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerSmoothingTolerance, in: 0...100)
                 .controlSize(.regular)
                 .help("Smoothing amount - 0% = no smoothing (preserves exact shape), 100% = maximum smoothing")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Feathering")
@@ -93,12 +83,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerFeathering, in: 0...1)
                 .controlSize(.regular)
                 .help("Edge softness for felt-tip marker appearance")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Start Taper")
@@ -110,12 +98,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerTaperStart, in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the start of marker strokes")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("End Taper")
@@ -127,12 +113,10 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerTaperEnd, in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the end of marker strokes")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Min Taper Thickness")
@@ -144,16 +128,13 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.currentMarkerMinTaperThickness, in: 0...60)
                 .controlSize(.regular)
                 .help("Minimum thickness at taper ends (0-60 points)")
             }
-
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                     .padding(.vertical, 4)
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Use Fill Color for Stroke")
@@ -169,7 +150,6 @@ struct MarkerSettingsSection: View {
                     .controlSize(.small)
                     .help("When enabled, marker uses fill color for both fill and stroke. When disabled, uses stroke color for both.")
                 }
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apply No Stroke")
@@ -185,7 +165,6 @@ struct MarkerSettingsSection: View {
                     .controlSize(.small)
                     .help("When enabled, marker shapes will have no stroke regardless of current stroke settings")
                 }
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
@@ -202,7 +181,6 @@ struct MarkerSettingsSection: View {
                     .help("When enabled, overlapping parts of marker strokes will be merged using union operation")
                 }
             }
-
             HStack {
                 Image(systemName: PressureManager.shared.hasRealPressureInput ? "hand.point.up.braille" : "hand.tap")
                     .foregroundColor(PressureManager.shared.hasRealPressureInput ? .green : .orange)

@@ -1,8 +1,6 @@
 import SwiftUI
-
 extension FileOperations {
     static func exportToSVG(_ document: VectorDocument, url: URL, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws {
-
         do {
             let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
             try svgContent.write(to: url, atomically: true, encoding: .utf8)

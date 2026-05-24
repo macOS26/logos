@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct SPOTColor: Codable, Hashable {
     var number: String
     var name: String

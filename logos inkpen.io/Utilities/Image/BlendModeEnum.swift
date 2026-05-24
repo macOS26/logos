@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum BlendMode: String, CaseIterable, Codable {
     case normal = "Normal"
     case multiply = "Multiply"
@@ -17,15 +16,12 @@ enum BlendMode: String, CaseIterable, Codable {
     case saturation = "Saturation"
     case color = "Color"
     case luminosity = "Luminosity"
-
     var displayName: String {
         return rawValue
     }
-
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
-
         if let mode = BlendMode(rawValue: rawValue) {
             self = mode
         } else {
@@ -33,7 +29,6 @@ enum BlendMode: String, CaseIterable, Codable {
             self = .normal
         }
     }
-
     var cgBlendMode: CGBlendMode {
         switch self {
         case .normal: return .normal
@@ -54,7 +49,6 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return .luminosity
         }
     }
-
     var svgBlendMode: String {
         switch self {
         case .normal: return "normal"
@@ -75,7 +69,6 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return "luminosity"
         }
     }
-
     var swiftUIBlendMode: SwiftUI.BlendMode {
         switch self {
         case .normal: return .normal

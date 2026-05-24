@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-
 class TextManagementCommand: BaseCommand {
     enum Operation {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
@@ -8,17 +7,14 @@ class TextManagementCommand: BaseCommand {
         case duplicateText(originalIDs: [UUID], duplicatedObjects: [UUID: VectorObject])
         case convertToOutlines(removedTextIDs: [UUID], removedObjects: [UUID: VectorObject], removedPositions: [UUID: Int], addedShapeIDs: [UUID], addedObjects: [UUID: VectorObject])
     }
-
     private let operation: Operation
     private let oldSelection: Set<UUID>
     private let newSelection: Set<UUID>
-
     init(operation: Operation, oldSelection: Set<UUID>, newSelection: Set<UUID>) {
         self.operation = operation
         self.oldSelection = oldSelection
         self.newSelection = newSelection
     }
-
     override func execute(on document: VectorDocument) {
         switch operation {
         case .addText(let textID, let shape, let layerIndex):
@@ -28,7 +24,6 @@ class TextManagementCommand: BaseCommand {
                 document.snapshot.layers[layerIndex].objectIDs.append(textID)
             }
             document.viewState.selectedObjectIDs = [textID]
-
         case .removeText(let textIDs, _, _):
             for textID in textIDs {
                 if let obj = document.snapshot.objects[textID] {
@@ -39,7 +34,6 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
-
         case .duplicateText(_, let duplicatedObjects):
             for (uuid, obj) in duplicatedObjects {
                 document.snapshot.objects[uuid] = obj
@@ -48,7 +42,6 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.viewState.selectedObjectIDs = newSelection
-
         case .convertToOutlines(let removedTextIDs, _, _, _, let addedObjects):
             for textID in removedTextIDs {
                 if let obj = document.snapshot.objects[textID] {
@@ -63,7 +56,6 @@ class TextManagementCommand: BaseCommand {
             document.viewState.selectedObjectIDs = newSelection
         }
     }
-
     override func undo(on document: VectorDocument) {
         switch operation {
         case .addText(let textID, _, _):
@@ -74,9 +66,7 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
-
         case .removeText(_, let removedObjects, let removedPositions):
-
             let sorted = removedObjects.sorted { a, b in
                 (removedPositions[a.key] ?? Int.max) < (removedPositions[b.key] ?? Int.max)
             }
@@ -92,7 +82,6 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
-
         case .duplicateText(_, let duplicatedObjects):
             for (uuid, obj) in duplicatedObjects {
                 document.snapshot.objects.removeValue(forKey: uuid)
@@ -101,7 +90,6 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.viewState.selectedObjectIDs = oldSelection
-
         case .convertToOutlines(_, let removedObjects, let removedPositions, let addedShapeIDs, _):
             for shapeID in addedShapeIDs {
                 if let obj = document.snapshot.objects[shapeID] {

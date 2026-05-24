@@ -1,9 +1,7 @@
 import SwiftUI
-
 enum VectorGradient: Codable, Hashable {
     case linear(LinearGradient)
     case radial(RadialGradient)
-
     var stops: [GradientStop] {
         switch self {
         case .linear(let gradient):
@@ -12,7 +10,6 @@ enum VectorGradient: Codable, Hashable {
             return gradient.stops
         }
     }
-
     var signature: String {
         func stopSig(_ s: GradientStop) -> String {
             switch s.color {
@@ -38,7 +35,6 @@ enum VectorGradient: Codable, Hashable {
                 return "p=\(s.position),gradref,so=\(s.opacity)"
             }
         }
-
         switch self {
         case .linear(let lg):
             let stopsSig = lg.stops.map(stopSig).joined(separator: "|")

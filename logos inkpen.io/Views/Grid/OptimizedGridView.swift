@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct OptimizedGridView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -7,7 +6,6 @@ struct OptimizedGridView: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let pageOrigin: CGPoint
-
     var body: some View {
         Canvas { context, size in
             let baseSpacing = gridSpacing * unit.pointsPerUnit
@@ -25,40 +23,31 @@ struct OptimizedGridView: View {
             }()
             let actualGridSpacing = baseSpacing * spacingMultiplier
             let majorGridInterval = unit.majorGridInterval
-
             let tileSize = actualGridSpacing * CGFloat(majorGridInterval)
-
             let shouldShowMinor = zoomLevel > 0.5
             let minorLineWidth: CGFloat = 0.625
             let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.3125 : 0.625
-
             let (minorPattern, majorPattern) = createTilePatterns(
                 tileSize: tileSize,
                 gridSpacing: actualGridSpacing,
                 majorInterval: majorGridInterval,
                 showMinor: shouldShowMinor
             )
-
             let visibleStartX = max(0, -canvasOffset.x / zoomLevel)
             let visibleEndX = min(canvasSize.width, (size.width - canvasOffset.x) / zoomLevel)
             let visibleStartY = max(0, -canvasOffset.y / zoomLevel)
             let visibleEndY = min(canvasSize.height, (size.height - canvasOffset.y) / zoomLevel)
-
             let offsetFromOriginX = (visibleStartX - pageOrigin.x) / tileSize
             let offsetFromOriginY = (visibleStartY - pageOrigin.y) / tileSize
-
             let tileStartX = Int(floor(offsetFromOriginX))
             let tileEndX = Int(ceil((visibleEndX - pageOrigin.x) / tileSize))
             let tileStartY = Int(floor(offsetFromOriginY))
             let tileEndY = Int(ceil((visibleEndY - pageOrigin.y) / tileSize))
-
             guard tileStartX <= tileEndX && tileStartY <= tileEndY else { return }
-
             for tileX in tileStartX...tileEndX {
                 for tileY in tileStartY...tileEndY {
                     let x = pageOrigin.x + CGFloat(tileX) * tileSize
                     let y = pageOrigin.y + CGFloat(tileY) * tileSize
-
                     if x < canvasSize.width && y < canvasSize.height {
                         var transform = CGAffineTransform.identity
                         transform = transform.translatedBy(
@@ -66,7 +55,6 @@ struct OptimizedGridView: View {
                             y: y * zoomLevel + canvasOffset.y
                         )
                         transform = transform.scaledBy(x: zoomLevel, y: zoomLevel)
-
                         if shouldShowMinor && !minorPattern.isEmpty {
                             let transformedMinor = minorPattern.applying(transform)
                             context.stroke(
@@ -75,7 +63,6 @@ struct OptimizedGridView: View {
                                 lineWidth: minorLineWidth
                             )
                         }
-
                         if !majorPattern.isEmpty {
                             let transformedMajor = majorPattern.applying(transform)
                             context.stroke(
@@ -87,11 +74,8 @@ struct OptimizedGridView: View {
                     }
                 }
             }
-
         }
-
     }
-
     private func createTilePatterns(
         tileSize: CGFloat,
         gridSpacing: CGFloat,
@@ -100,7 +84,6 @@ struct OptimizedGridView: View {
     ) -> (minor: Path, major: Path) {
         var minorPath = Path()
         var majorPath = Path()
-
         if showMinor {
             for i in 1..<majorInterval {
                 let offset = CGFloat(i) * gridSpacing
@@ -110,7 +93,6 @@ struct OptimizedGridView: View {
                 minorPath.addLine(to: CGPoint(x: tileSize, y: offset))
             }
         }
-
         majorPath.move(to: CGPoint(x: 0, y: 0))
         majorPath.addLine(to: CGPoint(x: 0, y: tileSize))
         majorPath.move(to: CGPoint(x: 0, y: 0))
@@ -119,7 +101,6 @@ struct OptimizedGridView: View {
         majorPath.addLine(to: CGPoint(x: tileSize, y: tileSize))
         majorPath.move(to: CGPoint(x: 0, y: tileSize))
         majorPath.addLine(to: CGPoint(x: tileSize, y: tileSize))
-
         return (minorPath, majorPath)
     }
 }

@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-
 struct ProfessionalOffsetPathSection: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
@@ -9,7 +8,6 @@ struct ProfessionalOffsetPathSection: View {
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
     @State private var keepOriginalPath: Bool = true
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -22,7 +20,6 @@ struct ProfessionalOffsetPathSection: View {
                         Image(systemName: showAdvanced ? "chevron.down" : "chevron.right")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-
                         Text("Offset Path")
                             .font(.caption)
                             .fontWeight(.semibold)
@@ -30,15 +27,12 @@ struct ProfessionalOffsetPathSection: View {
                     }
                 }
                 .buttonStyle(BorderlessButtonStyle())
-
                 Spacer()
-
                 Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, 12)
-
             if showAdvanced {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -46,17 +40,13 @@ struct ProfessionalOffsetPathSection: View {
                             Text("Offset:")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
-
                             Spacer()
-
                             Text(String(format: "%.1f %@", offsetDistance, document.settings.unit.abbreviation))
                                 .font(.caption2)
                                 .foregroundColor(.primary)
                                 .monospacedDigit()
                         }
-
                         ZStack {
-
                             let maxOffset: Double = {
                                 switch document.settings.unit {
                                 case .inches: return 1.0
@@ -70,7 +60,6 @@ struct ProfessionalOffsetPathSection: View {
                             Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
                             .controlSize(.regular)
                             .tint(Color.clear)
-
                             Capsule()
                                 .fill(
                                     SwiftUI.LinearGradient(
@@ -87,7 +76,6 @@ struct ProfessionalOffsetPathSection: View {
                                 .allowsHitTesting(false)
                         }
                     }
-
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Keep Original Path")
@@ -97,20 +85,16 @@ struct ProfessionalOffsetPathSection: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-
                         Spacer()
-
                         Toggle("", isOn: $keepOriginalPath)
                             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                             .controlSize(.small)
                     }
                     .help("Keep the original path when creating offset (Professional default)")
-
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Joins:")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-
                         HStack(spacing: 6) {
                             ForEach([JoinType.round, .square, .bevel, .miter], id: \.self) { joinType in
                                 Button {
@@ -119,7 +103,6 @@ struct ProfessionalOffsetPathSection: View {
                                     VStack(spacing: 2) {
                                         Image(systemName: joinType.iconName)
                                             .font(.system(size: 12))
-
                                         Text(joinType.displayName)
                                             .font(.caption2)
                                     }
@@ -141,22 +124,18 @@ struct ProfessionalOffsetPathSection: View {
                             }
                         }
                     }
-
                     if selectedJoinType == .miter {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Miter Limit:")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
-
                                 Spacer()
-
                                 Text("\(miterLimit, specifier: "%.1f")")
                                     .font(.caption2)
                                     .foregroundColor(.primary)
                                     .monospacedDigit()
                             }
-
                             ZStack {
                                 Capsule()
                                     .fill(Color.white)
@@ -165,13 +144,11 @@ struct ProfessionalOffsetPathSection: View {
                                         Capsule()
                                             .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                                     )
-
                                 Slider(value: $miterLimit, in: 1.0...20.0) {
                                     Text("Miter Limit")
                                 }
                                 .controlSize(.regular)
                                 .tint(Color.clear)
-
                                 Capsule()
                                     .fill(Color.blue)
                                     .frame(height: 6)
@@ -180,7 +157,6 @@ struct ProfessionalOffsetPathSection: View {
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-
                     Button {
                         performOffsetPath()
                     } label: {
@@ -211,7 +187,6 @@ struct ProfessionalOffsetPathSection: View {
             }
         }
         .onChange(of: document.settings.unit) { _, newUnit in
-
             let maxOffset: Double = {
                 switch newUnit {
                 case .inches: return 1.0
@@ -225,27 +200,22 @@ struct ProfessionalOffsetPathSection: View {
             offsetDistance = min(max(offsetDistance, -maxOffset), maxOffset)
         }
     }
-
     private func canPerformOffset() -> Bool {
         return !selectedObjectIDs.isEmpty
     }
-
     private func performOffsetPath() {
         guard !selectedObjectIDs.isEmpty else { return }
         guard let layerIndex = document.selectedLayerIndex else { return }
-
         let selectedShapes = document.getSelectedShapes()
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         var removedObjectIDs: [UUID] = []
-
         for shape in selectedShapes {
             oldShapes[shape.id] = shape
             if !keepOriginalPath {
                 removedObjectIDs.append(shape.id)
             }
         }
-
         let unit = document.settings.unit
         for shape in selectedShapes {
             let offsetInPoints = CGFloat(unit.toPoints(offsetDistance))
@@ -253,9 +223,7 @@ struct ProfessionalOffsetPathSection: View {
                                                     lineCap: .round,
                                                     lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
                                                     miterLimit: CGFloat(miterLimit))
-
             var finalPath: CGPath
-
             if offsetDistance >= 0 {
                 if let unionResult = CoreGraphicsPathOperations.union(shape.path.cgPath, offsetPath, using: .winding) {
                     finalPath = unionResult
@@ -263,11 +231,9 @@ struct ProfessionalOffsetPathSection: View {
                     finalPath = offsetPath
                 }
             } else {
-
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
                     finalPath = subtractResult
                 } else {
-
                     DispatchQueue.main.async {
                         let alert = NSAlert()
                         alert.messageText = "Invalid Offset Value"
@@ -278,7 +244,6 @@ struct ProfessionalOffsetPathSection: View {
                     continue
                 }
             }
-
             let offsetVectorPath = VectorPath(cgPath: finalPath)
             let offsetSign = offsetDistance > 0 ? "+" : ""
             let offsetShape = VectorShape(
@@ -289,10 +254,8 @@ struct ProfessionalOffsetPathSection: View {
                 transform: shape.transform,
                 opacity: shape.opacity
             )
-
             newShapes[offsetShape.id] = offsetShape
         }
-
         let placeBehind = offsetDistance > 0 && keepOriginalPath
         let command = GroupCommand(
             operation: .pathOperation,
@@ -306,11 +269,9 @@ struct ProfessionalOffsetPathSection: View {
             behindObjectIDs: placeBehind ? Set(oldShapes.keys) : []
         )
         document.executeCommand(command)
-
         document.viewState.selectedObjectIDs = Set(newShapes.keys)
         document.viewState.orderedSelectedObjectIDs = Array(newShapes.keys)
     }
-
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
         switch joinType {
         case .round: return .round
@@ -319,27 +280,22 @@ struct ProfessionalOffsetPathSection: View {
         case .square: return .miter
         }
     }
-
     private func findOutsidePath(from trimmedPaths: [CGPath], original: CGPath, offset: CGPath) -> CGPath? {
         guard !trimmedPaths.isEmpty else { return nil }
-
         let offsetBounds = offset.boundingBoxOfPath
         var bestPath: CGPath?
         var bestScore: CGFloat = 0
-
         for path in trimmedPaths {
             let pathBounds = path.boundingBoxOfPath
             let pathArea = pathBounds.width * pathBounds.height
             let areaScore = pathArea
             let proximityScore = pathBounds.intersection(offsetBounds).width * pathBounds.intersection(offsetBounds).height
             let totalScore = areaScore + proximityScore * 2.0
-
             if totalScore > bestScore {
                 bestScore = totalScore
                 bestPath = path
             }
         }
-
         return bestPath ?? trimmedPaths.first
     }
 }

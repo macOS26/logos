@@ -1,22 +1,16 @@
 import SwiftUI
 import UniformTypeIdentifiers
-
 final class ColorExportManager {
-
     static let shared = ColorExportManager()
-
     private init() {}
-
     enum ExportFormat {
         case png
     }
-
     enum ColorSpaceOption {
         case displayP3
         case sRGB
         case adobeRGB
     }
-
     @discardableResult
     func exportImage(
         _ cgImage: CGImage,
@@ -24,16 +18,13 @@ final class ColorExportManager {
         colorSpace: ColorSpaceOption = .displayP3,
         to outputURL: URL
     ) throws -> Bool {
-
         let ciImage = CIImage(cgImage: cgImage)
         let targetColorSpace = getColorSpace(for: colorSpace)
-
         let convertedCIImage = ciImage.matchedFromWorkingSpace(to: targetColorSpace) ?? ciImage
         let context = CIContext(options: [
             .workingColorSpace: targetColorSpace,
             .outputColorSpace: targetColorSpace
         ])
-
         guard let finalCGImage = context.createCGImage(
             convertedCIImage,
             from: convertedCIImage.extent,
@@ -42,19 +33,16 @@ final class ColorExportManager {
         ) else {
             throw ExportError.imageConversionFailed
         }
-
         switch format {
         case .png:
             return try exportAsPNG(finalCGImage, colorSpace: colorSpace, to: outputURL)
         }
     }
-
     private func exportAsPNG(
         _ cgImage: CGImage,
         colorSpace: ColorSpaceOption,
         to outputURL: URL
     ) throws -> Bool {
-
         guard let destination = CGImageDestinationCreateWithURL(
             outputURL as CFURL,
             UTType.png.identifier as CFString,
@@ -63,21 +51,15 @@ final class ColorExportManager {
         ) else {
             throw ExportError.destinationCreationFailed
         }
-
         let properties = getImageProperties(for: colorSpace)
-
         CGImageDestinationAddImage(destination, cgImage, properties as CFDictionary)
-
         let fileProperties = getFileProperties(for: colorSpace)
         CGImageDestinationSetProperties(destination, fileProperties as CFDictionary)
-
         guard CGImageDestinationFinalize(destination) else {
             throw ExportError.finalizationFailed
         }
-
         return true
     }
-
     private func getColorSpace(for option: ColorSpaceOption) -> CGColorSpace {
         switch option {
         case .displayP3:
@@ -88,7 +70,6 @@ final class ColorExportManager {
             return CGColorSpace(name: CGColorSpace.adobeRGB1998) ?? ColorManager.shared.sRGBCG
         }
     }
-
     private func getProfileName(for option: ColorSpaceOption) -> String {
         switch option {
         case .displayP3:
@@ -99,7 +80,6 @@ final class ColorExportManager {
             return "Adobe RGB (1998)"
         }
     }
-
     private func getImageProperties(for colorSpace: ColorSpaceOption) -> [CFString: Any] {
         return [
             kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
@@ -107,19 +87,16 @@ final class ColorExportManager {
             kCGImagePropertyHasAlpha: true as CFBoolean
         ]
     }
-
     private func getFileProperties(for colorSpace: ColorSpaceOption) -> [CFString: Any] {
         return [
             kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
             kCGImagePropertyProfileName: getProfileName(for: colorSpace) as CFString
         ]
     }
-
     enum ExportError: LocalizedError {
         case imageConversionFailed
         case destinationCreationFailed
         case finalizationFailed
-
         var errorDescription: String? {
             switch self {
             case .imageConversionFailed:
@@ -132,9 +109,7 @@ final class ColorExportManager {
         }
     }
 }
-
 extension ColorExportManager {
-
     @discardableResult
     func exportFromContext(
         _ context: CGContext,
@@ -142,11 +117,9 @@ extension ColorExportManager {
         colorSpace: ColorSpaceOption = .displayP3,
         to outputURL: URL
     ) throws -> Bool {
-
         guard let cgImage = context.makeImage() else {
             throw ExportError.imageConversionFailed
         }
-
         return try exportImage(cgImage, format: format, colorSpace: colorSpace, to: outputURL)
     }
 }

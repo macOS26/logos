@@ -1,5 +1,4 @@
 import SwiftUI
-
 extension DrawingCanvas {
     @ViewBuilder
     internal var directSelectionContextMenu: some View {
@@ -8,35 +7,28 @@ extension DrawingCanvas {
                 closeBezierPath()
             }
                             .keyboardShortcut("j", modifiers: [.command])
-
             Button("Finish Path (Open)") {
                 finishBezierPath()
             }
             .keyboardShortcut(.return)
-
             Button("Cancel Path") {
                 cancelBezierDrawing()
             }
             .keyboardShortcut(.escape)
         }
-
         if document.viewState.currentTool == .directSelection && !selectedPoints.isEmpty {
             Button("Close Path") {
                 closeSelectedPaths()
             }
-
             Button("Delete Selected") {
                 deleteSelectedPoints()
             }
             .keyboardShortcut(.delete)
-
             Divider()
-
             Button("Analyze Coincident Points") {
                 analyzeCoincidentPoints()
             }
         }
-
         if !document.viewState.selectedObjectIDs.isEmpty {
             Divider()
             Button("Make Clipping Mask") {
@@ -48,5 +40,4 @@ extension DrawingCanvas {
             }
         }
     }
-
 }

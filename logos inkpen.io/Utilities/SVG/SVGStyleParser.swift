@@ -1,7 +1,5 @@
 import SwiftUI
-
 extension SVGParser {
-
     func parseStrokeStyle(_ attributes: [String: String]) -> StrokeStyle? {
         if let strokeWidth = attributes["stroke-width"] {
             let width = parseLength(strokeWidth) ?? 1.0
@@ -9,17 +7,14 @@ extension SVGParser {
                 return nil
             }
         }
-
         let stroke = attributes["stroke"] ?? "none"
         guard stroke != "none" else { return nil }
-
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
         let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
         let lineCap = parseLineCap(attributes["stroke-linecap"])
         let lineJoin = parseLineJoin(attributes["stroke-linejoin"])
         let miterLimit = parseLength(attributes["stroke-miterlimit"]) ?? 10.0
         let dashPattern = parseDashArray(attributes["stroke-dasharray"])
-
         if stroke.hasPrefix("url(#") && stroke.hasSuffix(")") {
             let gradientId = String(stroke.dropFirst(5).dropLast(1))
             if let gradient = gradientDefinitions[gradientId] {
@@ -28,11 +23,9 @@ extension SVGParser {
             Log.error("Gradient reference not found for stroke: \(gradientId)", category: .error)
             return StrokeStyle(color: .black, width: width, placement: .center, dashPattern: dashPattern, lineCap: lineCap, lineJoin: lineJoin, miterLimit: miterLimit, opacity: opacity)
         }
-
         let color = parseColor(stroke) ?? .black
         return StrokeStyle(color: color, width: width, placement: .center, dashPattern: dashPattern, lineCap: lineCap, lineJoin: lineJoin, miterLimit: miterLimit, opacity: opacity)
     }
-
     private func parseLineCap(_ value: String?) -> CGLineCap {
         switch value?.lowercased() {
         case "round": return .round
@@ -40,7 +33,6 @@ extension SVGParser {
         default: return .butt
         }
     }
-
     private func parseLineJoin(_ value: String?) -> CGLineJoin {
         switch value?.lowercased() {
         case "round": return .round
@@ -48,7 +40,6 @@ extension SVGParser {
         default: return .miter
         }
     }
-
     private func parseDashArray(_ value: String?) -> [Double] {
         guard let value = value, value != "none" else { return [] }
         return value
@@ -56,14 +47,11 @@ extension SVGParser {
             .split(separator: " ")
             .compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
     }
-
     func parseFillStyle(_ attributes: [String: String]) -> FillStyle? {
         let fill = attributes["fill"] ?? "black"
         guard fill != "none" else { return nil }
-
         if fill.hasPrefix("url(#") && fill.hasSuffix(")") {
             let gradientId = String(fill.dropFirst(5).dropLast(1))
-
             if let gradient = gradientDefinitions[gradientId] {
                 let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
                 return FillStyle(gradient: gradient, opacity: opacity)
@@ -71,25 +59,18 @@ extension SVGParser {
             Log.error("❌ Gradient reference not found for fill: \(gradientId)", category: .error)
             return FillStyle(color: .black, opacity: parseLength(attributes["fill-opacity"]) ?? 1.0)
         }
-
         let color = parseColor(fill) ?? .black
         let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
         let fillRule = attributes["fill-rule"] ?? "nonzero"
-
         let fillStyle = FillStyle(color: color, opacity: opacity)
-
         if fillRule == "evenodd" {
         }
-
         return fillStyle
     }
-
     func parseColor(_ colorString: String) -> VectorColor? {
         let color = colorString.trimmingCharacters(in: .whitespaces)
-
         if color == "none" || color == "transparent" { return .clear }
         if color == "currentColor" { return .black }
-
         if color.hasPrefix("#") {
             let hex = String(color.dropFirst())
             if hex.count == 6 {
@@ -146,10 +127,8 @@ extension SVGParser {
             if color.lowercased() == "white" { return .white }
             return .rgb(convertSRGBToP3(red: r, green: g, blue: b))
         }
-
         return nil
     }
-
     private static let svgNamedColors: [String: (Double, Double, Double)] = [
         "aliceblue": (240/255.0, 248/255.0, 255/255.0),
         "antiquewhite": (250/255.0, 235/255.0, 215/255.0),
@@ -300,15 +279,12 @@ extension SVGParser {
         "yellow": (1, 1, 0),
         "yellowgreen": (154/255.0, 205/255.0, 50/255.0),
     ]
-
     private func convertSRGBToP3(red: Double, green: Double, blue: Double, alpha: Double = 1.0) -> RGBColor {
         let srgbComponents: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
         guard let srgbColor = CGColor(colorSpace: ColorManager.shared.sRGBCG, components: srgbComponents) else {
             return RGBColor(red: red, green: green, blue: blue, alpha: alpha, colorSpace: .displayP3)
         }
-
         let p3Color = ColorManager.shared.toWorking(srgbColor)
-
         if let components = p3Color.components, components.count >= 3 {
             return RGBColor(
                 red: Double(components[0]),
@@ -318,19 +294,14 @@ extension SVGParser {
                 colorSpace: .displayP3
             )
         }
-
         return RGBColor(red: red, green: green, blue: blue, alpha: alpha, colorSpace: .displayP3)
     }
-
     func parseLength(_ value: String?) -> Double? {
         guard let value = value else { return nil }
-
         let trimmed = value.trimmingCharacters(in: .whitespaces)
-
         if trimmed == "0" {
             return 0.0
         }
-
         if trimmed.hasSuffix("px") {
             return Double(String(trimmed.dropLast(2)))
         } else if trimmed.hasSuffix("pt") {

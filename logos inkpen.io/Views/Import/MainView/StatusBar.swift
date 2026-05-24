@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct StatusBar: View {
     let zoomLevel: Double
     @ObservedObject var document: VectorDocument
@@ -9,7 +8,6 @@ struct StatusBar: View {
                 Text("Tool: \(document.viewState.currentTool.rawValue)")
                     .font(.caption)
                     .foregroundColor(.secondary)
-
                 if document.viewState.currentTool == .bezierPen {
                     Text("• Click to place points • Click near first point to close")
                         .font(.caption)
@@ -24,9 +22,7 @@ struct StatusBar: View {
                         .foregroundColor(.secondary)
                 }
             }
-
             Spacer()
-
             HStack {
                 if document.viewState.selectedObjectIDs.isEmpty {
                     Text("No selection")
@@ -34,7 +30,6 @@ struct StatusBar: View {
                         .foregroundColor(.secondary)
                 } else {
                     let totalSelected = document.viewState.selectedObjectIDs.count
-
                     if let bounds = getSelectionBounds() {
                         Text("\(totalSelected) selected  •  W: \(formatPreciseDimension(bounds.width))pt H: \(formatPreciseDimension(bounds.height))pt")
                             .font(.caption)
@@ -46,21 +41,15 @@ struct StatusBar: View {
                     }
                 }
             }
-
             Spacer()
-
             Text("Size: \(formatDimension(document.settings.width))×\(formatDimension(document.settings.height)) \(document.settings.unit.abbreviation)")
                 .font(.caption)
                 .foregroundColor(.secondary)
-
             Spacer()
-
             Text("\(formatNumber(getTotalObjectCount())) obj  •  \(formatNumber(getTotalPointCount())) pts")
                 .font(.caption)
                 .foregroundColor(.secondary)
-
             Spacer()
-
             Text("Zoom: \(Int(zoomLevel * 100))%")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -74,10 +63,8 @@ struct StatusBar: View {
             alignment: .top
         )
     }
-
     private func formatDimension(_ value: Double) -> String {
         let formatted = String(format: "%.5f", value)
-
         if formatted.contains(".") {
             var trimmed = formatted.trimmingCharacters(in: CharacterSet(charactersIn: "0"))
             if trimmed.hasSuffix(".") {
@@ -85,13 +72,10 @@ struct StatusBar: View {
             }
             return trimmed
         }
-
         return formatted
     }
-
     private func formatPreciseDimension(_ value: CGFloat) -> String {
         let formatted = String(format: "%.5f", value)
-
         if formatted.contains(".") {
             var trimmed = formatted.trimmingCharacters(in: CharacterSet(charactersIn: "0"))
             if trimmed.hasSuffix(".") {
@@ -99,13 +83,10 @@ struct StatusBar: View {
             }
             return trimmed
         }
-
         return formatted
     }
-
     private func getSelectionBounds() -> CGRect? {
         var combinedBounds: CGRect?
-
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
@@ -121,7 +102,6 @@ struct StatusBar: View {
                 continue
             }
         }
-
         for vectorObject in document.snapshot.objects.values {
             if case .text(let shape) = vectorObject.objectType,
                document.viewState.selectedObjectIDs.contains(shape.id),
@@ -132,7 +112,6 @@ struct StatusBar: View {
                     width: textObj.bounds.width,
                     height: textObj.bounds.height
                 ).applying(textObj.transform)
-
                 if combinedBounds == nil {
                     combinedBounds = textBounds
                 } else {
@@ -140,32 +119,24 @@ struct StatusBar: View {
                 }
             }
         }
-
         return combinedBounds
     }
-
     private func getTotalObjectCount() -> Int {
         return document.snapshot.objects.count
     }
-
     private func getTotalPointCount() -> Int {
         var totalPoints = 0
-
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 totalPoints += countPointsInPath(shape.path)
             case .text:
-
                 break
             }
         }
-
         return totalPoints
     }
-
     private func countPointsInPath(_ path: VectorPath) -> Int {
-
         var count = 0
         for element in path.elements {
             switch element {
@@ -177,7 +148,6 @@ struct StatusBar: View {
         }
         return count
     }
-
     private func formatNumber(_ number: Int) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal

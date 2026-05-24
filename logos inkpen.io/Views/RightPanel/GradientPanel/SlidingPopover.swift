@@ -4,7 +4,6 @@ import AppKit
 #else
 import UIKit
 #endif
-
 class SlidingPopoverManager: NSObject {
     #if os(macOS)
     private var popover: NSPopover?
@@ -14,9 +13,7 @@ class SlidingPopoverManager: NSObject {
     private var currentAnchorView: UIView?
     private weak var presentingViewController: UIViewController?
     #endif
-
     private var dismissCallback: (() -> Void)?
-
     #if os(macOS)
     func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
@@ -33,22 +30,18 @@ class SlidingPopoverManager: NSObject {
         } else {
             let hostingController = NSHostingController(rootView: content)
             hostingController.sizingOptions = [.intrinsicContentSize]
-
             let newPopover = NSPopover()
             newPopover.contentViewController = hostingController
             newPopover.behavior = .transient
             newPopover.animates = true
             newPopover.delegate = self
-
             if let popoverView = newPopover.contentViewController?.view {
                 popoverView.wantsLayer = true
                 popoverView.layer?.backgroundColor = PlatformColor.clear.cgColor
             }
-
             let nsRectEdge = edge.toNSRectEdge()
             let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
             newPopover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
-
             self.popover = newPopover
             self.currentAnchorView = anchorView
         }
@@ -56,74 +49,58 @@ class SlidingPopoverManager: NSObject {
     #else
     func show<Content: View>(content: Content, anchorView: UIView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
-
         if presentingViewController == nil {
             presentingViewController = anchorView.viewController
         }
-
         guard let presentingVC = presentingViewController else { return }
-
         if let existingController = popoverController, existingController.presentingViewController != nil {
             if let hostingController = existingController as? UIHostingController<Content> {
                 hostingController.rootView = content
             } else {
-
                 existingController.dismiss(animated: false) {
                     self.showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
                 }
                 return
             }
-
             if let popover = existingController.popoverPresentationController {
                 popover.sourceView = anchorView
                 popover.sourceRect = calculatePositioningRect(for: anchorView, edge: edge)
                 popover.permittedArrowDirections = edge.toUIPopoverArrowDirection()
             }
-
             self.currentAnchorView = anchorView
         } else {
             showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
         }
     }
-
     private func showNewPopover<Content: View>(content: Content, anchorView: UIView, edge: Edge, presentingVC: UIViewController) {
         let hostingController = UIHostingController(rootView: content)
         hostingController.modalPresentationStyle = .popover
-
         if let popover = hostingController.popoverPresentationController {
             popover.sourceView = anchorView
             popover.sourceRect = calculatePositioningRect(for: anchorView, edge: edge)
             popover.permittedArrowDirections = edge.toUIPopoverArrowDirection()
             popover.delegate = self
         }
-
         presentingVC.present(hostingController, animated: true)
         self.popoverController = hostingController
         self.currentAnchorView = anchorView
     }
     #endif
-
     #if os(macOS)
     private func slideToNewAnchor(anchorView: NSView, edge: Edge, updateContent: () -> Void) {
         guard let popover = popover, popover.isShown else { return }
-
         updateContent()
-
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-
             let nsRectEdge = edge.toNSRectEdge()
             let positioningRect = calculatePositioningRect(for: anchorView, edge: nsRectEdge)
             popover.show(relativeTo: positioningRect, of: anchorView, preferredEdge: nsRectEdge)
         }
-
         self.currentAnchorView = anchorView
     }
-
     private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
         let bounds = anchorView.bounds
-
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -134,7 +111,6 @@ class SlidingPopoverManager: NSObject {
     #else
     private func calculatePositioningRect(for anchorView: UIView, edge: Edge) -> CGRect {
         let bounds = anchorView.bounds
-
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -143,9 +119,7 @@ class SlidingPopoverManager: NSObject {
         )
     }
     #endif
-
     func dismiss() {
-
         dismissCallback = nil
         #if os(macOS)
         popover?.performClose(nil)
@@ -156,7 +130,6 @@ class SlidingPopoverManager: NSObject {
         #endif
         currentAnchorView = nil
     }
-
     var isShown: Bool {
         #if os(macOS)
         return popover?.isShown ?? false
@@ -165,14 +138,11 @@ class SlidingPopoverManager: NSObject {
         #endif
     }
 }
-
 #if os(macOS)
 extension SlidingPopoverManager: NSPopoverDelegate {
     func popoverWillClose(_ notification: Notification) {
-
         dismissCallback?()
     }
-
     func popoverDidClose(_ notification: Notification) {
         dismissCallback = nil
         popover = nil
@@ -180,13 +150,10 @@ extension SlidingPopoverManager: NSPopoverDelegate {
     }
 }
 #else
-
 extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
     func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
-
         dismissCallback?()
     }
-
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         dismissCallback = nil
         popoverController = nil
@@ -194,7 +161,6 @@ extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
     }
 }
 #endif
-
 #if os(macOS)
 extension Edge {
     func toNSRectEdge() -> NSRectEdge {
@@ -217,7 +183,6 @@ extension Edge {
         }
     }
 }
-
 extension UIView {
     var viewController: UIViewController? {
         var responder: UIResponder? = self
@@ -231,10 +196,8 @@ extension UIView {
     }
 }
 #endif
-
 struct GlassCloseButton: View {
     let action: () -> Void
-
     var body: some View {
         if #available(macOS 26.0, *) {
             Button(action: action) {
@@ -264,11 +227,9 @@ struct GlassCloseButton: View {
         }
     }
 }
-
 #if os(macOS)
 struct PopoverAnchorView: NSViewRepresentable {
     let onViewCreated: (NSView) -> Void
-
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
@@ -276,15 +237,12 @@ struct PopoverAnchorView: NSViewRepresentable {
         }
         return view
     }
-
     func updateNSView(_ nsView: NSView, context: Context) {
-
     }
 }
 #else
 struct PopoverAnchorView: UIViewRepresentable {
     let onViewCreated: (UIView) -> Void
-
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         DispatchQueue.main.async {
@@ -292,9 +250,7 @@ struct PopoverAnchorView: UIViewRepresentable {
         }
         return view
     }
-
     func updateUIView(_ uiView: UIView, context: Context) {
-
     }
 }
 #endif

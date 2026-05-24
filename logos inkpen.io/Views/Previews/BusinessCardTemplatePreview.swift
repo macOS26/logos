@@ -1,12 +1,10 @@
 import SwiftUI
-
 struct BusinessCardTemplatePreview: View {
     var body: some View {
         VStack(spacing: 8) {
             Rectangle()
                 .fill(Color.ui.lightBlueBackground)
                 .frame(height: 20)
-
             HStack {
                 VStack(alignment: .leading) {
                     Rectangle()
@@ -19,7 +17,6 @@ struct BusinessCardTemplatePreview: View {
                 Spacer()
             }
             .padding(.horizontal)
-
             Spacer()
         }
         .background(Color.white)

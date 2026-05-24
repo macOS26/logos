@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum PanelTab: String, CaseIterable {
     case layers = "Layer"
     case properties = "Paint"
@@ -7,7 +6,6 @@ enum PanelTab: String, CaseIterable {
     case color = "Ink"
     case pathOps = "Path"
     case font = "Font"
-
     var iconName: String {
         switch self {
         case .layers: return "square.stack"

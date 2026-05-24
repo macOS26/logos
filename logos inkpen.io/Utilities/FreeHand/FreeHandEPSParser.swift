@@ -1,14 +1,11 @@
 import Foundation
 import CoreGraphics
-
 enum FreeHandEPSParser {
-
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
         guard let text = String(data: data, encoding: .ascii) ?? String(data: data, encoding: .utf8),
               text.hasPrefix("%!PS-Adobe") else {
             throw FreeHandImportError.notSupported
         }
-
         var pageWidth: Double = 612
         var pageHeight: Double = 792
         var bbOriginX: Double = 0
@@ -27,9 +24,7 @@ enum FreeHandEPSParser {
                 print("BBox: \(nums) → page \(pageWidth)×\(pageHeight) origin (\(bbOriginX),\(bbOriginY))")
             }
         }
-
         let normalized = text.replacingOccurrences(of: "\r", with: "\n")
-
         guard let defRange = normalized.range(of: "]def") else {
             throw FreeHandImportError.parseFailed(code: 1)
         }
@@ -38,18 +33,14 @@ enum FreeHandEPSParser {
             throw FreeHandImportError.parseFailed(code: 2)
         }
         let drawingText = String(afterDef[vmsRange.upperBound...])
-
         let debugTokens = tokenize(drawingText)
         print("Drawing text length: \(drawingText.count)")
         print("Token count: \(debugTokens.count)")
         print("First 30 tokens: \(debugTokens.prefix(30))")
-
         if debugTokens.count > 175 {
             print("Tokens 155-175: \(Array(debugTokens[155..<175]))")
         }
-
         let rawShapes = parsePostScript(drawingText, pageHeight: pageHeight, originX: bbOriginX, originY: bbOriginY)
-
         let groupRanges = inferGroupRanges(from: drawingText, totalShapes: rawShapes.count)
         let (preTextShapes, groupIDs): ([VectorShape], [UUID]) = {
             if groupRanges.isEmpty {
@@ -59,16 +50,13 @@ enum FreeHandEPSParser {
         }()
         var shapes = preTextShapes
         print("Shapes: \(rawShapes.count) raw → \(shapes.count) top-level (\(groupIDs.count) groups)")
-
         let textShapes = parseEPSTextRuns(in: drawingText, pageHeight: pageHeight,
                                           originX: bbOriginX, originY: bbOriginY,
                                           fontTable: extractFontTable(from: text))
         shapes.append(contentsOf: textShapes)
-
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
         }
-
         let layer = Layer(
             name: "eps-import",
             objectIDs: shapes.map { $0.id },
@@ -78,12 +66,10 @@ enum FreeHandEPSParser {
             blendMode: .normal,
             color: .blue
         )
-
         let stats = FreeHandDirectImporter.Stats(
             paths: rawShapes.count, groups: groupIDs.count, clipGroups: 0,
             compositePaths: 0, newBlends: 0, symbolInstances: 0, contentIdPaths: 0
         )
-
         return FreeHandDirectImporter.Result(
             shapes: shapes,
             pageSize: CGSize(width: pageWidth, height: pageHeight),
@@ -92,15 +78,12 @@ enum FreeHandEPSParser {
             groupShapeIDs: groupIDs
         )
     }
-
     static func inferGroupRanges(from drawingText: String, totalShapes: Int) -> [Range<Int>] {
         let tokens = tokenize(drawingText)
-
         struct Frame { let startShapeIdx: Int }
         var stack: [Frame] = []
         var raw: [Range<Int>] = []
         var shapeIdx = 0
-
         for token in tokens {
             switch token {
             case "gsave":
@@ -120,7 +103,6 @@ enum FreeHandEPSParser {
                 break
             }
         }
-
         let sortedSmallestFirst = raw.sorted {
             ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound)
         }
@@ -136,34 +118,28 @@ enum FreeHandEPSParser {
         }
         return kept.sorted { $0.lowerBound < $1.lowerBound }
     }
-
     static func wrapShapesIntoGroups(_ shapes: [VectorShape], ranges: [Range<Int>])
         -> (topLevel: [VectorShape], groupIDs: [UUID])
     {
         guard !ranges.isEmpty else { return (shapes, []) }
-
         var shapeToRange: [Int: Int] = [:]
         for (rIdx, r) in ranges.enumerated() {
             for i in r where i >= 0 && i < shapes.count { shapeToRange[i] = rIdx }
         }
-
         var output: [VectorShape] = []
         var groupIDs: [UUID] = []
         var rangeEmitted = Set<Int>()
-
         for (idx, shape) in shapes.enumerated() {
             if let rIdx = shapeToRange[idx] {
                 if !rangeEmitted.contains(rIdx) {
                     rangeEmitted.insert(rIdx)
                     let r = ranges[rIdx]
                     let members = Array(shapes[r])
-
                     var union = CGRect.null
                     for m in members {
                         let b = m.bounds.applying(m.transform)
                         union = union.union(b)
                     }
-
                     var group = VectorShape(
                         name: "Group",
                         path: VectorPath(elements: [], isClosed: false),
@@ -172,26 +148,22 @@ enum FreeHandEPSParser {
                         transform: .identity
                     )
                     group.isGroup = true
-
                     group.memberIDs = []
                     group.groupedShapes = members
                     group.bounds = union.isNull ? .zero : union
                     output.append(group)
                     groupIDs.append(group.id)
                 }
-
             } else {
                 output.append(shape)
             }
         }
         return (output, groupIDs)
     }
-
     private static func extractFontTable(from text: String) -> [String: String] {
         var table: [String: String] = [:]
         let lines = text.components(separatedBy: .newlines)
         for line in lines {
-
             if let fRange = line.range(of: #"/f\d+\s+/"#, options: .regularExpression) {
                 let fName = String(line[fRange])
                     .dropFirst()
@@ -206,19 +178,16 @@ enum FreeHandEPSParser {
         }
         return table
     }
-
     private static func parseEPSTextRuns(in drawingText: String,
                                          pageHeight: Double,
                                          originX: Double, originY: Double,
                                          fontTable: [String: String]) -> [VectorShape] {
         var results: [VectorShape] = []
         let ns = drawingText as NSString
-
         guard let blockRegex = try? NSRegularExpression(
             pattern: #"\{([^{}]*)\}\s*\[([^\]]*)\]\s*sts"#,
             options: [.dotMatchesLineSeparators]
         ) else { return results }
-
         let tsPattern = #"(-?[\d.]+)\s+(-?[\d.]+)\s+moveto(?:[^()]*)\(([^)]*)\)\s*ts"#
         guard let tsRegex = try? NSRegularExpression(pattern: tsPattern, options: [.dotMatchesLineSeparators]) else {
             return results
@@ -227,14 +196,12 @@ enum FreeHandEPSParser {
             pattern: #"(/f\d+)\s+\[(-?[\d.]+)\s+0\s+0\s+(-?[\d.]+)"#,
             options: [.dotMatchesLineSeparators]
         )
-
         for block in blockRegex.matches(in: drawingText, range: NSRange(location: 0, length: ns.length)) {
             let bodyRange = block.range(at: 1)
             let colorRange = block.range(at: 2)
             guard bodyRange.location != NSNotFound else { continue }
             let body = ns.substring(with: bodyRange)
             let bodyNs = body as NSString
-
             var psFont = "Helvetica-Bold"
             var fontSize: Double = 12
             if let fr = fontRegex,
@@ -245,7 +212,6 @@ enum FreeHandEPSParser {
                 let key = String(fKey.dropFirst())
                 if let mapped = fontTable[key] { psFont = mapped }
             }
-
             var chunks: [(x: Double, y: Double, text: String)] = []
             for tm in tsRegex.matches(in: body, range: NSRange(location: 0, length: bodyNs.length)) {
                 let xs = bodyNs.substring(with: tm.range(at: 1))
@@ -255,13 +221,10 @@ enum FreeHandEPSParser {
                 chunks.append((x, y, txt))
             }
             guard let first = chunks.first else { continue }
-
             let sameLine = chunks.filter { abs($0.y - first.y) < 0.01 }
             let literal = sameLine.map { $0.text }.joined()
             guard !literal.isEmpty else { continue }
-
             let (family, bold, italic) = splitPSFontName(psFont)
-
             var fill: VectorColor = .black
             if colorRange.location != NSNotFound {
                 let args = ns.substring(with: colorRange)
@@ -275,11 +238,9 @@ enum FreeHandEPSParser {
                     fill = .rgb(RGBColor(red: r, green: g, blue: b))
                 }
             }
-
             let ascender = fontSize * 0.8
             let baselineY = pageHeight - (first.y - originY)
             let textOrigin = CGPoint(x: first.x - originX, y: baselineY - ascender)
-
             var shape = VectorShape(
                 name: literal,
                 path: VectorPath(elements: [], isClosed: false),
@@ -315,7 +276,6 @@ enum FreeHandEPSParser {
         }
         return results
     }
-
     private static func splitPSFontName(_ psName: String) -> (family: String, bold: Bool, italic: Bool) {
         let parts = psName.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: true)
         guard let family = parts.first.map(String.init) else {
@@ -327,14 +287,11 @@ enum FreeHandEPSParser {
         let italic = variant.contains("italic") || variant.contains("oblique")
         return (family, bold, italic)
     }
-
     private struct Transform {
         var a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0
-
         func apply(_ x: Double, _ y: Double) -> (Double, Double) {
             (a * x + c * y + tx, b * x + d * y + ty)
         }
-
         func concat(_ other: Transform) -> Transform {
             Transform(
                 a: a * other.a + c * other.b,
@@ -346,14 +303,12 @@ enum FreeHandEPSParser {
             )
         }
     }
-
     private struct GraphicsState {
         var fillColor: VectorColor = .black
         var strokeColor: VectorColor = .black
         var lineWidth: Double = 1.0
         var transform: Transform = Transform()
     }
-
     private static func parsePostScript(_ text: String, pageHeight: Double, originX: Double = 0, originY: Double = 0) -> [VectorShape] {
         var shapes: [VectorShape] = []
         var stack: [Double] = []
@@ -362,13 +317,10 @@ enum FreeHandEPSParser {
         var stateStack: [GraphicsState] = []
         var currentColor: VectorColor = .black
         var pendingGradient: (color1: VectorColor, color2: VectorColor)? = nil
-
         let tokens = tokenize(text)
         var i = 0
-
         while i < tokens.count {
             let token = tokens[i]
-
             switch token {
             case "moveto":
                 if stack.count >= 2 {
@@ -376,14 +328,12 @@ enum FreeHandEPSParser {
                     let (tx, ty) = state.transform.apply(x, y)
                     elements.append(.move(to: VectorPoint(tx - originX, pageHeight - (ty - originY))))
                 }
-
             case "lineto":
                 if stack.count >= 2 {
                     let y = stack.removeLast(); let x = stack.removeLast()
                     let (tx, ty) = state.transform.apply(x, y)
                     elements.append(.line(to: VectorPoint(tx - originX, pageHeight - (ty - originY))))
                 }
-
             case "curveto":
                 if stack.count >= 6 {
                     let y3 = stack.removeLast(); let x3 = stack.removeLast()
@@ -398,15 +348,11 @@ enum FreeHandEPSParser {
                         control2: VectorPoint(tx2 - originX, pageHeight - (ty2 - originY))
                     ))
                 }
-
             case "closepath":
                 elements.append(.close)
-
             case "newpath":
                 elements = []
-
             case "concat":
-
                 if stack.count >= 6 {
                     let ty = stack.removeLast(); let tx = stack.removeLast()
                     let dd = stack.removeLast(); let cc = stack.removeLast()
@@ -414,24 +360,18 @@ enum FreeHandEPSParser {
                     let newT = Transform(a: aa, b: bb, c: cc, d: dd, tx: tx, ty: ty)
                     state.transform = state.transform.concat(newT)
                 }
-
             case "gsave":
                 stateStack.append(state)
-
             case "grestore":
                 if let saved = stateStack.popLast() {
                     state = saved
                 }
-
             case "setlinewidth":
                 if let w = stack.popLast() {
                     state.lineWidth = w
                 }
-
             case "setcolor":
-
                 currentColor = state.fillColor
-
             case "setcmykcolor":
                 if stack.count >= 4 {
                     let k = stack.removeLast(); let y = stack.removeLast()
@@ -441,11 +381,8 @@ enum FreeHandEPSParser {
                     state.strokeColor = color
                     currentColor = color
                 }
-
             case "radialfill", "eoradialfill":
-
                 if let grad = pendingGradient, !elements.isEmpty {
-
                     var cx = 0.5, cy = 0.5, rad = 0.5
                     if stack.count >= 3 {
                         rad = stack.removeLast()
@@ -471,7 +408,6 @@ enum FreeHandEPSParser {
                     pendingGradient = nil
                 }
                 stack.removeAll()
-
             case "rectfill":
                 print("RECTFILL: pendingGradient=\(pendingGradient != nil) elements=\(elements.count)")
                 if let grad = pendingGradient, !elements.isEmpty {
@@ -491,7 +427,6 @@ enum FreeHandEPSParser {
                     pendingGradient = nil
                 }
                 stack.removeAll()
-
             case "{fill}", "{ fill }", "{fill }", "{ fill}":
                 if !elements.isEmpty {
                     let isClosed = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
@@ -502,7 +437,6 @@ enum FreeHandEPSParser {
                         strokeStyle: nil, fillStyle: fillStyle, opacity: 1.0
                     ))
                 }
-
             case "{stroke}", "{ stroke }", "{stroke }", "{ stroke}":
                 if !elements.isEmpty {
                     let isClosed = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
@@ -514,19 +448,15 @@ enum FreeHandEPSParser {
                     ))
                     elements = []
                 }
-
             default:
-
                 if let num = Double(token) {
                     stack.append(num)
                 }
-
                 else if token.hasPrefix("[") {
                     var nums: [Double] = []
                     var t = token.dropFirst()
                     if t.hasSuffix("]") { t = t.dropLast() }
                     if let n = Double(t) { nums.append(n) }
-
                     var j = i + 1
                     while j < tokens.count {
                         var tk = tokens[j]
@@ -540,20 +470,15 @@ enum FreeHandEPSParser {
                         j += 1
                     }
                     i = j - 1
-
                     if nums.count == 6 {
-
                         stack.append(contentsOf: nums)
                     } else if nums.count == 4 {
                         let color = cmykToColor(nums[0], nums[1], nums[2], nums[3])
                         currentColor = color
                         state.fillColor = color
                         state.strokeColor = color
-
                         if j < tokens.count && tokens[j].hasPrefix("[") {
-
                             let firstColor = color
-
                             var color2Nums: [Double] = []
                             var tk2 = tokens[j].dropFirst()
                             if tk2.hasSuffix("]") { tk2 = tk2.dropLast() }
@@ -581,22 +506,18 @@ enum FreeHandEPSParser {
             }
             i += 1
         }
-
         return shapes
     }
-
     private static func mergeFillStrokePairs(_ shapes: [VectorShape]) -> [VectorShape] {
         var merged: [VectorShape] = []
         var i = 0
         while i < shapes.count {
             let current = shapes[i]
-
             if i + 1 < shapes.count {
                 let next = shapes[i + 1]
                 let samePath = current.path.elements.count == next.path.elements.count
                 if samePath && current.fillStyle != nil && current.strokeStyle == nil
                     && next.fillStyle == nil && next.strokeStyle != nil {
-
                     merged.append(VectorShape(
                         name: current.name, path: current.path,
                         geometricType: current.geometricType,
@@ -613,22 +534,18 @@ enum FreeHandEPSParser {
         }
         return merged
     }
-
     private static func cmykToColor(_ c: Double, _ m: Double, _ y: Double, _ k: Double) -> VectorColor {
         let r = (1 - c) * (1 - k)
         let g = (1 - m) * (1 - k)
         let b = (1 - y) * (1 - k)
         return .rgb(RGBColor(red: r, green: g, blue: b))
     }
-
     private static func tokenize(_ text: String) -> [String] {
-
         let keywords = ["rectfill","eoclip","closepath","moveto","lineto","curveto",
                         "newpath","gsave","grestore","setlinewidth","setcolor","setcmykcolor",
                         "setlinecap","setlinejoin","setmiterlimit","eofill","setflat",
                         "concat","stroke","fill","clip","def","vms","vmr","end"]
         var processed = text
-
         processed = processed.replacingOccurrences(of: "eoradialfill", with: " §EORADIALFILL§ ")
         processed = processed.replacingOccurrences(of: "radialfill", with: " §RADIALFILL§ ")
         processed = processed.replacingOccurrences(of: "rectfill", with: " §RECTFILL§ ")
@@ -638,20 +555,16 @@ enum FreeHandEPSParser {
             if kw == "rectfill" || kw == "eofill" || kw == "eoclip" { continue }
             processed = processed.replacingOccurrences(of: kw, with: " \(kw) ")
         }
-
         processed = processed.replacingOccurrences(of: "§EORADIALFILL§", with: "eoradialfill")
         processed = processed.replacingOccurrences(of: "§RADIALFILL§", with: "radialfill")
         processed = processed.replacingOccurrences(of: "§RECTFILL§", with: "rectfill")
         processed = processed.replacingOccurrences(of: "§EOFILL§", with: "eofill")
         processed = processed.replacingOccurrences(of: "§EOCLIP§", with: "eoclip")
-
         processed = processed.replacingOccurrences(of: "[", with: " [")
         processed = processed.replacingOccurrences(of: "]", with: "] ")
-
         var tokens: [String] = []
         var current = ""
         var inBrace = 0
-
         for ch in processed {
             if ch == "{" {
                 inBrace += 1

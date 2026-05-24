@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct RightPanel: View {
     let snapshot: DocumentSnapshot
     @ObservedObject var viewState: DocumentViewState
@@ -20,14 +19,12 @@ struct RightPanel: View {
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
     @Environment(AppState.self) private var appState
-
     var body: some View {
         VStack(spacing: 0) {
             PanelTabBar(selectedTab: Binding(
                 get: { appState.selectedPanelTab },
                 set: { appState.selectedPanelTab = $0 }
             ))
-
             switch appState.selectedPanelTab {
             case .layers:
                 LayersPanel(
@@ -91,10 +88,8 @@ struct RightPanel: View {
                         onOutlineSelectedStrokes: { document.outlineSelectedStrokes() },
                         onDuplicateSelectedShapes: { document.duplicateSelectedShapes() },
                         onUpdateObjectOpacity: { objectID, opacity, target in
-
                         },
                         onUpdateObjectStrokeWidth: { objectID, width in
-
                         },
                         onUpdateFillOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing) },
                         onUpdateStrokeOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing) },
@@ -177,6 +172,5 @@ struct RightPanel: View {
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
             alignment: .leading
         )
-
     }
 }

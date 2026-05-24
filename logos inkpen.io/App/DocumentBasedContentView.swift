@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct DocumentBasedContentView: View {
     @Binding var inkpenDocument: InkpenDocument
     let fileURL: URL?
@@ -7,12 +6,10 @@ struct DocumentBasedContentView: View {
     @AppStorage("imagePreviewQuality") var imagePreviewQuality: Double = 1.0
     @AppStorage("imageTileSize") var imageTileSize: Int = 512
     @AppStorage("imageInterpolationQuality") var imageInterpolationQuality: Int = 1
-
     var body: some View {
         DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
             .onAppear {
                 MemoryDiag.report("DocumentBasedContentView.onAppear (before hydrate)", document: inkpenDocument.document)
-
                 if !hasHydratedImages, let fileURL = fileURL {
                     hydrateLinkedImages(from: fileURL)
                     hasHydratedImages = true
@@ -21,38 +18,31 @@ struct DocumentBasedContentView: View {
                 MemoryDiag.measureObjectSizes(inkpenDocument.document)
             }
             .onChange(of: imagePreviewQuality) { _, _ in
-
                 ImageContentRegistry.clearAll(in: inkpenDocument.document)
                 MetalImageTileRenderer.shared?.clearCache()
             }
             .onChange(of: imageTileSize) { _, _ in
-
                 ImageContentRegistry.clearAll(in: inkpenDocument.document)
                 MetalImageTileRenderer.shared?.clearCache()
             }
     }
-
     private func hydrateLinkedImages(from sourceURL: URL) {
         let baseDirectory = sourceURL.deletingLastPathComponent()
         ImageContentRegistry.setBaseDirectory(baseDirectory, for: inkpenDocument.document)
-
         var imagesHydrated = 0
         var imagesMissing = 0
         var imagesDeleted = 0
         var missingPaths: [String] = []
         var shapesToDelete: [UUID] = []
-
         for (id, obj) in inkpenDocument.document.snapshot.objects {
             var shape: VectorShape? = nil
             if case .shape(let s) = obj.objectType { shape = s }
             else if case .image(let s) = obj.objectType { shape = s }
-
             guard let shape = shape else { continue }
             let hasImageData = shape.embeddedImageData != nil ||
                                shape.linkedImagePath != nil ||
                                shape.linkedImageBookmarkData != nil
             guard hasImageData else { continue }
-
             if let data = shape.embeddedImageData,
                shape.linkedImagePath == nil,
                shape.linkedImageBookmarkData == nil,
@@ -60,12 +50,10 @@ struct DocumentBasedContentView: View {
                 shapesToDelete.append(id)
                 continue
             }
-
             if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: inkpenDocument.document) != nil {
                 imagesHydrated += 1
                 continue
             }
-
             if let path = shape.linkedImagePath {
                 imagesMissing += 1
                 missingPaths.append(path)
@@ -78,12 +66,10 @@ struct DocumentBasedContentView: View {
                 shapesToDelete.append(id)
             }
         }
-
         for id in shapesToDelete {
             inkpenDocument.document.removeShapeFromUnifiedSystem(id: id)
             imagesDeleted += 1
         }
-
         if imagesHydrated > 0 {
             Log.fileOperation("  🖼️ Hydrated \(imagesHydrated) linked image(s) from \(baseDirectory.path)", level: .info)
         }

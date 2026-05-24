@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct GradientStopColorPicker: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -9,10 +8,8 @@ struct GradientStopColorPicker: View {
     let activeColorTarget: ColorTarget
     let onColorChanged: (VectorColor) -> Void
     let onDismiss: () -> Void
-
     @State private var currentColor: VectorColor
     @State private var isDismissing = false
-
     init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, stopColor: VectorColor, currentGradient: VectorGradient, activeColorTarget: ColorTarget, onColorChanged: @escaping (VectorColor) -> Void, onDismiss: @escaping () -> Void) {
         self.snapshot = snapshot
         self.selectedObjectIDs = selectedObjectIDs
@@ -24,21 +21,17 @@ struct GradientStopColorPicker: View {
         self.onDismiss = onDismiss
         self._currentColor = State(initialValue: stopColor)
     }
-
     var body: some View {
         ZStack(alignment: .topTrailing) {
             loadedContent
-
             GlassCloseButton(action: onDismiss)
         }
         .frame(width: 300, height: 480)
     }
-
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Spacer()
                 .frame(height: 8)
-
                 VStack(alignment: .leading, spacing: 4) {
                     Picker("Color Mode", selection: Binding(
                         get: { document.settings.colorMode },
@@ -60,7 +53,6 @@ struct GradientStopColorPicker: View {
                     .font(.caption)
                 }
                 .padding(.horizontal, 12)
-
                 if document.settings.colorMode == .pms {
                     HSBInputSection(
                         sharedColor: $currentColor,
@@ -123,7 +115,6 @@ struct GradientStopColorPicker: View {
                     )
                         .padding(.horizontal, 12)
                 }
-
                 HStack {
                     Text(colorModeDescription)
                         .font(.caption2)
@@ -131,18 +122,15 @@ struct GradientStopColorPicker: View {
                     Spacer()
                 }
                 .padding(.horizontal, 12)
-
                 ScrollView {
                     LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                         ForEach(Array(document.currentSwatches.prefix(40).enumerated()), id: \.offset) { index, color in
                             Button {
-
                                 currentColor = color
                                 onColorChanged(color)
                             } label: {
                                 ZStack {
                                     renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
-
                                     if case .pantone = color {
                                         overlayText(for: color)
                                     }
@@ -154,21 +142,17 @@ struct GradientStopColorPicker: View {
                     }
                     .padding(.horizontal, 12)
                 }
-
                 Spacer()
             }
             .onChange(of: currentColor) { _, newColor in
-
                 if !isDismissing {
                     onColorChanged(newColor)
                 }
             }
             .onChange(of: stopColor) { _, newStopColor in
-
                 currentColor = newStopColor
             }
     }
-
     private var colorModeDescription: String {
         switch document.settings.colorMode {
         case .rgb:
@@ -179,7 +163,6 @@ struct GradientStopColorPicker: View {
             return "PMS colors with Pantone matching"
         }
     }
-
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
@@ -198,7 +181,6 @@ struct GradientStopColorPicker: View {
             }
         }
     }
-
     private func overlayText(for color: VectorColor) -> some View {
         Group {
             if case .pantone(let pantone) = color {
@@ -211,12 +193,10 @@ struct GradientStopColorPicker: View {
             }
         }
     }
-
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
             return color
         }
-
         let rgbColor: RGBColor
         switch color {
         case .rgb(let rgb):
@@ -242,7 +222,6 @@ struct GradientStopColorPicker: View {
         default:
             return color
         }
-
         switch newMode {
         case .rgb:
             return .rgb(rgbColor)

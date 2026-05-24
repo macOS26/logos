@@ -1,30 +1,21 @@
 import SwiftUI
-
 final class ColorManager {
 	static let shared = ColorManager()
-
 	static let defaultBlue = VectorColor.rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3))
-
 	static let defaultRed = VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0))
-
 	private(set) var colorDefaults: ColorDefaults
-
 	private init() {
 		colorDefaults = ColorDefaults()
 	}
-
 	enum WorkingSpace {
 		case displayP3
 		case sRGB
 		case linearSRGB
 		case extendedSRGB
 	}
-
 	private(set) var workingSpace: WorkingSpace = .displayP3
-
 	var workingCGColorSpace: CGColorSpace {
 		let fallback = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-
 		switch workingSpace {
 		case .displayP3:
 			return CGColorSpace(name: CGColorSpace.displayP3) ?? fallback
@@ -36,7 +27,6 @@ final class ColorManager {
 			return CGColorSpace(name: CGColorSpace.extendedSRGB) ?? fallback
 		}
 	}
-
 	var workingSwiftUIColorSpace: Color.RGBColorSpace {
 		switch workingSpace {
 		case .displayP3: return .displayP3
@@ -49,7 +39,6 @@ final class ColorManager {
 		if cgColor.colorSpace == workingCGColorSpace { return cgColor }
 		return cgColor.converted(to: workingCGColorSpace, intent: .relativeColorimetric, options: nil) ?? cgColor
 	}
-
 	func convert(_ cgColor: CGColor, to target: CGColorSpace) -> CGColor {
 		if cgColor.colorSpace == target { return cgColor }
 		return cgColor.converted(to: target, intent: .relativeColorimetric, options: nil) ?? cgColor
@@ -68,7 +57,6 @@ final class ColorManager {
 	var displayP3CG: CGColorSpace {
 		CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
  }
-
 	func cgColorToSRGBHex(_ cgColor: CGColor) -> String {
 		let srgb = convert(cgColor, to: sRGBCG)
 		guard let comps = srgb.components else { return "#000000" }

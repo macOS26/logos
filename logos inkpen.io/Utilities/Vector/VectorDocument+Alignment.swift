@@ -1,42 +1,32 @@
 import Foundation
 import CoreGraphics
-
 enum AlignmentAxis {
     case both
     case xOnly
     case yOnly
 }
-
 extension VectorDocument {
-
     func alignSelectedObjectsByOrigin() {
         alignSelectedObjectsByOrigin(axis: .both)
     }
-
     func alignSelectedObjectsByOriginX() {
         alignSelectedObjectsByOrigin(axis: .xOnly)
     }
-
     func alignSelectedObjectsByOriginY() {
         alignSelectedObjectsByOrigin(axis: .yOnly)
     }
-
     private func alignSelectedObjectsByOrigin(axis: AlignmentAxis) {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
-
         let anchorID = determineAlignmentAnchor(from: orderedIDs)
         guard let anchorObj = snapshot.objects[anchorID] else { return }
-
         let anchorShape = anchorObj.shape
         let anchorOrigin = anchorShape.transformOrigin ?? .center
         let anchorBounds = anchorShape.isGroupContainer ? anchorShape.groupBounds : anchorShape.bounds
-
         let anchorPoint = CGPoint(
             x: anchorBounds.minX + anchorBounds.width * anchorOrigin.point.x,
             y: anchorBounds.minY + anchorBounds.height * anchorOrigin.point.y
         )
-
         modifySelectedShapesWithUndo(
             preCapture: {
                 for objectID in orderedIDs where objectID != anchorID {
@@ -44,15 +34,12 @@ extension VectorDocument {
                     var shape = obj.shape
                     let shapeOrigin = shape.transformOrigin ?? .center
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-
                     let currentOriginPoint = CGPoint(
                         x: shapeBounds.minX + shapeBounds.width * shapeOrigin.point.x,
                         y: shapeBounds.minY + shapeBounds.height * shapeOrigin.point.y
                     )
-
                     let offsetX: CGFloat
                     let offsetY: CGFloat
-
                     switch axis {
                     case .both:
                         offsetX = anchorPoint.x - currentOriginPoint.x
@@ -64,9 +51,7 @@ extension VectorDocument {
                         offsetX = 0
                         offsetY = anchorPoint.y - currentOriginPoint.y
                     }
-
                     guard abs(offsetX) > 0.001 || abs(offsetY) > 0.001 else { continue }
-
                     if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                         let translationTransform = CGAffineTransform(translationX: offsetX, y: offsetY)
                         applyTransformToGroup(groupID: shape.id, transform: translationTransform)
@@ -86,7 +71,6 @@ extension VectorDocument {
                     } else {
                         translateShapePath(&shape, dx: offsetX, dy: offsetY)
                     }
-
                     updateShapeByID(objectID, silent: false) { s in
                         s = shape
                     }
@@ -94,7 +78,6 @@ extension VectorDocument {
             }
         )
     }
-
     private func determineAlignmentAnchor(from orderedIDs: [UUID]) -> UUID {
         for objectID in orderedIDs {
             guard let obj = snapshot.objects[objectID] else { continue }
@@ -103,16 +86,12 @@ extension VectorDocument {
                 return objectID
             }
         }
-
         let mode = ApplicationSettings.shared.alignmentAnchorMode
-
         switch mode {
         case .firstSelected:
             return orderedIDs.first ?? orderedIDs[0]
-
         case .lastSelected:
             return orderedIDs.last ?? orderedIDs[0]
-
         case .largestArea:
             var largestID = orderedIDs[0]
             var largestArea: CGFloat = 0
@@ -127,7 +106,6 @@ extension VectorDocument {
                 }
             }
             return largestID
-
         case .smallestArea:
             var smallestID = orderedIDs[0]
             var smallestArea: CGFloat = .greatestFiniteMagnitude
@@ -144,7 +122,6 @@ extension VectorDocument {
             return smallestID
         }
     }
-
     private func translateShapePath(_ shape: inout VectorShape, dx: CGFloat, dy: CGFloat) {
         var translatedElements: [PathElement] = []
         for element in shape.path.elements {

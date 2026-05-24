@@ -1,23 +1,17 @@
 import SwiftUI
-
 extension PDFCommandParser {
-
     func handleFill() {
-
         if !isInCompoundPath && currentPath.isEmpty && compoundPathParts.isEmpty {
             return
         }
-
         if shouldSkipBlackBackground() {
             currentPath.removeAll()
             return
         }
-
         if isInCompoundPath && !compoundPathParts.isEmpty {
             createCompoundShapeFromParts(filled: true, stroked: false)
             return
         }
-
         if !isInCompoundPath {
             createShapeFromCurrentPath(filled: true, stroked: false)
         } else {
@@ -27,17 +21,13 @@ extension PDFCommandParser {
             }
         }
     }
-
     func shouldSkipBlackBackground() -> Bool {
         guard let imageBounds = transparentImageBounds else { return false }
-
         let r = Double(currentFillColor.components?[0] ?? 0.0)
         let g = Double(currentFillColor.components?[1] ?? 0.0)
         let b = Double(currentFillColor.components?[2] ?? 0.0)
         let isBlack = (r < 0.1 && g < 0.1 && b < 0.1)
-
         if !isBlack { return false }
-
         for command in currentPath {
             if case .rectangle(let rect) = command {
                 if rect.contains(imageBounds) || rect.equalTo(imageBounds) {
@@ -45,13 +35,11 @@ extension PDFCommandParser {
                 }
             }
         }
-
         if currentPath.count >= 4 {
             var minX = CGFloat.greatestFiniteMagnitude
             var minY = CGFloat.greatestFiniteMagnitude
             var maxX = -CGFloat.greatestFiniteMagnitude
             var maxY = -CGFloat.greatestFiniteMagnitude
-
             for command in currentPath {
                 switch command {
                 case .moveTo(let pt), .lineTo(let pt):
@@ -63,25 +51,20 @@ extension PDFCommandParser {
                     break
                 }
             }
-
             let pathBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             if pathBounds.contains(imageBounds) || pathBounds.equalTo(imageBounds) {
                 return true
             }
         }
-
         return false
     }
-
     func handleStroke() {
         if let lastShapeIndex = shapes.indices.last {
             let lastShape = shapes[lastShapeIndex]
             if lastShape.fillStyle != nil && lastShape.strokeStyle == nil && !currentPath.isEmpty {
                 let lastPathElementCount = lastShape.path.elements.count
                 let currentPathCommandCount = currentPath.count
-
                 if abs(lastPathElementCount - currentPathCommandCount) <= 1 {
-
                     let r = Double(currentStrokeColor.components?[0] ?? 0.0)
                     let g = Double(currentStrokeColor.components?[1] ?? 0.0)
                     let b = Double(currentStrokeColor.components?[2] ?? 0.0)
@@ -96,49 +79,39 @@ extension PDFCommandParser {
                         miterLimit: currentMiterLimit,
                         opacity: currentStrokeOpacity
                     )
-
                     let mergedShape = VectorShape(
                         name: lastShape.name,
                         path: lastShape.path,
                         strokeStyle: strokeStyle,
                         fillStyle: lastShape.fillStyle
                     )
-
                     shapes[lastShapeIndex] = mergedShape
                     currentPath.removeAll()
                     return
                 }
             }
         }
-
         createShapeFromCurrentPath(filled: false, stroked: true)
     }
-
     func handleFillAndStroke() {
         createShapeFromCurrentPath(filled: true, stroked: true)
     }
-
     func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
         defer {
             compoundPathParts.removeAll()
             currentPath.removeAll()
             isInCompoundPath = false
             moveToCount = 0
-
             activeGradient = nil
-
         }
-
         var allParts = compoundPathParts
         if !currentPath.isEmpty {
             allParts.append(currentPath)
         }
-
         if activeGradient != nil {
         } else {
             var separateParts: [[PathCommand]] = []
             var previousCommands: [PathCommand] = []
-
             for part in allParts {
                 var newCommands: [PathCommand] = []
                 for command in part {
@@ -146,22 +119,17 @@ extension PDFCommandParser {
                         newCommands.append(command)
                     }
                 }
-
                 if !newCommands.isEmpty {
                     separateParts.append(newCommands)
                     previousCommands = part
                 }
             }
-
             if !separateParts.isEmpty {
                 allParts = separateParts
             }
         }
-
         var combinedElements: [PathElement] = []
-
         for (_, part) in allParts.enumerated() {
-
             for command in part {
                 switch command {
                 case .moveTo(let point):
@@ -198,13 +166,10 @@ extension PDFCommandParser {
                 }
             }
         }
-
         let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close), fillRule: .evenOdd)
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
-
         if filled {
-
             if let gradient = activeGradient {
                 fillStyle = FillStyle(gradient: gradient)
             } else {
@@ -215,7 +180,6 @@ extension PDFCommandParser {
                 fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
             }
         }
-
         if stroked {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
@@ -232,7 +196,6 @@ extension PDFCommandParser {
                 opacity: currentStrokeOpacity
             )
         }
-
         let compoundShape = VectorShape(
             name: activeGradient != nil ? "PDF Compound Shape (Gradient)" : "PDF Compound Shape \(shapes.count + 1)",
             path: vectorPath,
@@ -241,19 +204,14 @@ extension PDFCommandParser {
             transform: .identity,
             isCompoundPath: true
         )
-
         shapes.append(compoundShape)
-
     }
-
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool) {
         guard !currentPath.isEmpty else {
             return
         }
-
         var vectorElements: [PathElement] = []
         let shouldApplyFlip = filled && !stroked
-
         for command in currentPath {
             switch command {
             case .moveTo(let point):
@@ -264,7 +222,6 @@ extension PDFCommandParser {
                     transformedPoint = VectorPoint(Double(point.x), Double(point.y))
                 }
                 vectorElements.append(.move(to: transformedPoint))
-
             case .lineTo(let point):
                 let transformedPoint: VectorPoint
                 if shouldApplyFlip {
@@ -273,7 +230,6 @@ extension PDFCommandParser {
                     transformedPoint = VectorPoint(Double(point.x), Double(point.y))
                 }
                 vectorElements.append(.line(to: transformedPoint))
-
             case .curveTo(let cp1, let cp2, let to):
                 let transformedCP1: VectorPoint
                 let transformedCP2: VectorPoint
@@ -288,7 +244,6 @@ extension PDFCommandParser {
                     transformedTo = VectorPoint(Double(to.x), Double(to.y))
                 }
                 vectorElements.append(.curve(to: transformedTo, control1: transformedCP1, control2: transformedCP2))
-
             case .quadCurveTo(let cp, let to):
                 let transformedCP: VectorPoint
                 let transformedTo: VectorPoint
@@ -300,25 +255,20 @@ extension PDFCommandParser {
                     transformedTo = VectorPoint(Double(to.x), Double(to.y))
                 }
                 vectorElements.append(.quadCurve(to: transformedTo, control: transformedCP))
-
             case .closePath:
                 vectorElements.append(.close)
-
             case .rectangle:
                 break
             }
         }
-
         let vectorPath = VectorPath(elements: vectorElements, isClosed: currentPath.contains(.closePath))
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
-
         if filled {
             let r = Double(currentFillColor.components?[0] ?? 0.0)
             let g = Double(currentFillColor.components?[1] ?? 0.0)
             let b = Double(currentFillColor.components?[2] ?? 1.0)
             let isWhiteShape = (r > 0.95 && g > 0.95 && b > 0.95)
-
             if let gradient = activeGradient {
                 if isWhiteShape && (isInCompoundPath || !compoundPathParts.isEmpty || gradientShapes.count > 0) {
                     gradientShapes.append(shapes.count)
@@ -333,7 +283,6 @@ extension PDFCommandParser {
                 fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
             }
         }
-
         if stroked {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
@@ -350,31 +299,24 @@ extension PDFCommandParser {
                 opacity: currentStrokeOpacity
             )
         }
-
         if fillStyle == nil && strokeStyle == nil {
             currentPath.removeAll()
             return
         }
-
         let shape = VectorShape(
             name: "PDF Shape \(shapes.count + 1)",
             path: vectorPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
-
         shapes.append(shape)
-
         if activeGradient != nil && gradientShapes.isEmpty {
             activeGradient = nil
         }
-
         currentPath.removeAll()
     }
-
     private func pathCommandEquals(_ cmd1: PathCommand, _ cmd2: PathCommand) -> Bool {
         let tolerance: CGFloat = 0.01
-
         switch (cmd1, cmd2) {
         case (.moveTo(let p1), .moveTo(let p2)):
             return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
@@ -398,12 +340,9 @@ extension PDFCommandParser {
             return false
         }
     }
-
     private func pathCommandsAreEqual(_ path1: [PathCommand], _ path2: [PathCommand]) -> Bool {
         guard path1.count == path2.count else { return false }
-
         let tolerance: CGFloat = 0.01
-
         for (cmd1, cmd2) in zip(path1, path2) {
             switch (cmd1, cmd2) {
             case (.moveTo(let p1), .moveTo(let p2)):
@@ -438,7 +377,6 @@ extension PDFCommandParser {
                 return false
             }
         }
-
         return true
     }
 }

@@ -1,24 +1,18 @@
 import SwiftUI
 import Combine
-
 extension VectorDocument {
     func makeClippingMaskFromSelection() {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
-
         guard let targetLayerIndex = selectedLayerIndex else { return }
-
         var shapesInOrder = selectedShapes
         let maskShape = shapesInOrder.removeLast()
         let contentShapes = shapesInOrder
         let groupShapes = [maskShape] + contentShapes
-
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
-
         var originalLayerIndices: [UUID: Int] = [:]
         var removedShapes: [UUID: VectorShape] = [:]
         var allRemovedObjectIDs: [UUID] = []
-
         for objectID in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[objectID] {
                 originalLayerIndices[objectID] = obj.layerIndex
@@ -26,9 +20,7 @@ extension VectorDocument {
                 allRemovedObjectIDs.append(objectID)
             }
         }
-
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
-
         let command = GroupCommand(
             operation: .group,
             layerIndex: targetLayerIndex,
@@ -40,24 +32,18 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs,
             originalLayerIndices: originalLayerIndices
         )
-
         commandManager.execute(command)
-
         viewState.orderedSelectedObjectIDs = [clippingGroup.id]
         viewState.selectedObjectIDs = [clippingGroup.id]
     }
-
     func releaseClippingMaskForSelection() {
         ungroupSelectedObjects()
     }
-
     func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
         guard let layerIndex = selectedLayerIndex else { return }
-
         let shapes = getShapesForLayer(layerIndex)
         guard let maskIndex = shapes.firstIndex(where: { $0.id == maskID }),
               var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex) else { return }
-
         var oldShapes: [UUID: VectorShape] = [:]
         var clippedShapeIDs: [UUID] = []
         oldShapes[maskID] = maskShape
@@ -67,19 +53,15 @@ extension VectorDocument {
                 clippedShapeIDs.append(shape.id)
             }
         }
-
         maskShape.transform = maskShape.transform.translatedBy(x: offset.x, y: offset.y)
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex, shape: maskShape)
-
         moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: maskIndex, by: offset)
-
         let allShapes = getShapesForLayer(layerIndex)
         for (idx, shape) in allShapes.enumerated() {
             if shape.clippedByShapeID == maskID {
                 moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: idx, by: offset)
             }
         }
-
         var newShapes: [UUID: VectorShape] = [:]
         if let shape = findShape(by: maskID) {
             newShapes[maskID] = shape
@@ -98,13 +80,10 @@ extension VectorDocument {
         ))
         commandManager.execute(command)
     }
-
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
         guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-
         if ImageContentRegistry.containsImage(shape, in: self) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
             shape.transform = shape.transform.translatedBy(x: offset.x, y: offset.y)
-
             var updatedElements: [PathElement] = []
             for element in shape.path.elements {
                 switch element {
@@ -167,35 +146,27 @@ extension VectorDocument {
             }
             shape.path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
         }
-
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
-
     func isShapeInClippingMask(_ shapeID: UUID) -> Bool {
         if let shape = findShape(by: shapeID) {
             return shape.isClippingPath || shape.clippedByShapeID != nil
         }
         return false
     }
-
     func getClippingMaskGroup(for maskID: UUID) -> [VectorShape] {
         guard let layerIndex = selectedLayerIndex else { return [] }
-
         var group: [VectorShape] = []
-
         if let maskShape = findShape(by: maskID), maskShape.isClippingPath {
             group.append(maskShape)
         }
-
         let shapes = getShapesForLayer(layerIndex)
-
         for shape in shapes {
             if shape.clippedByShapeID == maskID {
                 group.append(shape)
             }
         }
-
         return group
     }
 }

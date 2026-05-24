@@ -1,8 +1,6 @@
 import Foundation
 import CoreGraphics
-
 enum FreeHand2Parser {
-
     private static let headerSize = 256
     private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32]
     private static let pathRecordType: UInt16 = 0x151C
@@ -10,31 +8,22 @@ enum FreeHand2Parser {
     private static let rectRecordType: UInt16 = 0x1519
     private static let lineRecordType: UInt16 = 0x151D
     private static let unitsPerPoint: Double = 10.0
-
     private static let cornerPointType: UInt16 = 0x001B
     private static let curvePointType: UInt16 = 0x0009
-
     private struct FH2Point {
         let type: UInt16
-
         let controlIn: CGPoint
-
         let onCurve: CGPoint
-
         let controlOut: CGPoint
-
         var isCorner: Bool { type == cornerPointType }
     }
-
     private static func readUInt16BE(_ data: Data, offset: Int) -> UInt16 {
         let base = data.startIndex + offset
         return UInt16(data[base]) << 8 | UInt16(data[base + 1])
     }
-
     private static func readInt16BE(_ data: Data, offset: Int) -> Int16 {
         return Int16(bitPattern: readUInt16BE(data, offset: offset))
     }
-
     private static func readUInt32BE(_ data: Data, offset: Int) -> UInt32 {
         let base = data.startIndex + offset
         return UInt32(data[base]) << 24
@@ -42,18 +31,15 @@ enum FreeHand2Parser {
              | UInt32(data[base + 2]) << 8
              | UInt32(data[base + 3])
     }
-
     private struct RecordEntry {
         let offset: Int
         let type: UInt16
         let size: Int
     }
-
     enum GradientType { case linear, radial }
     struct GradientInfo {
         let type: GradientType
         let colors: [VectorColor]
-
         init(type: GradientType = .linear, colors: [VectorColor]) {
             self.type = type; self.colors = colors
         }
@@ -61,13 +47,11 @@ enum FreeHand2Parser {
             self.type = .linear; self.colors = [color1, color2]
         }
     }
-
     private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo], [Int: String]) {
         var colorTable: [Int: VectorColor] = [:]
         var widthTable: [Int: Double] = [:]
         var gradientTable: [Int: GradientInfo] = [:]
         var nameTable: [Int: String] = [:]
-
         var firstChildID = 18
         var tableChildIDs: [Int] = []
         for i in stride(from: headerSize, to: min(data.count - 10, headerSize + 2000), by: 1) {
@@ -88,7 +72,6 @@ enum FreeHand2Parser {
                 }
             }
         }
-
         var allRecords: [(offset: Int, type: UInt16, styleRid: Int, globalRid: Int)] = []
         var offset = headerSize
         var globalSeq = firstChildID
@@ -132,12 +115,10 @@ enum FreeHand2Parser {
             if matched { globalSeq += 1 }
             offset += 1
         }
-
         for rec in allRecords {
             let rid = rec.styleRid
             let gid = rec.globalRid
             let off = rec.offset
-
             func storeColor(_ color: VectorColor) {
                 colorTable[rid] = color
                 colorTable[gid] = color
@@ -157,10 +138,8 @@ enum FreeHand2Parser {
                 let r = (1 - c) * (1 - k); let g = (1 - m) * (1 - k); let b = (1 - y) * (1 - k)
                 storeColor(VectorColor.rgb(RGBColor(red: r, green: g, blue: b)))
             }
-
             if rec.type >= 0x14B0 && off + 12 <= data.count {
                 let innerRef = Int(readUInt16BE(data, offset: off + 10))
-
                 if rec.type == 0x14B8 && innerRef > 0 {
                     if let edgeColor = colorTable[innerRef] {
                         gradientTable[rid] = GradientInfo(type: .radial, colors: [.white, edgeColor])
@@ -186,7 +165,6 @@ enum FreeHand2Parser {
                     }
                 }
             }
-
             if rec.type == 0x14B6 && off + 20 <= data.count {
                 let rawWidth = Int(readUInt16BE(data, offset: off + 18))
                 if rawWidth > 0 {
@@ -194,7 +172,6 @@ enum FreeHand2Parser {
                     widthTable[gid] = Double(rawWidth) / 10.0
                 }
             }
-
             if rec.type == 0x0006, off + 5 <= data.count {
                 let nameLen = Int(data[off + 4])
                 if nameLen > 0, off + 5 + nameLen <= data.count {
@@ -206,7 +183,6 @@ enum FreeHand2Parser {
                 }
             }
         }
-
         let colorRecords = allRecords
             .filter { $0.type == 0x1452 || $0.type == 0x1453 || $0.type == 0x1454 }
             .prefix(tableChildIDs.count)
@@ -226,10 +202,8 @@ enum FreeHand2Parser {
                 colorTable[slotID] = .rgb(RGBColor(red: r, green: g, blue: b))
             }
         }
-
         return (colorTable, widthTable, gradientTable, nameTable)
     }
-
     private static func parseGroupColorsByAbsID(data: Data,
                                                  colorTable: [Int: VectorColor]) -> [Int: VectorColor] {
         var result: [Int: VectorColor] = [:]
@@ -266,7 +240,6 @@ enum FreeHand2Parser {
         }
         return result
     }
-
     static func parseNamedStrings(data: Data) -> [String] {
         var names: [String] = []
         var offset = headerSize
@@ -286,7 +259,6 @@ enum FreeHand2Parser {
         }
         return names
     }
-
     static func parseTextRecords(data: Data,
                                   colorTable: [Int: VectorColor] = [:],
                                   nameTable: [Int: String] = [:])
@@ -294,7 +266,6 @@ enum FreeHand2Parser {
              fontFamily: String, color: VectorColor, layerIndex: Int,
              bold: Bool, italic: Bool, alignment: Int)]
     {
-
         var distinctFontRefs: [Int] = []
         var seenFontRefs = Set<Int>()
         var scanOffset = headerSize
@@ -315,7 +286,6 @@ enum FreeHand2Parser {
         for (rank, ref) in distinctFontRefs.enumerated() { fontRefToRank[ref] = rank }
         let allNames = parseNamedStrings(data: data)
         let fontNames = Array(allNames.prefix(distinctFontRefs.count))
-
         var results: [(String, Double, Double, Double, String, VectorColor, Int, Bool, Bool, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
@@ -370,7 +340,6 @@ enum FreeHand2Parser {
         }
         return results
     }
-
     private static func parseLayers(data: Data) -> [[Int]] {
         var layers: [[Int]] = []
         var offset = headerSize
@@ -378,14 +347,12 @@ enum FreeHand2Parser {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
             if rtype == 0x138A && size >= 20 && size <= 200 {
-
                 var vals: [Int] = []
                 var j = offset + 6
                 while j + 1 < offset + size && j + 1 < data.count {
                     vals.append(Int(readUInt16BE(data, offset: j)))
                     j += 2
                 }
-
                 var children: [Int] = []
                 for (idx, v) in vals.enumerated() {
                     if idx > 0 && v > 0 && v != 16 && v < 10000 {
@@ -404,7 +371,6 @@ enum FreeHand2Parser {
         }
         return layers
     }
-
     private static func parsePathStylesByPosition(data: Data,
                                                    pathCount: Int,
                                                    colorTable: [Int: VectorColor])
@@ -432,24 +398,19 @@ enum FreeHand2Parser {
         }
         return result
     }
-
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
         let (ct, wt, _, _) = buildColorAndWidthTables(data: data)
         return (ct, wt)
     }
-
     static func debugGradientTable(data: Data) -> [Int: GradientInfo] {
         let (_, _, gt, _) = buildColorAndWidthTables(data: data)
         return gt
     }
-
     static func debugNameTable(data: Data) -> [Int: String] {
         let (_, _, _, nt) = buildColorAndWidthTables(data: data)
         return nt
     }
-
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
-
         guard data.count >= headerSize + 4 else {
             throw FreeHandImportError.notSupported
         }
@@ -458,19 +419,14 @@ enum FreeHand2Parser {
                 throw FreeHandImportError.notSupported
             }
         }
-
         let pageWidthRaw = Double(readUInt16BE(data, offset: 8))
         let pageHeightRaw = Double(readUInt16BE(data, offset: 10))
         let pageWidth = pageWidthRaw / unitsPerPoint
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
-
         let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
-
         let layerShapeIDs = parseLayers(data: data)
-
         let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
-
         var offsetToAbsID: [Int: Int] = [:]
         var preAbsID = 2
         var preOff = headerSize
@@ -478,7 +434,6 @@ enum FreeHand2Parser {
             let sz = Int(readUInt16BE(data, offset: preOff))
             let rt = readUInt16BE(data, offset: preOff + 2)
             var found = false
-
             if rt == 0x138A {  }
             else if rt == 0x1389 && sz == 56 { found = true }
             else if rt == 0x0005 && sz >= 16 && sz < 300 { found = true }
@@ -497,18 +452,14 @@ enum FreeHand2Parser {
             }
             preOff += 1
         }
-
         var shapes: [VectorShape] = []
         var shapeAbsIDs: [Int] = []
         var offset = headerSize
-
         while offset + 4 <= data.count {
             let word = readUInt16BE(data, offset: offset)
             var consumed = 0
-
             if offset + 44 <= data.count {
                 let rtype = readUInt16BE(data, offset: offset + 2)
-
                 if rtype == pathRecordType && word >= 44 && offset + Int(word) <= data.count {
                     let recordSize = Int(word)
                     let pointCount = Int(readUInt16BE(data, offset: offset + 28))
@@ -549,11 +500,9 @@ enum FreeHand2Parser {
                     }
                 }
             }
-
             _ = consumed
             offset += 1
         }
-
         if !layerShapeIDs.isEmpty {
             let shapeIDSet = Set(shapeAbsIDs)
             for (layerIdx, layerIDs) in layerShapeIDs.enumerated() {
@@ -563,11 +512,9 @@ enum FreeHand2Parser {
                 }
             }
         }
-
         guard !shapes.isEmpty else {
             throw FreeHandImportError.emptyOutput
         }
-
         if !groupColorByAbsID.isEmpty {
             for i in 0..<shapes.count {
                 let absID = shapeAbsIDs[i]
@@ -584,7 +531,6 @@ enum FreeHand2Parser {
                 }
             }
         }
-
         let positionalColors = parsePathStylesByPosition(data: data,
                                                           pathCount: shapes.count,
                                                           colorTable: colorTable)
@@ -603,7 +549,6 @@ enum FreeHand2Parser {
                 }
             }
         }
-
         let stats = FreeHandDirectImporter.Stats(
             paths: shapes.count,
             groups: 0,
@@ -613,43 +558,33 @@ enum FreeHand2Parser {
             symbolInstances: 0,
             contentIdPaths: 0
         )
-
         return FreeHandDirectImporter.Result(
             shapes: shapes,
             pageSize: pageSize,
             stats: stats
         )
     }
-
     private static func parsePathRecord(data: Data, recordOffset: Int,
                                         recordSize: Int,
                                         pageHeight: Double,
                                         colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-
         guard recordSize >= 44 else { return nil }
-
         let pointCount = Int(readUInt16BE(data, offset: recordOffset + 28))
         guard pointCount > 0 else { return nil }
-
         let expectedSize = 44 + pointCount * 16
         guard recordSize >= expectedSize else { return nil }
-
         let pointDataStart = recordOffset + 30
         var fh2Points: [FH2Point] = []
         fh2Points.reserveCapacity(pointCount)
-
         for i in 0..<pointCount {
             let pOffset = pointDataStart + i * 16
-
             let pointType = readUInt16BE(data, offset: pOffset + 2)
-
             let x1 = Double(readInt16BE(data, offset: pOffset + 4))
             let y1 = Double(readInt16BE(data, offset: pOffset + 6))
             let x2 = Double(readInt16BE(data, offset: pOffset + 8))
             let y2 = Double(readInt16BE(data, offset: pOffset + 10))
             let x3 = Double(readInt16BE(data, offset: pOffset + 12))
             let y3 = Double(readInt16BE(data, offset: pOffset + 14))
-
             let onCurve = CGPoint(
                 x: x1 / unitsPerPoint,
                 y: pageHeight - y1 / unitsPerPoint
@@ -662,7 +597,6 @@ enum FreeHand2Parser {
                 x: x3 / unitsPerPoint,
                 y: pageHeight - y3 / unitsPerPoint
             )
-
             fh2Points.append(FH2Point(
                 type: pointType,
                 controlIn: controlIn,
@@ -670,7 +604,6 @@ enum FreeHand2Parser {
                 controlOut: controlOut
             ))
         }
-
         let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
         let firstOnCurve = fh2Points[0].onCurve
         let lastOnCurve = fh2Points[fh2Points.count - 1].onCurve
@@ -678,26 +611,21 @@ enum FreeHand2Parser {
             && abs(firstOnCurve.x - lastOnCurve.x) < 0.01
             && abs(firstOnCurve.y - lastOnCurve.y) < 0.01
         let isClosed = pointsMatch || filledFlag == 1
-
         let elements = buildPathElements(from: fh2Points, closed: isClosed)
         guard !elements.isEmpty else { return nil }
-
         let path = VectorPath(
             elements: elements,
             isClosed: isClosed,
             fillRule: .winding
         )
-
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                           colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: isClosed)
-
         var detectedType: GeometricShapeType?
         var baseName = "Path"
         if let detected = PathShapeDetector.detect(elements: elements) {
             detectedType = detected.type
             baseName = detected.name
         }
-
         return VectorShape(
             name: baseName,
             path: path,
@@ -707,7 +635,6 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
-
     private static func scanForwardForStyleColor(data: Data, startOffset: Int,
                                                   colorTable: [Int: VectorColor]) -> VectorColor? {
         let limit = min(startOffset + 2048, data.count - 4)
@@ -725,21 +652,17 @@ enum FreeHand2Parser {
         }
         return nil
     }
-
     private static func extractFillStroke(data: Data, recordOffset: Int,
                                            colorTable: [Int: VectorColor],
                                            widthTable: [Int: Double], gradientTable: [Int: GradientInfo] = [:],
                                            isClosed: Bool) -> (fill: FillStyle?, stroke: StrokeStyle?) {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
-
         let whiteFillFlag = data[recordOffset + 13] & 0x80 != 0
-
         var fillStyle: FillStyle? = nil
         if isClosed && whiteFillFlag {
             fillStyle = FillStyle(color: .white)
         } else if isClosed && fillRef > 0 {
-
             if let grad = gradientTable[fillRef], grad.colors.count >= 2 {
                 var stops: [GradientStop] = []
                 for (idx, color) in grad.colors.enumerated() {
@@ -764,7 +687,6 @@ enum FreeHand2Parser {
                 fillStyle = FillStyle(color: .rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray)))
             }
         }
-
         let strokeStyle: StrokeStyle?
         if strokeRef > 0, let strokeColor = colorTable[strokeRef] {
             let strokeWidth = widthTable[strokeRef] ?? 0.5
@@ -772,33 +694,25 @@ enum FreeHand2Parser {
         } else {
             strokeStyle = nil
         }
-
         return (fillStyle, strokeStyle)
     }
-
     private static func parseRectRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
         let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
-
         let width = right - left
         let height = top - bottom
         guard width > 0.1 && height > 0.1 else { return nil }
-
         let cornerRadiusX = Double(readUInt16BE(data, offset: recordOffset + 38)) / unitsPerPoint
         let cornerRadiusY = Double(readUInt16BE(data, offset: recordOffset + 40)) / unitsPerPoint
         let cr = min(cornerRadiusX, cornerRadiusY, width / 2, height / 2)
-
         let x = left
         let y = pageHeight - top
-
         let elements: [PathElement]
         if cr > 0.1 {
-
             let k: Double = 0.5522847498
             elements = [
                 .move(to: VectorPoint(x + cr, y)),
@@ -829,11 +743,9 @@ enum FreeHand2Parser {
                 .close
             ]
         }
-
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                           colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: true)
-
         return VectorShape(
             name: cr > 0.1 ? "Rounded Rectangle" : "Rectangle",
             path: path,
@@ -843,25 +755,20 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
-
     private static func parseLineRecord(data: Data, recordOffset: Int,
                                           pageHeight: Double,
                                           colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-
         let x1 = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let x2 = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
         let y2 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(x1, y1)),
             .line(to: VectorPoint(x2, y2))
         ]
-
         let path = VectorPath(elements: elements, isClosed: false, fillRule: .winding)
         let (_, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                   colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: false)
-
         return VectorShape(
             name: "Line",
             path: path,
@@ -871,25 +778,20 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
-
     private static func parseOvalRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
         let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
-
         let width = right - left
         let height = top - bottom
         guard width > 0.1 && height > 0.1 else { return nil }
-
         let cx = left + width / 2.0
         let cy = pageHeight - (bottom + height / 2.0)
         let rx = width / 2.0
         let ry = height / 2.0
-
         let k: Double = 0.5522847498
         let elements: [PathElement] = [
             .move(to: VectorPoint(cx + rx, cy)),
@@ -907,12 +809,9 @@ enum FreeHand2Parser {
                    control2: VectorPoint(cx + rx, cy + ry * k)),
             .close
         ]
-
         let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
-
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                           colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: true)
-
         return VectorShape(
             name: "Ellipse",
             path: path,
@@ -922,33 +821,24 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
-
     private static func buildPathElements(from points: [FH2Point], closed: Bool = false) -> [PathElement] {
         guard let first = points.first else { return [] }
-
         var elements: [PathElement] = []
         elements.reserveCapacity(points.count + 1)
-
         elements.append(.move(to: VectorPoint(first.onCurve.x, first.onCurve.y)))
-
         let segmentCount = points.count - 1
-
         for i in 0..<segmentCount {
             let prev = points[i]
             let next = points[(i + 1) % points.count]
-
             let prevOutCoincident =
                 abs(prev.controlOut.x - prev.onCurve.x) < 0.01
                 && abs(prev.controlOut.y - prev.onCurve.y) < 0.01
             let nextInCoincident =
                 abs(next.controlIn.x - next.onCurve.x) < 0.01
                 && abs(next.controlIn.y - next.onCurve.y) < 0.01
-
             if prevOutCoincident && nextInCoincident {
-
                 elements.append(.line(to: VectorPoint(next.onCurve.x, next.onCurve.y)))
             } else {
-
                 elements.append(.curve(
                     to: VectorPoint(next.onCurve.x, next.onCurve.y),
                     control1: VectorPoint(prev.controlOut.x, prev.controlOut.y),
@@ -956,9 +846,7 @@ enum FreeHand2Parser {
                 ))
             }
         }
-
         if closed {
-
             let last = points[points.count - 1]
             let prevOutCoincident = abs(last.controlOut.x - last.onCurve.x) < 0.01
                 && abs(last.controlOut.y - last.onCurve.y) < 0.01
@@ -975,7 +863,6 @@ enum FreeHand2Parser {
             }
             elements.append(.close)
         }
-
         return elements
     }
 }

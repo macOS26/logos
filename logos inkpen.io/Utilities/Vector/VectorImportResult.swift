@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct VectorImportResult: Identifiable {
     let id = UUID()
     let success: Bool
@@ -7,16 +6,11 @@ struct VectorImportResult: Identifiable {
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
-
     var layers: [Layer] = []
-
     var groupShapeIDs: [UUID] = []
 }
-
 extension VectorImportResult {
-
     typealias ShapeFilter = (VectorShape) -> Bool
-
     @MainActor
     @discardableResult
     func dispatchAsImportCommand(into document: VectorDocument,
@@ -26,10 +20,8 @@ extension VectorImportResult {
         guard let target = fallbackLayer
                             ?? document.selectedLayerIndex
                             ?? document.snapshot.layers.indices.first else { return nil }
-
         let usable: [VectorShape]
         if let filter = filter { usable = shapes.filter(filter) } else { usable = shapes }
-
         let existingNames = Set(document.snapshot.layers.map { $0.name })
         let layersToAppend: [Layer] = layers.map { parsed in
             Layer(
@@ -43,7 +35,6 @@ extension VectorImportResult {
                 color: parsed.color
             )
         }
-
         let baseCount = document.snapshot.layers.count
         var parsedToDocLayer: [Int: Int] = [:]
         if layersToAppend.isEmpty {
@@ -54,15 +45,12 @@ extension VectorImportResult {
             }
         }
         let defaultTarget = parsedToDocLayer[0] ?? target
-
         var shapeIDToParsedLayer: [UUID: Int] = [:]
         for (idx, parsedLayer) in layers.enumerated() {
             for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
         }
-
         var topLevel: [VectorObject] = []
         var members: [VectorObject] = []
-
         @MainActor
         func collectMembers(of shape: VectorShape, layer: Int, into ids: inout [UUID]) {
             for child in shape.groupedShapes {
@@ -78,11 +66,9 @@ extension VectorImportResult {
                 ids.append(resolved.id)
             }
         }
-
         for shape in usable {
             let dest = shapeIDToParsedLayer[shape.id]
                 .flatMap { parsedToDocLayer[$0] } ?? defaultTarget
-
             if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
                 var container = shape
                 var memberIDs = container.memberIDs
@@ -96,12 +82,10 @@ extension VectorImportResult {
                 topLevel.append(VectorObject(id: shape.id, layerIndex: dest, objectType: type))
             }
         }
-
         let command = ImportCommand(newLayers: layersToAppend, topLevel: topLevel, members: members)
         document.commandManager.execute(command)
         return command
     }
-
     private static func uniqueName(_ proposed: String, against existing: Set<String>) -> String {
         if !existing.contains(proposed) { return proposed }
         var n = 2
@@ -109,7 +93,6 @@ extension VectorImportResult {
         return "\(proposed) \(n)"
     }
 }
-
 struct VectorImportMetadata {
     let originalFormat: VectorFileFormat
     let documentSize: CGSize
@@ -125,14 +108,12 @@ struct VectorImportMetadata {
     let documentVersion: String?
     let inkpenMetadata: String?
 }
-
 enum VectorUnit: String, CaseIterable {
     case points = "pt"
     case inches = "in"
     case millimeters = "mm"
     case pixels = "px"
     case picas = "pc"
-
     var pointsPerUnit: Double {
         switch self {
         case .points: return 1.0
@@ -143,7 +124,6 @@ enum VectorUnit: String, CaseIterable {
         }
     }
 }
-
 enum VectorImportError: Error, LocalizedError {
     case fileNotFound
     case unsupportedFormat(VectorFileFormat)
@@ -154,7 +134,6 @@ enum VectorImportError: Error, LocalizedError {
     case scalingError(String)
     case parsingError(String, line: Int?)
     case commercialLicenseRequired(VectorFileFormat)
-
     var errorDescription: String? {
         switch self {
         case .fileNotFound:

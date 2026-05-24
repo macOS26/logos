@@ -1,9 +1,7 @@
 import SwiftUI
 import AppKit
 import ImageIO
-
 enum ImageContentRegistry {
-
     private static func isXMLPayload(_ data: Data) -> Bool {
         guard data.count >= 5 else { return false }
         var offset = 0
@@ -20,34 +18,27 @@ enum ImageContentRegistry {
         }
         return false
     }
-
     static func register(image: CGImage, for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage[shapeID] = image
     }
-
     static func image(for shapeID: UUID, in document: VectorDocument) -> CGImage? {
         return document.imageStorage[shapeID]
     }
-
     static func containsImage(_ shape: VectorShape, in document: VectorDocument) -> Bool {
         return document.imageStorage[shape.id] != nil
     }
-
     @discardableResult
     static func hydrateImageIfAvailable(for shape: VectorShape, in document: VectorDocument) -> CGImage? {
         if let existing = document.imageStorage[shape.id] {
             return existing
         }
-
         var loadedCGImage: CGImage? = nil
-
         if let data = shape.embeddedImageData, !isXMLPayload(data),
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
             print("✅ Loaded embedded image for shape: \(shape.id)")
         }
-
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
@@ -58,12 +49,10 @@ enum ImageContentRegistry {
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
                    let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-
                     let width = sourceCGImage.width
                     let height = sourceCGImage.height
                     let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
                     let bitmapInfo = sourceCGImage.bitmapInfo
-
                     if let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
                         context.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
                         if let memoryCGImage = context.makeImage() {
@@ -86,36 +75,29 @@ enum ImageContentRegistry {
         } else if let linkedImagePath = shape.linkedImagePath {
             print("❌ [Registry] Shape has linkedImagePath but NO bookmark: \(linkedImagePath)")
         }
-
         if let cgImage = loadedCGImage {
             let mb = cgImage.width * cgImage.height * 4 / (1024 * 1024)
             print("🖼️ [MemDiag] imageStorage[\(shape.id)] = \(cgImage.width)x\(cgImage.height) (\(mb)MB uncompressed), total stored: \(document.imageStorage.count + 1)")
             document.imageStorage[shape.id] = cgImage
             return cgImage
         }
-
         return nil
     }
-
     static func setBaseDirectory(_ url: URL?, for document: VectorDocument) {
         document.baseDirectoryURL = url
     }
-
     static func remove(for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage.removeValue(forKey: shapeID)
     }
-
     static func cleanup(keepingShapes shapeIDs: Set<UUID>, in document: VectorDocument) {
         let keysToRemove = document.imageStorage.keys.filter { !shapeIDs.contains($0) }
         for key in keysToRemove {
             document.imageStorage.removeValue(forKey: key)
         }
     }
-
     static func clearAll(in document: VectorDocument) {
         document.imageStorage.removeAll()
     }
-
     static func storageSize(in document: VectorDocument) -> Int {
         return document.imageStorage.count
     }

@@ -1,11 +1,9 @@
 import SwiftUI
-
 enum JoinType: CaseIterable {
     case round
     case miter
     case bevel
     case square
-
     var displayName: String {
         switch self {
         case .round: return "Round"
@@ -14,7 +12,6 @@ enum JoinType: CaseIterable {
         case .square: return "Square"
         }
     }
-
     var iconName: String {
         switch self {
         case .round: return "circle"
@@ -23,7 +20,6 @@ enum JoinType: CaseIterable {
         case .square: return "square"
         }
     }
-
     var description: String {
         switch self {
         case .round: return "Rounded corners (smooth curves)"

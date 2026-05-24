@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct SharedEnvelopeOutline: View {
     let shape: VectorShape
     let zoomLevel: Double
@@ -10,7 +9,6 @@ struct SharedEnvelopeOutline: View {
     var body: some View {
         if shape.isWarpObject && shape.warpEnvelope.count >= 4 {
             let corners = shape.warpEnvelope
-
             Path { path in
                 path.move(to: corners[0])
                 path.addLine(to: corners[1])
@@ -32,7 +30,6 @@ struct SharedEnvelopeOutline: View {
         }
     }
 }
-
 struct SharedEnvelopeCorners: View {
     let shape: VectorShape
     let zoomLevel: Double
@@ -43,7 +40,6 @@ struct SharedEnvelopeCorners: View {
         if shape.isWarpObject && shape.warpEnvelope.count >= 4 {
             ForEach(0..<4) { cornerIndex in
                 let cornerPos = shape.warpEnvelope[cornerIndex]
-
                 Rectangle()
                     .fill(handleColor)
                     .stroke(Color.white, lineWidth: 1.0)

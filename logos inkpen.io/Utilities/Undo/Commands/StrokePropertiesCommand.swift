@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 import CoreGraphics
-
 class StrokePropertiesCommand: BaseCommand {
     enum PropertyType {
         case placement
@@ -10,7 +9,6 @@ class StrokePropertiesCommand: BaseCommand {
         case miterLimit
         case imageOpacity
     }
-
     private let objectIDs: [UUID]
     private let propertyType: PropertyType
     private let oldPlacements: [UUID: StrokePlacement]?
@@ -23,7 +21,6 @@ class StrokePropertiesCommand: BaseCommand {
     private let newMiterLimits: [UUID: Double]?
     private let oldOpacities: [UUID: Double]?
     private let newOpacities: [UUID: Double]?
-
     init(objectIDs: [UUID],
          placement old: [UUID: StrokePlacement],
          new: [UUID: StrokePlacement]) {
@@ -40,7 +37,6 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
-
     init(objectIDs: [UUID],
          lineJoin old: [UUID: CGLineJoin],
          new: [UUID: CGLineJoin]) {
@@ -57,7 +53,6 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
-
     init(objectIDs: [UUID],
          lineCap old: [UUID: CGLineCap],
          new: [UUID: CGLineCap]) {
@@ -74,7 +69,6 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
-
     init(objectIDs: [UUID],
          miterLimit old: [UUID: Double],
          new: [UUID: Double]) {
@@ -91,7 +85,6 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
-
     init(objectIDs: [UUID],
          imageOpacity old: [UUID: Double],
          new: [UUID: Double]) {
@@ -108,7 +101,6 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = old
         self.newOpacities = new
     }
-
     override func execute(on document: VectorDocument) {
         switch propertyType {
         case .placement:
@@ -133,7 +125,6 @@ class StrokePropertiesCommand: BaseCommand {
             }
         }
     }
-
     override func undo(on document: VectorDocument) {
         switch propertyType {
         case .placement:
@@ -158,14 +149,11 @@ class StrokePropertiesCommand: BaseCommand {
             }
         }
     }
-
     private func applyPlacements(_ placements: [UUID: StrokePlacement], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
-
         for id in objectIDs {
             guard let placement = placements[id],
                   var obj = document.snapshot.objects[id] else { continue }
-
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.placement = placement
@@ -176,17 +164,13 @@ class StrokePropertiesCommand: BaseCommand {
                 continue
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayers)
     }
-
     private func applyLineJoins(_ lineJoins: [UUID: CGLineJoin], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
-
         for id in objectIDs {
             guard let lineJoin = lineJoins[id],
                   var obj = document.snapshot.objects[id] else { continue }
-
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
@@ -197,17 +181,13 @@ class StrokePropertiesCommand: BaseCommand {
                 continue
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayers)
     }
-
     private func applyLineCaps(_ lineCaps: [UUID: CGLineCap], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
-
         for id in objectIDs {
             guard let lineCap = lineCaps[id],
                   var obj = document.snapshot.objects[id] else { continue }
-
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineCap = LineCap(lineCap)
@@ -218,17 +198,13 @@ class StrokePropertiesCommand: BaseCommand {
                 continue
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayers)
     }
-
     private func applyMiterLimits(_ miterLimits: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
-
         for id in objectIDs {
             guard let miterLimit = miterLimits[id],
                   var obj = document.snapshot.objects[id] else { continue }
-
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.miterLimit = miterLimit
@@ -239,17 +215,13 @@ class StrokePropertiesCommand: BaseCommand {
                 continue
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayers)
     }
-
     private func applyImageOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
-
         for id in objectIDs {
             guard let opacity = opacities[id],
                   var obj = document.snapshot.objects[id] else { continue }
-
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.opacity = opacity
@@ -260,7 +232,6 @@ class StrokePropertiesCommand: BaseCommand {
                 continue
             }
         }
-
         document.triggerLayerUpdates(for: affectedLayers)
     }
 }

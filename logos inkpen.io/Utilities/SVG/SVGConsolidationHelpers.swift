@@ -1,19 +1,14 @@
 import SwiftUI
-
 struct SVGConsolidationHelpers {
-
     static func consolidateSharedGradientsFixed(in inputShapes: [VectorShape]) -> [VectorShape] {
         guard !inputShapes.isEmpty else { return inputShapes }
-
         struct GroupKey: Hashable {
             let blendMode: BlendMode
             let opacity: Double
             let gradientSig: String
         }
-
         var buckets: [GroupKey: [VectorShape]] = [:]
         var shapeToBucketMap: [VectorShape: GroupKey] = [:]
-
         for shape in inputShapes {
             guard let fill = shape.fillStyle,
                   case .gradient(let g) = fill.color,
@@ -26,14 +21,12 @@ struct SVGConsolidationHelpers {
             buckets[key, default: []].append(shape)
             shapeToBucketMap[shape] = key
         }
-
         var consolidatedShapes: [GroupKey: VectorShape] = [:]
         for (key, shapes) in buckets {
             if shapes.count == 1 {
                 consolidatedShapes[key] = shapes[0]
                 continue
             }
-
             let cgPaths: [CGPath] = shapes.map { $0.path.cgPath }
             var combined: CGPath? = cgPaths.first
             for p in cgPaths.dropFirst() {
@@ -44,7 +37,6 @@ struct SVGConsolidationHelpers {
                     break
                 }
             }
-
             let compoundPath: VectorPath
             if let unified = combined {
                 compoundPath = VectorPath(cgPath: unified, fillRule: .winding)
@@ -56,7 +48,6 @@ struct SVGConsolidationHelpers {
                 }
                 compoundPath = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
             }
-
             let base = shapes[0]
             var compound = VectorShape(
                 name: "Compound Gradient",
@@ -84,7 +75,6 @@ struct SVGConsolidationHelpers {
             compound.updateBounds()
             consolidatedShapes[key] = compound
         }
-
         var result: [VectorShape] = []
         for shape in inputShapes {
             if let key = shapeToBucketMap[shape] {
@@ -99,7 +89,6 @@ struct SVGConsolidationHelpers {
                 result.append(shape)
             }
         }
-
         return result
     }
 }

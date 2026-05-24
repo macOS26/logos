@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct Layer: Equatable, Identifiable, Codable {
     let id: UUID
     var name: String
@@ -9,7 +8,6 @@ struct Layer: Equatable, Identifiable, Codable {
     var opacity: Double
     var blendMode: BlendMode
     var color: LayerColor
-
     init(
         id: UUID = UUID(),
         name: String,

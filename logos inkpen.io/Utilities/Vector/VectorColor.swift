@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum VectorColor: Hashable {
     case rgb(RGBColor)
     case cmyk(CMYKColor)
@@ -11,7 +10,6 @@ enum VectorColor: Hashable {
     case clear
     case black
     case white
-
     var color: Color {
         switch self {
         case .rgb(let rgb):
@@ -36,7 +34,6 @@ enum VectorColor: Hashable {
             return Color.white
         }
     }
-
     var cgColor: CGColor {
         switch self {
         case .rgb(let rgb):
@@ -68,14 +65,11 @@ enum VectorColor: Hashable {
             return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 1, green: 1, blue: 1, alpha: 1)
         }
     }
-
     static let basicColors: [VectorColor] = [
         .black, .white, .clear
     ]
-
     var svgColor: String {
         let useDisplayP3 = AppState.shared.exportColorSpace == .displayP3
-
         switch self {
         case .clear:
             return "none"
@@ -149,7 +143,6 @@ enum VectorColor: Hashable {
             return gradient.stops.first?.color.svgColor ?? "#000000"
         }
     }
-
     private func hsbToRgb(h: Double, s: Double, b: Double) -> (r: Double, g: Double, b: Double) {
         let hue = h * 360
         let saturation = s
@@ -158,7 +151,6 @@ enum VectorColor: Hashable {
         let x = c * (1 - abs((hue / 60).truncatingRemainder(dividingBy: 2) - 1))
         let m = brightness - c
         let (r, g, b): (Double, Double, Double)
-
         switch Int(hue) / 60 {
         case 0:
             (r, g, b) = (c, x, 0)
@@ -175,15 +167,12 @@ enum VectorColor: Hashable {
         default:
             (r, g, b) = (0, 0, 0)
         }
-
         return (r + m, g + m, b + m)
     }
 }
-
 extension VectorColor: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-
         switch self {
         case .rgb(let color):
             try container.encode(["rgb": color])
@@ -207,10 +196,8 @@ extension VectorColor: Codable {
             try container.encode("white")
         }
     }
-
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-
         if let simpleColor = try? container.decode(String.self) {
             switch simpleColor {
             case "black":
@@ -227,14 +214,12 @@ extension VectorColor: Codable {
             }
         } else {
             let dict = try container.decode([String: AnyCodable].self)
-
             guard let (key, value) = dict.first, dict.count == 1 else {
                 throw DecodingError.dataCorrupted(DecodingError.Context(
                     codingPath: decoder.codingPath,
                     debugDescription: "VectorColor should have exactly one color type"
                 ))
             }
-
             switch key {
             case "rgb":
                 let color = try value.decode(RGBColor.self)
@@ -266,10 +251,8 @@ extension VectorColor: Codable {
         }
     }
 }
-
 private struct AnyCodable: Codable {
     let value: Any
-
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let dict = try? container.decode([String: AnyCodable].self) {
@@ -288,7 +271,6 @@ private struct AnyCodable: Codable {
             value = NSNull()
         }
     }
-
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch value {
@@ -308,11 +290,9 @@ private struct AnyCodable: Codable {
             try container.encodeNil()
         }
     }
-
     init(wrapping value: Any) {
         self.value = value
     }
-
     func decode<T: Decodable>(_ type: T.Type) throws -> T {
         let data = try JSONSerialization.data(withJSONObject: value)
         return try JSONDecoder().decode(type, from: data)

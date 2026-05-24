@@ -1,8 +1,6 @@
 import SwiftUI
 import Combine
-
 extension VectorDocument {
-
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -19,16 +17,13 @@ extension VectorDocument {
                 break
             }
         }
-
         print("🎨 Updating fill color for non-group shape \(id)")
-
         updateShapeByID(id) { shape in
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
             } else {
                 shape.fillStyle?.color = color
             }
-
             if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
@@ -43,7 +38,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -58,14 +52,12 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
             } else {
                 shape.strokeStyle?.color = color
             }
-
             if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
                 var updatedChildren: [VectorShape] = []
                 for var childShape in shape.groupedShapes {
@@ -80,7 +72,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeFillOpacityInUnified(id: UUID, opacity: Double) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -95,7 +86,6 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             if shape.fillStyle == nil {
                 shape.fillStyle = FillStyle(color: defaultFillColor, opacity: opacity)
@@ -104,7 +94,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeStrokeWidthInUnified(id: UUID, width: Double) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -119,7 +108,6 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
@@ -128,31 +116,26 @@ extension VectorDocument {
             }
         }
     }
-
     func lockShapeInUnified(id: UUID) {
         updateShapeByID(id) { shape in
             shape.isLocked = true
         }
     }
-
     func unlockShapeInUnified(id: UUID) {
         updateShapeByID(id) { shape in
             shape.isLocked = false
         }
     }
-
     func hideShapeInUnified(id: UUID) {
         updateShapeByID(id) { shape in
             shape.isVisible = false
         }
     }
-
     func showShapeInUnified(id: UUID) {
         updateShapeByID(id) { shape in
             shape.isVisible = true
         }
     }
-
     func updateShapeStrokeOpacityInUnified(id: UUID, opacity: Double) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -167,7 +150,6 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: opacity)
@@ -176,7 +158,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeOpacityInUnified(id: UUID, opacity: Double) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -191,17 +172,13 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             shape.opacity = opacity
         }
     }
-
     func applyTransformToGroup(groupID: UUID, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
-
         guard let object = snapshot.objects[groupID] else { return }
-
         var memberIDs: [UUID] = []
         switch object.objectType {
         case .group(let shape), .clipGroup(let shape):
@@ -209,19 +186,14 @@ extension VectorDocument {
         default:
             return
         }
-
         guard !memberIDs.isEmpty else { return }
-
         for memberID in memberIDs {
             applyTransformToMemberShape(memberID: memberID, transform: transform)
         }
-
         recalculateGroupBounds(groupID: groupID)
     }
-
     private func applyTransformToMemberShape(memberID: UUID, transform: CGAffineTransform) {
         guard let object = snapshot.objects[memberID] else { return }
-
         switch object.objectType {
         case .group(let shape), .clipGroup(let shape):
             if !shape.memberIDs.isEmpty {
@@ -234,7 +206,6 @@ extension VectorDocument {
             updateShapeByID(memberID) { shape in
                 let combinedTransform = shape.transform.concatenating(transform)
                 var transformedElements: [PathElement] = []
-
                 for element in shape.path.elements {
                     switch element {
                     case .move(let to):
@@ -263,7 +234,6 @@ extension VectorDocument {
                         transformedElements.append(.close)
                     }
                 }
-
                 shape.path = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
                 shape.transform = .identity
                 shape.updateBounds()
@@ -277,13 +247,11 @@ extension VectorDocument {
             }
         }
     }
-
     func recalculateGroupBounds(groupID: UUID) {
         guard let object = snapshot.objects[groupID] else {
             Log.error("❌ recalculateGroupBounds: Group \(groupID) not found in snapshot.objects", category: .error)
             return
         }
-
         var memberIDs: [UUID] = []
         switch object.objectType {
         case .group(let shape), .clipGroup(let shape):
@@ -291,7 +259,6 @@ extension VectorDocument {
         default:
             return
         }
-
         var calculatedGroupBounds = CGRect.null
         var foundMembers = 0
         for memberID in memberIDs {
@@ -301,7 +268,6 @@ extension VectorDocument {
             }
             let memberShape = memberObject.shape
             foundMembers += 1
-
             let shapeBounds: CGRect
             if memberShape.typography != nil, let textPosition = memberShape.textPosition, let areaSize = memberShape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
@@ -310,12 +276,10 @@ extension VectorDocument {
             } else {
                 shapeBounds = memberShape.bounds.applying(memberShape.transform)
             }
-
             if !shapeBounds.isNull && !shapeBounds.isInfinite && shapeBounds.width > 0 && shapeBounds.height > 0 {
                 calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
             }
         }
-
         if !calculatedGroupBounds.isNull && !calculatedGroupBounds.isInfinite && foundMembers > 0 {
             updateShapeByID(groupID) { shape in
                 shape.bounds = calculatedGroupBounds
@@ -324,7 +288,6 @@ extension VectorDocument {
             Log.error("❌ recalculateGroupBounds: Invalid bounds calculated for group \(groupID), foundMembers=\(foundMembers)", category: .error)
         }
     }
-
     func updateShapeStrokePlacementInUnified(id: UUID, placement: StrokePlacement) {
         if let object = snapshot.objects[id] {
             switch object.objectType {
@@ -339,7 +302,6 @@ extension VectorDocument {
                 break
             }
         }
-
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
                 shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
@@ -347,7 +309,6 @@ extension VectorDocument {
                 shape.strokeStyle?.placement = placement
             }
         }
-
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
             object: nil,

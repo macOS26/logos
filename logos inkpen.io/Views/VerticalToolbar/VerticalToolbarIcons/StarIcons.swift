@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ThreePointStarIcon: View {
     let isSelected: Bool
     var body: some View {
@@ -26,7 +25,6 @@ struct ThreePointStarIcon: View {
         .frame(width: 20, height: 20)
     }
 }
-
 struct FourPointStarIcon: View {
     let isSelected: Bool
     var body: some View {
@@ -53,7 +51,6 @@ struct FourPointStarIcon: View {
         .frame(width: 20, height: 20)
     }
 }
-
 struct FivePointStarIcon: View {
     let isSelected: Bool
     var body: some View {
@@ -80,7 +77,6 @@ struct FivePointStarIcon: View {
         .frame(width: 20, height: 20)
     }
 }
-
 struct SixPointStarIcon: View {
     let isSelected: Bool
     var body: some View {
@@ -107,7 +103,6 @@ struct SixPointStarIcon: View {
         .frame(width: 20, height: 20)
     }
 }
-
 struct SevenPointStarIcon: View {
     let isSelected: Bool
     var body: some View {

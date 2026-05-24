@@ -1,5 +1,4 @@
 import SwiftUI
-
 class SVGParser: NSObject, XMLParserDelegate {
     var shapes: [VectorShape] = []
     internal var textObjects: [VectorText] = []
@@ -18,29 +17,21 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentStyleContent = ""
     internal var currentTextContent = ""
     internal var currentTextAttributes: [String: String] = [:]
-
     internal lazy var sharedTextStorage = NSTextStorage()
     internal lazy var sharedLayoutManager = NSLayoutManager()
     internal lazy var sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
-
     internal var fontCache: [String: PlatformFont] = [:]
-
     internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
     internal var isInMultiLineText: Bool = false
-
     internal var maxTextWidth: CGFloat = 0
-
     internal var currentGroupId: String? = nil
     internal var textBoxBounds: [String: CGRect] = [:]
     internal var pendingTextBoxRect: CGRect? = nil
-
     internal var groupElementStack: [(startIndex: Int, attrs: [String: String])] = []
-
     internal var currentPatternId: String? = nil
     internal var currentPatternWidth: CGFloat = 0
     internal var currentPatternHeight: CGFloat = 0
     internal var patternDefinitions: [String: [VectorShape]] = [:]
-
     internal var statGroupsOpened: Int = 0
     internal var statGroupsWrapped: Int = 0
     internal var statGroupsEmpty: Int = 0
@@ -50,7 +41,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var statImagesTotal: Int = 0
     internal var statImagesDropped: Int = 0
     internal var statImageHrefSamples: [String] = []
-
     static func looksLikeXML(_ data: Data) -> Bool {
         guard data.count >= 2 else { return false }
         var i = 0
@@ -63,30 +53,25 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return false
     }
-
     static func isSyntheticGroupId(_ id: String) -> Bool {
         guard id.hasPrefix("Group") else { return false }
         let suffix = id.dropFirst(5)
         return !suffix.isEmpty && suffix.allSatisfy { $0.isASCII && $0.isNumber }
     }
-
     internal var gradientDefinitions: [String: VectorGradient] = [:]
     internal var currentGradientId: String?
     internal var currentGradientType: String?
     internal var currentGradientStops: [GradientStop] = []
     internal var currentGradientAttributes: [String: String] = [:]
     internal var isParsingGradient = false
-
     internal var useExtremeValueHandling = false
     internal var detectedExtremeValues = false
-
     internal var clipPathDefinitions: [String: VectorPath] = [:]
     internal var currentClipPathId: String?
     internal var currentClipPath: VectorPath?
     internal var isParsingClipPath = false
     internal var pendingClipPathId: String?
     internal var clipPathStack: [String?] = []
-
     internal var elementDefinitions: [String: (elementName: String, attributes: [String: String])] = [:]
     internal var symbolDefinitions: [String: [VectorShape]] = [:]
     internal var symbolStack: [(id: String?, startIndex: Int)] = []
@@ -97,7 +82,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var elementHiddenStack: [Bool] = []
     private var useRecursionDepth = 0
     private let maxUseRecursionDepth = 10
-
     struct MarkerDefinition {
         let shapes: [VectorShape]
         let refX: Double
@@ -107,7 +91,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         let orient: String
         let unitsStrokeWidth: Bool
     }
-
     private func isElementHidden(_ attributes: [String: String]) -> Bool {
         if attributes["display"] == "none" { return true }
         if attributes["visibility"] == "hidden" { return true }
@@ -118,16 +101,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return false
     }
-
     var inkpenMetadata: String? = nil
     private var isInMetadata = false
     private var isInInkpenDocument = false
     private var currentMetadataContent = ""
-
     private var viewBoxScale: (x: Double, y: Double) {
         return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
     }
-
     struct ParseResult {
         let shapes: [VectorShape]
         let textObjects: [VectorText]
@@ -136,13 +116,10 @@ class SVGParser: NSObject, XMLParserDelegate {
         let creator: String?
         let version: String?
     }
-
     func parse(_ xmlString: String) throws -> ParseResult {
-
         guard let data = xmlString.data(using: .utf8) else {
             throw VectorImportError.parsingError("Invalid SVG string", line: nil)
         }
-
         sharedTextStorage = NSTextStorage()
         sharedLayoutManager = NSLayoutManager()
         sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
@@ -150,12 +127,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         sharedTextContainer.lineBreakMode = .byWordWrapping
         sharedTextStorage.addLayoutManager(sharedLayoutManager)
         sharedLayoutManager.addTextContainer(sharedTextContainer)
-
         fontCache.removeAll()
-
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = self
-
         if !xmlParser.parse() {
             if let error = xmlParser.parserError {
                 throw VectorImportError.parsingError("XML parsing failed: \(error.localizedDescription)", line: xmlParser.lineNumber)
@@ -163,18 +137,14 @@ class SVGParser: NSObject, XMLParserDelegate {
                 throw VectorImportError.parsingError("Unknown XML parsing error", line: nil)
             }
         }
-
         var finalShapes = shapes
-
         if !clipPathDefinitions.isEmpty {
             let unclippedImages = finalShapes.filter { shape in
                 shape.name == "Image" && shape.clippedByShapeID == nil && shape.embeddedImageData != nil
             }
-
             if !unclippedImages.isEmpty, let firstClipPathEntry = clipPathDefinitions.first {
                 let clipPath = firstClipPathEntry.value
                 var updatedShapes: [VectorShape] = []
-
                 for shape in finalShapes {
                     if shape.id == unclippedImages[0].id {
                         var maskedImage = shape
@@ -182,7 +152,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                         maskedImage.clippedByShapeID = clipShapeId
                         maskedImage.name = "Masked Image"
                         updatedShapes.append(maskedImage)
-
                         var clipShape = VectorShape(
                             name: "Clip Path",
                             path: clipPath,
@@ -194,18 +163,14 @@ class SVGParser: NSObject, XMLParserDelegate {
                         clipShape.isClippingPath = true
                         clipShape.isCompoundPath = true
                         updatedShapes.append(clipShape)
-
                     } else if !unclippedImages.contains(where: { $0.id == shape.id }) {
                         updatedShapes.append(shape)
                     }
                 }
-
                 finalShapes = updatedShapes
             }
         }
-
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
-
         var topLevelGroups = 0
         var topLevelCompound = 0
         var topLevelImages = 0
@@ -226,7 +191,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 print("   <image>[\(i)] href prefix: \(sample)")
             }
         }
-
         return ParseResult(
             shapes: consolidatedShapes,
             textObjects: textObjects,
@@ -236,24 +200,19 @@ class SVGParser: NSObject, XMLParserDelegate {
             version: version
         )
     }
-
     func enableExtremeValueHandling() {
         useExtremeValueHandling = true
     }
-
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElementName = elementName
-
         let elementIsHidden = isElementHidden(attributeDict)
         elementHiddenStack.append(elementIsHidden)
         if elementIsHidden {
             hiddenDepth += 1
         }
-
         if hiddenDepth > 0 {
             return
         }
-
         if let id = attributeDict["id"] {
             switch elementName {
             case "path", "rect", "circle", "ellipse", "line", "polyline", "polygon":
@@ -262,7 +221,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 break
             }
         }
-
         if isParsingClipPath {
             switch elementName {
             case "path", "rect", "circle", "ellipse", "polygon":
@@ -272,69 +230,49 @@ class SVGParser: NSObject, XMLParserDelegate {
                 break
             }
         }
-
         switch elementName {
         case "svg":
             parseSVGRoot(attributes: attributeDict)
-
         case "defs":
             defsDepth += 1
-
         case "pattern":
             if let id = attributeDict["id"] {
                 currentPatternId = id
                 currentPatternWidth = CGFloat(parseLength(attributeDict["width"]) ?? 0)
                 currentPatternHeight = CGFloat(parseLength(attributeDict["height"]) ?? 0)
             }
-
         case "symbol":
-
             symbolStack.append((id: attributeDict["id"], startIndex: shapes.count))
-
         case "marker":
-
             markerStack.append((id: attributeDict["id"], startIndex: shapes.count, attrs: attributeDict))
-
         case "style":
             currentStyleContent = ""
-
         case "metadata":
             isInMetadata = true
             currentMetadataContent = ""
-
         case "inkpen:document":
             if isInMetadata {
                 isInInkpenDocument = true
                 currentMetadataContent = ""
             }
-
         case "g":
             parseGroup(attributes: attributeDict)
-
         case "path":
             parsePath(attributes: attributeDict)
-
         case "rect":
             parseRectangle(attributes: attributeDict)
-
         case "circle":
             parseCircle(attributes: attributeDict)
-
         case "ellipse":
             parseEllipse(attributes: attributeDict)
-
         case "line":
             parseLine(attributes: attributeDict)
-
         case "polyline", "polygon":
             parsePolyline(attributes: attributeDict, closed: elementName == "polygon")
-
         case "text":
             parseText(attributes: attributeDict)
-
         case "tspan":
             isInMultiLineText = true
-
             var overlay = attributeDict
             if let classAttr = attributeDict["class"], !classAttr.isEmpty {
                 applyCSSClasses(classAttr, into: &overlay)
@@ -343,71 +281,54 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let styleDict = parseStyleAttribute(style)
                 for (k, v) in styleDict { overlay[k] = v }
             }
-
             let tspanX = parseLength(overlay["x"]) ?? 0
             let tspanY = parseLength(overlay["y"]) ?? 0
             var tspanAttributes = currentTextAttributes
             if let fam = overlay["font-family"], !fam.isEmpty { tspanAttributes["font-family"] = fam }
             if let size = overlay["font-size"], !size.isEmpty { tspanAttributes["font-size"] = size }
             if let fill = overlay["fill"], !fill.isEmpty { tspanAttributes["fill"] = fill }
-
             currentTextSpans.append((content: "", attributes: tspanAttributes, x: tspanX, y: tspanY))
             break
-
         case "linearGradient":
             parseLinearGradient(attributes: attributeDict)
-
         case "radialGradient":
             parseRadialGradient(attributes: attributeDict)
-
         case "stop":
             parseGradientStop(attributes: attributeDict)
-
         case "clipPath":
             parseClipPath(attributes: attributeDict)
-
         case "mask":
-
             isParsingClipPath = true
             currentClipPathId = attributeDict["id"]
             currentClipPath = nil
-
         case "image":
             if currentPatternId != nil {
                 resolvePatternImage(attributes: attributeDict)
             } else {
                 parseImage(attributes: attributeDict)
             }
-
         case "use":
             parseUseElement(attributes: attributeDict)
-
         default:
             break
         }
     }
-
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-
         if let wasHidden = elementHiddenStack.popLast(), wasHidden {
             hiddenDepth = max(0, hiddenDepth - 1)
         }
-
         if hiddenDepth > 0 {
             return
         }
-
         switch elementName {
         case "metadata":
             isInMetadata = false
-
         case "inkpen:document":
             if isInInkpenDocument {
                 inkpenMetadata = currentMetadataContent.trimmingCharacters(in: .whitespacesAndNewlines)
                 isInInkpenDocument = false
                 currentMetadataContent = ""
             }
-
         case "svg":
             if hasViewBox {
                 currentTransform = CGAffineTransform.identity
@@ -416,7 +337,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 } else {
                 currentTransform = .identity
             }
-
         case "g":
             if !transformStack.isEmpty {
                 transformStack.removeLast()
@@ -432,7 +352,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             } else if pendingClipPathId != nil {
                 pendingClipPathId = nil
             }
-
             if let entry = groupElementStack.popLast() {
                 let endIndex = shapes.count
                 guard entry.startIndex <= endIndex else { break }
@@ -441,13 +360,11 @@ class SVGParser: NSObject, XMLParserDelegate {
                     statGroupsEmpty += 1
                     break
                 }
-
                 let children = Array(shapes[childRange])
                 let allClippingRelated = children.allSatisfy {
                     $0.isClippingPath || $0.clippedByShapeID != nil
                 }
                 if allClippingRelated {
-
                     let maskShape = children.first { $0.isClippingPath }
                     let contentShapes = children.filter { !$0.isClippingPath }
                         .map { shape -> VectorShape in
@@ -474,13 +391,10 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                     break
                 }
-
                 if children.count <= 1 {
                     break
                 }
-
                 shapes.removeSubrange(childRange)
-
                 var mergedAttrs = entry.attrs
                 if let style = entry.attrs["style"], !style.isEmpty {
                     for (k, v) in parseStyleAttribute(style) {
@@ -488,7 +402,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                 }
                 let groupOpacity = parseLength(mergedAttrs["opacity"]) ?? 1.0
-
                 var groupShape = VectorShape.group(from: children, name: "Group")
                 groupShape.memberIDs = []
                 groupShape.groupedShapes = children
@@ -496,21 +409,16 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if let id = entry.attrs["id"], !id.isEmpty, !Self.isSyntheticGroupId(id) {
                     groupShape.name = id
                 }
-
                 shapes.append(groupShape)
                 statGroupsWrapped += 1
             }
-
         case "style":
             parseCSSStyles(currentStyleContent)
             currentStyleContent = ""
-
         case "text":
             finishTextElement()
-
         case "linearGradient", "radialGradient":
             finishGradientElement()
-
         case "clipPath", "mask":
             isParsingClipPath = false
             if let clipId = currentClipPathId, let clipPath = currentClipPath {
@@ -518,18 +426,13 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             currentClipPathId = nil
             currentClipPath = nil
-
         case "defs":
-
             defsDepth = max(0, defsDepth - 1)
-
         case "pattern":
             currentPatternId = nil
             currentPatternWidth = 0
             currentPatternHeight = 0
-
         case "symbol":
-
             if !symbolStack.isEmpty {
                 let entry = symbolStack.removeLast()
                 if entry.startIndex <= shapes.count {
@@ -537,13 +440,10 @@ class SVGParser: NSObject, XMLParserDelegate {
                     if let id = entry.id {
                         symbolDefinitions[id] = symbolShapes
                     }
-
                     shapes.removeSubrange(entry.startIndex..<shapes.count)
                 }
             }
-
         case "marker":
-
             if !markerStack.isEmpty {
                 let entry = markerStack.removeLast()
                 if entry.startIndex <= shapes.count {
@@ -559,16 +459,13 @@ class SVGParser: NSObject, XMLParserDelegate {
                             unitsStrokeWidth: (entry.attrs["markerUnits"] ?? "strokeWidth") == "strokeWidth"
                         )
                     }
-
                     shapes.removeSubrange(entry.startIndex..<shapes.count)
                 }
             }
-
         default:
             break
         }
     }
-
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         if currentElementName == "style" {
             currentStyleContent += string
@@ -585,18 +482,14 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
-
     private func parseCSSStyles(_ cssContent: String) {
-
         let rules = cssContent.components(separatedBy: "}")
-
         for rule in rules {
             let parts = rule.components(separatedBy: "{")
             if parts.count == 2 {
                 let selector = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
                 let declarations = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
                 var styles: [String: String] = [:]
-
                 let declParts = declarations.components(separatedBy: ";")
                 for decl in declParts {
                     let keyValue = decl.components(separatedBy: ":")
@@ -606,13 +499,10 @@ class SVGParser: NSObject, XMLParserDelegate {
                         styles[key] = value
                     }
                 }
-
                 cssStyles[selector] = styles
             }
         }
-
     }
-
     internal func applyCSSClasses(_ classAttr: String, into attributes: inout [String: String]) {
         let classNames = classAttr.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         for cls in classNames {
@@ -634,14 +524,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
-
     private func parseSVGRoot(attributes: [String: String]) {
         if let width = attributes["width"], let height = attributes["height"] {
             let w = parseLength(width) ?? 100
             let h = parseLength(height) ?? 100
             documentSize = CGSize(width: w, height: h)
         }
-
         if let viewBox = attributes["viewBox"] {
             let parts = viewBox.split(separator: " ").compactMap { Double($0) }
             if parts.count >= 4 {
@@ -650,30 +538,23 @@ class SVGParser: NSObject, XMLParserDelegate {
                 viewBoxWidth = parts[2]
                 viewBoxHeight = parts[3]
                 hasViewBox = true
-
                 if attributes["width"] == nil && attributes["height"] == nil {
                     documentSize = CGSize(width: viewBoxWidth, height: viewBoxHeight)
                 }
-
                 let scaleX = viewBoxScale.x
                 let scaleY = viewBoxScale.y
-
                 let par = attributes["preserveAspectRatio"] ?? "xMidYMid meet"
                 let parParts = par.split(separator: " ").map { String($0) }
                 let alignment = parParts.first ?? "xMidYMid"
                 let meetOrSlice = parParts.count > 1 ? parParts[1] : "meet"
-
                 if alignment == "none" {
-
                     currentTransform = CGAffineTransform.identity
                         .translatedBy(x: -viewBoxX, y: -viewBoxY)
                         .scaledBy(x: scaleX, y: scaleY)
                 } else {
-
                     let uniformScale = meetOrSlice == "slice" ? max(scaleX, scaleY) : min(scaleX, scaleY)
                     let scaledWidth = viewBoxWidth * uniformScale
                     let scaledHeight = viewBoxHeight * uniformScale
-
                     let translateX: Double
                     if alignment.hasPrefix("xMin") {
                         translateX = 0
@@ -682,7 +563,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     } else {
                         translateX = (documentSize.width - scaledWidth) / 2.0
                     }
-
                     let translateY: Double
                     if alignment.contains("YMin") {
                         translateY = 0
@@ -691,7 +571,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     } else {
                         translateY = (documentSize.height - scaledHeight) / 2.0
                     }
-
                     currentTransform = CGAffineTransform.identity
                         .translatedBy(x: translateX - viewBoxX * uniformScale, y: translateY - viewBoxY * uniformScale)
                         .scaledBy(x: uniformScale, y: uniformScale)
@@ -701,25 +580,19 @@ class SVGParser: NSObject, XMLParserDelegate {
             viewBoxWidth = documentSize.width
             viewBoxHeight = documentSize.height
         }
-
         creator = attributes["data-name"] ?? attributes["generator"]
         version = attributes["version"]
     }
-
     private func parseGroup(attributes: [String: String]) {
         transformStack.append(currentTransform)
-
         currentGroupId = attributes["id"]
         groupElementStack.append((startIndex: shapes.count, attrs: attributes))
         statGroupsOpened += 1
-
         clipPathStack.append(pendingClipPathId)
-
         if let transform = attributes["transform"] {
             let groupTransform = parseTransform(transform)
             currentTransform = currentTransform.concatenating(groupTransform)
         }
-
         var mergedAttributes = attributes
         if let className = attributes["class"] {
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
@@ -734,7 +607,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         if pendingClipPathId == nil, let clipPathAttr = mergedAttributes["clip-path"] {
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
@@ -751,17 +623,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else if pendingClipPathId != nil {
         }
     }
-
     private func parseUseElement(attributes: [String: String]) {
         guard useRecursionDepth < maxUseRecursionDepth else { return }
-
         let href = attributes["xlink:href"] ?? attributes["href"] ?? ""
         let refId = href.hasPrefix("#") ? String(href.dropFirst()) : href
         guard !refId.isEmpty else { return }
-
         let useX = parseLength(attributes["x"]) ?? 0
         let useY = parseLength(attributes["y"]) ?? 0
-
         let savedTransform = currentTransform
         if useX != 0 || useY != 0 {
             currentTransform = currentTransform.translatedBy(x: useX, y: useY)
@@ -769,15 +637,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         if let useTransform = attributes["transform"] {
             currentTransform = currentTransform.concatenating(parseTransform(useTransform))
         }
-
         useRecursionDepth += 1
-
         if let symbolShapes = symbolDefinitions[refId] {
-
             for shape in symbolShapes {
                 var instance = shape
                 instance.id = UUID()
-
                 if !currentTransform.isIdentity {
                     let useTransform = CGAffineTransform(translationX: useX, y: useY)
                     var combined = useTransform
@@ -803,12 +667,10 @@ class SVGParser: NSObject, XMLParserDelegate {
                 shapes.append(instance)
             }
         } else if let def = elementDefinitions[refId] {
-
             var mergedAttributes = def.attributes
             for (key, value) in attributes where key != "xlink:href" && key != "href" && key != "id" && key != "x" && key != "y" {
                 mergedAttributes[key] = value
             }
-
             switch def.elementName {
             case "path":       parsePath(attributes: mergedAttributes)
             case "rect":       parseRectangle(attributes: mergedAttributes)
@@ -820,40 +682,33 @@ class SVGParser: NSObject, XMLParserDelegate {
             default: break
             }
         }
-
         useRecursionDepth -= 1
         currentTransform = savedTransform
     }
-
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
         let pathData = parsePathData(d)
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
-
         if let patternId = Self.patternIdInFill(attributes: attributes),
            let patternShapes = patternDefinitions[patternId] {
             expandPatternInPlace(patternShapes: patternShapes, pathElements: pathData, originalAttributes: attributes)
             return
         }
-
         let detected = PathShapeDetector.detect(elements: pathData)
-
         let shape = createShape(
             name: detected?.name ?? "Path",
             path: vectorPath,
             attributes: attributes,
             geometricType: detected?.type
         )
-
         if shouldClip, let clipId = clipPathId {
             applyClipPathToShape(shape, clipPathId: clipId)
         } else {
             shapes.append(shape)
         }
     }
-
     static func patternIdInFill(attributes: [String: String]) -> String? {
         func extract(_ s: String) -> String? {
             guard let urlStart = s.range(of: "url(#") else { return nil }
@@ -872,7 +727,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return nil
     }
-
     private func expandPatternInPlace(patternShapes: [VectorShape], pathElements: [PathElement], originalAttributes: [String: String]) {
         var minX: CGFloat = .infinity
         var minY: CGFloat = .infinity
@@ -892,7 +746,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         guard minX.isFinite, minY.isFinite else { return }
         let translate = CGAffineTransform(translationX: minX, y: minY)
-
         for src in patternShapes {
             var copy = src
             copy.id = UUID()
@@ -900,7 +753,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             shapes.append(copy)
         }
     }
-
     private func resolvePatternImage(attributes: [String: String]) {
         guard let patternId = currentPatternId else { return }
         let href = attributes["href"] ?? attributes["xlink:href"] ?? ""
@@ -910,17 +762,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         let isBase64 = href[..<commaIdx.lowerBound].contains("base64")
         guard isBase64, let decoded = Data(base64Encoded: payload) else { return }
         guard let innerSVG = String(data: decoded, encoding: .utf8) else { return }
-
         let inner = SVGParser()
         guard let result = try? inner.parse(innerSVG) else { return }
         patternDefinitions[patternId] = result.shapes
         print("🎨 Resolved pattern #\(patternId) → \(result.shapes.count) nested shapes")
     }
-
     private func parseImage(attributes: [String: String]) {
-
         var mergedAttributes = attributes
-
         if let className = attributes["class"] {
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -934,19 +782,16 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         let x = parseLength(mergedAttributes["x"]) ?? 0
         let y = parseLength(mergedAttributes["y"]) ?? 0
         let width = parseLength(mergedAttributes["width"]) ?? 100
         let height = parseLength(mergedAttributes["height"]) ?? 100
         let imageHref = mergedAttributes["href"] ?? mergedAttributes["xlink:href"] ?? ""
         statImagesTotal += 1
-
         let hrefPrefix = String(imageHref.prefix(80))
         if statImageHrefSamples.count < 5 {
             statImageHrefSamples.append(hrefPrefix)
         }
-
         let lowerHref = imageHref.lowercased()
         if lowerHref.hasPrefix("data:image/svg+xml") ||
            lowerHref.hasPrefix("data:application/xml") ||
@@ -955,12 +800,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             statImagesDropped += 1
             return
         }
-
         if imageHref.isEmpty {
             statImagesDropped += 1
             return
         }
-
         if imageHref.hasPrefix("data:"), let commaIdx = imageHref.range(of: ",") {
             let payload = String(imageHref[commaIdx.upperBound...])
             let isBase64 = imageHref[..<commaIdx.lowerBound].contains("base64")
@@ -974,9 +817,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 return
             }
         }
-
         var clipPathId: String? = nil
-
         if let clipPathAttr = mergedAttributes["clip-path"], !clipPathAttr.isEmpty {
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
@@ -988,11 +829,9 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         if clipPathId == nil, let pendingId = pendingClipPathId {
             clipPathId = pendingId
         }
-
         let imageRect = CGRect(x: x, y: y, width: width, height: height)
         let imagePath = VectorPath(elements: [
             .move(to: VectorPoint(imageRect.minX, imageRect.minY)),
@@ -1001,20 +840,16 @@ class SVGParser: NSObject, XMLParserDelegate {
             .line(to: VectorPoint(imageRect.minX, imageRect.maxY)),
             .close
         ], isClosed: true)
-
         var imageAttributes = mergedAttributes
         imageAttributes["fill"] = "none"
         imageAttributes["fill-opacity"] = "0"
-
         var imageShape = createShape(
             name: "Image",
             path: imagePath,
             attributes: imageAttributes,
             geometricType: .rectangle
         )
-
         imageShape.fillStyle = nil
-
         if imageHref.hasPrefix("data:") {
             if let dataRange = imageHref.range(of: "base64,") {
                 let base64String = String(imageHref[dataRange.upperBound...])
@@ -1023,9 +858,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else if !imageHref.isEmpty {
             imageShape.linkedImagePath = imageHref
         }
-
         if let clipId = clipPathId {
-
             if let clipPath = clipPathDefinitions[clipId] {
                 var closedClipPath = clipPath
                 if !closedClipPath.isClosed {
@@ -1035,14 +868,11 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                     closedClipPath = VectorPath(elements: elements, isClosed: true)
                 }
-
                 var maskedImageShape = imageShape
                 let clipShapeId = UUID()
                 maskedImageShape.clippedByShapeID = clipShapeId
                 maskedImageShape.name = "Masked Image"
-
                 shapes.append(maskedImageShape)
-
                 var clipShape = VectorShape(
                     name: "Clip Path",
                     path: closedClipPath,
@@ -1053,35 +883,28 @@ class SVGParser: NSObject, XMLParserDelegate {
                 clipShape.id = clipShapeId
                 clipShape.isClippingPath = true
                 clipShape.isCompoundPath = true
-
                 shapes.append(clipShape)
-
                 return
             } else {
                 Log.warning("⚠️ Clip path '\(clipId)' referenced but not found in definitions. Available: \(clipPathDefinitions.keys.joined(separator: ", "))", category: .fileOperations)
                 Log.warning("⚠️ Falling back to no clipping for this image", category: .fileOperations)
             }
         }
-
         shapes.append(imageShape)
     }
-
     private func parseClipPath(attributes: [String: String]) {
         isParsingClipPath = true
         currentClipPathId = attributes["id"]
         currentClipPath = nil
     }
-
     private func parseShapeForClipPath(elementName: String, attributes: [String: String]) {
         var clipPath: VectorPath?
-
         switch elementName {
         case "path":
             if let d = attributes["d"] {
                 let pathData = parsePathData(d)
                 clipPath = VectorPath(elements: pathData, isClosed: true)
             }
-
         case "rect":
             let x = parseLength(attributes["x"]) ?? 0
             let y = parseLength(attributes["y"]) ?? 0
@@ -1095,7 +918,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 .line(to: VectorPoint(rect.minX, rect.maxY)),
                 .close
             ], isClosed: true)
-
         case "circle":
             let cx = parseLength(attributes["cx"]) ?? 0
             let cy = parseLength(attributes["cy"]) ?? 0
@@ -1117,7 +939,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                        control2: VectorPoint(center.x + r, center.y - r * 0.552)),
                 .close
             ], isClosed: true)
-
         case "ellipse":
             let cx = parseLength(attributes["cx"]) ?? 0
             let cy = parseLength(attributes["cy"]) ?? 0
@@ -1140,7 +961,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                        control2: VectorPoint(center.x + rx, center.y - ry * 0.552)),
                 .close
             ], isClosed: true)
-
         case "polygon":
             if let points = attributes["points"] {
                 let parsedPoints = parsePoints(points)
@@ -1155,11 +975,9 @@ class SVGParser: NSObject, XMLParserDelegate {
                 elements.append(.close)
                 clipPath = VectorPath(elements: elements, isClosed: true)
             }
-
         default:
             break
         }
-
         if let path = clipPath {
             if currentClipPath == nil {
                 currentClipPath = path
@@ -1167,15 +985,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
-
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         var mergedAttributes = attributes
-
         if let style = attributes["style"], !style.isEmpty {
             let styleDict = parseStyleAttribute(style)
             for (k, v) in styleDict { mergedAttributes[k] = v }
         }
-
         if let className = attributes["class"] {
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -1191,7 +1006,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         for (selector, styles) in cssStyles {
             if selector.contains(",") {
                 let selectors = selector.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
@@ -1210,7 +1024,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         let stroke = parseStrokeStyle(mergedAttributes)
         let fill = parseFillStyle(mergedAttributes)
         let transform: CGAffineTransform
@@ -1220,13 +1033,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else {
             transform = currentTransform.isIdentity ? .identity : currentTransform
         }
-
         var resolvedPath = path
         let fillRuleAttr = mergedAttributes["fill-rule"] ?? "nonzero"
         if fillRuleAttr == "evenodd" {
             resolvedPath.fillRule = .evenOdd
         }
-
         let moveCount = resolvedPath.elements.reduce(0) { count, el in
             if case .move = el { return count + 1 }
             return count
@@ -1240,7 +1051,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else {
             shapeName = name
         }
-
         if !transform.isIdentity {
             let flattenedElements = resolvedPath.elements.map { element -> PathElement in
                 switch element {
@@ -1264,14 +1074,12 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
             resolvedPath = VectorPath(elements: flattenedElements, isClosed: resolvedPath.isClosed, fillRule: resolvedPath.fillRule.cgPathFillRule)
-
             var resolvedStroke = stroke
             if var s = resolvedStroke {
                 let avgScale = (abs(transform.a) + abs(transform.d)) / 2.0
                 s.width *= avgScale
                 resolvedStroke = s
             }
-
             return VectorShape(
                 name: shapeName,
                 path: resolvedPath,
@@ -1282,7 +1090,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 isCompoundPath: isCompound
             )
         }
-
         return VectorShape(
             name: shapeName,
             path: resolvedPath,
@@ -1293,10 +1100,8 @@ class SVGParser: NSObject, XMLParserDelegate {
             isCompoundPath: isCompound
         )
     }
-
     internal func checkForClipPath(_ attributes: [String: String]) -> (shouldClip: Bool, clipPathId: String?) {
         var mergedAttributes = attributes
-
         if let className = attributes["class"] {
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -1310,7 +1115,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         let clipOrMaskAttr = mergedAttributes["clip-path"] ?? mergedAttributes["mask"]
         if let clipPathAttr = clipOrMaskAttr {
             if let range = clipPathAttr.range(of: "#") {
@@ -1321,21 +1125,17 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-
         if let pending = pendingClipPathId {
             return (true, pending)
         }
-
         return (false, nil)
     }
-
     internal func applyClipPathToShape(_ shape: VectorShape, clipPathId: String) {
         guard let clipPath = clipPathDefinitions[clipPathId] else {
             Log.error("❌ Clip path not found: \(clipPathId)", category: .error)
             shapes.append(shape)
             return
         }
-
         var closedClipPath = clipPath
         if !closedClipPath.isClosed {
             var elements = closedClipPath.elements
@@ -1344,14 +1144,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             closedClipPath = VectorPath(elements: elements, isClosed: true)
         }
-
         var maskedShape = shape
         let clipShapeId = UUID()
         maskedShape.clippedByShapeID = clipShapeId
         maskedShape.name = "Masked \(shape.name)"
-
         shapes.append(maskedShape)
-
         var clipShape = VectorShape(
             name: "Clip Path",
             path: closedClipPath,
@@ -1362,11 +1159,8 @@ class SVGParser: NSObject, XMLParserDelegate {
         clipShape.id = clipShapeId
         clipShape.isClippingPath = true
         clipShape.isCompoundPath = true
-
         shapes.append(clipShape)
-
     }
-
     internal func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
         return GradientCoordinateConverter.parseGradientCoordinate(
             value,
@@ -1377,7 +1171,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             viewBoxHeight: viewBoxHeight
         )
     }
-
     private func parseRadialGradientCoordinateExtreme(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
         return GradientCoordinateConverter.parseRadialGradientCoordinateExtreme(
             value,
@@ -1387,5 +1180,4 @@ class SVGParser: NSObject, XMLParserDelegate {
             viewBoxHeight: viewBoxHeight
         )
     }
-
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct PanelTabBar: View {
     @Binding var selectedTab: PanelTab
     var body: some View {

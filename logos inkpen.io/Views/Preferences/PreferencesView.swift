@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
@@ -7,28 +6,23 @@ struct PreferencesView: View {
     @AppStorage("imageTileSize") var tileSize: Int = 512
     @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1
     @ObservedObject private var settings = ApplicationSettings.shared
-
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
-
             VStack(alignment: .leading, spacing: 16) {
                 GroupBox(label: Label("Transform", systemImage: "arrow.up.left.and.arrow.down.right").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle("Include strokes in bounding box", isOn: $settings.boundingBoxIncludesStrokes)
-
                         Text("When enabled, selection and transform boxes include stroke width for all shapes.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 8)
                 }
-
                 GroupBox(label: Label("Alignment", systemImage: "align.horizontal.center").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Anchor Object:")
                                 .font(.subheadline)
-
                             Picker("", selection: $settings.alignmentAnchorMode) {
                                 ForEach(AlignmentAnchorMode.allCases, id: \.self) { mode in
                                     Text(mode.displayName).tag(mode)
@@ -36,17 +30,14 @@ struct PreferencesView: View {
                             }
                             .labelsHidden()
                             .frame(width: 140)
-
                             Spacer()
                         }
-
                         Text("Determines which object stays in place during alignment. Locked objects always take priority.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 8)
                 }
-
                 GroupBox(label: Label("Image Settings", systemImage: "photo").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -55,80 +46,63 @@ struct PreferencesView: View {
                                     .font(.subheadline)
                                 Spacer()
                             }
-
                             Slider(value: $imageQuality, in: 0.1...1.0, step: 0.05)
-
                             Text("Controls image resolution in canvas. Lower values use less memory.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-
                         HStack(spacing: 8) {
                             Button("50%") {
                                 imageQuality = 0.5
                             }
                             .buttonStyle(.bordered)
-
                             Button("75%") {
                                 imageQuality = 0.75
                             }
                             .buttonStyle(.bordered)
-
                             Button("100%") {
                                 imageQuality = 1.0
                             }
                             .buttonStyle(.bordered)
-
                             Spacer()
                         }
-
                         Divider()
                             .padding(.vertical, 4)
-
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Tile Size: \(Int(tileSize))px")
                                     .font(.subheadline)
                                 Spacer()
                             }
-
                             Slider(value: Binding(
                                 get: { Double(tileSize) },
                                 set: { tileSize = Int($0) }
                             ), in: 32...1024, step: 32)
-
                             Text("Size of image tiles. Smaller tiles use less memory but may be slower.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-
                         HStack(spacing: 8) {
                             Button("128px") {
                                 tileSize = 128
                             }
                             .buttonStyle(.bordered)
-
                             Button("256px") {
                                 tileSize = 256
                             }
                             .buttonStyle(.bordered)
-
                             Button("512px") {
                                 tileSize = 512
                             }
                             .buttonStyle(.bordered)
-
                             Spacer()
                         }
-
                         Divider()
                             .padding(.vertical, 4)
-
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Interpolation Quality:")
                                     .font(.subheadline)
-
                                 Picker("", selection: $interpolationQuality) {
                                     Text("Default").tag(0)
                                     Text("None").tag(1)
@@ -138,10 +112,8 @@ struct PreferencesView: View {
                                 }
                                 .labelsHidden()
                                 .frame(width: 120)
-
                                 Spacer()
                             }
-
                             Text("Quality of image scaling. Default is recommended.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -149,23 +121,18 @@ struct PreferencesView: View {
                     }
                     .padding(.vertical, 8)
                 }
-
                 Spacer()
             }
             .frame(maxWidth: .infinity)
-
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-
                     PressureCurveEditor(curve: $pressureCurve, size: 300)
                         .padding(.vertical, 8)
-
                     HStack(spacing: 8) {
                         Button("Linear") {
                             pressureCurve = PreferencesView.defaultPressureCurve()
                         }
                         .buttonStyle(.bordered)
-
                         Button("Soft") {
                             pressureCurve = [
                                 CGPoint(x: 0.0, y: 0.0),
@@ -176,7 +143,6 @@ struct PreferencesView: View {
                             ]
                         }
                         .buttonStyle(.bordered)
-
                         Button("Hard") {
                             pressureCurve = [
                                 CGPoint(x: 0.0, y: 0.0),
@@ -187,14 +153,12 @@ struct PreferencesView: View {
                             ]
                         }
                         .buttonStyle(.bordered)
-
                         Spacer()
                     }
                 }
                 .padding(.vertical, 8)
             }
             .frame(width: 380)
-
             Spacer()
         }
         .padding(24)
@@ -212,7 +176,6 @@ struct PreferencesView: View {
             MetalImageTileRenderer.shared?.clearCache()
         }
     }
-
     private func loadPressureCurve() {
         if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
             let loadedCurve = data.compactMap { dict -> CGPoint? in
@@ -224,16 +187,12 @@ struct PreferencesView: View {
             }
         }
     }
-
     private func savePressureCurve() {
         let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
         UserDefaults.standard.set(data, forKey: "pressureCurve")
         UserDefaults.standard.synchronize()
-
         appState.pressureCurve = pressureCurve
-
     }
-
     static func defaultPressureCurve() -> [CGPoint] {
         return [
             CGPoint(x: 0.0, y: 0.0),
@@ -243,13 +202,11 @@ struct PreferencesView: View {
             CGPoint(x: 1.0, y: 1.0)
         ]
     }
-
     static func defaultPressureCurveData() -> Data {
         let defaultCurve = defaultPressureCurve()
         return (try? JSONEncoder().encode(defaultCurve)) ?? Data()
     }
 }
-
 func defaultPressureCurveData() -> Data {
     let defaultCurve = [
         CGPoint(x: 0.0, y: 0.0),

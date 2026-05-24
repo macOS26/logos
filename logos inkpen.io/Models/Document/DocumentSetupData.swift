@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct DocumentSetupData {
     var width: Double = 11.0
     var height: Double = 8.5

@@ -1,8 +1,6 @@
 import SwiftUI
-
 struct TransformPreferencesSection: View {
     @ObservedObject private var settings = ApplicationSettings.shared
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -12,7 +10,6 @@ struct TransformPreferencesSection: View {
                     .font(.headline)
                 Spacer()
             }
-
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -29,7 +26,6 @@ struct TransformPreferencesSection: View {
                     .controlSize(.small)
                     .help("When enabled, objects scale in real-time during transform; when disabled, only a red outline preview is shown")
                 }
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Hide Transform Box While Dragging")

@@ -1,5 +1,4 @@
 import SwiftUI
-
 extension Color {
     var components: (red: Double, green: Double, blue: Double, alpha: Double) {
         #if canImport(AppKit)
@@ -15,7 +14,6 @@ extension Color {
         #else
         let cg = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
         #endif
-
         let rgba = cg.rgbaComponents
         return (Double(rgba.r), Double(rgba.g), Double(rgba.b), Double(rgba.a))
     }

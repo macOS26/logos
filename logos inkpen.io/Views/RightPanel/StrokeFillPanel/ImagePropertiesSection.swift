@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ImagePropertiesSection: View {
     let imageOpacity: Double
     let onUpdateImageOpacity: (Double) -> Void
@@ -13,7 +12,6 @@ struct ImagePropertiesSection: View {
                     .fontWeight(.medium)
                 Spacer()
             }
-
             VStack(spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -24,7 +22,6 @@ struct ImagePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
-
                 Slider(value: Binding(
                     get: { imageOpacity },
                     set: { onUpdateImageOpacity($0) }

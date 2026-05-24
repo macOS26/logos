@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-
 struct VerticalToolbar: View {
     let currentTool: DrawingTool
     @ObservedObject var viewState: DocumentViewState
@@ -11,11 +10,9 @@ struct VerticalToolbar: View {
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @ObservedObject private var toolGroupManager = ToolGroupManager.shared
-
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
     }
-
     @ViewBuilder
     private func toolIconView(for toolItem: ToolItem) -> some View {
         if toolItem.tool == .shear {
@@ -34,7 +31,6 @@ struct VerticalToolbar: View {
             customShapeIconView(for: toolItem)
         }
     }
-
     @ViewBuilder
     private func customShapeIconView(for toolItem: ToolItem) -> some View {
         switch toolItem.tool {
@@ -78,16 +74,13 @@ struct VerticalToolbar: View {
                 .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
         }
     }
-
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []
         let allToolGroups = getAllToolGroups()
-
         for toolGroup in allToolGroups {
             var groupTools: [ToolItem] = []
             let primaryTool = toolGroup[0]
             let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
-
             if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
                     if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
@@ -115,23 +108,18 @@ struct VerticalToolbar: View {
                     groupTools.append(ToolItem(tool: selectedTool, starVariant: nil))
                 }
             }
-
             if !groupTools.isEmpty {
                 toolGroups.append(groupTools)
             }
         }
-
         return toolGroups
     }
-
     private func getToolsToDisplay() -> [ToolItem] {
         var toolsToShow: [ToolItem] = []
         let allToolGroups = getAllToolGroups()
-
         for toolGroup in allToolGroups {
             let primaryTool = toolGroup[0]
             let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
-
             if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
                     if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
@@ -159,10 +147,8 @@ struct VerticalToolbar: View {
                 }
             }
         }
-
         return toolsToShow
     }
-
     private func getAllToolGroups() -> [[DrawingTool]] {
         var groups = ToolGroupConfiguration.getAllToolGroupsAsArrays()
         if let idx = groups.firstIndex(where: { $0.contains(.pentagon) && $0.contains(.octagon) }) {
@@ -170,7 +156,6 @@ struct VerticalToolbar: View {
         }
         return groups
     }
-
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
         if let starVariant = toolItem.starVariant {
             return currentTool == .star && toolGroupManager.selectedVariant == starVariant
@@ -178,31 +163,24 @@ struct VerticalToolbar: View {
             return currentTool == toolItem.tool
         }
     }
-
     private func isToolInExpandableGroup(_ toolItem: ToolItem) -> Bool {
         let tool = toolItem.tool
         let group = ToolGroupConfiguration.getToolGroup(for: tool)
-
         if tool == .star {
             return true
         }
-
         return group.count > 1
     }
-
     private func isGroupExpanded(for toolItem: ToolItem) -> Bool {
         let tool = toolItem.tool
-
         if tool == .star {
             let groupName = "stars"
             return toolGroupManager.expandedGroups.contains(groupName)
         } else if let groupName = ToolGroupConfiguration.getToolGroupName(for: tool) {
             return toolGroupManager.expandedGroups.contains(groupName)
         }
-
         return false
     }
-
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -217,7 +195,6 @@ struct VerticalToolbar: View {
                                         .frame(height: 0.5)
                                         .frame(maxWidth: .infinity)
                                 }
-
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
                                     VerticalToolbarButton(
                                         toolItem: toolItem,
@@ -261,9 +238,7 @@ struct VerticalToolbar: View {
                             }
                         }
                     }
-
                     Divider()
-
                     ToolSection {
                         ColorSwatchGrid(
                             document: document,
@@ -271,7 +246,6 @@ struct VerticalToolbar: View {
                             defaultStrokeColor: $defaultStrokeColor
                         )
                     }
-
                     Spacer()
                 }
                 .padding(.bottom, 4)
@@ -285,12 +259,10 @@ struct VerticalToolbar: View {
             )
         }
     }
-
     private func toolTooltip(for tool: DrawingTool, variant: StarVariant? = nil) -> String {
         if let starVariant = variant {
             return "Star Tool - Draw \(starVariant.rawValue) (Long press for more variants)"
         }
-
         switch tool {
         case .selection:
             return "Selection Tool (V) - Select and move objects"
@@ -375,7 +347,6 @@ struct VerticalToolbar: View {
         }
     }
 }
-
 struct VerticalToolbarButton: View {
     let toolItem: ToolItem
     let isSelected: Bool
@@ -384,11 +355,9 @@ struct VerticalToolbarButton: View {
     let onTap: () -> Void
     let onLongPress: () -> Void
     let toolIconView: () -> AnyView
-
     @State private var inc: Double = 0.0
     @State private var shouldRepeat: Bool = true
     @State private var lastTappedTool: String = ""
-
     init(toolItem: ToolItem,
          isSelected: Bool,
          isExpandable: Bool,
@@ -404,29 +373,23 @@ struct VerticalToolbarButton: View {
         self.onLongPress = onLongPress
         self.toolIconView = { AnyView(toolIconView()) }
     }
-
     fileprivate func FreeHandMXLongPress() {
         inc += 0.1
-
         lastTappedTool = toolItem.tool.rawValue
         onTap()
-
         if inc <= 0.1 {
             shouldRepeat = true
             return
         }
-
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             inc = 0.0
             shouldRepeat = true
             lastTappedTool = ""
         }
-
         if shouldRepeat {
             if inc > 0.1 {
                 Thread.sleep(forTimeInterval: 0.1)
             }
-
             if inc >= 0.3 && lastTappedTool == toolItem.tool.rawValue  {
                 onLongPress()
                 shouldRepeat = false
@@ -434,7 +397,6 @@ struct VerticalToolbarButton: View {
             }
         }
     }
-
     var body: some View {
         Button(action: {
             FreeHandMXLongPress()
@@ -445,10 +407,8 @@ struct VerticalToolbarButton: View {
                           ? InkPenUIColors.shared.toolSelectionBlue
                           : Color.clear)
                     .frame(width: 47, height: 34)
-
                 toolIconView()
                     .frame(width: 47)
-
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: 6))
                     path.addLine(to: CGPoint(x: 6, y: 0))

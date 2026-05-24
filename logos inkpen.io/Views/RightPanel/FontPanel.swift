@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct FontPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -10,11 +9,9 @@ struct FontPanel: View {
     @Binding var letterSpacingDelta: Double?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
-
     private var selectedTextTypography: TypographyProperties? {
         guard !selectedObjectIDs.isEmpty,
               let textID = selectedObjectIDs.first else { return nil }
-
         if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             if let typography = shape.typography {
@@ -28,30 +25,24 @@ struct FontPanel: View {
         }
         return nil
     }
-
     private var selectedTextID: UUID? {
         return selectedObjectIDs.first
     }
-
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
-
         if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
         return nil
     }
-
     private var selectedText: VectorText? {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
-
         if let newVectorObj = snapshot.objects[textID],
            case .text(let shape) = newVectorObj.objectType {
             return VectorText.from(shape)
         }
-
         var text = VectorText(
             content: selectedTextContent ?? "",
             typography: typography,
@@ -60,7 +51,6 @@ struct FontPanel: View {
         text.id = textID
         return text
     }
-
     private var editingText: VectorText? {
         if let newVectorObj = document.snapshot.objects.values.first(where: { obj in
             if case .text(let shape) = obj.objectType {
@@ -74,7 +64,6 @@ struct FontPanel: View {
         }
         return nil
     }
-
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -83,7 +72,6 @@ struct FontPanel: View {
                         selectedText: selectedText,
                         editingText: editingText
                     )
-
                     VStack(spacing: 16) {
                         FontPickerView(
                             selectedObjectIDs: selectedObjectIDs,
@@ -93,7 +81,6 @@ struct FontPanel: View {
                             editingText: editingText,
                             fontFamilyUpdateTrigger: $fontFamilyUpdateTrigger
                         )
-
                         FontSizeControls(
                             selectedObjectIDs: selectedObjectIDs,
                             selectedFontSize: document.fontManager.selectedFontSize,
@@ -107,7 +94,6 @@ struct FontPanel: View {
                             lineHeightDelta: $lineHeightDelta,
                             letterSpacingDelta: $letterSpacingDelta
                         )
-
                         FontAlignmentControls(
                             selectedObjectIDs: selectedObjectIDs,
                             selectedTextAlignment: document.fontManager.selectedTextAlignment,
@@ -115,7 +101,6 @@ struct FontPanel: View {
                             selectedText: selectedText,
                             editingText: editingText
                         )
-
                         ConvertToOutlinesButton(
                             selectedObjectIDs: selectedObjectIDs,
                             selectedLayerIndex: document.selectedLayerIndex,
@@ -130,7 +115,6 @@ struct FontPanel: View {
                 .background(Color.platformControlBackground.opacity(0.5))
                 .cornerRadius(12)
                 .padding(.horizontal, 12)
-
                 Spacer()
             }
         }
@@ -147,7 +131,6 @@ struct FontPanel: View {
                 }
                 return nil
             }
-
             if let newEditingText = freshEditingText {
                 if newEditingText.id != lastLoggedEditing {
                     lastLoggedEditing = newEditingText.id

@@ -1,9 +1,7 @@
 import SwiftUI
 import simd
-
 extension DrawingCanvas {
     internal var allowedZoomSteps: [CGFloat] { [0.75, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 640.0] }
-
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
         let clamped = max(allowedZoomSteps.first ?? 0.75, min(allowedZoomSteps.last ?? 640.0, zoom))
         var best = allowedZoomSteps.first ?? 0.75
@@ -17,7 +15,6 @@ extension DrawingCanvas {
         }
         return best
     }
-
     internal func nextAllowedStepUp(from zoom: CGFloat) -> CGFloat {
         let epsilon: CGFloat = 1e-6
         for step in allowedZoomSteps {
@@ -25,7 +22,6 @@ extension DrawingCanvas {
         }
         return allowedZoomSteps.last ?? 640.0
     }
-
     internal func nextAllowedStepDown(from zoom: CGFloat) -> CGFloat {
         let epsilon: CGFloat = 1e-6
         for step in allowedZoomSteps.reversed() {
@@ -33,25 +29,19 @@ extension DrawingCanvas {
         }
         return allowedZoomSteps.first ?? 0.75
     }
-
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
         guard !isBezierDrawing && !isPanGestureActive else {
             return
         }
-
         if !isZoomGestureActive {
             isZoomGestureActive = true
         }
-
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
-
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
-
         let newZoomLevel = CGFloat(currentZoom * adjustedValue)
         let clampedZoom = max(0.75, min(640.0, newZoomLevel))
-
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: currentMousePosition, geometry: geometry)
         } else {
@@ -59,33 +49,25 @@ extension DrawingCanvas {
             handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: viewCenter, geometry: geometry)
         }
     }
-
     internal func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
         defer {
             isZoomGestureActive = false
         }
-
         guard !isBezierDrawing && !isPanGestureActive else {
             return
         }
-
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
-
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
-
         let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))
-
         if currentMousePosition != .zero {
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
         } else {
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
             handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: viewCenter, geometry: geometry)
         }
-
         initialZoomLevel = finalZoomLevel
-
         #if os(macOS)
         if isCanvasHovering && document.viewState.currentTool == .zoom {
             MagnifyingGlassCursor.set()
@@ -93,32 +75,24 @@ extension DrawingCanvas {
         }
         #endif
     }
-
     internal func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
-
         switch request.mode {
         case .fitToPage:
             fitToPage(geometry: geometry)
-
         case .actualSize:
             actualSize(geometry: geometry)
-
         case .zoomIn:
             let newZoom = nextAllowedStepUp(from: zoomLevel)
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
             handleZoomAtPoint(newZoomLevel: newZoom, focalPoint: viewCenter, geometry: geometry)
-
         case .zoomOut:
             let newZoom = nextAllowedStepDown(from: zoomLevel)
             let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
             handleZoomAtPoint(newZoomLevel: newZoom, focalPoint: viewCenter, geometry: geometry)
-
         case .custom(let focalPoint):
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
         }
-
         document.clearZoomRequest()
-
         #if os(macOS)
         if isCanvasHovering {
             switch document.viewState.currentTool {

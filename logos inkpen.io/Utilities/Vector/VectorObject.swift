@@ -1,10 +1,8 @@
 import SwiftUI
-
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
     let layerIndex: Int
     let objectType: ObjectType
-
     enum ObjectType: Hashable {
         case shape(VectorShape)
         case text(VectorShape)
@@ -15,13 +13,11 @@ struct VectorObject: Identifiable, Hashable {
         case clipMask(VectorShape)
         case guide(VectorShape)
     }
-
     init(id: UUID, layerIndex: Int, objectType: ObjectType) {
         self.id = id
         self.layerIndex = layerIndex
         self.objectType = objectType
     }
-
     static func determineType(for shape: VectorShape) -> ObjectType {
         if shape.isGuide {
             return .guide(shape)
@@ -41,13 +37,11 @@ struct VectorObject: Identifiable, Hashable {
             return .shape(shape)
         }
     }
-
     init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
         self.layerIndex = layerIndex
         self.objectType = VectorObject.determineType(for: shape)
     }
-
     var isVisible: Bool {
         switch objectType {
         case .shape(let shape),
@@ -61,7 +55,6 @@ struct VectorObject: Identifiable, Hashable {
             return shape.isVisible
         }
     }
-
     var isLocked: Bool {
         switch objectType {
         case .shape(let shape),
@@ -75,7 +68,6 @@ struct VectorObject: Identifiable, Hashable {
             return shape.isLocked
         }
     }
-
     var shape: VectorShape {
         switch objectType {
         case .shape(let shape),
@@ -90,19 +82,15 @@ struct VectorObject: Identifiable, Hashable {
         }
     }
 }
-
 extension VectorObject: Codable {
     enum CodingKeys: String, CodingKey {
         case id, layerIndex, objectType
     }
-
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(layerIndex, forKey: .layerIndex)
-
         var objectContainer = container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
-
         switch objectType {
         case .shape(let shape):
             try objectContainer.encode("shape", forKey: .type)
@@ -130,16 +118,12 @@ extension VectorObject: Codable {
             try objectContainer.encode(shape, forKey: .shape)
         }
     }
-
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
         id = try container.decode(UUID.self, forKey: .id)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
-
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
-
         if shape.typography != nil, let textPosition = shape.textPosition {
             if shape.transform.tx == 0 && shape.transform.ty == 0 {
                 var newTransform = shape.transform
@@ -148,7 +132,6 @@ extension VectorObject: Codable {
                 shape.transform = newTransform
             }
         }
-
         if let typeString = try? objectContainer.decode(String.self, forKey: .type) {
             switch typeString {
             case "shape":
@@ -190,7 +173,6 @@ extension VectorObject: Codable {
             }
         }
     }
-
     private enum ObjectTypeCodingKeys: String, CodingKey {
         case type, shape
     }

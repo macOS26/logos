@@ -1,6 +1,5 @@
 import SwiftUI
 import UniformTypeIdentifiers
-
 struct DocumentBasedMainView: View {
     @ObservedObject var document: VectorDocument
     let fileURL: URL?
@@ -45,19 +44,16 @@ struct DocumentBasedMainView: View {
     @State var viewportSize: CGSize = .zero
     @State private var viewWindow: NSWindow? = nil
     @State private var isTabActive: Bool = true
-
     var body: some View {
         Group {
             if isTabActive {
                 fullDocumentView
             } else {
-
                 Color(nsColor: .windowBackgroundColor)
             }
         }
         .background(HostingWindowFinder(callback: { window in
             self.viewWindow = window
-
             if !isTabActive, let w = window, (w.isKeyWindow || w.isMainWindow) {
                 isTabActive = true
                 MemoryDiag.checkpoint("Tab ACTIVATED (first appear)")
@@ -73,7 +69,6 @@ struct DocumentBasedMainView: View {
                 }
                 AppEventMonitor.shared.setActiveDocument(document)
             } else if window.tabbingIdentifier == vw.tabbingIdentifier {
-
                 if isTabActive {
                     isTabActive = false
                     MemoryDiag.checkpoint("Tab SUSPENDED")
@@ -90,7 +85,6 @@ struct DocumentBasedMainView: View {
             AppEventMonitor.shared.setActiveDocument(document)
         }
         .onDisappear {
-
             documentState.cleanup()
             document.imageStorage.removeAll()
             document.lastDrawnImageHash.removeAll()
@@ -99,7 +93,6 @@ struct DocumentBasedMainView: View {
             document.commandManager.clear()
             document.commandManager.document = nil
             MemoryDiag.checkpoint("Tab CLOSED")
-
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if NSDocumentController.shared.documents.isEmpty {
                     SharedMetalDevice.releaseAll()
@@ -108,7 +101,6 @@ struct DocumentBasedMainView: View {
             }
         }
     }
-
     private var fullDocumentView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -133,27 +125,23 @@ struct DocumentBasedMainView: View {
                 .background(Color.black.opacity(0.8))
                 .zIndex(100)
                 .onAppear { MemoryDiag.checkpoint("VerticalToolbar.onAppear") }
-
                 GeometryReader { geometry in
                     ZStack {
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
-
                         DrawingCanvas(document: document, zoomLevel: $zoomLevel, canvasOffset: $canvasOffset, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform, livePointPositions: $livePointPositions, liveHandlePositions: $liveHandlePositions, fillDeltaOpacity: $fillDeltaOpacity, strokeDeltaOpacity: $strokeDeltaOpacity, strokeDeltaWidth: $strokeDeltaWidth, colorDeltaColor: $colorDeltaColor, colorDeltaOpacity: $colorDeltaOpacity, activeGradientDelta: $activeGradientDelta, fontSizeDelta: $fontSizeDelta, lineSpacingDelta: $lineSpacingDelta, lineHeightDelta: $lineHeightDelta, letterSpacingDelta: $letterSpacingDelta, textContentDelta: $textContentDelta, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
                             .zIndex(1)
-
                             .onChange(of: geometry.size) { _, newSize in
                                 viewportSize = newSize
                             }
                             .onAppear {
                                 viewportSize = geometry.size
                             }
-
                         RulersView(
                             document: document,
                             geometry: geometry,
@@ -161,7 +149,6 @@ struct DocumentBasedMainView: View {
                             canvasOffset: canvasOffset
                         )
                         .zIndex(50)
-
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300)
@@ -169,7 +156,6 @@ struct DocumentBasedMainView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500)
                 .contentShape(Rectangle())
-
                 RightPanel(
                     snapshot: document.snapshot,
                     viewState: document.viewState,
@@ -197,14 +183,12 @@ struct DocumentBasedMainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400)
-
             StatusBar(zoomLevel: zoomLevel, document: document)
         }
         .frame(minHeight: 524)
         .toolbarBackground(Color.platformControlBackground, for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
-
             MainToolbarContent(
                 document: document,
                 appState: appState,
@@ -329,7 +313,6 @@ struct DocumentBasedMainView: View {
             SFSymbolsPickerView(
                 isPresented: $showingSFSymbolsPicker,
                 onImport: { tempURL in
-
                     let result = await VectorImportManager.shared.importVectorFile(from: tempURL)
                     result.dispatchAsImportCommand(into: document)
                 }
@@ -340,27 +323,22 @@ struct DocumentBasedMainView: View {
                 document.viewState.currentTool = appState.defaultTool
                 hasInitializedTool = true
             }
-
             documentState.setDocument(document)
-
             DispatchQueue.main.async {
                 if let window = self.viewWindow, window.isKeyWindow {
                     AppEventMonitor.shared.setActiveDocument(document)
                     print("🟢 onAppear: Set active document \(ObjectIdentifier(document))")
                 }
             }
-
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
             }
         }
         .onDisappear {
-
         }
         .focusedSceneObject(documentState)
     }
-
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.settings = importedDoc.settings
         document.snapshot.layers = importedDoc.snapshot.layers
@@ -373,16 +351,12 @@ struct DocumentBasedMainView: View {
         document.gridSettings = importedDoc.gridSettings
         calculateInitialZoom()
     }
-
     private func importVectorFile(from url: URL) {
         showingImportProgress = true
-
         Task {
             let result = await VectorImportManager.shared.importVectorFile(from: url)
-
             await MainActor.run {
                 showingImportProgress = false
-
                 if result.success {
                     if result.dispatchAsImportCommand(into: document) != nil {
                         document.viewState.selectedObjectIDs = Set(result.shapes.map { $0.id })
@@ -391,16 +365,13 @@ struct DocumentBasedMainView: View {
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
                 }
-
                 importResult = result
             }
         }
     }
-
     private func runPasteboardDiagnostics() {
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
-
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "Pasteboard Diagnostics Complete"
@@ -411,15 +382,12 @@ struct DocumentBasedMainView: View {
             alert.runModal()
         }
     }
-
     private func calculateInitialZoom() {
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
 }
-
 struct HostingWindowFinder: NSViewRepresentable {
     var callback: (NSWindow?) -> Void
-
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async { [weak view] in
@@ -427,6 +395,5 @@ struct HostingWindowFinder: NSViewRepresentable {
         }
         return view
     }
-
     func updateNSView(_ nsView: NSView, context: Context) {}
 }

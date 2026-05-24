@@ -1,5 +1,4 @@
 import SwiftUI
-
 extension Color {
     static let layerColorPalette: [(name: String, color: Color)] = [
         (LayerColorName.maroon, Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),
@@ -29,11 +28,9 @@ extension Color {
         (LayerColorName.gray, Color.gray)
     ]
 }
-
 private let kLayerTextStyle: Font = .system(size: 11)
 private let kLayerControlLabelWidth: CGFloat = 50
 private let kLayerPercentageWidth: CGFloat = 35
-
 extension View {
     @ViewBuilder
     func layerText(width: CGFloat? = nil, alignment: Alignment = .leading) -> some View {
@@ -49,45 +46,35 @@ extension View {
         }
     }
 }
-
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
-
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
-
     private var selectedIndex: Int? {
         if let selectedLayerId = document.settings.selectedLayerId {
             return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
         }
         return document.snapshot.layers.count > 2 ? 2 : nil
     }
-
     private var overlaysEnabled: Bool {
         return !visibleRows.isEmpty
     }
-
     private enum RowType: Hashable {
         case layer(index: Int)
         case object(layerIndex: Int, objectId: UUID)
         case childObject(layerIndex: Int, parentObjectId: UUID, childShapeId: UUID)
     }
-
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
-
         func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID) {
             guard childShape.isGroupContainer else { return }
-
             let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
             guard isChildGroupExpanded else { return }
-
             let nestedMembers = document.resolveGroupMembers(childShape)
-
             let orderedNested: [VectorShape] = {
                 if childShape.isClippingGroup { return nestedMembers }
                 return Array(nestedMembers.reversed())
@@ -97,29 +84,23 @@ struct LayersPanel: View {
                 addNestedGroupChildren(childShape: nestedChild, layerIndex: layerIndex, parentObjectId: nestedChild.id)
             }
         }
-
         for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
             rows.append(.layer(index: layerIndex))
-
             let isExpanded = if layerIndex <= 1 {
                 document.settings.layerExpansionState[layer.id] ?? false
             } else {
                 document.settings.layerExpansionState[layer.id] ?? true
             }
-
             if isExpanded {
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
-
                 for objectID in objectIDs.reversed() {
                     if let object = document.snapshot.objects[objectID] {
                         rows.append(.object(layerIndex: layerIndex, objectId: object.id))
-
                         let isGroupExpanded = document.settings.groupExpansionState[object.id] ?? false
                         if isGroupExpanded {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
                                 let memberShapes = document.resolveGroupMembers(shape)
-
                                 let ordered: [VectorShape] = {
                                     if case .clipGroup = object.objectType { return memberShapes }
                                     return Array(memberShapes.reversed())
@@ -136,22 +117,17 @@ struct LayersPanel: View {
                 }
             }
         }
-
         return rows
     }
-
     var body: some View {
-
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
-
             if let index = selectedIndex {
                 layerControlsSection(for: index)
                     .frame(maxWidth: .infinity)
                 Divider().padding(.horizontal, 6.5)
             }
-
             layersScrollContent
             Spacer()
         }
@@ -166,7 +142,6 @@ struct LayersPanel: View {
             }
         }
     }
-
     private var layersHeader: some View {
         HStack {
             Text("Layer")
@@ -196,13 +171,11 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
-
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text("Opacity")
                     .layerText(width: kLayerControlLabelWidth)
-
                 ZStack {
                     Capsule()
                         .fill(
@@ -237,20 +210,16 @@ struct LayersPanel: View {
                             }
                         }
                     }
-
                     .controlSize(.regular)
                     .tint(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
-
                 Text("\(Int(layerOpacityState * 100))%")
                     .layerText(width: kLayerPercentageWidth, alignment: .trailing)
             }
-
             HStack(spacing: 8) {
                 Text("Blend")
                     .layerText(width: kLayerControlLabelWidth)
-
                 Picker("", selection: Binding(
                     get: {
                         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return BlendMode.normal }
@@ -271,7 +240,6 @@ struct LayersPanel: View {
                 .frame(width: 100)
                 .labelsHidden()
                 .pickerStyle(.menu)
-
                 Spacer(minLength: 10)
                     .frame(width: 10)
                 ColorSwatchButton(
@@ -301,7 +269,6 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
-
     private func dragOverlay(
         xPosition: CGFloat,
         isDragging: WritableKeyPath<DocumentViewState, Bool>,
@@ -311,7 +278,6 @@ struct LayersPanel: View {
             ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                 let rowY = CGFloat(rowIndex) * kLayerRowHeight
                 let iconCenterY = rowY + (kLayerRowHeight / 2)
-
                 Color.red.opacity(0.0000000)
                     .frame(width: 20, height: 20)
                     .contentShape(Rectangle())
@@ -325,18 +291,14 @@ struct LayersPanel: View {
                         document.viewState[keyPath: isDragging] = true
                         processedLayersDuringDrag.removeAll()
                         processedObjectsDuringDrag.removeAll()
-
                         let startY = value.startLocation.y
                         let rowIndex = Int(startY / kLayerRowHeight)
-
                         if rowIndex >= 0 && rowIndex < visibleRows.count {
                             toggle(visibleRows[rowIndex])
                         }
                     }
-
                     let currentY = value.location.y
                     let rowIndex = Int(currentY / kLayerRowHeight)
-
                     if rowIndex >= 0 && rowIndex < visibleRows.count {
                         toggle(visibleRows[rowIndex])
                     }
@@ -348,29 +310,24 @@ struct LayersPanel: View {
                 }
         )
     }
-
     private var layersScrollContent: some View {
         return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
-
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.changeNotifier.layerChangeToken)
                 .padding(.horizontal, 4)
-
                 if overlaysEnabled {
                     let iconSize: CGFloat = 20
                     let iconSpacing: CGFloat = 2
                     let rowPadding: CGFloat = 4
                     let eyeIconX = rowPadding + (iconSize / 2)
                     let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
-
                     dragOverlay(xPosition: eyeIconX, isDragging: \.isDraggingVisibility, toggle: toggleVisibility)
                         .padding(.horizontal, 4)
-
                     dragOverlay(xPosition: lockIconX, isDragging: \.isDraggingLock, toggle: toggleLock)
                         .padding(.horizontal, 4)
                         .zIndex(200)
@@ -378,7 +335,6 @@ struct LayersPanel: View {
             }
         }
     }
-
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
@@ -387,7 +343,6 @@ struct LayersPanel: View {
             selectedLayerIndex: $selectedLayerIndex
         )
     }
-
     private func toggleVisibility(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -400,13 +355,11 @@ struct LayersPanel: View {
             if !processedObjectsDuringDrag.contains(objectId) {
                 if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
-
                     switch obj.objectType {
                     case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape), .guide(var shape):
                         shape.isVisible.toggle()
                         updatedShape = shape
                     }
-
                     if let shape = updatedShape {
                         let updatedObject = VectorObject(
                             shape: shape,
@@ -421,7 +374,6 @@ struct LayersPanel: View {
         case .childObject(let layerIndex, _, let childShapeId):
             print("🟡 toggleVisibility childObject: \(childShapeId)")
             if !processedObjectsDuringDrag.contains(childShapeId) {
-
                 if let childObj = document.snapshot.objects[childShapeId] {
                     var shape = childObj.shape
                     shape.isVisible.toggle()
@@ -440,7 +392,6 @@ struct LayersPanel: View {
             }
         }
     }
-
     private func toggleLock(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -453,13 +404,11 @@ struct LayersPanel: View {
             if !processedObjectsDuringDrag.contains(objectId) {
                 if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
-
                     switch obj.objectType {
                     case .shape(var shape), .text(var shape), .image(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape), .guide(var shape):
                         shape.isLocked.toggle()
                         updatedShape = shape
                     }
-
                     if let shape = updatedShape {
                         let updatedObject = VectorObject(
                             shape: shape,
@@ -473,7 +422,6 @@ struct LayersPanel: View {
             }
         case .childObject(let layerIndex, _, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
-
                 if let childObj = document.snapshot.objects[childShapeId] {
                     var shape = childObj.shape
                     shape.isLocked.toggle()
@@ -490,13 +438,11 @@ struct LayersPanel: View {
         }
     }
 }
-
 struct ColorSwatchButton<Content: View>: View {
     @Binding var color: Color
     let availableColors: [(name: String, color: Color)]
     let buttonContent: () -> Content
     @State private var showColorPicker: Bool = false
-
     init(
         color: Binding<Color>,
         availableColors: [(name: String, color: Color)],
@@ -506,7 +452,6 @@ struct ColorSwatchButton<Content: View>: View {
         self.availableColors = availableColors
         self.buttonContent = buttonContent
     }
-
     var body: some View {
         Button(action: {
             showColorPicker = true
@@ -542,7 +487,6 @@ struct ColorSwatchButton<Content: View>: View {
         }
     }
 }
-
 extension ColorSwatchButton where Content == AnyView {
     init(color: Binding<Color>, availableColors: [(name: String, color: Color)]) {
         self._color = color

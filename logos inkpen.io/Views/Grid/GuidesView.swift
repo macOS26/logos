@@ -1,21 +1,16 @@
 import SwiftUI
-
 struct GuidesView: View {
     @ObservedObject var document: VectorDocument
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
     @Binding var liveDragOffset: CGPoint
-
     var body: some View {
         if showGuides {
-
             let _ = document.viewState.objectPositionUpdateTrigger
-
             let guideShapes = document.getGuideShapes()
             let selectedIDs = document.viewState.selectedObjectIDs
             let isKeylineMode = document.viewState.viewMode == .keyline
-
             GeometryReader { geometry in
                 ZStack {
                     ForEach(guideShapes, id: \.id) { shape in
@@ -38,7 +33,6 @@ struct GuidesView: View {
         }
     }
 }
-
 private struct GuideLineView: View {
     let shape: VectorShape
     let orientation: Guide.Orientation
@@ -48,18 +42,15 @@ private struct GuideLineView: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let viewSize: CGSize
-
     private var guideColor: Color {
         if isKeylineMode {
             return .black
         }
         return isSelected ? Color.nonPhotoBlueSelected : Color.nonPhotoBlue
     }
-
     var body: some View {
         Path { p in
             var position = extractGuidePosition()
-
             if isSelected {
                 switch orientation {
                 case .horizontal:
@@ -68,7 +59,6 @@ private struct GuideLineView: View {
                     position += dragOffset.x
                 }
             }
-
             switch orientation {
             case .horizontal:
                 let screenY = position * zoomLevel + canvasOffset.y
@@ -82,10 +72,8 @@ private struct GuideLineView: View {
         }
         .stroke(guideColor, lineWidth: 1)
     }
-
     private func extractGuidePosition() -> CGFloat {
         guard let firstElement = shape.path.elements.first else { return 0 }
-
         switch firstElement {
         case .move(let point):
             switch orientation {

@@ -1,13 +1,11 @@
 import SwiftUI
 import SwiftUI
-
 struct ShearHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
-
     @State private var isShearing = false
     @State private var shearStarted = false
     @State private var initialBounds: CGRect = .zero
@@ -21,9 +19,7 @@ struct ShearHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State private var pointsRefreshTrigger: Int = 0
     @State private var cachedPreviewPath: Path? = nil
-
     private let handleSize: CGFloat = 10
-
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) && !shape.transform.isIdentity {
             let baseBounds = shape.bounds
@@ -43,18 +39,14 @@ struct ShearHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
-
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
-
     var body: some View {
-
         ZStack {
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
-
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
                     for groupedShape in shape.groupedShapes {
                         var path = Path()
@@ -124,9 +116,7 @@ struct ShearHandles: View {
                 }
             }
             .allowsHitTesting(false)
-
             pathPointsView()
-
             let isCenterLockedPin = (lockedPinPointIndex == nil)
             let shapeCenter = shape.calculateCentroid()
             Circle()
@@ -153,21 +143,17 @@ struct ShearHandles: View {
                             finishShear()
                         }
                 )
-
             if isShearing && !previewTransform.isIdentity, let cachedPath = cachedPreviewPath {
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
-
                     let transform = CGAffineTransform.identity
                         .translatedBy(x: offset.x, y: offset.y)
                         .scaledBy(x: zoom, y: zoom)
-
                     context.transform = transform
                     context.stroke(cachedPath, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoom, dash: [4.0 / zoom, 4.0 / zoom]))
                 }
                 .allowsHitTesting(false)
-
                 let anchorScreenX = shearAnchorPoint.x * zoomLevel + canvasOffset.x
                 let anchorScreenY = shearAnchorPoint.y * zoomLevel + canvasOffset.y
                 let isCenterPinned = document.viewState.shearAnchor == .center
@@ -177,13 +163,11 @@ struct ShearHandles: View {
                     .frame(width: handleSize, height: handleSize)
                     .position(x: anchorScreenX, y: anchorScreenY)
             }
-
         }
         .onAppear {
             initialBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
             initialTransform = shape.transform
             extractPathPoints()
-
             if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
                 setLockedPinPoint(nil)
             }
@@ -199,7 +183,6 @@ struct ShearHandles: View {
                 cachedPreviewPath = nil
                 return
             }
-
             var path = Path()
             for element in shape.path.elements {
                 switch element {
@@ -224,54 +207,39 @@ struct ShearHandles: View {
             }
             cachedPreviewPath = path
         }
-
     }
-
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
-
         let baseShearTransform = CGAffineTransform(a: 1, b: shearY, c: shearX, d: 1, tx: 0, ty: 0)
         let sheared_anchor = anchor.applying(baseShearTransform)
-
         let compensationTranslation = CGAffineTransform(translationX: anchor.x - sheared_anchor.x, y: anchor.y - sheared_anchor.y)
         let pinPointShearTransform = baseShearTransform.concatenating(compensationTranslation)
-
         previewTransform = initialTransform.concatenating(pinPointShearTransform)
-
         isShearing = true
-
     }
-
     private func finishShear() {
         shearStarted = false
         isShearing = false
         document.isHandleScalingActive = false
-
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
-
         if let vectorObject = document.findObject(by: shape.id),
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 var updatedShape = currentShape
                 updatedShape.transform = initialTransform
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             }
-
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-
             document.updateTransformPanelValues()
-
             var newShapes: [UUID: VectorShape] = [:]
             for shapeID in allShapeIDs {
                 if let transformedShape = document.findShape(by: shapeID) {
                     newShapes[shapeID] = transformedShape
                 }
             }
-
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: allShapeIDs,
@@ -280,9 +248,7 @@ struct ShearHandles: View {
                 )
                 document.executeCommand(command)
             }
-
             document.triggerLayerUpdate(for: layerIndex)
-
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterShear()
             }
@@ -290,15 +256,11 @@ struct ShearHandles: View {
         } else {
             Log.error("❌ SHEAR FAILED: Could not find shape in unified objects system", category: .error)
         }
-
         previewTransform = .identity
     }
-
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
-
         ids.append(shapeID)
-
         switch object.objectType {
         case .shape(let s), .image(let s), .warp(let s), .clipMask(let s), .guide(let s):
             oldShapes[shapeID] = s
@@ -311,10 +273,8 @@ struct ShearHandles: View {
             break
         }
     }
-
     private func extractPathPoints() {
         pathPoints.removeAll()
-
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             for groupedShape in shape.groupedShapes {
                 for element in groupedShape.path.elements {
@@ -340,18 +300,14 @@ struct ShearHandles: View {
                 }
             }
         }
-
         let centroid = shape.calculateCentroid()
         centerPoint = VectorPoint(centroid)
-
     }
-
     @ViewBuilder
     private func pathPointsView() -> some View {
         ForEach(pathPoints.indices, id: \.self) { index in
             let point = pathPoints[index]
             let isLockedPin = lockedPinPointIndex == index
-
             Circle()
                 .fill(isLockedPin ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
@@ -378,10 +334,8 @@ struct ShearHandles: View {
                 )
         }
     }
-
     private func setLockedPinPoint(_ pointIndex: Int?) {
         lockedPinPointIndex = pointIndex
-
         if let index = pointIndex {
             if index < pathPoints.count {
                 let point = pathPoints[index]
@@ -412,15 +366,12 @@ struct ShearHandles: View {
             shearAnchorPoint = calculatedCenter
         }
     }
-
     private func handleShearingFromPoint(draggedPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !shearStarted {
             startShearingFromPoint(draggedPointIndex: draggedPointIndex, bounds: bounds, dragValue: dragValue)
         }
-
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
         }
-
         let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
         let anchorScreenX = shearAnchorPoint.x * preciseZoom + canvasOffset.x
@@ -429,21 +380,17 @@ struct ShearHandles: View {
             x: startLocation.x - anchorScreenX,
             y: startLocation.y - anchorScreenY
         )
-
         let currentDistance = CGPoint(
             x: currentLocation.x - anchorScreenX,
             y: currentLocation.y - anchorScreenY
         )
-
         let sensitivity: CGFloat = 0.002
         let deltaX = currentDistance.x - startDistance.x
         let deltaY = currentDistance.y - startDistance.y
-
         let shearFactorX = deltaX * sensitivity
         let shearFactorY = deltaY * sensitivity
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
-
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             if abs(deltaX) > abs(deltaY) {
@@ -452,10 +399,8 @@ struct ShearHandles: View {
                 finalShearX = 0
             }
         }
-
         calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
     }
-
     private func startShearingFromPoint(draggedPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
         shearStarted = true
         isShearing = true
@@ -463,16 +408,12 @@ struct ShearHandles: View {
         initialBounds = bounds
         initialTransform = shape.transform
         startLocation = dragValue.location
-
         if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
             setLockedPinPoint(nil)
         }
-
     }
-
     private func updatePathPointsAfterShear() {
         pathPoints.removeAll()
-
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             for groupedShape in shape.groupedShapes {
                 for element in groupedShape.path.elements {
@@ -498,14 +439,10 @@ struct ShearHandles: View {
                 }
             }
         }
-
         let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
-
         pointsRefreshTrigger += 1
-
     }
-
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
@@ -515,32 +452,25 @@ struct ShearHandles: View {
         default: return center
         }
     }
-
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
-
         if currentTransform.isIdentity {
             return
         }
-
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
             return
         }
-
         var transformedElements: [PathElement] = []
-
         for element in shape.path.elements {
             switch element {
             case .move(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-
             case .line(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-
             case .curve(let to, let control1, let control2):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl1 = control1.cgPoint.applying(currentTransform)
@@ -550,7 +480,6 @@ struct ShearHandles: View {
                     control1: VectorPoint(transformedControl1),
                     control2: VectorPoint(transformedControl2),
                 ))
-
             case .quadCurve(let to, let control):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl = control.cgPoint.applying(currentTransform)
@@ -558,18 +487,15 @@ struct ShearHandles: View {
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl),
                 ))
-
             case .close:
                 transformedElements.append(.close)
             }
         }
-
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity
         updatedShape.updateBounds()
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-
     }
 }

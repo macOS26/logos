@@ -1,12 +1,10 @@
 import SwiftUI
-
 struct LetterheadTemplatePreview: View {
     var body: some View {
         VStack(spacing: 0) {
             Rectangle()
                 .fill(Color.ui.lightBlueBackground)
                 .frame(height: 40)
-
             Rectangle()
                 .fill(Color.white)
                 .overlay(

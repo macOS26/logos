@@ -1,27 +1,19 @@
 import SwiftUI
 import UniformTypeIdentifiers
-
 class VectorImportManager {
-
     static let shared = VectorImportManager()
-
     private init() {}
-
     private static let freehandExtensions: Set<String> = [
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
         "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
     ]
-
     func importVectorFile(from url: URL) async -> VectorImportResult {
-
         if Self.freehandExtensions.contains(url.pathExtension.lowercased()) {
             return await importFreeHand(from: url)
         }
-
         if let raster = detectRaster(from: url) {
             return await importRaster(from: url, raster: raster)
         }
-
         guard let format = detectFormat(from: url) else {
             return VectorImportResult(
                 success: false,
@@ -31,7 +23,6 @@ class VectorImportManager {
                 warnings: ["Could not detect file format"]
             )
         }
-
         guard format.isCurrentlySupported else {
             return VectorImportResult(
                 success: false,
@@ -41,7 +32,6 @@ class VectorImportManager {
                 warnings: ["Professional CAD formats require commercial licensing"]
             )
         }
-
         switch format {
         case .svg:
             return importSVG(from: url)
@@ -49,9 +39,7 @@ class VectorImportManager {
             return await importPDF(from: url)
         }
     }
-
     func importSVGWithExtremeValueHandling(from url: URL) -> VectorImportResult {
-
         guard let format = detectFormat(from: url) else {
             return VectorImportResult(
                 success: false,
@@ -61,7 +49,6 @@ class VectorImportManager {
                 warnings: ["Could not detect file format"]
             )
         }
-
         guard format.isCurrentlySupported else {
             return VectorImportResult(
                 success: false,
@@ -71,7 +58,6 @@ class VectorImportManager {
                 warnings: ["Professional CAD formats require commercial licensing"]
             )
         }
-
         switch format {
         case .svg:
             return importSVG(from: url, useExtremeValueHandling: true)
@@ -85,19 +71,14 @@ class VectorImportManager {
             )
         }
     }
-
     private func detectFormat(from url: URL) -> VectorFileFormat? {
         let pathExtension = url.pathExtension.lowercased()
-
         if let format = VectorFileFormat.allCases.first(where: { $0.rawValue == pathExtension }) {
             return format
         }
-
         guard let data = try? Data(contentsOf: url) else { return nil }
-
         return detectFormatByContent(data)
     }
-
     enum RasterFormat: String, CaseIterable {
         case png = "png"
         case jpg = "jpg"
@@ -111,46 +92,35 @@ class VectorImportManager {
         case gif = "gif"
         case webp = "webp"
     }
-
     private func detectRaster(from url: URL) -> RasterFormat? {
         let ext = url.pathExtension.lowercased()
         return RasterFormat.allCases.first { $0.rawValue == ext }
     }
-
     private func detectFormatByContent(_ data: Data) -> VectorFileFormat? {
         guard let string = String(data: data.prefix(1024), encoding: .utf8) else { return nil }
-
         if string.contains("<svg") || string.contains("<?xml") && string.contains("svg") {
             return .svg
         }
-
         if string.hasPrefix("%PDF-") {
             return .pdf
         }
-
         if string.hasPrefix("%!PS-Adobe") {
             return .pdf
         }
-
         return nil
     }
-
     private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) -> VectorImportResult {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
-
         do {
             guard let data = try? Data(contentsOf: url) else {
                 throw VectorImportError.fileNotFound
             }
-
             if let svgString = String(data: data, encoding: .utf8) {
                 if let range = svgString.range(of: "<inkpen:document"),
                    let endRange = svgString.range(of: "</inkpen:document>") {
-
                     if let openTagEnd = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound) {
-
                         let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                         var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72)
                         if let widthRange = svgString.range(of: "width=\""),
@@ -163,7 +133,6 @@ class VectorImportManager {
                            let height = Double(svgString[heightRange.upperBound..<heightEnd.lowerBound]) {
                             documentSize.height = height
                         }
-
                         let metadata = VectorImportMetadata(
                             originalFormat: .svg,
                             documentSize: documentSize,
@@ -179,7 +148,6 @@ class VectorImportManager {
                             documentVersion: nil,
                             inkpenMetadata: base64Data
                         )
-
                         return VectorImportResult(
                             success: true,
                             shapes: [],
@@ -190,14 +158,11 @@ class VectorImportManager {
                     }
                 }
             }
-
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
-
             if !svgContent.missingFonts.isEmpty {
                 warnings.append("Missing fonts: \(svgContent.missingFonts.joined(separator: ", "))")
             }
-
             let metadata = VectorImportMetadata(
                 originalFormat: .svg,
                 documentSize: svgContent.documentSize,
@@ -213,7 +178,6 @@ class VectorImportManager {
                 documentVersion: svgContent.version,
                 inkpenMetadata: svgContent.inkpenMetadata
             )
-
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
@@ -221,11 +185,9 @@ class VectorImportManager {
                 errors: errors,
                 warnings: warnings
             )
-
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
             Log.error("❌ SVG import failed: \(error)", category: .error)
-
             return VectorImportResult(
                 success: false,
                 shapes: [],
@@ -235,7 +197,6 @@ class VectorImportManager {
             )
         }
     }
-
     private func importFreeHand(from url: URL) async -> VectorImportResult {
         do {
             let direct = try FreeHandDirectImporter.parseToShapes(url: url)
@@ -283,7 +244,6 @@ class VectorImportManager {
             )
         }
     }
-
     private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
@@ -295,7 +255,6 @@ class VectorImportManager {
                 warnings: []
             )
         }
-
         let size = CGSize(width: cgImage.width, height: cgImage.height)
         var rectShape = VectorShape(
             name: "[IMG] \(url.lastPathComponent)",
@@ -310,13 +269,9 @@ class VectorImportManager {
             fillStyle: FillStyle(color: .clear),
             transform: .identity
         )
-
         rectShape.bounds = CGRect(origin: .zero, size: size)
-
         let shouldEmbed = ApplicationSettings.shared.embedImagesByDefault
-
         if shouldEmbed {
-
             let mutableData = NSMutableData()
             if let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) {
                 CGImageDestinationAddImage(destination, cgImage, nil)
@@ -325,7 +280,6 @@ class VectorImportManager {
                 }
             }
         } else {
-
             rectShape.linkedImagePath = url.path
             if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                 rectShape.linkedImageBookmarkData = bookmark
@@ -348,12 +302,10 @@ class VectorImportManager {
         )
         return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
-
     private func importPDF(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
         var shapes: [VectorShape] = []
-
         guard let pdfDocument = CGPDFDocument(url as CFURL) else {
             errors.append(.corruptedFile)
             return VectorImportResult(
@@ -364,7 +316,6 @@ class VectorImportManager {
                 warnings: warnings
             )
         }
-
         guard let page = pdfDocument.page(at: 1) else {
             errors.append(.invalidStructure("No pages found"))
             return VectorImportResult(
@@ -375,18 +326,14 @@ class VectorImportManager {
                 warnings: warnings
             )
         }
-
         var inkpenMetadata: String? = nil
-
         if let pdfDoc = page.document, let catalog = pdfDoc.catalog {
             var metadataRef: CGPDFStreamRef?
-
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
                let metadataStream = metadataRef {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
-
                         if let range = xmpString.range(of: "<inkpen:document>"),
                            let endRange = xmpString.range(of: "</inkpen:document>") {
                             let startIndex = range.upperBound
@@ -398,11 +345,8 @@ class VectorImportManager {
                 }
             }
         }
-
         let mediaBox = page.getBoxRect(.mediaBox)
-
         if let metadata = inkpenMetadata {
-
             let importMetadata = VectorImportMetadata(
                 originalFormat: .pdf,
                 documentSize: mediaBox.size,
@@ -418,7 +362,6 @@ class VectorImportManager {
                 documentVersion: nil,
                 inkpenMetadata: metadata
             )
-
             return VectorImportResult(
                 success: true,
                 shapes: [],
@@ -427,11 +370,9 @@ class VectorImportManager {
                 warnings: warnings
             )
         }
-
         do {
             let pdfContent = try extractPDFVectorContent(page)
             shapes = pdfContent.shapes
-
             let metadata = VectorImportMetadata(
                 originalFormat: .pdf,
                 documentSize: mediaBox.size,
@@ -447,7 +388,6 @@ class VectorImportManager {
                 documentVersion: pdfContent.version,
                 inkpenMetadata: inkpenMetadata
             )
-
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
@@ -455,11 +395,9 @@ class VectorImportManager {
                 errors: errors,
                 warnings: warnings
             )
-
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
             Log.error("❌ PDF import failed: \(error)", category: .error)
-
             return VectorImportResult(
                 success: false,
                 shapes: [],
@@ -469,7 +407,6 @@ class VectorImportManager {
             )
         }
     }
-
     private func createDefaultMetadata() -> VectorImportMetadata {
         return VectorImportMetadata(
             originalFormat: .svg,

@@ -1,7 +1,5 @@
 import SwiftUI
-
 extension SVGParser {
-
     func parseRectangle(attributes: [String: String]) {
         let x = parseLength(attributes["x"]) ?? 0
         let y = parseLength(attributes["y"]) ?? 0
@@ -19,13 +17,10 @@ extension SVGParser {
             pendingTextBoxRect = rect
             return
         }
-
         let elements: [PathElement]
-
         if rx > 0 || ry > 0 {
             let radiusX = rx
             let radiusY = ry == 0 ? rx : ry
-
             elements = [
                 .move(to: VectorPoint(x + radiusX, y)),
                 .line(to: VectorPoint(x + width - radiusX, y)),
@@ -55,24 +50,20 @@ extension SVGParser {
                 .close
             ]
         }
-
         let vectorPath = VectorPath(elements: elements, isClosed: true)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
-
         let shape = createShape(
             name: "Rectangle",
             path: vectorPath,
             attributes: attributes,
             geometricType: rx > 0 || ry > 0 ? .roundedRectangle : .rectangle
         )
-
         if shouldClip, let clipId = clipPathId {
             applyClipPathToShape(shape, clipPathId: clipId)
         } else {
             shapes.append(shape)
         }
     }
-
     func parseCircle(attributes: [String: String]) {
         let cx = parseLength(attributes["cx"]) ?? 0
         let cy = parseLength(attributes["cy"]) ?? 0
@@ -80,21 +71,18 @@ extension SVGParser {
         let center = CGPoint(x: cx, y: cy)
         let shape = VectorShape.circle(center: center, radius: r)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
-
         let finalShape = createShape(
             name: "Circle",
             path: shape.path,
             attributes: attributes,
             geometricType: .circle
         )
-
         if shouldClip, let clipId = clipPathId {
             applyClipPathToShape(finalShape, clipPathId: clipId)
         } else {
             shapes.append(finalShape)
         }
     }
-
     func parseEllipse(attributes: [String: String]) {
         let cx = parseLength(attributes["cx"]) ?? 0
         let cy = parseLength(attributes["cy"]) ?? 0
@@ -116,24 +104,20 @@ extension SVGParser {
                    control2: VectorPoint(cx + rx, cy - ry * 0.552)),
             .close
         ]
-
         let vectorPath = VectorPath(elements: elements, isClosed: true)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
-
         let shape = createShape(
             name: "Ellipse",
             path: vectorPath,
             attributes: attributes,
             geometricType: .ellipse
         )
-
         if shouldClip, let clipId = clipPathId {
             applyClipPathToShape(shape, clipPathId: clipId)
         } else {
             shapes.append(shape)
         }
     }
-
     func parseLine(attributes: [String: String]) {
         let x1 = parseLength(attributes["x1"]) ?? 0
         let y1 = parseLength(attributes["y1"]) ?? 0
@@ -143,7 +127,6 @@ extension SVGParser {
             .move(to: VectorPoint(x1, y1)),
             .line(to: VectorPoint(x2, y2))
         ]
-
         let vectorPath = VectorPath(elements: elements, isClosed: false)
         let shape = createShape(
             name: "Line",
@@ -151,26 +134,19 @@ extension SVGParser {
             attributes: attributes,
             geometricType: .line
         )
-
         shapes.append(shape)
     }
-
     func parsePolyline(attributes: [String: String], closed: Bool) {
         guard let pointsString = attributes["points"] else { return }
-
         let points = parsePoints(pointsString)
         guard !points.isEmpty else { return }
-
         var elements: [PathElement] = [.move(to: VectorPoint(points[0]))]
-
         for i in 1..<points.count {
             elements.append(.line(to: VectorPoint(points[i])))
         }
-
         if closed {
             elements.append(.close)
         }
-
         let vectorPath = VectorPath(elements: elements, isClosed: closed)
         let shape = createShape(
             name: closed ? "Polygon" : "Polyline",
@@ -178,7 +154,6 @@ extension SVGParser {
             attributes: attributes,
             geometricType: closed ? .polygon : nil
         )
-
         shapes.append(shape)
     }
 }

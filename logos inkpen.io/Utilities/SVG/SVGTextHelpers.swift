@@ -1,13 +1,10 @@
 import SwiftUI
-
 extension SVGParser {
-
     internal func getCachedFont(family: String, size: Double) -> PlatformFont {
         let cacheKey = "\(family)-\(size)"
         if let cached = fontCache[cacheKey] {
             return cached
         }
-
         let byPostScriptName = PlatformFont(name: family, size: size)
         let byFamily: PlatformFont? = {
             let descriptor = NSFontDescriptor(fontAttributes: [.family: family])
@@ -17,38 +14,28 @@ extension SVGParser {
         fontCache[cacheKey] = nsFont
         return nsFont
     }
-
     internal func calculateTextWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = alignment.nsTextAlignment
-
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .paragraphStyle: paragraphStyle
         ]
-
         let attributedString = NSAttributedString(string: text, attributes: attributes)
-
         sharedTextStorage.setAttributedString(attributedString)
-
         let glyphRange = sharedLayoutManager.glyphRange(for: sharedTextContainer)
         let boundingRect = sharedLayoutManager.boundingRect(forGlyphRange: glyphRange, in: sharedTextContainer)
-
         return ceil(boundingRect.width)
     }
-
     internal func calculateMaxLineWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let lines = text.components(separatedBy: "\n")
         var maxWidth: CGFloat = 0
-
         for line in lines {
             let lineWidth = calculateTextWidth(for: line, font: font, alignment: alignment)
             maxWidth = max(maxWidth, lineWidth)
         }
-
         return maxWidth
     }
-
     func extractFontFamily(from attributes: [String: String]) -> String? {
         if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return explicit
@@ -64,7 +51,6 @@ extension SVGParser {
         }
         return nil
     }
-
     func normalizeFontFamily(_ rawFamily: String?) -> String {
         guard let raw = rawFamily?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
             return "Helvetica Neue"
@@ -81,10 +67,8 @@ extension SVGParser {
         }
         return "Helvetica Neue"
     }
-
     func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
-
         if let firstTspan = tspans.first,
            let textAnchor = firstTspan.attributes["text-anchor"] {
             switch textAnchor.lowercased() {
@@ -94,14 +78,11 @@ extension SVGParser {
             default: return .left
             }
         }
-
         let lines = tspans.map { (x: $0.x, contentLength: $0.content.count) }
         let sortedByLength = lines.sorted { $0.contentLength > $1.contentLength }
-
         if sortedByLength.count >= 2 {
             let longestLine = sortedByLength[0]
             guard let shortestLine = sortedByLength.last else { return .left }
-
             if shortestLine.x > longestLine.x {
                 let xDifference = abs(shortestLine.x - longestLine.x)
                 if xDifference > 5.0 {
@@ -109,23 +90,18 @@ extension SVGParser {
                 }
             }
         }
-
         let xValues = lines.map { $0.x }
         let minX = xValues.min() ?? 0
         let maxX = xValues.max() ?? 0
-
         if abs(maxX - minX) < 5.0 {
             return .left
         }
-
         return .left
     }
-
     func parseText(attributes: [String: String]) {
         currentTextContent = ""
         currentTextSpans.removeAll()
         isInMultiLineText = false
-
         var merged = attributes
         if let classAttr = attributes["class"], !classAttr.isEmpty {
             applyCSSClasses(classAttr, into: &merged)
@@ -136,7 +112,6 @@ extension SVGParser {
         }
         currentTextAttributes = merged
     }
-
     func finishTextElement() {
         if isInMultiLineText && !currentTextSpans.isEmpty {
             let baseX = parseLength(currentTextAttributes["x"]) ?? 0
@@ -147,11 +122,9 @@ extension SVGParser {
             var firstFontSize: Double = 12
             var firstFontFamily: String = "System Font"
             var firstFillColor: VectorColor = .black
-
             for (index, span) in currentTextSpans.enumerated() {
                 let cleanContent = span.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !cleanContent.isEmpty else { continue }
-
                 if index == 0 || (combinedContent.isEmpty) {
                     firstFontSize = parseLength(span.attributes["font-size"]) ?? 12
                     let rawFontFamily = extractFontFamily(from: span.attributes)
@@ -159,14 +132,11 @@ extension SVGParser {
                     let fill = span.attributes["fill"] ?? "black"
                     firstFillColor = parseColor(fill) ?? .black
                 }
-
                 combinedContent.append(cleanContent)
             }
-
             if !combinedContent.isEmpty {
                 let multiLineContent = combinedContent.joined(separator: "\n")
                 let textAlignment = detectTextAlignment(from: currentTextSpans)
-
                 let lineHeight = firstFontSize * 1.2
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
@@ -182,11 +152,9 @@ extension SVGParser {
                     fillColor: firstFillColor,
                     fillOpacity: 1.0
                 )
-
                 let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ??
                                  currentTextSpans.first?.attributes["text-anchor"]?.lowercased() ??
                                  "start"
-
                 let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
                 let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
                 let actualWidth: CGFloat
@@ -196,18 +164,15 @@ extension SVGParser {
                 } else {
                     actualWidth = maxLineWidth
                 }
-
                 var adjustedX = baseX
                 if textAnchor == "middle" {
                     adjustedX -= actualWidth / 2.0
                 } else if textAnchor == "end" {
                     adjustedX -= actualWidth
                 }
-
                 maxTextWidth = max(maxTextWidth, actualWidth)
                 let actualHeight = lineHeight * Double(max(1, combinedContent.count))
                 let finalY = baseY - (firstFontSize)
-
                 var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
@@ -215,19 +180,16 @@ extension SVGParser {
                     transform: finalTextTransform,
                     areaSize: CGSize(width: actualWidth, height: actualHeight)
                 )
-
                 textObject.bounds = CGRect(
                     x: adjustedX,
                     y: finalY,
                     width: actualWidth,
                     height: actualHeight
                 )
-
                 textObjects.append(textObject)
             }
         } else {
             guard !currentTextContent.isEmpty else { return }
-
             let x = parseLength(currentTextAttributes["x"]) ?? 0
             let y = parseLength(currentTextAttributes["y"]) ?? 0
             let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
@@ -244,7 +206,6 @@ extension SVGParser {
             case "end": textAlignment = .right
             default: textAlignment = .left
             }
-
             let lineHeight = fontSize * 1.2
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
@@ -260,7 +221,6 @@ extension SVGParser {
                 fillColor: parseColor(fill) ?? .black,
                 fillOpacity: 1.0
             )
-
             let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
             let nsFont = getCachedFont(family: fontFamily, size: fontSize)
             let textWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
@@ -271,20 +231,16 @@ extension SVGParser {
             } else {
                 actualWidth = textWidth
             }
-
             maxTextWidth = max(maxTextWidth, actualWidth)
-
             var adjustedX = x
             if textAnchor == "middle" {
                 adjustedX -= actualWidth / 2.0
             } else if textAnchor == "end" {
                 adjustedX -= actualWidth
             }
-
             let lineCount = max(1, trimmedContent.components(separatedBy: "\n").count)
             let actualHeight = lineHeight * Double(lineCount)
             let finalY = y - (fontSize)
-
             var textObject = VectorText(
                 content: trimmedContent,
                 typography: typography,
@@ -292,17 +248,14 @@ extension SVGParser {
                 transform: finalTextTransform,
                 areaSize: CGSize(width: actualWidth, height: actualHeight)
             )
-
             textObject.bounds = CGRect(
                 x: adjustedX,
                 y: finalY,
                 width: actualWidth,
                 height: actualHeight
             )
-
             textObjects.append(textObject)
         }
-
         currentTextContent = ""
         currentTextAttributes = [:]
         currentTextSpans.removeAll()

@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct StrokePropertiesSection: View {
     let strokeWidth: Double
     let strokePlacement: StrokePlacement
@@ -25,7 +24,6 @@ struct StrokePropertiesSection: View {
             Text("Stroke")
                 .font(.headline)
                 .fontWeight(.medium)
-
             VStack(spacing: 0) {
                 HStack {
                     Text("Width")
@@ -36,14 +34,12 @@ struct StrokePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
-
                 Slider(value: Binding(
                     get: { strokeWidth },
                     set: { onUpdateStrokeWidth($0) }
                 ), in: 0...72, onEditingChanged: onStrokeWidthEditingChanged)
                 .controlSize(.regular)
             }
-
             VStack(spacing: 0) {
                 HStack {
                     Text("Opacity")
@@ -54,7 +50,6 @@ struct StrokePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
-
                 ZStack {
                     Capsule()
                         .fill(Color.clear)
@@ -63,7 +58,6 @@ struct StrokePropertiesSection: View {
                             Capsule()
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                         )
-
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
@@ -77,22 +71,18 @@ struct StrokePropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-
                     Slider(value: Binding(
                         get: { strokeOpacity },
                         set: { onUpdateStrokeOpacity($0) }
                     ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
                     .controlSize(.regular)
                     .tint(Color.clear)
-
                 }
             }
-
             VStack(alignment: .leading, spacing: 0) {
                 Text("Placement")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
-
                 Picker("", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
@@ -100,7 +90,6 @@ struct StrokePropertiesSection: View {
                     }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in
-
                         if !isTextSelected || placement == .center {
                             HStack {
                                 Image(systemName: placement.iconName)
@@ -113,12 +102,10 @@ struct StrokePropertiesSection: View {
                 .pickerStyle(MenuPickerStyle())
                 .font(.caption)
             }
-
             VStack(alignment: .leading, spacing: 4) {
                 Text("Joins")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
-
                 HStack(spacing: 6) {
                     ForEach([CGLineJoin.round, .miter, .bevel], id: \.self) { joinType in
                         Button {
@@ -127,7 +114,6 @@ struct StrokePropertiesSection: View {
                             VStack(spacing: 2) {
                                 Image(systemName: joinType.iconName)
                                     .font(.system(size: 12))
-
                                 Text(joinType.displayName)
                                     .font(.caption2)
                             }
@@ -149,12 +135,10 @@ struct StrokePropertiesSection: View {
                     }
                 }
             }
-
             VStack(alignment: .leading, spacing: 4) {
                 Text("End Caps")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
-
                 HStack(spacing: 6) {
                     ForEach([CGLineCap.butt, .round, .square], id: \.self) { capType in
                         Button {
@@ -163,7 +147,6 @@ struct StrokePropertiesSection: View {
                             VStack(spacing: 2) {
                                 Image(systemName: capType.iconName)
                                     .font(.system(size: 12))
-
                                 Text(capType.displayName)
                                     .font(.caption2)
                             }
@@ -185,7 +168,6 @@ struct StrokePropertiesSection: View {
                     }
                 }
             }
-
             VStack(spacing: 8) {
                 HStack {
                     Text("Miter Limit")
@@ -196,7 +178,6 @@ struct StrokePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
-
                 Slider(value: Binding(
                     get: { strokeMiterLimit },
                     set: { onUpdateMiterLimit($0) }
@@ -204,7 +185,6 @@ struct StrokePropertiesSection: View {
                 .controlSize(.regular)
                 .tint(.blue)
             }
-
             HStack {
                 Toggle(isOn: Binding(
                     get: { strokeScaleWithTransform },

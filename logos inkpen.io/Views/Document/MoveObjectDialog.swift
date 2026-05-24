@@ -1,30 +1,23 @@
 import SwiftUI
-
 struct MoveObjectDialog: View {
     @ObservedObject var document: VectorDocument
     @Binding var isPresented: Bool
-
     @State private var xDelta: String = "0"
     @State private var yDelta: String = "0"
     @FocusState private var focusedField: Field?
-
     enum Field {
         case x, y
     }
-
     private var currentUnit: MeasurementUnit {
         document.settings.unit
     }
-
     private var unitSuffix: String {
         currentUnit.abbreviation
     }
-
     var body: some View {
         VStack(spacing: 16) {
             Text("Move")
                 .font(.headline)
-
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Horizontal:")
@@ -41,7 +34,6 @@ struct MoveObjectDialog: View {
                         .foregroundColor(.secondary)
                         .frame(width: 30, alignment: .leading)
                 }
-
                 HStack {
                     Text("Vertical:")
                         .frame(width: 80, alignment: .trailing)
@@ -58,18 +50,15 @@ struct MoveObjectDialog: View {
                         .frame(width: 30, alignment: .leading)
                 }
             }
-
             Text("Use positive values to move right/down, negative to move left/up")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-
             HStack(spacing: 12) {
                 Button("Cancel") {
                     isPresented = false
                 }
                 .keyboardShortcut(.escape, modifiers: [])
-
                 Button("Move") {
                     applyMove()
                 }
@@ -83,28 +72,23 @@ struct MoveObjectDialog: View {
             focusedField = .x
         }
     }
-
     private func applyMove() {
         guard let xValue = Double(xDelta),
               let yValue = Double(yDelta) else {
             isPresented = false
             return
         }
-
         let deltaX = currentUnit.toPoints(xValue)
         let deltaY = currentUnit.toPoints(yValue)
-
         guard deltaX != 0 || deltaY != 0 else {
             isPresented = false
             return
         }
-
         if !document.viewState.selectedPoints.isEmpty {
             applyMoveToSelectedPoints(deltaX: deltaX, deltaY: deltaY)
             isPresented = false
             return
         }
-
         document.modifySelectedShapesWithUndo { shape in
             var transformedElements: [PathElement] = []
             for element in shape.path.elements {
@@ -133,7 +117,6 @@ struct MoveObjectDialog: View {
             }
             shape.path = VectorPath(elements: transformedElements)
             shape.updateBounds()
-
             if shape.isGroupContainer {
                 var movedGroupedShapes: [VectorShape] = []
                 for var groupedShape in shape.groupedShapes {
@@ -168,7 +151,6 @@ struct MoveObjectDialog: View {
                 }
                 shape.groupedShapes = movedGroupedShapes
             }
-
             if shape.typography != nil {
                 if let textPos = shape.textPosition {
                     shape.textPosition = CGPoint(x: textPos.x + deltaX, y: textPos.y + deltaY)
@@ -177,35 +159,27 @@ struct MoveObjectDialog: View {
                                                     y: shape.transform.ty + deltaY)
             }
         }
-
         isPresented = false
     }
-
     private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
         let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
-
         var pointsByShape: [UUID: [PointID]] = [:]
         for pointID in document.viewState.selectedPoints {
             pointsByShape[pointID.shapeID, default: []].append(pointID)
         }
-
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
-
         for shapeID in pointsByShape.keys {
             if let shape = document.findShape(by: shapeID) {
                 oldShapes[shapeID] = shape
                 objectIDs.append(shapeID)
             }
         }
-
         for (shapeID, pointIDs) in pointsByShape {
             guard var shape = document.findShape(by: shapeID) else { continue }
-
             var elements = shape.path.elements
             for pointID in pointIDs {
                 guard pointID.elementIndex < elements.count else { continue }
-
                 let element = elements[pointID.elementIndex]
                 switch element {
                 case .move(let to):
@@ -213,7 +187,6 @@ struct MoveObjectDialog: View {
                 case .line(let to):
                     elements[pointID.elementIndex] = .line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy))
                 case .curve(let to, let c1, let c2):
-
                     elements[pointID.elementIndex] = .curve(
                         to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
                         control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),
@@ -228,27 +201,22 @@ struct MoveObjectDialog: View {
                     break
                 }
             }
-
             shape.path = VectorPath(elements: elements, isClosed: shape.path.isClosed)
             shape.updateBounds()
-
             document.updateShapeByID(shapeID, silent: false) { s in
                 s = shape
             }
         }
-
         var newShapes: [UUID: VectorShape] = [:]
         for shapeID in objectIDs {
             if let shape = document.findShape(by: shapeID) {
                 newShapes[shapeID] = shape
             }
         }
-
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             document.executeCommand(command)
         }
-
         document.viewState.objectPositionUpdateTrigger.toggle()
     }
 }

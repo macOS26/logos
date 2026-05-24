@@ -1,52 +1,41 @@
 import SwiftUI
-
 struct PointID: Hashable {
     let shapeID: UUID
     let pathIndex: Int
     let elementIndex: Int
 }
-
 struct HandleID: Hashable {
     let shapeID: UUID
     let pathIndex: Int
     let elementIndex: Int
     let handleType: HandleType
 }
-
 enum HandleType {
     case control1, control2
 }
-
 enum AnchorPointType {
     case auto
     case corner
     case cusp
     case smooth
 }
-
 func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
     guard let targetPosition = getPointPositionExternal(targetPointID, in: document) else { return [] }
-
     var coincidentPoints: Set<PointID> = []
     let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
-
     for layerIndex in document.snapshot.layers.indices {
         let layer = document.snapshot.layers[layerIndex]
         if !layer.isVisible { continue }
-
         let shapes = document.getShapesForLayer(layerIndex)
         for shape in shapes {
             if !shape.isVisible { continue }
-
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 let pointID = PointID(
                     shapeID: shape.id,
                     pathIndex: 0,
                     elementIndex: elementIndex
                 )
-
                 if pointID == targetPointID { continue }
-
                 if let checkPoint = element.endpointCGPoint {
                     let distance = targetPoint.distance(to: checkPoint)
                     if distance <= tolerance {
@@ -56,6 +45,5 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
             }
         }
     }
-
     return coincidentPoints
 }

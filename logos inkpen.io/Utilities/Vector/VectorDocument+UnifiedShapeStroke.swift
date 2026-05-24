@@ -1,7 +1,5 @@
 import SwiftUI
-
 extension VectorDocument {
-
     func updateShapeStrokeLineJoinInUnified(id: UUID, lineJoin: CGLineJoin) {
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
@@ -11,7 +9,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeStrokeLineCapInUnified(id: UUID, lineCap: CGLineCap) {
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
@@ -21,7 +18,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeStrokeMiterLimitInUnified(id: UUID, miterLimit: CGFloat) {
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
@@ -31,7 +27,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeStrokeScaleWithTransformInUnified(id: UUID, scaleWithTransform: Bool) {
         updateShapeByID(id) { shape in
             if shape.strokeStyle == nil {
@@ -41,13 +36,11 @@ extension VectorDocument {
             }
         }
     }
-
     func createFillStyleInUnified(id: UUID, color: VectorColor, opacity: Double) {
         updateShapeByID(id) { shape in
             shape.fillStyle = FillStyle(color: color, opacity: opacity)
         }
     }
-
     func createStrokeStyleInUnified(id: UUID, color: VectorColor, width: Double, placement: StrokePlacement, lineCap: CGLineCap, lineJoin: CGLineJoin, miterLimit: Double, opacity: Double) {
         updateShapeByID(id) { shape in
             shape.strokeStyle = StrokeStyle(
@@ -61,14 +54,12 @@ extension VectorDocument {
             )
         }
     }
-
     func updateShapePathUnified(id: UUID, path: VectorPath) {
         updateShapeByID(id) { shape in
             shape.path = path
             shape.updateBounds()
         }
     }
-
     func updateShapeCornerRadiiInUnified(id: UUID, cornerRadii: [Double], path: VectorPath) {
         updateShapeByID(id) { shape in
             shape.cornerRadii = cornerRadii
@@ -76,7 +67,6 @@ extension VectorDocument {
             shape.updateBounds()
         }
     }
-
     func updateShapeGradientInUnified(id: UUID, gradient: VectorGradient, target: ColorTarget) {
         updateShapeByID(id) { shape in
             switch target {
@@ -97,7 +87,6 @@ extension VectorDocument {
             }
         }
     }
-
     func updateShapeTransformAndPathInUnified(id: UUID, path: VectorPath? = nil, transform: CGAffineTransform? = nil) {
         updateShapeByID(id) { shape in
             if let path = path {
@@ -109,7 +98,6 @@ extension VectorDocument {
             shape.updateBounds()
         }
     }
-
     func updateEntireShapeInUnified(id: UUID, updater: (inout VectorShape) -> Void) {
         updateShapeByID(id) { shape in
             updater(&shape)

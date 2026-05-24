@@ -1,29 +1,23 @@
 import Foundation
 import CoreGraphics
-
 enum MemoryDiag {
     private static var lastReport = Date.distantPast
     private static var baselineMB = 0
-
     static func setBaseline() {
         baselineMB = processMemoryMB()
         print("📊 [MemDiag] BASELINE: \(baselineMB)MB")
     }
-
     static func checkpoint(_ label: String) {
         let mb = processMemoryMB()
         let delta = mb - baselineMB
         print("📊 [Mem] \(label): \(mb)MB (Δ\(delta)MB from baseline)")
     }
-
     static func report(_ label: String, document: VectorDocument? = nil) {
         let now = Date()
         guard now.timeIntervalSince(lastReport) >= 1.0 else { return }
         lastReport = now
-
         let mb = processMemoryMB()
         var parts = ["📊 [Mem] \(label): \(mb)MB"]
-
         if let doc = document {
             var embeddedBytes = 0
             var imageShapeCount = 0
@@ -57,7 +51,6 @@ enum MemoryDiag {
         }
         print(parts.joined(separator: " | "))
     }
-
     static func dumpObjects(_ doc: VectorDocument) {
         let mb = processMemoryMB()
         print("📊 [Mem] === OBJECT DUMP: \(doc.snapshot.objects.count) objects, process=\(mb)MB ===")
@@ -82,13 +75,11 @@ enum MemoryDiag {
                 print("  \(typeName) \(id): pathEls=\(pathEls) embedded=\(embedded/1024)KB groupKids=\(groupKids) members=\(memberCount)")
             }
         }
-
         for (id, img) in doc.imageStorage {
             let px = img.width * img.height
             print("  cgCache \(id): \(img.width)x\(img.height) = \(px*4/(1024*1024))MB")
         }
     }
-
     static func measureObjectSizes(_ doc: VectorDocument) {
         let mb = processMemoryMB()
         print("📊 [MemSize] process=\(mb)MB")
@@ -98,7 +89,6 @@ enum MemoryDiag {
         print("  commandManager: \(malloc_size(Unmanaged.passUnretained(doc.commandManager).toOpaque()))B")
         print("  changeNotifier: \(malloc_size(Unmanaged.passUnretained(doc.changeNotifier).toOpaque()))B")
         print("  fontManager: \(malloc_size(Unmanaged.passUnretained(doc.fontManager).toOpaque()))B")
-
         if let tileRenderer = MetalImageTileRenderer.shared {
             print("  MetalImageTileRenderer.shared: \(malloc_size(Unmanaged.passUnretained(tileRenderer).toOpaque()))B")
         } else {
@@ -113,7 +103,6 @@ enum MemoryDiag {
         print("  PDFHybridProcessor.shared: \(malloc_size(Unmanaged.passUnretained(PDFHybridProcessor.shared).toOpaque()))B")
         print("  process AFTER singleton access: \(processMemoryMB())MB")
     }
-
     static func processMemoryMB() -> Int {
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)

@@ -1,22 +1,17 @@
 import SwiftUI
 import AppKit
-
 struct SFSymbolsPickerView: View {
     @Binding var isPresented: Bool
     let onImport: (URL) async -> Void
-
     @State private var query: String = ""
     @State private var allNames: [String] = []
     @State private var results: [String] = []
     @State private var loading: Bool = true
-
     @AppStorage("recentSFSymbols") private var recentSymbolsData: Data = Data()
     private static let maxRecents: Int = 30
-
     private static let gridColumns = [GridItem(.adaptive(minimum: 72), spacing: 8)]
     private static let tileSize: CGFloat = 56
     private static let maxResults: Int = 300
-
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -35,7 +30,6 @@ struct SFSymbolsPickerView: View {
             SFSymbolsLibrary.shared.releaseCache()
         }
     }
-
     private var header: some View {
         HStack {
             Text("SF Symbols")
@@ -46,7 +40,6 @@ struct SFSymbolsPickerView: View {
         }
         .padding(10)
     }
-
     private var searchField: some View {
         HStack {
             Image(systemName: "magnifyingglass")
@@ -69,7 +62,6 @@ struct SFSymbolsPickerView: View {
         }
         .padding(10)
     }
-
     private var resultsGrid: some View {
         Group {
             if loading {
@@ -160,7 +152,6 @@ struct SFSymbolsPickerView: View {
             }
         }
     }
-
     private var footer: some View {
         HStack {
             if query.isEmpty {
@@ -180,7 +171,6 @@ struct SFSymbolsPickerView: View {
         }
         .padding(10)
     }
-
     private func loadLibrary() async {
         let names = await Task.detached(priority: .userInitiated) {
             await SFSymbolsLibrary.shared.allNames()
@@ -189,18 +179,15 @@ struct SFSymbolsPickerView: View {
         results = filteredResults(for: query)
         loading = false
     }
-
     private func filteredResults(for q: String) -> [String] {
         let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if trimmed.isEmpty { return [] }
         let matches = allNames.filter { $0.lowercased().contains(trimmed) }
         return Array(matches.prefix(Self.maxResults))
     }
-
     private var recentSymbols: [String] {
         (try? JSONDecoder().decode([String].self, from: recentSymbolsData)) ?? []
     }
-
     private func addToRecents(_ name: String) {
         var recents = recentSymbols
         recents.removeAll { $0 == name }
@@ -210,14 +197,12 @@ struct SFSymbolsPickerView: View {
         }
         recentSymbolsData = (try? JSONEncoder().encode(recents)) ?? Data()
     }
-
     private func importSymbol(named name: String) async {
         guard let svg = SFSymbolsLibrary.shared.svg(named: name) else {
             NSSound.beep()
             return
         }
         addToRecents(name)
-
         let tempDir = FileManager.default.temporaryDirectory
         let sanitized = name.replacingOccurrences(of: "/", with: "_")
         let tempURL = tempDir.appendingPathComponent("sfsymbol-\(sanitized)-\(UUID().uuidString.prefix(8)).svg")
@@ -229,7 +214,6 @@ struct SFSymbolsPickerView: View {
             NSSound.beep()
             try? FileManager.default.removeItem(at: tempURL)
         }
-
         isPresented = false
     }
 }

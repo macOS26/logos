@@ -1,15 +1,12 @@
 import SwiftUI
-
 struct PressureCurveEditor: View {
     @Binding var curve: [CGPoint]
     @State private var selectedControlPoint: Int?
     let size: CGFloat
-
     init(curve: Binding<[CGPoint]>, size: CGFloat = 280) {
         self._curve = curve
         self.size = size
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 20) {
@@ -25,7 +22,6 @@ struct PressureCurveEditor: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Control Points")
                         .font(.caption)
@@ -37,12 +33,10 @@ struct PressureCurveEditor: View {
                     }
                 }
             }
-
             ZStack {
                 Rectangle()
                     .fill(Color.platformControlBackground)
                     .border(Color.gray.opacity(0.3), width: 1)
-
                 Path { path in
                     let gridCount = 10
                     for i in 0...gridCount {
@@ -57,24 +51,19 @@ struct PressureCurveEditor: View {
                     }
                 }
                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-
                 Path { path in
                     guard curve.count >= 2 else { return }
-
                     let firstPoint = curve[0]
                     path.move(to: CGPoint(x: firstPoint.x * size, y: size - firstPoint.y * size))
-
                     for i in 1..<curve.count {
                         let point = curve[i]
                         path.addLine(to: CGPoint(x: point.x * size, y: size - point.y * size))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
-
                 ForEach(curve.indices, id: \.self) { index in
                     let point = curve[index]
                     let isSelected = selectedControlPoint == index
-
                     Circle()
                         .fill(isSelected ? Color.red : Color.blue)
                         .frame(width: 12, height: 12)
@@ -87,7 +76,6 @@ struct PressureCurveEditor: View {
                                     var newCurve = curve
                                     newCurve[index] = CGPoint(x: newX, y: newY)
                                     curve = newCurve
-
                                     selectedControlPoint = index
                                 }
                                 .onEnded { _ in
@@ -103,10 +91,8 @@ struct PressureCurveEditor: View {
         }
     }
 }
-
 func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double {
     guard curve.count >= 2 else { return pressure }
-
     let clampedPressure = max(0.0, min(1.0, pressure))
     var lowerIndex = 0
     for i in 0..<curve.count {
@@ -116,17 +102,13 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
             break
         }
     }
-
     let upperIndex = min(lowerIndex + 1, curve.count - 1)
     let lowerPoint = curve[lowerIndex]
     let upperPoint = curve[upperIndex]
-
     if upperPoint.x == lowerPoint.x {
         return lowerPoint.y
     }
-
     let t = (clampedPressure - lowerPoint.x) / (upperPoint.x - lowerPoint.x)
     let curveOutput = lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
-
     return curveOutput
 }

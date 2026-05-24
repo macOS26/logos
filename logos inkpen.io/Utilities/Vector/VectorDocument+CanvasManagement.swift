@@ -1,10 +1,8 @@
 import SwiftUI
 import Combine
-
 extension VectorDocument {
     internal func createCanvasAndWorkingLayers() {
         snapshot.layers.removeAll()
-
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Pasteboard",
@@ -15,7 +13,6 @@ extension VectorDocument {
             blendMode: .normal,
             color: .gray
         ))
-
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Canvas",
@@ -26,7 +23,6 @@ extension VectorDocument {
             blendMode: .normal,
             color: .blue
         ))
-
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Guides",
@@ -37,7 +33,6 @@ extension VectorDocument {
             blendMode: .normal,
             color: .cyan
         ))
-
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Layer 1",
@@ -49,14 +44,11 @@ extension VectorDocument {
             color: .green
         ))
     }
-
     var documentBounds: CGRect {
         return CGRect(origin: .zero, size: settings.sizeInPoints)
     }
-
     func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
         guard delta != .zero else { return }
-
         for layerIndex in snapshot.layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             for (shapeIndex, _) in shapes.enumerated() {
@@ -66,17 +58,13 @@ extension VectorDocument {
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
             }
         }
-
         translateAllTextInUnified(delta: delta)
     }
-
     func onSettingsChanged() {
         gridSettings.gridSpacing = settings.gridSpacing
     }
-
     func migrateBackgroundShapesToCanvas() {
         var needsMigration = false
-
         if snapshot.layers.count > 0 && snapshot.layers[0].name == "Pasteboard" {
             let pasteboardShapes = getShapesForLayer(0)
             if let bgShape = pasteboardShapes.first(where: { $0.name == "Pasteboard Background" }) {
@@ -85,7 +73,6 @@ extension VectorDocument {
                 removeShapeFromUnifiedSystem(id: bgShape.id)
             }
         }
-
         if snapshot.layers.count > 1 && snapshot.layers[1].name == "Canvas" {
             let canvasShapes = getShapesForLayer(1)
             if let bgShape = canvasShapes.first(where: { $0.name == "Canvas Background" }) {
@@ -94,7 +81,6 @@ extension VectorDocument {
                 removeShapeFromUnifiedSystem(id: bgShape.id)
             }
         }
-
         if needsMigration {
             Log.info("✅ Document migrated to SwiftUI Canvas-based backgrounds", category: .general)
         }

@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct GradientLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -7,7 +6,6 @@ struct GradientLabelStyle: ViewModifier {
             .foregroundColor(Color.ui.secondaryText)
     }
 }
-
 struct GradientSubLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -15,10 +13,8 @@ struct GradientSubLabelStyle: ViewModifier {
             .foregroundColor(Color.ui.secondaryText)
     }
 }
-
 struct GradientTextFieldStyle: ViewModifier {
     let width: CGFloat
-
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -26,21 +22,17 @@ struct GradientTextFieldStyle: ViewModifier {
             .font(.system(size: 11))
     }
 }
-
 extension View {
     func gradientLabel() -> some View {
         modifier(GradientLabelStyle())
     }
-
     func gradientSubLabel() -> some View {
         modifier(GradientSubLabelStyle())
     }
-
     func gradientTextField(width: CGFloat) -> some View {
         modifier(GradientTextFieldStyle(width: width))
     }
 }
-
 private struct GradientSliderControl: View {
     let label: String
     let value: Double
@@ -52,14 +44,12 @@ private struct GradientSliderControl: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .gradientSubLabel()
-
             HStack(spacing: 8) {
                 Slider(value: Binding(
                     get: { value },
                     set: onChange
                 ), in: range, onEditingChanged: onEditingChanged)
                 .controlSize(.regular)
-
                 TextField("", text: createNaturalNumberBinding(
                     getValue: { value },
                     setValue: onChange
@@ -69,7 +59,6 @@ private struct GradientSliderControl: View {
         }
     }
 }
-
 struct GradientTypePickerView: View {
     @Binding var gradientType: GradientFillSection.GradientType
     @Binding var currentGradient: VectorGradient?
@@ -78,7 +67,6 @@ struct GradientTypePickerView: View {
     let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
     let onGradientChange: () -> Void
-
     private func select(_ newType: GradientFillSection.GradientType) {
         gradientType = newType
         if let existing = currentGradient {
@@ -90,12 +78,10 @@ struct GradientTypePickerView: View {
         gradientId = UUID()
         onGradientChange()
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type")
                 .gradientLabel()
-
             HStack(spacing: 4) {
                 ForEach(GradientFillSection.GradientType.allCases, id: \.self) { type in
                     Button {
@@ -111,7 +97,6 @@ struct GradientTypePickerView: View {
         }
     }
 }
-
 struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -127,7 +112,6 @@ struct GradientAngleControlView: View {
                     return radial.angle
                 }
             }()
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Angle")
@@ -136,21 +120,17 @@ struct GradientAngleControlView: View {
                     Text("\(formatNumberForDisplay(angle, maxDecimals: 1))°")
                         .gradientLabel()
                 }
-
                 HStack(spacing: 8) {
                     Slider(value: Binding(
                         get: { angle },
                         set: { newAngle in
-
                             onAngleChange(newAngle)
                         }
                     ), in: -180...180, onEditingChanged: onEditingChanged)
                     .controlSize(.regular)
-
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
                         setValue: { newAngle in
-
                             onAngleChange(newAngle)
                         }
                     ))
@@ -163,7 +143,6 @@ struct GradientAngleControlView: View {
         }
     }
 }
-
 struct GradientOriginControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -180,7 +159,6 @@ struct GradientOriginControlView: View {
                     return radial.originPoint.x
                 }
             }()
-
             let originY: Double = {
                 switch gradient {
                 case .linear(let linear):
@@ -189,11 +167,9 @@ struct GradientOriginControlView: View {
                     return radial.originPoint.y
                 }
             }()
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Origin Point")
                     .gradientLabel()
-
                 HStack(spacing: 8) {
                     GradientSliderControl(
                         label: "X: \(formatNumberForDisplay(originX))",
@@ -203,7 +179,6 @@ struct GradientOriginControlView: View {
                         onChange: updateOriginX,
                         onEditingChanged: onEditingChanged
                     )
-
                     GradientSliderControl(
                         label: "Y: \(formatNumberForDisplay(originY))",
                         value: originY,
@@ -217,7 +192,6 @@ struct GradientOriginControlView: View {
         }
     }
 }
-
 struct GradientScaleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -234,7 +208,6 @@ struct GradientScaleControlView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Scale: \(currentGradient.map { Int(getScale($0) * 100) } ?? 100)%")
                         .gradientLabel()
-
                     HStack(spacing: 8) {
                         Slider(value: Binding(
                             get: { currentGradient.map { getScale($0) } ?? 1.0 },
@@ -243,7 +216,6 @@ struct GradientScaleControlView: View {
                             }
                         ), in: 0.01...8.0, onEditingChanged: onEditingChanged)
                         .controlSize(.regular)
-
                         TextField("", text: Binding(
                             get: {
                                 let scale = currentGradient.map { getScale($0) } ?? 1.0
@@ -262,12 +234,10 @@ struct GradientScaleControlView: View {
                         .gradientTextField(width: 50)
                     }
                 }
-
                 if case .radial = currentGradient {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aspect Ratio: \(currentGradient.map { formatNumberForDisplay(getAspectRatio($0)) } ?? "1")")
                             .gradientLabel()
-
                         HStack(spacing: 8) {
                             Slider(value: Binding(
                                 get: { currentGradient.map { getAspectRatio($0) } ?? 1.0 },
@@ -276,7 +246,6 @@ struct GradientScaleControlView: View {
                                 }
                             ), in: 0.01...2.0, onEditingChanged: onEditingChanged)
                             .controlSize(.regular)
-
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient.map { getAspectRatio($0) } ?? 1.0 },
                                 setValue: updateAspectRatio
@@ -284,11 +253,9 @@ struct GradientScaleControlView: View {
                             .gradientTextField(width: 50)
                         }
                     }
-
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Radius: \(currentGradient.map { formatNumberForDisplay(getRadius($0)) } ?? "0.5")")
                             .gradientLabel()
-
                         HStack(spacing: 8) {
                             Slider(value: Binding(
                                 get: { currentGradient.map { getRadius($0) } ?? 0.5 },
@@ -297,7 +264,6 @@ struct GradientScaleControlView: View {
                                 }
                             ), in: 0.1...2.0, onEditingChanged: onEditingChanged)
                             .controlSize(.regular)
-
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient.map { getRadius($0) } ?? 0.5 },
                                 setValue: updateRadius
@@ -310,7 +276,6 @@ struct GradientScaleControlView: View {
         }
     }
 }
-
 struct GradientApplyButtonView: View {
     let currentGradient: VectorGradient?
     let onApply: () -> Void
@@ -328,7 +293,6 @@ struct GradientApplyButtonView: View {
             .onTapGesture {
                 addColorStop()
             }
-
             Button {
                 onAddSwatch()
             } label: {
@@ -339,7 +303,6 @@ struct GradientApplyButtonView: View {
             .onTapGesture {
                 onAddSwatch()
             }
-
             Button {
                 onApply()
             } label: {

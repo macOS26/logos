@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct RectangleIcon: View {
     let isSelected: Bool
     var body: some View {

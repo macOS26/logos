@@ -1,19 +1,16 @@
 import SwiftUI
-
 struct ColorSwatchGrid: View {
     @ObservedObject var document: VectorDocument
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @State private var showingColorPicker = false
     @State private var showingCustomColorPopover = false
-
     let columns = [
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1)
     ]
-
     private var currentFillColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
@@ -34,10 +31,8 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-
         return defaultFillColor
     }
-
     private var currentStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
@@ -62,10 +57,8 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-
         return defaultStrokeColor
     }
-
     private var currentFillOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
@@ -86,10 +79,8 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-
         return document.defaultFillOpacity
     }
-
     private var currentStrokeOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let object = document.findObject(by: firstSelectedObjectID) {
@@ -110,10 +101,8 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-
         return document.defaultStrokeOpacity
     }
-
     var body: some View {
         VStack(spacing: 4) {
             ZStack {
@@ -125,18 +114,15 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
 	                            Rectangle()
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
-
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
                                 path.addLine(to: CGPoint(x: 22, y: 22))
@@ -149,10 +135,8 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
                             GradientSwatchCanvas(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -165,11 +149,9 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
                             Rectangle()
                                 .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                                 .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -191,18 +173,15 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
 	                            Rectangle()
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
-
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
                                 path.addLine(to: CGPoint(x: 22, y: 22))
@@ -215,10 +194,8 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
                             GradientSwatchCanvas(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -231,11 +208,9 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-
                             Rectangle()
                                 .fill(currentFillColor.color.opacity(currentFillOpacity))
                                 .frame(width: 22, height: 22)
-
                             if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -253,7 +228,6 @@ struct ColorSwatchGrid: View {
 			.frame(width: 28, height: 28)
             .padding(.bottom, 6)
             .padding(.top, 8)
-
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
@@ -265,12 +239,10 @@ struct ColorSwatchGrid: View {
                                     CheckerboardPattern(size: 2)
                                         .frame(width: 10, height: 10)
                                         .clipped()
-
                                     Rectangle()
                                         .fill(Color.clear)
                                         .frame(width: 10, height: 10)
                                         .border(Color.gray, width: 0.5)
-
                                     Path { path in
                                         path.move(to: CGPoint(x: 0, y: 0))
                                         path.addLine(to: CGPoint(x: 10, y: 10))
@@ -296,7 +268,6 @@ struct ColorSwatchGrid: View {
                 }
             }
             .padding(.horizontal, 2)
-
             Button {
                 showingCustomColorPopover.toggle()
             } label: {
@@ -311,7 +282,6 @@ struct ColorSwatchGrid: View {
             }
         }
     }
-
     @ViewBuilder
     private var customColorPanel: some View {
         ColorPanel(
@@ -355,7 +325,6 @@ struct ColorSwatchGrid: View {
         )
         .frame(width: 300, height: 480)
     }
-
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"

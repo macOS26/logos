@@ -1,15 +1,11 @@
 import SwiftUI
-
 class TemplateManager {
-
     static let shared = TemplateManager()
     private var isInitialized = false
-
     private init() {
         loadAvailableTemplates()
         isInitialized = true
     }
-
     enum TemplateType: String, CaseIterable {
         case blank = "blank"
         case businessCard = "business_card"
@@ -20,10 +16,8 @@ class TemplateManager {
         case engineering = "engineering"
         case webGraphics = "web_graphics"
     }
-
     private func loadAvailableTemplates() {
     }
-
     func createBlankDocument(with defaultTool: DrawingTool = .selection) -> VectorDocument {
         let blankSettings = DocumentSettings(
             width: 11.0,
@@ -37,15 +31,11 @@ class TemplateManager {
             gridSpacing: 0.125,
             backgroundColor: VectorColor.white
         )
-
         let document = VectorDocument(settings: blankSettings)
-
         document.selectedLayerIndex = 3
         document.viewState.selectedObjectIDs.removeAll()
         document.removeAllText()
-
         document.viewState.currentTool = defaultTool
-
         return document
     }
 }

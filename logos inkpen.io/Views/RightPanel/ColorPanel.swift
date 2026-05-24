@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ColorPanel: View {
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -16,7 +15,6 @@ struct ColorPanel: View {
     let onSetActiveColor: (VectorColor) -> Void
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
-
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
     @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3))
@@ -25,7 +23,6 @@ struct ColorPanel: View {
     let hasInitialColor: Bool
     let initialColor: VectorColor?
     let onDismiss: (() -> Void)?
-
     init(
         snapshot: Binding<DocumentSnapshot>,
         selectedObjectIDs: Set<UUID>,
@@ -65,47 +62,39 @@ struct ColorPanel: View {
         self.hasInitialColor = (initialColor != nil)
         self.initialColor = initialColor
         self.onDismiss = onDismiss
-
         let color = initialColor ?? (activeColorTarget.wrappedValue == .stroke ? defaultStrokeColor.wrappedValue : defaultFillColor.wrappedValue)
         self._currentPreviewColor = State(initialValue: color)
     }
-
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if isLoaded {
                 loadedContent
             } else {
-
                 VStack {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .onAppear {
-
                     DispatchQueue.main.async {
                         isLoaded = true
                     }
                 }
             }
-
             if let dismiss = onDismiss {
                 GlassCloseButton(action: dismiss)
             }
         }
     }
-
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
                 Spacer()
                     .frame(height: 8)
-
             VStack(alignment: .leading, spacing: 4) {
                 Picker("Color Mode", selection: Binding(
                     get: { colorMode },
                     set: { newMode in
                         let oldMode = colorMode
                         colorMode = newMode
-
                         currentPreviewColor = convertColorToMode(currentPreviewColor, from: oldMode, to: newMode)
                     }
                 )) {
@@ -121,7 +110,6 @@ struct ColorPanel: View {
                 .font(.caption)
             }
             .padding(.horizontal, 12)
-
             if colorMode == .rgb {
                 RGBInputSection(
                     snapshot: $snapshot,
@@ -169,7 +157,6 @@ struct ColorPanel: View {
                 )
                 .padding(.horizontal, 12)
             }
-
             HStack {
                 Text(colorModeDescription)
                     .font(.caption2)
@@ -177,16 +164,13 @@ struct ColorPanel: View {
                 Spacer()
             }
             .padding(.horizontal, 12)
-
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         if hasInitialColor {
-
                             onColorSelected?(color)
                         } else {
-
                             selectColor(color)
                             currentPreviewColor = color
                         }
@@ -196,7 +180,6 @@ struct ColorPanel: View {
                     } label: {
                         ZStack {
                             renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
-
                             if case .pantone = color {
                                 overlayText(for: color)
                             }
@@ -213,7 +196,6 @@ struct ColorPanel: View {
                 }
                 .padding(.horizontal, 12)
             }
-
             Spacer()
         }
         .onAppear {
@@ -233,13 +215,11 @@ struct ColorPanel: View {
             }
         }
         .onChange(of: initialColor) { _, newInitialColor in
-
             if let newColor = newInitialColor {
                 currentPreviewColor = newColor
             }
         }
     }
-
     private var colorModeDescription: String {
         switch colorMode {
         case .rgb:
@@ -250,7 +230,6 @@ struct ColorPanel: View {
             return "PMS colors with Pantone matching"
         }
     }
-
     private var filteredColors: [VectorColor] {
         if searchText.isEmpty {
             return currentSwatches
@@ -260,7 +239,6 @@ struct ColorPanel: View {
             }
         }
     }
-
     private func selectColor(_ color: VectorColor) {
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
@@ -269,7 +247,6 @@ struct ColorPanel: View {
             onSetActiveColor(color)
         }
     }
-
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
@@ -294,7 +271,6 @@ struct ColorPanel: View {
             }
         }
     }
-
     @ViewBuilder
     private func overlayText(for color: VectorColor) -> some View {
         if case .pantone(let pantone) = color {
@@ -309,12 +285,10 @@ struct ColorPanel: View {
                 .allowsTightening(true)
         }
     }
-
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
             return color
         }
-
         if oldMode == .rgb && newMode == .cmyk {
             switch color {
             case .rgb(let rgbColor):
@@ -342,7 +316,6 @@ struct ColorPanel: View {
                 return color
             }
         }
-
         if oldMode == .cmyk && newMode == .rgb {
             switch color {
             case .cmyk(let cmykColor):
@@ -368,7 +341,6 @@ struct ColorPanel: View {
                 return color
             }
         }
-
         if newMode == .pms {
             switch color {
             case .hsb:
@@ -393,8 +365,6 @@ struct ColorPanel: View {
                 return color
             }
         }
-
         return color
     }
-
 }

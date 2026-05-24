@@ -1,9 +1,7 @@
 import SwiftUI
-
 struct FreehandSettingsSection: View {
     @Environment(AppState.self) private var appState
     @ObservedObject private var settings = ApplicationSettings.shared
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -14,12 +12,10 @@ struct FreehandSettingsSection: View {
                     .foregroundColor(Color.ui.primaryText)
                 Spacer()
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Fill Mode")
                     .font(.subheadline)
                     .foregroundColor(Color.ui.secondaryText)
-
                 Picker("", selection: $settings.freehandFillMode) {
                     ForEach(VectorDocument.FreehandFillMode.allCases, id: \.self) { mode in
                         Text(mode.rawValue).tag(mode)
@@ -28,7 +24,6 @@ struct FreehandSettingsSection: View {
                 .pickerStyle(.segmented)
                 .help("Choose whether freehand paths have fill or just stroke")
             }
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothing")
@@ -40,12 +35,10 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
-
                 Slider(value: $settings.freehandSmoothingTolerance, in: 0.1...10)
                 .controlSize(.small)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
-
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Close Path")
@@ -61,7 +54,6 @@ struct FreehandSettingsSection: View {
                 .controlSize(.small)
                 .help("When enabled, closes the path by connecting the end to the start")
             }
-
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Expand Stroke")
@@ -77,10 +69,8 @@ struct FreehandSettingsSection: View {
                 .controlSize(.small)
                 .help("When enabled, converts the stroke to a filled path outline")
             }
-
             Divider()
                 .padding(.vertical, 4)
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Real-time Smoothing")
@@ -92,7 +82,6 @@ struct FreehandSettingsSection: View {
                     .controlSize(.small)
                 }
                 .help("Enable real-time smoothing during drawing")
-
                 if settings.realTimeSmoothingEnabled {
                     HStack {
                         Text("Strength")
@@ -104,13 +93,11 @@ struct FreehandSettingsSection: View {
                             .foregroundColor(Color.ui.primaryText)
                             .monospacedDigit()
                     }
-
                     Slider(value: $settings.realTimeSmoothingStrength, in: 0...1)
                     .controlSize(.small)
                     .help("Strength of real-time smoothing (0-100%)")
                 }
             }
-
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Preserve Sharp Corners")
@@ -126,10 +113,8 @@ struct FreehandSettingsSection: View {
                 .controlSize(.small)
                 .help("Preserve sharp corners when simplifying paths")
             }
-
             Divider()
                 .padding(.vertical, 8)
-
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: "waveform.path")
@@ -143,7 +128,6 @@ struct FreehandSettingsSection: View {
                     .controlSize(.small)
                 }
                 .help("Enable advanced curve smoothing algorithms")
-
                 if settings.advancedSmoothingEnabled {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -156,7 +140,6 @@ struct FreehandSettingsSection: View {
                                 .foregroundColor(Color.ui.primaryText)
                                 .monospacedDigit()
                         }
-
                         Slider(value: Binding<Double>(
                             get: { Double(settings.chaikinSmoothingIterations) },
                             set: { settings.chaikinSmoothingIterations = Int(round($0)) }
@@ -164,7 +147,6 @@ struct FreehandSettingsSection: View {
                         .controlSize(.small)
                         .help("More iterations create smoother curves but may lose detail (1-3)")
                     }
-
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Preserve Sharp Corners")
@@ -182,7 +164,6 @@ struct FreehandSettingsSection: View {
                     }
                 }
             }
-
             HStack {
                 Image(systemName: "info.circle")
                     .foregroundColor(Color.ui.primaryBlue)

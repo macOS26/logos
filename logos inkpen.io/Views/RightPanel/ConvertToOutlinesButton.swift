@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct FullWidthSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -21,14 +20,12 @@ struct FullWidthSecondaryButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
-
 struct ConvertToOutlinesButton: View {
     let selectedObjectIDs: Set<UUID>
     let selectedLayerIndex: Int?
     let snapshot: DocumentSnapshot
     let document: VectorDocument
     let selectedText: VectorText?
-
     var body: some View {
         Button("Convert to Outlines") {
             convertSelectedTextToOutlines()
@@ -38,13 +35,11 @@ struct ConvertToOutlinesButton: View {
         .keyboardShortcut("o", modifiers: [.command, .shift])
         .disabled(selectedText == nil)
     }
-
     private func convertSelectedTextToOutlines() {
         guard !selectedObjectIDs.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
             return
         }
-
         if let layerIndex = selectedLayerIndex,
            layerIndex >= 0 && layerIndex < snapshot.layers.count {
             let layer = snapshot.layers[layerIndex]
@@ -53,7 +48,6 @@ struct ConvertToOutlinesButton: View {
                 return
             }
         }
-
         document.convertSelectedTextToOutlines()
     }
 }

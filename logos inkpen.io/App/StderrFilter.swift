@@ -1,8 +1,6 @@
 import SwiftUI
-
 final class StderrFilter {
     static let shared = StderrFilter()
-
     private var suppressPatterns: [String] = []
     private var originalStderrFD: Int32 = -1
     private var pipeReadFD: Int32 = -1
@@ -11,30 +9,24 @@ final class StderrFilter {
     private var pendingBuffer = Data()
     private let queue = DispatchQueue(label: "io.logos.stderr.filter", qos: .background)
     private var isInstalled = false
-
     private init() {}
-
     func installFilter(suppressing patterns: [String]) {
         guard !isInstalled else { return }
         isInstalled = true
         suppressPatterns = patterns.map { $0.lowercased() }
-
         var fds: [Int32] = [0, 0]
         if pipe(&fds) != 0 {
             return
         }
         pipeReadFD = fds[0]
         pipeWriteFD = fds[1]
-
         originalStderrFD = dup(STDERR_FILENO)
         if originalStderrFD == -1 {
             close(pipeReadFD)
             close(pipeWriteFD)
             return
         }
-
         setvbuf(stderr, nil, _IONBF, 0)
-
         if dup2(pipeWriteFD, STDERR_FILENO) == -1 {
             close(pipeReadFD)
             close(pipeWriteFD)
@@ -42,10 +34,8 @@ final class StderrFilter {
             return
         }
         close(pipeWriteFD)
-
         let source = DispatchSource.makeReadSource(fileDescriptor: pipeReadFD, queue: queue)
         readSource = source
-
         source.setEventHandler { [weak self] in
             guard let self = self else { return }
             var buffer = [UInt8](repeating: 0, count: 4096)
@@ -60,15 +50,12 @@ final class StderrFilter {
                 self.cleanup()
             }
         }
-
         source.setCancelHandler { [weak self] in
             guard let self = self else { return }
             if self.pipeReadFD != -1 { close(self.pipeReadFD) }
         }
-
         source.resume()
     }
-
     private func processPendingBuffer() {
         while let range = pendingBuffer.firstRange(of: Data([0x0A])) {
             let lineData = pendingBuffer.subdata(in: 0..<range.lowerBound)
@@ -76,14 +63,12 @@ final class StderrFilter {
             forwardIfNotSuppressed(lineData: lineData)
         }
     }
-
     private func flushRemaining() {
         if !pendingBuffer.isEmpty {
             forwardIfNotSuppressed(lineData: pendingBuffer)
             pendingBuffer.removeAll(keepingCapacity: false)
         }
     }
-
     private func forwardIfNotSuppressed(lineData: Data) {
         guard let line = String(data: lineData, encoding: .utf8) else {
             writeRaw(lineData)
@@ -97,7 +82,6 @@ final class StderrFilter {
             writeRaw(Data([0x0A]))
         }
     }
-
     private func writeRaw(_ data: Data) {
         data.withUnsafeBytes { ptr in
             var remaining = ptr.count
@@ -110,7 +94,6 @@ final class StderrFilter {
             }
         }
     }
-
     private func cleanup() {
         readSource?.cancel()
         readSource = nil

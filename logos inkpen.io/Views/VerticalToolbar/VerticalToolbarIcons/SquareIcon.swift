@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct SquareIcon: View {
     let isSelected: Bool
     var body: some View {

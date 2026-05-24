@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-
 struct ScaleHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
@@ -24,7 +23,6 @@ struct ScaleHandles: View {
     @State var pointsRefreshTrigger: Int = 0
     @State var cachedPreviewPath: Path? = nil
     let handleSize: CGFloat = 10
-
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) {
             let pathBounds = shape.path.cgPath.boundingBoxOfPath
@@ -33,22 +31,17 @@ struct ScaleHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
-
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
-
     var body: some View {
         let bounds = calculatedBounds
         let center = calculatedCenter
-
         ZStack {
-
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
                 let activeTransform = (isScaling && !previewTransform.isIdentity) ? previewTransform : shape.transform
-
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
                     for groupedShape in shape.groupedShapes {
                         var path = Path()
@@ -118,14 +111,10 @@ struct ScaleHandles: View {
                 }
             }
             .allowsHitTesting(false)
-
             pathPointsView()
-
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-
                 let displayBounds = (isScaling && !previewTransform.isIdentity) ? bounds.applying(previewTransform) : bounds
                 let displayCenter = CGPoint(x: displayBounds.midX, y: displayBounds.midY)
-
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
@@ -138,12 +127,10 @@ struct ScaleHandles: View {
                     context.stroke(Path(screenRect), with: .color(.green), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [3.0, 3.0]))
                 }
                 .allowsHitTesting(false)
-
                 ForEach(0..<4) { i in
                     let cornerPos = cornerPosition(for: i, in: displayBounds, center: displayCenter)
                     let cornerIndex = pathPoints.count + i
                     let isLockedPin = lockedPinPointIndex == cornerIndex
-
                     Circle()
                         .fill(isLockedPin ? Color.red : Color.green)
                         .stroke(Color.white, lineWidth: 1.0)
@@ -168,7 +155,6 @@ struct ScaleHandles: View {
                         )
                 }
             }
-
             let isCenterLockedPin = (lockedPinPointIndex == nil)
             let displayCenter = (isScaling && !previewTransform.isIdentity) ? center.applying(previewTransform) : center
             Circle()
@@ -197,44 +183,35 @@ struct ScaleHandles: View {
                                 startLocation = value.startLocation
                                 scalingAnchorPoint = center
                             }
-
                             let translation = CGSize(
                                 width: value.location.x - value.startLocation.x,
                                 height: value.location.y - value.startLocation.y
                             )
-
                             let sensitivity: CGFloat = 0.005 / zoomLevel
                             var scaleX = 1.0 + (translation.width * sensitivity)
                             var scaleY = 1.0 + (translation.height * sensitivity)
-
                             scaleX = min(max(scaleX, 0.1), 10.0)
                             scaleY = min(max(scaleY, 0.1), 10.0)
-
                             if isShiftPressed {
                                 let avgScale = (scaleX + scaleY) / 2.0
                                 scaleX = avgScale
                                 scaleY = avgScale
                             }
-
                             calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: center)
                         }
                         .onEnded { _ in
                             finishScaling()
                         }
                 )
-
             if isScaling && !previewTransform.isIdentity, let cachedPath = cachedPreviewPath {
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
-
                     let transform = CGAffineTransform.identity
                         .translatedBy(x: offset.x, y: offset.y)
                         .scaledBy(x: zoom, y: zoom)
-
                     context.transform = transform
                     context.stroke(cachedPath, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoom, dash: [4.0 / zoom, 4.0 / zoom]))
-
                     if shape.isGroup && !shape.groupedShapes.isEmpty {
                         let transformedBounds = bounds.applying(previewTransform)
                         context.stroke(Path(transformedBounds), with: .color(.green.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.5 / zoom, dash: [3.0 / zoom, 3.0 / zoom]))
@@ -247,7 +224,6 @@ struct ScaleHandles: View {
             initialBounds = shape.bounds
             initialTransform = shape.transform
             extractPathPoints()
-
             if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
                 setLockedPinPoint(nil)
             }
@@ -263,7 +239,6 @@ struct ScaleHandles: View {
                 cachedPreviewPath = nil
                 return
             }
-
             var path = Path()
             if shape.isGroup && !shape.groupedShapes.isEmpty {
                 for groupedShape in shape.groupedShapes {
@@ -314,8 +289,6 @@ struct ScaleHandles: View {
             }
             cachedPreviewPath = path
         }
-
     }
-
     @State var keyEventMonitor: Any?
 }

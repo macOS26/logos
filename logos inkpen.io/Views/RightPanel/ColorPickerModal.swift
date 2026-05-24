@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ColorPickerModal: View {
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -19,9 +18,7 @@ struct ColorPickerModal: View {
     @Environment(\.presentationMode) var presentationMode
     let title: String
     let onColorSelected: (VectorColor) -> Void
-
     @State private var localActiveColorTarget: ColorTarget?
-
     var body: some View {
         NavigationView {
             ColorPanel(
@@ -52,7 +49,6 @@ struct ColorPickerModal: View {
                             presentationMode.wrappedValue.dismiss()
                         }
                     }
-
                     ToolbarItem(placement: .primaryAction) {
                         Button("Done") {
                             presentationMode.wrappedValue.dismiss()

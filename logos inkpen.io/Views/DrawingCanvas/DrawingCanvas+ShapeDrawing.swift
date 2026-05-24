@@ -1,6 +1,5 @@
 import SwiftUI
 import simd
-
 extension DrawingCanvas {
     private func geometricTypeForTool(_ tool: DrawingTool) -> GeometricShapeType? {
         switch tool {
@@ -20,7 +19,6 @@ extension DrawingCanvas {
         default: return nil
         }
     }
-
     private func calculateDistanceWithFallback(from point1: CGPoint, to point2: CGPoint) -> Float {
         let metalEngine = MetalComputeEngine.shared
         let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
@@ -28,33 +26,24 @@ extension DrawingCanvas {
         case .success(let distance):
             return distance
         case .failure(_):
-
             let distance = simd_length(SIMD2<Double>(point2.x - point1.x, point2.y - point1.y))
             return Float(distance)
         }
     }
-
     internal func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-
         let dragDistance = calculateDistanceWithFallback(from: value.startLocation, to: value.location)
         let minimumDragThreshold: Double = 0.0
-
         if Double(dragDistance) < minimumDragThreshold {
             return
         }
-
         if !isDrawing {
             let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let isDraggingResizeHandle = isLocationOnShapeResizeHandle(startLocation)
-
             if isDraggingResizeHandle {
                 return
             }
-
             isDrawing = true
-
             shapeDragStart = value.startLocation
-
             var initialPoint = startLocation
             let shapeTools: [DrawingTool] = [.line, .rectangle, .square, .roundedRectangle, .pill,
                                               .circle, .ellipse, .oval, .egg, .cone,
@@ -64,28 +53,22 @@ extension DrawingCanvas {
             if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
                 initialPoint = applySnapping(to: initialPoint)
             }
-
             shapeStartPoint = initialPoint
             drawingStartPoint = shapeStartPoint
-
         }
-
         let cursorDelta = CGPoint(
             x: value.location.x - shapeDragStart.x,
             y: value.location.y - shapeDragStart.y
         )
-
         let preciseZoom = Double(zoomLevel)
         let canvasDelta = CGPoint(
             x: cursorDelta.x / preciseZoom,
             y: cursorDelta.y / preciseZoom
         )
-
         var currentLocation = CGPoint(
             x: shapeStartPoint.x + canvasDelta.x,
             y: shapeStartPoint.y + canvasDelta.y
         )
-
         let shapeTools: [DrawingTool] = [.line, .rectangle, .square, .roundedRectangle, .pill,
                                           .circle, .ellipse, .oval, .egg, .cone,
                                           .star, .polygon, .pentagon, .hexagon, .heptagon,
@@ -94,12 +77,9 @@ extension DrawingCanvas {
         if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
             currentLocation = applySnapping(to: currentLocation)
         }
-
         if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
         }
-
         guard let startPoint = drawingStartPoint else { return }
-
         switch document.viewState.currentTool {
         case .line:
             currentPath = VectorPath(elements: [
@@ -109,14 +89,12 @@ extension DrawingCanvas {
         case .rectangle:
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rectBounds: CGRect
             if isOptionCurrentlyPressed {
@@ -134,9 +112,7 @@ extension DrawingCanvas {
                     height: height
                 )
             }
-
             let normalizedRect = rectBounds.standardized
-
             currentPath = VectorPath(elements: [
                 .move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
                 .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
@@ -150,7 +126,6 @@ extension DrawingCanvas {
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSizeX = dragDeltaX >= 0 ? size : -size
             let signedSizeY = dragDeltaY >= 0 ? size : -size
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var squareRect: CGRect
             if isOptionCurrentlyPressed {
@@ -168,9 +143,7 @@ extension DrawingCanvas {
                     height: signedSizeY
                 )
             }
-
             let normalizedRect = squareRect.standardized
-
             currentPath = VectorPath(elements: [
                 .move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
                 .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
@@ -181,14 +154,12 @@ extension DrawingCanvas {
         case .roundedRectangle:
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -206,21 +177,18 @@ extension DrawingCanvas {
                     height: height
                 )
             }
-
             let normalizedRect = rect.standardized
             let cornerRadius: Double = 20.0
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .pill:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -251,7 +219,6 @@ extension DrawingCanvas {
             let dragDeltaY = currentLocation.y - startPoint.y
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSize = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0) ? size : -size
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var circleRect: CGRect
             if isOptionCurrentlyPressed {
@@ -273,14 +240,12 @@ extension DrawingCanvas {
         case .ellipse:
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -302,14 +267,12 @@ extension DrawingCanvas {
         case .oval:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -337,14 +300,12 @@ extension DrawingCanvas {
         case .egg:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -384,7 +345,6 @@ extension DrawingCanvas {
                 sqrt3 = Float(sqrt(3.0))
             }
             let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3))
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var triangleRect: CGRect
             if isOptionCurrentlyPressed {
@@ -402,7 +362,6 @@ extension DrawingCanvas {
                     height: triangleHeight
                 )
             }
-
             if document.gridSettings.snapToGrid {
                 currentPath = createEquilateralTrianglePathWithGridSnapping(rect: triangleRect, gridSpacing: document.settings.gridSpacing, unit: document.settings.unit)
             } else {
@@ -410,7 +369,6 @@ extension DrawingCanvas {
                 let topY = triangleRect.minY
                 let bottomY = triangleRect.maxY
                 let baseHalfWidth = abs(triangleWidth) / 2.0
-
                 currentPath = VectorPath(elements: [
                     .move(to: VectorPoint(centerX, topY)),
                     .line(to: VectorPoint(centerX - baseHalfWidth, bottomY)),
@@ -418,18 +376,15 @@ extension DrawingCanvas {
                     .close
                 ], isClosed: true)
             }
-
         case .rightTriangle:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -450,19 +405,16 @@ extension DrawingCanvas {
             let dragX = dragDeltaX >= 0 ? "RIGHT" : "LEFT"
             let dragY = dragDeltaY >= 0 ? "DOWN" : "UP"
             let dragDirection = "\(dragX)_\(dragY)"
-
             currentPath = createRightTrianglePath(rect: rect, dragDirection: dragDirection)
         case .acuteTriangle:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -484,14 +436,12 @@ extension DrawingCanvas {
         case .isoscelesTriangle:
             var dragDeltaX = currentLocation.x - startPoint.x
             var dragDeltaY = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
                 dragDeltaX = dragDeltaX >= 0 ? size : -size
                 dragDeltaY = dragDeltaY >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var rect: CGRect
             if isOptionCurrentlyPressed {
@@ -513,14 +463,12 @@ extension DrawingCanvas {
         case .cone:
             var dx = currentLocation.x - startPoint.x
             var dy = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(dx), abs(dy))
                 dx = dx >= 0 ? size : -size
                 dy = dy >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             var raw: CGRect
             if isOptionCurrentlyPressed {
@@ -545,7 +493,6 @@ extension DrawingCanvas {
             let c7 = VectorPoint(baseLeft.x, baseLeft.y - r.height * 0.12160)
             let c8 = VectorPoint(baseLeft.x + r.width * 0.00141, baseLeft.y - r.height * 0.12660)
             let leftExit = VectorPoint(baseLeft.x + r.width * 0.00463, baseLeft.y - r.height * 0.13147)
-
             currentPath = VectorPath(elements: [
                 .move(to: move),
                 .curve(to: rightStart, control1: c1, control2: c2),
@@ -558,14 +505,12 @@ extension DrawingCanvas {
         case .star:
             var width = currentLocation.x - startPoint.x
             var height = currentLocation.y - startPoint.y
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let size = max(abs(width), abs(height))
                 width = width >= 0 ? size : -size
                 height = height >= 0 ? size : -size
             }
-
             let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
             let center: CGPoint
             let outerRadius: Float
@@ -629,7 +574,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -648,7 +592,6 @@ extension DrawingCanvas {
 					height: dragDeltaY >= 0 ? size : -size
 				)
 			}
-
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -686,7 +629,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -742,7 +684,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -798,7 +739,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -854,7 +794,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -910,7 +849,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
 			var rect: CGRect
 			if isOptionCurrentlyPressed {
@@ -966,10 +904,8 @@ extension DrawingCanvas {
             break
         }
     }
-
     internal func finishShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let path = currentPath else { return }
-
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -982,21 +918,16 @@ extension DrawingCanvas {
             color: document.defaultFillColor,
             opacity: document.defaultFillOpacity
         )
-
         var shapeGeometricType = geometricTypeForTool(document.viewState.currentTool)
-
         if document.viewState.currentTool == .rectangle && isShiftPressed {
             shapeGeometricType = .square
         }
         else if document.viewState.currentTool == .ellipse && isShiftPressed {
             shapeGeometricType = .circle
         }
-
         let shapeName = shapeGeometricType?.rawValue ?? document.viewState.currentTool.rawValue
-
         if document.viewState.currentTool == .rectangle || document.viewState.currentTool == .square ||
            document.viewState.currentTool == .roundedRectangle || document.viewState.currentTool == .pill {
-
             let startPoint = shapeStartPoint
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             let originalBounds: CGRect
@@ -1004,7 +935,6 @@ extension DrawingCanvas {
                 let dragDeltaX = currentLocation.x - startPoint.x
                 let dragDeltaY = currentLocation.y - startPoint.y
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
                 originalBounds = CGRect(
                     x: startPoint.x,
                     y: startPoint.y,
@@ -1019,10 +949,8 @@ extension DrawingCanvas {
                     height: abs(currentLocation.y - startPoint.y)
                 )
             }
-
             let initialRadius: Double
             let cornerRadii: [Double]
-
             switch document.viewState.currentTool {
             case .rectangle, .square:
                 initialRadius = 0.0
@@ -1038,7 +966,6 @@ extension DrawingCanvas {
                 initialRadius = 0.0
                 cornerRadii = [0.0, 0.0, 0.0, 0.0]
             }
-
             let shape = VectorShape(
                 name: shapeName,
                 path: path,
@@ -1049,7 +976,6 @@ extension DrawingCanvas {
                 originalBounds: originalBounds,
                 cornerRadii: cornerRadii
             )
-
             document.addShape(shape)
         } else {
             let shape = VectorShape(
@@ -1059,37 +985,29 @@ extension DrawingCanvas {
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle
             )
-
             document.addShape(shape)
         }
-
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
-
     }
-
     private func isLocationOnShapeResizeHandle(_ location: CGPoint) -> Bool {
         let handleRadius: Double = 6.0
         let tolerance: Double = 15.0
         let totalTolerance = handleRadius + tolerance
-
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.findObject(by: objectID) else { continue }
-
             switch object.objectType {
             case .text:
                 continue
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 if !shape.isVisible || shape.isLocked { continue }
-
                 let shapeBounds: CGRect
                 if shape.isGroupContainer {
                     shapeBounds = shape.groupBounds
                 } else {
                     shapeBounds = shape.bounds.applying(shape.transform)
                 }
-
                 let handles = [
                     CGPoint(x: shapeBounds.minX, y: shapeBounds.minY),
                     CGPoint(x: shapeBounds.maxX, y: shapeBounds.minY),
@@ -1100,14 +1018,12 @@ extension DrawingCanvas {
                     CGPoint(x: shapeBounds.minX, y: shapeBounds.midY),
                     CGPoint(x: shapeBounds.maxX, y: shapeBounds.midY),
                 ]
-
                 for handle in handles {
                     let distance = location.distance(to: handle)
                     if distance <= totalTolerance {
                         return true
                     }
                 }
-
                 let center = shape.calculateCentroid()
                 let centerDistance = location.distance(to: center)
                 if centerDistance <= totalTolerance {
@@ -1115,7 +1031,6 @@ extension DrawingCanvas {
                 }
             }
         }
-
         return false
     }
 }

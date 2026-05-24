@@ -1,9 +1,7 @@
 import SwiftUI
-
 class FileOperations {
     static func convertVectorPathToCGPath(_ vectorPath: VectorPath) -> CGPath {
         let cgPath = CGMutablePath()
-
         for element in vectorPath.elements {
             switch element {
             case .move(let point):
@@ -27,7 +25,6 @@ class FileOperations {
                 }
             }
         }
-
         return cgPath
     }
 }

@@ -1,22 +1,16 @@
 import SwiftUI
-
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-
         if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return
         }
-
         if !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return
         }
-
         guard !viewState.selectedObjectIDs.isEmpty else { return }
-
         let translationTransform = CGAffineTransform(translationX: nudgeAmount.dx, y: nudgeAmount.dy)
-
         modifySelectedShapesWithUndo(
             preCapture: {
                 for objectID in viewState.selectedObjectIDs {
@@ -40,14 +34,12 @@ extension VectorDocument {
                                 }
                                 shape.groupedShapes = nudgedGroupedShapes
                                 shape.updateBounds()
-
                                 updateEntireShapeInUnified(id: shape.id) { updatedShape in
                                     updatedShape = shape
                                 }
                             } else {
                                 shape.path = nudgePath(shape.path, by: nudgeAmount)
                                 shape.updateBounds()
-
                                 updateEntireShapeInUnified(id: shape.id) { updatedShape in
                                     updatedShape = shape
                                 }
@@ -57,12 +49,10 @@ extension VectorDocument {
                         }
                     }
                 }
-
                 viewState.objectPositionUpdateTrigger.toggle()
             }
         )
     }
-
     private func nudgePath(_ path: VectorPath, by nudgeAmount: CGVector) -> VectorPath {
         var nudgedElements: [PathElement] = []
         for element in path.elements {
@@ -88,32 +78,25 @@ extension VectorDocument {
         }
         return VectorPath(elements: nudgedElements, isClosed: path.isClosed)
     }
-
     private func nudgeSelectedPoints(by nudgeAmount: CGVector) {
         guard !viewState.selectedPoints.isEmpty else { return }
-
         var pointsByShape: [UUID: [PointID]] = [:]
         for pointID in viewState.selectedPoints {
             pointsByShape[pointID.shapeID, default: []].append(pointID)
         }
-
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
-
         for shapeID in pointsByShape.keys {
             if let shape = findShape(by: shapeID) {
                 oldShapes[shapeID] = shape
                 objectIDs.append(shapeID)
             }
         }
-
         for (shapeID, pointIDs) in pointsByShape {
             guard var shape = findShape(by: shapeID) else { continue }
-
             var elements = shape.path.elements
             for pointID in pointIDs {
                 guard pointID.elementIndex < elements.count else { continue }
-
                 let element = elements[pointID.elementIndex]
                 switch element {
                 case .move(let to):
@@ -135,27 +118,22 @@ extension VectorDocument {
                     break
                 }
             }
-
             shape.path = VectorPath(elements: elements, isClosed: shape.path.isClosed)
             shape.updateBounds()
-
             updateShapeByID(shapeID, silent: false) { s in
                 s = shape
             }
         }
-
         var newShapes: [UUID: VectorShape] = [:]
         for shapeID in objectIDs {
             if let shape = findShape(by: shapeID) {
                 newShapes[shapeID] = shape
             }
         }
-
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             executeCommand(command)
         }
-
         viewState.objectPositionUpdateTrigger.toggle()
     }
 }

@@ -1,14 +1,12 @@
 import SwiftUI
 import Combine
 import simd
-
 struct RotateHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
-
     @State private var isRotating = false
     @State private var rotationStarted = false
     @State private var initialBounds: CGRect = .zero
@@ -23,9 +21,7 @@ struct RotateHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State private var pointsRefreshTrigger: Int = 0
     @State private var cachedPreviewPath: Path? = nil
-
     private let handleSize: CGFloat = 10
-
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) && !shape.transform.isIdentity {
             let baseBounds = shape.bounds
@@ -45,21 +41,16 @@ struct RotateHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
-
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
-
     var body: some View {
         let bounds = calculatedBounds
         let center = calculatedCenter
-
         ZStack {
-
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
-
                 var path = Path()
                 for element in shape.path.elements {
                     switch element {
@@ -93,13 +84,11 @@ struct RotateHandles: View {
                 context.stroke(path, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
             .allowsHitTesting(false)
-
             if isRotating && !previewTransform.isIdentity {
                 Canvas { context, size in
                     let zoom = zoomLevel
                     let offset = canvasOffset
                     let currentTransform = previewTransform
-
                     var path = Path()
                     if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                         for memberID in shape.memberIDs {
@@ -166,9 +155,7 @@ struct RotateHandles: View {
                 .allowsHitTesting(false)
                 .id(previewTransform.a + previewTransform.d)
             }
-
             pathPointsView()
-
             let isCenterSelected = selectedAnchorPointIndex == nil
             Circle()
                 .fill(isCenterSelected ? Color.red : Color.green)
@@ -202,12 +189,9 @@ struct RotateHandles: View {
         .onDisappear {
             teardownRotationKeyEventMonitoring()
         }
-
     }
-
     private func extractPathPoints() {
         pathPoints.removeAll()
-
         for element in shape.path.elements {
             switch element {
             case .move(let to), .line(let to):
@@ -218,11 +202,8 @@ struct RotateHandles: View {
                 break
             }
         }
-
         centerPoint = VectorPoint(shape.calculateCentroid())
-
     }
-
     @ViewBuilder
     private func pathPointsView() -> some View {
         ForEach(pathPoints.indices, id: \.self) { index in
@@ -253,12 +234,10 @@ struct RotateHandles: View {
                 )
         }
     }
-
     private func handlePointRotation(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !rotationStarted {
             startPointRotation(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
         }
-
         let currentLocation = dragValue.location
         let anchorScreenX = rotationAnchorPoint.x * zoomLevel + canvasOffset.x
         let anchorScreenY = rotationAnchorPoint.y * zoomLevel + canvasOffset.y
@@ -268,37 +247,29 @@ struct RotateHandles: View {
         let currentAngle = atan2(currentVector.y, currentVector.x)
         let initialAngle = atan2(startVector.y, startVector.x)
         var rotationAngle = currentAngle - initialAngle
-
         let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             let increment: CGFloat = .pi / 4
             rotationAngle = round(rotationAngle / increment) * increment
         }
-
         calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
     }
-
     private func startPointRotation(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
         rotationStarted = true
         document.isHandleScalingActive = true
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
-
         selectedAnchorPointIndex = anchorPointIndex
-
         if let pointIndex = anchorPointIndex {
             let point = pathPoints[pointIndex]
             rotationAnchorPoint = CGPoint(x: point.x, y: point.y)
         } else {
             rotationAnchorPoint = shape.calculateCentroid()
         }
-
     }
-
     private func updatePathPointsAfterRotation() {
         pathPoints.removeAll()
-
         for element in shape.path.elements {
             switch element {
             case .move(let to), .line(let to):
@@ -309,13 +280,9 @@ struct RotateHandles: View {
                 break
             }
         }
-
         centerPoint = VectorPoint(shape.calculateCentroid())
-
         pointsRefreshTrigger += 1
-
     }
-
     private func getRotationAnchorPoint(for anchor: RotationAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
         switch anchor {
         case .center:
@@ -330,7 +297,6 @@ struct RotateHandles: View {
             return CGPoint(x: bounds.maxX, y: bounds.maxY)
         }
     }
-
     private func isRotationPinnedAnchorCorner(cornerIndex: Int) -> Bool {
         switch document.viewState.rotationAnchor {
         case .center:
@@ -345,7 +311,6 @@ struct RotateHandles: View {
             return cornerIndex == 3
         }
     }
-
     private func getRotationAnchorForCorner(index: Int) -> RotationAnchor {
         switch index {
         case 0: return .topLeft
@@ -355,7 +320,6 @@ struct RotateHandles: View {
         default: return .center
         }
     }
-
     private func rotationCornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
@@ -365,32 +329,25 @@ struct RotateHandles: View {
         default: return center
         }
     }
-
     private func applyRotationTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
-
         if currentTransform.isIdentity {
             return
         }
-
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
             return
         }
-
         var transformedElements: [PathElement] = []
-
         for element in shape.path.elements {
             switch element {
             case .move(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-
             case .line(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-
             case .curve(let to, let control1, let control2):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl1 = control1.cgPoint.applying(currentTransform)
@@ -400,7 +357,6 @@ struct RotateHandles: View {
                     control1: VectorPoint(transformedControl1),
                     control2: VectorPoint(transformedControl2),
                 ))
-
             case .quadCurve(let to, let control):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl = control.cgPoint.applying(currentTransform)
@@ -408,96 +364,73 @@ struct RotateHandles: View {
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl),
                 ))
-
             case .close:
                 transformedElements.append(.close)
             }
         }
-
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-
         guard let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-
         if !currentShape.cornerRadii.isEmpty && currentShape.isRoundedRectangle {
             var updatedShape = currentShape
             updatedShape.path = transformedPath
             updatedShape.transform = .identity
             applyTransformToCornerRadiiLocal(shape: &updatedShape, transform: currentTransform)
-
             document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
         } else {
             document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
-
     }
-
     @State private var rotationKeyEventMonitor: Any?
-
     private func setupRotationKeyEventMonitoring() {
     }
-
     private func teardownRotationKeyEventMonitoring() {
         if let monitor = rotationKeyEventMonitor {
             NSEvent.removeMonitor(monitor)
             rotationKeyEventMonitor = nil
         }
     }
-
     private func startRotation(cornerIndex: Int, bounds: CGRect, dragValue: DragGesture.Value) {
         rotationStarted = true
         document.isHandleScalingActive = true
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
-
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         rotationAnchorPoint = getRotationAnchorPoint(for: document.viewState.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
     }
-
     private func calculatePreviewRotation(angle: CGFloat, anchor: CGPoint) {
         let rotationTransform = CGAffineTransform.identity
             .translatedBy(x: anchor.x, y: anchor.y)
             .rotated(by: angle)
             .translatedBy(x: -anchor.x, y: -anchor.y)
-
         previewTransform = initialTransform.concatenating(rotationTransform)
-
         isRotating = true
     }
-
     private func finishRotation() {
         rotationStarted = false
         isRotating = false
         document.isHandleScalingActive = false
-
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
-
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
-
         if let vectorObject = document.findObject(by: shape.id),
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 var updatedShape = currentShape
                 updatedShape.transform = initialTransform
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             }
-
             applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-
             previewTransform = .identity
             document.updateTransformPanelValues()
-
             var newShapes: [UUID: VectorShape] = [:]
             for shapeID in allShapeIDs {
                 if let transformedShape = document.findShape(by: shapeID) {
                     newShapes[shapeID] = transformedShape
                 }
             }
-
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: allShapeIDs,
@@ -506,9 +439,7 @@ struct RotateHandles: View {
                 )
                 document.executeCommand(command)
             }
-
             document.triggerLayerUpdate(for: layerIndex)
-
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterRotation()
             }
@@ -516,21 +447,16 @@ struct RotateHandles: View {
         } else {
             Log.error("❌ ROTATION FAILED: Could not find shape in unified objects system", category: .error)
         }
-
         previewTransform = .identity
     }
-
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
-
         ids.append(shapeID)
-
         switch object.objectType {
         case .shape(let s), .image(let s), .warp(let s), .clipMask(let s), .guide(let s):
             oldShapes[shapeID] = s
         case .group(let s), .clipGroup(let s):
             oldShapes[shapeID] = s
-
             for memberID in s.memberIDs {
                 collectShapesForUndo(shapeID: memberID, into: &ids, oldShapes: &oldShapes)
             }
@@ -538,7 +464,6 @@ struct RotateHandles: View {
             break
         }
     }
-
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
@@ -548,7 +473,6 @@ struct RotateHandles: View {
         default: return center
         }
     }
-
     private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
         switch document.viewState.rotationAnchor {
         case .center: return false
@@ -558,7 +482,6 @@ struct RotateHandles: View {
         case .bottomLeft: return cornerIndex == 3
         }
     }
-
     private func getAnchorForCorner(index: Int) -> RotationAnchor {
         switch index {
         case 0: return .topLeft
@@ -568,7 +491,6 @@ struct RotateHandles: View {
         default: return .center
         }
     }
-
     private func getAnchorPoint(for anchor: RotationAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
         switch anchor {
         case .center: return CGPoint(x: bounds.midX, y: bounds.midY)
@@ -578,27 +500,21 @@ struct RotateHandles: View {
         case .bottomRight: return CGPoint(x: bounds.maxX, y: bounds.maxY)
         }
     }
-
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
-
         if currentTransform.isIdentity {
             return
         }
-
         var transformedElements: [PathElement] = []
-
         for element in shape.path.elements {
             switch element {
             case .move(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-
             case .line(let to):
                 let transformedPoint = to.cgPoint.applying(currentTransform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-
             case .curve(let to, let control1, let control2):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl1 = control1.cgPoint.applying(currentTransform)
@@ -608,7 +524,6 @@ struct RotateHandles: View {
                     control1: VectorPoint(transformedControl1),
                     control2: VectorPoint(transformedControl2),
                 ))
-
             case .quadCurve(let to, let control):
                 let transformedTo = to.cgPoint.applying(currentTransform)
                 let transformedControl = control.cgPoint.applying(currentTransform)
@@ -616,39 +531,31 @@ struct RotateHandles: View {
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl),
                 ))
-
             case .close:
                 transformedElements.append(.close)
             }
         }
-
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity
         updatedShape.updateBounds()
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-
     }
-
     private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
-
         let scaleX = simd_length(SIMD2(Double(transform.a), Double(transform.c)))
         let scaleY = simd_length(SIMD2(Double(transform.b), Double(transform.d)))
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
-
         if scaleRatio > maxReasonableRatio {
             shape.isRoundedRectangle = false
             shape.cornerRadii = []
             shape.originalBounds = nil
             return
         }
-
         if !shape.cornerRadii.isEmpty {
             let averageScale = (scaleX + scaleY) / 2.0
-
             for i in shape.cornerRadii.indices {
                 let oldRadius = shape.cornerRadii[i]
                 let newRadius = oldRadius * Double(averageScale)

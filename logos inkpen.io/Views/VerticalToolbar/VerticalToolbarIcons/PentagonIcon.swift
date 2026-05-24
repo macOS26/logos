@@ -1,5 +1,4 @@
 import SwiftUI
-
 private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Path {
     var p = Path()
     let adjustedRadius = radius + IconStrokeExpand
@@ -18,31 +17,26 @@ private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Pa
     p.closeSubpath()
     return p
 }
-
 struct PentagonIcon: View { let isSelected: Bool; var body: some View {
     polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 5)
         .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
 }}
-
 struct HexagonIcon: View { let isSelected: Bool; var body: some View {
     polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 6)
         .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
 }}
-
 struct HeptagonIcon: View { let isSelected: Bool; var body: some View {
     polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 7)
         .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
 }}
-
 struct OctagonIcon: View { let isSelected: Bool; var body: some View {
     polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 8)
         .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
 }}
-
 struct NonagonIcon: View { let isSelected: Bool; var body: some View {
     polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 9)
         .stroke(Color.primary, lineWidth: IconStrokeWidth)

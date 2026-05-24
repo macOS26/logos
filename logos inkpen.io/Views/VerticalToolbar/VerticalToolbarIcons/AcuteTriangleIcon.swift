@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct AcuteTriangleIcon: View {
     let isSelected: Bool
     var body: some View {
@@ -10,7 +9,6 @@ struct AcuteTriangleIcon: View {
             let topPoint = CGPoint(x: center.x, y: center.y - height * 0.5 - IconStrokeExpand)
             let bottomLeft = CGPoint(x: center.x - baseWidth * 0.5 - IconStrokeExpand, y: center.y + height * 0.5 + IconStrokeExpand)
             let bottomRight = CGPoint(x: center.x + baseWidth * 0.5 + IconStrokeExpand, y: center.y + height * 0.5 + IconStrokeExpand)
-
             path.move(to: topPoint)
             path.addLine(to: bottomLeft)
             path.addLine(to: bottomRight)

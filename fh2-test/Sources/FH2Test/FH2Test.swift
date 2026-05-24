@@ -1,37 +1,28 @@
 import Foundation
-
 @main
 struct FH2Test {
     static func main() {
         let path = CommandLine.arguments.count > 1
             ? CommandLine.arguments[1]
             : "/Users/toddbruss/Downloads/simple.fh2"
-
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
             print("Cannot read: \(path)")
             return
         }
-
         print("File: \(path) (\(data.count) bytes)")
-
         do {
-
             let isEPS = data.count > 10 && String(data: data.prefix(10), encoding: .ascii)?.hasPrefix("%!PS") == true
             let result = try isEPS
                 ? FreeHandEPSParser.parseToShapes(data: data)
                 : FreeHand2Parser.parseToShapes(data: data)
             if isEPS { print("Format: EPS") } else { print("Format: FH2") }
             print("Parsed: \(result.shapes.count) shapes, page \(Int(result.pageSize.width))×\(Int(result.pageSize.height))")
-
             let gradients = FreeHand2Parser.debugGradientTable(data: data)
-
             let svg = generateSVG(shapes: result.shapes, pageSize: result.pageSize, data: data, gradients: gradients)
-
             let baseName = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
             let outPath = "/Users/toddbruss/Downloads/\(baseName)_parsed.svg"
             try svg.write(toFile: outPath, atomically: true, encoding: .utf8)
             print("SVG written: \(outPath)")
-
             print("\nAll records in file (type 0x1000-0x1FFF):")
             var scanOff = 256
             while scanOff + 4 <= data.count {
@@ -43,7 +34,6 @@ struct FH2Test {
                 }
                 scanOff += 1
             }
-
             print("\nColor table entries:")
             let (ct, wt) = FreeHand2Parser.debugColorTable(data: data)
             for id in ct.keys.sorted() {
@@ -52,7 +42,6 @@ struct FH2Test {
                 let ws = w != nil ? " w=\(w!)pt" : ""
                 print(String(format: "  ID=%d → rgb(%d,%d,%d)%@", id, Int(r*255), Int(g*255), Int(b*255), ws))
             }
-
             for (i, shape) in result.shapes.enumerated() {
                 let fill = shape.fillStyle.map { c -> String in
                     let (r,g,b) = c.color.rgbValues
@@ -68,18 +57,14 @@ struct FH2Test {
             print("Parse error: \(error)")
         }
     }
-
     static func generateSVG(shapes: [VectorShape], pageSize: CGSize, data: Data, gradients: [Int: FreeHand2Parser.GradientInfo]) -> String {
-
         func u16(_ d: Data, _ o: Int) -> Int { Int(d[d.startIndex+o])<<8|Int(d[d.startIndex+o+1]) }
-
         var defs: [String] = []
         var parts = [
             "<?xml version=\"1.0\"?>",
             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\(pageSize.width)\" height=\"\(pageSize.height)\" viewBox=\"0 0 \(pageSize.width) \(pageSize.height)\">",
             "<rect width=\"\(pageSize.width)\" height=\"\(pageSize.height)\" fill=\"white\"/>"
         ]
-
         var shapeOffsets: [Int] = []
         var scanOff = 256
         while scanOff + 4 <= data.count {
@@ -91,11 +76,9 @@ struct FH2Test {
             }
             scanOff += 1
         }
-
         for (i, shape) in shapes.enumerated() {
             var fillStr: String
             if let f = shape.fillStyle {
-
                 if case .gradient(let vg) = f.color {
                     let gid = "grad\(i)"
                     switch vg {
@@ -120,7 +103,6 @@ struct FH2Test {
             } else {
                 fillStr = "none"
             }
-
             let strokeStr: String
             let strokeWidth: Double
             if let s = shape.strokeStyle {
@@ -131,7 +113,6 @@ struct FH2Test {
                 strokeStr = "none"
                 strokeWidth = 0
             }
-
             var d = ""
             for el in shape.path.elements {
                 switch el {
@@ -144,10 +125,8 @@ struct FH2Test {
                 case .close: d += "Z "
                 }
             }
-
             parts.append("<path d=\"\(d.trimmingCharacters(in: .whitespaces))\" fill=\"\(fillStr)\" stroke=\"\(strokeStr)\" stroke-width=\"\(strokeWidth)\"/>")
         }
-
         let (ct0, _) = FreeHand2Parser.debugColorTable(data: data)
         let nt0 = FreeHand2Parser.debugNameTable(data: data)
         let textRuns = FreeHand2Parser.parseTextRecords(data: data, colorTable: ct0, nameTable: nt0)
@@ -170,7 +149,6 @@ struct FH2Test {
             }()
             parts.append("<text x=\"\(run.x)\" y=\"\(flippedY)\" dominant-baseline=\"hanging\" text-anchor=\"\(anchor)\" font-family=\"\(run.fontFamily)\" font-weight=\"\(weight)\" font-style=\"\(style)\" font-size=\"\(run.fontSize)\" fill=\"\(fill)\">\(esc)</text>")
         }
-
         if !defs.isEmpty {
             parts.insert("<defs>\(defs.joined())</defs>", at: 3)
         }

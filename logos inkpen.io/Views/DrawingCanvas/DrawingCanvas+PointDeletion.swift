@@ -1,10 +1,8 @@
 import SwiftUI
 import Combine
-
 extension DrawingCanvas {
     internal func deleteSelectedPoints() {
         let pointsByShape = Dictionary(grouping: selectedPoints) { $0.shapeID }
-
         for (shapeID, points) in pointsByShape {
             for layerIndex in document.snapshot.layers.indices {
                 let shapes = document.getShapesForLayer(layerIndex)
@@ -16,7 +14,6 @@ extension DrawingCanvas {
                         case .close: return false
                         }
                     }.count
-
                     if points.count >= pathPointCount || pathPointCount <= 2 {
                         document.removeShapeFromUnifiedSystem(id: shape.id)
                     } else {
@@ -27,11 +24,9 @@ extension DrawingCanvas {
                 }
             }
         }
-
         selectedPoints.removeAll()
         selectedHandles.removeAll()
     }
-
     internal func closeBezierPath() {
         guard bezierPath != nil,
                 let activeShape = activeBezierShape,
@@ -39,20 +34,16 @@ extension DrawingCanvas {
             cancelBezierDrawing()
             return
         }
-
         updatePathWithHandles()
-
         guard let updatedPath = bezierPath else {
             cancelBezierDrawing()
             return
         }
-
         let firstPoint = bezierPoints[0]
         let lastIndex = bezierPoints.count - 1
         let lastPointHandles = bezierHandles[lastIndex]
         let firstPointHandles = bezierHandles[0]
         var finalElements = updatedPath.elements
-
         if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstControl1))
         } else if let lastControl2 = lastPointHandles?.control2 {
@@ -62,14 +53,10 @@ extension DrawingCanvas {
         } else {
             finalElements.append(.line(to: firstPoint))
         }
-
         finalElements.append(.close)
-
         let closedPath = VectorPath(elements: finalElements, isClosed: true)
-
         var targetLayerIndex = document.selectedLayerIndex
         if targetLayerIndex == nil {
-
             for (index, layer) in document.snapshot.layers.enumerated() {
                 if layer.name != "Pasteboard" && layer.name != "Canvas" && layer.name != "Guides" {
                     targetLayerIndex = index
@@ -77,29 +64,22 @@ extension DrawingCanvas {
                 }
             }
         }
-
         if let layerIndex = targetLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == activeShape.id }) {
                 guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-
                 shape.path = closedPath
                 shape.fillStyle = FillStyle(
                     color: document.defaultFillColor,
                     opacity: document.defaultFillOpacity
                 )
                 shape.updateBounds()
-
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             }
         }
-
         cancelBezierDrawing()
-
         currentShapeId = nil
-
         showClosePathHint = false
         showContinuePathHint = false
-
     }
 }

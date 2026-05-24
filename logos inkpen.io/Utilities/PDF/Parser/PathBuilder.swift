@@ -1,5 +1,4 @@
 import SwiftUI
-
 private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
     let offsetElements = path.elements.map { element -> PathElement in
         switch element {
@@ -22,23 +21,18 @@ private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
             return .close
         }
     }
-
     return VectorPath(elements: offsetElements, isClosed: path.isClosed)
 }
-
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     var inkpenMetadata: String? = nil
-
     if let pdfDoc = page.document {
         if let catalog = pdfDoc.catalog {
             var metadataRef: CGPDFStreamRef?
-
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
                let metadataStream = metadataRef {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
-
                         if let range = xmpString.range(of: "<inkpen:document>"),
                            let endRange = xmpString.range(of: "</inkpen:document>") {
                             let startIndex = range.upperBound
@@ -51,21 +45,17 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
             }
         }
     }
-
     let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("temp_pdf_page.pdf")
     var mediaBox = page.getBoxRect(.mediaBox)
     guard let context = CGContext(tempURL as CFURL, mediaBox: &mediaBox, nil) else {
         throw VectorImportError.parsingError("Cannot create PDF context", line: nil)
     }
-
     context.beginPDFPage(nil)
     context.drawPDFPage(page)
     context.endPDFPage()
     context.closePDF()
-
     let parser = PDFCommandParser()
     var shapes = parser.parseDocument(at: tempURL)
-
     if mediaBox.origin != .zero {
         let offset = CGPoint(x: -mediaBox.origin.x, y: -mediaBox.origin.y)
         shapes = shapes.map { shape in
@@ -74,9 +64,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
             return offsetShape
         }
     }
-
     try? FileManager.default.removeItem(at: tempURL)
-
     return PDFContent(
         shapes: shapes,
         textCount: 0,

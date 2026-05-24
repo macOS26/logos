@@ -1,12 +1,10 @@
 import SwiftUI
-
 struct FontAlignmentControls: View {
     let selectedObjectIDs: Set<UUID>
     let selectedTextAlignment: TextAlignment
     let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
-
     private var currentTextAlignment: NSTextAlignment {
         if let selectedText = selectedText {
             return selectedText.typography.alignment.nsTextAlignment
@@ -16,14 +14,12 @@ struct FontAlignmentControls: View {
             return selectedTextAlignment.nsTextAlignment
         }
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Alignment")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
-
             HStack(spacing: 4) {
                 Button {
                     updateAlignment(.left)
@@ -32,7 +28,6 @@ struct FontAlignmentControls: View {
                 }
                 .buttonStyle(.alignment(isSelected: currentTextAlignment == .left))
                 .help("Align Left")
-
                 Button {
                     updateAlignment(.center)
                 } label: {
@@ -40,7 +35,6 @@ struct FontAlignmentControls: View {
                 }
                 .buttonStyle(.alignment(isSelected: currentTextAlignment == .center))
                 .help("Align Center")
-
                 Button {
                     updateAlignment(.right)
                 } label: {
@@ -48,7 +42,6 @@ struct FontAlignmentControls: View {
                 }
                 .buttonStyle(.alignment(isSelected: currentTextAlignment == .right))
                 .help("Align Right")
-
                 Button {
                     updateAlignment(.justified)
                 } label: {
@@ -56,16 +49,13 @@ struct FontAlignmentControls: View {
                 }
                 .buttonStyle(.alignment(isSelected: currentTextAlignment == .justified))
                 .help("Justify")
-
                 Spacer()
             }
             .padding(.vertical, 8)
         }
     }
-
     private func updateAlignment(_ alignment: TextAlignment) {
         document.fontManager.selectedTextAlignment = alignment
-
         for textID in selectedObjectIDs {
             document.updateShapeByID(textID) { shape in
                 var typography = shape.typography ?? TypographyProperties(

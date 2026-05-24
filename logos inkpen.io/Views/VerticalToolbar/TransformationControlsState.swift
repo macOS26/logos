@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-
 final class TransformationControlsState: ObservableObject {
     @Published var xValue: String = ""
     @Published var yValue: String = ""

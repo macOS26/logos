@@ -1,30 +1,22 @@
 import SwiftUI
-
 extension VectorDocument {
-
     func performPathfinderOperation(_ operation: PathfinderOperation) -> Bool {
-
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
             Log.error("❌ No shapes selected for pathfinder operation", category: .error)
             return false
         }
-
         let paths = selectedShapes.map { $0.path.cgPath }
-
         guard ProfessionalPathOperations.canPerformOperation(operation, on: paths) else {
             Log.error("❌ Cannot perform \(operation.rawValue) on selected shapes", category: .error)
             return false
         }
-
         guard let layerIndex = selectedLayerIndex else { return false }
         var oldShapes: [UUID: VectorShape] = [:]
         for shape in selectedShapes {
             oldShapes[shape.id] = shape
         }
-
         var resultShapes: [VectorShape] = []
-
         switch operation {
         case .union:
             if let unionPath = ProfessionalPathOperations.union(paths) {
@@ -42,26 +34,22 @@ extension VectorDocument {
                 )
                 resultShapes = [unionShape]
             }
-
         case .minusFront:
             guard selectedShapes.count >= 2 else {
                 Log.error("❌ PUNCH requires at least 2 shapes", category: .error)
                 return false
             }
-
             guard let backShape = selectedShapes.first else {
                 Log.error("❌ PUNCH: No back shape found", category: .general)
                 return false
             }
             let frontShapes = Array(selectedShapes.dropFirst())
             var resultPath = backShape.path.cgPath
-
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
                 }
             }
-
             let resultShape = VectorShape(
                 name: "Punch Result",
                 path: VectorPath(cgPath: resultPath),
@@ -71,13 +59,11 @@ extension VectorDocument {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-
         case .intersect:
             guard selectedShapes.count == 2 else {
                 Log.error("❌ INTERSECT requires exactly 2 shapes", category: .error)
                 return false
             }
-
             if let intersectedPath = ProfessionalPathOperations.intersect(paths[0], paths[1]) {
                 guard let topmostShape = selectedShapes.last else {
                     Log.error("❌ No topmost shape found", category: .general)
@@ -93,19 +79,16 @@ extension VectorDocument {
                 )
                 resultShapes = [intersectedShape]
             }
-
         case .exclude:
             guard selectedShapes.count == 2 else {
                 Log.error("❌ EXCLUDE requires exactly 2 shapes", category: .error)
                 return false
             }
-
             let excludedPaths = ProfessionalPathOperations.exclude(paths[0], paths[1])
             guard let topmostShape = selectedShapes.last else {
                 Log.error("❌ No topmost shape found", category: .error)
                 return false
             }
-
             for (index, excludedPath) in excludedPaths.enumerated() {
                 let excludedShape = VectorShape(
                     name: "Excluded Shape \(index + 1)",
@@ -117,16 +100,12 @@ extension VectorDocument {
                 )
                 resultShapes.append(excludedShape)
             }
-
         case .mosaic:
             let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             var shapeCounters: [Int: Int] = [:]
-
             for (mosaicPath, originalShapeIndex) in mosaicResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
-
                 let originalShape = selectedShapes[originalShapeIndex]
-
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                 let mosaicShape = VectorShape(
@@ -139,16 +118,12 @@ extension VectorDocument {
                 )
                 resultShapes.append(mosaicShape)
             }
-
         case .cut:
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
             var shapeCounters: [Int: Int] = [:]
-
             for (cutPath, originalShapeIndex) in cutResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
-
                 let originalShape = selectedShapes[originalShapeIndex]
-
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                 let cutShape = VectorShape(
@@ -161,23 +136,17 @@ extension VectorDocument {
                 )
                 resultShapes.append(cutShape)
             }
-
         case .merge:
             let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
-
             guard colors.count == selectedShapes.count else {
                 Log.error("❌ MERGE: Could not extract colors from all shapes", category: .error)
                 return false
             }
-
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
             var shapeCounters: [Int: Int] = [:]
-
             for (mergedPath, originalShapeIndex) in mergeResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
-
                 let originalShape = selectedShapes[originalShapeIndex]
-
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                 let mergedShape = VectorShape(
@@ -190,16 +159,12 @@ extension VectorDocument {
                 )
                 resultShapes.append(mergedShape)
             }
-
         case .crop:
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
             var shapeCounters: [Int: Int] = [:]
-
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
-
                 let originalShape = selectedShapes[originalShapeIndex]
-
                 if isInvisibleCropShape {
                     let invisibleCropShape = VectorShape(
                         name: "Crop Boundary (\(originalShape.name))",
@@ -224,10 +189,8 @@ extension VectorDocument {
                     resultShapes.append(croppedShape)
                 }
             }
-
         case .dieline:
             let dielinePaths = ProfessionalPathOperations.dieline(paths)
-
             for (index, dielinePath) in dielinePaths.enumerated() {
                 let dielineShape = VectorShape(
                     name: "Dieline \(index + 1)",
@@ -245,13 +208,10 @@ extension VectorDocument {
                 )
                 resultShapes.append(dielineShape)
             }
-
         case .separate:
             var separatedShapes: [VectorShape] = []
-
             for (_, shape) in selectedShapes.enumerated() {
                 let components = CoreGraphicsPathOperations.componentsSeparated(shape.path.cgPath, using: .winding)
-
                 if components.count <= 1 {
                     separatedShapes.append(shape)
                 } else {
@@ -268,28 +228,23 @@ extension VectorDocument {
                     }
                 }
             }
-
             resultShapes = separatedShapes
-
         case .kick:
             guard selectedShapes.count >= 2 else {
                 Log.error("❌ KICK requires at least 2 shapes", category: .error)
                 return false
             }
-
             guard let frontShape = selectedShapes.last else {
                 Log.error("❌ KICK: No front shape found", category: .general)
                 return false
             }
             let backShapes = Array(selectedShapes.dropLast())
             var resultPath = frontShape.path.cgPath
-
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
                 }
             }
-
             let resultShape = VectorShape(
                 name: "Kick Result",
                 path: VectorPath(cgPath: resultPath),
@@ -299,7 +254,6 @@ extension VectorDocument {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-
         case .combine:
             if let unionPath = ProfessionalPathOperations.union(paths) {
                 guard let topmostShape = selectedShapes.last else {
@@ -317,17 +271,14 @@ extension VectorDocument {
                 resultShapes = [combinedShape]
             }
         }
-
         guard !resultShapes.isEmpty else {
             Log.error("❌ Pathfinder operation \(operation.rawValue) produced no results", category: .error)
             return false
         }
-
         var newShapes: [UUID: VectorShape] = [:]
         for shape in resultShapes {
             newShapes[shape.id] = shape
         }
-
         let command = GroupCommand(
             operation: .pathOperation,
             layerIndex: layerIndex,
@@ -339,7 +290,6 @@ extension VectorDocument {
             newSelectedObjectIDs: Set(newShapes.keys)
         )
         executeCommand(command)
-
         return true
     }
 }

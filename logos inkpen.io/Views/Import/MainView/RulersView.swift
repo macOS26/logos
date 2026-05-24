@@ -1,27 +1,21 @@
 import SwiftUI
-
 struct RulersView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
-
     private let rulerThickness: CGFloat = 20
-
     @State private var isDraggingGuide = false
     @State private var draggingGuideOrientation: Guide.Orientation?
     @State private var draggingGuidePosition: CGFloat = 0
-
     var body: some View {
         if document.gridSettings.showRulers {
             ZStack {
-
                 Canvas { context, size in
                     context.fill(
                         Path(CGRect(origin: .zero, size: size)),
                         with: .color(Color.ui.controlBackground)
                     )
-
                     context.stroke(
                         Path { path in
                             path.move(to: CGPoint(x: 0, y: size.height - 0.5))
@@ -30,10 +24,8 @@ struct RulersView: View {
                         with: .color(Color.ui.lightGrayBorder),
                         lineWidth: 0.5
                     )
-
                     drawHorizontalRuler(context: context, size: size, document: document)
                 }
-
                 .frame(height: rulerThickness)
                 .position(x: geometry.size.width / 2, y: rulerThickness / 2)
                 .contentShape(Path { path in
@@ -42,7 +34,6 @@ struct RulersView: View {
                 .gesture(
                     DragGesture(minimumDistance: 1)
                         .onChanged { value in
-
                             isDraggingGuide = true
                             draggingGuideOrientation = .horizontal
                             let canvasY = (value.location.y - canvasOffset.y) / zoomLevel
@@ -66,13 +57,11 @@ struct RulersView: View {
                         }
                     }
                 }
-
                 Canvas { context, size in
                     context.fill(
                         Path(CGRect(origin: .zero, size: size)),
                         with: .color(Color.ui.controlBackground)
                     )
-
                     context.stroke(
                         Path { path in
                             path.move(to: CGPoint(x: size.width - 0.5, y: 0))
@@ -81,12 +70,10 @@ struct RulersView: View {
                         with: .color(Color.ui.lightGrayBorder),
                         lineWidth: 0.5
                     )
-
                     var ctx = context
                     ctx.translateBy(x: 0, y: 0.5)
                     drawVerticalRuler(context: ctx, size: size, document: document)
                 }
-
                 .frame(width: rulerThickness)
                 .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 .contentShape(Path { path in
@@ -95,7 +82,6 @@ struct RulersView: View {
                 .gesture(
                     DragGesture(minimumDistance: 1)
                         .onChanged { value in
-
                             isDraggingGuide = true
                             draggingGuideOrientation = .vertical
                             let canvasX = (value.location.x - canvasOffset.x) / zoomLevel
@@ -119,9 +105,7 @@ struct RulersView: View {
                         }
                     }
                 }
-
                 PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
-
                 if isDraggingGuide, let orientation = draggingGuideOrientation {
                     let screenPosition = draggingGuidePosition * zoomLevel + (orientation == .horizontal ? canvasOffset.y : canvasOffset.x)
                     if orientation == .horizontal {
@@ -152,13 +136,10 @@ struct RulersView: View {
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-
         let offsetFromOrigin = startX - pageOrigin.x
         var x = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.x
-
         while x <= endX {
             let rulerX = x * zoomLevel + canvasOffset.x
-
             if rulerX >= 0 && rulerX <= size.width {
                 let relativePosition = x - pageOrigin.x
                 var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
@@ -193,7 +174,6 @@ struct RulersView: View {
                     let isQuarter = abs(relativePosition.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(relativePosition.truncatingRemainder(dividingBy: eighthStep)) < epsilon
                     let isThreePoint = abs(relativePosition.truncatingRemainder(dividingBy: 3.0)) < epsilon
-
                     if zoomLevel < 3.0 {
                         if isMajor {
                             tickHeight = 16
@@ -240,7 +220,6 @@ struct RulersView: View {
                     let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
                     let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
                     loopStep = Double(stepMm) * mmPoints
-
                     if unit == .centimeters {
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
@@ -248,14 +227,12 @@ struct RulersView: View {
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
                     }
-
                     if !isCentimeter && !isHalfCentimeter {
                         if mmIndex % desiredMinorMm != 0 {
                             x += loopStep
                             continue
                         }
                     }
-
                     if isCentimeter {
                         tickHeight = 16
                         lineWidth = 1.0
@@ -287,7 +264,6 @@ struct RulersView: View {
                         continue
                     }
                 }
-
                 context.stroke(
                     Path { path in
                         path.move(to: CGPoint(x: rulerX, y: size.height - tickHeight))
@@ -296,7 +272,6 @@ struct RulersView: View {
                     with: .color(.primary),
                     lineWidth: lineWidth
                 )
-
                 if labelUsesMajor {
                     var labelText: String
                     if unit == .millimeters {
@@ -307,20 +282,16 @@ struct RulersView: View {
                         let value = (x - pageOrigin.x) / pointsPerUnit
                         labelText = formatRulerValue(value, unit: unit)
                     }
-
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color.ui.primaryText)
-
                     let offsetX: CGFloat = 3
                     context.draw(text, at: CGPoint(x: rulerX + offsetX, y: size.height - 14), anchor: .leading)
                 }
             }
-
             x += loopStep
         }
     }
-
     private func drawVerticalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
@@ -332,13 +303,10 @@ struct RulersView: View {
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-
         let offsetFromOrigin = startY - pageOrigin.y
         var y = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.y
-
         while y <= endY {
             let rulerY = y * zoomLevel + canvasOffset.y
-
             if rulerY >= 0 && rulerY <= size.height {
                 let relativePosition = y - pageOrigin.y
                 var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
@@ -373,7 +341,6 @@ struct RulersView: View {
                     let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(y.truncatingRemainder(dividingBy: eighthStep)) < epsilon
                     let isThreePoint = abs(y.truncatingRemainder(dividingBy: 3.0)) < epsilon
-
                     if zoomLevel < 3.0 {
                         if isMajor {
                             tickWidth = 16
@@ -420,7 +387,6 @@ struct RulersView: View {
                     let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
                     let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
                     loopStep = Double(stepMm) * mmPoints
-
                     if unit == .centimeters {
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
@@ -428,14 +394,12 @@ struct RulersView: View {
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
                     }
-
                     if !isCentimeter && !isHalfCentimeter {
                         if mmIndex % desiredMinorMm != 0 {
                             y += loopStep
                             continue
                         }
                     }
-
                     if isCentimeter {
                         tickWidth = 16
                         lineWidth = 1.0
@@ -467,7 +431,6 @@ struct RulersView: View {
                         continue
                     }
                 }
-
                 context.stroke(
                     Path { path in
                         path.move(to: CGPoint(x: size.width - tickWidth, y: rulerY))
@@ -476,7 +439,6 @@ struct RulersView: View {
                     with: .color(.primary),
                     lineWidth: lineWidth
                 )
-
                 if labelUsesMajor {
                     var labelText: String
                     if unit == .millimeters {
@@ -487,27 +449,21 @@ struct RulersView: View {
                         let value = (y - pageOrigin.y) / pointsPerUnit
                         labelText = formatRulerValue(value, unit: unit)
                     }
-
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color.ui.primaryText)
-
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-
                     let offsetX: CGFloat = 3
                     rotatedContext.draw(text, at: CGPoint(x: -rulerY + offsetX, y: size.width - 14), anchor: .leading)
                 }
             }
-
             y += loopStep
         }
     }
 }
-
 private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
-
     switch unit {
     case .pixels, .points:
         if zoomLevel >= 1.0 {
@@ -539,10 +495,8 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
         }
     }
 }
-
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
-
     switch unit {
     case .pixels, .points:
         if zoomLevel >= 1.0 {
@@ -604,16 +558,12 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
             return pointsPerUnit * 2
         }
     }
-
 }
-
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
-
     let roundedValue = value.rounded()
     if abs(roundedValue) < 0.01 {
         return "0"
     }
-
     switch unit {
     case .inches:
         return String(format: "%.0f", roundedValue)
@@ -629,35 +579,24 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
         return String(format: "%.0f", roundedValue)
     }
 }
-
 extension VectorDocument {
     func snapToGrid(_ point: CGPoint) -> CGPoint {
         guard gridSettings.snapToGrid else { return point }
-
         let gridSpacing = settings.gridSpacing * settings.unit.pointsPerUnit
-
         guard gridSpacing > 0 else { return point }
-
         let snappedX = round(point.x / gridSpacing) * gridSpacing
         let snappedY = round(point.y / gridSpacing) * gridSpacing
-
         return CGPoint(x: snappedX, y: snappedY)
     }
-
     func snapToGuidelines(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
-
         let guidesLayerVisible = snapshot.layers.count > 2 && snapshot.layers[2].isVisible
         guard gridSettings.snapToGuides && guidesLayerVisible else { return point }
-
         var snappedPoint = point
         var didSnapX = false
         var didSnapY = false
-
         let guideShapes = getShapesForLayer(2).filter { $0.isGuide }
-
         for shape in guideShapes {
             guard let orientation = shape.guideOrientation else { continue }
-
             let position: CGFloat
             if let firstElement = shape.path.elements.first,
                case .move(let pt) = firstElement {
@@ -670,7 +609,6 @@ extension VectorDocument {
             } else {
                 continue
             }
-
             switch orientation {
             case .horizontal:
                 if !didSnapY && abs(point.y - position) < snapDistance {
@@ -683,15 +621,12 @@ extension VectorDocument {
                     didSnapX = true
                 }
             }
-
             if didSnapX && didSnapY {
                 break
             }
         }
-
         return snappedPoint
     }
-
     func snapPoint(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
         var result = point
         result = snapToGuidelines(result, snapDistance: snapDistance)
@@ -699,19 +634,14 @@ extension VectorDocument {
         return result
     }
 }
-
 struct UnitsConverter {
     static func convert(value: Double, from: MeasurementUnit, to: MeasurementUnit) -> Double {
         if from == to { return value }
-
         let points = value * from.pointsPerUnit
-
         return points / to.pointsPerUnit
     }
-
     static func formatValue(_ value: Double, unit: MeasurementUnit) -> String {
         let convertedValue = value / unit.pointsPerUnit
-
         switch unit {
         case .inches:
             return String(format: "%.3f in", convertedValue)
@@ -728,7 +658,6 @@ struct UnitsConverter {
         }
     }
 }
-
 private func gcd(_ a: Int, _ b: Int) -> Int {
     var x = abs(a)
     var y = abs(b)
@@ -739,17 +668,14 @@ private func gcd(_ a: Int, _ b: Int) -> Int {
     }
     return max(1, x)
 }
-
 struct PageOriginCrosshair: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let rulerThickness: CGFloat
     let zoomLevel: Double
     let canvasOffset: CGPoint
-
     @State private var isDragging = false
     @State private var currentDragLocation: CGPoint?
-
     var body: some View {
         ZStack {
             CrosshairIcon()
@@ -759,7 +685,6 @@ struct PageOriginCrosshair: View {
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             isDragging = true
-
                             let adjustedLocation = CGPoint(
                                 x: value.location.x + rulerThickness / 2,
                                 y: value.location.y + rulerThickness / 2
@@ -776,35 +701,29 @@ struct PageOriginCrosshair: View {
                             updatePageOrigin(screenLocation: adjustedLocation)
                         }
                 )
-
             if isDragging, let dragLocation = currentDragLocation {
                 let snappedLocation = getSnappedScreenLocation(dragLocation)
-
                 ForEach(getSnapPointsInScreenSpace(), id: \.debugDescription) { point in
                     Circle()
                         .fill(Color.red.opacity(0.7))
                         .frame(width: 8, height: 8)
                         .position(point)
                 }
-
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
                 .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
-
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
                 .stroke(Color(white: 0.3), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
-
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
                 .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
-
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
@@ -813,7 +732,6 @@ struct PageOriginCrosshair: View {
             }
         }
     }
-
     private func screenToCanvasPosition(_ screenPoint: CGPoint) -> CGPoint {
         let canvasScreenPoint = CGPoint(
             x: screenPoint.x - rulerThickness,
@@ -824,36 +742,29 @@ struct PageOriginCrosshair: View {
             y: (canvasScreenPoint.y - canvasOffset.y) / zoomLevel
         )
     }
-
     private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
         return CGPoint(
             x: canvasPoint.x * zoomLevel + canvasOffset.x,
             y: canvasPoint.y * zoomLevel + canvasOffset.y
         )
     }
-
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
         let snapThreshold: CGFloat = 10.0
-
         let snapPoints: [CGPoint] = [
             CGPoint(x: 0, y: 0),
             CGPoint(x: canvasWidth, y: 0),
             CGPoint(x: 0, y: canvasHeight),
             CGPoint(x: canvasWidth, y: canvasHeight),
-
             CGPoint(x: canvasWidth / 2, y: 0),
             CGPoint(x: canvasWidth / 2, y: canvasHeight),
             CGPoint(x: 0, y: canvasHeight / 2),
             CGPoint(x: canvasWidth, y: canvasHeight / 2),
-
             CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)
         ]
-
         var closestPoint: CGPoint?
         var closestDistance: CGFloat = snapThreshold
-
         for snapPoint in snapPoints {
             let distance = hypot(canvasPoint.x - snapPoint.x, canvasPoint.y - snapPoint.y)
             if distance < closestDistance {
@@ -861,16 +772,13 @@ struct PageOriginCrosshair: View {
                 closestPoint = snapPoint
             }
         }
-
         return closestPoint ?? canvasPoint
     }
-
     private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
         let canvasPoint = screenToCanvasPosition(screenPoint)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
         return canvasToScreenPosition(snappedCanvasPoint)
     }
-
     private func getSnapPointsInScreenSpace() -> [CGPoint] {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
@@ -885,26 +793,21 @@ struct PageOriginCrosshair: View {
             CGPoint(x: canvasWidth, y: canvasHeight / 2),
             CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)
         ]
-
         return canvasSnapPoints.map { canvasToScreenPosition($0) }
     }
-
     private func updatePageOrigin(screenLocation: CGPoint) {
         let canvasPoint = screenToCanvasPosition(screenLocation)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
-
         document.settings.pageOrigin = snappedCanvasPoint
         document.onSettingsChanged()
     }
 }
-
 struct CrosshairIcon: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 Rectangle()
                     .fill(Color.ui.controlBackground)
-
                 Path { path in
                     let padding: CGFloat = 1
                     path.move(to: CGPoint(x: padding, y: geometry.size.height / 2))
@@ -913,7 +816,6 @@ struct CrosshairIcon: View {
                     path.addLine(to: CGPoint(x: geometry.size.width / 2, y: geometry.size.height - padding))
                 }
                 .stroke(Color.gray, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [1, 1]))
-
                 Rectangle()
                     .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
             }
@@ -921,13 +823,11 @@ struct CrosshairIcon: View {
         .contentShape(Rectangle())
     }
 }
-
 extension CGSize {
     var asCGPoint: CGPoint {
         CGPoint(x: width, y: height)
     }
 }
-
 extension CGPoint {
     static func + (lhs: CGPoint, rhs: CGPoint) -> CGPoint {
         lhs.adding(rhs)

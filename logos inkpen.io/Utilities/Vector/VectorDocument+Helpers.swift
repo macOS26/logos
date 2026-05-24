@@ -1,25 +1,20 @@
 import SwiftUI
-
 extension VectorDocument {
-
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches
         swatches.append(contentsOf: colorSwatches.rgb)
         return swatches
     }
-
     var cmykSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.cmykSwatches
         swatches.append(contentsOf: colorSwatches.cmyk)
         return swatches
     }
-
     var hsbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.hsbSwatches
         swatches.append(contentsOf: colorSwatches.hsb)
         return swatches
     }
-
     var allShapes: [VectorShape] {
         return snapshot.objects.values.compactMap { object in
             switch object.objectType {
@@ -36,7 +31,6 @@ extension VectorDocument {
             }
         }
     }
-
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
@@ -44,7 +38,6 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
     var defaultStrokeColor: VectorColor {
         get { documentColorDefaults.strokeColor }
         set {
@@ -52,7 +45,6 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
     var defaultFillOpacity: Double {
         get { documentColorDefaults.fillOpacity }
         set {
@@ -60,7 +52,6 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
     var defaultStrokeOpacity: Double {
         get { documentColorDefaults.strokeOpacity }
         set {
@@ -68,7 +59,6 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
     var defaultStrokeWidth: Double {
         get { documentColorDefaults.strokeWidth }
         set {
@@ -76,7 +66,6 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
     var currentSwatches: [VectorColor] {
         switch settings.colorMode {
         case .rgb:
@@ -87,7 +76,6 @@ extension VectorDocument {
             return hsbSwatches
         }
     }
-
     func addCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -104,7 +92,6 @@ extension VectorDocument {
             }
         }
     }
-
     func removeCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -115,10 +102,8 @@ extension VectorDocument {
             colorSwatches.hsb.removeAll(where: { $0 == color })
         }
     }
-
     func updateTransformPanelValues() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
-
         var combinedBounds: CGRect?
         for objectID in viewState.selectedObjectIDs {
             if let vectorObject = findObject(by: objectID) {
@@ -146,13 +131,10 @@ extension VectorDocument {
                 }
             }
         }
-
         viewState.objectPositionUpdateTrigger.toggle()
     }
-
     func cleanupImageRegistry() {
         var allShapeIDs = Set<UUID>()
-
         for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
@@ -173,13 +155,10 @@ extension VectorDocument {
                 break
             }
         }
-
         ImageContentRegistry.cleanup(keepingShapes: allShapeIDs, in: self)
     }
-
     func collectUsedColors() -> Set<VectorColor> {
         var colors = Set<VectorColor>()
-
         for object in snapshot.objects.values {
             switch object.objectType {
             case .shape(let shape),
@@ -192,7 +171,6 @@ extension VectorDocument {
                 if let fillStyle = shape.fillStyle {
                     colors.insert(fillStyle.color)
                 }
-
                 if let strokeStyle = shape.strokeStyle {
                     colors.insert(strokeStyle.color)
                 }
@@ -205,14 +183,11 @@ extension VectorDocument {
                 }
             }
         }
-
         if settings.backgroundColor != .white {
             colors.insert(settings.backgroundColor)
         }
-
         return colors
     }
-
     static func isPermanentColor(_ color: VectorColor) -> Bool {
         switch color {
         case .black, .white, .clear:
@@ -221,7 +196,6 @@ extension VectorDocument {
             return false
         }
     }
-
     func applyScalingToShape(
         shapeId: UUID,
         scaleX: CGFloat,
@@ -238,27 +212,21 @@ extension VectorDocument {
                     .translatedBy(x: centerX, y: centerY)
                     .scaledBy(x: scaleX, y: scaleY)
                     .translatedBy(x: -centerX, y: -centerY)
-
                 let newTransform = initialTransform.concatenating(scaleTransform)
-
                 guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 shape.transform = newTransform
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
-
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
                 break
             }
         }
     }
-
     func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform
-
         if transform.isIdentity {
             return
         }
-
         if let obj = snapshot.objects[shape.id] {
             switch obj.objectType {
             case .group, .clipGroup:
@@ -271,13 +239,11 @@ extension VectorDocument {
                 break
             }
         }
-
         shape.path = shape.path.applying(transform)
         shape.transform = .identity
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
-
     func saveStrokeStyleDefaults() {
         var prefs: [String: Any] = [:]
         prefs["strokePlace"] = strokeDefaults.placement.rawValue
@@ -286,10 +252,8 @@ extension VectorDocument {
         prefs["strokeMiter"] = strokeDefaults.miterLimit
         UserDefaults.standard.set(prefs, forKey: "strokeStylePrefs")
     }
-
     func loadStrokeStyleDefaults() {
         guard let prefs = UserDefaults.standard.dictionary(forKey: "strokeStylePrefs") else { return }
-
         if let placement = prefs["strokePlace"] as? String {
             strokeDefaults.placement = StrokePlacement(rawValue: placement) ?? .center
         }
@@ -303,11 +267,9 @@ extension VectorDocument {
             strokeDefaults.miterLimit = miter
         }
     }
-
     func findObject(by id: UUID) -> VectorObject? {
         return snapshot.objects[id]
     }
-
     func findShape(by id: UUID) -> VectorShape? {
         guard let object = snapshot.objects[id] else {
             return nil
@@ -325,7 +287,6 @@ extension VectorDocument {
             return shape
         }
     }
-
     func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
         if !groupShape.memberIDs.isEmpty {
             let resolved = groupShape.memberIDs.compactMap { findShape(by: $0) }
@@ -341,11 +302,9 @@ extension VectorDocument {
         }
         return groupShape.groupedShapes
     }
-
     func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
         let members = resolveGroupMembers(groupShape)
         var result: [VectorShape] = []
-
         for member in members {
             if member.isGroupContainer {
                 result.append(contentsOf: resolveGroupMembersRecursively(member))
@@ -353,16 +312,12 @@ extension VectorDocument {
                 result.append(member)
             }
         }
-
         return result
     }
-
     func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
         guard groupShape.isGroupContainer else { return groupShape.bounds }
-
         let members = resolveGroupMembers(groupShape)
         var calculatedBounds = CGRect.null
-
         for member in members {
             let memberBounds: CGRect
             if member.typography != nil, let textPosition = member.textPosition, let areaSize = member.areaSize {
@@ -374,10 +329,8 @@ extension VectorDocument {
             }
             calculatedBounds = calculatedBounds.union(memberBounds)
         }
-
         return calculatedBounds.isEmpty ? groupShape.bounds : calculatedBounds
     }
-
     func findText(by id: UUID) -> VectorText? {
         if let object = snapshot.objects[id] {
             if case .text(let shape) = object.objectType,
@@ -386,7 +339,6 @@ extension VectorDocument {
                 return vectorText
             }
         }
-
         for object in snapshot.objects.values {
             if case .group(let shape) = object.objectType {
                 let members = resolveGroupMembers(shape)
@@ -397,10 +349,8 @@ extension VectorDocument {
                 }
             }
         }
-
         return nil
     }
-
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
@@ -412,10 +362,8 @@ extension VectorDocument {
             }
         }
     }
-
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return [] }
-
         let layer = snapshot.layers[layerIndex]
         return layer.objectIDs.compactMap { objectID in
             guard let object = snapshot.objects[objectID] else { return nil }

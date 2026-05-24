@@ -1,25 +1,20 @@
 import SwiftUI
 import SwiftUI
-
 struct PersistentWarpMarquee: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isEnvelopeTool: Bool
-
     private let handleSize: CGFloat = 8
-
     var body: some View {
         ZStack {
             if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
                 warpEnvelopeOutline()
-
                 if isEnvelopeTool {
                     warpCornerHandles()
                 } else {
                     warpCornerDots()
-
                     if document.viewState.currentTool == .selection {
                         warpGridOverlay()
                     }
@@ -27,12 +22,10 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
-
     @ViewBuilder
     private func warpEnvelopeOutline() -> some View {
         if shape.warpEnvelope.count >= 4 {
             let corners = shape.warpEnvelope
-
             Path { path in
                 path.move(to: corners[0])
                 path.addLine(to: corners[1])
@@ -52,13 +45,11 @@ struct PersistentWarpMarquee: View {
             .transformEffect(shape.transform)
         }
     }
-
     @ViewBuilder
     private func warpCornerHandles() -> some View {
         if shape.warpEnvelope.count >= 4 {
             ForEach(0..<4) { cornerIndex in
                 let cornerPos = shape.warpEnvelope[cornerIndex]
-
                 Rectangle()
                     .fill(Color.green)
                     .stroke(Color.white, lineWidth: 1.0)
@@ -70,13 +61,11 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
-
     @ViewBuilder
     private func warpCornerDots() -> some View {
         if shape.warpEnvelope.count >= 4 {
             ForEach(0..<4) { cornerIndex in
                 let cornerPos = shape.warpEnvelope[cornerIndex]
-
                 Circle()
                     .fill(Color.blue)
                     .frame(width: 4.0 / zoomLevel, height: 4.0 / zoomLevel)
@@ -87,13 +76,11 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
-
     @ViewBuilder
     private func warpGridOverlay() -> some View {
         if shape.warpEnvelope.count >= 4 {
             let gridLines = 4
             let corners = shape.warpEnvelope
-
             ForEach(0..<4) { row in
                 let t = CGFloat(row) / CGFloat(gridLines - 1)
                 Path { path in
@@ -120,7 +107,6 @@ struct PersistentWarpMarquee: View {
                 .transformEffect(shape.transform)
                 .opacity(0.8)
             }
-
             ForEach(0..<4) { col in
                 let u = CGFloat(col) / CGFloat(gridLines - 1)
                 Path { path in
@@ -149,7 +135,6 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
-
     private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
         let top = CGPoint(
             x: topLeft.x * (1 - u) + topRight.x * u,
@@ -159,7 +144,6 @@ struct PersistentWarpMarquee: View {
             x: bottomLeft.x * (1 - u) + bottomRight.x * u,
             y: bottomLeft.y * (1 - u) + bottomRight.y * u
         )
-
         return CGPoint(
             x: top.x * (1 - v) + bottom.x * v,
             y: top.y * (1 - v) + bottom.y * v

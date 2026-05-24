@@ -1,18 +1,14 @@
 import SwiftUI
-
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
-
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
     }
 }
-
 struct ObjectRowTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
-
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -20,11 +16,9 @@ struct ObjectRowTextStyle: ViewModifier {
             .lineLimit(1)
     }
 }
-
 struct ObjectRowChildTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
-
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -32,7 +26,6 @@ struct ObjectRowChildTextStyle: ViewModifier {
             .lineLimit(1)
     }
 }
-
 struct ObjectRowIndicatorStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -40,32 +33,26 @@ struct ObjectRowIndicatorStyle: ViewModifier {
             .foregroundColor(.secondary)
     }
 }
-
 extension View {
     func objectRowIcon(size: CGFloat) -> some View {
         modifier(ObjectRowIconStyle(size: size))
     }
-
     func objectRowText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowTextStyle(size: size, isSelected: isSelected))
     }
-
     func objectRowChildText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowChildTextStyle(size: size, isSelected: isSelected))
     }
-
     func objectRowIndicator() -> some View {
         modifier(ObjectRowIndicatorStyle())
     }
 }
-
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
         case text = "text"
         case group = "group"
     }
-
     let objectType: ObjectType
     let objectId: UUID
     let name: String
@@ -75,26 +62,21 @@ struct ObjectRow: View {
     let document: VectorDocument
     let memberIDs: [UUID]
     let showBottomIndicator: Bool
-
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
-
     private var isGroupExpanded: Bool {
         document.settings.groupExpansionState[objectId] ?? false
     }
-
     private func setGroupExpanded(_ value: Bool) {
         var updatedSettings = document.settings
         updatedSettings.groupExpansionState[objectId] = value
         document.settings = updatedSettings
     }
-
     private func saveRenamedObject() {
         guard !editedName.isEmpty else {
             isEditingName = false
             return
         }
-
         if let object = document.snapshot.objects[objectId] {
             var shape = object.shape
             shape.name = editedName
@@ -107,10 +89,8 @@ struct ObjectRow: View {
             document.changeNotifier.notifyObjectChanged(objectId)
             document.triggerLayerUpdate(for: layerIndex)
         }
-
         isEditingName = false
     }
-
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, memberIDs: [UUID] = [], showBottomIndicator: Bool = false) {
         self.objectType = objectType
         self.objectId = objectId
@@ -122,7 +102,6 @@ struct ObjectRow: View {
         self.memberIDs = memberIDs
         self.showBottomIndicator = showBottomIndicator
     }
-
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: {
@@ -165,7 +144,6 @@ struct ObjectRow: View {
             }
         )
     }
-
     private var isLockedBinding: Binding<Bool> {
         Binding(
             get: {
@@ -208,7 +186,6 @@ struct ObjectRow: View {
             }
         )
     }
-
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -232,7 +209,6 @@ struct ObjectRow: View {
             }
         )
     }
-
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -256,7 +232,6 @@ struct ObjectRow: View {
             }
         )
     }
-
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
@@ -264,16 +239,13 @@ struct ObjectRow: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 21, height: 1)
-
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 19, height: 1)
-
                     Spacer()
                 }
                 .padding(.leading, 2.5)
                 .padding(.trailing, 4)
-
                 HStack(spacing: 2) {
                     Button(action: {
                         isVisibleBinding.wrappedValue.toggle()
@@ -283,7 +255,6 @@ struct ObjectRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isVisibleBinding.wrappedValue ? "Hide Object" : "Show Object")
-
                     Button(action: {
                         isLockedBinding.wrappedValue.toggle()
                     }) {
@@ -292,7 +263,6 @@ struct ObjectRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isLockedBinding.wrappedValue ? "Unlock Object" : "Lock Object")
-
                     HStack(spacing: 4) {
                         if objectType == .group {
                             Button(action: {
@@ -310,18 +280,15 @@ struct ObjectRow: View {
                         } else {
                             Color.clear.frame(width: 12, height: 12)
                         }
-
                         HStack(spacing: 4) {
                             Image(systemName: objectIcon)
                                 .font(.system(size: 10))
                                 .foregroundColor(objectIconColor)
                                 .frame(width: 12)
-
                             Circle()
                                 .fill(isSelected ? Color.blue : Color.clear)
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                 .frame(width: 8, height: 8)
-
                             if isEditingName {
                                 TextField("Name", text: $editedName, onCommit: {
                                     saveRenamedObject()
@@ -345,7 +312,6 @@ struct ObjectRow: View {
                                         isEditingName = true
                                     }
                             }
-
                             if objectType == .group && !memberIDs.isEmpty {
                                 Spacer()
                                 Text("\(memberIDs.count)")
@@ -399,39 +365,31 @@ struct ObjectRow: View {
             }
             .dropDestination(for: DraggableItem.self) { items, location in
                 guard let droppedItem = items.first else { return false }
-
                 guard case .vectorObject(let vectorObj) = droppedItem else {
                     return false
                 }
-
                 let droppedObjectId = vectorObj.objectId
                 let sourceLayerIndex = vectorObj.sourceLayerIndex
-
                 if droppedObjectId == objectId {
                     return false
                 }
-
                 if sourceLayerIndex == layerIndex {
                     document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
                 } else {
                     document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
                     document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
                 }
-
                 return true
             }
             .contextMenu {
                 Button("Select") {
                     onSelect(false, false)
                 }
-
                 Button("Rename") {
                     editedName = name
                     isEditingName = true
                 }
-
                 Divider()
-
                 Button("Duplicate") {
                 }
                 Button("Delete") {
@@ -443,21 +401,16 @@ struct ObjectRow: View {
                         document.removeSelectedText()
                     }
                 }
-
                 Divider()
-
                 Button(isVisibleBinding.wrappedValue ? "Hide" : "Show") {
                     isVisibleBinding.wrappedValue.toggle()
                 }
-
                 Button(isLockedBinding.wrappedValue ? "Unlock" : "Lock") {
                     isLockedBinding.wrappedValue.toggle()
                 }
             }
-
             if objectType == .group, isGroupExpanded, !memberIDs.isEmpty {
                 let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-
                 let displayShapes = document.snapshot.objects[objectId].map { obj -> [VectorShape] in
                     if case .clipGroup = obj.objectType {
                         return memberShapes
@@ -465,32 +418,26 @@ struct ObjectRow: View {
                         return Array(memberShapes.reversed())
                     }
                 } ?? memberShapes
-
                 ForEach(displayShapes.indices, id: \.self) { index in
                     let childShape = displayShapes[index]
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
                     let originalIndex = index
-
                     ZStack(alignment: .bottom) {
                         HStack(spacing: 2) {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 21, height: 1)
-
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 19, height: 1)
-
                             Spacer()
                         }
                         .padding(.leading, 2.5)
                         .padding(.trailing, 4)
-
                         HStack(spacing: 2) {
                             Button(action: {
-
                                 let clickedShape = displayShapes[index]
                                 print("🎯 EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
                                 guard let obj = document.snapshot.objects[clickedShape.id] else {
@@ -513,7 +460,6 @@ struct ObjectRow: View {
                             }
                             .buttonStyle(BorderlessButtonStyle())
                             .help(childVisBinding.wrappedValue ? "Hide Object" : "Show Object")
-
                             Button(action: {
                                 childLockBinding.wrappedValue.toggle()
                             }) {
@@ -522,9 +468,7 @@ struct ObjectRow: View {
                             }
                             .buttonStyle(BorderlessButtonStyle())
                             .help(childLockBinding.wrappedValue ? "Unlock Object" : "Lock Object")
-
                             HStack(spacing: 4) {
-
                                 if childShape.isGroupContainer {
                                     let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                                     Button(action: {
@@ -544,23 +488,19 @@ struct ObjectRow: View {
                                 } else {
                                     Color.clear.frame(width: 12, height: 12)
                                 }
-
                                 Image(systemName: childIconFor(childShape, index: originalIndex))
                                     .font(.system(size: 10))
                                     .foregroundColor(childIconColorFor(childShape, index: originalIndex))
                                     .frame(width: 12)
-
                                 Circle()
                                     .fill(isChildSelected ? Color.blue : Color.clear)
                                     .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                     .frame(width: 8, height: 8)
-
                                 Text(childShape.typography != nil ? (childShape.textContent ?? "Text") : childShape.name)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(isChildSelected ? .blue : .secondary)
                                     .lineLimit(1)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-
                                 if childShape.isGroupContainer {
                                     Spacer()
                                     let childMemberCount = childShape.memberIDs.isEmpty ? childShape.groupedShapes.count : childShape.memberIDs.count
@@ -583,7 +523,6 @@ struct ObjectRow: View {
                     .onTapGesture {
                         let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
                         let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-
                         if isCommandPressed {
                             if document.viewState.selectedObjectIDs.contains(childShape.id) {
                                 document.viewState.orderedSelectedObjectIDs.removeAll { $0 == childShape.id }
@@ -602,7 +541,6 @@ struct ObjectRow: View {
                             document.viewState.selectedObjectIDs = [childShape.id]
                         }
                     }
-
                     if childShape.isGroupContainer {
                         let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                         if isNestedGroupExpanded {
@@ -620,14 +558,11 @@ struct ObjectRow: View {
         }
     }
 }
-
 struct NestedGroupChildrenView: View {
     let memberIDs: [UUID]
     let layerIndex: Int
-
     let parentObjectId: UUID
     @ObservedObject var document: VectorDocument
-
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -651,7 +586,6 @@ struct NestedGroupChildrenView: View {
             }
         )
     }
-
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -675,38 +609,31 @@ struct NestedGroupChildrenView: View {
             }
         )
     }
-
     var body: some View {
         let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-
         let parentIsClip: Bool = {
             if let parent = document.snapshot.objects[parentObjectId],
                case .clipGroup = parent.objectType { return true }
             return false
         }()
         let displayShapes = parentIsClip ? memberShapes : Array(memberShapes.reversed())
-
         ForEach(displayShapes.indices, id: \.self) { index in
             let childShape = displayShapes[index]
             let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
             let childVisBinding = childVisibilityBinding(for: childShape.id)
             let childLockBinding = childLockBinding(for: childShape.id)
-
             ZStack(alignment: .bottom) {
                 HStack(spacing: 2) {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 21, height: 1)
-
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 19, height: 1)
-
                     Spacer()
                 }
                 .padding(.leading, 2.5)
                 .padding(.trailing, 4)
-
                 HStack(spacing: 2) {
                     Button(action: {
                         let clickedShape = displayShapes[index]
@@ -730,7 +657,6 @@ struct NestedGroupChildrenView: View {
                             .visibilityButton(isVisible: childVisBinding.wrappedValue)
                     }
                     .buttonStyle(BorderlessButtonStyle())
-
                     Button(action: {
                         childLockBinding.wrappedValue.toggle()
                     }) {
@@ -738,7 +664,6 @@ struct NestedGroupChildrenView: View {
                             .lockButton(isLocked: childLockBinding.wrappedValue)
                     }
                     .buttonStyle(BorderlessButtonStyle())
-
                     HStack(spacing: 4) {
                         if childShape.isGroupContainer {
                             let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
@@ -758,24 +683,20 @@ struct NestedGroupChildrenView: View {
                         } else {
                             Color.clear.frame(width: 12, height: 12)
                         }
-
                         let isClipMask = parentIsClip && index == 0
                         Image(systemName: childShape.isGroupContainer ? "folder" : (isClipMask ? "scissors" : "square"))
                             .font(.system(size: 10))
                             .foregroundColor(childShape.isGroupContainer ? .purple : (isClipMask ? .orange : .blue))
                             .frame(width: 12)
-
                         Circle()
                             .fill(isChildSelected ? Color.blue : Color.clear)
                             .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                             .frame(width: 8, height: 8)
-
                         Text(childShape.name)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(isChildSelected ? .blue : .secondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
-
                         if childShape.isGroupContainer {
                             Spacer()
                             let childMemberCount = childShape.memberIDs.isEmpty ? childShape.groupedShapes.count : childShape.memberIDs.count
@@ -797,7 +718,6 @@ struct NestedGroupChildrenView: View {
             .onTapGesture {
                 let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
                 let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-
                 if isCommandPressed {
                     if document.viewState.selectedObjectIDs.contains(childShape.id) {
                         document.viewState.orderedSelectedObjectIDs.removeAll { $0 == childShape.id }
@@ -816,7 +736,6 @@ struct NestedGroupChildrenView: View {
                     document.viewState.selectedObjectIDs = [childShape.id]
                 }
             }
-
             if childShape.isGroupContainer {
                 let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                 if isNestedGroupExpanded {
@@ -832,7 +751,6 @@ struct NestedGroupChildrenView: View {
         }
     }
 }
-
 extension ObjectRow {
     private var objectIcon: String {
         switch objectType {
@@ -851,7 +769,6 @@ extension ObjectRow {
         case .group: return "folder.fill"
         }
     }
-
     private func childIconName(for shape: VectorShape) -> String {
         if shape.isWarpObject {
             return "waveform.path"
@@ -861,7 +778,6 @@ extension ObjectRow {
         }
         return "square"
     }
-
     private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
         if let object = document.snapshot.objects[objectId] {
             switch object.objectType {
@@ -873,17 +789,14 @@ extension ObjectRow {
                 break
             }
         }
-
         if childShape.typography != nil {
             return "textformat"
         }
-
         if childShape.isGroupContainer {
             return "folder"
         }
         return childIconName(for: childShape)
     }
-
     private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
         if let object = document.snapshot.objects[objectId] {
             switch object.objectType {
@@ -895,17 +808,14 @@ extension ObjectRow {
                 break
             }
         }
-
         if childShape.typography != nil {
             return .green
         }
-
         if childShape.isGroupContainer {
             return .purple
         }
         return .blue
     }
-
     private var objectIconColor: Color {
         switch objectType {
         case .shape: return .blue

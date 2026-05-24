@@ -1,13 +1,11 @@
 import Foundation
 import CoreGraphics
-
 enum FreeHandImportError: Error {
     case notSupported
     case parseFailed(code: Int)
     case emptyOutput
     case allocationFailed
 }
-
 enum FreeHandDirectImporter {
     struct Stats {
         let paths: Int
@@ -18,23 +16,17 @@ enum FreeHandDirectImporter {
         let symbolInstances: Int
         let contentIdPaths: Int
     }
-
     struct Result {
         let shapes: [VectorShape]
         let pageSize: CGSize
         let stats: Stats
-
         let layers: [Layer]
-
         let groupShapeIDs: [UUID]
     }
-
     private static func stripIPTCWrapper(_ data: Data) -> Data {
         guard data.count >= 4 else { return data }
         let b0 = data[data.startIndex]
-
         if b0 == UInt8(ascii: "A") || b0 == UInt8(ascii: "F") { return data }
-
         let a = UInt8(ascii: "A"), g = UInt8(ascii: "G"), d = UInt8(ascii: "D")
         let end = data.count - 3
         for i in 1..<end {
@@ -46,9 +38,7 @@ enum FreeHandDirectImporter {
         }
         return data
     }
-
     static func parseToShapes(data: Data) throws -> Result {
-
         if data.count >= 4,
            data[data.startIndex] == 0x46,
            data[data.startIndex + 1] == 0x48,
@@ -57,7 +47,6 @@ enum FreeHandDirectImporter {
         {
             return try FreeHand2Parser.parseToShapes(data: data)
         }
-
         if data.count >= 10,
            data[data.startIndex] == 0x25,
            data[data.startIndex + 1] == 0x21,
@@ -66,7 +55,6 @@ enum FreeHandDirectImporter {
         {
             return try FreeHandEPSParser.parseToShapes(data: data)
         }
-
         let fhData = stripIPTCWrapper(data)
         return try fhData.withUnsafeBytes { bytes -> Result in
             guard let base = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
@@ -83,7 +71,6 @@ enum FreeHandDirectImporter {
                 }
             }
             defer { fh_result_free(result) }
-
             let shapes = Self.buildShapes(from: result)
             let pageSize = CGSize(
                 width: fh_result_page_width(result),
@@ -101,18 +88,14 @@ enum FreeHandDirectImporter {
             return Result(shapes: shapes, pageSize: pageSize, stats: stats, layers: [], groupShapeIDs: [])
         }
     }
-
     static func parseToShapes(url: URL) throws -> Result {
         let data = try Data(contentsOf: url)
         return try parseToShapes(data: data)
     }
-
     private static func buildShapes(from result: OpaquePointer) -> [VectorShape] {
         let count = fh_result_shape_count(result)
         var built: [VectorShape?] = Array(repeating: nil, count: count)
-
         var consumed = Set<size_t>()
-
         for idx in 0..<count {
             let kind = Int(fh_result_shape_kind(result, idx))
             switch kind {
@@ -132,7 +115,6 @@ enum FreeHandDirectImporter {
                 break
             }
         }
-
         var top: [VectorShape] = []
         top.reserveCapacity(count)
         for (idx, shape) in built.enumerated() {
@@ -142,14 +124,11 @@ enum FreeHandDirectImporter {
         }
         return top
     }
-
     private static func makePathShape(from result: OpaquePointer, index: size_t, isCompound: Bool) -> VectorShape? {
         let elementCount = fh_result_shape_path_element_count(result, index)
         guard elementCount > 0 else { return nil }
-
         var elements: [PathElement] = []
         elements.reserveCapacity(elementCount)
-
         for elIdx in 0..<elementCount {
             let kind = Int(fh_result_shape_path_element_kind(result, index, elIdx))
             let x = fh_result_shape_path_element_coord(result, index, elIdx, 0)
@@ -158,7 +137,6 @@ enum FreeHandDirectImporter {
             let y1 = fh_result_shape_path_element_coord(result, index, elIdx, 3)
             let x2 = fh_result_shape_path_element_coord(result, index, elIdx, 4)
             let y2 = fh_result_shape_path_element_coord(result, index, elIdx, 5)
-
             switch kind {
             case FH_PATH_MOVE:
                 elements.append(.move(to: VectorPoint(x, y)))
@@ -179,7 +157,6 @@ enum FreeHandDirectImporter {
             }
         }
         guard !elements.isEmpty else { return nil }
-
         let isClosed = fh_result_shape_is_closed(result, index) != 0
         let evenOdd = fh_result_shape_even_odd(result, index) != 0
         let path = VectorPath(
@@ -187,7 +164,6 @@ enum FreeHandDirectImporter {
             isClosed: isClosed,
             fillRule: evenOdd ? .evenOdd : .winding
         )
-
         let fillKind = Int(fh_result_shape_fill_kind(result, index))
         var fillStyle: FillStyle? = nil
         switch fillKind {
@@ -210,7 +186,6 @@ enum FreeHandDirectImporter {
         default:
             break
         }
-
         var strokeStyle: StrokeStyle? = nil
         if fh_result_shape_has_stroke(result, index) != 0 {
             let color = VectorColor.rgb(RGBColor(
@@ -224,7 +199,6 @@ enum FreeHandDirectImporter {
                 width: fh_result_shape_stroke_width(result, index)
             )
         }
-
         if fillStyle == nil && strokeStyle == nil {
             if ApplicationSettings.shared.importFreeHandEffects {
                 strokeStyle = StrokeStyle(color: .black, width: 0.5)
@@ -232,16 +206,13 @@ enum FreeHandDirectImporter {
                 return nil
             }
         }
-
         let opacity = fh_result_shape_opacity(result, index)
-
         var detectedType: GeometricShapeType? = nil
         var baseName = isCompound ? "Compound Path" : "Path"
         if !isCompound, let detected = PathShapeDetector.detect(elements: elements) {
             detectedType = detected.type
             baseName = detected.name
         }
-
         return VectorShape(
             name: baseName,
             path: path,
@@ -252,7 +223,6 @@ enum FreeHandDirectImporter {
             isCompoundPath: isCompound
         )
     }
-
     private static func readGradientStops(from result: OpaquePointer, index: size_t) -> [GradientStop] {
         let count = fh_result_shape_gradient_stop_count(result, index)
         var stops: [GradientStop] = []
@@ -275,12 +245,10 @@ enum FreeHandDirectImporter {
         }
         return stops
     }
-
     private static func buildLinearGradient(from result: OpaquePointer, index: size_t) -> VectorGradient? {
         let stops = readGradientStops(from: result, index: index)
         let angleDeg = fh_result_shape_fill_angle(result, index)
         let angleRad = angleDeg * .pi / 180.0
-
         let dx = cos(angleRad) * 0.5
         let dy = sin(angleRad) * 0.5
         let start = CGPoint(x: 0.5 - dx, y: 0.5 - dy)
@@ -288,7 +256,6 @@ enum FreeHandDirectImporter {
         let linear = LinearGradient(startPoint: start, endPoint: end, stops: stops)
         return .linear(linear)
     }
-
     private static func buildRadialGradient(from result: OpaquePointer, index: size_t) -> VectorGradient? {
         let stops = readGradientStops(from: result, index: index)
         let cx = fh_result_shape_fill_center_x(result, index)
@@ -300,7 +267,6 @@ enum FreeHandDirectImporter {
         )
         return .radial(radial)
     }
-
     private static func makeGroupShape(
         from result: OpaquePointer,
         index: size_t,
@@ -310,7 +276,6 @@ enum FreeHandDirectImporter {
     ) -> VectorShape? {
         let memberCount = fh_result_shape_member_count(result, index)
         guard memberCount > 0 else { return nil }
-
         var peerIndices: [size_t] = []
         peerIndices.reserveCapacity(memberCount)
         for m in 0..<memberCount {
@@ -320,23 +285,19 @@ enum FreeHandDirectImporter {
             peerIndices.append(peerIdx)
         }
         guard !peerIndices.isEmpty else { return nil }
-
         var memberShapes: [VectorShape] = []
         memberShapes.reserveCapacity(peerIndices.count)
         for peerIdx in peerIndices {
             if let shape = built[peerIdx] { memberShapes.append(shape) }
         }
-
         if isClip && !memberShapes.isEmpty {
             memberShapes[0].name = "Clip Path"
             for i in 1..<memberShapes.count {
                 memberShapes[i].name = "Masked " + memberShapes[i].name
             }
         }
-
         let name = isClip ? "Clipping Group" : "Group"
         var container = VectorShape.group(from: memberShapes, name: name, isClippingGroup: isClip)
-
         container.memberIDs = []
         container.groupedShapes = memberShapes
         return container

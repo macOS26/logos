@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-
 struct DocumentSectionIconStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -8,7 +7,6 @@ struct DocumentSectionIconStyle: ViewModifier {
             .foregroundColor(.blue)
     }
 }
-
 struct DocumentSectionTitleStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -16,7 +14,6 @@ struct DocumentSectionTitleStyle: ViewModifier {
             .foregroundColor(.primary)
     }
 }
-
 struct DocumentFieldLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -24,21 +21,17 @@ struct DocumentFieldLabelStyle: ViewModifier {
             .foregroundColor(.secondary)
     }
 }
-
 extension View {
     func documentSectionIcon() -> some View {
         modifier(DocumentSectionIconStyle())
     }
-
     func documentSectionTitle() -> some View {
         modifier(DocumentSectionTitleStyle())
     }
-
     func documentFieldLabel() -> some View {
         modifier(DocumentFieldLabelStyle())
     }
 }
-
 private struct DocumentSectionHeader: View {
     let icon: String
     let title: String
@@ -46,39 +39,31 @@ private struct DocumentSectionHeader: View {
         HStack {
             Image(systemName: icon)
                 .documentSectionIcon()
-
             Text(title)
                 .documentSectionTitle()
         }
     }
 }
-
 struct NewDocumentSetupView: View {
     @Binding var isPresented: Bool
     let onDocumentCreated: (VectorDocument, URL?) -> Void
-
     @State private var setupData = DocumentSetupData()
     @State private var documentPreview: NSImage?
     @State private var isGeneratingPreview = false
     @State private var skipNextUnitConversion = false
     @Environment(AppState.self) private var appState
     @Environment(\.dismissWindow) private var dismissWindow
-
     var body: some View {
             VStack(spacing: 0) {
             professionalHeader
-
             HStack(spacing: 0) {
                 settingsPanel
-
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
                     .frame(width: 1)
-
                 previewPanel
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
             professionalFooter
         }
         .background(Color.ui.windowBackground)
@@ -86,7 +71,6 @@ struct NewDocumentSetupView: View {
             generateDocumentPreview()
         }
     }
-
     private var professionalHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -99,20 +83,16 @@ struct NewDocumentSetupView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.blue.opacity(0.1))
                         )
-
                     VStack(alignment: .leading, spacing: 2) {
                         Text("New Document")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.primary)
-
                         Text("Create a new vector document with professional settings")
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }
                 }
-
                 Spacer()
-
                 Button(action: { dismissWindow() }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .medium))
@@ -124,86 +104,69 @@ struct NewDocumentSetupView: View {
                         )
                 }
                 .padding(.trailing, -11)
-
                 .padding(.top, -55)
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Cancel")
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
-
             Divider()
         }
         .background(Color.ui.controlBackground)
     }
-
     private var settingsPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 documentNameSection
-
                 documentSizeSection
-
                 quickSizesSection
-
             }
             .padding(24)
         }
         .frame(width: 450)
         .background(Color.ui.controlBackground)
     }
-
     private var documentNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             DocumentSectionHeader(icon: "doc.text", title: "Document Name")
-
             VStack(alignment: .leading, spacing: 8) {
                 TextField("Enter document name", text: $setupData.filename)
                     .textFieldStyle(ProfessionalTextFieldStyle())
                     .onChange(of: setupData.filename) { _, _ in generateDocumentPreview() }
-
                 Text("File will be saved as: \(setupData.filename.isEmpty ? "Untitled" : setupData.filename).inkpen")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
         }
     }
-
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             DocumentSectionHeader(icon: "ruler", title: "Document Size")
-
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Width")
                             .documentFieldLabel()
-
                         HStack(spacing: 8) {
                             TextField("Width", value: $setupData.width, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
                                 .frame(width: 100)
-
                             Text(unitLabel)
                                 .documentFieldLabel()
                         }
                     }
-
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Height")
                             .documentFieldLabel()
-
                         HStack(spacing: 8) {
                             TextField("Height", value: $setupData.height, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
                                 .frame(width: 100)
-
                             Text(unitLabel)
                                 .documentFieldLabel()
                         }
                     }
                 }
-
             }
         }
         .onChange(of: setupData.width) { _, _ in generateDocumentPreview() }
@@ -214,7 +177,6 @@ struct NewDocumentSetupView: View {
                 generateDocumentPreview()
                 return
             }
-
             let convertedWidth = UnitsConverter.convert(value: setupData.width, from: oldUnit, to: newUnit)
             let convertedHeight = UnitsConverter.convert(value: setupData.height, from: oldUnit, to: newUnit)
             setupData.width = convertedWidth
@@ -222,11 +184,9 @@ struct NewDocumentSetupView: View {
             generateDocumentPreview()
         }
     }
-
     private var quickSizesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             DocumentSectionHeader(icon: "square.grid.2x2", title: "Quick Sizes")
-
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(quickSizes, id: \.self) { size in
                     ProfessionalQuickSizeButton(size: size, displayUnit: setupData.unit) {
@@ -236,12 +196,10 @@ struct NewDocumentSetupView: View {
             }
         }
     }
-
     private var previewPanel: some View {
              VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
                 DocumentSectionHeader(icon: "eye", title: "Document Preview")
-
                 VStack(spacing: 16) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
@@ -251,7 +209,6 @@ struct NewDocumentSetupView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                             )
-
                         if let preview = documentPreview {
                             Image(nsImage: preview)
                                 .resizable()
@@ -276,24 +233,20 @@ struct NewDocumentSetupView: View {
                             }
                         }
                     }
-
                     VStack(spacing: 8) {
                         Text("\(formatNumberForDisplay(setupData.width)) × \(formatNumberForDisplay(setupData.height)) \(setupData.unit.rawValue)")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.primary)
-
                         Text("\(setupData.colorMode.rawValue.uppercased()) • \(Int(setupData.resolution)) DPI")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
                 }
             }
-
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Units")
                         .documentFieldLabel()
-
                     Picker("Unit", selection: $setupData.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
                             Text(unit.rawValue.capitalized).tag(unit)
@@ -301,12 +254,10 @@ struct NewDocumentSetupView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
-
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Color Mode")
                             .documentFieldLabel()
-
                         Picker("Color Mode", selection: $setupData.colorMode) {
                             ForEach(ColorMode.allCases, id: \.self) { mode in
                                 Text(mode.rawValue.uppercased()).tag(mode)
@@ -314,11 +265,9 @@ struct NewDocumentSetupView: View {
                         }
                         .pickerStyle(SegmentedPickerStyle())
                     }
-
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Resolution")
                             .documentFieldLabel()
-
                         HStack(spacing: 6) {
                             TextField("Resolution", value: $setupData.resolution, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
@@ -329,25 +278,20 @@ struct NewDocumentSetupView: View {
                     }
                 }
             }
-
             Spacer()
         }
         .padding(20)
         .frame(maxWidth: .infinity)
     }
-
     private var professionalFooter: some View {
         VStack(spacing: 0) {
             Divider()
-
             HStack {
                 Spacer()
-
                 Button("Cancel") {
                     dismissWindow()
                 }
                 .buttonStyle(ProfessionalSecondaryButtonStyle())
-
                 Button("Create Document") {
                     createDocument()
                 }
@@ -359,11 +303,9 @@ struct NewDocumentSetupView: View {
         }
         .background(Color.ui.controlBackground)
     }
-
     private var unitLabel: String {
         setupData.unit.rawValue
     }
-
     private var quickSizes: [QuickSize] {
         [
             QuickSize(name: "Letter", baseWidth: 8.5, baseHeight: 11.0, baseUnit: .inches),
@@ -376,24 +318,19 @@ struct NewDocumentSetupView: View {
             QuickSize(name: "Wide", baseWidth: 1920, baseHeight: 1080, baseUnit: .pixels)
         ]
     }
-
     private func applyQuickSize(_ size: QuickSize) {
         let targetUnit = setupData.unit
         setupData.width = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: targetUnit)
         setupData.height = UnitsConverter.convert(value: size.baseHeight, from: size.baseUnit, to: targetUnit)
-
         generateDocumentPreview()
     }
-
     private func generateDocumentPreview() {
         isGeneratingPreview = true
-
         DispatchQueue.global(qos: .userInitiated).async {
             let previewSize = CGSize(width: 280, height: 280)
             let scale: CGFloat = 2.0
             let pixelWidth = Int(previewSize.width * scale)
             let pixelHeight = Int(previewSize.height * scale)
-
             guard let context = CGContext(
                 data: nil,
                 width: pixelWidth,
@@ -408,17 +345,13 @@ struct NewDocumentSetupView: View {
                 }
                 return
             }
-
             context.scaleBy(x: scale, y: scale)
-
             context.setFillColor(CGColor(gray: 0.95, alpha: 1.0))
             context.fill(CGRect(origin: .zero, size: previewSize))
-
             let aspectRatio = setupData.width / setupData.height
             let maxSize: CGFloat = 240
             let docWidth: CGFloat
             let docHeight: CGFloat
-
             if aspectRatio > 1 {
                 docWidth = maxSize
                 docHeight = maxSize / aspectRatio
@@ -426,27 +359,22 @@ struct NewDocumentSetupView: View {
                 docHeight = maxSize
                 docWidth = maxSize * aspectRatio
             }
-
             let docRect = CGRect(
                 x: (previewSize.width - docWidth) / 2,
                 y: (previewSize.height - docHeight) / 2,
                 width: docWidth,
                 height: docHeight
             )
-
             context.setFillColor(CGColor(gray: 1.0, alpha: 1.0))
             context.fill(docRect)
-
             context.setStrokeColor(CGColor(gray: 0.5, alpha: 1.0))
             context.setLineWidth(1.0)
             context.stroke(docRect)
-
             let infoText = "\(Int(setupData.width))×\(Int(setupData.height))"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: PlatformFont.systemFont(ofSize: 12, weight: .medium),
                 .foregroundColor: PlatformColor.gray
             ]
-
             let textSize = infoText.size(withAttributes: attributes)
             let textRect = CGRect(
                 x: docRect.midX - textSize.width / 2,
@@ -454,14 +382,12 @@ struct NewDocumentSetupView: View {
                 width: textSize.width,
                 height: textSize.height
             )
-
             let attrString = NSAttributedString(string: infoText, attributes: attributes)
             context.saveGState()
             context.translateBy(x: 0, y: previewSize.height)
             context.scaleBy(x: 1.0, y: -1.0)
             attrString.draw(in: textRect)
             context.restoreGState()
-
             if let cgImage = context.makeImage() {
                 let image = NSImage(cgImage: cgImage, size: previewSize)
                 DispatchQueue.main.async {
@@ -475,16 +401,12 @@ struct NewDocumentSetupView: View {
             }
         }
     }
-
     private func createDocument() {
         let document = VectorDocument(settings: setupData.documentSettings)
-
         document.viewState.currentTool = appState.defaultTool
-
         let filename = setupData.filename.trimmingCharacters(in: .whitespacesAndNewlines)
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
         let suggestedURL = documentsPath?.appendingPathComponent("\(filename).inkpen")
-
         onDocumentCreated(document, suggestedURL)
         isPresented = false
     }

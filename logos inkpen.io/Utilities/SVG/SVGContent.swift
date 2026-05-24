@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct SVGContent {
     let shapes: [VectorShape]
     let documentSize: CGSize
@@ -12,23 +11,17 @@ struct SVGContent {
     let version: String?
     let inkpenMetadata: String?
 }
-
 func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
     guard let xmlString = String(data: data, encoding: .utf8) else {
         throw VectorImportError.parsingError("Could not decode SVG as UTF-8", line: nil)
     }
-
     let parser = SVGParser()
-
     if useExtremeValueHandling {
         parser.enableExtremeValueHandling()
     }
-
     let result = try parser.parse(xmlString)
     var allShapes = result.shapes
-
     let maxWidth = parser.maxTextWidth
-
     for var textObject in result.textObjects.reversed() {
         if maxWidth > 0 {
             let height = textObject.areaSize?.height ?? CGFloat(textObject.typography.lineHeight)
@@ -43,7 +36,6 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
         let textShape = textObject.toVectorShape()
         allShapes.append(textShape)
     }
-
     return SVGContent(
         shapes: allShapes,
         documentSize: result.documentSize,

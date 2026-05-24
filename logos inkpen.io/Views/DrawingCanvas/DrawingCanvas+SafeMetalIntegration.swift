@@ -3,19 +3,13 @@ import SwiftUI
 import AppKit
 #endif
 import MetalKit
-
 extension DrawingCanvas {
-
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-
             canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .none)
-
             canvasOverlays(geometry: geometry)
-
             pressureSensitiveOverlay(geometry: geometry)
-
             #if os(macOS)
             CanvasCursorOverlayView(
                 isHovering: isCanvasHovering,
@@ -26,13 +20,11 @@ extension DrawingCanvas {
             )
             #endif
         }
-
         .scaleEffect(liveZoomDelta)
         .offset(x: livePanDelta.x, y: livePanDelta.y)
         .onAppear {
             setupCanvas()
             previousTool = document.viewState.currentTool
-
             if !hasPerformedInitialFitToPage {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     if !hasPerformedInitialFitToPage {
@@ -43,7 +35,6 @@ extension DrawingCanvas {
             }
         }
         .onDisappear {
-
         }
         .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)

@@ -1,11 +1,8 @@
 import SwiftUI
 import simd
-
 extension DrawingCanvas {
-
     internal func snapToGrid(_ point: CGPoint) -> CGPoint {
         guard document.gridSettings.snapToGrid else { return point }
-
         let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
         let spacingMultiplier: CGFloat = {
             switch document.settings.unit {
@@ -20,18 +17,13 @@ extension DrawingCanvas {
             }
         }()
         let gridSpacing = baseSpacing * spacingMultiplier
-
         guard gridSpacing > 0 else { return point }
-
         let snappedX = round(point.x / gridSpacing) * gridSpacing
         let snappedY = round(point.y / gridSpacing) * gridSpacing
-
         return CGPoint(x: snappedX, y: snappedY)
     }
-
     internal func ensureIncompletePathHasProperColors(shape: VectorShape) {
         guard let layerIndex = document.selectedLayerIndex else { return }
-
         let shapes = document.getShapesForLayer(layerIndex)
         for shapeIndex in shapes.indices {
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -46,13 +38,11 @@ extension DrawingCanvas {
                     miterLimit: document.strokeDefaults.miterLimit,
                     opacity: document.defaultStrokeOpacity
                 )
-
                 document.createFillStyleInUnified(
                     id: shape.id,
                     color: document.defaultFillColor,
                     opacity: document.defaultFillOpacity
                 )
-
                 var updatedShape = currentShape
                 updatedShape.updateBounds()
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -60,31 +50,25 @@ extension DrawingCanvas {
             }
         }
     }
-
     internal func handleBezierPenTap(at location: CGPoint) {
         var constrainedLocation = location
-
         if isShiftPressed && isBezierDrawing && !bezierPoints.isEmpty {
             guard let lastPoint = bezierPoints.last else { return }
             let referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
             constrainedLocation = constrainToAngle(from: referencePoint, to: location)
         }
-
         constrainedLocation = applySnapping(to: constrainedLocation)
-
         if isBezierDrawing && bezierPoints.count >= 3 && showClosePathHint {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
             let baseCloseTolerance: Double = 5.0
             let zoomLevel = zoomLevel
             let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel)
-
             if distance(constrainedLocation, firstPointLocation) <= closeTolerance {
                 closeBezierPath()
                 return
             }
         }
-
         if !isBezierDrawing {
             if let selectedPointID = selectedPoints.first {
                 if getShapeForPoint(selectedPointID) != nil,
@@ -93,7 +77,6 @@ extension DrawingCanvas {
                     return
                 }
             }
-
             if activeBezierShape == nil {
                 createNewBezierPath(at: constrainedLocation)
             }
@@ -102,34 +85,25 @@ extension DrawingCanvas {
             addCornerPoint(at: constrainedLocation)
         }
     }
-
     internal func handleBezierPenDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         var startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         var currentLocation = screenToCanvas(value.location, geometry: geometry)
-
         startLocation = applySnapping(to: startLocation)
-
         if isShiftPressed && isBezierDrawing && !bezierPoints.isEmpty {
             currentLocation = applyAngleConstraintForDrag(currentLocation: currentLocation, startLocation: startLocation)
         }
-
         currentLocation = applySnapping(to: currentLocation)
-
         let dragDistance = value.location.distance(to: value.startLocation)
         let baseThreshold: Double = 8.0
         let zoomLevel = zoomLevel
         let zoomAwareThreshold = max(2.0, baseThreshold / zoomLevel)
-
         if !isBezierDrawing && activeBezierShape == nil {
             handleFirstPointCreationFromDrag(startLocation: startLocation)
         }
-
         guard isBezierDrawing else { return }
-
         if dragDistance < zoomAwareThreshold {
             return
         }
-
         let basePointTolerance: Double = 8.0
         let tolerance = max(2.0, basePointTolerance / zoomLevel)
         var draggedPointIndex: Int? = nil
@@ -140,14 +114,12 @@ extension DrawingCanvas {
                 break
             }
         }
-
         if let pointIndex = draggedPointIndex {
             editExistingPointHandles(pointIndex: pointIndex, currentLocation: currentLocation)
         } else {
             createNewPointWithHandles(startLocation: startLocation, currentLocation: currentLocation)
         }
     }
-
     internal func updateActiveBezierShapeInDocument(isLiveDrag: Bool = false) {
         guard let activeBezierShape = activeBezierShape,
               let updatedPath = bezierPath,
@@ -158,7 +130,6 @@ extension DrawingCanvas {
                currentShape.id == activeBezierShape.id {
                 var updatedShape = currentShape
                 updatedShape.path = updatedPath
-
                 if !isLiveDrag {
                     document.createStrokeStyleInUnified(
                         id: activeBezierShape.id,
@@ -170,33 +141,26 @@ extension DrawingCanvas {
                         miterLimit: document.strokeDefaults.miterLimit,
                         opacity: document.defaultStrokeOpacity
                     )
-
                     updatedShape.updateBounds()
                 }
-
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 break
             }
         }
     }
-
     internal func finishBezierPath() {
         guard var activeBezierShape = activeBezierShape else {
             cancelBezierDrawing()
             return
         }
-
         if bezierPoints.count < 2 {
             ensureIncompletePathHasProperColors(shape: activeBezierShape)
             cancelBezierDrawing()
             currentShapeId = nil
             return
         }
-
         updatePathWithHandles()
-
         if var currentPath = bezierPath {
-
             if let firstPointHandles = bezierHandles[0], let control2 = firstPointHandles.control2 {
                 currentPath.pendingStartHandle = control2
                 print("🔧 Saved pendingStartHandle: \(control2)")
@@ -206,9 +170,7 @@ extension DrawingCanvas {
                 currentPath.pendingEndHandle = control2
                 print("🔧 Saved pendingEndHandle: \(control2)")
             }
-
             if !currentPath.isClosed {
-
                 var stringKeyedHandles: [String: BezierHandleInfo] = [:]
                 for (key, value) in bezierHandles {
                     stringKeyedHandles[String(key)] = value
@@ -220,18 +182,14 @@ extension DrawingCanvas {
                 currentPath.pendingStartHandle = nil
                 currentPath.pendingEndHandle = nil
             }
-
             activeBezierShape.path = currentPath
             activeBezierShape.updateBounds()
         }
-
         print("🔧 finishBezierPath: points = \(bezierPoints.count), elements = \(activeBezierShape.path.elements.count)")
-
         if let obj = document.snapshot.objects[activeBezierShape.id] {
             var documentShape = obj.shape
             documentShape.path = activeBezierShape.path
             documentShape.updateBounds()
-
             if let pendingEnd = documentShape.path.pendingEndHandle {
                 print("🔧 documentShape has pendingEndHandle: \(pendingEnd)")
             } else {
@@ -240,13 +198,10 @@ extension DrawingCanvas {
             if let pendingStart = documentShape.path.pendingStartHandle {
                 print("🔧 documentShape has pendingStartHandle: \(pendingStart)")
             }
-
             let objectType = VectorObject.determineType(for: documentShape)
             let updatedObj = VectorObject(id: obj.id, layerIndex: obj.layerIndex, objectType: objectType)
-
             document.snapshot.objects[activeBezierShape.id] = updatedObj
             document.triggerLayerUpdate(for: obj.layerIndex)
-
             if isContinuingExistingPath, let originalShape = originalBezierShapeForUndo {
                 let command = ShapeModificationCommand(
                     objectIDs: [activeBezierShape.id],
@@ -260,53 +215,40 @@ extension DrawingCanvas {
                 document.commandManager.recordCompletedCommand(command)
                 print("🔧 Registered undo for new path")
             }
-
             print("🔧 Shape updated successfully")
         } else {
             print("🔧 ERROR: Shape not found in document!")
         }
-
         isContinuingExistingPath = false
         originalBezierShapeForUndo = nil
-
         cancelBezierDrawing()
     }
-
     internal func finishBezierPenDrag() {
         for (index, liveHandle) in liveBezierHandles {
             bezierHandles[index] = liveHandle
         }
-
         liveBezierHandles.removeAll()
         originalBezierHandles.removeAll()
-
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
-
         updatePathWithHandles()
         updateActiveBezierShapeInDocument()
     }
-
     internal func shouldShowContinuePathHint() -> (Bool, CGPoint?) {
         guard document.viewState.currentTool == .bezierPen && !isBezierDrawing else {
             return (false, nil)
         }
-
         if let selectedPointID = selectedPoints.first,
            let pointPosition = getPointPosition(selectedPointID) {
             return (true, CGPoint(x: pointPosition.x, y: pointPosition.y))
         }
-
         return (false, nil)
     }
-
     internal var constraintAngles: [Double] {
         return [0, 45, 90, 135, 180, 225, 270, 315]
     }
-
     internal func findBestIntersectionPoint(from currentPoint: CGPoint, toward target: CGPoint) -> CGPoint? {
         guard isBezierDrawing && bezierPoints.count >= 1 else { return nil }
-
         let dx = target.x - currentPoint.x
         let dy = target.y - currentPoint.y
         let currentAngle = atan2(dy, dx)
@@ -314,7 +256,6 @@ extension DrawingCanvas {
         if currentAngleDegrees < 0 {
             currentAngleDegrees += 360
         }
-
         var closestAngleFromCurrent = constraintAngles[0]
         var minDiff = 360.0
         for angle in constraintAngles {
@@ -325,32 +266,25 @@ extension DrawingCanvas {
                 closestAngleFromCurrent = angle
             }
         }
-
         let angleFromCurrentRad = closestAngleFromCurrent * .pi / 180.0
         var bestIntersection: CGPoint?
         var bestScore = Double.infinity
-
         let dir1 = SIMD2<Double>(cos(angleFromCurrentRad), sin(angleFromCurrentRad))
         let currentVec = SIMD2<Double>(Double(currentPoint.x), Double(currentPoint.y))
         let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
-
         for existingPoint in bezierPoints {
             let existingVec = SIMD2<Double>(Double(existingPoint.x), Double(existingPoint.y))
-
             for constraintAngleFromPoint in constraintAngles {
                 let angleFromPointRad = constraintAngleFromPoint * .pi / 180.0
                 let dir2 = SIMD2<Double>(cos(angleFromPointRad), sin(angleFromPointRad))
                 let denominator = dir1.x * dir2.y - dir1.y * dir2.x
-
                 if abs(denominator) > 0.001 {
                     let delta = existingVec - currentVec
                     let t1 = (delta.x * dir2.y - delta.y * dir2.x) / denominator
                     let t2 = (delta.x * dir1.y - delta.y * dir1.x) / denominator
-
                     if t1 > 0 && t2 > 0 {
                         let intersectionVec = currentVec + dir1 * t1
                         let distToTarget = simd_length(targetVec - intersectionVec)
-
                         if distToTarget < bestScore {
                             bestScore = distToTarget
                             bestIntersection = CGPoint(x: intersectionVec.x, y: intersectionVec.y)
@@ -359,34 +293,26 @@ extension DrawingCanvas {
                 }
             }
         }
-
         return bestIntersection
     }
-
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
-
         let refVec = SIMD2<Double>(Double(reference.x), Double(reference.y))
         let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
         let delta = targetVec - refVec
         let distance = simd_length(delta)
-
         guard distance > 0.001 else { return target }
-
         if isBezierDrawing && bezierPoints.count >= 1 {
             if let intersectionPoint = findBestIntersectionPoint(from: reference, toward: target) {
                 return intersectionPoint
             }
         }
-
         let angle = atan2(delta.y, delta.x)
         var angleDegrees = angle * 180.0 / .pi
         if angleDegrees < 0 {
             angleDegrees += 360
         }
-
         var closestAngle = constraintAngles[0]
         var minDifference = 360.0
-
         for constraintAngle in constraintAngles {
             let diff = abs(angleDegrees - constraintAngle)
             let wrappedDiff = min(diff, 360 - diff)
@@ -395,22 +321,17 @@ extension DrawingCanvas {
                 closestAngle = constraintAngle
             }
         }
-
         let constrainedAngleRad = closestAngle * .pi / 180.0
-
         let offset = SIMD2<Double>(cos(constrainedAngleRad), sin(constrainedAngleRad)) * distance
         let result = refVec + offset
-
         return CGPoint(x: result.x, y: result.y)
     }
-
     internal func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
         for object in document.snapshot.objects.values {
             if case .shape(let shape) = object.objectType {
                 if shape.id == pointID.shapeID {
                     return shape
                 }
-
                 if shape.isGroupContainer {
                     if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
                         return groupedShape
@@ -420,7 +341,6 @@ extension DrawingCanvas {
         }
         return nil
     }
-
     private func createNewBezierPath(at location: CGPoint) {
         let newPath = VectorPath(elements: [.move(to: VectorPoint(location))])
         bezierPath = newPath
@@ -428,7 +348,6 @@ extension DrawingCanvas {
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -440,91 +359,72 @@ extension DrawingCanvas {
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-
         activeBezierShape = VectorShape(
             name: "Bezier Path",
             path: newPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
-
         if let shape = activeBezierShape {
             currentShapeId = shape.id
             document.addShape(shape)
         }
     }
-
     internal func continueExistingPath(from pointPosition: VectorPoint) {
         guard let selectedPointID = selectedPoints.first,
               let shape = getShapeForPoint(selectedPointID) else {
             createNewPathFromPoint(pointPosition)
             return
         }
-
         let isClosed = shape.path.elements.contains { element in
             if case .close = element { return true }
             return false
         }
-
         if isClosed {
             createNewPathFromPoint(pointPosition)
             return
         }
-
         var points: [VectorPoint] = []
         var handles: [Int: BezierHandleInfo] = [:]
         var currentIndex = 0
         var previousPoint: VectorPoint?
-
         let pendingStartHandle = shape.path.pendingStartHandle
         let pendingEndHandle = shape.path.pendingEndHandle
-
         print("🔧 continueExistingPath - pendingStartHandle: \(pendingStartHandle != nil ? "YES" : "nil")")
         print("🔧 continueExistingPath - pendingEndHandle: \(pendingEndHandle != nil ? "YES" : "nil")")
-
         for element in shape.path.elements {
             switch element {
             case .move(to: let point):
                 points.append(point)
                 previousPoint = point
                 currentIndex = 0
-
             case .line(to: let point):
                 points.append(point)
                 previousPoint = point
                 currentIndex += 1
-
             case .curve(to: let point, control1: let cp1, control2: let cp2):
                 points.append(point)
-
                 if previousPoint != nil {
                     var prevHandleInfo = handles[currentIndex] ?? BezierHandleInfo()
                     prevHandleInfo.control2 = cp1
                     prevHandleInfo.hasHandles = true
                     handles[currentIndex] = prevHandleInfo
                 }
-
                 var currentHandleInfo = handles[currentIndex + 1] ?? BezierHandleInfo()
                 currentHandleInfo.control1 = cp2
                 currentHandleInfo.hasHandles = true
                 handles[currentIndex + 1] = currentHandleInfo
-
                 previousPoint = point
                 currentIndex += 1
-
             case .quadCurve(to: let point, control: _):
-
                 points.append(point)
                 previousPoint = point
                 currentIndex += 1
-
             case .close:
                 break
             }
         }
-
         let lastPointIndex = points.count - 1
-
         if let pendingStart = shape.path.pendingStartHandle {
             var handleInfo = handles[0] ?? BezierHandleInfo()
             handleInfo.control2 = pendingStart
@@ -545,10 +445,8 @@ extension DrawingCanvas {
                 break
             }
         }
-
         var handleInfo = handles[lastPointIndex] ?? BezierHandleInfo()
         print("🔧 Last point existing handleInfo - control1: \(handleInfo.control1 != nil)")
-
         if let pendingEnd = shape.path.pendingEndHandle {
             handleInfo.control2 = pendingEnd
             handleInfo.hasHandles = true
@@ -558,7 +456,6 @@ extension DrawingCanvas {
             switch lastElement {
             case .curve(_, _, control2: let cp2):
                 let lastPoint = points[lastPointIndex]
-
                 let mirroredControl2 = VectorPoint(
                     2 * lastPoint.x - cp2.x,
                     2 * lastPoint.y - cp2.y
@@ -576,18 +473,14 @@ extension DrawingCanvas {
                 break
             }
         }
-
         let isStartPoint = selectedPointID.elementIndex == 0
         let isEndPoint = selectedPointID.elementIndex == points.count - 1
-
         if !isStartPoint && !isEndPoint {
             createNewPathFromPoint(pointPosition)
             return
         }
-
         if isStartPoint {
             points.reverse()
-
             var reversedHandles: [Int: BezierHandleInfo] = [:]
             for (index, handleInfo) in handles {
                 let newIndex = points.count - 1 - index
@@ -598,7 +491,6 @@ extension DrawingCanvas {
                 reversedHandles[newIndex] = newHandleInfo
             }
             handles = reversedHandles
-
             let newLastIndex = points.count - 1
             if let pendingStart = pendingStartHandle {
                 let lastPoint = points[newLastIndex]
@@ -613,7 +505,6 @@ extension DrawingCanvas {
                 print("🔧 Applied mirrored pendingStartHandle to reversed last point \(newLastIndex)")
             }
         } else if isEndPoint {
-
             let lastIdx = points.count - 1
             if let lastHandles = handles[lastIdx] {
                 print("🔧 End continuation: last point (\(lastIdx)) control2: \(lastHandles.control2 != nil ? "YES - smooth" : "NO - corner")")
@@ -621,7 +512,6 @@ extension DrawingCanvas {
                 print("🔧 End continuation: last point (\(lastIdx)) has no handles - corner point")
             }
         }
-
         bezierPoints = points
         bezierHandles = handles
         liveBezierHandles.removeAll()
@@ -630,37 +520,28 @@ extension DrawingCanvas {
         activeBezierPointIndex = points.count - 1
         activeBezierShape = shape
         currentShapeId = shape.id
-
         isContinuingExistingPath = true
         originalBezierShapeForUndo = shape
-
         print("🔧 continueExistingPath: loaded \(points.count) points, \(handles.count) handle entries")
         for (index, handleInfo) in handles.sorted(by: { $0.key < $1.key }) {
             print("  Point \(index): control1=\(handleInfo.control1 != nil), control2=\(handleInfo.control2 != nil), hasHandles=\(handleInfo.hasHandles)")
         }
-
         rebuildBezierPath()
-
         selectedPoints.removeAll()
     }
-
     private func rebuildBezierPath() {
         guard !bezierPoints.isEmpty else {
             bezierPath = nil
             return
         }
-
         var elements: [PathElement] = []
         elements.append(.move(to: bezierPoints[0]))
-
         for i in 1..<bezierPoints.count {
             let currentPoint = bezierPoints[i]
             let previousHandles = bezierHandles[i - 1]
             let currentHandles = bezierHandles[i]
-
             let hasOutgoingHandle = previousHandles?.control2 != nil
             let hasIncomingHandle = currentHandles?.control1 != nil
-
             if hasOutgoingHandle || hasIncomingHandle {
                 let control1 = previousHandles?.control2 ?? VectorPoint(bezierPoints[i - 1].x, bezierPoints[i - 1].y)
                 let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
@@ -669,10 +550,8 @@ extension DrawingCanvas {
                 elements.append(.line(to: currentPoint))
             }
         }
-
         bezierPath = VectorPath(elements: elements)
     }
-
     private func createNewPathFromPoint(_ pointPosition: VectorPoint) {
         let newPath = VectorPath(elements: [.move(to: pointPosition)])
         bezierPath = newPath
@@ -680,10 +559,8 @@ extension DrawingCanvas {
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-
         isContinuingExistingPath = false
         originalBezierShapeForUndo = nil
-
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -695,29 +572,23 @@ extension DrawingCanvas {
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-
         activeBezierShape = VectorShape(
             name: "Bezier Path (Continued)",
             path: newPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
-
         if let shape = activeBezierShape {
             currentShapeId = shape.id
             document.addShape(shape)
         }
-
         selectedPoints.removeAll()
     }
-
     private func addCornerPoint(at location: CGPoint) {
         let newPoint = VectorPoint(location)
         bezierPoints.append(newPoint)
         activeBezierPointIndex = bezierPoints.count - 1
-
         let previousPointIndex = bezierPoints.count - 2
-
         if previousPointIndex >= 0 {
             if let previousHandles = bezierHandles[previousPointIndex] {
                 print("🔧 addCornerPoint: prev point \(previousPointIndex) has control2: \(previousHandles.control2 != nil)")
@@ -725,7 +596,6 @@ extension DrawingCanvas {
                 print("🔧 addCornerPoint: prev point \(previousPointIndex) has NO handle entry")
             }
         }
-
         if previousPointIndex >= 0,
            let previousHandles = bezierHandles[previousPointIndex],
            let previousControl2 = previousHandles.control2 {
@@ -735,10 +605,8 @@ extension DrawingCanvas {
             bezierPath?.addElement(.line(to: newPoint))
             print("🔧 addCornerPoint: added LINE")
         }
-
         updateActiveBezierShapeInDocument(isLiveDrag: true)
     }
-
     private func applyAngleConstraintForDrag(currentLocation: CGPoint, startLocation: CGPoint) -> CGPoint {
         let referencePoint: CGPoint
         if isDraggingBezierHandle {
@@ -763,7 +631,6 @@ extension DrawingCanvas {
         }
         return constrainToAngle(from: referencePoint, to: currentLocation)
     }
-
     private func handleFirstPointCreationFromDrag(startLocation: CGPoint) {
         if let selectedPointID = selectedPoints.first {
             if getShapeForPoint(selectedPointID) != nil,
@@ -776,7 +643,6 @@ extension DrawingCanvas {
             createNewPathFromDrag(at: startLocation)
         }
     }
-
     private func createNewPathFromDrag(at location: CGPoint) {
         let firstPoint = VectorPoint(location)
         let newPath = VectorPath(elements: [.move(to: firstPoint)])
@@ -785,7 +651,6 @@ extension DrawingCanvas {
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -801,21 +666,18 @@ extension DrawingCanvas {
         activeBezierShape = newShape
         document.addShape(newShape)
     }
-
     private func editExistingPointHandles(pointIndex: Int, currentLocation: CGPoint) {
         if !isDraggingBezierHandle {
             isDraggingBezierHandle = true
             isDraggingBezierPoint = true
             originalBezierHandles = bezierHandles
         }
-
         let point = bezierPoints[pointIndex]
         let pointLocation = CGPoint(x: point.x, y: point.y)
         let dragVector = CGPoint(
             x: currentLocation.x - pointLocation.x,
             y: currentLocation.y - pointLocation.y
         )
-
         let control1 = VectorPoint(
             pointLocation.x - dragVector.x,
             pointLocation.y - dragVector.y
@@ -824,25 +686,21 @@ extension DrawingCanvas {
             pointLocation.x + dragVector.x,
             pointLocation.y + dragVector.y
         )
-
         liveBezierHandles[pointIndex] = BezierHandleInfo(
             control1: control1,
             control2: control2,
             hasHandles: true
         )
     }
-
     private func createNewPointWithHandles(startLocation: CGPoint, currentLocation: CGPoint) {
         if !isDraggingBezierHandle {
             isDraggingBezierHandle = true
             originalBezierHandles = bezierHandles
-
             let lastPoint = bezierPoints.last
             let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
             let baseDuplicateTolerance: Double = 5.0
             let zoomLevel = zoomLevel
             let duplicateTolerance = max(1.0, baseDuplicateTolerance / zoomLevel)
-
             if distanceToLastPoint > duplicateTolerance {
                 let newPoint = VectorPoint(startLocation)
                 bezierPoints.append(newPoint)
@@ -852,7 +710,6 @@ extension DrawingCanvas {
                 activeBezierPointIndex = bezierPoints.count - 1
             }
         }
-
         let activeIndex = bezierPoints.count - 1
         let activePoint = bezierPoints[activeIndex]
         let activeLocation = CGPoint(x: activePoint.x, y: activePoint.y)
@@ -860,7 +717,6 @@ extension DrawingCanvas {
             x: currentLocation.x - activeLocation.x,
             y: currentLocation.y - activeLocation.y
         )
-
         let control1 = VectorPoint(
             activeLocation.x - dragVector.x * 0.5,
             activeLocation.y - dragVector.y * 0.5
@@ -869,17 +725,14 @@ extension DrawingCanvas {
             activeLocation.x + dragVector.x * 0.5,
             activeLocation.y + dragVector.y * 0.5
         )
-
         liveBezierHandles[activeIndex] = BezierHandleInfo(
             control1: control1,
             control2: control2,
             hasHandles: true
         )
     }
-
     private func applyFinalColorsToPath(shape: VectorShape) {
         guard let layerIndex = document.selectedLayerIndex else { return }
-
         let shapes = document.getShapesForLayer(layerIndex)
         for shapeIndex in shapes.indices {
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -894,17 +747,14 @@ extension DrawingCanvas {
                     miterLimit: document.strokeDefaults.miterLimit,
                     opacity: document.defaultStrokeOpacity
                 )
-
                 document.createFillStyleInUnified(
                     id: shape.id,
                     color: document.defaultFillColor,
                     opacity: document.defaultFillOpacity
                 )
-
                 var updatedShape = currentShape
                 updatedShape.updateBounds()
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-
                 break
             }
         }

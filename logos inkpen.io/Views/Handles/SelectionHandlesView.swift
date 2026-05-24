@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-
 struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
@@ -14,20 +13,15 @@ struct SelectionHandlesView: View {
     let transformBoxOpacity: Double
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
-
     private var selectionID: String {
         document.viewState.selectedObjectIDs.map { $0.uuidString }.sorted().joined()
     }
-
     var body: some View {
         ZStack {
-
             if !document.viewState.selectedObjectIDs.isEmpty {
-
                 if document.viewState.selectedObjectIDs.count > 1 {
                     renderCombinedSelectionBox()
                 } else {
-
                     ForEach(Array(document.viewState.selectedObjectIDs), id: \.self) { selectedID in
                         if let newVectorObject = document.snapshot.objects[selectedID] {
                             if case .group(let groupShape) = newVectorObject.objectType {
@@ -37,12 +31,9 @@ struct SelectionHandlesView: View {
                                     }
                                 }
                             }
-
                             switch newVectorObject.objectType {
                             case .guide:
-
                                 EmptyView()
-
                             case .shape(let shape),
                                  .image(let shape),
                                  .warp(let shape),
@@ -72,7 +63,6 @@ struct SelectionHandlesView: View {
                                                                  .circle, .ellipse, .oval, .egg, .cone,
                                                                  .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                                                  .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
-
                                         if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
                                             TransformBoxHandles(
                                                 document: document,
@@ -122,9 +112,7 @@ struct SelectionHandlesView: View {
                 }
             }
         }
-
     }
-
     @ViewBuilder
     private func renderHandlesForShape(_ shape: VectorShape) -> some View {
         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -149,7 +137,6 @@ struct SelectionHandlesView: View {
                                          .circle, .ellipse, .oval, .egg, .cone,
                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
-
                 if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
                     TransformBoxHandles(
                         document: document,
@@ -194,42 +181,33 @@ struct SelectionHandlesView: View {
             }
         }
     }
-
     private var combinedSelectionBounds: CGRect? {
         var combinedBounds: CGRect?
         let settings = ApplicationSettings.shared
-
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
-
             switch object.objectType {
             case .text(let shape):
-
                 let textBounds: CGRect
                 if let position = shape.textPosition, let size = shape.areaSize {
                     textBounds = CGRect(origin: position, size: size)
                 } else {
                     textBounds = shape.bounds.applying(shape.transform)
                 }
-
                 if let existing = combinedBounds {
                     combinedBounds = existing.union(textBounds)
                 } else {
                     combinedBounds = textBounds
                 }
                 continue
-
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 var baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-
                 if settings.boundingBoxIncludesStrokes && shape.strokeStyle != nil && shape.typography == nil {
                     let strokeWidth = shape.strokeStyle?.width ?? 1.0
                     let strokeExpansion = strokeWidth / 2.0
                     baseBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
                 }
-
                 let transformedBounds = baseBounds.applying(shape.transform)
-
                 if let existing = combinedBounds {
                     combinedBounds = existing.union(transformedBounds)
                 } else {
@@ -237,10 +215,8 @@ struct SelectionHandlesView: View {
                 }
             }
         }
-
         return combinedBounds
     }
-
     private func createCombinedShape(from bounds: CGRect) -> VectorShape {
         var combinedShape = VectorShape(
             name: "Combined Selection",
@@ -256,7 +232,6 @@ struct SelectionHandlesView: View {
         combinedShape.transform = CGAffineTransform(translationX: bounds.origin.x, y: bounds.origin.y)
         return combinedShape
     }
-
     @ViewBuilder
     private func renderCombinedSelectionBox() -> some View {
         if let bounds = combinedSelectionBounds {
@@ -264,9 +239,7 @@ struct SelectionHandlesView: View {
                                      .circle, .ellipse, .oval, .egg, .cone,
                                      .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                      .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
-
             if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
-
                 TransformBoxHandles(
                     document: document,
                     shape: createCombinedShape(from: bounds),

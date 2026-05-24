@@ -1,9 +1,6 @@
 import SwiftUI
-
 extension PDFCommandParser {
-
     func createShapeFromShading(gradient: VectorGradient) {
-
         let pageRect = [
             PathCommand.moveTo(CGPoint(x: 0, y: 0)),
             PathCommand.lineTo(CGPoint(x: pageSize.width, y: 0)),
@@ -11,7 +8,6 @@ extension PDFCommandParser {
             PathCommand.lineTo(CGPoint(x: 0, y: pageSize.height)),
             PathCommand.closePath
         ]
-
         var vectorElements: [PathElement] = []
         for command in pageRect {
             switch command {
@@ -27,7 +23,6 @@ extension PDFCommandParser {
                 break
             }
         }
-
         let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
         let fillStyle = FillStyle(gradient: gradient)
         let shadingShape = VectorShape(
@@ -37,7 +32,6 @@ extension PDFCommandParser {
             fillStyle: fillStyle,
             isCompoundPath: true
         )
-
         shapes.append(shadingShape)
     }
 }

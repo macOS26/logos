@@ -1,9 +1,6 @@
 import Foundation
-
 struct InkpenMigrator {
-
     static func migrateLegacyDocument(from data: Data) -> VectorDocument? {
-
         do {
             let legacyDoc = try decodeLegacy1_0(from: data)
             Log.fileOperation("🔄 Migrating document from version 1.0 to 1.0.27", level: .info)
@@ -13,7 +10,6 @@ struct InkpenMigrator {
             return nil
         }
     }
-
     private struct Legacy1_0Document: Codable {
         var canvasOffset: [Double]?
         var currentTool: String?
@@ -23,7 +19,6 @@ struct InkpenMigrator {
         var viewMode: String?
         var zoomLevel: Double?
     }
-
     private struct Legacy1_0Layer: Codable {
         var color: String?
         var id: String
@@ -33,7 +28,6 @@ struct InkpenMigrator {
         var blendMode: String?
         var isVisible: Bool?
     }
-
     private struct Legacy1_0Settings: Codable {
         var backgroundColor: AnyCodable?
         var colorMode: String?
@@ -56,20 +50,16 @@ struct InkpenMigrator {
         var customCmykSwatches: [AnyCodable]?
         var customHsbSwatches: [AnyCodable]?
     }
-
     private struct Legacy1_0Object: Codable {
         var id: String
         var layerIndex: Int
         var orderID: Int?
         var objectType: AnyCodable
     }
-
     private struct AnyCodable: Codable {
         let value: Any
-
         init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
-
             if let dict = try? container.decode([String: AnyCodable].self) {
                 value = dict.mapValues { $0.value }
             } else if let array = try? container.decode([AnyCodable].self) {
@@ -84,10 +74,8 @@ struct InkpenMigrator {
                 value = NSNull()
             }
         }
-
         func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
-
             switch value {
             case let dict as [String: Any]:
                 try container.encode(dict.mapValues { AnyCodable(value: $0) })
@@ -103,35 +91,27 @@ struct InkpenMigrator {
                 try container.encodeNil()
             }
         }
-
         private init(value: Any) {
             self.value = value
         }
     }
-
     private static func decodeLegacy1_0(from data: Data) throws -> Legacy1_0Document {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(Legacy1_0Document.self, from: data)
     }
-
     private static func migrate1_0_to_1_0_27(_ legacy: Legacy1_0Document) -> VectorDocument {
-
         let document = VectorDocument()
-
         document.settings.width = legacy.settings.width
         document.settings.height = legacy.settings.height
         document.settings.resolution = legacy.settings.resolution ?? 72
-
         if let unit = legacy.settings.unit {
             document.settings.unit = MeasurementUnit(rawValue: unit) ?? .inches
         }
-
         document.settings.showGrid = legacy.settings.showGrid ?? false
         document.settings.showRulers = legacy.settings.showRulers ?? true
         document.settings.snapToGrid = legacy.settings.snapToGrid ?? false
         document.settings.snapToPoint = legacy.settings.snapToPoint ?? false
-
         var migratedLayers: [Layer] = []
         for legacyLayer in legacy.layers {
             let layer = Layer(
@@ -146,27 +126,21 @@ struct InkpenMigrator {
             )
             migratedLayers.append(layer)
         }
-
         let sortedObjects = legacy.vectorObjects.sorted { obj1, obj2 in
             let order1 = obj1.orderID ?? 0
             let order2 = obj2.orderID ?? 0
             return order1 < order2
         }
-
         if let objectsData = try? JSONEncoder().encode(sortedObjects),
            let jsonArray = try? JSONSerialization.jsonObject(with: objectsData) as? [[String: Any]] {
-
             for (index, jsonObject) in jsonArray.enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    var vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
-
                     if case .shape(let shape) = vectorObject.objectType {
                         let hasImage = shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil
-
                         if index == 2 {
                             Log.fileOperation("  [\(index)] DEBUG: name=\(shape.name), hasLinkedPath=\(shape.linkedImagePath != nil), hasBookmark=\(shape.linkedImageBookmarkData != nil), hasEmbedded=\(shape.embeddedImageData != nil)", level: .info)
                         }
-
                         if hasImage {
                             vectorObject = VectorObject(
                                 id: vectorObject.id,
@@ -181,9 +155,7 @@ struct InkpenMigrator {
                             Log.fileOperation("  [\(index)] DEBUG: Already .image type, name=\(shape.name)", level: .info)
                         }
                     }
-
                     document.snapshot.objects[vectorObject.id] = vectorObject
-
                     let layerIndex = vectorObject.layerIndex
                     if layerIndex >= 0 && layerIndex < migratedLayers.count {
                         migratedLayers[layerIndex].objectIDs.append(vectorObject.id)
@@ -193,39 +165,30 @@ struct InkpenMigrator {
                     Log.fileOperation("⚠️ Failed to decode object at index \(index)", level: .warning)
                 }
             }
-
             for (layerIdx, layer) in migratedLayers.enumerated() {
                 Log.fileOperation("  Layer \(layerIdx) '\(layer.name)': \(layer.objectIDs.count) objects", level: .info)
             }
         }
-
         document.snapshot.layers = migratedLayers
         document.snapshot.formatVersion = "1.0.27"
-
         for layer in migratedLayers {
             if layer.objectIDs.count > 20 {
                 document.settings.layerExpansionState[layer.id] = false
                 Log.fileOperation("  📦 Collapsed layer '\(layer.name)' (\(layer.objectIDs.count) objects)", level: .debug)
             }
         }
-
         if migratedLayers.count > 2 {
             document.settings.selectedLayerId = migratedLayers[2].id
             document.selectedLayerIndex = 3
             Log.fileOperation("  🎯 Set default selected layer to '\(migratedLayers[2].name)'", level: .debug)
         }
-
         Log.fileOperation("✅ Successfully migrated document to version 1.0.27", level: .info)
-
         return document
     }
-
     static func hydrateLinkedImages(in document: VectorDocument, from sourceURL: URL?) {
         guard let sourceURL = sourceURL else { return }
-
         let baseDirectory = sourceURL.deletingLastPathComponent()
         ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
-
         var imagesHydrated = 0
         for obj in document.snapshot.objects.values {
             if case .shape(let shape) = obj.objectType {
@@ -238,7 +201,6 @@ struct InkpenMigrator {
                 }
             }
         }
-
         if imagesHydrated > 0 {
             Log.fileOperation("  🖼️ Hydrated \(imagesHydrated) linked image(s)", level: .info)
         }

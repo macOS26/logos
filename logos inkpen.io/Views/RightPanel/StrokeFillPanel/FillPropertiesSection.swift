@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct FillPropertiesSection: View {
     let fillOpacity: Double
     let fillColor: VectorColor
@@ -11,7 +10,6 @@ struct FillPropertiesSection: View {
             Text("Fill")
                 .font(.headline)
                 .fontWeight(.medium)
-
             VStack(spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -22,7 +20,6 @@ struct FillPropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
-
                 ZStack {
                     Capsule()
                         .fill(Color.clear)
@@ -31,7 +28,6 @@ struct FillPropertiesSection: View {
                             Capsule()
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                         )
-
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
@@ -45,7 +41,6 @@ struct FillPropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-
                     Slider(value: Binding(
                         get: { fillOpacity },
                         set: { onUpdateFillOpacity($0) }

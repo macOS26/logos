@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct PathfinderOperationButton: View {
     let operation: PathfinderOperation
     let isEnabled: Bool
@@ -10,7 +9,6 @@ struct PathfinderOperationButton: View {
                 Image(systemName: operation.iconName)
                     .font(.system(size: operation.isShapeMode ? 14 : 12))
                     .foregroundColor(isEnabled ? .accentColor : .secondary)
-
                 Text(operation.rawValue)
                     .font(.caption2)
                     .lineLimit(2)

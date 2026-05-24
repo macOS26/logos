@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum TransformOrigin: String, CaseIterable {
     case topLeft = "Top Left"
     case topCenter = "Top Center"
@@ -10,7 +9,6 @@ enum TransformOrigin: String, CaseIterable {
     case bottomLeft = "Bottom Left"
     case bottomCenter = "Bottom Center"
     case bottomRight = "Bottom Right"
-
     var point: CGPoint {
         switch self {
         case .topLeft: return CGPoint(x: 0, y: 0)
@@ -25,7 +23,6 @@ enum TransformOrigin: String, CaseIterable {
         }
     }
 }
-
 struct NinePointOriginSelector: View {
     @Binding var selectedOrigin: TransformOrigin
     var body: some View {
@@ -38,7 +35,6 @@ struct NinePointOriginSelector: View {
                             Rectangle()
                                 .fill(selectedOrigin == origin ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.1))
                                 .frame(width: 10, height: 10)
-
                             Circle()
                                 .fill(selectedOrigin == origin ? Color.red : Color.gray.opacity(0.5))
                                 .frame(width: selectedOrigin == origin ? 6 : 4, height: selectedOrigin == origin ? 6 : 4)
@@ -60,13 +56,11 @@ struct NinePointOriginSelector: View {
         )
         .help("Transform origin: \(selectedOrigin.rawValue)")
     }
-
     private func originForPosition(row: Int, col: Int) -> TransformOrigin {
         let index = row * 3 + col
         return TransformOrigin.allCases[index]
     }
 }
-
 struct TransformationControls: View {
     @ObservedObject var document: VectorDocument
     @Binding var liveDragOffset: CGPoint
@@ -81,7 +75,6 @@ struct TransformationControls: View {
     @State private var scaleYValue: String = "100"
     @State private var linkScale: Bool = true
     @State private var rotationValue: String = "0"
-
     private var transformOriginBinding: Binding<TransformOrigin> {
         Binding(
             get: { document.viewState.transformOrigin },
@@ -95,25 +88,20 @@ struct TransformationControls: View {
             }
         )
     }
-
     var hasSelection: Bool {
         !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
-
     private var currentUnit: MeasurementUnit {
         document.settings.unit
     }
-
     private var unitSuffix: String {
         currentUnit.abbreviation
     }
-
     var body: some View {
         HStack(spacing: 6) {
             NinePointOriginSelector(selectedOrigin: transformOriginBinding)
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
-
             HStack(spacing: 1) {
                 Text("X:")
                     .font(.system(size: 10, weight: .medium))
@@ -133,7 +121,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 20, alignment: .leading)
             }
-
             HStack(spacing: 1) {
                 Text("Y:")
                     .font(.system(size: 10, weight: .medium))
@@ -153,7 +140,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 20, alignment: .leading)
             }
-
             HStack(spacing: 1) {
                 Text("W:")
                     .font(.system(size: 10, weight: .medium))
@@ -181,7 +167,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 20, alignment: .leading)
             }
-
             HStack(spacing: 1) {
                 Text("H:")
                     .font(.system(size: 10, weight: .medium))
@@ -209,7 +194,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 20, alignment: .leading)
             }
-
             Button(action: {
                 keepProportions.toggle()
             }) {
@@ -237,10 +221,8 @@ struct TransformationControls: View {
             .disabled(!hasSelection)
             .opacity(hasSelection ? 1.0 : 0.3)
             .help(keepProportions ? "⚠️ Proportions LOCKED - Width/Height ratio maintained" : "✓ Proportions UNLOCKED - Free resize")
-
             Divider()
                 .frame(height: 24)
-
             HStack(spacing: 2) {
                 Text("SX:")
                     .font(.system(size: 10, weight: .medium))
@@ -264,7 +246,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 12, alignment: .leading)
             }
-
             HStack(spacing: 2) {
                 Text("SY:")
                     .font(.system(size: 10, weight: .medium))
@@ -288,7 +269,6 @@ struct TransformationControls: View {
                     .foregroundColor(.secondary.opacity(0.7))
                     .frame(width: 12, alignment: .leading)
             }
-
             Button(action: {
                 linkScale.toggle()
             }) {
@@ -316,10 +296,8 @@ struct TransformationControls: View {
             .disabled(!hasSelection)
             .opacity(hasSelection ? 1.0 : 0.3)
             .help(linkScale ? "⚠️ Scale LINKED - X and Y scale together" : "✓ Scale UNLINKED - Independent X/Y scaling")
-
             Divider()
                 .frame(height: 24)
-
             HStack(spacing: 2) {
                 Text("R:")
                     .font(.system(size: 10, weight: .medium))
@@ -369,38 +347,31 @@ struct TransformationControls: View {
             updateValuesFromSelection()
         }
     }
-
     private func syncTransformOriginFromSelection() {
         guard let firstID = document.viewState.selectedObjectIDs.first,
               let obj = document.snapshot.objects[firstID] else {
             return
         }
-
         if let objectOrigin = obj.shape.transformOrigin {
             if document.viewState.transformOrigin != objectOrigin {
                 document.viewState.transformOrigin = objectOrigin
             }
         }
     }
-
     private func updatePositionOnly() {
         let bounds = document.cachedSelectionBounds ?? getSelectionBounds()
-
         guard let bounds = bounds else {
             xValue = ""
             yValue = ""
             return
         }
-
         let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let xInPoints = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
         let yInPoints = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
-
         xValue = currentUnit.format(currentUnit.fromPoints(xInPoints))
         yValue = currentUnit.format(currentUnit.fromPoints(yInPoints))
     }
-
     private func updateValuesFromSelection() {
         guard let bounds = getSelectionBounds() else {
             xValue = ""
@@ -410,45 +381,36 @@ struct TransformationControls: View {
             aspectRatio = 1.0
             return
         }
-
         let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let xInPoints = bounds.minX + bounds.width * origin.x - pageOrigin.x
         let yInPoints = bounds.minY + bounds.height * origin.y - pageOrigin.y
-
         xValue = currentUnit.format(currentUnit.fromPoints(xInPoints))
         yValue = currentUnit.format(currentUnit.fromPoints(yInPoints))
         widthValue = currentUnit.format(currentUnit.fromPoints(bounds.width))
         heightValue = currentUnit.format(currentUnit.fromPoints(bounds.height))
         aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : 1.0
     }
-
     private func updateHeightProportionally() {
         guard let width = Double(widthValue), aspectRatio > 0 else { return }
         let newHeight = width / aspectRatio
         heightValue = currentUnit.format(newHeight)
     }
-
     private func updateWidthProportionally() {
         guard let height = Double(heightValue), aspectRatio > 0 else { return }
         let newWidth = height * aspectRatio
         widthValue = currentUnit.format(newWidth)
     }
-
     private func transformPoint(_ point: CGPoint, currentOrigin: CGPoint, newOrigin: CGPoint, scaleX: CGFloat, scaleY: CGFloat) -> CGPoint {
         let dx = point.x - currentOrigin.x
         let dy = point.y - currentOrigin.y
         let scaledX = dx * scaleX
         let scaledY = dy * scaleY
-
         return CGPoint(x: scaledX + newOrigin.x, y: scaledY + newOrigin.y)
     }
-
     private func getSelectionBounds() -> CGRect? {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
-
         var combinedBounds: CGRect?
-
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
             case .text(let shape):
@@ -475,10 +437,8 @@ struct TransformationControls: View {
                 }
             }
         }
-
         return combinedBounds
     }
-
     private func applyTransformation() {
         guard let currentBounds = getSelectionBounds(),
               let newXInUnit = Double(xValue),
@@ -487,12 +447,10 @@ struct TransformationControls: View {
               let newHeightInUnit = Double(heightValue),
               newWidthInUnit > 0,
               newHeightInUnit > 0 else { return }
-
         let newX = currentUnit.toPoints(newXInUnit)
         let newY = currentUnit.toPoints(newYInUnit)
         let newWidth = currentUnit.toPoints(newWidthInUnit)
         let newHeight = currentUnit.toPoints(newHeightInUnit)
-
         document.modifySelectedShapesWithUndo(
             preCapture: {
                 let originOffset = document.viewState.transformOrigin.point
@@ -503,11 +461,9 @@ struct TransformationControls: View {
                 let newOriginY = newY + pageOrigin.y
                 let scaleX = newWidth / currentBounds.width
                 let scaleY = newHeight / currentBounds.height
-
                 for objectID in document.viewState.selectedObjectIDs {
                     if let newVectorObject = document.snapshot.objects[objectID],
                        case .shape(var shape) = newVectorObject.objectType {
-
                         if shape.isGroupContainer {
                             var transformedGroupedShapes: [VectorShape] = []
                             for var groupedShape in shape.groupedShapes {
@@ -569,15 +525,12 @@ struct TransformationControls: View {
                                                             currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                             newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                             scaleX: scaleX, scaleY: scaleY)
-
                             shape.textPosition = newPosition
                             shape.transform = CGAffineTransform(translationX: newPosition.x, y: newPosition.y)
-
                             if scaleX != 1.0 || scaleY != 1.0 {
                                 let newWidth = shape.bounds.width * scaleX
                                 let newHeight = shape.bounds.height * scaleY
                                 shape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
-
                                 if let areaSize = shape.areaSize {
                                     shape.areaSize = CGSize(width: areaSize.width * scaleX, height: areaSize.height * scaleY)
                                 }
@@ -632,12 +585,10 @@ struct TransformationControls: View {
                             shape.path = VectorPath(elements: transformedElements)
                             shape.updateBounds()
                         }
-
                         for layerIndex in document.snapshot.layers.indices {
                             let shapes = document.getShapesForLayer(layerIndex)
                             if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
                                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
-
                                 if shape.typography != nil {
                                     if let position = shape.textPosition {
                                         document.updateTextPositionInUnified(id: shape.id, position: position)
@@ -655,39 +606,30 @@ struct TransformationControls: View {
                 }
             }
         )
-
         updateValuesFromSelection()
     }
-
     private func applyScale() {
         guard let scaleX = Double(scaleXValue),
               let scaleY = Double(scaleYValue),
               scaleX > 0, scaleY > 0,
               let currentBounds = getSelectionBounds() else { return }
-
         let scaleFactorX = scaleX / 100.0
         let scaleFactorY = scaleY / 100.0
-
         guard abs(scaleFactorX - 1.0) > 0.001 || abs(scaleFactorY - 1.0) > 0.001 else { return }
-
         let originOffset = document.viewState.transformOrigin.point
         let originX = currentBounds.minX + currentBounds.width * originOffset.x
         let originY = currentBounds.minY + currentBounds.height * originOffset.y
-
         document.modifySelectedShapesWithUndo(
             preCapture: {
                 for objectID in document.viewState.selectedObjectIDs {
                     if let vectorObject = document.snapshot.objects[objectID] {
                         var shape = vectorObject.shape
-
                         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-
                             let scaleTransform = CGAffineTransform(translationX: originX, y: originY)
                                 .scaledBy(x: scaleFactorX, y: scaleFactorY)
                                 .translatedBy(x: -originX, y: -originY)
                             document.applyTransformToGroup(groupID: shape.id, transform: scaleTransform)
                         } else if shape.isGroupContainer {
-
                             for i in shape.groupedShapes.indices {
                                 var groupedShape = shape.groupedShapes[i]
                                 scaleShapePath(&groupedShape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
@@ -698,7 +640,6 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else if shape.typography != nil {
-
                             if let pos = shape.textPosition {
                                 let newX = originX + (pos.x - originX) * scaleFactorX
                                 let newY = originY + (pos.y - originY) * scaleFactorY
@@ -716,7 +657,6 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else {
-
                             scaleShapePath(&shape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
                             document.updateShapeByID(objectID, silent: false) { s in
                                 s = shape
@@ -726,12 +666,10 @@ struct TransformationControls: View {
                 }
             }
         )
-
         scaleXValue = "100"
         scaleYValue = "100"
         updateValuesFromSelection()
     }
-
     private func scaleShapePath(_ shape: inout VectorShape, scaleX: CGFloat, scaleY: CGFloat, originX: CGFloat, originY: CGFloat) {
         var scaledElements: [PathElement] = []
         for element in shape.path.elements {
@@ -772,32 +710,25 @@ struct TransformationControls: View {
         shape.path = VectorPath(elements: scaledElements)
         shape.updateBounds()
     }
-
     private func applyRotation() {
         guard let angle = Double(rotationValue),
               let currentBounds = getSelectionBounds() else { return }
-
         guard abs(angle) > 0.001 else { return }
-
         let radians = angle * .pi / 180.0
         let originOffset = document.viewState.transformOrigin.point
         let originX = currentBounds.minX + currentBounds.width * originOffset.x
         let originY = currentBounds.minY + currentBounds.height * originOffset.y
-
         document.modifySelectedShapesWithUndo(
             preCapture: {
                 for objectID in document.viewState.selectedObjectIDs {
                     if let vectorObject = document.snapshot.objects[objectID] {
                         var shape = vectorObject.shape
-
                         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-
                             let rotationTransform = CGAffineTransform(translationX: originX, y: originY)
                                 .rotated(by: radians)
                                 .translatedBy(x: -originX, y: -originY)
                             document.applyTransformToGroup(groupID: shape.id, transform: rotationTransform)
                         } else if shape.isGroupContainer {
-
                             for i in shape.groupedShapes.indices {
                                 var groupedShape = shape.groupedShapes[i]
                                 rotateShapePath(&groupedShape, radians: radians, originX: originX, originY: originY)
@@ -808,7 +739,6 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else if shape.typography != nil {
-
                             if let pos = shape.textPosition {
                                 let dx = pos.x - originX
                                 let dy = pos.y - originY
@@ -821,7 +751,6 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else {
-
                             rotateShapePath(&shape, radians: radians, originX: originX, originY: originY)
                             document.updateShapeByID(objectID, silent: false) { s in
                                 s = shape
@@ -831,11 +760,9 @@ struct TransformationControls: View {
                 }
             }
         )
-
         rotationValue = "0"
         updateValuesFromSelection()
     }
-
     private func rotateShapePath(_ shape: inout VectorShape, radians: CGFloat, originX: CGFloat, originY: CGFloat) {
         var rotatedElements: [PathElement] = []
         for element in shape.path.elements {
@@ -869,7 +796,6 @@ struct TransformationControls: View {
         shape.path = VectorPath(elements: rotatedElements)
         shape.updateBounds()
     }
-
     private func rotatePoint(x: CGFloat, y: CGFloat, originX: CGFloat, originY: CGFloat, radians: CGFloat) -> CGPoint {
         let dx = x - originX
         let dy = y - originY

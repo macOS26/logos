@@ -1,21 +1,15 @@
 import SwiftUI
-
 extension FileOperations {
     static func importFromSVGData(_ data: Data) throws -> VectorDocument {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).svg")
         try data.write(to: tempURL)
-
         defer {
             try? FileManager.default.removeItem(at: tempURL)
         }
-
         return try openSVGFile(url: tempURL)
     }
-
     static func openSVGFile(url: URL) throws -> VectorDocument {
-
         let document = VectorDocument(settings: DocumentSettings())
-
         let objectsToKeep = document.snapshot.objects.filter { (_, obj) in
             if case .shape(let shape) = obj.objectType {
                 return shape.name == "Canvas Background" || shape.name == "Pasteboard Background"
@@ -23,51 +17,36 @@ extension FileOperations {
             return false
         }
         document.snapshot.objects = objectsToKeep
-
         let result = VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
-
         if !result.success {
             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
             throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
         }
-
         if let inkpenMetadata = result.metadata.inkpenMetadata {
-
             guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
                 Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
                 throw VectorImportError.parsingError("Invalid inkpen metadata encoding", line: nil)
             }
-
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-
             if let inkpenDocument = try? decoder.decode(VectorDocument.self, from: inkpenData) {
-
                 Log.fileOperation("📦 Opened inkpen document from SVG, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
-
                 FileOperations.removeLegacyBackgroundObjects(from: inkpenDocument)
-
                 return inkpenDocument
             }
-
             Log.fileOperation("⚠️ Current format failed, attempting legacy migration from SVG...", level: .warning)
             if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: inkpenData) {
                 return migratedDocument
             }
-
             Log.error("❌ Failed to decode inkpen metadata from SVG", category: .error)
             throw VectorImportError.parsingError("Invalid inkpen metadata in SVG", line: nil)
         }
-
         let metadata = result.metadata
         let docSize = metadata.documentSize
-
         if let viewBoxSize = metadata.viewBoxSize {
             let widthRatio = docSize.width / viewBoxSize.width
             let heightRatio = docSize.height / viewBoxSize.height
-
             if abs(widthRatio - (96.0/72.0)) < 0.1 && abs(heightRatio - (96.0/72.0)) < 0.1 {
-
                 document.settings.width = viewBoxSize.width / 72.0
                 document.settings.height = viewBoxSize.height / 72.0
             } else {
@@ -78,7 +57,6 @@ extension FileOperations {
             document.settings.width = docSize.width / 72.0
             document.settings.height = docSize.height / 72.0
         }
-
         let importedLayer = Layer(
             id: UUID(),
             name: "Imported SVG",
@@ -89,13 +67,10 @@ extension FileOperations {
             blendMode: .normal,
             color: .green
         )
-
         document.snapshot.layers.append(importedLayer)
         let targetLayer = document.snapshot.layers.count - 1
-
         var clippingMasks: [UUID: (mask: VectorShape, clippedShapes: [VectorShape])] = [:]
         var standaloneShapes: [VectorShape] = []
-
         for shape in result.shapes {
             autoreleasepool {
                 if shape.isClippingPath {
@@ -130,40 +105,30 @@ extension FileOperations {
                             return shape.path.elements.isEmpty
                         }
                     }()
-
                     if !shouldSkip {
                         standaloneShapes.append(shape)
                     }
                 }
             }
         }
-
         for shape in standaloneShapes {
             autoreleasepool {
                 installShapeRespectingGroups(shape, layerIndex: targetLayer, document: document)
             }
         }
-
         for (_, maskGroup) in clippingMasks {
             autoreleasepool {
                 guard maskGroup.mask.name != "Placeholder" else { return }
-
                 for clippedShape in maskGroup.clippedShapes {
-
                     document.addShapeToUnifiedSystem(clippedShape, layerIndex: targetLayer)
                 }
-
                 document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: targetLayer)
             }
         }
-
         document.selectedLayerIndex = targetLayer
-
         FileOperations.removeLegacyBackgroundObjects(from: document)
-
         return document
     }
-
     private static func installShapeRespectingGroups(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
             var container = shape
@@ -179,7 +144,6 @@ extension FileOperations {
             document.addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         }
     }
-
     private static func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {

@@ -1,5 +1,4 @@
 import SwiftUI
-
 final class DocumentStateRegistry {
     static let shared = DocumentStateRegistry()
     let table = NSHashTable<DocumentState>.weakObjects()

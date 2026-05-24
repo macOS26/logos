@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ColorChannelLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -8,7 +7,6 @@ struct ColorChannelLabelStyle: ViewModifier {
             .frame(width: 12)
     }
 }
-
 struct ColorValueTextFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -17,14 +15,12 @@ struct ColorValueTextFieldStyle: ViewModifier {
             .font(.system(size: 11))
     }
 }
-
 struct ColorIndicatorStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(width: 12, height: 12)
     }
 }
-
 struct HexTextFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -33,41 +29,33 @@ struct HexTextFieldStyle: ViewModifier {
             .frame(width: 70)
     }
 }
-
 extension View {
     func colorChannelLabel() -> some View {
         modifier(ColorChannelLabelStyle())
     }
-
     func colorValueTextField() -> some View {
         modifier(ColorValueTextFieldStyle())
     }
-
     func colorIndicator() -> some View {
         modifier(ColorIndicatorStyle())
     }
-
     func hexTextField() -> some View {
         modifier(HexTextFieldStyle())
     }
 }
-
 struct ColorChannelSlider: View {
     let color: Color
     let label: String
     @Binding var value: Double
     let gradient: SwiftUI.LinearGradient
     let onEditingChanged: (Bool) -> Void
-
     var body: some View {
         HStack(spacing: 8) {
             Circle()
                 .fill(color)
                 .colorIndicator()
-
             Text(label)
                 .colorChannelLabel()
-
             ZStack {
                 Capsule()
                     .fill(Color.white)
@@ -76,23 +64,19 @@ struct ColorChannelSlider: View {
                         Capsule()
                             .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                     )
-
                 Capsule()
                     .fill(gradient)
                     .frame(height: 6)
                     .allowsHitTesting(false)
-
                 Slider(value: $value, in: 0...255, onEditingChanged: onEditingChanged)
                     .controlSize(.regular)
                     .tint(Color.clear)
             }
-
             Text("\(Int(value))")
                 .colorValueTextField()
         }
     }
 }
-
 struct RGBInputSection: View {
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -106,14 +90,11 @@ struct RGBInputSection: View {
     let onSetActiveColor: (VectorColor) -> Void
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
-
     @Binding var sharedColor: VectorColor
     @Environment(AppState.self) private var appState
-
     let disableSetActiveColor: Bool
     let onColorSelected: ((VectorColor) -> Void)?
     let onDismiss: (() -> Void)?
-
     init(
         snapshot: Binding<DocumentSnapshot>,
         selectedObjectIDs: Set<UUID>,
@@ -149,11 +130,9 @@ struct RGBInputSection: View {
         self.onColorSelected = onColorSelected
         self.onDismiss = onDismiss
     }
-
     @State private var redValue: Double = 133
     @State private var greenValue: Double = 78
     @State private var blueValue: Double = 68
-
     private var currentColor: RGBColor {
         return RGBColor(
             red: redValue / 255.0,
@@ -162,11 +141,9 @@ struct RGBInputSection: View {
             alpha: 1.0
         )
     }
-
     private func swiftUIColor(r: Double, g: Double, b: Double) -> Color {
         return Color(.displayP3, red: r/255.0, green: g/255.0, blue: b/255.0)
     }
-
     private var redGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -177,7 +154,6 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-
     private var greenGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -188,7 +164,6 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-
     private var blueGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -199,7 +174,6 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 8) {
@@ -213,7 +187,6 @@ struct RGBInputSection: View {
                     gradient: redGradient,
                     onEditingChanged: onRedEditingChanged
                 )
-
                 ColorChannelSlider(
                     color: .green,
                     label: "G",
@@ -224,7 +197,6 @@ struct RGBInputSection: View {
                     gradient: greenGradient,
                     onEditingChanged: onGreenEditingChanged
                 )
-
                 ColorChannelSlider(
                     color: .blue,
                     label: "B",
@@ -236,7 +208,6 @@ struct RGBInputSection: View {
                     onEditingChanged: onBlueEditingChanged
                 )
             }
-
             HStack(spacing: 8) {
                 Rectangle()
                     .fill(Color(.displayP3,
@@ -248,14 +219,11 @@ struct RGBInputSection: View {
                         Rectangle()
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
-
                 Button("Add Swatch") {
                     onAddColorSwatch(.rgb(currentColor))
                 }
                 .font(.system(size: 10))
-
                 Spacer()
-
                 Text(String(format: "#%02x%02x%02x", Int(redValue), Int(greenValue), Int(blueValue)))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
@@ -269,7 +237,6 @@ struct RGBInputSection: View {
             loadInitialColor()
         }
     }
-
     private func loadInitialColor() {
         let rgb: RGBColor
         switch sharedColor {
@@ -308,21 +275,16 @@ struct RGBInputSection: View {
         greenValue = rgb.green * 255
         blueValue = rgb.blue * 255
     }
-
     private func onUpdateRed(_ value: Double) {
         redValue = value
-
         sharedColor = VectorColor.rgb(currentColor)
-
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor
-
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
-
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
@@ -330,21 +292,16 @@ struct RGBInputSection: View {
             }
         }
     }
-
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
-
         sharedColor = VectorColor.rgb(currentColor)
-
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor
-
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
-
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
@@ -352,21 +309,16 @@ struct RGBInputSection: View {
             }
         }
     }
-
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
-
         sharedColor = VectorColor.rgb(currentColor)
-
         if !disableSetActiveColor {
             let previewColor = VectorColor.rgb(currentColor)
             colorDeltaColor = previewColor
-
             if colorDeltaOpacity == nil {
                 let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
                 colorDeltaOpacity = currentOpacity
             }
-
             if activeColorTarget == .fill {
                 defaultFillColor = previewColor
             } else {
@@ -374,10 +326,8 @@ struct RGBInputSection: View {
             }
         }
     }
-
     private func onRedEditingChanged(_ isEditing: Bool) {
         if isEditing {
-
             let currentOpacity: Double
             if let firstSelectedID = selectedObjectIDs.first,
                let object = snapshot.objects[firstSelectedID] {
@@ -391,20 +341,15 @@ struct RGBInputSection: View {
             }
             colorDeltaOpacity = currentOpacity
         } else {
-
             colorDeltaColor = nil
             colorDeltaOpacity = nil
-
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
-
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
-
                     var shape = object.shape
-
                     if activeColorTarget == .fill {
                         if shape.fillStyle == nil {
                             shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
@@ -418,17 +363,14 @@ struct RGBInputSection: View {
                             shape.strokeStyle?.color = finalColor
                         }
                     }
-
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
-
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
-
     private func onGreenEditingChanged(_ isEditing: Bool) {
         if isEditing {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
@@ -436,17 +378,13 @@ struct RGBInputSection: View {
         } else {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
-
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
-
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
-
                     var shape = object.shape
-
                     if activeColorTarget == .fill {
                         if shape.fillStyle == nil {
                             shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
@@ -460,17 +398,14 @@ struct RGBInputSection: View {
                             shape.strokeStyle?.color = finalColor
                         }
                     }
-
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
-
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
-
     private func onBlueEditingChanged(_ isEditing: Bool) {
         if isEditing {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
@@ -478,17 +413,13 @@ struct RGBInputSection: View {
         } else {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
-
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
-
             var affectedLayers = Set<Int>()
             for objectID in selectedObjectIDs {
                 if let object = snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
-
                     var shape = object.shape
-
                     if activeColorTarget == .fill {
                         if shape.fillStyle == nil {
                             shape.fillStyle = FillStyle(color: finalColor, opacity: defaultFillOpacity)
@@ -502,13 +433,11 @@ struct RGBInputSection: View {
                             shape.strokeStyle?.color = finalColor
                         }
                     }
-
                     let updatedObject = VectorObject(shape: shape, layerIndex: object.layerIndex)
                     snapshot.objects[objectID] = updatedObject
                 }
             }
             onTriggerLayerUpdates(affectedLayers)
-
             sharedColor = VectorColor.rgb(currentColor)
         }
     }

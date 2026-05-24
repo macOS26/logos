@@ -1,5 +1,4 @@
 import SwiftUI
-
 extension CGLineCap {
     var swiftUILineCap: SwiftUI.CGLineCap {
         switch self {
@@ -10,7 +9,6 @@ extension CGLineCap {
         }
     }
 }
-
 extension CGLineJoin {
     var swiftUILineJoin: SwiftUI.CGLineJoin {
         switch self {

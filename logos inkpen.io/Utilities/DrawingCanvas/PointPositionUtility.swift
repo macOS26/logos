@@ -1,5 +1,4 @@
 import Foundation
-
 func getPointPositionExternal(_ pointID: PointID, in document: VectorDocument) -> VectorPoint? {
     for object in document.snapshot.objects.values {
         if case .shape(let shape) = object.objectType,
