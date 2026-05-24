@@ -17,49 +17,34 @@ struct ReflectHandles: View {
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var reflectionAnchorPoint: CGPoint = .zero
-    @State private var selectedAnchorPointIndex: Int? = nil
-    @State private var pathPoints: [VectorPoint] = []
-    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
 
     private let handleSize: CGFloat = 10
 
-    private var calculatedCenter: CGPoint {
-        return shape.calculateCentroid()
+    private var boundsInWorld: CGRect {
+        return shape.isGroupContainer ? shape.groupBounds : shape.bounds
+    }
+
+    private func screenPoint(_ p: CGPoint) -> CGPoint {
+        return CGPoint(x: p.x * zoomLevel + canvasOffset.x, y: p.y * zoomLevel + canvasOffset.y)
     }
 
     var body: some View {
-        let center = calculatedCenter
+        let bounds = boundsInWorld
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
         ZStack {
             Canvas { context, size in
-                let zoom = zoomLevel
-                let offset = canvasOffset
-                var path = Path()
-                for element in shape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        let p = to.cgPoint.applying(shape.transform)
-                        path.move(to: CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y))
-                    case .line(let to):
-                        let p = to.cgPoint.applying(shape.transform)
-                        path.addLine(to: CGPoint(x: p.x * zoom + offset.x, y: p.y * zoom + offset.y))
-                    case .curve(let to, let control1, let control2):
-                        let tp = to.cgPoint.applying(shape.transform)
-                        let tc1 = control1.cgPoint.applying(shape.transform)
-                        let tc2 = control2.cgPoint.applying(shape.transform)
-                        path.addCurve(to: CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y),
-                                      control1: CGPoint(x: tc1.x * zoom + offset.x, y: tc1.y * zoom + offset.y),
-                                      control2: CGPoint(x: tc2.x * zoom + offset.x, y: tc2.y * zoom + offset.y))
-                    case .quadCurve(let to, let control):
-                        let tp = to.cgPoint.applying(shape.transform)
-                        let tc = control.cgPoint.applying(shape.transform)
-                        path.addQuadCurve(to: CGPoint(x: tp.x * zoom + offset.x, y: tp.y * zoom + offset.y),
-                                          control: CGPoint(x: tc.x * zoom + offset.x, y: tc.y * zoom + offset.y))
-                    case .close:
-                        path.closeSubpath()
-                    }
-                }
-                context.stroke(path, with: .color(.white), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0], dashPhase: 2.0))
-                context.stroke(path, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
+                let tl = screenPoint(CGPoint(x: bounds.minX, y: bounds.minY))
+                let tr = screenPoint(CGPoint(x: bounds.maxX, y: bounds.minY))
+                let br = screenPoint(CGPoint(x: bounds.maxX, y: bounds.maxY))
+                let bl = screenPoint(CGPoint(x: bounds.minX, y: bounds.maxY))
+                var rect = Path()
+                rect.move(to: tl)
+                rect.addLine(to: tr)
+                rect.addLine(to: br)
+                rect.addLine(to: bl)
+                rect.closeSubpath()
+                context.stroke(rect, with: .color(.white), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0], dashPhase: 2.0))
+                context.stroke(rect, with: .color(.blue), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [2.0, 2.0]))
             }
             .allowsHitTesting(false)
             if isReflecting && !previewTransform.isIdentity {
@@ -84,25 +69,19 @@ struct ReflectHandles: View {
                 .allowsHitTesting(false)
                 .id("\(previewTransform.a)_\(previewTransform.b)_\(previewTransform.tx)_\(previewTransform.ty)")
             }
-            pathPointsView()
-            let isCenterSelected = selectedAnchorPointIndex == nil
+            midpointHandle(at: CGPoint(x: bounds.midX, y: bounds.minY), horizontal: false)
+            midpointHandle(at: CGPoint(x: bounds.midX, y: bounds.maxY), horizontal: false)
+            midpointHandle(at: CGPoint(x: bounds.minX, y: bounds.midY), horizontal: true)
+            midpointHandle(at: CGPoint(x: bounds.maxX, y: bounds.midY), horizontal: true)
             Circle()
-                .fill(isCenterSelected ? Color.red : Color.green)
+                .fill(Color.red)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize)
-                .position(CGPoint(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: center.y * zoomLevel + canvasOffset.y
-                ))
-                .onTapGesture {
-                    if !isReflecting {
-                        selectedAnchorPointIndex = nil
-                    }
-                }
+                .position(screenPoint(center))
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
-                            handlePointReflection(anchorPointIndex: nil, dragValue: value)
+                            handleCenterReflection(dragValue: value, center: center)
                         }
                         .onEnded { _ in
                             finishReflection()
@@ -111,8 +90,19 @@ struct ReflectHandles: View {
         }
         .onAppear {
             initialTransform = shape.transform
-            extractPathPoints()
         }
+    }
+
+    @ViewBuilder
+    private func midpointHandle(at worldPoint: CGPoint, horizontal: Bool) -> some View {
+        Rectangle()
+            .fill(Color.green)
+            .stroke(Color.white, lineWidth: 1.0)
+            .frame(width: handleSize, height: handleSize)
+            .position(screenPoint(worldPoint))
+            .onTapGesture {
+                performFlip(horizontal: horizontal)
+            }
     }
 
     private func appendPreviewElements(of previewShape: VectorShape, to path: inout Path, baseTransform: CGAffineTransform, currentTransform: CGAffineTransform, zoom: Double, offset: CGPoint) {
@@ -156,60 +146,17 @@ struct ReflectHandles: View {
         context.stroke(axis, with: .color(.red.opacity(0.7)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [6.0, 4.0]))
     }
 
-    private func extractPathPoints() {
-        pathPoints.removeAll()
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to), .line(let to):
-                pathPoints.append(to)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                pathPoints.append(to)
-            case .close:
-                break
-            }
-        }
-        centerPoint = VectorPoint(shape.calculateCentroid())
-    }
-
-    @ViewBuilder
-    private func pathPointsView() -> some View {
-        ForEach(pathPoints.indices, id: \.self) { index in
-            let point = pathPoints[index]
-            let isSelected = selectedAnchorPointIndex == index
-            let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
-            Circle()
-                .fill(isSelected ? Color.red : Color.green)
-                .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize, height: handleSize)
-                .position(CGPoint(
-                    x: transformedPoint.x * zoomLevel + canvasOffset.x,
-                    y: transformedPoint.y * zoomLevel + canvasOffset.y
-                ))
-                .onTapGesture {
-                    if !isReflecting {
-                        selectedAnchorPointIndex = index
-                    }
-                }
-                .highPriorityGesture(
-                    DragGesture(minimumDistance: 3)
-                        .onChanged { value in
-                            handlePointReflection(anchorPointIndex: index, dragValue: value)
-                        }
-                        .onEnded { _ in
-                            finishReflection()
-                        }
-                )
-        }
-    }
-
-    private func handlePointReflection(anchorPointIndex: Int?, dragValue: DragGesture.Value) {
+    private func handleCenterReflection(dragValue: DragGesture.Value, center: CGPoint) {
         if !reflectionStarted {
-            startPointReflection(anchorPointIndex: anchorPointIndex, dragValue: dragValue)
+            reflectionStarted = true
+            document.isHandleScalingActive = true
+            initialTransform = shape.transform
+            reflectionAnchorPoint = center
+            startLocation = dragValue.location
         }
-        let currentLocation = dragValue.location
         let anchorScreenX = reflectionAnchorPoint.x * zoomLevel + canvasOffset.x
         let anchorScreenY = reflectionAnchorPoint.y * zoomLevel + canvasOffset.y
-        let axisVector = CGPoint(x: currentLocation.x - anchorScreenX, y: currentLocation.y - anchorScreenY)
+        let axisVector = CGPoint(x: dragValue.location.x - anchorScreenX, y: dragValue.location.y - anchorScreenY)
         if abs(axisVector.x) < 0.001 && abs(axisVector.y) < 0.001 {
             return
         }
@@ -222,18 +169,14 @@ struct ReflectHandles: View {
         calculatePreviewReflection(axisAngle: axisAngle, anchor: reflectionAnchorPoint)
     }
 
-    private func startPointReflection(anchorPointIndex: Int?, dragValue: DragGesture.Value) {
-        reflectionStarted = true
-        document.isHandleScalingActive = true
-        startLocation = dragValue.location
+    private func performFlip(horizontal: Bool) {
+        let bounds = boundsInWorld
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
         initialTransform = shape.transform
-        selectedAnchorPointIndex = anchorPointIndex
-        if let pointIndex = anchorPointIndex, pointIndex < pathPoints.count {
-            let point = pathPoints[pointIndex]
-            reflectionAnchorPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
-        } else {
-            reflectionAnchorPoint = shape.calculateCentroid()
-        }
+        reflectionAnchorPoint = center
+        let axisAngle: CGFloat = horizontal ? (.pi / 2.0) : 0.0
+        calculatePreviewReflection(axisAngle: axisAngle, anchor: center)
+        finishReflection()
     }
 
     private func calculatePreviewReflection(axisAngle: CGFloat, anchor: CGPoint) {
@@ -286,9 +229,6 @@ struct ReflectHandles: View {
                 document.executeCommand(command)
             }
             document.triggerLayerUpdate(for: layerIndex)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.extractPathPoints()
-            }
         }
         } else {
             Log.error("❌ REFLECT FAILED: Could not find shape in unified objects system", category: .error)
@@ -304,8 +244,10 @@ struct ReflectHandles: View {
         }
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
+            reflectGroupGradients(groupID: shape.id, transform: currentTransform)
             return
         }
+        let oldBounds = boundsOfElements(shape.path.elements)
         var transformedElements: [PathElement] = []
         for element in shape.path.elements {
             switch element {
@@ -328,6 +270,7 @@ struct ReflectHandles: View {
                 transformedElements.append(.close)
             }
         }
+        let newBounds = boundsOfElements(transformedElements)
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed, fillRule: shape.path.fillRule.cgPathFillRule)
         guard let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         if !currentShape.cornerRadii.isEmpty && currentShape.isRoundedRectangle {
@@ -339,6 +282,107 @@ struct ReflectHandles: View {
         } else {
             document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
+        reflectGradientForShape(id: currentShape.id, transform: currentTransform, oldBounds: oldBounds, newBounds: newBounds)
+    }
+
+    private func reflectGroupGradients(groupID: UUID, transform: CGAffineTransform) {
+        guard let object = document.snapshot.objects[groupID] else { return }
+        var memberIDs: [UUID] = []
+        switch object.objectType {
+        case .group(let s), .clipGroup(let s):
+            memberIDs = s.memberIDs
+        default:
+            return
+        }
+        for memberID in memberIDs {
+            guard let memberObject = document.snapshot.objects[memberID] else { continue }
+            switch memberObject.objectType {
+            case .group, .clipGroup:
+                reflectGroupGradients(groupID: memberID, transform: transform)
+            default:
+                let memberShape = memberObject.shape
+                let bounds = boundsOfElements(memberShape.path.elements)
+                reflectGradientForShape(id: memberID, transform: transform, oldBounds: bounds, newBounds: bounds)
+            }
+        }
+    }
+
+    private func reflectGradientForShape(id: UUID, transform: CGAffineTransform, oldBounds: CGRect, newBounds: CGRect) {
+        guard let object = document.snapshot.objects[id], let gradient = object.shape.fillStyle?.gradient else { return }
+        let reflected = reflectGradient(gradient, transform: transform, oldBounds: oldBounds, newBounds: newBounds)
+        document.updateShapeByID(id) { s in
+            if var fill = s.fillStyle {
+                fill.color = .gradient(reflected)
+                s.fillStyle = fill
+            }
+        }
+    }
+
+    private func reflectGradient(_ gradient: VectorGradient, transform: CGAffineTransform, oldBounds: CGRect, newBounds: CGRect) -> VectorGradient {
+        func remap(_ p: CGPoint) -> CGPoint {
+            let worldX = oldBounds.minX + p.x * oldBounds.width
+            let worldY = oldBounds.minY + p.y * oldBounds.height
+            let r = CGPoint(x: worldX, y: worldY).applying(transform)
+            let nx = newBounds.width != 0 ? (r.x - newBounds.minX) / newBounds.width : p.x
+            let ny = newBounds.height != 0 ? (r.y - newBounds.minY) / newBounds.height : p.y
+            return CGPoint(x: nx, y: ny)
+        }
+        func reflectedAngle(_ degrees: Double) -> Double {
+            let rad = degrees * .pi / 180.0
+            let dx = cos(rad)
+            let dy = sin(rad)
+            let rx = Double(transform.a) * dx + Double(transform.c) * dy
+            let ry = Double(transform.b) * dx + Double(transform.d) * dy
+            return atan2(ry, rx) * 180.0 / .pi
+        }
+        switch gradient {
+        case .linear(var lg):
+            lg.originPoint = remap(lg.originPoint)
+            lg.startPoint = remap(lg.startPoint)
+            lg.endPoint = remap(lg.endPoint)
+            lg.storedAngle = reflectedAngle(lg.storedAngle)
+            return .linear(lg)
+        case .radial(var rg):
+            rg.originPoint = remap(rg.originPoint)
+            rg.centerPoint = remap(rg.centerPoint)
+            if let focal = rg.focalPoint {
+                rg.focalPoint = remap(focal)
+            }
+            rg.angle = reflectedAngle(rg.angle)
+            return .radial(rg)
+        }
+    }
+
+    private func boundsOfElements(_ elements: [PathElement]) -> CGRect {
+        var minX = CGFloat.greatestFiniteMagnitude
+        var minY = CGFloat.greatestFiniteMagnitude
+        var maxX = -CGFloat.greatestFiniteMagnitude
+        var maxY = -CGFloat.greatestFiniteMagnitude
+        func include(_ p: CGPoint) {
+            minX = min(minX, p.x)
+            minY = min(minY, p.y)
+            maxX = max(maxX, p.x)
+            maxY = max(maxY, p.y)
+        }
+        for element in elements {
+            switch element {
+            case .move(let to), .line(let to):
+                include(to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                include(to.cgPoint)
+                include(control1.cgPoint)
+                include(control2.cgPoint)
+            case .quadCurve(let to, let control):
+                include(to.cgPoint)
+                include(control.cgPoint)
+            case .close:
+                break
+            }
+        }
+        if minX > maxX || minY > maxY {
+            return .zero
+        }
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
