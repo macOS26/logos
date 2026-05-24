@@ -102,6 +102,25 @@ class SVGExporter {
             return ""
         }
 
+        // Native clipping group: first member is the mask, rest are clipped content.
+        // The mask carries no isClippingPath flag — it is identified positionally.
+        if shape.isClippingGroup, let members = resolveClippingGroupMembers(shape, in: document), members.count >= 2 {
+            let content = Array(members.dropFirst())
+            svg += "<g id=\"clipgroup_\(shape.id.uuidString)\" clip-path=\"url(#clip_\(shape.id.uuidString))\">\n"
+
+            for memberShape in content {
+                if !memberShape.isVisible { continue }
+                if let doc = document, let memberObject = doc.findObject(by: memberShape.id), case .text = memberObject.objectType {
+                    svg += exportTextShape(memberShape, dpiScale: dpiScale, renderingMode: .glyphs)
+                } else {
+                    svg += exportShape(memberShape, dpiScale: dpiScale, document: document)
+                }
+            }
+
+            svg += "</g>\n"
+            return svg
+        }
+
         // Handle groups and clip groups with memberIDs (new system)
         if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
@@ -928,20 +947,45 @@ class SVGExporter {
         var processedClipPaths = Set<UUID>()
 
         for vectorObject in document.snapshot.objects.values {
-            if case .shape(let clipShape) = vectorObject.objectType {
-                if clipShape.isClippingPath && !processedClipPaths.contains(clipShape.id) {
-                    processedClipPaths.insert(clipShape.id)
+            guard case .shape(let candidate) = vectorObject.objectType else { continue }
 
-                    let pathData = generatePathData(from: clipShape.path, transform: clipShape.transform)
+            // Legacy: shape explicitly flagged as a clipping path (referenced by clippedByShapeID).
+            if candidate.isClippingPath && !processedClipPaths.contains(candidate.id) {
+                processedClipPaths.insert(candidate.id)
 
-                    defs += "<clipPath id=\"clip_\(clipShape.id.uuidString)\" clipPathUnits=\"userSpaceOnUse\">\n"
-                    defs += "  <path d=\"\(pathData)\"/>\n"
-                    defs += "</clipPath>\n"
-                }
+                let pathData = generatePathData(from: candidate.path, transform: candidate.transform)
+
+                defs += "<clipPath id=\"clip_\(candidate.id.uuidString)\" clipPathUnits=\"userSpaceOnUse\">\n"
+                defs += "  <path d=\"\(pathData)\"/>\n"
+                defs += "</clipPath>\n"
+            }
+
+            // Native clipping group: first member acts as the mask. Def id keyed off the group id.
+            if candidate.isClippingGroup && !processedClipPaths.contains(candidate.id),
+               let members = resolveClippingGroupMembers(candidate, in: document),
+               let mask = members.first {
+                processedClipPaths.insert(candidate.id)
+
+                let pathData = generatePathData(from: mask.path, transform: mask.transform)
+
+                defs += "<clipPath id=\"clip_\(candidate.id.uuidString)\" clipPathUnits=\"userSpaceOnUse\">\n"
+                defs += "  <path d=\"\(pathData)\"/>\n"
+                defs += "</clipPath>\n"
             }
         }
 
         return defs
+    }
+
+    private func resolveClippingGroupMembers(_ shape: VectorShape, in document: VectorDocument?) -> [VectorShape]? {
+        if !shape.memberIDs.isEmpty, let doc = document {
+            let resolved = shape.memberIDs.compactMap { doc.findShape(by: $0) }
+            return resolved.isEmpty ? nil : resolved
+        }
+        if !shape.groupedShapes.isEmpty {
+            return shape.groupedShapes
+        }
+        return nil
     }
 
     private func generateGradientDef(_ gradient: VectorGradient, id: String) -> String {

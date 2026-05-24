@@ -220,6 +220,53 @@ extension FileOperations {
             return
         }
 
+        // Native clipping group: first member is the mask, remainder are clipped content.
+        // Members carry no isClippingPath/clippedByShapeID flags — mask is identified positionally.
+        if shape.isClippingGroup,
+           let members = resolveClippingGroupMembersForPDF(shape, in: document),
+           members.count >= 2 {
+            let mask = members[0]
+            let content = Array(members.dropFirst())
+
+            context.saveGState()
+
+            context.concatenate(shape.transform)
+
+            if shape.blendMode != .normal {
+                context.setBlendMode(shape.blendMode.cgBlendMode)
+            }
+
+            if shape.opacity < 1.0 {
+                context.setAlpha(CGFloat(shape.opacity))
+            }
+
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+
+            // Apply mask transform → clip → revert so content shapes draw in the group's space.
+            context.concatenate(mask.transform)
+            let clipPath = convertVectorPathToCGPath(mask.path)
+            context.addPath(clipPath)
+            context.clip()
+            context.concatenate(mask.transform.inverted())
+
+            for memberShape in content where memberShape.isVisible {
+                try renderShapeToPDFWithImageSupport(
+                    shape: memberShape,
+                    context: context,
+                    isExport: isExport,
+                    useCMYK: useCMYK,
+                    textRenderingMode: textRenderingMode,
+                    document: document
+                )
+            }
+
+            context.endTransparencyLayer()
+
+            context.restoreGState()
+
+            return
+        }
+
         // Handle groups and clip groups with memberIDs (new system)
         if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
             context.saveGState()
@@ -343,6 +390,17 @@ extension FileOperations {
         }
 
         context.restoreGState()
+    }
+
+    static func resolveClippingGroupMembersForPDF(_ shape: VectorShape, in document: VectorDocument?) -> [VectorShape]? {
+        if !shape.memberIDs.isEmpty, let doc = document {
+            let resolved = shape.memberIDs.compactMap { doc.findShape(by: $0) }
+            return resolved.isEmpty ? nil : resolved
+        }
+        if !shape.groupedShapes.isEmpty {
+            return shape.groupedShapes
+        }
+        return nil
     }
 
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
