@@ -1,10 +1,12 @@
 import Foundation
+
 class TextContentCommand: BaseCommand {
     private let textID: UUID
     private let oldContent: String
     private let newContent: String
     private let oldBounds: CGRect?
     private let newBounds: CGRect?
+
     init(textID: UUID, oldContent: String, newContent: String, oldBounds: CGRect? = nil, newBounds: CGRect? = nil) {
         self.textID = textID
         self.oldContent = oldContent
@@ -12,6 +14,7 @@ class TextContentCommand: BaseCommand {
         self.oldBounds = oldBounds
         self.newBounds = newBounds
     }
+
     override func execute(on document: VectorDocument) {
         if var object = document.snapshot.objects[textID] {
             switch object.objectType {
@@ -28,6 +31,7 @@ class TextContentCommand: BaseCommand {
             }
         }
     }
+
     override func undo(on document: VectorDocument) {
         if var object = document.snapshot.objects[textID] {
             switch object.objectType {

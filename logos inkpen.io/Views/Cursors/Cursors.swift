@@ -1,6 +1,8 @@
 import SwiftUI
+
 #if os(macOS)
 import AppKit
+
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
@@ -46,6 +48,7 @@ let HandClosedCursor: NSCursor = {
     let originalHotspot = CGPoint(x: 9, y: 9)
     return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
+
 private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0, hotspotAdjustY: CGFloat = -1) -> NSCursor {
     let imgSize = CGSize(width: size, height: size)
     let centerX = floor(imgSize.width / 2) + 0.5
@@ -83,22 +86,28 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
 }
 let CrosshairCursor: NSCursor = makeCrosshairCursor()
 #endif
+
 struct HashableCGPoint: Hashable, Equatable {
     let point: CGPoint
+
     init(_ point: CGPoint) {
         self.point = point
     }
+
     static func == (lhs: HashableCGPoint, rhs: HashableCGPoint) -> Bool {
         return lhs.point.x == rhs.point.x && lhs.point.y == rhs.point.y
     }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(point.x)
         hasher.combine(point.y)
     }
 }
+
 struct BrushPoint {
     let location: CGPoint
     let pressure: Double
+
     init(location: CGPoint, pressure: Double = 1.0) {
         self.location = location
         self.pressure = max(0.0, min(1.0, pressure))

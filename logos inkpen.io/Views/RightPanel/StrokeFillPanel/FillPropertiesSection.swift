@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct FillPropertiesSection: View {
     let fillOpacity: Double
     let fillColor: VectorColor

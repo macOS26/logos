@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func outlineSelectedStrokes() {
         guard let layerIndex = selectedLayerIndex else { return }
         let shapesToOutline = getShapesForLayer(layerIndex).filter { viewState.selectedObjectIDs.contains($0.id) && $0.strokeStyle != nil }

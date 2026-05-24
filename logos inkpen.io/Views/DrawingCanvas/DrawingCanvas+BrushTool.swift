@@ -1,10 +1,13 @@
 import SwiftUI
 import simd
+
 extension DrawingCanvas {
+
     func isPathBoundsFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite &&
                rect.size.width.isFinite && rect.size.height.isFinite
     }
+
     internal func cancelBrushDrawing() {
         brushPath = nil
         brushRawPoints.removeAll()
@@ -12,6 +15,7 @@ extension DrawingCanvas {
         isBrushDrawing = false
         activeBrushShape = nil
     }
+
     internal func handleBrushDragStart(at location: CGPoint) {
         guard !isBrushDrawing else { return }
         isBrushDrawing = true
@@ -35,6 +39,7 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
     }
+
     internal func handleBrushDragUpdate(at location: CGPoint, pressure: Double? = nil) {
         guard isBrushDrawing else { return }
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
@@ -45,6 +50,7 @@ extension DrawingCanvas {
             brushRawPoints = Array(brushRawPoints.suffix(800))
         }
     }
+
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
         if brushRawPoints.count == 2 {
@@ -76,11 +82,13 @@ extension DrawingCanvas {
         cancelBrushDrawing()
         document.viewState.selectedObjectIDs.removeAll()
     }
+
     private func updateBrushPreview() {
         guard brushRawPoints.count >= 2 else { return }
         let newPreviewPath = generateLivePreviewPath()
         brushPreviewPath = newPreviewPath
     }
+
     private func generateLivePreviewPath() -> VectorPath {
         guard brushRawPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
@@ -140,6 +148,7 @@ extension DrawingCanvas {
         }
         return VectorPath(elements: [.move(to: VectorPoint(dedupedLocations[0]))])
     }
+
     private func processBrushStroke() {
         guard brushRawPoints.count >= 2,
               activeBrushShape != nil,
@@ -179,6 +188,7 @@ extension DrawingCanvas {
         }
         document.addShapeToFront(finalShape)
     }
+
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
         guard brushRawPoints.count >= 2 else { return }
@@ -273,6 +283,7 @@ extension DrawingCanvas {
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
     }
+
     private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
@@ -318,6 +329,7 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed())
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
+
     private func interpolatePressureForPoint(_ targetPoint: CGPoint, from rawPoints: [BrushPoint]) -> Double {
         guard !rawPoints.isEmpty else { return 1.0 }
         var firstClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
@@ -343,6 +355,7 @@ extension DrawingCanvas {
         }
         return firstClosest.pressure
     }
+
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
@@ -380,6 +393,7 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed())
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
+
     private func generateOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
         var offsetPoints: [CGPoint] = []
         for i in 0..<centerPoints.count {
@@ -428,6 +442,7 @@ extension DrawingCanvas {
         }
         return offsetPoints
     }
+
     private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath) -> VectorPath {
         var elements: [PathElement] = []
         elements.append(contentsOf: leftEdgePath.elements)

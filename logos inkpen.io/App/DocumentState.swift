@@ -1,14 +1,17 @@
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
+
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
+
     private func getDocumentBaseName() -> String {
         if let fileURL = NSDocumentController.shared.currentDocument?.fileURL {
             return fileURL.deletingPathExtension().lastPathComponent
         }
         return "Untitled"
     }
+
     @Published var isFocused = false
     @Published var canUndo = false
     @Published var canRedo = false
@@ -33,6 +36,7 @@ class DocumentState: ObservableObject {
     private var pasteboardTimer: Timer?
     private var missingImageObserver: NSObjectProtocol?
     private var promptedMissingImages = Set<UUID>()
+
     init() {
         DocumentStateRegistry.shared.register(self)
         startPasteboardMonitoring()
@@ -50,6 +54,7 @@ class DocumentState: ObservableObject {
             self.promptForMissingImage(shapeID: shapeID, originalPath: path)
         }
     }
+
     deinit {
         cleanup()
         if let observer = missingImageObserver {
@@ -61,6 +66,7 @@ class DocumentState: ObservableObject {
         print("🧹 DocumentState.deinit — fully released")
         #endif
     }
+
     func setDocument(_ document: VectorDocument) {
         self.document = document
         updateAllStates()
@@ -68,6 +74,7 @@ class DocumentState: ObservableObject {
             await setupDocumentObserversAsync()
         }
     }
+
     func cleanup() {
         selectionCancellable?.cancel()
         selectionCancellable = nil
@@ -85,6 +92,7 @@ class DocumentState: ObservableObject {
         MemoryDiag.checkpoint("DocumentState.cleanup")
         document = nil
     }
+
     func forceCleanup() {
         isTerminating = true
         document = nil
@@ -105,6 +113,7 @@ class DocumentState: ObservableObject {
         canUnwrapWarpObject = false
         canExpandWarpObject = false
     }
+
     private func startPasteboardMonitoring() {
         pasteboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self = self, !self.isTerminating else { return }
@@ -117,6 +126,7 @@ class DocumentState: ObservableObject {
     }
     private var selectionCancellable: AnyCancellable?
     private var commandManagerCancellable: AnyCancellable?
+
     private func setupDocumentObserversAsync() async {
         guard let document = document else { return }
         await MainActor.run {
@@ -128,6 +138,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     private func updateAllStates() {
         guard !isTerminating else {
             return
@@ -157,6 +168,7 @@ class DocumentState: ObservableObject {
         canCut = hasSelection
         canCopy = hasSelection
         canPaste = ClipboardManager.shared.canPaste()
+
         func isShape(_ newVectorObject: VectorObject) -> Bool {
             switch newVectorObject.objectType {
             case .shape, .image, .warp, .group, .clipGroup, .clipMask:
@@ -228,6 +240,7 @@ class DocumentState: ObservableObject {
             return false
         }()
     }
+
     private func hydrateGroupImagesRecursively(_ shape: VectorShape, document: VectorDocument, count: inout Int) {
         if shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
             if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
@@ -252,6 +265,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func showImportDialog() {
         guard let document = document else { return }
         let panel = NSOpenPanel()
@@ -317,6 +331,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func exportSVG() {
         guard let document = document else { return }
         let panel = NSSavePanel()
@@ -377,17 +392,21 @@ class DocumentState: ObservableObject {
         glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
         linesRadio.target = svgHandler
         linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
+
         class ColorSpaceHandler: NSObject {
             let displayP3Radio: NSButton
             let sRGBRadio: NSButton
+
             init(displayP3Radio: NSButton, sRGBRadio: NSButton) {
                 self.displayP3Radio = displayP3Radio
                 self.sRGBRadio = sRGBRadio
             }
+
             @objc func selectDisplayP3(_ sender: NSButton) {
                 displayP3Radio.state = .on
                 sRGBRadio.state = .off
             }
+
             @objc func selectSRGB(_ sender: NSButton) {
                 displayP3Radio.state = .off
                 sRGBRadio.state = .on
@@ -447,6 +466,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func exportPDF() {
         guard let document = document else { return }
         let panel = NSSavePanel()
@@ -537,6 +557,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func exportPNG() {
         guard let document = document else { return }
         let panel = NSSavePanel()
@@ -591,6 +612,7 @@ class DocumentState: ObservableObject {
         iconCheckbox.target = iconCheckbox
         iconCheckbox.action = #selector(NSButton.performClick(_:))
         iconCheckbox.sendAction(on: .leftMouseUp)
+
         class IconCheckboxHandler: NSObject {
             let scaleLabel: NSTextField
             let scalePopup: NSPopUpButton
@@ -598,6 +620,7 @@ class DocumentState: ObservableObject {
             let iconSizesLabel: NSTextField
             let iconCheckbox: NSButton
             let textToOutlinesCheckbox: NSButton
+
             init(scaleLabel: NSTextField, scalePopup: NSPopUpButton, bgCheckbox: NSButton, iconSizesLabel: NSTextField, iconCheckbox: NSButton, textToOutlinesCheckbox: NSButton) {
                 self.scaleLabel = scaleLabel
                 self.scalePopup = scalePopup
@@ -606,6 +629,7 @@ class DocumentState: ObservableObject {
                 self.iconCheckbox = iconCheckbox
                 self.textToOutlinesCheckbox = textToOutlinesCheckbox
             }
+
             @objc func toggleIconMode(_ sender: NSButton) {
                 let isIconMode = sender.state == .on
                 scaleLabel.isHidden = isIconMode
@@ -618,6 +642,7 @@ class DocumentState: ObservableObject {
                     scalePopup.selectItem(withTitle: "Icon Set")
                 }
             }
+
             @objc func scaleChanged(_ sender: NSPopUpButton) {
                 let selectedItem = sender.titleOfSelectedItem ?? ""
                 let isIconOption = selectedItem == "Icon Set" || selectedItem.contains("icon")
@@ -717,6 +742,7 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func exportAutoDeskSVG() {
         guard let document = document else { return }
         let panel = NSSavePanel()
@@ -805,92 +831,113 @@ class DocumentState: ObservableObject {
             }
         }
     }
+
     func undo() {
         document?.undo()
         updateAllStates()
     }
+
     func redo() {
         document?.redo()
         updateAllStates()
     }
+
     func cut() {
         guard let document = document else { return }
         ClipboardManager.shared.cut(from: document)
         updateAllStates()
     }
+
     func copy() {
         guard let document = document else { return }
         ClipboardManager.shared.copy(from: document)
         updateAllStates()
     }
+
     func paste() {
         guard let document = document else { return }
         ClipboardManager.shared.paste(to: document)
         updateAllStates()
     }
+
     func pasteInBack() {
         guard let document = document else { return }
         ClipboardManager.shared.pasteInBack(to: document)
         updateAllStates()
     }
+
     func pasteInFront() {
         guard let document = document else { return }
         ClipboardManager.shared.pasteInFront(to: document)
         updateAllStates()
     }
+
     func selectAll() {
         document?.selectAll()
         updateAllStates()
     }
+
     func deselectAll() {
         document?.clearSelectionWithUndo()
         updateAllStates()
     }
+
     func delete() {
         guard let document = document else { return }
         document.removeSelectedObjects()
         updateAllStates()
     }
+
     func bringToFront() {
         document?.bringSelectedToFront()
         updateAllStates()
     }
+
     func bringForward() {
         document?.bringSelectedForward()
         updateAllStates()
     }
+
     func sendBackward() {
         document?.sendSelectedBackward()
         updateAllStates()
     }
+
     func sendToBack() {
         document?.sendSelectedToBack()
         updateAllStates()
     }
+
     func groupObjects() {
         document?.groupSelectedObjects()
         updateAllStates()
     }
+
     func ungroupObjects() {
         document?.ungroupSelectedObjects()
         updateAllStates()
     }
+
     func flattenObjects() {
         document?.flattenSelectedObjects()
         updateAllStates()
     }
+
     func unflattenObjects() {
         document?.unflattenSelectedObjects()
         updateAllStates()
     }
+
     func alignByOrigin() {
         document?.alignSelectedObjectsByOrigin()
         updateAllStates()
     }
+
     func alignByOriginX() {
         document?.alignSelectedObjectsByOriginX()
         updateAllStates()
     }
+
     func alignByOriginY() {
         document?.alignSelectedObjectsByOriginY()
         updateAllStates()
@@ -899,6 +946,7 @@ class DocumentState: ObservableObject {
         guard let doc = document else { return false }
         return doc.viewState.orderedSelectedObjectIDs.count >= 2
     }
+
     func duplicate() {
         guard let document = document else { return }
         if !document.viewState.selectedObjectIDs.isEmpty {
@@ -908,58 +956,73 @@ class DocumentState: ObservableObject {
         }
         updateAllStates()
     }
+
     func makeCompoundPath() {
         document?.makeCompoundPath()
         updateAllStates()
     }
+
     func releaseCompoundPath() {
         document?.releaseCompoundPath()
         updateAllStates()
     }
+
     func makeLoopingPath() {
         document?.makeLoopingPath()
         updateAllStates()
     }
+
     func releaseLoopingPath() {
         document?.releaseLoopingPath()
         updateAllStates()
     }
+
     func unwrapWarpObject() {
         document?.unwrapWarpObject()
         updateAllStates()
     }
+
     func expandWarpObject() {
         document?.expandWarpObject()
         updateAllStates()
     }
+
     func lockSelectedObjects() {
         document?.lockSelectedObjects()
         updateAllStates()
     }
+
     func unlockAllObjects() {
         document?.unlockAllObjects()
         updateAllStates()
     }
+
     func hideSelectedObjects() {
         document?.hideSelectedObjects()
         updateAllStates()
     }
+
     func showAllObjects() {
         document?.showAllObjects()
         updateAllStates()
     }
+
     func zoomIn() {
         document?.requestZoom(to: 0.0, mode: .zoomIn)
     }
+
     func zoomOut() {
         document?.requestZoom(to: 0.0, mode: .zoomOut)
     }
+
     func fitToPage() {
         document?.requestZoom(to: 0.0, mode: .fitToPage)
     }
+
     func actualSize() {
         document?.requestZoom(to: 1.0, mode: .actualSize)
     }
+
     func toggleColorKeylineView() {
         guard let doc = document else { return }
         if doc.viewState.viewMode == .color {
@@ -968,38 +1031,48 @@ class DocumentState: ObservableObject {
             doc.viewState.viewMode = .color
         }
     }
+
     func toggleRulers() {
         document?.gridSettings.showRulers.toggle()
     }
+
     func toggleGrid() {
         document?.settings.showGrid.toggle()
         document?.gridSettings.showGrid = document?.settings.showGrid ?? false
     }
+
     func toggleSnapToGrid() {
         document?.gridSettings.snapToGrid.toggle()
         document?.settings.snapToGrid = document?.gridSettings.snapToGrid ?? false
     }
+
     func toggleSnapToPoint() {
         document?.gridSettings.snapToPoint.toggle()
         document?.settings.snapToPoint = document?.gridSettings.snapToPoint ?? false
     }
+
     func toggleGuides() {
         document?.gridSettings.showGuides.toggle()
     }
+
     func toggleLockGuides() {
         document?.gridSettings.guidesLocked.toggle()
     }
+
     func toggleSnapToGuides() {
         document?.gridSettings.snapToGuides.toggle()
     }
+
     func clearGuides() {
         document?.clearGuides()
     }
+
     func createOutlines() {
         guard let document = document, !document.viewState.selectedObjectIDs.isEmpty else { return }
         document.convertSelectedTextToOutlines()
         updateAllStates()
     }
+
     func embedSelectedLinkedImages() {
         guard let document = document else { return }
         for layerIndex in document.snapshot.layers.indices {
@@ -1023,6 +1096,7 @@ class DocumentState: ObservableObject {
         }
         updateAllStates()
     }
+
     func cleanupDuplicatePoints() {
         guard let document = document else { return }
         if !document.viewState.selectedObjectIDs.isEmpty {
@@ -1032,16 +1106,19 @@ class DocumentState: ObservableObject {
         }
         updateAllStates()
     }
+
     func cleanupAllDuplicatePoints() {
         guard let document = document else { return }
         ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
         updateAllStates()
     }
+
     func switchToTool(_ tool: DrawingTool) {
         guard let document = document else { return }
         document.viewState.currentTool = tool
         ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
     }
+
     static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
         let textObjects = document.snapshot.objects.values.compactMap { obj -> VectorText? in
             guard case .text(let shape) = obj.objectType else { return nil }
@@ -1065,6 +1142,7 @@ class DocumentState: ObservableObject {
         }
         document.viewState.selectedObjectIDs.removeAll()
     }
+
     private func promptForMissingImage(shapeID: UUID, originalPath: String) {
         guard let document = document else { return }
         let filename = URL(fileURLWithPath: originalPath).lastPathComponent

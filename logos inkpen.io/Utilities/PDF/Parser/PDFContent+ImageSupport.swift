@@ -1,7 +1,9 @@
 import SwiftUI
 import PDFKit
 import AppKit
+
 extension PDFCommandParser {
+
     func processImageXObject(name: String, xObjectStream: CGPDFStreamRef, currentTransform: CGAffineTransform) {
         if hasClipOperatorPending {
             createClippingPathFromPending()
@@ -267,6 +269,7 @@ extension PDFCommandParser {
             hasUpcomingTransparentImage = false
         }
     }
+
     func handleXObjectWithImageSupport(scanner: CGPDFScannerRef) {
         var namePtr: UnsafePointer<CChar>?
         guard CGPDFScannerPopName(scanner, &namePtr) else {
@@ -280,6 +283,7 @@ extension PDFCommandParser {
         let name = String(cString: namePtr)
         processXObjectWithImageSupport(name: name)
     }
+
     func processXObjectWithImageSupport(name: String) {
         guard let page = currentPage,
               let resourceDict = page.dictionary else {
@@ -324,7 +328,9 @@ extension PDFCommandParser {
         }
     }
 }
+
 extension PDFCommandParser {
+
     func handleClipOperator() {
         if isInCompoundPath || !compoundPathParts.isEmpty {
             hasClipOperatorPending = true
@@ -375,6 +381,7 @@ extension PDFCommandParser {
             pendingClippingPath = clipShape
         }
     }
+
     func createClippingPathFromPending() {
         guard hasClipOperatorPending else { return }
         var allPathCommands: [[PathCommand]] = []
@@ -431,6 +438,7 @@ extension PDFCommandParser {
             currentPath.removeAll()
         }
     }
+
     func resetClippingState() {
         if isInsideClippingPath {
             if let pendingClip = pendingClippingPath {
@@ -441,6 +449,7 @@ extension PDFCommandParser {
             currentClippingPathId = nil
         }
     }
+
     func finalizeClippingGroup() {
         if let pendingClip = pendingClippingPath {
             shapes.append(pendingClip)
@@ -455,6 +464,7 @@ extension PDFCommandParser {
         clipOperatorPath.removeAll()
         currentPath.removeAll()
     }
+
     func saveGraphicsState() {
         let state = PDFGraphicsState(
             transformMatrix: currentTransformMatrix,
@@ -467,6 +477,7 @@ extension PDFCommandParser {
         )
         graphicsStateStack.append(state)
     }
+
     func restoreGraphicsState() {
         finalizeClippingGroup()
         guard !graphicsStateStack.isEmpty else {
@@ -482,6 +493,7 @@ extension PDFCommandParser {
         pendingClippingPath = state.pendingClippingPath
     }
 }
+
 fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, hasAlpha: Bool) -> Data? {
     let bytesPerPixel = 4
     let bitsPerComponent = 8

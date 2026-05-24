@@ -1,6 +1,8 @@
 import Foundation
+
 class AddObjectCommand: BaseCommand {
     private let objectsToAdd: [UUID: VectorObject]
+
     init(objects: [VectorObject]) {
         var dict: [UUID: VectorObject] = [:]
         for obj in objects {
@@ -8,9 +10,11 @@ class AddObjectCommand: BaseCommand {
         }
         self.objectsToAdd = dict
     }
+
     convenience init(object: VectorObject) {
         self.init(objects: [object])
     }
+
     override func execute(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for (uuid, obj) in objectsToAdd {
@@ -25,6 +29,7 @@ class AddObjectCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for (uuid, obj) in objectsToAdd {

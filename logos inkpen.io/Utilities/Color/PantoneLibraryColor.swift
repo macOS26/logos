@@ -1,11 +1,13 @@
 import SwiftUI
 import Combine
+
 struct PantoneLibraryColor: Codable, Hashable {
     var pantone: String
     var name: String
     var rgbEquivalent: RGBColor
     var cmykEquivalent: CMYKColor
     var hsbEquivalent: HSBColorModel
+
     init(pantone: String, hex: String) {
         let cleanedPantone = pantone
             .replacingOccurrences(of: "-c", with: "")
@@ -20,6 +22,7 @@ struct PantoneLibraryColor: Codable, Hashable {
     var color: Color {
         rgbEquivalent.color
     }
+
     static func hexToRGB(_ hex: String) -> RGBColor {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
@@ -30,6 +33,7 @@ struct PantoneLibraryColor: Codable, Hashable {
         let blue = Double(rgb & 0x0000FF) / 255.0
         return RGBColor(red: red, green: green, blue: blue)
     }
+
     static func rgbToCMYK(_ rgb: RGBColor) -> CMYKColor {
         let k = 1.0 - max(rgb.red, max(rgb.green, rgb.blue))
         if k == 1.0 {
@@ -40,6 +44,7 @@ struct PantoneLibraryColor: Codable, Hashable {
         let y = (1.0 - rgb.blue - k) / (1.0 - k)
         return CMYKColor(cyan: c, magenta: m, yellow: y, black: k)
     }
+
     func distanceFrom(hsb: HSBColorModel) -> Double {
         let hueDiff = min(abs(hsbEquivalent.hue - hsb.hue), 360 - abs(hsbEquivalent.hue - hsb.hue))
         let satDiff = abs(hsbEquivalent.saturation - hsb.saturation)
@@ -47,19 +52,25 @@ struct PantoneLibraryColor: Codable, Hashable {
         return hueDiff * 0.5 + satDiff * 100 * 0.3 + briDiff * 100 * 0.2
     }
 }
+
 class PantoneLibrary: ObservableObject {
     static let shared = PantoneLibrary()
+
     @Published var allColors: [PantoneLibraryColor] = []
     private var isLoaded = false
+
     private init() {}
+
     func ensureLoaded() {
         guard !isLoaded else { return }
         loadPantoneColors()
     }
+
     func releaseColors() {
         allColors = []
         isLoaded = false
     }
+
     private func loadPantoneColors() {
         guard let url = Bundle.main.url(forResource: "pantone_library", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -79,6 +90,7 @@ class PantoneLibrary: ObservableObject {
         }
         isLoaded = true
     }
+
     func findClosestMatch(to hsb: HSBColorModel) -> PantoneLibraryColor? {
         ensureLoaded()
         guard !allColors.isEmpty else { return nil }
@@ -93,6 +105,7 @@ class PantoneLibrary: ObservableObject {
         }
         return closestColor
     }
+
     func searchColors(query: String) -> [PantoneLibraryColor] {
         ensureLoaded()
         let lowercaseQuery = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -110,6 +123,7 @@ class PantoneLibrary: ObservableObject {
         }
     }
 }
+
 struct PantoneRawData: Codable {
     let pms: String
     let hex: String

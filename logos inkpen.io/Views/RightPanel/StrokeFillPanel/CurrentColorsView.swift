@@ -1,31 +1,40 @@
 import SwiftUI
+
 struct ColorLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption2)
             .foregroundColor(Color.ui.secondaryText)
     }
 }
+
 struct ColorSwatchButtonStyle: ButtonStyle {
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
 extension View {
+
     func colorLabelStyle() -> some View {
         modifier(ColorLabelStyle())
     }
 }
+
 struct CurrentColorsView: View {
     let strokeColor: VectorColor
     let fillColor: VectorColor
     let strokeOpacity: Double
     let fillOpacity: Double
+
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
+
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
@@ -36,10 +45,12 @@ struct CurrentColorsView: View {
     let onAddColorSwatch: (VectorColor) -> Void
     let onRemoveColorSwatch: (VectorColor) -> Void
     let onSetActiveColor: (VectorColor) -> Void
+
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     let onSetActiveColorTarget: (ColorTarget) -> Void
     let onColorSelected: (VectorColor) -> Void
+
     @Environment(AppState.self) private var appState
     @State private var popoverManager = SlidingPopoverManager()
     @State private var anchorViews: [String: NSView] = [:]
@@ -117,18 +128,22 @@ struct CurrentColorsView: View {
         .cornerRadius(8)
     }
 }
+
 private struct ColorSwatchView: View {
     let color: VectorColor
     let opacity: Double
     let label: String
     let anchorKey: String
     let popoverManager: SlidingPopoverManager
+
     @Binding var anchorViews: [String: NSView]
     @Binding var activeAnchorKey: String?
     let appState: AppState
+
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
+
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
@@ -139,10 +154,12 @@ private struct ColorSwatchView: View {
     let onAddColorSwatch: (VectorColor) -> Void
     let onRemoveColorSwatch: (VectorColor) -> Void
     let onSetActiveColor: (VectorColor) -> Void
+
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     let onColorSelected: (VectorColor) -> Void
     let onSetActiveColorTarget: (ColorTarget) -> Void
+
     @State private var localActiveColorTarget: ColorTarget
     init(color: VectorColor, opacity: Double, label: String, anchorKey: String, popoverManager: SlidingPopoverManager, anchorViews: Binding<[String: NSView]>, activeAnchorKey: Binding<String?>, appState: AppState, snapshot: Binding<DocumentSnapshot>, selectedObjectIDs: Set<UUID>, activeColorTarget: ColorTarget, colorMode: Binding<ColorMode>, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, defaultFillOpacity: Double, defaultStrokeOpacity: Double, currentSwatches: [VectorColor], onTriggerLayerUpdates: @escaping (Set<Int>) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, onRemoveColorSwatch: @escaping (VectorColor) -> Void, onSetActiveColor: @escaping (VectorColor) -> Void, colorDeltaColor: Binding<VectorColor?>, colorDeltaOpacity: Binding<Double?>, onColorSelected: @escaping (VectorColor) -> Void, onSetActiveColorTarget: @escaping (ColorTarget) -> Void) {
         self.color = color
@@ -208,6 +225,7 @@ private struct ColorSwatchView: View {
                 .colorLabelStyle()
         }
     }
+
     private func showPopover() {
         guard let anchorView = anchorViews[anchorKey] else { return }
         localActiveColorTarget = (anchorKey == "fill") ? .fill : .stroke

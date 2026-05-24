@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ColorDefaults: Codable {
     var fillColor: VectorColor
     var strokeColor: VectorColor
@@ -8,6 +9,7 @@ struct ColorDefaults: Codable {
     var rgbSwatches: [VectorColor]
     var cmykSwatches: [VectorColor]
     var hsbSwatches: [VectorColor]
+
     init() {
         self.fillColor = ColorManager.defaultBlue
         self.strokeColor = ColorManager.defaultRed
@@ -20,6 +22,7 @@ struct ColorDefaults: Codable {
         loadFromUserDefaults()
     }
     private static let userDefaultsKey = "logosinkpen-colorsv2"
+
     mutating func loadFromUserDefaults() {
         guard let data = UserDefaults.standard.data(forKey: Self.userDefaultsKey),
               let dict = try? JSONDecoder().decode([String: Data].self, from: data) else {
@@ -60,6 +63,7 @@ struct ColorDefaults: Codable {
             hsbSwatches = swatches.count == 40 ? swatches : Self.createDefaultHSBSwatches()
         }
     }
+
     static func createDefaultRGBSwatches() -> [VectorColor] {
         var colors: [VectorColor] = []
         colors.append(.black)
@@ -104,6 +108,7 @@ struct ColorDefaults: Codable {
         colors.append(.rgb(RGBColor(red: 0.75, green: 0.75, blue: 0.75)))
         return Array(colors.prefix(40))
     }
+
     static func createDefaultCMYKSwatches() -> [VectorColor] {
         var colors: [VectorColor] = []
         colors.append(.black)
@@ -126,6 +131,7 @@ struct ColorDefaults: Codable {
         }
         return Array(colors.prefix(40))
     }
+
     static func createDefaultHSBSwatches() -> [VectorColor] {
         var colors: [VectorColor] = []
         colors.append(.black)
@@ -149,6 +155,7 @@ struct ColorDefaults: Codable {
         }
         return Array(colors.prefix(40))
     }
+
     func saveToUserDefaults() {
         var dict: [String: Data] = [:]
         if let fillData = try? JSONEncoder().encode(fillColor) {

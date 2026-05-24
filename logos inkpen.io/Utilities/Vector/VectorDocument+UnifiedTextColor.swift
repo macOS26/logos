@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func updateTextFontFamilyPreview(id: UUID, fontFamily: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -13,6 +15,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextFontVariantPreview(id: UUID, fontVariant: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -25,6 +28,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -37,6 +41,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -49,6 +54,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
         if let textObject = findText(by: id) {
             var previewTypography = textObject.typography
@@ -64,6 +70,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextLineSpacingPreview(id: UUID, lineSpacing: Double) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -76,6 +83,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextLineHeightPreview(id: UUID, lineHeight: Double) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -88,6 +96,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateTextFontSizePreviewDirect(id: UUID, typography: TypographyProperties) {
         textPreviewTypography[id] = typography
         NotificationCenter.default.post(
@@ -96,6 +105,7 @@ extension VectorDocument {
             userInfo: ["textID": id, "typography": typography]
         )
     }
+
     func updateTextLineSpacingPreviewDirect(id: UUID, typography: TypographyProperties) {
         textPreviewTypography[id] = typography
         NotificationCenter.default.post(
@@ -104,6 +114,7 @@ extension VectorDocument {
             userInfo: ["textID": id, "typography": typography]
         )
     }
+
     func updateTextLineHeightPreviewDirect(id: UUID, typography: TypographyProperties) {
         textPreviewTypography[id] = typography
         NotificationCenter.default.post(
@@ -112,9 +123,11 @@ extension VectorDocument {
             userInfo: ["textID": id, "typography": typography]
         )
     }
+
     func clearTextPreviewTypography(id: UUID) {
         textPreviewTypography.removeValue(forKey: id)
     }
+
     func updateTextFillOpacityPreview(id: UUID, opacity: Double) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -127,6 +140,7 @@ extension VectorDocument {
             )
         }
     }
+
     func updateShapeFillOpacityPreview(id: UUID, opacity: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -134,6 +148,7 @@ extension VectorDocument {
             userInfo: ["shapeID": id, "fillOpacity": opacity]
         )
     }
+
     func updateShapeStrokeOpacityPreview(id: UUID, opacity: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -141,6 +156,7 @@ extension VectorDocument {
             userInfo: ["shapeID": id, "strokeOpacity": opacity]
         )
     }
+
     func updateShapeStrokeWidthPreview(id: UUID, width: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -148,6 +164,7 @@ extension VectorDocument {
             userInfo: ["shapeID": id, "strokeWidth": width]
         )
     }
+
     func updateShapeStrokePlacementPreview(id: UUID, placement: StrokePlacement) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -155,6 +172,7 @@ extension VectorDocument {
             userInfo: ["shapeID": id, "strokePlacement": placement.rawValue]
         )
     }
+
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
         updateShapeByID(id) { shape in
             if shape.typography != nil {
@@ -167,11 +185,13 @@ extension VectorDocument {
             }
         }
     }
+
     func updateTextTypographyInUnified(id: UUID, typography: TypographyProperties) {
         updateShapeByID(id) { shape in
             shape.typography = typography
         }
     }
+
     func updateTextStrokeColorInUnified(id: UUID, color: VectorColor) {
         updateShapeByID(id) { shape in
             if shape.typography != nil {

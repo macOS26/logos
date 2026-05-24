@@ -1,13 +1,17 @@
 import SwiftUI
 import simd
+
 extension DrawingCanvas {
+
     @discardableResult
     internal func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
         return screenToCanvas([point], geometry: geometry)[0]
     }
+
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         return screenToCanvasCPU(points)
     }
+
     private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
         if points.count > 100 {
             return GPUCoordinateTransform.shared.transformPoints(
@@ -25,12 +29,15 @@ extension DrawingCanvas {
             return CGPoint(x: CGFloat(canvasVec.x), y: CGFloat(canvasVec.y))
         }
     }
+
     internal func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
         return canvasToScreen([point], geometry: geometry)[0]
     }
+
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         return canvasToScreenCPU(points, geometry: geometry)
     }
+
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         if points.count > 100 {
             return GPUCoordinateTransform.shared.transformPoints(
@@ -48,6 +55,7 @@ extension DrawingCanvas {
             return CGPoint(x: CGFloat(screenVec.x), y: CGFloat(screenVec.y))
         }
     }
+
     internal func setupDefaultView(geometry: GeometryProxy) {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
@@ -75,6 +83,7 @@ extension DrawingCanvas {
         )
         initialZoomLevel = zoomLevel
     }
+
     internal func fitToPage(geometry: GeometryProxy) {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
@@ -101,6 +110,7 @@ extension DrawingCanvas {
         )
         initialZoomLevel = zoomLevel
     }
+
     internal func actualSize(geometry: GeometryProxy) {
         let newZoomLevel: Double = 1.0
         let rulerThickness: CGFloat = 20
@@ -123,6 +133,7 @@ extension DrawingCanvas {
         )
         initialZoomLevel = CGFloat(newZoomLevel)
     }
+
     internal func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy, isLive: Bool = false) {
         let oldZoomLevel = zoomLevel
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
@@ -142,6 +153,7 @@ extension DrawingCanvas {
             canvasOffset = newOffset
         }
     }
+
     internal func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
         let oldZoomLevel = zoomLevel
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }

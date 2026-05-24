@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum ViewMode: String, CaseIterable, Codable {
     case color = "Color View"
     case keyline = "Keyline View"

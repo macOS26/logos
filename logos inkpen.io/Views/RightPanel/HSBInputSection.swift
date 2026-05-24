@@ -1,7 +1,10 @@
 import SwiftUI
+
 struct HSBInputSection: View {
+
     @Binding var sharedColor: VectorColor
     let activeColorTarget: ColorTarget
+
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Binding var colorDeltaColor: VectorColor?
@@ -9,6 +12,7 @@ struct HSBInputSection: View {
     let onAddColorSwatch: (VectorColor) -> Void
     let disableSetActiveColor: Bool
     let onDismiss: (() -> Void)?
+
     init(sharedColor: Binding<VectorColor>, activeColorTarget: ColorTarget, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, colorDeltaColor: Binding<VectorColor?>, onSetActiveColor: @escaping (VectorColor) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, disableSetActiveColor: Bool = false, onDismiss: (() -> Void)? = nil) {
         self._sharedColor = sharedColor
         self.activeColorTarget = activeColorTarget
@@ -20,6 +24,7 @@ struct HSBInputSection: View {
         self.disableSetActiveColor = disableSetActiveColor
         self.onDismiss = onDismiss
     }
+
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
@@ -74,6 +79,7 @@ struct HSBInputSection: View {
         let b = (Double(brightnessValue) ?? 0) / 100.0
         return Color(hue: h/360.0, saturation: s/100.0, brightness: b)
     }
+
     private func swiftUIColor(h: Double, s: Double, b: Double) -> Color {
         return Color(hue: h/360.0, saturation: s/100.0, brightness: b/100.0)
     }
@@ -365,6 +371,7 @@ struct HSBInputSection: View {
             loadFromSharedColor()
         }
     }
+
     private func updateHexFromHSB() {
         let userHue = Double(hueValue) ?? 0
         let normalizedHue = userHue >= 360 ? 0 : userHue
@@ -379,6 +386,7 @@ struct HSBInputSection: View {
         hexValue = String(format: "%02x%02x%02x", r, g, b_value)
         isUpdatingHexFromHSB = false
     }
+
     private func updateSharedColor() {
         if isDisplayingGradient {
             return
@@ -395,6 +403,7 @@ struct HSBInputSection: View {
             defaultStrokeColor = hsbColor
         }
     }
+
     private func loadFromSharedColor() {
         isDisplayingGradient = false
         var hsbColor: HSBColorModel
@@ -439,6 +448,7 @@ struct HSBInputSection: View {
             brightness: hsbColor.brightness * 100
         )
     }
+
     private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
         isProgrammaticallyUpdating = true
         hueValue = String(Int(hue))
@@ -450,6 +460,7 @@ struct HSBInputSection: View {
         updateHexFromHSB()
         isProgrammaticallyUpdating = false
     }
+
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
         if !disableSetActiveColor {
@@ -457,6 +468,7 @@ struct HSBInputSection: View {
         }
         updateSharedColor()
     }
+
     private func addColorToSwatches() {
         let exactHSBColor = HSBColorModel(
             hue: Double(hueValue) ?? 0,
@@ -466,6 +478,7 @@ struct HSBInputSection: View {
         let vectorColor = VectorColor.hsb(exactHSBColor)
         onAddColorSwatch(vectorColor)
     }
+
     private func performLivePMSSearch(_ query: String) {
         let cleanedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if cleanedQuery.isEmpty {
@@ -488,6 +501,7 @@ struct HSBInputSection: View {
             livePMSPreview = nil
         }
     }
+
     private func searchAndApplyPMSColor() {
         let cleanedEntry = pmsEntryText
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -510,10 +524,12 @@ struct HSBInputSection: View {
             onAddColorSwatch(pmsColor)
         }
     }
+
     private func applyHSBColorToActiveSelection() {
         applyColorToActiveSelection()
         addColorToSwatches()
     }
+
     private func applyPMSColorToActiveSelection() {
         if let pantoneColor = livePreviewColor.pms {
             let pmsVectorColor = VectorColor.pantone(pantoneColor)

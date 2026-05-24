@@ -1,11 +1,14 @@
 import SwiftUI
 import Combine
+
 struct ScaleHandles: View {
+
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
+
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
     @State var isScaling = false
@@ -290,5 +293,6 @@ struct ScaleHandles: View {
             cachedPreviewPath = path
         }
     }
+
     @State var keyEventMonitor: Any?
 }

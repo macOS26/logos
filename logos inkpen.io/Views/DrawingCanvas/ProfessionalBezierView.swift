@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ProfessionalBezierView: View {
     let document: VectorDocument
     let zoomLevel: Double
@@ -11,6 +12,7 @@ struct ProfessionalBezierView: View {
     let showContinuePathHint: Bool
     let closePathHintLocation: CGPoint
     let continuePathHintLocation: CGPoint
+
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -119,6 +121,7 @@ struct ProfessionalBezierView: View {
             }
         }
     }
+
     private func drawBezierHandle(_ handlePoint: VectorPoint, anchor: CGPoint, context: inout GraphicsContext, zoom: CGFloat) {
         let handleLocation = CGPoint(x: handlePoint.x, y: handlePoint.y)
         var linePath = Path()

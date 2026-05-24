@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     @ViewBuilder
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
         if document.viewState.currentTool == .cornerRadius,
@@ -37,6 +39,7 @@ extension DrawingCanvas {
             )
         }
     }
+
     @ViewBuilder
     private func cornerRadiusLivePreview(shape: VectorShape, geometry: GeometryProxy) -> some View {
         let currentBounds = shape.path.cgPath.boundingBox
@@ -52,6 +55,7 @@ extension DrawingCanvas {
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
     }
+
     private func handleCornerRadiusCanvasDrag(
         value: DragGesture.Value,
         shape: VectorShape,
@@ -87,6 +91,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func handleCornerRadiusToolDrag(
         cornerIndex: Int,
         value: DragGesture.Value,
@@ -151,6 +156,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func finishCornerRadiusToolDrag() {
         if isDraggingCorner {
             if let selectedShape = getSelectedRectangleShape() {

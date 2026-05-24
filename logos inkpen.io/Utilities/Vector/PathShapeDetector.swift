@@ -1,5 +1,7 @@
 import CoreGraphics
+
 enum PathShapeDetector {
+
     static func detect(elements: [PathElement]) -> (type: GeometricShapeType, name: String)? {
         var drawn: [PathElement] = []
         for el in elements {
@@ -111,9 +113,11 @@ enum PathShapeDetector {
         }
         return nil
     }
+
     private static func approxEqual(_ a: CGPoint, _ b: CGPoint, tolerance: CGFloat = 0.5) -> Bool {
         return abs(a.x - b.x) <= tolerance && abs(a.y - b.y) <= tolerance
     }
+
     private static func approxEqual(_ a: CGFloat, _ b: CGFloat, tolerance: CGFloat = 0.5) -> Bool {
         return abs(a - b) <= tolerance
     }

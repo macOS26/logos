@@ -1,11 +1,14 @@
 import SwiftUI
 import Combine
+
 struct StrokeFillPanel: View {
+
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let selectedPoints: Set<PointID>
     let selectedHandles: Set<HandleID>
     let activeColorTarget: ColorTarget
+
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
@@ -22,6 +25,7 @@ struct StrokeFillPanel: View {
     let onAddColorSwatch: (VectorColor) -> Void
     let onRemoveColorSwatch: (VectorColor) -> Void
     let onSetActiveColor: (VectorColor) -> Void
+
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @Binding var fillDeltaOpacity: Double?
@@ -45,6 +49,7 @@ struct StrokeFillPanel: View {
     let onUpdateImageOpacity: (Double) -> Void
     let onApplyFillToSelectedShapes: (VectorColor, Double) -> Void
     let onUpdateShapeStrokePlacementInUnified: (UUID, StrokePlacement) -> Void
+
     @Environment(AppState.self) private var appState
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
@@ -89,6 +94,7 @@ struct StrokeFillPanel: View {
         }
         return .auto
     }
+
     private func detectAnchorType(for pointID: PointID, in shape: VectorShape) -> AnchorPointType {
         guard pointID.elementIndex < shape.path.elements.count else {
             return .auto
@@ -143,6 +149,7 @@ struct StrokeFillPanel: View {
         }
         return .corner
     }
+
     private func detectClosedPathEndpointType(pointID: PointID, elements: [PathElement]) -> AnchorPointType? {
         guard elements.count >= 2 else { return nil }
         var lastElementIndex = elements.count - 1
@@ -241,6 +248,7 @@ struct StrokeFillPanel: View {
         .background(Color.gray.opacity(0.1))
         .cornerRadius(6)
     }
+
     private func applyAnchorTypeToSelection(_ type: AnchorPointType) {
         guard !selectedPoints.isEmpty else {
             return
@@ -426,6 +434,7 @@ struct StrokeFillPanel: View {
             document.viewState.handleRefreshTrigger.toggle()
         }
     }
+
     private func getAnchorPosition(from element: PathElement) -> CGPoint? {
         switch element {
         case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
@@ -434,11 +443,13 @@ struct StrokeFillPanel: View {
             return nil
         }
     }
+
     private func distance(from p1: CGPoint, to p2: VectorPoint) -> Double {
         let dx = p2.x - p1.x
         let dy = p2.y - p1.y
         return sqrt(dx * dx + dy * dy)
     }
+
     private func normalize(from p1: VectorPoint, to p2: CGPoint) -> CGPoint {
         let dx = p2.x - p1.x
         let dy = p2.y - p1.y
@@ -882,6 +893,7 @@ struct StrokeFillPanel: View {
             }
         }
     }
+
     private func syncOpacityStates() {
         fillOpacityState = fillOpacity
         strokeOpacityState = strokeOpacity
@@ -890,15 +902,19 @@ struct StrokeFillPanel: View {
         strokeMiterLimitState = strokeMiterLimit
         selectedImageOpacityState = selectedImageOpacity
     }
+
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
         onUpdateFillOpacityLive(opacity, isEditing)
     }
+
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
         onUpdateStrokeOpacityLive(opacity, isEditing)
     }
+
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
         onUpdateStrokeWidthLive(width, isEditing)
     }
+
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         var updatedDefaults = strokeDefaults
         updatedDefaults.placement = placement
@@ -920,27 +936,35 @@ struct StrokeFillPanel: View {
             }
         }
     }
+
     private func updateStrokePlacement(_ placement: StrokePlacement) {
         onUpdateStrokePlacement(placement)
     }
+
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
         onUpdateStrokeLineJoin(lineJoin)
     }
+
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
         onUpdateStrokeLineCap(lineCap)
     }
+
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
         onUpdateStrokeMiterLimit(miterLimit)
     }
+
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
         onUpdateStrokeMiterLimitDirectNoUndo(miterLimit)
     }
+
     private func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool) {
         onUpdateStrokeScaleWithTransform(scaleWithTransform)
     }
+
     private func updateImageOpacity(_ opacity: Double) {
         onUpdateImageOpacity(opacity)
     }
+
     private func applyFillToSelectedShapes() {
         onApplyFillToSelectedShapes(selectedFillColor, fillOpacity)
     }

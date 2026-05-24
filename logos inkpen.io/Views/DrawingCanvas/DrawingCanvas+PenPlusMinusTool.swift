@@ -1,7 +1,9 @@
 import SwiftUI
 import Combine
 import simd
+
 extension DrawingCanvas {
+
     func handlePenPlusMinusTap(at location: CGPoint) {
         let tolerance: Double = 8.0 / zoomLevel
         if let pointToDelete = findAnchorPointAt(location: location, tolerance: tolerance) {
@@ -17,6 +19,7 @@ extension DrawingCanvas {
             return
         }
     }
+
     private func insertPointOnSegment(shapeID: UUID, elementIndex: Int, at location: CGPoint) {
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType,
@@ -112,6 +115,7 @@ extension DrawingCanvas {
         let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
         document.commandManager.execute(command)
     }
+
     private func closestPointOnLineSegment(point: CGPoint, start: CGPoint, end: CGPoint) -> Double {
         let A = point.x - start.x
         let B = point.y - start.y
@@ -126,6 +130,7 @@ extension DrawingCanvas {
         param = max(0.0, min(1.0, param))
         return param
     }
+
     private func deletePointWithCurvePreservation(pointID: PointID) {
         guard let object = document.snapshot.objects[pointID.shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -165,6 +170,7 @@ extension DrawingCanvas {
             return
         }
     }
+
     private func findAnchorPointAt(location: CGPoint, tolerance: Double) -> PointID? {
         for newVectorObject in document.snapshot.objects.values.reversed() {
             if case .shape(let shape) = newVectorObject.objectType {
@@ -185,6 +191,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     private func findSegmentAt(location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for object in document.snapshot.objects.values.reversed() {
             if case .shape(let shape) = object.objectType {
@@ -232,6 +239,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     private func findParametricValueOnCurve(start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint, targetPoint: CGPoint) -> Double {
         var bestT: Double = 0.5
         var bestDistance: Double = Double.infinity
@@ -246,6 +254,7 @@ extension DrawingCanvas {
         }
         return bestT
     }
+
     private func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, t: Double) -> CGPoint {
         let oneMinusT = 1.0 - t
         let oneMinusT2 = oneMinusT * oneMinusT
@@ -257,6 +266,7 @@ extension DrawingCanvas {
             y: oneMinusT3 * p0.y + 3 * oneMinusT2 * t * p1.y + 3 * oneMinusT * t2 * p2.y + t3 * p3.y
         )
     }
+
     private func splitCubicBezierAt(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, t: Double) -> (
         leftControl1: CGPoint, leftControl2: CGPoint,
         splitPoint: CGPoint,
@@ -276,12 +286,14 @@ extension DrawingCanvas {
             rightControl2: p23
         )
     }
+
     private func lerp(_ a: CGPoint, _ b: CGPoint, _ t: Double) -> CGPoint {
         return CGPoint(
             x: a.x + (b.x - a.x) * t,
             y: a.y + (b.y - a.y) * t
         )
     }
+
     private func isPointNearLineSegment(point: CGPoint, start: CGPoint, end: CGPoint, tolerance: Double) -> Bool {
         let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
         let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
@@ -305,6 +317,7 @@ extension DrawingCanvas {
         let distance = simd_length(pointVec - closestVec)
         return distance <= tolerance
     }
+
     private func isPointNearBezierCurve(point: CGPoint, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tolerance: Double) -> Bool {
         for i in 0...20 {
             let t = Double(i) / 20.0
@@ -315,6 +328,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     private func deletePointWithCurveMerging(elements: [PathElement], pointIndex: Int) -> [PathElement] {
         var newElements = elements
         newElements.remove(at: pointIndex)

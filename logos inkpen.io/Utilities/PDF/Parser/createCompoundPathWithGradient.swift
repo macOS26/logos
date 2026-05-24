@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func createCompoundPathWithGradient(gradient: VectorGradient) {
         guard !gradientShapes.isEmpty else {
             Log.warning("PDF: ⚠️ No gradient shapes tracked", category: .general)

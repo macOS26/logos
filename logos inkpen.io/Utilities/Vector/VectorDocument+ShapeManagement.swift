@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -9,6 +11,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
     }
+
     func addShapeToFront(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -18,6 +21,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
     }
+
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -25,6 +29,7 @@ extension VectorDocument {
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
     }
+
     func addImportedShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
@@ -41,6 +46,7 @@ extension VectorDocument {
             addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         }
     }
+
     private func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {
@@ -56,13 +62,16 @@ extension VectorDocument {
         let vectorObject = VectorObject(id: toInstall.id, layerIndex: layerIndex, objectType: objectType)
         snapshot.objects[toInstall.id] = vectorObject
     }
+
     func addShapeWithoutUndo(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
+
     func removeSelectedShapes() {
         removeSelectedObjects()
     }
+
     func removeSelectedObjects() {
         let objectIDsToDelete = viewState.selectedObjectIDs.filter { uuid in
             guard let object = snapshot.objects[uuid] else { return false }
@@ -99,6 +108,7 @@ extension VectorDocument {
         }
         viewState.selectedObjectIDs.removeAll()
     }
+
     func getSelectedShapes() -> [VectorShape] {
         var selectedShapes: [VectorShape] = []
         for objectID in viewState.selectedObjectIDs {
@@ -119,6 +129,7 @@ extension VectorDocument {
         }
         return selectedShapes
     }
+
     func getShapesByIds(_ shapeIDs: Set<UUID>) -> [VectorShape] {
         var shapes: [VectorShape] = []
         for shapeID in shapeIDs {
@@ -139,6 +150,7 @@ extension VectorDocument {
         }
         return shapes
     }
+
     func getActiveShapeIDs() -> Set<UUID> {
         if viewState.currentTool == .directSelection || viewState.currentTool == .convertAnchorPoint || viewState.currentTool == .penPlusMinus,
            !viewState.selectedObjectIDs.isEmpty {
@@ -146,10 +158,12 @@ extension VectorDocument {
         }
         return viewState.selectedObjectIDs
     }
+
     func getActiveShapes() -> [VectorShape] {
         let activeShapeIDs = getActiveShapeIDs()
         return getShapesByIds(activeShapeIDs)
     }
+
     func getObjectsInStackingOrder() -> [VectorObject] {
         var result: [VectorObject] = []
         for layer in snapshot.layers {
@@ -162,6 +176,7 @@ extension VectorDocument {
         }
         return result
     }
+
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
         var result: [VectorShape] = []
         for layer in snapshot.layers {
@@ -183,6 +198,7 @@ extension VectorDocument {
         }
         return result
     }
+
     func setSelectionWithUndo(_ newSelectedIDs: Set<UUID>, ordered: [UUID]? = nil) {
         let oldSelectedIDs = viewState.selectedObjectIDs
         let oldOrderedIDs = viewState.orderedSelectedObjectIDs
@@ -196,6 +212,7 @@ extension VectorDocument {
         )
         executeCommand(command)
     }
+
     func addToSelectionWithUndo(_ shapeID: UUID) {
         guard findObject(by: shapeID) != nil else { return }
         var newSelectedIDs = viewState.selectedObjectIDs
@@ -206,6 +223,7 @@ extension VectorDocument {
         }
         setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
     }
+
     func removeFromSelectionWithUndo(_ shapeID: UUID) {
         var newSelectedIDs = viewState.selectedObjectIDs
         newSelectedIDs.remove(shapeID)
@@ -213,6 +231,7 @@ extension VectorDocument {
         newOrderedIDs.removeAll { $0 == shapeID }
         setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
     }
+
     func toggleSelectionWithUndo(_ shapeID: UUID) {
         if viewState.selectedObjectIDs.contains(shapeID) {
             removeFromSelectionWithUndo(shapeID)
@@ -220,20 +239,24 @@ extension VectorDocument {
             addToSelectionWithUndo(shapeID)
         }
     }
+
     func clearSelectionWithUndo() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         setSelectionWithUndo([], ordered: [])
     }
+
     func selectShape(_ shapeID: UUID) {
         if let vectorObject = findObject(by: shapeID) {
             setSelectionWithUndo([vectorObject.id], ordered: [vectorObject.id])
         }
     }
+
     func addToSelection(_ shapeID: UUID) {
         if let vectorObject = findObject(by: shapeID) {
             addToSelectionWithUndo(vectorObject.id)
         }
     }
+
     func selectAll() {
         var objectIDsInLayers = Set<UUID>()
         for layer in snapshot.layers {
@@ -276,6 +299,7 @@ extension VectorDocument {
             setSelectionWithUndo(selectedIDs, ordered: orderedIDs)
         }
     }
+
     func duplicateSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
         var newShapeIDs: Set<UUID> = []
@@ -307,6 +331,7 @@ extension VectorDocument {
         }
         viewState.selectedObjectIDs = newShapeIDs
     }
+
     internal func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
         if transform.isIdentity {
             return shape
@@ -317,6 +342,7 @@ extension VectorDocument {
         newShape.transform = .identity
         return newShape
     }
+
     func addGuideShape(position: CGFloat, orientation: Guide.Orientation) {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return }
@@ -353,6 +379,7 @@ extension VectorDocument {
         viewState.selectedObjectIDs.removeAll()
         viewState.orderedSelectedObjectIDs.removeAll()
     }
+
     func clearGuides() {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return }
@@ -363,6 +390,7 @@ extension VectorDocument {
             }
         }
     }
+
     func getGuideShapes() -> [VectorShape] {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return [] }

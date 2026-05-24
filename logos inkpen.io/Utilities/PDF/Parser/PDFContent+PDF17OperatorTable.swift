@@ -1,6 +1,8 @@
 import SwiftUI
 import PDFKit
+
 extension PDFCommandParser {
+
     func PDF17OperatorTable() -> CGPDFOperatorTableRef? {
         guard let operatorTable = CGPDFOperatorTableCreate() else { return nil }
         CGPDFOperatorTableSetCallback(operatorTable, "m") { (scanner, info) in

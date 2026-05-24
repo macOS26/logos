@@ -1,6 +1,8 @@
 import SwiftUI
 import PDFKit
+
 extension PDFCommandParser {
+
     func handleXObjectPDF17(scanner: CGPDFScannerRef) {
         var namePtr: UnsafePointer<CChar>?
         guard CGPDFScannerPopName(scanner, &namePtr) else {
@@ -14,6 +16,7 @@ extension PDFCommandParser {
         let name = String(cString: namePtr)
         processXObjectPDF17(name: name)
     }
+
     func processXObjectPDF17(name: String, parentResourcesDict: CGPDFDictionaryRef? = nil) {
         var foundXObject: CGPDFObjectRef? = nil
         var foundResourcesDict: CGPDFDictionaryRef? = nil
@@ -79,6 +82,7 @@ extension PDFCommandParser {
         }
         parseXObjectContentStream(xObjectStream, dictionary: xObjectStreamDict, name: name, resourcesDict: xObjectResourcesDict)
     }
+
     func parseXObjectContentStream(_ xObjectStream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef, name: String, resourcesDict: CGPDFDictionaryRef? = nil) {
         let savedFillOpacity = xObjectSavedFillOpacity
         let savedStrokeOpacity = xObjectSavedStrokeOpacity
@@ -99,6 +103,7 @@ extension PDFCommandParser {
                                           resourcesDict: resourcesDict)
         }
     }
+
     private func parseDecompressedXObjectContent(data: CFData, name: String,
                                                 savedFillOpacity: Double, savedStrokeOpacity: Double,
                                                 resourcesDict: CGPDFDictionaryRef? = nil) {
@@ -118,6 +123,7 @@ extension PDFCommandParser {
                                  resourcesDict: resourcesDict)
         }
     }
+
     private func parseXObjectOperations(_ operations: [String], name: String,
                                        savedFillOpacity: Double, savedStrokeOpacity: Double,
                                        resourcesDict: CGPDFDictionaryRef? = nil) {

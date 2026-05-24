@@ -1,8 +1,11 @@
 import SwiftUI
 import AppKit
+
 struct SFSymbolsPickerView: View {
+
     @Binding var isPresented: Bool
     let onImport: (URL) async -> Void
+
     @State private var query: String = ""
     @State private var allNames: [String] = []
     @State private var results: [String] = []
@@ -171,6 +174,7 @@ struct SFSymbolsPickerView: View {
         }
         .padding(10)
     }
+
     private func loadLibrary() async {
         let names = await Task.detached(priority: .userInitiated) {
             await SFSymbolsLibrary.shared.allNames()
@@ -179,6 +183,7 @@ struct SFSymbolsPickerView: View {
         results = filteredResults(for: query)
         loading = false
     }
+
     private func filteredResults(for q: String) -> [String] {
         let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if trimmed.isEmpty { return [] }
@@ -188,6 +193,7 @@ struct SFSymbolsPickerView: View {
     private var recentSymbols: [String] {
         (try? JSONDecoder().decode([String].self, from: recentSymbolsData)) ?? []
     }
+
     private func addToRecents(_ name: String) {
         var recents = recentSymbols
         recents.removeAll { $0 == name }
@@ -197,6 +203,7 @@ struct SFSymbolsPickerView: View {
         }
         recentSymbolsData = (try? JSONEncoder().encode(recents)) ?? Data()
     }
+
     private func importSymbol(named name: String) async {
         guard let svg = SFSymbolsLibrary.shared.svg(named: name) else {
             NSSound.beep()

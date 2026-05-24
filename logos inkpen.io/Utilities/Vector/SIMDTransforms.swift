@@ -1,7 +1,9 @@
 import Foundation
 import CoreGraphics
 import simd
+
 extension VectorPoint {
+
     func applying(_ transform: CGAffineTransform) -> VectorPoint {
         let matrix = simd_double3x3(
             SIMD3(Double(transform.a), Double(transform.b), 0),
@@ -12,6 +14,7 @@ extension VectorPoint {
         let result = matrix * homogeneous
         return VectorPoint(simd: SIMD2(result.x, result.y))
     }
+
     static func applyingTransform(_ points: [VectorPoint], transform: CGAffineTransform) -> [VectorPoint] {
         let matrix = simd_double3x3(
             SIMD3(Double(transform.a), Double(transform.b), 0),
@@ -25,7 +28,9 @@ extension VectorPoint {
         }
     }
 }
+
 extension PathElement {
+
     func applying(_ transform: CGAffineTransform) -> PathElement {
         switch self {
         case .move(let to):
@@ -48,7 +53,9 @@ extension PathElement {
         }
     }
 }
+
 extension VectorPath {
+
     func applying(_ transform: CGAffineTransform) -> VectorPath {
         if transform.isIdentity {
             return self
@@ -57,7 +64,9 @@ extension VectorPath {
         return VectorPath(elements: transformedElements, isClosed: isClosed, fillRule: fillRule.cgPathFillRule)
     }
 }
+
 extension VectorShape {
+
     func applyingSIMDTransform(_ transform: CGAffineTransform) -> VectorShape {
         var newShape = self
         newShape.path = path.applying(transform)
@@ -66,7 +75,9 @@ extension VectorShape {
         return newShape
     }
 }
+
 extension Array where Element == VectorPoint {
+
     func simdBounds() -> CGRect? {
         guard let first = first else { return nil }
         var minPoint = first.simdPoint
@@ -83,7 +94,9 @@ extension Array where Element == VectorPoint {
         )
     }
 }
+
 extension VectorPath {
+
     func simdBounds() -> CGRect {
         var points: [VectorPoint] = []
         for element in elements {

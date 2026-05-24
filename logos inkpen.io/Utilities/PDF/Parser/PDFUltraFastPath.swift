@@ -2,11 +2,14 @@ import Foundation
 import CoreGraphics
 import simd
 import Accelerate
+
 struct PDFUltraFastPath {
+
     static func simplifyPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
         return douglasPeuckerSIMD(points: points, epsilon: Float(tolerance))
     }
+
     private static func douglasPeuckerSIMD(points: [CGPoint], epsilon: Float) -> [CGPoint] {
         guard points.count > 2 else { return points }
         guard let firstPoint = points.first, let lastPoint = points.last else { return points }
@@ -32,6 +35,7 @@ struct PDFUltraFastPath {
             return [firstPoint, lastPoint]
         }
     }
+
     private static func calculatePerpendicularDistancesSIMD(
         points: [CGPoint],
         lineStart: CGPoint,
@@ -59,6 +63,7 @@ struct PDFUltraFastPath {
         }
         return distances
     }
+
     static func calculateTightBounds(path: CGPath) -> CGRect {
         var points = [CGPoint]()
         path.applyWithBlock { element in
@@ -74,12 +79,14 @@ struct PDFUltraFastPath {
                 points.append(element.pointee.points[2])
             case .closeSubpath:
                 break
+
             @unknown default:
                 break
             }
         }
         return PDFAdvancedSIMD.calculatePathBounds(points: points)
     }
+
     static func parallelTessellatePath(path: CGPath, flatness: CGFloat) -> [CGPoint] {
         var segments: [(start: CGPoint, cp1: CGPoint?, cp2: CGPoint?, end: CGPoint)] = []
         var currentPoint = CGPoint.zero
@@ -104,6 +111,7 @@ struct PDFUltraFastPath {
                 currentPoint = end
             case .closeSubpath:
                 break
+
             @unknown default:
                 break
             }
@@ -131,6 +139,7 @@ struct PDFUltraFastPath {
         }
         return segmentResults.flatMap { $0 }
     }
+
     private static func tessellateCubicSIMD(
         start: CGPoint,
         cp1: CGPoint,
@@ -178,6 +187,7 @@ struct PDFUltraFastPath {
         )
         return leftPoints + rightPoints.dropFirst()
     }
+
     private static func tessellateQuadraticSIMD(
         start: CGPoint,
         cp: CGPoint,
@@ -210,6 +220,7 @@ struct PDFUltraFastPath {
         )
         return leftPoints + rightPoints.dropFirst()
     }
+
     static func transformPath(_ path: CGPath, by transform: CGAffineTransform) -> CGPath {
         var points = [CGPoint]()
         path.applyWithBlock { element in
@@ -225,6 +236,7 @@ struct PDFUltraFastPath {
                 points.append(element.pointee.points[2])
             case .closeSubpath:
                 break
+
             @unknown default:
                 break
             }
@@ -255,6 +267,7 @@ struct PDFUltraFastPath {
                 pointIndex += 3
             case .closeSubpath:
                 newPath.closeSubpath()
+
             @unknown default:
                 break
             }

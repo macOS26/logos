@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractColorFromFunctionIndex(_ functions: CGPDFArrayRef, index: Int) -> VectorColor {
         var functionObj: CGPDFObjectRef?
         guard CGPDFArrayGetObject(functions, index, &functionObj),

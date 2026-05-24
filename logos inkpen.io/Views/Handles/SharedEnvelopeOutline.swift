@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct SharedEnvelopeOutline: View {
     let shape: VectorShape
     let zoomLevel: Double
@@ -30,6 +31,7 @@ struct SharedEnvelopeOutline: View {
         }
     }
 }
+
 struct SharedEnvelopeCorners: View {
     let shape: VectorShape
     let zoomLevel: Double

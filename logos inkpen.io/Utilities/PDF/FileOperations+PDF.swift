@@ -1,8 +1,11 @@
 import SwiftUI
+
 extension FileOperations {
+
     static func generatePDFData(from document: VectorDocument) throws -> Data {
         return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false, textRenderingMode: .lines, includeInkpenData: true)
     }
+
     static func generatePDFDataForExport(from document: VectorDocument, useCMYK: Bool, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         if !useCMYK {
             return try generatePDFDataFromView(from: document, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
@@ -10,6 +13,7 @@ extension FileOperations {
             return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
         }
     }
+
     static func renderShapeToPDF(shape: VectorShape, context: CGContext) throws {
         let cgPath = convertVectorPathToCGPath(shape.path)
         context.saveGState()
@@ -50,6 +54,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     static func setFillStyle(_ fillStyle: FillStyle, context: CGContext) {
         let cgColor = fillStyle.color.cgColor
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
@@ -68,6 +73,7 @@ extension FileOperations {
             context.setFillColor(cgColor.copy(alpha: fillStyle.opacity) ?? cgColor)
         }
     }
+
     static func setStrokeStyle(_ strokeStyle: StrokeStyle, context: CGContext) {
         let cgColor = strokeStyle.color.cgColor
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
@@ -93,6 +99,7 @@ extension FileOperations {
             context.setLineDash(phase: 0, lengths: dashPatternCGFloat)
         }
     }
+
     static func drawPDFGradientForExport(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double, useCMYK: Bool) {
         if useCMYK {
             drawPDFGradientAsCMYK(gradient, in: context, bounds: bounds, opacity: opacity)
@@ -100,6 +107,7 @@ extension FileOperations {
             drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         }
     }
+
     static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         #if DEBUG
         let method = AppState.shared.pdfGradientMethod
@@ -119,6 +127,7 @@ extension FileOperations {
         drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         #endif
     }
+
     private static func drawPDFGradientWithCGGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         context.setAlpha(CGFloat(opacity))
         switch gradient {
@@ -226,8 +235,10 @@ extension FileOperations {
             )
         }
     }
+
     private final class GradientData {
         let stops: [(position: CGFloat, r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)]
+
         init(stops: [GradientStop], opacity: Double) {
             self.stops = stops.map { stop in
                 let cgColor = stop.color.cgColor
@@ -252,6 +263,7 @@ extension FileOperations {
                 }
             }
         }
+
         func interpolateColor(at t: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
             guard !stops.isEmpty else { return (0, 0, 0, 0) }
             guard let first = stops.first, let last = stops.last else {
@@ -282,6 +294,7 @@ extension FileOperations {
             )
         }
     }
+
     private static func drawPDFGradientWithCGShading(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         switch gradient {
         case .linear(let linearGradient):
@@ -290,6 +303,7 @@ extension FileOperations {
             drawRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds, opacity: opacity)
         }
     }
+
     private static func drawLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gradientData = GradientData(stops: linearGradient.stops, opacity: opacity)
         let colorSpace = ColorManager.shared.workingCGColorSpace
@@ -343,6 +357,7 @@ extension FileOperations {
         context.drawShading(shading)
         context.restoreGState()
     }
+
     private static func drawRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gradientData = GradientData(stops: radialGradient.stops, opacity: opacity)
         let colorSpace = ColorManager.shared.workingCGColorSpace
@@ -400,6 +415,7 @@ extension FileOperations {
         context.drawShading(shading)
         context.restoreGState()
     }
+
     private static func drawSimplifiedLinearGradientWithCGGradient(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         let angle = linearGradient.angle * .pi / 180.0
@@ -454,6 +470,7 @@ extension FileOperations {
         )
         context.restoreGState()
     }
+
     private static func drawSimplifiedRadialGradientWithCGGradient(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
@@ -512,6 +529,7 @@ extension FileOperations {
         )
         context.restoreGState()
     }
+
     private static func drawPDFGradientAsBlend(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         context.saveGState()
         switch gradient {
@@ -522,6 +540,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     private static func drawLinearGradientAsBlend(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let bandCount = AppState.shared.pdfBlendSteps
         let stops = linearGradient.stops
@@ -550,6 +569,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     private static func drawRadialGradientAsBlend(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let bandCount = AppState.shared.pdfBlendSteps
         let stops = radialGradient.stops
@@ -579,6 +599,7 @@ extension FileOperations {
             context.restoreGState()
         }
     }
+
     private static func drawPDFGradientAsMesh(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         context.saveGState()
         switch gradient {
@@ -589,6 +610,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     private static func drawLinearGradientAsMesh(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gridSizeX = AppState.shared.pdfMeshGridX
         let gridSizeY = AppState.shared.pdfMeshGridY
@@ -616,6 +638,7 @@ extension FileOperations {
             }
         }
     }
+
     private static func drawRadialGradientAsMesh(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gridSize = 12
         let stops = radialGradient.stops
@@ -668,6 +691,7 @@ extension FileOperations {
             }
         }
     }
+
     private static func drawPDFGradientAsCMYK(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let stops = gradient.stops
         guard !stops.isEmpty else {
@@ -684,6 +708,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     private static func drawCMYKLinearGradient(_ linearGradient: LinearGradient, stops: [GradientStop], in context: CGContext, bounds: CGRect) {
         let startX = bounds.minX + bounds.width * linearGradient.startPoint.x
         let startY = bounds.minY + bounds.height * linearGradient.startPoint.y
@@ -714,6 +739,7 @@ extension FileOperations {
                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
     }
+
     private static func drawCMYKRadialGradient(_ radialGradient: RadialGradient, stops: [GradientStop], in context: CGContext, bounds: CGRect) {
         let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
         let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
@@ -744,6 +770,7 @@ extension FileOperations {
                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
     }
+
     private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> CGColor {
         guard let first = stops.first, let last = stops.last else { return .clear }
         var lowerStop = first
@@ -774,6 +801,7 @@ extension FileOperations {
         let a = (lowerStop.opacity * (1 - factor) + upperStop.opacity * factor) * opacity
         return CGColor(red: r, green: g, blue: b, alpha: CGFloat(a))
     }
+
     private static func colorFromVectorColor(_ color: VectorColor, opacity: Double) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
         let cgColor = color.cgColor
         if let components = cgColor.components, components.count >= 3 {

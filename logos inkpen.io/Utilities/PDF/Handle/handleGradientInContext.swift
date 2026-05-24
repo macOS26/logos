@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleGradientInContext(gradient: VectorGradient) {
         if !currentPath.isEmpty {
             createShapeFromCurrentPath(filled: true, stroked: false, customFillStyle: FillStyle(gradient: gradient))

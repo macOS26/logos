@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct WebGraphicsTemplatePreview: View {
     var body: some View {
         VStack(spacing: 8) {

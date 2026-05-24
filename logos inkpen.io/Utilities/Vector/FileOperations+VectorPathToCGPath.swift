@@ -1,5 +1,7 @@
 import SwiftUI
+
 class FileOperations {
+
     static func convertVectorPathToCGPath(_ vectorPath: VectorPath) -> CGPath {
         let cgPath = CGMutablePath()
         for element in vectorPath.elements {

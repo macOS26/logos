@@ -1,10 +1,12 @@
 import AppKit
 import Combine
+
 class ExportTextOptionsHandler: NSObject {
     let textToOutlinesCheckbox: NSButton
     let textModeLabel: NSTextField
     let glyphsRadio: NSButton
     let linesRadio: NSButton
+
     init(textToOutlinesCheckbox: NSButton,
          textModeLabel: NSTextField,
          glyphsRadio: NSButton,
@@ -14,22 +16,27 @@ class ExportTextOptionsHandler: NSObject {
         self.glyphsRadio = glyphsRadio
         self.linesRadio = linesRadio
     }
+
     @objc func toggleTextOptions(_ sender: NSButton) {
         let shouldHide = sender.state == .on
         textModeLabel.isHidden = shouldHide
         glyphsRadio.isHidden = shouldHide
         linesRadio.isHidden = shouldHide
     }
+
     @objc func selectGlyphs(_ sender: NSButton) {
         glyphsRadio.state = .on
         linesRadio.state = .off
     }
+
     @objc func selectLines(_ sender: NSButton) {
         glyphsRadio.state = .off
         linesRadio.state = .on
     }
 }
+
 extension DocumentState {
+
     @discardableResult
     static func exportWithTextToOutlines(
         _ document: VectorDocument,
@@ -47,6 +54,7 @@ extension DocumentState {
         }
         return exportData
     }
+
     static func exportSVGWithTextToOutlines(
         _ document: VectorDocument,
         includeBackground: Bool,

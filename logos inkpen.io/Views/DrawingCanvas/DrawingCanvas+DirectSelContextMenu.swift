@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     @ViewBuilder
     internal var directSelectionContextMenu: some View {
         if document.viewState.currentTool == .bezierPen && isBezierDrawing && bezierPoints.count >= 3 {

@@ -1,12 +1,15 @@
 import Foundation
 import CoreGraphics
+
 enum FreeHandImportError: Error {
     case notSupported
     case parseFailed(code: Int)
     case emptyOutput
     case allocationFailed
 }
+
 enum FreeHandDirectImporter {
+
     struct Stats {
         let paths: Int
         let groups: Int
@@ -16,6 +19,7 @@ enum FreeHandDirectImporter {
         let symbolInstances: Int
         let contentIdPaths: Int
     }
+
     struct Result {
         let shapes: [VectorShape]
         let pageSize: CGSize
@@ -23,6 +27,7 @@ enum FreeHandDirectImporter {
         let layers: [Layer]
         let groupShapeIDs: [UUID]
     }
+
     private static func stripIPTCWrapper(_ data: Data) -> Data {
         guard data.count >= 4 else { return data }
         let b0 = data[data.startIndex]
@@ -38,6 +43,7 @@ enum FreeHandDirectImporter {
         }
         return data
     }
+
     static func parseToShapes(data: Data) throws -> Result {
         if data.count >= 4,
            data[data.startIndex] == 0x46,
@@ -88,10 +94,12 @@ enum FreeHandDirectImporter {
             return Result(shapes: shapes, pageSize: pageSize, stats: stats, layers: [], groupShapeIDs: [])
         }
     }
+
     static func parseToShapes(url: URL) throws -> Result {
         let data = try Data(contentsOf: url)
         return try parseToShapes(data: data)
     }
+
     private static func buildShapes(from result: OpaquePointer) -> [VectorShape] {
         let count = fh_result_shape_count(result)
         var built: [VectorShape?] = Array(repeating: nil, count: count)
@@ -124,6 +132,7 @@ enum FreeHandDirectImporter {
         }
         return top
     }
+
     private static func makePathShape(from result: OpaquePointer, index: size_t, isCompound: Bool) -> VectorShape? {
         let elementCount = fh_result_shape_path_element_count(result, index)
         guard elementCount > 0 else { return nil }
@@ -223,6 +232,7 @@ enum FreeHandDirectImporter {
             isCompoundPath: isCompound
         )
     }
+
     private static func readGradientStops(from result: OpaquePointer, index: size_t) -> [GradientStop] {
         let count = fh_result_shape_gradient_stop_count(result, index)
         var stops: [GradientStop] = []
@@ -245,6 +255,7 @@ enum FreeHandDirectImporter {
         }
         return stops
     }
+
     private static func buildLinearGradient(from result: OpaquePointer, index: size_t) -> VectorGradient? {
         let stops = readGradientStops(from: result, index: index)
         let angleDeg = fh_result_shape_fill_angle(result, index)
@@ -256,6 +267,7 @@ enum FreeHandDirectImporter {
         let linear = LinearGradient(startPoint: start, endPoint: end, stops: stops)
         return .linear(linear)
     }
+
     private static func buildRadialGradient(from result: OpaquePointer, index: size_t) -> VectorGradient? {
         let stops = readGradientStops(from: result, index: index)
         let cx = fh_result_shape_fill_center_x(result, index)
@@ -267,6 +279,7 @@ enum FreeHandDirectImporter {
         )
         return .radial(radial)
     }
+
     private static func makeGroupShape(
         from result: OpaquePointer,
         index: size_t,

@@ -1,10 +1,13 @@
 import SwiftUI
+
 struct RulersView: View {
+
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
     private let rulerThickness: CGFloat = 20
+
     @State private var isDraggingGuide = false
     @State private var draggingGuideOrientation: Guide.Orientation?
     @State private var draggingGuidePosition: CGFloat = 0
@@ -125,6 +128,7 @@ struct RulersView: View {
             }
         }
     }
+
     private func drawHorizontalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
@@ -292,6 +296,7 @@ struct RulersView: View {
             x += loopStep
         }
     }
+
     private func drawVerticalRuler(context: GraphicsContext, size: CGSize, document: VectorDocument) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
@@ -462,6 +467,7 @@ struct RulersView: View {
         }
     }
 }
+
 private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
     switch unit {
@@ -495,6 +501,7 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
         }
     }
 }
+
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
     switch unit {
@@ -559,6 +566,7 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         }
     }
 }
+
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
     let roundedValue = value.rounded()
     if abs(roundedValue) < 0.01 {
@@ -579,7 +587,9 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
         return String(format: "%.0f", roundedValue)
     }
 }
+
 extension VectorDocument {
+
     func snapToGrid(_ point: CGPoint) -> CGPoint {
         guard gridSettings.snapToGrid else { return point }
         let gridSpacing = settings.gridSpacing * settings.unit.pointsPerUnit
@@ -588,6 +598,7 @@ extension VectorDocument {
         let snappedY = round(point.y / gridSpacing) * gridSpacing
         return CGPoint(x: snappedX, y: snappedY)
     }
+
     func snapToGuidelines(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
         let guidesLayerVisible = snapshot.layers.count > 2 && snapshot.layers[2].isVisible
         guard gridSettings.snapToGuides && guidesLayerVisible else { return point }
@@ -627,6 +638,7 @@ extension VectorDocument {
         }
         return snappedPoint
     }
+
     func snapPoint(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
         var result = point
         result = snapToGuidelines(result, snapDistance: snapDistance)
@@ -634,12 +646,15 @@ extension VectorDocument {
         return result
     }
 }
+
 struct UnitsConverter {
+
     static func convert(value: Double, from: MeasurementUnit, to: MeasurementUnit) -> Double {
         if from == to { return value }
         let points = value * from.pointsPerUnit
         return points / to.pointsPerUnit
     }
+
     static func formatValue(_ value: Double, unit: MeasurementUnit) -> String {
         let convertedValue = value / unit.pointsPerUnit
         switch unit {
@@ -658,6 +673,7 @@ struct UnitsConverter {
         }
     }
 }
+
 private func gcd(_ a: Int, _ b: Int) -> Int {
     var x = abs(a)
     var y = abs(b)
@@ -668,12 +684,15 @@ private func gcd(_ a: Int, _ b: Int) -> Int {
     }
     return max(1, x)
 }
+
 struct PageOriginCrosshair: View {
+
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let rulerThickness: CGFloat
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     @State private var isDragging = false
     @State private var currentDragLocation: CGPoint?
     var body: some View {
@@ -732,6 +751,7 @@ struct PageOriginCrosshair: View {
             }
         }
     }
+
     private func screenToCanvasPosition(_ screenPoint: CGPoint) -> CGPoint {
         let canvasScreenPoint = CGPoint(
             x: screenPoint.x - rulerThickness,
@@ -742,12 +762,14 @@ struct PageOriginCrosshair: View {
             y: (canvasScreenPoint.y - canvasOffset.y) / zoomLevel
         )
     }
+
     private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
         return CGPoint(
             x: canvasPoint.x * zoomLevel + canvasOffset.x,
             y: canvasPoint.y * zoomLevel + canvasOffset.y
         )
     }
+
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
@@ -774,11 +796,13 @@ struct PageOriginCrosshair: View {
         }
         return closestPoint ?? canvasPoint
     }
+
     private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
         let canvasPoint = screenToCanvasPosition(screenPoint)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
         return canvasToScreenPosition(snappedCanvasPoint)
     }
+
     private func getSnapPointsInScreenSpace() -> [CGPoint] {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
@@ -795,6 +819,7 @@ struct PageOriginCrosshair: View {
         ]
         return canvasSnapPoints.map { canvasToScreenPosition($0) }
     }
+
     private func updatePageOrigin(screenLocation: CGPoint) {
         let canvasPoint = screenToCanvasPosition(screenLocation)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
@@ -802,6 +827,7 @@ struct PageOriginCrosshair: View {
         document.onSettingsChanged()
     }
 }
+
 struct CrosshairIcon: View {
     var body: some View {
         GeometryReader { geometry in
@@ -823,12 +849,15 @@ struct CrosshairIcon: View {
         .contentShape(Rectangle())
     }
 }
+
 extension CGSize {
     var asCGPoint: CGPoint {
         CGPoint(x: width, y: height)
     }
 }
+
 extension CGPoint {
+
     static func + (lhs: CGPoint, rhs: CGPoint) -> CGPoint {
         lhs.adding(rhs)
     }

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+
 struct GradientCenterPointCanvasView: View {
     let document: VectorDocument
     let geometry: GeometryProxy
@@ -71,6 +72,7 @@ struct GradientCenterPointCanvasView: View {
                 .onEnded(onDragEnded)
         )
     }
+
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
@@ -80,6 +82,7 @@ struct GradientCenterPointCanvasView: View {
         }
         return gradient
     }
+
     private func getSelectedShapeWithGradient(document: VectorDocument) -> VectorShape? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
@@ -89,6 +92,7 @@ struct GradientCenterPointCanvasView: View {
         }
         return shape
     }
+
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -97,6 +101,7 @@ struct GradientCenterPointCanvasView: View {
             return radial.originPoint.x
         }
     }
+
     private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -106,7 +111,9 @@ struct GradientCenterPointCanvasView: View {
         }
     }
 }
+
 extension DrawingCanvas {
+
     @ViewBuilder
     func gradientEditTool(geometry: GeometryProxy) -> some View {
         if getSelectedShapeGradient(document: document) != nil,
@@ -131,6 +138,7 @@ extension DrawingCanvas {
             )
         }
     }
+
     private func getSelectedShapeWithGradient() -> VectorShape? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
@@ -140,6 +148,7 @@ extension DrawingCanvas {
         }
         return shape
     }
+
     private func getGradientCenterPoint(gradient: VectorGradient, shape: VectorShape) -> CGPoint {
         let shapeBounds = shape.bounds
         switch gradient {
@@ -157,6 +166,7 @@ extension DrawingCanvas {
             return CGPoint(x: centerX, y: centerY)
         }
     }
+
     private func getGradientScale(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -165,6 +175,7 @@ extension DrawingCanvas {
             return radial.scaleX
         }
     }
+
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -173,6 +184,7 @@ extension DrawingCanvas {
             return radial.originPoint.x
         }
     }
+
     private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -181,6 +193,7 @@ extension DrawingCanvas {
             return radial.originPoint.y
         }
     }
+
     private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
         if dragStartGradient == nil {
             dragStartGradient = gradient
@@ -203,6 +216,7 @@ extension DrawingCanvas {
         }
         activeGradientDelta = newGradient
     }
+
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
         guard let finalGradient = activeGradientDelta,
               let startGradient = dragStartGradient,
@@ -223,12 +237,15 @@ extension DrawingCanvas {
         activeGradientDelta = nil
         dragStartGradient = nil
     }
+
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
         updateGradientOriginXOptimized(newX, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
     }
+
     private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
         updateGradientOriginYOptimized(newY, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
     }
+
     private func updateGradientOriginXOptimized(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         switch selectedGradient {
@@ -241,6 +258,7 @@ extension DrawingCanvas {
             updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
+
     private func updateGradientOriginYOptimized(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         switch selectedGradient {
@@ -253,6 +271,7 @@ extension DrawingCanvas {
             updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
+
     private func updateGradientOriginXYOptimized(_ newX: Double, _ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         let newGradient: VectorGradient
@@ -269,12 +288,15 @@ extension DrawingCanvas {
         }
         activeGradientDelta = newGradient
     }
+
     private func updateShapeGradient(shape: VectorShape, newGradient: VectorGradient) {
         updateShapeGradientOptimized(shape: shape, newGradient: newGradient, isLiveDrag: false)
     }
+
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: document.viewState.activeColorTarget)
     }
+
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),

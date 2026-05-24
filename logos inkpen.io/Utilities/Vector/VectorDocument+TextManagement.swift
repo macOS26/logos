@@ -2,7 +2,9 @@ import SwiftUI
 import CoreText
 import AppKit
 import Combine
+
 extension VectorDocument {
+
     func addText(_ text: VectorText) {
         guard let layerIndex = selectedLayerIndex else { return }
         let oldSelection = viewState.selectedObjectIDs
@@ -16,6 +18,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [text.id]
         viewState.selectedObjectIDs = [text.id]
     }
+
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
         guard let layerIndex = layerIndex,
               layerIndex >= 0 && layerIndex < snapshot.layers.count else {
@@ -36,6 +39,7 @@ extension VectorDocument {
         viewState.selectedObjectIDs = [text.id]
         selectedLayerIndex = layerIndex
     }
+
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
         var removedObjects: [UUID: VectorObject] = [:]
@@ -59,6 +63,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs.removeAll()
     }
+
     func duplicateSelectedText() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let oldSelection = viewState.selectedObjectIDs
@@ -88,6 +93,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs = newTextIDs
     }
+
     func updateTextInUnified(_ updatedText: VectorText) {
         if let obj = snapshot.objects[updatedText.id],
            case .text = obj.objectType {
@@ -100,6 +106,7 @@ extension VectorDocument {
             snapshot.objects[updatedText.id] = updatedObject
         }
     }
+
     func convertSelectedTextToOutlines() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let selectedTexts = viewState.selectedObjectIDs.compactMap { textID -> VectorText? in
@@ -157,6 +164,7 @@ extension VectorDocument {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
     }
+
     func updateTextContent(_ textID: UUID, content: String) {
         updateTextContentInUnified(id: textID, content: content)
     }

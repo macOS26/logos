@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool, customFillStyle: FillStyle? = nil) {
         guard !currentPath.isEmpty else {
             return

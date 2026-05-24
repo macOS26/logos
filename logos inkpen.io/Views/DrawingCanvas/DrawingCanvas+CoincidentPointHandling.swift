@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftUI
+
 extension DrawingCanvas {
+
     func findCoincidentPoints(to targetPointID: PointID, tolerance: Double = 1.0) -> Set<PointID> {
         guard let targetPosition = getPointPosition(targetPointID) else { return [] }
         var coincidentPoints: Set<PointID> = []
@@ -43,6 +45,7 @@ extension DrawingCanvas {
         }
         return coincidentPoints
     }
+
     func selectPointWithCoincidents(_ pointID: PointID, addToSelection: Bool = false) {
         if !addToSelection {
             selectedPoints.removeAll()
@@ -60,6 +63,7 @@ extension DrawingCanvas {
         }
         showHandlesForSelectedPoints()
     }
+
     internal func showHandlesForSelectedPoints() {
         for pointID in selectedPoints {
             guard let object = document.snapshot.objects[pointID.shapeID],
@@ -78,6 +82,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     func findClosedPathEndpoints(for pointID: PointID) -> Set<PointID> {
         var endpointPairs: Set<PointID> = []
         if let vectorObject = document.findObject(by: pointID.shapeID),
@@ -121,6 +126,7 @@ extension DrawingCanvas {
         }
         return endpointPairs
     }
+
     func analyzeCoincidentPoints() {
         var totalCoincidentGroups = 0
         var processedPoints: Set<PointID> = []
@@ -157,6 +163,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     func moveCoincidentPointsWithSmoothLogic(pointID: PointID, to newPosition: CGPoint, delta: CGPoint) {
         let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
         for coincidentPointID in coincidentPoints {
@@ -192,6 +199,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func isSmoothCurvePoint(elements: [PathElement], elementIndex: Int) -> Bool {
         guard elementIndex < elements.count else { return false }
         switch elements[elementIndex] {
@@ -209,6 +217,7 @@ extension DrawingCanvas {
             return false
         }
     }
+
     private func moveSmoothCurveHandles(elements: inout [PathElement], elementIndex: Int, delta: CGPoint) {
         guard elementIndex < elements.count else { return }
         switch elements[elementIndex] {
@@ -232,6 +241,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     @discardableResult
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
         if handleFirstLastCoincidentPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
@@ -350,6 +360,7 @@ extension DrawingCanvas {
         }
         return !coincidentPoints.isEmpty
     }
+
     private func findCoincidentPointsInSameShape(
         shapeID: UUID,
         anchorPosition: CGPoint,
@@ -378,6 +389,7 @@ extension DrawingCanvas {
         }
         return coincidentIndices
     }
+
     private func handleFirstLastCoincidentPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
@@ -460,6 +472,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     func updateElementControl1(_ element: PathElement, newControl1: VectorPoint) -> PathElement {
         switch element {
         case .curve(let to, _, let control2):
@@ -470,6 +483,7 @@ extension DrawingCanvas {
             return element
         }
     }
+
     func updateElementControl2(_ element: PathElement, newControl2: VectorPoint) -> PathElement {
         switch element {
         case .curve(let to, let control1, _):

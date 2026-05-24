@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension VectorDocument {
     var documentUnits: VectorUnit {
         get {
@@ -12,6 +13,7 @@ extension VectorDocument {
             }
         }
     }
+
     func getDocumentBounds() -> CGRect {
         var documentBounds = CGRect.zero
         var hasContent = false
@@ -48,6 +50,7 @@ extension VectorDocument {
         }
         return documentBounds
     }
+
     func getArtworkBounds() -> CGRect? {
         var artworkBounds: CGRect = .zero
         var hasContent = false
@@ -97,6 +100,7 @@ extension VectorDocument {
         }
         return hasContent ? artworkBounds : nil
     }
+
     private func calculateGroupBoundsFromMembers(memberIDs: [UUID]) -> CGRect {
         var groupBounds: CGRect = .null
         for memberID in memberIDs {

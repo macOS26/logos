@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct VectorImportResult: Identifiable {
     let id = UUID()
     let success: Bool
@@ -9,8 +10,10 @@ struct VectorImportResult: Identifiable {
     var layers: [Layer] = []
     var groupShapeIDs: [UUID] = []
 }
+
 extension VectorImportResult {
     typealias ShapeFilter = (VectorShape) -> Bool
+
     @MainActor
     @discardableResult
     func dispatchAsImportCommand(into document: VectorDocument,
@@ -51,6 +54,7 @@ extension VectorImportResult {
         }
         var topLevel: [VectorObject] = []
         var members: [VectorObject] = []
+
         @MainActor
         func collectMembers(of shape: VectorShape, layer: Int, into ids: inout [UUID]) {
             for child in shape.groupedShapes {
@@ -86,6 +90,7 @@ extension VectorImportResult {
         document.commandManager.execute(command)
         return command
     }
+
     private static func uniqueName(_ proposed: String, against existing: Set<String>) -> String {
         if !existing.contains(proposed) { return proposed }
         var n = 2
@@ -93,6 +98,7 @@ extension VectorImportResult {
         return "\(proposed) \(n)"
     }
 }
+
 struct VectorImportMetadata {
     let originalFormat: VectorFileFormat
     let documentSize: CGSize
@@ -108,6 +114,7 @@ struct VectorImportMetadata {
     let documentVersion: String?
     let inkpenMetadata: String?
 }
+
 enum VectorUnit: String, CaseIterable {
     case points = "pt"
     case inches = "in"
@@ -124,6 +131,7 @@ enum VectorUnit: String, CaseIterable {
         }
     }
 }
+
 enum VectorImportError: Error, LocalizedError {
     case fileNotFound
     case unsupportedFormat(VectorFileFormat)

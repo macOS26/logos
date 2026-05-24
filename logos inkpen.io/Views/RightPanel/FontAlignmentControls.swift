@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct FontAlignmentControls: View {
     let selectedObjectIDs: Set<UUID>
     let selectedTextAlignment: TextAlignment
@@ -54,6 +55,7 @@ struct FontAlignmentControls: View {
             .padding(.vertical, 8)
         }
     }
+
     private func updateAlignment(_ alignment: TextAlignment) {
         document.fontManager.selectedTextAlignment = alignment
         for textID in selectedObjectIDs {

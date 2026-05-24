@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 class PressureManager: ObservableObject {
+
     @Published var hasRealPressureInput = false
     @Published var currentPressure: Double = 1.0
     @Published var isCalibrating = false
@@ -16,17 +18,21 @@ class PressureManager: ObservableObject {
     private let pressureVariationThreshold = 0.01
     private let maxSpeed: Double = 100.0
     private let speedSmoothingFactor: Double = 0.3
+
     init() {
         detectInitialPressureSupport()
     }
+
     private func detectInitialPressureSupport() {
         hasRealPressureInput = false
     }
+
     func updatePressureSupport(_ isSupported: Bool) {
         DispatchQueue.main.async {
             self.hasRealPressureInput = isSupported
         }
     }
+
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
         if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
             return
@@ -59,6 +65,7 @@ class PressureManager: ObservableObject {
             lastRecordedPressure = pressure
         }
     }
+
     func processSimulatedPressure(at location: CGPoint, sensitivity: Double = 0.5, timestamp: Date = Date()) -> Double {
         let simulatedPressure = calculateSimulatedPressure(at: location, timestamp: timestamp, sensitivity: sensitivity)
         DispatchQueue.main.async {
@@ -66,6 +73,7 @@ class PressureManager: ObservableObject {
         }
         return simulatedPressure
     }
+
     private func calculateSimulatedPressure(at location: CGPoint, timestamp: Date, sensitivity: Double) -> Double {
         defer {
             lastLocation = location
@@ -85,6 +93,7 @@ class PressureManager: ObservableObject {
         let smoothedPressure = (currentPressure * (1.0 - speedSmoothingFactor)) + (finalPressure * speedSmoothingFactor)
         return smoothedPressure
     }
+
     private func isPressureConstant() -> Bool {
         guard recentPressureValues.count >= pressureHistorySize else {
             return false
@@ -94,6 +103,7 @@ class PressureManager: ObservableObject {
         let variation = maxPressure - minPressure
         return variation < pressureVariationThreshold
     }
+
     func resetForNewDrawing() {
         lastLocation = nil
         lastTimestamp = nil
@@ -101,6 +111,7 @@ class PressureManager: ObservableObject {
         currentPressure = 1.0
         recentPressureValues.removeAll()
     }
+
     func getPressure(for location: CGPoint, sensitivity: Double = 0.5) -> Double {
         if hasRealPressureInput {
             if isPressureConstant() {
@@ -112,6 +123,7 @@ class PressureManager: ObservableObject {
             return processSimulatedPressure(at: location, sensitivity: sensitivity)
         }
     }
+
     func startCalibration() {
         DispatchQueue.main.async {
             self.isCalibrating = true
@@ -120,11 +132,13 @@ class PressureManager: ObservableObject {
             self.calibrationSampleCount = 0
         }
     }
+
     func stopCalibration() {
         DispatchQueue.main.async {
             self.isCalibrating = false
         }
     }
+
     func resetCalibration() {
         DispatchQueue.main.async {
             self.calibrationMinPressure = 0.0
@@ -132,12 +146,14 @@ class PressureManager: ObservableObject {
             self.calibrationSampleCount = 0
         }
     }
+
     private func updateCalibrationData(pressure: Double, isTabletEvent: Bool = false) {
         DispatchQueue.main.async {
             self.calibrationSampleCount += 1
         }
     }
 }
+
 extension PressureManager {
     static let shared = PressureManager()
 }

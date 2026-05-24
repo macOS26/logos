@@ -1,6 +1,8 @@
 import Foundation
 import CoreGraphics
+
 class GradientCommand: BaseCommand {
+
     enum GradientTarget {
         case fill
         case stroke
@@ -11,6 +13,7 @@ class GradientCommand: BaseCommand {
     private let newGradients: [UUID: VectorGradient?]
     private let oldOpacities: [UUID: Double]
     private let newOpacities: [UUID: Double]
+
     init(objectIDs: [UUID],
          target: GradientTarget,
          oldGradients: [UUID: VectorGradient?],
@@ -24,13 +27,16 @@ class GradientCommand: BaseCommand {
         self.oldOpacities = oldOpacities
         self.newOpacities = newOpacities
     }
+
     override func execute(on document: VectorDocument) {
         Thread.callStackSymbols.prefix(10).forEach { print("  \($0)") }
         applyGradients(newGradients, opacities: newOpacities, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyGradients(oldGradients, opacities: oldOpacities, to: document)
     }
+
     private func applyGradients(_ gradients: [UUID: VectorGradient?], opacities: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {

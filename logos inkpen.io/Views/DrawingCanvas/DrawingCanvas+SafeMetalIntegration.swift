@@ -1,9 +1,12 @@
 import SwiftUI
+
 #if os(macOS)
 import AppKit
 #endif
 import MetalKit
+
 extension DrawingCanvas {
+
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {

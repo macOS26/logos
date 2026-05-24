@@ -1,4 +1,5 @@
 import SwiftUI
+
 class PDFCommandParser {
     var commands: [PathCommand] = []
     var currentPoint = CGPoint.zero
@@ -42,6 +43,7 @@ class PDFCommandParser {
     var transparentImageBounds: CGRect? = nil
     var hasClipOperatorPending: Bool = false
     var clipOperatorPath: [PathCommand] = []
+
     struct PDFGraphicsState {
         var transformMatrix: CGAffineTransform
         var simdTransformMatrix: PDFSIMDMatrix
@@ -72,6 +74,7 @@ class PDFCommandParser {
     var pdfCreator: String = ""
     var usesTextMatrixForPosition: Bool? = nil
     var needsYFlip: Bool? = nil
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
@@ -106,19 +109,24 @@ class PDFCommandParser {
         }
         return shapes
     }
+
     private func mergeTextShapesByLine(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
         var pending: VectorShape? = nil
+
         func isTextShape(_ s: VectorShape) -> Bool {
             return s.textContent != nil && !(s.textContent ?? "").isEmpty
         }
+
         func shapeY(_ s: VectorShape) -> CGFloat {
             return s.textPosition?.y ?? s.bounds.minY
         }
+
         func shapeX(_ s: VectorShape) -> CGFloat {
             return s.textPosition?.x ?? s.bounds.minX
         }
+
         func canMerge(_ a: VectorShape, _ b: VectorShape) -> Bool {
             guard isTextShape(a) && isTextShape(b) else { return false }
             let yDelta = abs(shapeY(a) - shapeY(b))
@@ -155,6 +163,7 @@ class PDFCommandParser {
         }
         return result
     }
+
     private func finalizeTextShapeWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {
@@ -184,20 +193,25 @@ class PDFCommandParser {
                                height: max(measuredHeight, result.bounds.height))
         return result
     }
+
     private func mergeTextLinesByParagraph(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
         var pending: VectorShape? = nil
         var pendingLineY: CGFloat = 0
+
         func isTextShape(_ s: VectorShape) -> Bool {
             return s.textContent != nil && !(s.textContent ?? "").isEmpty
         }
+
         func textY(_ s: VectorShape) -> CGFloat {
             return s.textPosition?.y ?? s.bounds.minY
         }
+
         func textX(_ s: VectorShape) -> CGFloat {
             return s.textPosition?.x ?? s.bounds.minX
         }
+
         func canContinueParagraph(_ prev: VectorShape, _ next: VectorShape, prevLineY: CGFloat) -> Bool {
             guard isTextShape(prev) && isTextShape(next) else { return false }
             guard let pType = prev.typography, let nType = next.typography else { return false }
@@ -232,6 +246,7 @@ class PDFCommandParser {
         }
         return result
     }
+
     private func finalizeParagraphWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {
@@ -267,10 +282,12 @@ class PDFCommandParser {
                                height: measuredHeight)
         return result
     }
+
     func detectPDFVersion(document: CGPDFDocument) -> String {
         let versionString = "PDF1.7"
         return versionString
     }
+
     func detectPDFCreator(document: CGPDFDocument) {
         guard let info = document.info else {
             pdfCreator = ""
@@ -284,6 +301,7 @@ class PDFCommandParser {
             }
         }
     }
+
     func parsePage(document: CGPDFDocument, pageNumber: Int) {
         autoreleasepool {
             guard let page = document.page(at: pageNumber) else { return }
@@ -306,9 +324,11 @@ class PDFCommandParser {
             pageResourcesDict = nil
         }
     }
+
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
         PDFOperatorInterpreter.setupOperatorCallbacks(operatorTable, parser: self)
     }
+
     func removeDuplicateClippingShapes() {
         let clippingPaths = shapes.filter { $0.isClippingPath }
         for clippingPath in clippingPaths {
@@ -344,6 +364,7 @@ class PDFCommandParser {
             }
         }
     }
+
     func shapeMatchesOuterBoundary(_ shape: VectorShape, of compound: VectorShape) -> Bool {
         let shapeBounds = shape.bounds
         let compoundBounds = compound.bounds
@@ -353,6 +374,7 @@ class PDFCommandParser {
                abs(shapeBounds.maxX - compoundBounds.maxX) < tolerance &&
                abs(shapeBounds.maxY - compoundBounds.maxY) < tolerance
     }
+
     func pathsAreEqual(_ path1: VectorPath, _ path2: VectorPath) -> Bool {
         guard path1.elements.count == path2.elements.count else { return false }
         for (element1, element2) in zip(path1.elements, path2.elements) {
@@ -362,6 +384,7 @@ class PDFCommandParser {
         }
         return true
     }
+
     func elementsAreEqual(_ e1: PathElement, _ e2: PathElement) -> Bool {
         let tolerance = 0.01
         switch (e1, e2) {
@@ -382,6 +405,7 @@ class PDFCommandParser {
             return false
         }
     }
+
     func calculateArtworkBounds() -> CGRect {
         return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: pageSize)
     }

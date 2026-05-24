@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     func parsePoints(_ pointsString: String) -> [CGPoint] {
         let coordinates = pointsString
             .replacingOccurrences(of: ",", with: " ")
@@ -11,6 +13,7 @@ extension SVGParser {
         }
         return points
     }
+
     func tokenizeSVGPath(_ pathData: String) -> [String] {
         var tokens: [String] = []
         let chars = Array(pathData)
@@ -76,6 +79,7 @@ extension SVGParser {
         }
         return tokens
     }
+
     func parsePathData(_ pathData: String) -> [PathElement] {
         var elements: [PathElement] = []
         var currentPoint = CGPoint.zero
@@ -399,6 +403,7 @@ extension SVGParser {
         }
         return elements
     }
+
     private func expandArcTokens(_ tokens: [String], from start: Int) -> [String] {
         var result: [String] = []
         var paramIdx = 0
@@ -436,6 +441,7 @@ extension SVGParser {
         }
         return result
     }
+
     func arcToBezierCurves(from p1: CGPoint, to p2: CGPoint, rx inputRx: Double, ry inputRy: Double, xRotation: Double, largeArc: Bool, sweep: Bool) -> [PathElement] {
         if p1.x == p2.x && p1.y == p2.y { return [] }
         var rx = inputRx
@@ -492,6 +498,7 @@ extension SVGParser {
         }
         return elements
     }
+
     private func arcSegmentToBezier(cx: Double, cy: Double, rx: Double, ry: Double, phi: Double, startAngle: Double, segmentAngle: Double) -> [PathElement] {
         let alpha = sin(segmentAngle) * (sqrt(4.0 + 3.0 * tan(segmentAngle / 2.0) * tan(segmentAngle / 2.0)) - 1.0) / 3.0
         let cosPhi = cos(phi)

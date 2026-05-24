@@ -2,8 +2,10 @@ import SwiftUI
 import AppKit
 import CoreText
 import Combine
+
 @MainActor
 class ProfessionalTextViewModel: ObservableObject {
+
     @Published var text: String = ""
     @Published var fontSize: CGFloat = 24.0
     @Published var selectedFont: PlatformFont = PlatformFont.systemFont(ofSize: 24.0)
@@ -13,6 +15,7 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var textObject: VectorText
     let document: VectorDocument
     var linePaths: [CGPath] = []
+
     init(textObject: VectorText, document: VectorDocument) {
         self.textObject = textObject
         self.document = document
@@ -30,6 +33,7 @@ class ProfessionalTextViewModel: ObservableObject {
         )
         self.isEditing = textObject.isEditing
     }
+
     private func calculateTextHeight(for content: String) -> CGFloat {
         guard !content.isEmpty else { return 50.0 }
         let paragraphStyle = NSMutableParagraphStyle()
@@ -54,6 +58,7 @@ class ProfessionalTextViewModel: ObservableObject {
         let usedRect = layoutManager.usedRect(for: textContainer)
         return max(50.0, ceil(usedRect.height + 10))
     }
+
     func syncFromDocument(_ textObject: VectorText) {
         guard self.textObject.id == textObject.id else {
             Log.error("❌ SYNC ERROR: Mismatched text IDs", category: .error)
@@ -108,10 +113,12 @@ class ProfessionalTextViewModel: ObservableObject {
         )
     }
     private var lastTypingTime: TimeInterval = 0
+
     func updateLastTypingTime() {
         lastTypingTime = Date().timeIntervalSince1970
     }
     var isAutoResizing = false
+
     func startEditing() {
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType,
@@ -122,10 +129,12 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         isEditing = true
     }
+
     func stopEditing() {
         isEditing = false
         updateDocumentTextBounds(textBoxFrame)
     }
+
     func updateTextBoxFrame(_ newFrame: CGRect) {
         isAutoResizing = true
         textBoxFrame = newFrame
@@ -134,6 +143,7 @@ class ProfessionalTextViewModel: ObservableObject {
             self.isAutoResizing = false
         }
     }
+
     func updateDocumentTextBounds(_ frame: CGRect) {
         document.updateShapeByID(textObject.id) { shape in
             shape.transform = CGAffineTransform(translationX: frame.minX, y: frame.minY)
@@ -142,6 +152,7 @@ class ProfessionalTextViewModel: ObservableObject {
             shape.areaSize = CGSize(width: frame.width, height: frame.height)
         }
     }
+
     private func isRectangleGlyph(_ path: CGPath) -> Bool {
         var subpaths: [[CGPoint]] = []
         var currentPath: [CGPoint] = []
@@ -163,6 +174,7 @@ class ProfessionalTextViewModel: ObservableObject {
                     subpaths.append(currentPath)
                     currentPath = []
                 }
+
             @unknown default:
                 break
             }
@@ -193,6 +205,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         return false
     }
+
     private func isRectangularPath(_ points: [CGPoint]) -> Bool {
         guard points.count >= 4 else { return false }
         for i in 0..<points.count - 1 {
@@ -208,6 +221,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         return true
     }
+
     private func boundingBox(of points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
         var minX = points[0].x
@@ -222,6 +236,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
+
     private func convertUsingNSLayoutManager() {
         linePaths = CTLineTextConverter.convertTextToPaths(
             text: text,
@@ -233,9 +248,11 @@ class ProfessionalTextViewModel: ObservableObject {
             letterSpacing: textObject.typography.letterSpacing
         )
     }
+
     private func convertToCoreTextPath() {
         convertUsingNSLayoutManager()
     }
+
     func convertToPath() {
         guard !text.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: Cannot convert empty text", category: .error)
@@ -297,6 +314,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         document.removeTextFromUnifiedSystem(id: textObject.id)
     }
+
     func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {
         var elements: [PathElement] = []
         cgPath.applyWithBlock { elementPointer in
@@ -326,6 +344,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 ))
             case .closeSubpath:
                 elements.append(.close)
+
             @unknown default:
                 break
             }
@@ -333,6 +352,7 @@ class ProfessionalTextViewModel: ObservableObject {
         elements = makeCurvesSmooth(elements)
         return VectorPath(elements: elements, isClosed: false)
     }
+
     private func makeCurvesSmooth(_ elements: [PathElement]) -> [PathElement] {
         var smoothedElements: [PathElement] = []
         let angleTolerance = 10.0 * .pi / 180.0
@@ -371,6 +391,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         return smoothedElements
     }
+
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false, at location: CGPoint = .zero) {
         guard let textObject = document.findText(by: textID) else {
             Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
@@ -410,6 +431,7 @@ class ProfessionalTextViewModel: ObservableObject {
             }
         }
     }
+
     private func startEditingText(textID: UUID, at location: CGPoint = .zero, isDoubleClickFromArrow: Bool = false) {
         var editingCount = 0
         for obj in document.snapshot.objects.values {

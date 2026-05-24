@@ -1,17 +1,23 @@
 import simd
 import CoreGraphics
+
 class MetalDrawingOptimizer {
     static let shared = MetalDrawingOptimizer()
+
     private init() {}
+
     func optimizePathSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         return cpuOptimizedSimplification(points, tolerance: tolerance)
     }
+
     func optimizeRealTimeDrawing(enabled: Bool) {
     }
+
     private func cpuOptimizedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
         return douglasPeuckerOptimized(points: points, tolerance: tolerance)
     }
+
     private func douglasPeuckerOptimized(points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
         guard let startPoint = points.first,
@@ -35,6 +41,7 @@ class MetalDrawingOptimizer {
             return [startPoint, endPoint]
         }
     }
+
     private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> CGFloat {
         let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
         let startVec = SIMD2<Double>(Double(lineStart.x), Double(lineStart.y))
@@ -56,8 +63,10 @@ class MetalDrawingOptimizer {
         let distance = simd_length(pointVec - closestVec)
         return CGFloat(distance)
     }
+
     func trackDrawingStart() {
     }
+
     func optimizePointCollection(_ points: inout [CGPoint], maxPoints: Int = 500) {
         if points.count > maxPoints {
             let step = max(2, points.count / (maxPoints / 2))
@@ -70,7 +79,9 @@ class MetalDrawingOptimizer {
         }
     }
 }
+
 extension MetalDrawingOptimizer {
+
     func optimizeFreehandDrawing(points: [CGPoint], tolerance: CGFloat = 2.0) -> [CGPoint] {
         trackDrawingStart()
         if points.count > 20 {
@@ -85,6 +96,7 @@ extension MetalDrawingOptimizer {
         }
         return points
     }
+
     func adaptiveOptimization(cpuUsage: Double) {
         if cpuUsage > 70 {
             optimizeRealTimeDrawing(enabled: true)

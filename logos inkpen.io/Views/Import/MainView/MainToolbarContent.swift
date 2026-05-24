@@ -1,8 +1,11 @@
 import SwiftUI
 import Combine
+
 struct MainToolbarContent: ToolbarContent {
+
     @ObservedObject var document: VectorDocument
     let appState: AppState
+
     @Binding var currentDocumentURL: URL?
     @Binding var showingDocumentSettings: Bool
     @Binding var showingImportDialog: Bool
@@ -14,12 +17,15 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
     let onRunDiagnostics: () -> Void
+
     private func hasOpenPaths() -> Bool {
         return hasSelectedPathsToClose()
     }
+
     private func closeOpenPaths() {
         closeSelectedPaths()
     }
+
     private func hasSelectedPathsToClose() -> Bool {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return false }
         for objectID in document.viewState.selectedObjectIDs {
@@ -52,6 +58,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         return false
     }
+
     private func closeSelectedPaths() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -297,6 +304,7 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
     }
+
     private func onSnapPageToArtwork() {
         guard let bounds = document.getArtworkBounds(), bounds.width > 0, bounds.height > 0 else { return }
         var oldShapes: [UUID: VectorShape] = [:]
@@ -339,6 +347,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
+
     private func onSnapPageToSelection() {
         guard let selectionBounds = getSelectionBoundsForDocument(), selectionBounds.width > 0, selectionBounds.height > 0 else { return }
         var oldShapes: [UUID: VectorShape] = [:]
@@ -381,6 +390,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
+
     private func getSelectionBoundsForDocument() -> CGRect? {
         var combinedBounds: CGRect?
         for objectID in document.viewState.selectedObjectIDs {
@@ -403,18 +413,23 @@ struct MainToolbarContent: ToolbarContent {
         }
         return combinedBounds
     }
+
     private func bringSelectedToFront() {
         document.bringSelectedToFront()
     }
+
     private func bringSelectedForward() {
         document.bringSelectedForward()
     }
+
     private func sendSelectedBackward() {
         document.sendSelectedBackward()
     }
+
     private func sendSelectedToBack() {
         document.sendSelectedToBack()
     }
+
     private func lockSelectedObjects() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -457,6 +472,7 @@ struct MainToolbarContent: ToolbarContent {
             document.commandManager.execute(command)
         }
     }
+
     private func unlockAllObjects() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -483,6 +499,7 @@ struct MainToolbarContent: ToolbarContent {
             document.commandManager.execute(command)
         }
     }
+
     private func hideSelectedObjects() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -524,6 +541,7 @@ struct MainToolbarContent: ToolbarContent {
             document.commandManager.execute(command)
         }
     }
+
     private func showAllObjects() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -550,9 +568,11 @@ struct MainToolbarContent: ToolbarContent {
             document.commandManager.execute(command)
         }
     }
+
     private func hasSelection() -> Bool {
         return !document.viewState.selectedObjectIDs.isEmpty
     }
+
     private func createRectangleFromBoundingBox() {
         guard let bounds = getBoundingBoxForSelection(), bounds.width > 0, bounds.height > 0 else { return }
         let path = VectorPath(elements: [
@@ -586,6 +606,7 @@ struct MainToolbarContent: ToolbarContent {
         )
         document.addShape(rectangle)
     }
+
     private func getBoundingBoxForSelection() -> CGRect? {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
         var combinedBounds: CGRect?

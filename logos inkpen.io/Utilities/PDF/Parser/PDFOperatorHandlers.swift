@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleMoveTo(scanner: CGPDFScannerRef) {
         if !currentPath.isEmpty {
             compoundPathParts.append(currentPath)
@@ -19,6 +21,7 @@ extension PDFCommandParser {
         pathStartPoint = point
         currentPath.append(.moveTo(point))
     }
+
     func handleLineTo(scanner: CGPDFScannerRef) {
         var x: CGFloat = 0, y: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &y),
@@ -27,6 +30,7 @@ extension PDFCommandParser {
         currentPath.append(.lineTo(point))
         currentPoint = point
     }
+
     func handleCurveTo(scanner: CGPDFScannerRef) {
         var x1: CGFloat = 0, y1: CGFloat = 0
         var x2: CGFloat = 0, y2: CGFloat = 0
@@ -43,6 +47,7 @@ extension PDFCommandParser {
         currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
         currentPoint = to
     }
+
     func handleCurveToV(scanner: CGPDFScannerRef) {
         var x2: CGFloat = 0, y2: CGFloat = 0
         var x3: CGFloat = 0, y3: CGFloat = 0
@@ -56,6 +61,7 @@ extension PDFCommandParser {
         currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
         currentPoint = to
     }
+
     func handleCurveToY(scanner: CGPDFScannerRef) {
         var x1: CGFloat = 0, y1: CGFloat = 0
         var x3: CGFloat = 0, y3: CGFloat = 0
@@ -69,6 +75,7 @@ extension PDFCommandParser {
         currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
         currentPoint = to
     }
+
     func handleRectangle(scanner: CGPDFScannerRef) {
         var x: CGFloat = 0, y: CGFloat = 0
         var width: CGFloat = 0, height: CGFloat = 0
@@ -87,6 +94,7 @@ extension PDFCommandParser {
         currentPath.append(.closePath)
         currentPoint = CGPoint(x: rect.minX, y: rect.minY)
     }
+
     func handleClosePath() {
         currentPath.append(.closePath)
         currentPoint = pathStartPoint

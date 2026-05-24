@@ -1,7 +1,9 @@
 import Foundation
 import Combine
 import CoreGraphics
+
 class StrokePropertiesCommand: BaseCommand {
+
     enum PropertyType {
         case placement
         case lineJoin
@@ -21,6 +23,7 @@ class StrokePropertiesCommand: BaseCommand {
     private let newMiterLimits: [UUID: Double]?
     private let oldOpacities: [UUID: Double]?
     private let newOpacities: [UUID: Double]?
+
     init(objectIDs: [UUID],
          placement old: [UUID: StrokePlacement],
          new: [UUID: StrokePlacement]) {
@@ -37,6 +40,7 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
+
     init(objectIDs: [UUID],
          lineJoin old: [UUID: CGLineJoin],
          new: [UUID: CGLineJoin]) {
@@ -53,6 +57,7 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
+
     init(objectIDs: [UUID],
          lineCap old: [UUID: CGLineCap],
          new: [UUID: CGLineCap]) {
@@ -69,6 +74,7 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
+
     init(objectIDs: [UUID],
          miterLimit old: [UUID: Double],
          new: [UUID: Double]) {
@@ -85,6 +91,7 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = nil
         self.newOpacities = nil
     }
+
     init(objectIDs: [UUID],
          imageOpacity old: [UUID: Double],
          new: [UUID: Double]) {
@@ -101,6 +108,7 @@ class StrokePropertiesCommand: BaseCommand {
         self.oldOpacities = old
         self.newOpacities = new
     }
+
     override func execute(on document: VectorDocument) {
         switch propertyType {
         case .placement:
@@ -125,6 +133,7 @@ class StrokePropertiesCommand: BaseCommand {
             }
         }
     }
+
     override func undo(on document: VectorDocument) {
         switch propertyType {
         case .placement:
@@ -149,6 +158,7 @@ class StrokePropertiesCommand: BaseCommand {
             }
         }
     }
+
     private func applyPlacements(_ placements: [UUID: StrokePlacement], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {
@@ -166,6 +176,7 @@ class StrokePropertiesCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyLineJoins(_ lineJoins: [UUID: CGLineJoin], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {
@@ -183,6 +194,7 @@ class StrokePropertiesCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyLineCaps(_ lineCaps: [UUID: CGLineCap], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {
@@ -200,6 +212,7 @@ class StrokePropertiesCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyMiterLimits(_ miterLimits: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {
@@ -217,6 +230,7 @@ class StrokePropertiesCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyImageOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {

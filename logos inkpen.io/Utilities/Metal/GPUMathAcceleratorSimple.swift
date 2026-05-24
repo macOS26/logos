@@ -1,11 +1,15 @@
 import simd
 import CoreGraphics
+
 class GPUMathAcceleratorSimple {
     static let shared = GPUMathAcceleratorSimple()
+
     private init() {}
+
     func douglasPeuckerSimplifyGPUReady(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         return douglasPeuckerOptimized(points: points, tolerance: Float(tolerance))
     }
+
     private func douglasPeuckerOptimized(points: [CGPoint], tolerance: Float) -> [CGPoint] {
         guard points.count > 2 else { return points }
         var result: [CGPoint] = []
@@ -44,6 +48,7 @@ class GPUMathAcceleratorSimple {
         result = keepPoints.sorted().map { points[$0] }
         return result
     }
+
     private func perpendicularDistanceOptimized(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Float {
         let lineVec = SIMD2<Float>(Float(lineEnd.x - lineStart.x), Float(lineEnd.y - lineStart.y))
         let normal = SIMD2<Float>(lineVec.y, -lineVec.x)
@@ -52,6 +57,7 @@ class GPUMathAcceleratorSimple {
         let denominator = simd_length(normal)
         return numerator / denominator
     }
+
     func optimizeDrawingPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if points.count > 20 {
             return douglasPeuckerSimplifyGPUReady(points, tolerance: tolerance)
@@ -62,6 +68,7 @@ class GPUMathAcceleratorSimple {
     var isGPUReady: Bool {
         return true
     }
+
     func getPerformanceInfo() -> String {
         return "SIMD CPU Accelerated"
     }

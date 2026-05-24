@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct MarkerSettingsSection: View {
+
     @Environment(AppState.self) private var appState
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {

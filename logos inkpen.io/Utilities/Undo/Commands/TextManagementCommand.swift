@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+
 class TextManagementCommand: BaseCommand {
+
     enum Operation {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
         case removeText(textIDs: [UUID], removedObjects: [UUID: VectorObject], removedPositions: [UUID: Int])
@@ -10,11 +12,13 @@ class TextManagementCommand: BaseCommand {
     private let operation: Operation
     private let oldSelection: Set<UUID>
     private let newSelection: Set<UUID>
+
     init(operation: Operation, oldSelection: Set<UUID>, newSelection: Set<UUID>) {
         self.operation = operation
         self.oldSelection = oldSelection
         self.newSelection = newSelection
     }
+
     override func execute(on document: VectorDocument) {
         switch operation {
         case .addText(let textID, let shape, let layerIndex):
@@ -56,6 +60,7 @@ class TextManagementCommand: BaseCommand {
             document.viewState.selectedObjectIDs = newSelection
         }
     }
+
     override func undo(on document: VectorDocument) {
         switch operation {
         case .addText(let textID, _, _):

@@ -1,20 +1,24 @@
 import SwiftUI
 import AppKit
+
 final class AppEventMonitor {
     static let shared = AppEventMonitor()
     private var keyEventMonitor: Any?
     private let lock = NSLock()
     private(set) weak var activeDocument: VectorDocument?
     private var isSpacebarPressed = false
+
     private init() {
         setupKeyEventMonitoring()
     }
+
     func setActiveDocument(_ document: VectorDocument) {
         lock.lock()
         defer { lock.unlock() }
         activeDocument = document
         print("🎯 AppEventMonitor: activeDocument set to \(ObjectIdentifier(document))")
     }
+
     private func setupKeyEventMonitoring() {
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] (event: NSEvent) -> NSEvent? in
             guard let self = self else { return event }
@@ -36,6 +40,7 @@ final class AppEventMonitor {
     private var accumulatedNudgeOffset: CGVector = .zero
     private var lastNudgeTime: Date = Date.distantPast
     private var isNudging: Bool = false
+
     private func handleKeyEvent(_ event: NSEvent, activeDoc: VectorDocument) -> NSEvent? {
         if let window = NSApp.keyWindow,
            let firstResponder = window.firstResponder,

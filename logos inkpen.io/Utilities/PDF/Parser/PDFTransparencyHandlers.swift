@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleFillOpacity(scanner: CGPDFScannerRef) {
         var opacity: CGFloat = 1.0
         guard CGPDFScannerPopNumber(scanner, &opacity) else {
@@ -8,6 +10,7 @@ extension PDFCommandParser {
         }
         currentFillOpacity = Double(opacity)
     }
+
     func handleStrokeOpacity(scanner: CGPDFScannerRef) {
         var opacity: CGFloat = 1.0
         guard CGPDFScannerPopNumber(scanner, &opacity) else {
@@ -16,6 +19,7 @@ extension PDFCommandParser {
         }
         currentStrokeOpacity = Double(opacity)
     }
+
     func handleGraphicsState(scanner: CGPDFScannerRef) {
         var nameRef: CGPDFStringRef?
         var namePtr: UnsafePointer<CChar>?
@@ -78,10 +82,12 @@ extension PDFCommandParser {
             gs3StrokeOpacity = currentStrokeOpacity
         }
     }
+
     func handleXObject(scanner: CGPDFScannerRef) {
         xObjectSavedFillOpacity = currentFillOpacity
         xObjectSavedStrokeOpacity = currentStrokeOpacity
     }
+
     func handleXObjectWithOpacitySaving(scanner: CGPDFScannerRef) {
         var namePtr: UnsafePointer<CChar>?
         guard CGPDFScannerPopName(scanner, &namePtr) else {

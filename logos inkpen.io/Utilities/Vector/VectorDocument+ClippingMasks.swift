@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func makeClippingMaskFromSelection() {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
@@ -36,9 +38,11 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [clippingGroup.id]
         viewState.selectedObjectIDs = [clippingGroup.id]
     }
+
     func releaseClippingMaskForSelection() {
         ungroupSelectedObjects()
     }
+
     func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
         guard let layerIndex = selectedLayerIndex else { return }
         let shapes = getShapesForLayer(layerIndex)
@@ -80,6 +84,7 @@ extension VectorDocument {
         ))
         commandManager.execute(command)
     }
+
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
         guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         if ImageContentRegistry.containsImage(shape, in: self) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
@@ -149,12 +154,14 @@ extension VectorDocument {
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
+
     func isShapeInClippingMask(_ shapeID: UUID) -> Bool {
         if let shape = findShape(by: shapeID) {
             return shape.isClippingPath || shape.clippedByShapeID != nil
         }
         return false
     }
+
     func getClippingMaskGroup(for maskID: UUID) -> [VectorShape] {
         guard let layerIndex = selectedLayerIndex else { return [] }
         var group: [VectorShape] = []

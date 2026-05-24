@@ -1,4 +1,5 @@
 import SwiftUI
+
 class SVGParser: NSObject, XMLParserDelegate {
     var shapes: [VectorShape] = []
     internal var textObjects: [VectorText] = []
@@ -41,6 +42,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var statImagesTotal: Int = 0
     internal var statImagesDropped: Int = 0
     internal var statImageHrefSamples: [String] = []
+
     static func looksLikeXML(_ data: Data) -> Bool {
         guard data.count >= 2 else { return false }
         var i = 0
@@ -53,6 +55,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return false
     }
+
     static func isSyntheticGroupId(_ id: String) -> Bool {
         guard id.hasPrefix("Group") else { return false }
         let suffix = id.dropFirst(5)
@@ -82,6 +85,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var elementHiddenStack: [Bool] = []
     private var useRecursionDepth = 0
     private let maxUseRecursionDepth = 10
+
     struct MarkerDefinition {
         let shapes: [VectorShape]
         let refX: Double
@@ -91,6 +95,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         let orient: String
         let unitsStrokeWidth: Bool
     }
+
     private func isElementHidden(_ attributes: [String: String]) -> Bool {
         if attributes["display"] == "none" { return true }
         if attributes["visibility"] == "hidden" { return true }
@@ -108,6 +113,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var viewBoxScale: (x: Double, y: Double) {
         return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
     }
+
     struct ParseResult {
         let shapes: [VectorShape]
         let textObjects: [VectorText]
@@ -116,6 +122,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         let creator: String?
         let version: String?
     }
+
     func parse(_ xmlString: String) throws -> ParseResult {
         guard let data = xmlString.data(using: .utf8) else {
             throw VectorImportError.parsingError("Invalid SVG string", line: nil)
@@ -200,9 +207,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             version: version
         )
     }
+
     func enableExtremeValueHandling() {
         useExtremeValueHandling = true
     }
+
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElementName = elementName
         let elementIsHidden = isElementHidden(attributeDict)
@@ -313,6 +322,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             break
         }
     }
+
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if let wasHidden = elementHiddenStack.popLast(), wasHidden {
             hiddenDepth = max(0, hiddenDepth - 1)
@@ -466,6 +476,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             break
         }
     }
+
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         if currentElementName == "style" {
             currentStyleContent += string
@@ -482,6 +493,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
+
     private func parseCSSStyles(_ cssContent: String) {
         let rules = cssContent.components(separatedBy: "}")
         for rule in rules {
@@ -503,6 +515,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
+
     internal func applyCSSClasses(_ classAttr: String, into attributes: inout [String: String]) {
         let classNames = classAttr.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         for cls in classNames {
@@ -524,6 +537,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
+
     private func parseSVGRoot(attributes: [String: String]) {
         if let width = attributes["width"], let height = attributes["height"] {
             let w = parseLength(width) ?? 100
@@ -583,6 +597,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         creator = attributes["data-name"] ?? attributes["generator"]
         version = attributes["version"]
     }
+
     private func parseGroup(attributes: [String: String]) {
         transformStack.append(currentTransform)
         currentGroupId = attributes["id"]
@@ -623,6 +638,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else if pendingClipPathId != nil {
         }
     }
+
     private func parseUseElement(attributes: [String: String]) {
         guard useRecursionDepth < maxUseRecursionDepth else { return }
         let href = attributes["xlink:href"] ?? attributes["href"] ?? ""
@@ -685,6 +701,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         useRecursionDepth -= 1
         currentTransform = savedTransform
     }
+
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
         let pathData = parsePathData(d)
@@ -709,7 +726,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             shapes.append(shape)
         }
     }
+
     static func patternIdInFill(attributes: [String: String]) -> String? {
+
         func extract(_ s: String) -> String? {
             guard let urlStart = s.range(of: "url(#") else { return nil }
             let after = s[urlStart.upperBound...]
@@ -727,6 +746,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return nil
     }
+
     private func expandPatternInPlace(patternShapes: [VectorShape], pathElements: [PathElement], originalAttributes: [String: String]) {
         var minX: CGFloat = .infinity
         var minY: CGFloat = .infinity
@@ -753,6 +773,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             shapes.append(copy)
         }
     }
+
     private func resolvePatternImage(attributes: [String: String]) {
         guard let patternId = currentPatternId else { return }
         let href = attributes["href"] ?? attributes["xlink:href"] ?? ""
@@ -767,6 +788,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         patternDefinitions[patternId] = result.shapes
         print("🎨 Resolved pattern #\(patternId) → \(result.shapes.count) nested shapes")
     }
+
     private func parseImage(attributes: [String: String]) {
         var mergedAttributes = attributes
         if let className = attributes["class"] {
@@ -892,11 +914,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         shapes.append(imageShape)
     }
+
     private func parseClipPath(attributes: [String: String]) {
         isParsingClipPath = true
         currentClipPathId = attributes["id"]
         currentClipPath = nil
     }
+
     private func parseShapeForClipPath(elementName: String, attributes: [String: String]) {
         var clipPath: VectorPath?
         switch elementName {
@@ -985,6 +1009,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
     }
+
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         var mergedAttributes = attributes
         if let style = attributes["style"], !style.isEmpty {
@@ -1100,6 +1125,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             isCompoundPath: isCompound
         )
     }
+
     internal func checkForClipPath(_ attributes: [String: String]) -> (shouldClip: Bool, clipPathId: String?) {
         var mergedAttributes = attributes
         if let className = attributes["class"] {
@@ -1130,6 +1156,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         return (false, nil)
     }
+
     internal func applyClipPathToShape(_ shape: VectorShape, clipPathId: String) {
         guard let clipPath = clipPathDefinitions[clipPathId] else {
             Log.error("❌ Clip path not found: \(clipPathId)", category: .error)
@@ -1161,6 +1188,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         clipShape.isCompoundPath = true
         shapes.append(clipShape)
     }
+
     internal func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
         return GradientCoordinateConverter.parseGradientCoordinate(
             value,
@@ -1171,6 +1199,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             viewBoxHeight: viewBoxHeight
         )
     }
+
     private func parseRadialGradientCoordinateExtreme(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
         return GradientCoordinateConverter.parseRadialGradientCoordinateExtreme(
             value,

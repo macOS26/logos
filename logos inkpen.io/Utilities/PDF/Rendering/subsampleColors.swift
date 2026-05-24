@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func subsampleColors(_ colors: [VectorColor], targetCount: Int) -> [VectorColor] {
         guard colors.count > targetCount else {
             return colors

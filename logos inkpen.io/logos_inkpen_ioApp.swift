@@ -1,6 +1,8 @@
 import SwiftUI
+
 @main
 struct logos_inken_ioApp: App {
+
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState? {
         didSet {
@@ -8,6 +10,7 @@ struct logos_inken_ioApp: App {
         }
     }
     private var appState = AppState.shared
+
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
     @AppStorage("imagePreviewQuality") private var imagePreviewQuality: Double = 1.0
@@ -22,6 +25,7 @@ struct logos_inken_ioApp: App {
         }
         _ = AppEventMonitor.shared
     }
+
     private func windowTitle(for fileURL: URL?) -> String {
         guard let fileURL = fileURL else { return "Untitled" }
         let fileName = fileURL.lastPathComponent
@@ -821,11 +825,14 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentMinSize)
     }
 }
+
 class ClipboardManager {
     static let shared = ClipboardManager()
     private let pasteboard = NSPasteboard.general
     private let vectorObjectsType = NSPasteboard.PasteboardType("io.logos.logos-inkpen-io.vectorObjects")
+
     private init() {}
+
     private func regenerateUUIDsForShapes(_ shapes: [VectorShape]) -> ([VectorShape], [UUID: UUID]) {
         var oldToNewID: [UUID: UUID] = [:]
         for shape in shapes {
@@ -849,6 +856,7 @@ class ClipboardManager {
         }
         return (newShapes, oldToNewID)
     }
+
     private func regenerateUUIDs(for shape: VectorShape) -> VectorShape {
         var newShape = shape
         newShape.id = UUID()
@@ -859,13 +867,16 @@ class ClipboardManager {
         }
         return newShape
     }
+
     func canPaste() -> Bool {
         return pasteboard.data(forType: vectorObjectsType) != nil
     }
+
     func cut(from document: VectorDocument) {
         copy(from: document)
         document.removeSelectedObjects()
     }
+
     private func collectShapeAndMembers(
         _ shape: VectorShape,
         from document: VectorDocument,
@@ -881,6 +892,7 @@ class ClipboardManager {
             }
         }
     }
+
     func copy(from document: VectorDocument) {
         var shapesToCopy: [VectorShape] = []
         var copiedShapeIDs: Set<UUID> = []
@@ -928,6 +940,7 @@ class ClipboardManager {
             Log.error("❌ Failed to copy objects: \(error)", category: .error)
         }
     }
+
     func paste(to document: VectorDocument) {
         guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
         do {
@@ -989,6 +1002,7 @@ class ClipboardManager {
             Log.error("❌ Failed to paste objects: \(error)", category: .error)
         }
     }
+
     func pasteInBack(to document: VectorDocument) {
         guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
         do {
@@ -1050,6 +1064,7 @@ class ClipboardManager {
             Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }
     }
+
     func pasteInFront(to document: VectorDocument) {
         guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
         do {
@@ -1118,10 +1133,12 @@ class ClipboardManager {
         }
     }
 }
+
 struct ClipboardData: Codable {
     let shapes: [VectorShape]
     let texts: [VectorText]
 }
+
 func openLogosInkPenHelp() {
     let helpBookName = "LogosInkPenHelp"
     if let helpBookPath = Bundle.main.path(forResource: helpBookName, ofType: "help") {

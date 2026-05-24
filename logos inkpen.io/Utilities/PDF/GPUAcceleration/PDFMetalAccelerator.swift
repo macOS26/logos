@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import Metal
 import simd
+
 class PDFMetalAccelerator {
     private static var _shared: PDFMetalAccelerator?
     private static let lock = NSLock()
@@ -13,6 +14,7 @@ class PDFMetalAccelerator {
         _shared = instance
         return instance
     }
+
     static func releaseShared() {
         lock.lock()
         _shared = nil
@@ -34,6 +36,7 @@ class PDFMetalAccelerator {
     private let parallelMaxPipeline: MTLComputePipelineState
     private let parallelMaxIndexPipeline: MTLComputePipelineState
     private let interpolatePipeline: MTLComputePipelineState
+
     private init() {
         let metal = SharedMetalDevice.shared
         self.device = metal.device
@@ -41,6 +44,7 @@ class PDFMetalAccelerator {
             fatalError("Failed to create Metal command queue")
         }
         self.commandQueue = commandQueue
+
         func createPipeline(named functionName: String) throws -> MTLComputePipelineState {
             guard let function = metal.library.makeFunction(name: functionName) else {
                 throw NSError(domain: "PDFMetalAccelerator", code: 1,
@@ -67,6 +71,7 @@ class PDFMetalAccelerator {
             fatalError("Failed to create Metal pipelines: \(error)")
         }
     }
+
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         let count = points.count
@@ -99,6 +104,7 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: count)
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
+
     func multiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
         let count = matrices.count
@@ -131,6 +137,7 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float3x3.self, capacity: count)
         return (0..<count).map { PDFSIMDMatrix(metalBuffer: Array(UnsafeBufferPointer(start: outputPointer.advanced(by: $0), count: 1)).flatMap { [$0.columns.0.x, $0.columns.0.y, $0.columns.0.z, $0.columns.1.x, $0.columns.1.y, $0.columns.1.z, $0.columns.2.x, $0.columns.2.y, $0.columns.2.z] }) }
     }
+
     func calculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
         let count = points.count
@@ -163,6 +170,7 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: Float.self, capacity: count)
         return (0..<count).map { CGFloat(outputPointer[$0]) }
     }
+
     func perpendicularDistances(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> [Float] {
         guard !points.isEmpty else { return [] }
         let count = points.count
@@ -200,6 +208,7 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: Float.self, capacity: count)
         return Array(UnsafeBufferPointer(start: outputPointer, count: count))
     }
+
     func findMaxDistance(_ distances: [Float]) -> (maxValue: Float, maxIndex: Int) {
         guard !distances.isEmpty else { return (0, 0) }
         var distancesData = distances
@@ -234,8 +243,10 @@ class PDFMetalAccelerator {
         let maxIndex = Int(maxIndexBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee)
         return (maxValue, maxIndex)
     }
+
     func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tValues: [Float]) -> [CGPoint] {
         guard !tValues.isEmpty else { return [] }
+
         struct CubicCurve {
             var p0: simd_float2
             var p1: simd_float2
@@ -277,6 +288,7 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: count)
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
+
     func batchCheckCollinearity(triplets: [(CGPoint, CGPoint, CGPoint)], tolerance: Float) -> [Bool] {
         guard !triplets.isEmpty else { return [] }
         let count = triplets.count

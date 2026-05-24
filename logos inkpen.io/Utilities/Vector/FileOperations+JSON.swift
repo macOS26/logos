@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension FileOperations {
+
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
         let jsonData = try exportToJSONData(document)
         let baseDir = url.deletingLastPathComponent()
@@ -12,6 +14,7 @@ extension FileOperations {
             throw VectorImportError.parsingError("Failed to export JSON: \(error.localizedDescription)", line: nil)
         }
     }
+
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -24,6 +27,7 @@ extension FileOperations {
             throw VectorImportError.parsingError("Failed to export JSON: \(error.localizedDescription)", line: nil)
         }
     }
+
     static func importFromJSON(url: URL) throws -> VectorDocument {
         let jsonData = try Data(contentsOf: url)
         let decoder = JSONDecoder()
@@ -52,6 +56,7 @@ extension FileOperations {
         Log.error("❌ JSON import failed: Unable to decode as current or legacy format", category: .error)
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
+
     static func importFromJSONData(_ data: Data, sourceURL: URL? = nil) throws -> VectorDocument {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -84,6 +89,7 @@ extension FileOperations {
         Log.error("❌ JSON data import failed: Unable to decode as current or legacy format", category: .error)
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
+
     static func removeLegacyBackgroundObjects(from document: VectorDocument) {
         for layerIndex in 0..<document.snapshot.layers.count {
             var layer = document.snapshot.layers[layerIndex]

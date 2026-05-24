@@ -1,7 +1,10 @@
 import SwiftUI
+
 struct SVGConsolidationHelpers {
+
     static func consolidateSharedGradientsFixed(in inputShapes: [VectorShape]) -> [VectorShape] {
         guard !inputShapes.isEmpty else { return inputShapes }
+
         struct GroupKey: Hashable {
             let blendMode: BlendMode
             let opacity: Double

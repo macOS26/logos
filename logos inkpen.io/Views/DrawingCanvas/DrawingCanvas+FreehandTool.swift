@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func cancelFreehandDrawing() {
         freehandPath = nil
         freehandRawPoints.removeAll()
@@ -9,6 +11,7 @@ extension DrawingCanvas {
         isFreehandDrawing = false
         activeFreehandShape = nil
     }
+
     internal func handleFreehandDragStart(at location: CGPoint) {
         guard !isFreehandDrawing else { return }
         isFreehandDrawing = true
@@ -41,6 +44,7 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
     }
+
     internal func handleFreehandDragUpdate(at location: CGPoint) {
         guard isFreehandDrawing else { return }
         MetalDrawingOptimizer.shared.trackDrawingStart()
@@ -59,6 +63,7 @@ extension DrawingCanvas {
         MetalDrawingOptimizer.shared.optimizePointCollection(&freehandRawPoints, maxPoints: 500)
         updateFreehandPreview(smoothedLocation: smoothedLocation)
     }
+
     internal func handleFreehandDragEnd() {
         guard isFreehandDrawing else { return }
         processFreehandPath()
@@ -66,6 +71,7 @@ extension DrawingCanvas {
         cancelFreehandDrawing()
         document.viewState.selectedObjectIDs.removeAll()
     }
+
     private func updateFreehandPreview(smoothedLocation: CGPoint? = nil) {
         guard freehandRawPoints.count >= 2 else { return }
         var elements: [PathElement] = []
@@ -76,6 +82,7 @@ extension DrawingCanvas {
         let previewPath = VectorPath(elements: elements)
         freehandPreviewPath = previewPath
     }
+
     private func processFreehandPath() {
         guard freehandRawPoints.count >= 3 else {
             return
@@ -99,6 +106,7 @@ extension DrawingCanvas {
             DrawingCanvasPathHelpers.createSmoothBezierPath(from: finalCGPoints)
         updateFinalFreehandShape(with: smoothPath)
     }
+
     private func createAdvancedSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
             return VectorPath(elements: [])
@@ -120,9 +128,11 @@ extension DrawingCanvas {
         }
         return VectorPath(elements: elements)
     }
+
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         return DrawingCanvasPathHelpers.createSmoothBezierPath(from: points)
     }
+
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
         var strokeColor = getCurrentStrokeColor()
         var fillColor = getCurrentFillColor()

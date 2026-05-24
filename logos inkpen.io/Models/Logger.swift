@@ -1,5 +1,6 @@
 import SwiftUI
 import os.log
+
 enum LogCategory: String, CaseIterable {
     case general = "general"
     case pressure = "pressure"
@@ -14,6 +15,7 @@ enum LogCategory: String, CaseIterable {
     case error = "error"
     case debug = "debug"
 }
+
 enum LogLevel: String, CaseIterable {
     case debug = "debug"
     case info = "info"
@@ -21,6 +23,7 @@ enum LogLevel: String, CaseIterable {
     case error = "error"
     case fault = "fault"
 }
+
 struct Log {
     #if DEBUG
     private static let subsystem = Bundle.main.bundleIdentifier ?? "com.logos.inkpen"
@@ -39,6 +42,7 @@ struct Log {
         "FONT FAMILY",
         "PDF"
     ]
+
     private static func logger(for category: LogCategory) -> Logger {
         var existingLogger: Logger?
         loggersQueue.sync {
@@ -56,6 +60,7 @@ struct Log {
             return logger
         }
     }
+
     private static func shouldSuppressMessage(_ message: String) -> Bool {
         let isFontRelated = fontRelatedPatterns.contains { pattern in
             message.uppercased().contains(pattern)
@@ -70,6 +75,7 @@ struct Log {
             return currentCount > maxRepeatedMessages
         }
     }
+
     private static func simplifyMessageForCounting(_ message: String) -> String {
         var simplified = message
         simplified = simplified.replacingOccurrences(of: #"\([0-9.-]+,\s*[0-9.-]+\)"#, with: "(X,Y)", options: .regularExpression)
@@ -82,6 +88,7 @@ struct Log {
         return simplified
     }
     #endif
+
     static func info(_ message: String, category: LogCategory = .general) {
         #if DEBUG
         if shouldSuppressMessage(message) {
@@ -91,6 +98,7 @@ struct Log {
         logger.info("\(message, privacy: .public)")
         #endif
     }
+
     static func warning(_ message: String, category: LogCategory = .general) {
         #if DEBUG
         if shouldSuppressMessage(message) {
@@ -100,18 +108,21 @@ struct Log {
         logger.warning("\(message, privacy: .public)")
         #endif
     }
+
     static func error(_ message: String, category: LogCategory = .error) {
         #if DEBUG
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
         #endif
     }
+
     static func fault(_ message: String, category: LogCategory = .error) {
         #if DEBUG
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")
         #endif
     }
+
     static func metal(_ message: String, level: LogLevel = .info) {
         #if DEBUG
         switch level {
@@ -123,6 +134,7 @@ struct Log {
         }
         #endif
     }
+
     static func fileOperation(_ message: String, level: LogLevel = .info) {
         #if DEBUG
         switch level {

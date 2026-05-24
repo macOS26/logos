@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func groupSelectedObjects() {
         guard viewState.selectedObjectIDs.count > 1 else {
             return
@@ -27,6 +29,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [groupShape.id]
         viewState.selectedObjectIDs = [groupShape.id]
     }
+
     func flattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count > 1 else { return }
@@ -81,6 +84,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [flattenedShape.id]
         viewState.selectedObjectIDs = [flattenedShape.id]
     }
+
     func ungroupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               !viewState.selectedObjectIDs.isEmpty else {
@@ -136,6 +140,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs = newSelectedShapeIDs
     }
+
     func unflattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count == 1,
@@ -174,6 +179,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs = newSelectedIDs
     }
+
     func makeCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count > 1 else { return }
@@ -221,6 +227,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [compoundShape.id]
         viewState.selectedObjectIDs = [compoundShape.id]
     }
+
     func makeLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count > 1 else { return }
@@ -268,6 +275,7 @@ extension VectorDocument {
         viewState.orderedSelectedObjectIDs = [loopingShape.id]
         viewState.selectedObjectIDs = [loopingShape.id]
     }
+
     func releaseCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count == 1,
@@ -312,6 +320,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs = newSelectedIDs
     }
+
     func releaseLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               viewState.selectedObjectIDs.count == 1,
@@ -356,6 +365,7 @@ extension VectorDocument {
         commandManager.execute(command)
         viewState.selectedObjectIDs = newSelectedIDs
     }
+
     private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
@@ -378,6 +388,7 @@ extension VectorDocument {
                 if !currentPath.isEmpty {
                     currentPath.closeSubpath()
                 }
+
             @unknown default:
                 break
             }

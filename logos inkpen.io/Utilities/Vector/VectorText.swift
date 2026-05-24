@@ -1,9 +1,11 @@
 import SwiftUI
 import Combine
+
 enum TextRenderMode: String, Codable, Hashable {
     case nstext
     case ctline
 }
+
 enum TextBoxState: String, CaseIterable {
     case editing
     case selected
@@ -16,6 +18,7 @@ enum TextBoxState: String, CaseIterable {
         }
     }
 }
+
 enum TextAlignment: String, CaseIterable, Codable {
     case left = "Left"
     case center = "Center"
@@ -38,6 +41,7 @@ enum TextAlignment: String, CaseIterable, Codable {
         }
     }
 }
+
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
     var fontVariant: String?
@@ -53,6 +57,7 @@ struct TypographyProperties: Codable, Hashable {
     var strokeLineJoin: LineJoin
     var fillColor: VectorColor
     var fillOpacity: Double
+
     static func == (lhs: TypographyProperties, rhs: TypographyProperties) -> Bool {
         return lhs.fontFamily == rhs.fontFamily
             && lhs.fontVariant == rhs.fontVariant
@@ -69,6 +74,7 @@ struct TypographyProperties: Codable, Hashable {
             && lhs.fillColor == rhs.fillColor
             && lhs.fillOpacity == rhs.fillOpacity
     }
+
     init(
         fontFamily: String = "Helvetica",
         fontVariant: String? = nil,
@@ -127,6 +133,7 @@ struct TypographyProperties: Codable, Hashable {
         paragraphStyle.maximumLineHeight = lineHeight
         return paragraphStyle
     }
+
     func textAttributes(includeColor: Bool = false) -> [NSAttributedString.Key: Any] {
         var attributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
@@ -138,12 +145,14 @@ struct TypographyProperties: Codable, Hashable {
         }
         return attributes
     }
+
     enum CodingKeys: String, CodingKey {
         case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
         case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth
         case strokeOpacity, strokeLineJoin, fillColor, fillOpacity
         case fontWeight, fontStyle
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         fontFamily = try container.decode(String.self, forKey: .fontFamily)
@@ -161,6 +170,7 @@ struct TypographyProperties: Codable, Hashable {
         fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
         fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(fontFamily, forKey: .fontFamily)
@@ -179,6 +189,7 @@ struct TypographyProperties: Codable, Hashable {
         try container.encode(fillOpacity, forKey: .fillOpacity)
     }
 }
+
 struct VectorText: Identifiable, Codable, Hashable {
     var id: UUID
     var content: String
@@ -192,6 +203,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var layerIndex: Int?
     var cursorPosition: Int
     var areaSize: CGSize?
+
     func getState(in document: VectorDocument) -> TextBoxState {
         if isEditing {
             return .editing
@@ -204,6 +216,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var canBeEdited: Bool {
         return isVisible && !isLocked
     }
+
     func shouldShowFontSettings(in document: VectorDocument) -> Bool {
         let state = getState(in: document)
         return state == .editing || state == .selected
@@ -220,6 +233,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
         return textBounds
     }
+
     init(
         content: String = "",
         typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),
@@ -246,6 +260,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         self.areaSize = areaSize
         updateBounds()
     }
+
     mutating func updateBounds() {
         if let userAreaSize = areaSize {
             bounds = CGRect(x: 0, y: 0, width: userAreaSize.width, height: userAreaSize.height)
@@ -306,10 +321,12 @@ struct VectorText: Identifiable, Codable, Hashable {
             )
         }
     }
+
     private func createCoreTextFont() -> CTFont {
         let nsFont = typography.nsFont
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
+
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.typography != nil else { return nil }
         let typography: TypographyProperties
@@ -357,6 +374,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         return vectorText
     }
 }
+
 class FontManager: ObservableObject {
     private static var sharedAvailableFonts: [String] = []
     private static var sharedSystemFonts: [String] = []
@@ -366,6 +384,7 @@ class FontManager: ObservableObject {
     var googleFonts: [String] = []
     private static var sharedFontVariantsCache: [String: [String]] = [:]
     private static var sharedPostScriptNameCache: [String: String] = [:]
+
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"
     @Published var selectedFontSize: Double = 24.0
@@ -378,10 +397,12 @@ class FontManager: ObservableObject {
             Self.sharedFontsLoaded = true
         }
     }
+
     func clearVariantsCache() {
         Self.sharedFontVariantsCache.removeAll()
         Self.sharedPostScriptNameCache.removeAll()
     }
+
     private func loadAvailableFonts() {
         let fontManager = NSFontManager.shared
         Self.sharedSystemFonts = fontManager.availableFontFamilies.sorted()
@@ -426,6 +447,7 @@ class FontManager: ObservableObject {
         }
         Self.sharedAvailableFonts = orderedFonts
     }
+
     private func getWeightOrder(_ variantName: String) -> Int {
         let name = variantName.lowercased()
         let isItalic = name.contains("italic") || name.contains("oblique")
@@ -482,6 +504,7 @@ class FontManager: ObservableObject {
         }
         return 1000
     }
+
     func getAvailableVariantNames(for family: String) -> [String] {
         if let cached = Self.sharedFontVariantsCache[family] {
             return cached
@@ -526,6 +549,7 @@ class FontManager: ObservableObject {
         Self.sharedFontVariantsCache[family] = sortedVariants
         return sortedVariants
     }
+
     func getPostScriptName(family: String, variant: String) -> String? {
         let cacheKey = "\(family)-\(variant)"
         if let cached = Self.sharedPostScriptNameCache[cacheKey] {
@@ -544,7 +568,9 @@ class FontManager: ObservableObject {
         return nil
     }
 }
+
 extension VectorText {
+
     func toVectorShape() -> VectorShape {
         let fillStyle = FillStyle(
             color: typography.fillColor,

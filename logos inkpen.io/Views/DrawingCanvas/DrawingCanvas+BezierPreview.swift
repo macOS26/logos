@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     @ViewBuilder
     internal func fillClosePreview(geometry: GeometryProxy) -> some View {
         if showClosePathHint && bezierPoints.count >= 3,
@@ -38,6 +40,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     @ViewBuilder
     internal func rubberBandFillPreview(geometry: GeometryProxy) -> some View {
         if let mouseLocation = currentMouseLocation,
@@ -108,6 +111,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     @ViewBuilder
     internal func rubberBandPreview(geometry: GeometryProxy) -> some View {
         if isBezierDrawing && document.viewState.currentTool == .bezierPen,
@@ -229,6 +233,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
         return GeometryUtils.constrainToAngle(from: reference, to: target, constraintAngles: constraintAngles)
     }

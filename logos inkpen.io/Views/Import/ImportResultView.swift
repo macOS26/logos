@@ -1,45 +1,59 @@
 import SwiftUI
+
 struct ImportResultHeaderStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.headline)
     }
 }
+
 struct ImportResultSectionStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption)
             .foregroundColor(.secondary)
     }
 }
+
 struct ImportResultWarningStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption)
             .foregroundColor(.orange)
     }
 }
+
 struct ImportResultErrorStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption)
             .foregroundColor(.red)
     }
 }
+
 extension View {
+
     func importResultHeader() -> some View {
         modifier(ImportResultHeaderStyle())
     }
+
     func importResultSection() -> some View {
         modifier(ImportResultSectionStyle())
     }
+
     func importResultWarning() -> some View {
         modifier(ImportResultWarningStyle())
     }
+
     func importResultError() -> some View {
         modifier(ImportResultErrorStyle())
     }
 }
+
 struct ImportResultView: View {
     let result: VectorImportResult
     let onDismiss: () -> Void

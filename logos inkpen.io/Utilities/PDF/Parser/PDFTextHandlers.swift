@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleBeginText() {
         isInTextObject = true
         currentTextMatrix = .identity
@@ -12,6 +14,7 @@ extension PDFCommandParser {
         )
         currentTextContent = ""
     }
+
     func handleEndText() {
         guard isInTextObject else { return }
         isInTextObject = false
@@ -24,6 +27,7 @@ extension PDFCommandParser {
         simdTextMatrix = PDFSIMDMatrix()
         simdLineMatrix = PDFSIMDMatrix()
     }
+
     func handleSetFont(scanner: CGPDFScannerRef) {
         var fontNamePointer: UnsafePointer<CChar>?
         var fontSize: CGPDFReal = 12.0
@@ -43,48 +47,56 @@ extension PDFCommandParser {
             Log.error("PDF Text: Failed to parse Tf operator", category: .error)
         }
     }
+
     func handleSetCharacterSpacing(scanner: CGPDFScannerRef) {
         var charSpace: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &charSpace) {
             textCharacterSpacing = Double(charSpace)
         }
     }
+
     func handleSetWordSpacing(scanner: CGPDFScannerRef) {
         var wordSpace: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &wordSpace) {
             textWordSpacing = Double(wordSpace)
         }
     }
+
     func handleSetHorizontalScaling(scanner: CGPDFScannerRef) {
         var scale: CGPDFReal = 100
         if CGPDFScannerPopNumber(scanner, &scale) {
             textHorizontalScaling = Double(scale)
         }
     }
+
     func handleSetTextLeading(scanner: CGPDFScannerRef) {
         var leading: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &leading) {
             textLeading = Double(leading)
         }
     }
+
     func handleSetTextRenderingMode(scanner: CGPDFScannerRef) {
         var mode: CGPDFInteger = 0
         if CGPDFScannerPopInteger(scanner, &mode) {
             textRenderingMode = Int(mode)
         }
     }
+
     func handleSetTextRise(scanner: CGPDFScannerRef) {
         var rise: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &rise) {
             textRise = Double(rise)
         }
     }
+
     private func appendInterWordSpaceIfNeeded() {
         guard !currentTextContent.isEmpty else { return }
         let last = currentTextContent.unicodeScalars.last
         if let scalar = last, CharacterSet.whitespaces.contains(scalar) { return }
         currentTextContent += " "
     }
+
     func handleTextMove(scanner: CGPDFScannerRef) {
         var tx: CGPDFReal = 0
         var ty: CGPDFReal = 0
@@ -107,6 +119,7 @@ extension PDFCommandParser {
             }
         }
     }
+
     func handleTextMoveWithLeading(scanner: CGPDFScannerRef) {
         var tx: CGPDFReal = 0
         var ty: CGPDFReal = 0
@@ -130,6 +143,7 @@ extension PDFCommandParser {
             }
         }
     }
+
     func handleSetTextMatrix(scanner: CGPDFScannerRef) {
         var a: CGPDFReal = 1, b: CGPDFReal = 0
         var c: CGPDFReal = 0, d: CGPDFReal = 1
@@ -171,6 +185,7 @@ extension PDFCommandParser {
             }
         }
     }
+
     func handleTextNewLine() {
         if !currentTextContent.isEmpty {
             createVectorTextFromAccumulated()
@@ -181,6 +196,7 @@ extension PDFCommandParser {
         currentTextMatrix = currentLineMatrix
         currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
     }
+
     func handleShowText(scanner: CGPDFScannerRef) {
         var stringRef: CGPDFStringRef?
         if CGPDFScannerPopString(scanner, &stringRef),
@@ -190,6 +206,7 @@ extension PDFCommandParser {
             advanceTextPosition(for: text)
         }
     }
+
     func handleShowTextWithPositioning(scanner: CGPDFScannerRef) {
         var arrayRef: CGPDFArrayRef?
         if CGPDFScannerPopArray(scanner, &arrayRef),
@@ -213,10 +230,12 @@ extension PDFCommandParser {
             advanceTextPosition(for: combinedText)
         }
     }
+
     func handleMoveAndShowText(scanner: CGPDFScannerRef) {
         handleTextNewLine()
         handleShowText(scanner: scanner)
     }
+
     func handleSpacingMoveAndShowText(scanner: CGPDFScannerRef) {
         var stringRef: CGPDFStringRef?
         var wordSpace: CGPDFReal = 0
@@ -234,6 +253,7 @@ extension PDFCommandParser {
             }
         }
     }
+
     private func extractTextFromPDFString(_ pdfString: CGPDFStringRef) -> String {
         if let fontDict = currentFontDict {
             if let decodedText = decodeTextUsingToUnicode(pdfString, fontDict: fontDict) {
@@ -263,6 +283,7 @@ extension PDFCommandParser {
         }
         return ""
     }
+
     private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
         var toUnicodeStream: CGPDFStreamRef?
         guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
@@ -304,6 +325,7 @@ extension PDFCommandParser {
         }
         return result.isEmpty ? nil : result
     }
+
     private func isCIDFont(_ fontDict: CGPDFDictionaryRef) -> Bool {
         var subtype: UnsafePointer<CChar>?
         if CGPDFDictionaryGetName(fontDict, "Subtype", &subtype),
@@ -313,6 +335,7 @@ extension PDFCommandParser {
         }
         return false
     }
+
     private func parseCMap(_ cmapString: String) -> [UInt16: String] {
         var mapping: [UInt16: String] = [:]
         let bfcharPattern = "<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>"
@@ -384,12 +407,14 @@ extension PDFCommandParser {
         }
         return mapping
     }
+
     private func cleanPDFFontName(_ fontName: String) -> String {
         if let plusIndex = fontName.firstIndex(of: "+") {
             return String(fontName[fontName.index(after: plusIndex)...])
         }
         return fontName
     }
+
     private func resolveFontFromResources(_ resourceName: String) -> String? {
         guard let resources = pageResourcesDict else { return nil }
         var fontDict: CGPDFDictionaryRef?
@@ -407,6 +432,7 @@ extension PDFCommandParser {
         }
         return nil
     }
+
     private func resolveFontFromResourcesWithDict(_ resourceName: String) -> (String, CGPDFDictionaryRef)? {
         guard let resources = pageResourcesDict else { return nil }
         var fontDict: CGPDFDictionaryRef?
@@ -424,6 +450,7 @@ extension PDFCommandParser {
         }
         return nil
     }
+
     private func resolveMacOSFont(postScriptName rawName: String) -> (family: String, variant: String?) {
         if let result = macOSFontFromPostScriptName(rawName) {
             return result
@@ -452,6 +479,7 @@ extension PDFCommandParser {
             ?? "Helvetica Neue"
         return (family: fallbackFamily, variant: closestVariantDisplayName(in: fallbackFamily, requested: rawVariant))
     }
+
     private func macOSFontFromPostScriptName(_ name: String) -> (family: String, variant: String?)? {
         guard let font = PlatformFont(name: name, size: 12) else { return nil }
         let returnedPS = font.fontName
@@ -466,6 +494,7 @@ extension PDFCommandParser {
         }
         return (family: family, variant: nil)
     }
+
     private func dashSplitFamilyVariant(_ name: String) -> (family: String, variant: String?) {
         if let dashIdx = name.lastIndex(of: "-") {
             return (family: String(name[..<dashIdx]),
@@ -473,6 +502,7 @@ extension PDFCommandParser {
         }
         return (family: name, variant: nil)
     }
+
     private func closestVariantDisplayName(in family: String, requested: String?) -> String? {
         let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
         let displayNames: [String] = members.compactMap { $0[1] as? String }
@@ -489,6 +519,7 @@ extension PDFCommandParser {
         let wantItalic = reqLower.contains("italic") || reqLower.contains("oblique")
         let wantLight = reqLower.contains("light") || reqLower.contains("thin")
         let wantMedium = reqLower.contains("medium")
+
         func score(_ name: String) -> Int {
             let n = name.lowercased()
             let isBold = n.contains("bold") || n.contains("heavy") || n.contains("black")
@@ -505,12 +536,14 @@ extension PDFCommandParser {
         }
         return displayNames.max(by: { score($0) < score($1) }) ?? displayNames.first
     }
+
     private func advanceTextPosition(for text: String) {
         let estimatedWidth = Double(text.count) * currentFontSize * 0.5
         let advance = estimatedWidth * (textHorizontalScaling / 100.0)
         let translation = CGAffineTransform(translationX: CGFloat(advance), y: 0)
         currentTextMatrix = currentTextMatrix.concatenating(translation)
     }
+
     private func createVectorTextFromAccumulated() {
         let trimmed = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

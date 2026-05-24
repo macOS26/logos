@@ -1,5 +1,6 @@
 import Foundation
 import CoreGraphics
+
 enum FreeHand2Parser {
     private static let headerSize = 256
     private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32]
@@ -10,6 +11,7 @@ enum FreeHand2Parser {
     private static let unitsPerPoint: Double = 10.0
     private static let cornerPointType: UInt16 = 0x001B
     private static let curvePointType: UInt16 = 0x0009
+
     private struct FH2Point {
         let type: UInt16
         let controlIn: CGPoint
@@ -17,13 +19,16 @@ enum FreeHand2Parser {
         let controlOut: CGPoint
         var isCorner: Bool { type == cornerPointType }
     }
+
     private static func readUInt16BE(_ data: Data, offset: Int) -> UInt16 {
         let base = data.startIndex + offset
         return UInt16(data[base]) << 8 | UInt16(data[base + 1])
     }
+
     private static func readInt16BE(_ data: Data, offset: Int) -> Int16 {
         return Int16(bitPattern: readUInt16BE(data, offset: offset))
     }
+
     private static func readUInt32BE(_ data: Data, offset: Int) -> UInt32 {
         let base = data.startIndex + offset
         return UInt32(data[base]) << 24
@@ -31,22 +36,28 @@ enum FreeHand2Parser {
              | UInt32(data[base + 2]) << 8
              | UInt32(data[base + 3])
     }
+
     private struct RecordEntry {
         let offset: Int
         let type: UInt16
         let size: Int
     }
+
     enum GradientType { case linear, radial }
+
     struct GradientInfo {
         let type: GradientType
         let colors: [VectorColor]
+
         init(type: GradientType = .linear, colors: [VectorColor]) {
             self.type = type; self.colors = colors
         }
+
         init(color1: VectorColor, color2: VectorColor) {
             self.type = .linear; self.colors = [color1, color2]
         }
     }
+
     private static func buildColorAndWidthTables(data: Data) -> ([Int: VectorColor], [Int: Double], [Int: GradientInfo], [Int: String]) {
         var colorTable: [Int: VectorColor] = [:]
         var widthTable: [Int: Double] = [:]
@@ -119,6 +130,7 @@ enum FreeHand2Parser {
             let rid = rec.styleRid
             let gid = rec.globalRid
             let off = rec.offset
+
             func storeColor(_ color: VectorColor) {
                 colorTable[rid] = color
                 colorTable[gid] = color
@@ -204,6 +216,7 @@ enum FreeHand2Parser {
         }
         return (colorTable, widthTable, gradientTable, nameTable)
     }
+
     private static func parseGroupColorsByAbsID(data: Data,
                                                  colorTable: [Int: VectorColor]) -> [Int: VectorColor] {
         var result: [Int: VectorColor] = [:]
@@ -240,6 +253,7 @@ enum FreeHand2Parser {
         }
         return result
     }
+
     static func parseNamedStrings(data: Data) -> [String] {
         var names: [String] = []
         var offset = headerSize
@@ -259,6 +273,7 @@ enum FreeHand2Parser {
         }
         return names
     }
+
     static func parseTextRecords(data: Data,
                                   colorTable: [Int: VectorColor] = [:],
                                   nameTable: [Int: String] = [:])
@@ -345,6 +360,7 @@ enum FreeHand2Parser {
         }
         return results
     }
+
     private static func parseLayers(data: Data) -> [[Int]] {
         var layers: [[Int]] = []
         var offset = headerSize
@@ -376,6 +392,7 @@ enum FreeHand2Parser {
         }
         return layers
     }
+
     private static func parsePathStylesByPosition(data: Data,
                                                    pathCount: Int,
                                                    colorTable: [Int: VectorColor])
@@ -405,18 +422,22 @@ enum FreeHand2Parser {
         }
         return result
     }
+
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
         let (ct, wt, _, _) = buildColorAndWidthTables(data: data)
         return (ct, wt)
     }
+
     static func debugGradientTable(data: Data) -> [Int: GradientInfo] {
         let (_, _, gt, _) = buildColorAndWidthTables(data: data)
         return gt
     }
+
     static func debugNameTable(data: Data) -> [Int: String] {
         let (_, _, _, nt) = buildColorAndWidthTables(data: data)
         return nt
     }
+
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
         guard data.count >= headerSize + 4 else {
             throw FreeHandImportError.notSupported
@@ -466,6 +487,7 @@ enum FreeHand2Parser {
         while offset + 4 <= data.count {
             let word = readUInt16BE(data, offset: offset)
             let rtype = readUInt16BE(data, offset: offset + 2)
+
             func recordLayerIdx() -> Int {
                 guard offset + 10 <= data.count else { return 1 }
                 return max(1, Int(readUInt16BE(data, offset: offset + 8)))
@@ -637,6 +659,7 @@ enum FreeHand2Parser {
             groupShapeIDs: []
         )
     }
+
     private static func inferEffectivePageSize(shapes: [VectorShape],
                                                 textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor, layerIndex: Int, bold: Bool, italic: Bool, alignment: Int)],
                                                 storedPage: CGSize) -> CGSize {
@@ -662,6 +685,7 @@ enum FreeHand2Parser {
         }
         return storedPage
     }
+
     private static func translateShapeY(_ shape: VectorShape, by dy: CGFloat) -> VectorShape {
         var s = shape
         let t = CGAffineTransform(translationX: 0, y: dy)
@@ -675,6 +699,7 @@ enum FreeHand2Parser {
         }
         return s
     }
+
     private static func parsePathRecord(data: Data, recordOffset: Int,
                                         recordSize: Int,
                                         pageHeight: Double,
@@ -740,6 +765,7 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
+
     private static func scanForwardForStyleColor(data: Data, startOffset: Int,
                                                   colorTable: [Int: VectorColor]) -> VectorColor? {
         let limit = min(startOffset + 2048, data.count - 4)
@@ -757,6 +783,7 @@ enum FreeHand2Parser {
         }
         return nil
     }
+
     private static func extractFillStroke(data: Data, recordOffset: Int,
                                            colorTable: [Int: VectorColor],
                                            widthTable: [Int: Double], gradientTable: [Int: GradientInfo] = [:],
@@ -801,6 +828,7 @@ enum FreeHand2Parser {
         }
         return (fillStyle, strokeStyle)
     }
+
     private static func parseRectRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
@@ -860,6 +888,7 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
+
     private static func parseLineRecord(data: Data, recordOffset: Int,
                                           pageHeight: Double,
                                           colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
@@ -883,6 +912,7 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
+
     private static func parseOvalRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
@@ -926,6 +956,7 @@ enum FreeHand2Parser {
             opacity: 1.0
         )
     }
+
     private static func buildPathElements(from points: [FH2Point], closed: Bool = false) -> [PathElement] {
         guard let first = points.first else { return [] }
         var elements: [PathElement] = []

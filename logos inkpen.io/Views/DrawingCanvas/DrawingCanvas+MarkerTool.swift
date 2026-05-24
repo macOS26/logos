@@ -1,14 +1,18 @@
 import SwiftUI
 import simd
+
 struct MarkerPoint {
     let location: CGPoint
     let pressure: Double
+
     init(location: CGPoint, pressure: Double = 1.0) {
         self.location = location
         self.pressure = pressure
     }
 }
+
 extension DrawingCanvas {
+
     internal func cancelMarkerDrawing() {
         markerPath = nil
         markerRawPoints.removeAll()
@@ -16,6 +20,7 @@ extension DrawingCanvas {
         isMarkerDrawing = false
         activeMarkerShape = nil
     }
+
     internal func handleMarkerDragStart(at location: CGPoint) {
         guard !isMarkerDrawing else { return }
         isMarkerDrawing = true
@@ -50,6 +55,7 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
     }
+
     internal func handleMarkerDragUpdate(at location: CGPoint, pressure: Double? = nil) {
         guard isMarkerDrawing else { return }
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
@@ -60,6 +66,7 @@ extension DrawingCanvas {
             markerRawPoints = Array(markerRawPoints.suffix(800))
         }
     }
+
     internal func handleMarkerDragEnd() {
         guard isMarkerDrawing else { return }
         if let preview = markerPreviewPath {
@@ -71,6 +78,7 @@ extension DrawingCanvas {
         cancelMarkerDrawing()
         document.viewState.selectedObjectIDs.removeAll()
     }
+
     private func calculateMarkerPressure(at location: CGPoint) -> Double {
         if !appState.pressureSensitivityEnabled {
             return 1.0
@@ -87,11 +95,13 @@ extension DrawingCanvas {
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         return finalPressure
     }
+
     private func updateMarkerPreview() {
         guard markerRawPoints.count >= 2 else { return }
         let previewPath = generateMarkerLivePreviewPath()
         markerPreviewPath = previewPath
     }
+
     private func generateMarkerLivePreviewPath() -> VectorPath {
         guard markerRawPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(markerRawPoints[0].location))])
@@ -102,6 +112,7 @@ extension DrawingCanvas {
             recentRawPoints: markerRawPoints
         )
     }
+
     private func processMarkerStroke() {
         guard markerRawPoints.count >= 2,
               activeMarkerShape != nil,
@@ -212,6 +223,7 @@ extension DrawingCanvas {
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }
+
     private func finalizeMarkerFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
         let strokeColor = ApplicationSettings.shared.markerApplyNoStroke ? nil : getCurrentStrokeColor()
@@ -278,18 +290,21 @@ extension DrawingCanvas {
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }
+
     private func createSmoothMarkerStroke(centerPoints: [CGPoint], recentRawPoints: [MarkerPoint]) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
         }
         return createVariableWidthMarkerStroke(centerPoints: centerPoints, rawPoints: recentRawPoints)
     }
+
     private func createFinalMarkerStroke(centerPoints: [CGPoint], recentRawPoints: [MarkerPoint]) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
         }
         return createVariableWidthMarkerStroke(centerPoints: centerPoints, rawPoints: recentRawPoints)
     }
+
     private func createVariableWidthMarkerStroke(centerPoints: [CGPoint], rawPoints: [MarkerPoint]) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
@@ -362,6 +377,7 @@ extension DrawingCanvas {
         let rightEdgePoints = generateMarkerOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
         return createSimpleMarkerOutline(leftEdgePoints: leftEdgePoints, rightEdgePoints: rightEdgePoints)
     }
+
     private func getPressureAtPoint(_ point: CGPoint, rawPoints: [MarkerPoint]) -> Double {
         guard rawPoints.count > 0 else {
             return 1.0
@@ -393,6 +409,7 @@ extension DrawingCanvas {
         }
         return closestPressure1
     }
+
     private func generateMarkerOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
         var offsetPoints: [CGPoint] = []
         for i in 0..<centerPoints.count {
@@ -429,6 +446,7 @@ extension DrawingCanvas {
         }
         return offsetPoints
     }
+
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
             return VectorPath(elements: [])
@@ -447,6 +465,7 @@ extension DrawingCanvas {
         }
         return VectorPath(elements: elements)
     }
+
     private func createSimpleMarkerOutline(leftEdgePoints: [CGPoint], rightEdgePoints: [CGPoint]) -> VectorPath {
         guard leftEdgePoints.count >= 2 && rightEdgePoints.count >= 2 else {
             if let firstPoint = leftEdgePoints.first {
@@ -475,6 +494,7 @@ extension DrawingCanvas {
         elements.append(.close)
         return VectorPath(elements: elements)
     }
+
     private func createMarkerDot(at center: CGPoint) -> VectorPath {
         let radius = ApplicationSettings.shared.currentMarkerTipSize / 2.0
         var elements: [PathElement] = []
@@ -503,6 +523,7 @@ extension DrawingCanvas {
         elements.append(.close)
         return VectorPath(elements: elements)
     }
+
     private func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
         var elements: [PathElement] = []
         for i in 1..<points.count {
@@ -535,6 +556,7 @@ extension DrawingCanvas {
         }
         return elements
     }
+
     private func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
         let p0Vec = SIMD2<Double>(Double(p0.x), Double(p0.y))
         let p1Vec = SIMD2<Double>(Double(p1.x), Double(p1.y))
@@ -550,6 +572,7 @@ extension DrawingCanvas {
             return CGPoint(x: 1, y: 0)
         }
     }
+
     private func applySelfUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         let shapes = document.getShapesForLayer(layerIndex)
         guard shapeIndex < shapes.count else {
@@ -575,6 +598,7 @@ extension DrawingCanvas {
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
+
     private func applySingleUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
             return
@@ -597,6 +621,7 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
         }
     }
+
     private func applyExpandedStrokeUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
             return
@@ -634,6 +659,7 @@ extension DrawingCanvas {
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
+
     private func applyDualUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
             return
@@ -665,6 +691,7 @@ extension DrawingCanvas {
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
+
     private func removeCoincidentPointsFromPath(_ path: VectorPath, tolerance: Double = 0.5) -> VectorPath {
         let elements = path.elements
         guard elements.count > 2 else { return path }
@@ -717,6 +744,7 @@ extension DrawingCanvas {
         }
         return VectorPath(elements: cleanedElements)
     }
+
     private func applyAdditionalSimplification(_ path: VectorPath, simplifyAmount: Double) -> VectorPath {
         let elements = path.elements
         guard elements.count > 3 else { return path }
@@ -750,6 +778,7 @@ extension DrawingCanvas {
         return VectorPath(elements: newElements)
     }
 }
+
 private extension PathElement {
     var isClose: Bool {
         if case .close = self { return true }

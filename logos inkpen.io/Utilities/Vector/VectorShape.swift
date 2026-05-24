@@ -1,7 +1,9 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 struct LineCap: Codable, Hashable {
     private let cap: String
+
     init(_ cap: CGLineCap) {
         switch cap {
         case .butt:
@@ -10,14 +12,17 @@ struct LineCap: Codable, Hashable {
             self.cap = "round"
         case .square:
             self.cap = "square"
+
         @unknown default:
             self.cap = "butt"
         }
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.cap = try container.decode(String.self)
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(cap)
@@ -38,8 +43,10 @@ struct LineCap: Codable, Hashable {
     static let round = LineCap(.round)
     static let square = LineCap(.square)
 }
+
 struct LineJoin: Codable, Hashable {
     private let join: String
+
     init(_ join: CGLineJoin) {
         switch join {
         case .miter:
@@ -48,14 +55,17 @@ struct LineJoin: Codable, Hashable {
             self.join = "round"
         case .bevel:
             self.join = "bevel"
+
         @unknown default:
             self.join = "miter"
         }
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.join = try container.decode(String.self)
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(join)
@@ -76,6 +86,7 @@ struct LineJoin: Codable, Hashable {
     static let round = LineJoin(.round)
     static let bevel = LineJoin(.bevel)
 }
+
 enum StrokePlacement: String, CaseIterable, Codable {
     case center = "Center"
     case inside = "Inside"
@@ -88,6 +99,7 @@ enum StrokePlacement: String, CaseIterable, Codable {
         }
     }
 }
+
 struct StrokeStyle: Hashable {
     var color: VectorColor
     var width: Double
@@ -99,6 +111,7 @@ struct StrokeStyle: Hashable {
     var opacity: Double
     var blendMode: BlendMode
     var scaleWithTransform: Bool
+
     init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal, scaleWithTransform: Bool = false) {
         self.color = color
         self.width = width
@@ -111,6 +124,7 @@ struct StrokeStyle: Hashable {
         self.blendMode = blendMode
         self.scaleWithTransform = scaleWithTransform
     }
+
     init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal, scaleWithTransform: Bool = false) {
         self.color = .gradient(gradient)
         self.width = width
@@ -139,10 +153,13 @@ struct StrokeStyle: Hashable {
         return !isGradient
     }
 }
+
 extension StrokeStyle: Codable {
+
     enum CodingKeys: String, CodingKey {
         case color, width, placement, dashPattern, lineCap, lineJoin, miterLimit, opacity, blendMode, scaleWithTransform
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(color, forKey: .color)
@@ -164,6 +181,7 @@ extension StrokeStyle: Codable {
             try container.encode(scaleWithTransform, forKey: .scaleWithTransform)
         }
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         color = try container.decode(VectorColor.self, forKey: .color)
@@ -178,18 +196,22 @@ extension StrokeStyle: Codable {
         scaleWithTransform = try container.decodeIfPresent(Bool.self, forKey: .scaleWithTransform) ?? false
     }
 }
+
 struct FillStyle: Codable, Hashable {
     var color: VectorColor
     var opacity: Double
     var blendMode: BlendMode
+
     init(color: VectorColor = .clear, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = color
         self.opacity = opacity
         self.blendMode = blendMode
     }
+
     enum CodingKeys: String, CodingKey {
         case color, opacity, blendMode
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(color, forKey: .color)
@@ -200,12 +222,14 @@ struct FillStyle: Codable, Hashable {
             try container.encode(blendMode, forKey: .blendMode)
         }
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         color = try container.decode(VectorColor.self, forKey: .color)
         opacity = try container.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
         blendMode = try container.decodeIfPresent(BlendMode.self, forKey: .blendMode) ?? .normal
     }
+
     init(gradient: VectorGradient, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = .gradient(gradient)
         self.opacity = opacity
@@ -232,6 +256,7 @@ struct FillStyle: Codable, Hashable {
         }
         return color
     }
+
     static func linearGradient(from startColor: VectorColor, to endColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
         let stops = [
             GradientStop(position: 0.0, color: startColor, opacity: 1.0),
@@ -246,6 +271,7 @@ struct FillStyle: Codable, Hashable {
         let gradient = VectorGradient.linear(linear)
         return FillStyle(gradient: gradient, opacity: opacity)
     }
+
     static func radialGradient(from innerColor: VectorColor, to outerColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
         let stops = [
             GradientStop(position: 0.0, color: innerColor, opacity: 1.0),
@@ -262,6 +288,7 @@ struct FillStyle: Codable, Hashable {
         return FillStyle(gradient: gradient, opacity: opacity)
     }
 }
+
 enum GeometricShapeType: String, CaseIterable, Codable {
     case rectangle = "Rectangle"
     case square = "Square"
@@ -304,6 +331,7 @@ enum GeometricShapeType: String, CaseIterable, Codable {
         }
     }
 }
+
 struct VectorShape: Hashable, Identifiable {
     var id: UUID
     var name: String
@@ -356,6 +384,7 @@ struct VectorShape: Hashable, Identifiable {
     var cachedRenderedImage: CGImage? = nil
     var cachedImageQuality: Double = 1.0
     var cachedImageTileSize: Int = 32
+
     func cachedCGPath(updateTrigger: UInt? = nil) -> CGPath {
         if let trigger = updateTrigger, _cacheUpdateTrigger != trigger {
             return buildCGPath()
@@ -371,9 +400,11 @@ struct VectorShape: Hashable, Identifiable {
         }
         return buildCGPath()
     }
+
     mutating func invalidateCGPathCache() {
         _cachedCGPath = nil
     }
+
     private func buildCGPath() -> CGPath {
         let mutablePath = CGMutablePath()
         for element in path.elements {
@@ -398,6 +429,7 @@ struct VectorShape: Hashable, Identifiable {
         }
         return mutablePath
     }
+
     init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], memberIDs: [UUID] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:], anchorTypes: [Int: AnchorPointType] = [:]) {
         self.id = UUID()
         self.name = name
@@ -440,6 +472,7 @@ struct VectorShape: Hashable, Identifiable {
         var mutableTransform = transform
         return path.cgPath.copy(using: &mutableTransform) ?? path.cgPath
     }
+
     mutating func updateBounds() {
         if typography != nil {
             if let areaSize = areaSize {
@@ -457,6 +490,7 @@ struct VectorShape: Hashable, Identifiable {
             bounds = pathBounds
         }
     }
+
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
@@ -515,6 +549,7 @@ struct VectorShape: Hashable, Identifiable {
         }
         return groupBounds
     }
+
     func createWarpObject(warpedPath: VectorPath, warpEnvelope: [CGPoint]) -> VectorShape {
         var warpObject = self
         warpObject.id = UUID()
@@ -527,6 +562,7 @@ struct VectorShape: Hashable, Identifiable {
         warpObject.updateBounds()
         return warpObject
     }
+
     func unwrapWarpObject() -> VectorShape? {
         guard isWarpObject else { return nil }
         var unwrappedShape = self
@@ -547,6 +583,7 @@ struct VectorShape: Hashable, Identifiable {
         unwrappedShape.updateBounds()
         return unwrappedShape
     }
+
     func expandWarpObject() -> VectorShape? {
         guard isWarpObject else { return nil }
         var expandedShape = self
@@ -560,6 +597,7 @@ struct VectorShape: Hashable, Identifiable {
         expandedShape.updateBounds()
         return expandedShape
     }
+
     static func textObject(content: String, typography: TypographyProperties, position: CGPoint, areaSize: CGSize? = nil) -> VectorShape {
         let emptyPath = VectorPath(elements: [], isClosed: false)
         return VectorShape(
@@ -581,6 +619,7 @@ struct VectorShape: Hashable, Identifiable {
             textPosition: position
         )
     }
+
     static func from(_ vectorText: VectorText) -> VectorShape {
         let emptyPath = VectorPath(elements: [], isClosed: false)
         let finalTransform = CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform)
@@ -618,7 +657,9 @@ struct VectorShape: Hashable, Identifiable {
         return shape
     }
 }
+
 extension VectorShape: Codable {
+
     enum CodingKeys: String, CodingKey {
         case id, name, path, geometricType, strokeStyle, fillStyle
         case transform, isVisible, isLocked, opacity, blendMode, bounds
@@ -631,6 +672,7 @@ extension VectorShape: Codable {
         case textContent, typography
         case cursorPosition, areaSize, isEditing, textPosition
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
@@ -701,6 +743,7 @@ extension VectorShape: Codable {
         if let isEditing = isEditing, isEditing { try container.encode(isEditing, forKey: .isEditing) }
         try container.encodeIfPresent(textPosition, forKey: .textPosition)
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         do {
@@ -766,6 +809,7 @@ extension VectorShape: Codable {
         textPosition = try container.decodeIfPresent(CGPoint.self, forKey: .textPosition)
     }
 }
+
 extension VectorShape {
     var isEvenOddCompoundPath: Bool {
         return isCompoundPath && path.fillRule.cgPathFillRule == .evenOdd
@@ -779,6 +823,7 @@ extension VectorShape {
     var isTrueLoopingPath: Bool {
         return isWindingLoopingPath
     }
+
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)
         let path = VectorPath(elements: [
@@ -796,6 +841,7 @@ extension VectorShape {
             fillStyle: FillStyle(color: .white, opacity: 1.0)
         )
     }
+
     static func circle(center: CGPoint, radius: Double) -> VectorShape {
         let path = VectorPath(elements: [
             .move(to: VectorPoint(center.x + radius, center.y)),
@@ -821,6 +867,7 @@ extension VectorShape {
             fillStyle: FillStyle(color: .white, opacity: 1.0)
         )
     }
+
     static func star(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int = 5) -> VectorShape {
         var elements: [PathElement] = []
         let angleStep = .pi / Double(points)
@@ -840,6 +887,7 @@ extension VectorShape {
         return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(placement: .center), fillStyle: FillStyle(color: .white))
     }
 }
+
 struct VectorLayer: Hashable, Identifiable {
     var id: UUID
     var name: String
@@ -848,6 +896,7 @@ struct VectorLayer: Hashable, Identifiable {
     var opacity: Double
     var blendMode: BlendMode
     var color: Color
+
     init(name: String, shapes: [VectorShape] = [], isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, color: Color = .blue) {
         self.id = UUID()
         self.name = name
@@ -857,15 +906,20 @@ struct VectorLayer: Hashable, Identifiable {
         self.blendMode = blendMode
         self.color = color
     }
+
     mutating func addShape(_ shape: VectorShape) {
     }
+
     mutating func removeShape(_ shape: VectorShape) {
     }
 }
+
 extension VectorLayer: Codable {
+
     enum CodingKeys: String, CodingKey {
         case id, name, isVisible, isLocked, opacity, blendMode, color
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
@@ -876,6 +930,7 @@ extension VectorLayer: Codable {
         if blendMode != .normal { try container.encode(blendMode, forKey: .blendMode) }
         try container.encode(color.description, forKey: .color)
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -890,6 +945,7 @@ extension VectorLayer: Codable {
             self.color = .blue
         }
     }
+
     private static func parseColor(from string: String) -> Color {
         switch string.lowercased() {
         case let s where s.contains("gray"): return .gray
@@ -905,6 +961,7 @@ extension VectorLayer: Codable {
         }
     }
 }
+
 enum DraggableItem: Codable, Transferable {
     case vectorObject(DraggableVectorObject)
     case layer(DraggableLayer)
@@ -912,7 +969,9 @@ enum DraggableItem: Codable, Transferable {
         CodableRepresentation(contentType: .draggableItem)
     }
 }
+
 struct DraggableVectorObject: Codable, Transferable {
+
     enum ObjectType: String, Codable {
         case shape = "shape"
         case text = "text"
@@ -920,6 +979,7 @@ struct DraggableVectorObject: Codable, Transferable {
     let objectType: ObjectType
     let objectId: UUID
     let sourceLayerIndex: Int
+
     init(objectType: ObjectType, objectId: UUID, sourceLayerIndex: Int) {
         self.objectType = objectType
         self.objectId = objectId
@@ -929,9 +989,11 @@ struct DraggableVectorObject: Codable, Transferable {
         CodableRepresentation(contentType: .draggableVectorObject)
     }
 }
+
 struct DraggableLayer: Codable, Transferable {
     let layerIndex: Int
     let layerId: UUID
+
     init(layerIndex: Int, layerId: UUID) {
         self.layerIndex = layerIndex
         self.layerId = layerId
@@ -940,6 +1002,7 @@ struct DraggableLayer: Codable, Transferable {
         CodableRepresentation(contentType: .draggableLayer)
     }
 }
+
 extension UTType {
     static var inkpen: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.document")

@@ -1,9 +1,12 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func executeCommand(_ command: Command) {
         commandManager.execute(command)
     }
+
     @discardableResult
     func modifySelectedShapesWithUndo(
         _ modification: (inout VectorShape) -> Void
@@ -12,6 +15,7 @@ extension VectorDocument {
         guard !activeShapeIDs.isEmpty else { return false }
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
+
         func collectAllMemberIDs(_ shapeID: UUID, into collection: inout [UUID]) {
             guard let shape = findShape(by: shapeID) else { return }
             if !collection.contains(shapeID) {
@@ -52,6 +56,7 @@ extension VectorDocument {
         }
         return !objectIDs.isEmpty
     }
+
     @discardableResult
     func modifySelectedShapesWithUndo(
         preCapture: () -> Void,
@@ -61,6 +66,7 @@ extension VectorDocument {
         guard !activeShapeIDs.isEmpty else { return false }
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
+
         func collectAllMemberIDs(_ shapeID: UUID, into collection: inout [UUID]) {
             guard let shape = findShape(by: shapeID) else { return }
             if !collection.contains(shapeID) {
@@ -104,6 +110,7 @@ extension VectorDocument {
         }
         return !objectIDs.isEmpty
     }
+
     @discardableResult
     func modifyShapesWithUndo(
         shapeIDs: [UUID],
@@ -139,6 +146,7 @@ extension VectorDocument {
         }
         return !validIDs.isEmpty
     }
+
     func undo() {
         if commandManager.canUndo {
             commandManager.undo()
@@ -146,6 +154,7 @@ extension VectorDocument {
         }
         cleanupImageRegistry()
     }
+
     func redo() {
         if commandManager.canRedo {
             commandManager.redo()

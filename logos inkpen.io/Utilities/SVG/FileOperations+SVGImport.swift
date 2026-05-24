@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension FileOperations {
+
     static func importFromSVGData(_ data: Data) throws -> VectorDocument {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).svg")
         try data.write(to: tempURL)
@@ -8,6 +10,7 @@ extension FileOperations {
         }
         return try openSVGFile(url: tempURL)
     }
+
     static func openSVGFile(url: URL) throws -> VectorDocument {
         let document = VectorDocument(settings: DocumentSettings())
         let objectsToKeep = document.snapshot.objects.filter { (_, obj) in
@@ -129,6 +132,7 @@ extension FileOperations {
         FileOperations.removeLegacyBackgroundObjects(from: document)
         return document
     }
+
     private static func installShapeRespectingGroups(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
             var container = shape
@@ -144,6 +148,7 @@ extension FileOperations {
             document.addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         }
     }
+
     private static func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {

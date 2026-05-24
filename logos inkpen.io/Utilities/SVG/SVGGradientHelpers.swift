@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     func finishGradientElement() {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
         let attributes = currentGradientAttributes
@@ -40,18 +42,23 @@ extension SVGParser {
             useExtremeValueHandling = false
         }
     }
+
     internal func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {
         return GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
     }
+
     internal func parseSpreadMethod(from attributes: [String: String]) -> GradientSpreadMethod {
         return GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
     }
+
     internal func degreesToRadians(_ degrees: Double) -> Double {
         return degrees * .pi / 180.0
     }
+
     internal func radiansToDegrees(_ radians: Double) -> Double {
         return radians * 180.0 / .pi
     }
+
     internal func parseGradientStop(attributes: [String: String]) {
         guard isParsingGradient else { return }
         let offset = parseLength(attributes["offset"]) ?? 0.0
@@ -75,9 +82,11 @@ extension SVGParser {
         let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
         currentGradientStops.append(gradientStop)
     }
+
     internal func clamp(_ value: Double, _ minValue: Double, _ maxValue: Double) -> Double {
         return max(minValue, min(maxValue, value))
     }
+
     internal func parseStyleAttribute(_ style: String) -> [String: String] {
         var styleDict: [String: String] = [:]
         let declarations = style.components(separatedBy: ";")

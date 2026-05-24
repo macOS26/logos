@@ -1,8 +1,11 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func selectObjectAt(_ location: CGPoint) {
         handleSelectionTap(at: location)
     }
+
     internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }

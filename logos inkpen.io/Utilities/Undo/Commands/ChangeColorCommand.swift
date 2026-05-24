@@ -1,5 +1,7 @@
 import Foundation
+
 class ChangeColorCommand: BaseCommand {
+
     enum ColorTarget {
         case fill
         case stroke
@@ -10,6 +12,7 @@ class ChangeColorCommand: BaseCommand {
     private let newColors: [UUID: VectorColor]
     private let oldOpacities: [UUID: Double]
     private let newOpacities: [UUID: Double]
+
     init(objectIDs: [UUID],
          target: ColorTarget,
          oldColors: [UUID: VectorColor],
@@ -23,12 +26,15 @@ class ChangeColorCommand: BaseCommand {
         self.oldOpacities = oldOpacities
         self.newOpacities = newOpacities
     }
+
     override func execute(on document: VectorDocument) {
         applyColors(newColors, opacities: newOpacities, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyColors(oldColors, opacities: oldOpacities, to: document)
     }
+
     private func applyColors(_ colors: [UUID: VectorColor],
                              opacities: [UUID: Double],
                              to document: VectorDocument) {

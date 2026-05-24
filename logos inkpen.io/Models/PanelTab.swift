@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum PanelTab: String, CaseIterable {
     case layers = "Layer"
     case properties = "Paint"

@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+
 class OpacityCommand: BaseCommand {
+
     enum OpacityTarget {
         case fill
         case stroke
@@ -9,18 +11,22 @@ class OpacityCommand: BaseCommand {
     private let target: OpacityTarget
     private let oldOpacities: [UUID: Double]
     private let newOpacities: [UUID: Double]
+
     init(objectIDs: [UUID], target: OpacityTarget, oldOpacities: [UUID: Double], newOpacities: [UUID: Double]) {
         self.objectIDs = objectIDs
         self.target = target
         self.oldOpacities = oldOpacities
         self.newOpacities = newOpacities
     }
+
     override func execute(on document: VectorDocument) {
         applyOpacities(newOpacities, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyOpacities(oldOpacities, to: document)
     }
+
     private func applyOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {

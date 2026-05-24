@@ -1,6 +1,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 extension FileOperations {
+
     static func generatePDFDataFromView(from document: VectorDocument, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         return try generatePDFDataWithClippingSupport(
             from: document,
@@ -11,6 +13,7 @@ extension FileOperations {
             includeBackground: includeBackground
         )
     }
+
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         let documentSize = document.settings.sizeInPoints
         let pdfData = NSMutableData()
@@ -72,6 +75,7 @@ extension FileOperations {
         pdfContext.closePDF()
         return pdfData as Data
     }
+
     static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeBackground: Bool = true) throws {
         context.saveGState()
         var clippingMasks: [UUID: VectorShape] = [:]
@@ -148,6 +152,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument) throws {
         context.saveGState()
         context.concatenate(clippingMask.transform)
@@ -160,6 +165,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument? = nil) throws {
         if let doc = document, let object = doc.findObject(by: shape.id), case .text = object.objectType, let vectorText = VectorText.from(shape) {
             Log.info("📄 PDF Export - Rendering text: '\(vectorText.content)' at position: \(vectorText.position)", category: .general)
@@ -293,6 +299,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     static func resolveClippingGroupMembersForPDF(_ shape: VectorShape, in document: VectorDocument?) -> [VectorShape]? {
         if !shape.memberIDs.isEmpty, let doc = document {
             let resolved = shape.memberIDs.compactMap { doc.findShape(by: $0) }
@@ -303,6 +310,7 @@ extension FileOperations {
         }
         return nil
     }
+
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
@@ -323,6 +331,7 @@ extension FileOperations {
         context.restoreGState()
         context.restoreGState()
     }
+
     static func renderTextToPDF(vectorText: VectorText, context: CGContext, renderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
         guard !vectorText.content.isEmpty else { return }
         switch renderingMode {
@@ -332,6 +341,7 @@ extension FileOperations {
             try renderTextToPDF_Lines(vectorText: vectorText, context: context)
         }
     }
+
     private static func renderTextToPDF_Glyphs(vectorText: VectorText, context: CGContext) throws {
         guard !vectorText.content.isEmpty else { return }
         let nsFont = vectorText.typography.nsFont
@@ -407,6 +417,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     private static func isRectangleGlyph(_ path: CGPath) -> Bool {
         var subpaths: [[CGPoint]] = []
         var currentPath: [CGPoint] = []
@@ -428,6 +439,7 @@ extension FileOperations {
                     subpaths.append(currentPath)
                     currentPath = []
                 }
+
             @unknown default:
                 break
             }
@@ -457,6 +469,7 @@ extension FileOperations {
         }
         return false
     }
+
     private static func isRectangularPath(_ points: [CGPoint]) -> Bool {
         guard points.count >= 4 else { return false }
         for i in 0..<points.count - 1 {
@@ -472,6 +485,7 @@ extension FileOperations {
         }
         return true
     }
+
     private static func boundingBox(of points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
         var minX = points[0].x
@@ -486,6 +500,7 @@ extension FileOperations {
         }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
+
     private static func renderTextToPDF_Lines(vectorText: VectorText, context: CGContext) throws {
         guard !vectorText.content.isEmpty else { return }
         let nsFont = vectorText.typography.nsFont

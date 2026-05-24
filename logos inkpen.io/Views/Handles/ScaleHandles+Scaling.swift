@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension ScaleHandles {
+
     func handleCornerScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !scalingStarted {
             scalingStarted = true
@@ -39,6 +41,7 @@ extension ScaleHandles {
         }
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
+
     func finishScaling() {
         scalingStarted = false
         isScaling = false
@@ -84,6 +87,7 @@ extension ScaleHandles {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
     }
+
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
         ids.append(shapeID)
@@ -99,6 +103,7 @@ extension ScaleHandles {
             break
         }
     }
+
     func handleScalingFromPoint(draggedPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !scalingStarted {
             startScalingFromPoint(draggedPointIndex: draggedPointIndex, bounds: bounds, dragValue: dragValue)
@@ -132,6 +137,7 @@ extension ScaleHandles {
         }
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
+
     func startScalingFromPoint(draggedPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
         scalingStarted = true
         isScaling = true
@@ -143,6 +149,7 @@ extension ScaleHandles {
             setLockedPinPoint(nil)
         }
     }
+
     func calculatePreviewTransform(scaleX: CGFloat, scaleY: CGFloat, anchor: CGPoint) {
         let scaleTransform = CGAffineTransform.identity
             .translatedBy(x: anchor.x, y: anchor.y)

@@ -1,4 +1,5 @@
 import Foundation
+
 extension TypographyProperties {
     var isItalic: Bool {
         guard let variant = fontVariant else { return false }

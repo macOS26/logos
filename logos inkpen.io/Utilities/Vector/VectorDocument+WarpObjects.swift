@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func unwrapWarpObject() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         var selectedWarpObjects: [VectorObject] = []
@@ -34,6 +36,7 @@ extension VectorDocument {
         )
         commandManager.execute(command)
     }
+
     func expandWarpObject() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         var selectedWarpObjects: [VectorObject] = []

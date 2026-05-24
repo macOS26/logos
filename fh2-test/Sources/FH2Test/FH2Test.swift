@@ -1,6 +1,8 @@
 import Foundation
+
 @main
 struct FH2Test {
+
     static func main() {
         let path = CommandLine.arguments.count > 1
             ? CommandLine.arguments[1]
@@ -57,7 +59,9 @@ struct FH2Test {
             print("Parse error: \(error)")
         }
     }
+
     static func generateSVG(shapes: [VectorShape], pageSize: CGSize, data: Data, gradients: [Int: FreeHand2Parser.GradientInfo]) -> String {
+
         func u16(_ d: Data, _ o: Int) -> Int { Int(d[d.startIndex+o])<<8|Int(d[d.startIndex+o+1]) }
         var defs: [String] = []
         var parts = [

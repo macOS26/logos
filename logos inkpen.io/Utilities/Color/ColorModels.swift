@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum ColorMode: String, CaseIterable, Codable {
     case rgb = "RGB"
     case cmyk = "CMYK"
@@ -11,25 +12,30 @@ enum ColorMode: String, CaseIterable, Codable {
         }
     }
 }
+
 enum ColorTarget: String, CaseIterable, Codable {
     case fill = "Fill"
     case stroke = "Stroke"
 }
+
 enum ColorChangeType: String, CaseIterable, Codable {
     case fillColor = "FillColor"
     case fillOpacity = "FillOpacity"
     case strokeColor = "StrokeColor"
     case strokeOpacity = "StrokeOpacity"
 }
+
 enum ColorSpaceType: String, Codable {
     case sRGB = "sRGB"
     case displayP3 = "displayP3"
 }
+
 struct RGBColor: Codable, Hashable {
     var red: Double
     var green: Double
     var blue: Double
     var alpha: Double
+
     init(red: Double, green: Double, blue: Double, alpha: Double = 1.0, colorSpace: ColorSpaceType = .displayP3) {
         self.red = red
         self.green = green
@@ -44,12 +50,14 @@ struct RGBColor: Codable, Hashable {
         return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: red, green: green, blue: blue, alpha: alpha)
     }
 }
+
 struct CMYKColor: Codable, Hashable {
     var cyan: Double
     var magenta: Double
     var yellow: Double
     var black: Double
     var alpha: Double
+
     init(cyan: Double, magenta: Double, yellow: Double, black: Double, alpha: Double = 1.0) {
         self.cyan = cyan
         self.magenta = magenta
@@ -66,11 +74,13 @@ struct CMYKColor: Codable, Hashable {
         return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
 }
+
 struct HSBColorModel: Codable, Hashable {
     var hue: Double
     var saturation: Double
     var brightness: Double
     var alpha: Double
+
     init(hue: Double, saturation: Double, brightness: Double, alpha: Double = 1.0) {
         self.hue = hue
         self.saturation = saturation
@@ -106,6 +116,7 @@ struct HSBColorModel: Codable, Hashable {
     var color: Color {
         return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
+
     static func fromRGB(_ rgb: RGBColor) -> HSBColorModel {
         let max = Swift.max(rgb.red, rgb.green, rgb.blue)
         let min = Swift.min(rgb.red, rgb.green, rgb.blue)

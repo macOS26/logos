@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleConcatMatrix(scanner: CGPDFScannerRef) {
         var a: CGFloat = 1, b: CGFloat = 0, c: CGFloat = 0, d: CGFloat = 1, tx: CGFloat = 0, ty: CGFloat = 0
         CGPDFScannerPopNumber(scanner, &ty)

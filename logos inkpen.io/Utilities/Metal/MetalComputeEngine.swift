@@ -1,4 +1,5 @@
 import MetalKit
+
 class MetalComputeEngine {
     let device: MTLDevice
     private let commandQueue: MTLCommandQueue
@@ -38,11 +39,13 @@ class MetalComputeEngine {
         _shared = instance
         return instance
     }
+
     static func releaseShared() {
         lock.lock()
         _shared = nil
         lock.unlock()
     }
+
     private init() throws {
         let metal = SharedMetalDevice.shared
         self.device = metal.device
@@ -53,6 +56,7 @@ class MetalComputeEngine {
         self.commandQueue = commandQueue
         try setupComputePipelines()
     }
+
     private func setupComputePipelines() throws {
         if let function = library.makeFunction(name: "calculate_distances") {
             douglasPeuckerPipeline = try device.makeComputePipelineState(function: function)
@@ -130,6 +134,7 @@ class MetalComputeEngine {
             smoothBrushStrokePipeline = try device.makeComputePipelineState(function: function)
         }
     }
+
     func douglasPeuckerGPU(_ points: [CGPoint], tolerance: Float) -> Result<[CGPoint], MetalError> {
         guard points.count > 2 else {
             return .failure(.operationFailed("Need at least 3 points for Douglas-Peucker simplification"))
@@ -140,6 +145,7 @@ class MetalComputeEngine {
         let result = douglasPeuckerRecursiveGPU(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
         return .success(result)
     }
+
     private func douglasPeuckerRecursiveGPU(points: [CGPoint], tolerance: Float, startIndex: Int, endIndex: Int) -> [CGPoint] {
         guard endIndex - startIndex > 1 else {
             return [points[startIndex], points[endIndex]]
@@ -168,6 +174,7 @@ class MetalComputeEngine {
             return [points[startIndex], points[endIndex]]
         }
     }
+
     private func findMaxDistanceGPU(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> Result<(distance: Float, index: Int), MetalError> {
         guard let pipeline = douglasPeuckerPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -221,6 +228,7 @@ class MetalComputeEngine {
         }
         return .success((distance: maxDistance, index: maxIndex))
     }
+
     func transformPointsGPU(_ points: [CGPoint], transform: CGAffineTransform) -> Result<[CGPoint], MetalError> {
         guard let pipeline = matrixTransformPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -261,6 +269,7 @@ class MetalComputeEngine {
         }
         return .success(result)
     }
+
     func pointsInPolygonGPU(_ testPoints: [CGPoint], polygon: [CGPoint]) -> Result<[Bool], MetalError> {
         guard let pipeline = collisionDetectionPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -299,6 +308,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculateDistancesGPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> Result<[Float], MetalError> {
         guard sourcePoints.count == targetPoints.count else {
             return .failure(.operationFailed("Source and target point counts must match"))
@@ -337,6 +347,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func normalizeVectorsGPU(_ vectors: [CGPoint]) -> Result<[CGPoint], MetalError> {
         guard let pipeline = vectorNormalizePipeline else {
             return .failure(.pipelineNotAvailable)
@@ -370,6 +381,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func lerpVectorsGPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> Result<[CGPoint], MetalError> {
         guard startPoints.count == endPoints.count else {
             return .failure(.operationFailed("Start and end point counts must match"))
@@ -411,6 +423,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculateLinkedHandlesGPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> Result<[CGPoint], MetalError> {
         guard anchorPoints.count == draggedHandles.count &&
               draggedHandles.count == originalOppositeHandles.count else {
@@ -454,6 +467,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculateCurvatureGPU(points: [CGPoint]) -> Result<[Float], MetalError> {
         guard points.count >= 3 else {
             return .failure(.operationFailed("Need at least 3 points for curvature calculation"))
@@ -492,6 +506,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func chaikinSmoothingGPU(points: [CGPoint], ratio: Float = 0.25) -> Result<[CGPoint], MetalError> {
         guard points.count >= 3 else {
             return .failure(.operationFailed("Need at least 3 points for Chaikin smoothing"))
@@ -536,6 +551,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculatePointDistanceGPU(from point1: CGPoint, to point2: CGPoint) -> Result<Float, MetalError> {
         let results = calculateDistancesGPU(from: [point1], to: [point2])
         switch results {
@@ -545,6 +561,7 @@ class MetalComputeEngine {
             return .failure(error)
         }
     }
+
     func calculateSquareRootGPU(_ value: Float) -> Result<Float, MetalError> {
         let results = calculateSquareRootsGPU([value])
         switch results {
@@ -554,6 +571,7 @@ class MetalComputeEngine {
             return .failure(error)
         }
     }
+
     func calculateSquareRootsGPU(_ values: [Float]) -> Result<[Float], MetalError> {
         guard !values.isEmpty else {
             return .failure(.operationFailed("Values array cannot be empty"))
@@ -588,6 +606,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func booleanGeometryUnionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> Result<[Point2D], MetalError> {
         guard let pipeline = booleanGeometryPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -623,6 +642,7 @@ class MetalComputeEngine {
         let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: resultCount))
         return .success(resultArray)
     }
+
     func pathIntersectionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> Result<[Point2D], MetalError> {
         guard let pipeline = pathIntersectionPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -661,6 +681,7 @@ class MetalComputeEngine {
         let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: Int(intersectionCount)))
         return .success(resultArray)
     }
+
     func calculateTrigonometricGPU(angles: [Float], function: TrigonometricFunction) -> Result<[Float], MetalError> {
         guard !angles.isEmpty else {
             return .failure(.operationFailed("Angles array cannot be empty"))
@@ -697,6 +718,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculatePolygonPointsGPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float = -Float.pi/2) -> Result<[CGPoint], MetalError> {
         guard sides > 2 else {
             return .failure(.operationFailed("Polygon must have at least 3 sides"))
@@ -733,6 +755,7 @@ class MetalComputeEngine {
         }
         return .success(results)
     }
+
     func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> Result<[CGPoint], MetalError> {
         guard controlPoints.count == 4 else {
             return .failure(.operationFailed("Bezier curve requires exactly 4 control points"))
@@ -770,6 +793,7 @@ class MetalComputeEngine {
         }
         return .success(result)
     }
+
     func findNearestPointGPU(points: [CGPoint], tapLocation: CGPoint, selectionRadius: CGFloat, transform: CGAffineTransform = .identity) -> Int? {
         guard !points.isEmpty else { return nil }
         guard let pipeline = findNearestPointPipeline else { return nil }
@@ -815,6 +839,7 @@ class MetalComputeEngine {
         }
         return minIndex
     }
+
     func findNearestHandleGPU(handlePoints: [CGPoint], anchorPoints: [CGPoint], tapLocation: CGPoint, selectionRadius: CGFloat, transform: CGAffineTransform = .identity) -> Int? {
         guard !handlePoints.isEmpty, handlePoints.count == anchorPoints.count else { return nil }
         guard let pipeline = findNearestHandlePipeline else { return nil }
@@ -864,6 +889,7 @@ class MetalComputeEngine {
         }
         return minIndex
     }
+
     func findPointsInRadiusGPU(points: [CGPoint], tapLocation: CGPoint, selectionRadius: CGFloat, transform: CGAffineTransform = .identity, maxMatches: Int = 1000) -> [Int] {
         guard !points.isEmpty else { return [] }
         guard let pipeline = findPointsInRadiusPipeline else { return [] }
@@ -905,6 +931,7 @@ class MetalComputeEngine {
         }
         return results
     }
+
     static func testMetalEngine() -> Bool {
         guard MTLCreateSystemDefaultDevice() != nil else {
             return false
@@ -921,6 +948,7 @@ class MetalComputeEngine {
             return false
         }
     }
+
     func pathHitTestGPU(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
         guard let pipeline = pathHitTestPipeline,
               let commandBuffer = commandQueue.makeCommandBuffer(),
@@ -966,6 +994,7 @@ class MetalComputeEngine {
                     control1: simd_float2(0, 0),
                     control2: simd_float2(0, 0)
                 ))
+
             @unknown default:
                 break
             }
@@ -995,6 +1024,7 @@ class MetalComputeEngine {
         let hitResult = hitResultBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee
         return hitResult == 1
     }
+
     func findNearestSnapPointGPU(snapPoints: [CGPoint], objectIDs: [UUID], mousePoint: CGPoint, threshold: CGFloat) -> (index: Int, objectID: UUID, point: CGPoint)? {
         guard let pipeline = findNearestSnapPointPipeline,
               !snapPoints.isEmpty,
@@ -1041,6 +1071,7 @@ class MetalComputeEngine {
         }
         return (index: index, objectID: objectIDs[index], point: snapPoints[index])
     }
+
     func removeCoincidentPointsGPU(_ points: [CGPoint], pressures: [Float]? = nil, tolerance: Float = 1.0) -> Result<([CGPoint], [Float]?), MetalError> {
         guard !points.isEmpty else {
             return .success(([], nil))
@@ -1096,6 +1127,7 @@ class MetalComputeEngine {
         }
         return .success((resultPoints, resultPressures))
     }
+
     func smoothBrushStrokeGPU(_ points: [CGPoint], pressures: [Float]? = nil, smoothingFactor: Float = 0.7, subdivisions: Int = 4) -> Result<([CGPoint], [Float]?), MetalError> {
         guard points.count >= 2 else {
             return .success((points, pressures))
@@ -1156,6 +1188,7 @@ class MetalComputeEngine {
         return .success((resultPoints, resultPressures))
     }
 }
+
 struct MetalPathSegment {
     let type: UInt32
     let point: simd_float2

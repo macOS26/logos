@@ -1,4 +1,5 @@
 import SwiftUI
+
 func deletePointsFromPath(_ path: VectorPath, selectedPoints: [PointID]) -> VectorPath {
     var elements = path.elements
     let indicesToDelete = selectedPoints.compactMap { $0.elementIndex }.sorted(by: >)
@@ -12,6 +13,7 @@ func deletePointsFromPath(_ path: VectorPath, selectedPoints: [PointID]) -> Vect
     let validatedElements = validatePathElements(elements)
     return VectorPath(elements: validatedElements, isClosed: path.isClosed)
 }
+
 func canDeleteElement(at index: Int, in elements: [PathElement]) -> Bool {
     if case .move = elements[index] {
         let moveCount = elements.compactMap { if case .move = $0 { return 1 } else { return nil } }.count
@@ -25,6 +27,7 @@ func canDeleteElement(at index: Int, in elements: [PathElement]) -> Bool {
     }.count
     return pointCount > 2
 }
+
 func validatePathElements(_ elements: [PathElement]) -> [PathElement] {
     var validElements: [PathElement] = []
     for element in elements {

@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct StrokePropertiesSection: View {
     let strokeWidth: Double
     let strokePlacement: StrokePlacement

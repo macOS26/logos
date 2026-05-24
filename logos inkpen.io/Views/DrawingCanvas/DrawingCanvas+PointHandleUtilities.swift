@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func captureOriginalPositions() {
         originalPointPositions.removeAll()
         originalHandlePositions.removeAll()
@@ -15,6 +17,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func getPointPosition(_ pointID: PointID) -> VectorPoint? {
         if let object = document.snapshot.objects[pointID.shapeID],
            case .shape(let shape) = object.objectType {
@@ -31,6 +34,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     internal func getHandlePosition(_ handleID: HandleID) -> VectorPoint? {
         if let object = document.snapshot.objects[handleID.shapeID],
            case .shape(let shape) = object.objectType {
@@ -47,12 +51,15 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     internal func movePointToAbsolutePosition(_ pointID: PointID, to newPosition: CGPoint) {
         movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: isDraggingPoint, shouldUpdate: true)
     }
+
     internal func movePointToAbsolutePositionBatched(_ pointID: PointID, to newPosition: CGPoint) {
         movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: true, shouldUpdate: false)
     }
+
     private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
         guard let object = document.snapshot.objects[pointID.shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -99,6 +106,7 @@ extension DrawingCanvas {
                     shape.updateBounds()
                 }
     }
+
     private func isSmoothCurvePoint(elements: [PathElement], elementIndex: Int) -> Bool {
         guard elementIndex < elements.count else { return false }
         switch elements[elementIndex] {
@@ -116,6 +124,7 @@ extension DrawingCanvas {
             return false
         }
     }
+
     private func moveHandlesWithAnchorPoint(elements: inout [PathElement], elementIndex: Int, delta: CGPoint) {
         guard elementIndex < elements.count else { return }
         switch elements[elementIndex] {
@@ -141,12 +150,15 @@ extension DrawingCanvas {
             break
         }
     }
+
     internal func moveHandleToAbsolutePosition(_ handleID: HandleID, to newPosition: CGPoint) {
         moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: isDraggingHandle, shouldUpdate: true)
     }
+
     internal func moveHandleToAbsolutePositionBatched(_ handleID: HandleID, to newPosition: CGPoint) {
         moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: true, shouldUpdate: false)
     }
+
     private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType else { return }

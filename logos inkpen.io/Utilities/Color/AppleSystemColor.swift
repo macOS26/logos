@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct AppleSystemColor: Codable, Hashable {
     var name: String
     var lightMode: RGBColor

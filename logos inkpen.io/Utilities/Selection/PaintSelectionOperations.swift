@@ -1,6 +1,8 @@
 import SwiftUI
 import Foundation
+
 enum PaintSelectionOperations {
+
     static func handleFillOpacityEditingComplete(_ opacity: Double, document: VectorDocument) {
         document.modifySelectedShapesWithUndo(
             preCapture: {
@@ -12,6 +14,7 @@ enum PaintSelectionOperations {
             }
         )
     }
+
     static func handleStrokeWidthEditingComplete(_ width: Double, document: VectorDocument) {
         document.modifySelectedShapesWithUndo(
             preCapture: {
@@ -20,6 +23,7 @@ enum PaintSelectionOperations {
             }
         )
     }
+
     static func handleStrokeOpacityEditingComplete(_ opacity: Double, document: VectorDocument) {
         document.modifySelectedShapesWithUndo(
             preCapture: {
@@ -28,6 +32,7 @@ enum PaintSelectionOperations {
             }
         )
     }
+
     static func handleMiterLimitEditingComplete(_ miterLimit: Double, document: VectorDocument) {
         document.modifySelectedShapesWithUndo(
             preCapture: {
@@ -36,6 +41,7 @@ enum PaintSelectionOperations {
             }
         )
     }
+
     static func updateFillOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
         if isEditing {
             return
@@ -53,6 +59,7 @@ enum PaintSelectionOperations {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     static func updateFillOpacity(_ opacity: Double, document: VectorDocument) {
         document.defaultFillOpacity = opacity
         var oldOpacities: [UUID: Double] = [:]
@@ -84,6 +91,7 @@ enum PaintSelectionOperations {
             document.executeCommand(command)
         }
     }
+
     static func updateFillColor(_ color: VectorColor, opacity: Double? = nil, document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for objectID in document.viewState.selectedObjectIDs {
@@ -104,6 +112,7 @@ enum PaintSelectionOperations {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     static func updateStrokeWidthLive(_ width: Double, document: VectorDocument, isEditing: Bool) {
         if isEditing {
             return
@@ -123,6 +132,7 @@ enum PaintSelectionOperations {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     static func updateStrokeOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
         if isEditing {
             return
@@ -140,6 +150,7 @@ enum PaintSelectionOperations {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     static func updateStrokePlacement(_ placement: StrokePlacement, document: VectorDocument) {
         document.strokeDefaults.placement = placement
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -169,6 +180,7 @@ enum PaintSelectionOperations {
             document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
         }
     }
+
     static func updateStrokeLineJoin(_ lineJoin: CGLineJoin, document: VectorDocument) {
         document.strokeDefaults.lineJoin = lineJoin
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -207,6 +219,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func updateStrokeLineCap(_ lineCap: CGLineCap, document: VectorDocument) {
         document.strokeDefaults.lineCap = lineCap
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -237,6 +250,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double, document: VectorDocument) {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
@@ -248,6 +262,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func updateStrokeMiterLimit(_ miterLimit: Double, document: VectorDocument) {
         document.strokeDefaults.miterLimit = miterLimit
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -278,6 +293,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func updateStrokeScaleWithTransform(_ scaleWithTransform: Bool, document: VectorDocument) {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
@@ -289,6 +305,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func updateImageOpacity(_ opacity: Double, document: VectorDocument) {
         guard let layerIndex = document.selectedLayerIndex else { return }
         var oldOpacities: [UUID: Double] = [:]
@@ -322,6 +339,7 @@ enum PaintSelectionOperations {
             }
         }
     }
+
     static func applyFillToSelectedShapes(fillColor: VectorColor, fillOpacity: Double, document: VectorDocument) {
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty { return }
@@ -357,6 +375,7 @@ enum PaintSelectionOperations {
             document.createFillStyleInUnified(id: shapeID, color: fillColor, opacity: fillOpacity)
         }
     }
+
     static func duplicateSelectedShapes(document: VectorDocument) {
         var duplicatedIDs: [UUID] = []
         var affectedLayers = Set<Int>()

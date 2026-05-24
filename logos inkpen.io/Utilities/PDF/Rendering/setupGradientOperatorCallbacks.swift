@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func setupGradientOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
         CGPDFOperatorTableSetCallback(operatorTable, "SCN") { (scanner, info) in
             guard let info = info else { return }

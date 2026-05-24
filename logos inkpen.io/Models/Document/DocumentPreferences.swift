@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct StrokeDefaults: Equatable {
     var placement: StrokePlacement
     var lineJoin: CGLineJoin
@@ -11,10 +12,13 @@ struct StrokeDefaults: Equatable {
         miterLimit: 10.0
     )
 }
+
 extension StrokeDefaults: Codable {
+
     enum CodingKeys: String, CodingKey {
         case placement, lineJoin, lineCap, miterLimit
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         placement = try container.decode(StrokePlacement.self, forKey: .placement)
@@ -24,6 +28,7 @@ extension StrokeDefaults: Codable {
         lineCap = CGLineCap(rawValue: lineCapRaw) ?? .butt
         miterLimit = try container.decode(Double.self, forKey: .miterLimit)
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(placement, forKey: .placement)
@@ -32,6 +37,7 @@ extension StrokeDefaults: Codable {
         try container.encode(miterLimit, forKey: .miterLimit)
     }
 }
+
 struct GridSettings: Equatable {
     var showRulers: Bool
     var showGrid: Bool
@@ -56,11 +62,14 @@ struct GridSettings: Equatable {
         snapToGuides: true
     )
 }
+
 extension GridSettings: Codable {
+
     enum CodingKeys: String, CodingKey {
         case showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, gridOnTop
         case guides, showGuides, guidesLocked, snapToGuides
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         showRulers = try container.decode(Bool.self, forKey: .showRulers)
@@ -74,6 +83,7 @@ extension GridSettings: Codable {
         guidesLocked = try container.decodeIfPresent(Bool.self, forKey: .guidesLocked) ?? false
         snapToGuides = try container.decodeIfPresent(Bool.self, forKey: .snapToGuides) ?? true
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(showRulers, forKey: .showRulers)
@@ -88,6 +98,7 @@ extension GridSettings: Codable {
         try container.encode(snapToGuides, forKey: .snapToGuides)
     }
 }
+
 struct ColorSwatches: Codable, Equatable {
     var rgb: [VectorColor]
     var cmyk: [VectorColor]

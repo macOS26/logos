@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum VectorColor: Hashable {
     case rgb(RGBColor)
     case cmyk(CMYKColor)
@@ -143,6 +144,7 @@ enum VectorColor: Hashable {
             return gradient.stops.first?.color.svgColor ?? "#000000"
         }
     }
+
     private func hsbToRgb(h: Double, s: Double, b: Double) -> (r: Double, g: Double, b: Double) {
         let hue = h * 360
         let saturation = s
@@ -170,7 +172,9 @@ enum VectorColor: Hashable {
         return (r + m, g + m, b + m)
     }
 }
+
 extension VectorColor: Codable {
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -196,6 +200,7 @@ extension VectorColor: Codable {
             try container.encode("white")
         }
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let simpleColor = try? container.decode(String.self) {
@@ -251,8 +256,10 @@ extension VectorColor: Codable {
         }
     }
 }
+
 private struct AnyCodable: Codable {
     let value: Any
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let dict = try? container.decode([String: AnyCodable].self) {
@@ -271,6 +278,7 @@ private struct AnyCodable: Codable {
             value = NSNull()
         }
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch value {
@@ -290,9 +298,11 @@ private struct AnyCodable: Codable {
             try container.encodeNil()
         }
     }
+
     init(wrapping value: Any) {
         self.value = value
     }
+
     func decode<T: Decodable>(_ type: T.Type) throws -> T {
         let data = try JSONSerialization.data(withJSONObject: value)
         return try JSONDecoder().decode(type, from: data)

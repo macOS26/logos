@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+
 struct ProfessionalDirectSelectionView: View {
     let document: VectorDocument
     let zoomLevel: Double
@@ -15,6 +16,7 @@ struct ProfessionalDirectSelectionView: View {
     let livePointPositions: [PointID: CGPoint]
     let liveHandlePositions: [HandleID: CGPoint]
     let draggedCurveSegment: (shapeID: UUID, elementIndex: Int)?
+
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -98,6 +100,7 @@ struct ProfessionalDirectSelectionView: View {
             }
         }
     }
+
     private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
         let isDraggingSegmentOnThisShape = draggedCurveSegment?.shapeID == shape.id
         var outlinePath = Path()
@@ -177,6 +180,7 @@ struct ProfessionalDirectSelectionView: View {
             ctx.stroke(draggedPath, with: .color(.orange), lineWidth: scaleForZoom(2.0, zoom: zoom) / zoom)
         }
     }
+
     private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
         let isKeylineMode = document.viewState.viewMode == .keyline
         let outlineColor: Color = isKeylineMode ? .black : .red
@@ -194,6 +198,7 @@ struct ProfessionalDirectSelectionView: View {
         ctx.concatenate(shapeTransform)
         ctx.stroke(outlinePath, with: .color(outlineColor), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
     }
+
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
         let element = shape.path.elements[handleID.elementIndex]
         var anchorPoint: CGPoint?
@@ -242,6 +247,7 @@ struct ProfessionalDirectSelectionView: View {
         context.fill(circle, with: .color(isSelected ? .orange : .blue))
         context.stroke(circle, with: .color(.white), lineWidth: scaleForZoom(0.7, zoom: zoom) / zoom)
     }
+
     private func extractPoint(_ element: PathElement) -> VectorPoint? {
         switch element {
         case .move(let to), .line(let to):

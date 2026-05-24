@@ -1,11 +1,14 @@
 import SwiftUI
 import Combine
 import simd
+
 struct EnvelopeHandles: View {
+
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     @State private var isWarping = false
     @State private var warpingStarted = false
     @State private var initialBounds: CGRect = .zero
@@ -165,6 +168,7 @@ struct EnvelopeHandles: View {
             }
         }
     }
+
     @ViewBuilder
     private func envelopeCornerHandles() -> some View {
         if warpedCorners.count == 4 {
@@ -196,6 +200,7 @@ struct EnvelopeHandles: View {
             }
         }
     }
+
     @ViewBuilder
     private func envelopeGridPreview() -> some View {
         Canvas { context, size in
@@ -251,6 +256,7 @@ struct EnvelopeHandles: View {
         }
         .allowsHitTesting(false)
     }
+
     @ViewBuilder
     private func warpedShapePreview() -> some View {
         if let warpedPath = previewPath {
@@ -284,6 +290,7 @@ struct EnvelopeHandles: View {
             .allowsHitTesting(false)
         }
     }
+
     private func initializeEnvelopeCorners() {
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty, let originalPath = shape.originalPath {
             let originalBounds = originalPath.cgPath.boundingBoxOfPath
@@ -339,6 +346,7 @@ struct EnvelopeHandles: View {
             }
         }
     }
+
     private func cornersHaveChangedSignificantly(from oldCorners: [CGPoint], to newCorners: [CGPoint]) -> Bool {
         guard oldCorners.count == 4 && newCorners.count == 4 else { return true }
         let threshold: CGFloat = 1.0
@@ -351,6 +359,7 @@ struct EnvelopeHandles: View {
         }
         return false
     }
+
     private func handleEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
         if !warpingStarted {
             startEnvelopeWarp(cornerIndex: cornerIndex, dragValue: dragValue)
@@ -363,6 +372,7 @@ struct EnvelopeHandles: View {
         )
         warpedCorners[cornerIndex] = canvasLocation
     }
+
     private func startEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
         warpingStarted = true
         isWarping = true
@@ -382,6 +392,7 @@ struct EnvelopeHandles: View {
         startLocation = dragValue.startLocation
         draggingCornerIndex = cornerIndex
     }
+
     private func calculateEnvelopeWarpPreview() {
         guard originalCorners.count == 4 && warpedCorners.count == 4 else { return }
         if shape.isWarpObject, let originalPath = shape.originalPath {
@@ -401,6 +412,7 @@ struct EnvelopeHandles: View {
             previewPath = VectorPath(elements: warpedElements, isClosed: shape.path.isClosed)
         }
     }
+
     private func warpPathElements(_ elements: [PathElement]) -> [PathElement] {
         var warpedElements: [PathElement] = []
         for element in elements {
@@ -433,6 +445,7 @@ struct EnvelopeHandles: View {
         }
         return warpedElements
     }
+
     private func warpPoint(_ point: CGPoint) -> CGPoint {
         guard originalCorners.count == 4 else {
             let bounds = initialBounds
@@ -461,6 +474,7 @@ struct EnvelopeHandles: View {
             u: u, v: v
         )
     }
+
     private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
         let top = CGPoint(
             x: topLeft.x * (1 - u) + topRight.x * u,
@@ -475,6 +489,7 @@ struct EnvelopeHandles: View {
             y: top.y * (1 - v) + bottom.y * v
         )
     }
+
     private func inverseBilinearInterpolation(point: CGPoint, topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint) -> (u: CGFloat, v: CGFloat) {
         let rightVector = CGPoint(x: topRight.x - topLeft.x, y: topRight.y - topLeft.y)
         let downVector = CGPoint(x: bottomLeft.x - topLeft.x, y: bottomLeft.y - topLeft.y)
@@ -493,6 +508,7 @@ struct EnvelopeHandles: View {
         let v = (rightVector.x * pointVector.y - rightVector.y * pointVector.x) / det
         return (u: max(0, min(1, u)), v: max(0, min(1, v)))
     }
+
     private func buildWarpedShape(from currentShape: VectorShape) -> VectorShape {
         if currentShape.isWarpObject {
             var updatedWarpObject = currentShape
@@ -539,6 +555,7 @@ struct EnvelopeHandles: View {
             return warpObject
         }
     }
+
     private func finishEnvelopeWarp() {
         warpingStarted = false
         isWarping = false
@@ -563,6 +580,7 @@ struct EnvelopeHandles: View {
         )
         document.executeCommand(command)
     }
+
     private func commitEnvelopeWarp() {
         if warpedCorners.count == 4 {
             let minX = warpedCorners.map { $0.x }.min() ?? 0
@@ -573,9 +591,11 @@ struct EnvelopeHandles: View {
             document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
         }
     }
+
     @State private var envelopeKeyEventMonitor: Any?
     private func setupEnvelopeKeyEventMonitoring() {
     }
+
     private func teardownEnvelopeKeyEventMonitoring() {
         if let monitor = envelopeKeyEventMonitor {
             NSEvent.removeMonitor(monitor)

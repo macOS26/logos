@@ -1,7 +1,9 @@
 import SwiftUI
 import Combine
 import simd
+
 extension DrawingCanvas {
+
     internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle && !isDraggingCurveSegment {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
@@ -130,6 +132,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func isCoincidentPointSmooth(elements: [PathElement], handleID: HandleID) -> Bool {
         guard elements.count >= 2 else { return false }
         guard let object = document.snapshot.objects[handleID.shapeID],
@@ -197,6 +200,7 @@ extension DrawingCanvas {
         let dot = simd_dot(norm1, norm2)
         return dot < -0.9962
     }
+
     private func isPointSmooth(handleID: HandleID) -> Bool {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType,
@@ -252,6 +256,7 @@ extension DrawingCanvas {
         let dot = simd_dot(norm1, norm2)
         return dot < -0.9962
     }
+
     private func updateLiveHandlesForMovedPoint(pointID: PointID, delta: CGPoint) {
         guard let object = document.snapshot.objects[pointID.shapeID],
               case .shape(let shape) = object.objectType,
@@ -290,6 +295,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func updateLiveLinkedHandle(handleID: HandleID, newPosition: CGPoint) {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType,
@@ -336,6 +342,7 @@ extension DrawingCanvas {
         )
         liveHandlePositions[oppositeID] = linkedPosition
     }
+
     private func handleCoincidentForLiveHandle(handleID: HandleID, newPosition: CGPoint, shape: VectorShape) {
         let elements = shape.path.elements
         guard elements.count >= 2 else { return }
@@ -418,6 +425,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func checkFirstLastCoincidentForLive(elements: [PathElement], handleID: HandleID, newPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
         let firstPoint: CGPoint?
@@ -475,6 +483,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     private func applyPointUpdatesToShape(shapeID: UUID, pointUpdates: [(PointID, CGPoint)]) {
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -523,6 +532,7 @@ extension DrawingCanvas {
             shape.updateBounds()
         }
     }
+
     private func applyHandleUpdatesToShape(shapeID: UUID, handleUpdates: [(HandleID, CGPoint)]) {
         guard let object = document.snapshot.objects[shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -551,6 +561,7 @@ extension DrawingCanvas {
             shape.updateBounds()
         }
     }
+
     private func moveHandleToAbsolutePositionWithoutLinked(_ handleID: HandleID, to newPosition: CGPoint) {
         guard let object = document.snapshot.objects[handleID.shapeID],
               case .shape(let shape) = object.objectType else { return }
@@ -577,6 +588,7 @@ extension DrawingCanvas {
             shape.updateBounds()
         }
     }
+
     private func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
         let anchorVec = SIMD2<Double>(Double(anchorPoint.x), Double(anchorPoint.y))
         let draggedVec = SIMD2<Double>(Double(draggedHandle.x), Double(draggedHandle.y))
@@ -590,6 +602,7 @@ extension DrawingCanvas {
         let linkedVec = anchorVec - normalizedDragged * originalLength
         return CGPoint(x: linkedVec.x, y: linkedVec.y)
     }
+
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDraggingDirectSelectedShapes {
             isDraggingDirectSelectedShapes = true
@@ -599,6 +612,7 @@ extension DrawingCanvas {
         }
         handleSelectionDrag(value: value, geometry: geometry)
     }
+
     internal func finishDirectSelectionDrag() {
         if isDraggingCurveSegment {
             finishCurveSegmentDrag()
@@ -662,6 +676,7 @@ extension DrawingCanvas {
             originalDragShapes.removeAll()
         }
     }
+
     private func findCurveSegmentInSelectedShapes(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for objectID in selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID],
@@ -709,6 +724,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     private func calculateTOnCurveSegment(shape: VectorShape, elementIndex: Int, point: CGPoint) -> Double {
         guard elementIndex < shape.path.elements.count,
               case .curve(let to, let control1, let control2) = shape.path.elements[elementIndex] else {
@@ -744,6 +760,7 @@ extension DrawingCanvas {
         }
         return bestT
     }
+
     private func captureOriginalHandlesForCurveSegment(shapeID: UUID, elementIndex: Int, maintainTangency: Bool = true) {
         originalHandlePositions.removeAll()
         liveHandlePositions.removeAll()
@@ -790,6 +807,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func convertCloseSegmentToCurveAndDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint, curveSegment: (shapeID: UUID, elementIndex: Int)) {
         var firstPoint: VectorPoint?
         if case .move(let to) = shape.path.elements[0] {
@@ -826,6 +844,7 @@ extension DrawingCanvas {
               case .curve = updatedShape.path.elements[elementIndex] else { return }
         dragCurveSegmentWithHandles(shape: updatedShape, curveSegment: curveSegment, offset: offset)
     }
+
     private func convertLineToCurveAndDrag(shape: VectorShape, elementIndex: Int, to: VectorPoint, offset: CGPoint, curveSegment: (shapeID: UUID, elementIndex: Int)) {
         var prevPoint: VectorPoint?
         if elementIndex > 0 {
@@ -857,6 +876,7 @@ extension DrawingCanvas {
               case .curve = updatedShape.path.elements[elementIndex] else { return }
         dragCurveSegmentWithHandles(shape: updatedShape, curveSegment: curveSegment, offset: offset)
     }
+
     private func handleCloseSegmentDrag(shape: VectorShape, elementIndex: Int, offset: CGPoint) {
         var firstPoint: VectorPoint?
         if case .move(let to) = shape.path.elements[0] {
@@ -890,6 +910,7 @@ extension DrawingCanvas {
         livePointPositions[firstPointID] = CGPoint(x: first.x + moveOffset.x, y: first.y + moveOffset.y)
         livePointPositions[lastPointID] = CGPoint(x: last.x + moveOffset.x, y: last.y + moveOffset.y)
     }
+
     private func handleLineSegmentDrag(shape: VectorShape, elementIndex: Int, to: VectorPoint, offset: CGPoint) {
         var prevPoint: VectorPoint?
         if elementIndex > 0 {
@@ -918,6 +939,7 @@ extension DrawingCanvas {
         livePointPositions[startPointID] = CGPoint(x: start.x + moveOffset.x, y: start.y + moveOffset.y)
         livePointPositions[endPointID] = CGPoint(x: to.x + moveOffset.x, y: to.y + moveOffset.y)
     }
+
     private func handleCurveSegmentDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let curveSegment = draggedCurveSegment else { return }
         let currentLocation = screenToCanvas(value.location, geometry: geometry)
@@ -951,6 +973,7 @@ extension DrawingCanvas {
         }
         dragCurveSegmentWithHandles(shape: shape, curveSegment: curveSegment, offset: offset)
     }
+
     private func dragCurveSegmentWithHandles(shape: VectorShape, curveSegment: (shapeID: UUID, elementIndex: Int), offset: CGPoint) {
         let t = curveSegmentDragT
         let control1Weight = 1.0 - t
@@ -1087,6 +1110,7 @@ extension DrawingCanvas {
             visibleHandles.insert(firstControl1HandleID)
         }
     }
+
     private func finishCurveSegmentDrag() {
         guard let curveSegment = draggedCurveSegment else { return }
         guard let object = document.snapshot.objects[curveSegment.shapeID],
@@ -1121,6 +1145,7 @@ extension DrawingCanvas {
             document.commandManager.execute(command)
         }
     }
+
     private func isPointNearLineSegment(point: CGPoint, start: CGPoint, end: CGPoint, tolerance: Double) -> Bool {
         let dx = end.x - start.x
         let dy = end.y - start.y
@@ -1135,6 +1160,7 @@ extension DrawingCanvas {
         let distance = sqrt(pow(point.x - closestX, 2) + pow(point.y - closestY, 2))
         return distance <= tolerance
     }
+
     private func isPointNearBezierCurve(point: CGPoint, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tolerance: Double) -> Bool {
         for i in 0...20 {
             let t = Double(i) / 20.0
@@ -1145,6 +1171,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     private func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, t: Double) -> CGPoint {
         let mt = 1.0 - t
         let mt2 = mt * mt

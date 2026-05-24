@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func lockTextInUnified(id: UUID) {
         if let obj = snapshot.objects[id],
            case .text(var shape) = obj.objectType {
@@ -12,6 +14,7 @@ extension VectorDocument {
             snapshot.objects[id] = updatedObject
         }
     }
+
     func unlockTextInUnified(id: UUID) {
         if let obj = snapshot.objects[id],
            case .text(var shape) = obj.objectType {
@@ -24,6 +27,7 @@ extension VectorDocument {
             snapshot.objects[id] = updatedObject
         }
     }
+
     func hideTextInUnified(id: UUID) {
         if let obj = snapshot.objects[id],
            case .text(var shape) = obj.objectType {
@@ -36,6 +40,7 @@ extension VectorDocument {
             snapshot.objects[id] = updatedObject
         }
     }
+
     func showTextInUnified(id: UUID) {
         if let obj = snapshot.objects[id],
            case .text(var shape) = obj.objectType {
@@ -48,22 +53,26 @@ extension VectorDocument {
             snapshot.objects[id] = updatedObject
         }
     }
+
     func updateTextFillOpacityInUnified(id: UUID, opacity: Double) {
         updateShapeByID(id) { shape in
             shape.typography?.fillOpacity = opacity
         }
     }
+
     func updateTextStrokeWidthInUnified(id: UUID, width: Double) {
         updateShapeByID(id) { shape in
             shape.typography?.strokeWidth = width
             shape.typography?.hasStroke = width > 0
         }
     }
+
     func updateTextStrokeLineJoin(id: UUID, lineJoin: CGLineJoin) {
         updateShapeByID(id) { shape in
             shape.typography?.strokeLineJoin = LineJoin(lineJoin)
         }
     }
+
     func translateTextInUnified(id: UUID, delta: CGPoint) {
         updateShapeByID(id) { shape in
             shape.transform.tx += delta.x
@@ -73,6 +82,7 @@ extension VectorDocument {
             }
         }
     }
+
     func translateAllTextInUnified(delta: CGPoint) {
         let textIDs = snapshot.objects.values.compactMap { obj -> UUID? in
             if case .text(let shape) = obj.objectType {
@@ -84,11 +94,13 @@ extension VectorDocument {
             translateTextInUnified(id: textID, delta: delta)
         }
     }
+
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
         updateShapeByID(id) { shape in
             shape.isEditing = isEditing
         }
     }
+
     func updateTextLayerInUnified(id: UUID, layerIndex: Int) {
         if let obj = snapshot.objects[id],
            case .text(let shape) = obj.objectType {

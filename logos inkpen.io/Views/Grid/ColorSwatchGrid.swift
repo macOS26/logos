@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct ColorSwatchGrid: View {
+
     @ObservedObject var document: VectorDocument
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
@@ -282,6 +284,7 @@ struct ColorSwatchGrid: View {
             }
         }
     }
+
     @ViewBuilder
     private var customColorPanel: some View {
         ColorPanel(
@@ -325,6 +328,7 @@ struct ColorSwatchGrid: View {
         )
         .frame(width: 300, height: 480)
     }
+
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"

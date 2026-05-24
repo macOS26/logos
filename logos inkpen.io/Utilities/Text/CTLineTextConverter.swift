@@ -1,7 +1,9 @@
 import Foundation
 import CoreText
 import AppKit
+
 struct CTLineTextConverter {
+
     static func convertTextToPaths(
         text: String,
         font: PlatformFont,
@@ -61,6 +63,7 @@ struct CTLineTextConverter {
         }
         return linePaths
     }
+
     private static func convertCTLineToPath(line: CTLine, position: CGPoint) -> CGPath? {
         let linePath = CGMutablePath()
         guard let runs = CTLineGetGlyphRuns(line) as? [CTRun], !runs.isEmpty else { return nil }
@@ -92,6 +95,7 @@ struct CTLineTextConverter {
         }
         return linePath.isEmpty ? nil : linePath
     }
+
     private static func isRectangleGlyph(_ path: CGPath) -> Bool {
         var pointCount = 0
         var hasOnlyLines = true
@@ -103,6 +107,7 @@ struct CTLineTextConverter {
                 hasOnlyLines = false
             case .closeSubpath:
                 break
+
             @unknown default:
                 break
             }

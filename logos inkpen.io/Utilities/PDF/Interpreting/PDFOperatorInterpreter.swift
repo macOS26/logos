@@ -1,5 +1,7 @@
 import SwiftUI
+
 class PDFOperatorInterpreter {
+
     static func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef, parser: PDFCommandParser) {
         CGPDFOperatorTableSetCallback(operatorTable, "m") { (scanner, info) in
             guard let info = info else { return }
@@ -202,6 +204,7 @@ class PDFOperatorInterpreter {
         setupTextOperators(operatorTable)
         setupGradientOperators(operatorTable)
     }
+
     private static func setupTextOperators(_ operatorTable: CGPDFOperatorTableRef) {
         CGPDFOperatorTableSetCallback(operatorTable, "BT") { (scanner, info) in
             guard let info = info else { return }
@@ -289,6 +292,7 @@ class PDFOperatorInterpreter {
             parser.handleSpacingMoveAndShowText(scanner: scanner)
         }
     }
+
     private static func setupGradientOperators(_ operatorTable: CGPDFOperatorTableRef) {
         CGPDFOperatorTableSetCallback(operatorTable, "SCN") { (scanner, info) in
             guard let info = info else { return }

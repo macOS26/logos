@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct PathOperationsPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -160,14 +161,17 @@ struct PathOperationsPanel: View {
             }
         }
     }
+
     private func canPerformOperation(_ operation: PathfinderOperation) -> Bool {
         let selectedShapes = document.getSelectedShapes()
         let paths = selectedShapes.map { $0.path.cgPath }
         return ProfessionalPathOperations.canPerformOperation(operation, on: paths)
     }
+
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
         _ = document.performPathfinderOperation(operation)
     }
+
     private func removeOverlapFromSelectedShapes() {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return }
         let selectedShapes = document.getSelectedShapes()
@@ -178,6 +182,7 @@ struct PathOperationsPanel: View {
             }
         }
     }
+
     private func removeOverlapFromAllShapes() {
         let allShapes = document.snapshot.objects.values.compactMap { obj -> VectorShape? in
             if case .shape(let shape) = obj.objectType {
@@ -193,6 +198,7 @@ struct PathOperationsPanel: View {
             }
         }
     }
+
     @discardableResult
     private func removeOverlapFromShape(_ shape: VectorShape) -> Bool {
         let originalPath = shape.path.cgPath
@@ -214,6 +220,7 @@ struct PathOperationsPanel: View {
         Log.error("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)", category: .error)
         return false
     }
+
     private func mergeCoincidentPointsInSelectedShapes() {
         guard !document.viewState.selectedObjectIDs.isEmpty else {
             Log.info("No shapes selected", category: .general)

@@ -1,6 +1,7 @@
 import MetalKit
 import simd
 import UniformTypeIdentifiers
+
 class MetalImageTileRenderer {
     private static var _shared: MetalImageTileRenderer?
     private static let lock = NSLock()
@@ -15,6 +16,7 @@ class MetalImageTileRenderer {
         _shared = instance
         return instance
     }
+
     static func releaseShared() {
         lock.lock()
         _shared?.clearCache()
@@ -27,6 +29,7 @@ class MetalImageTileRenderer {
     private let pipelineState: MTLRenderPipelineState
     private var diskCachePaths: [String: String] = [:]
     private let diskCacheLock = NSLock()
+
     func getCachedImage(for key: String) -> CGImage? {
         diskCacheLock.lock()
         defer { diskCacheLock.unlock() }
@@ -36,6 +39,7 @@ class MetalImageTileRenderer {
         }
         return loadImageFromDisk(path: cachedPath)
     }
+
     private init?() {
         let metal = SharedMetalDevice.shared
         guard let commandQueue = metal.makeCommandQueue() else {
@@ -69,6 +73,7 @@ class MetalImageTileRenderer {
             return nil
         }
     }
+
     func getTexture(from cgImage: CGImage) -> MTLTexture? {
         let width = cgImage.width
         let height = cgImage.height
@@ -107,6 +112,7 @@ class MetalImageTileRenderer {
         texture.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: width * 4)
         return texture
     }
+
     func compositeImageTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -201,6 +207,7 @@ class MetalImageTileRenderer {
         }
         return resultImage
     }
+
     func renderTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -242,6 +249,7 @@ class MetalImageTileRenderer {
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
+
     private func renderTileQuad(
         encoder: MTLRenderCommandEncoder,
         tileRect: CGRect,
@@ -278,6 +286,7 @@ class MetalImageTileRenderer {
             indexBufferOffset: 0
         )
     }
+
     private func cgImage(from texture: MTLTexture) -> CGImage? {
         let width = texture.width
         let height = texture.height
@@ -303,6 +312,7 @@ class MetalImageTileRenderer {
         print("📊 Reading texture format: \(texture.pixelFormat.rawValue) - should be 10 (RGBA)")
         return context.makeImage()
     }
+
     func clearCache() {
         diskCacheLock.lock()
         for (_, path) in diskCachePaths {
@@ -312,6 +322,7 @@ class MetalImageTileRenderer {
         diskCacheLock.unlock()
         print("🗑️ MetalImageTileRenderer.clearCache() - cleared disk cache")
     }
+
     private func saveImageToDisk(image: CGImage, key: String) -> String? {
         let tmpDir = NSTemporaryDirectory()
         let filename = "metal_tile_\(key).png"
@@ -327,6 +338,7 @@ class MetalImageTileRenderer {
         }
         return filePath
     }
+
     private func loadImageFromDisk(path: String) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
@@ -335,6 +347,7 @@ class MetalImageTileRenderer {
         }
         return image
     }
+
     private func createOrthographicMatrix(width: Float, height: Float) -> simd_float4x4 {
         let left: Float = 0
         let right = width

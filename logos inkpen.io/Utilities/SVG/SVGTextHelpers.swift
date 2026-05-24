@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     internal func getCachedFont(family: String, size: Double) -> PlatformFont {
         let cacheKey = "\(family)-\(size)"
         if let cached = fontCache[cacheKey] {
@@ -14,6 +16,7 @@ extension SVGParser {
         fontCache[cacheKey] = nsFont
         return nsFont
     }
+
     internal func calculateTextWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = alignment.nsTextAlignment
@@ -27,6 +30,7 @@ extension SVGParser {
         let boundingRect = sharedLayoutManager.boundingRect(forGlyphRange: glyphRange, in: sharedTextContainer)
         return ceil(boundingRect.width)
     }
+
     internal func calculateMaxLineWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let lines = text.components(separatedBy: "\n")
         var maxWidth: CGFloat = 0
@@ -36,6 +40,7 @@ extension SVGParser {
         }
         return maxWidth
     }
+
     func extractFontFamily(from attributes: [String: String]) -> String? {
         if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return explicit
@@ -51,6 +56,7 @@ extension SVGParser {
         }
         return nil
     }
+
     func normalizeFontFamily(_ rawFamily: String?) -> String {
         guard let raw = rawFamily?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
             return "Helvetica Neue"
@@ -67,6 +73,7 @@ extension SVGParser {
         }
         return "Helvetica Neue"
     }
+
     func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
         if let firstTspan = tspans.first,
@@ -98,6 +105,7 @@ extension SVGParser {
         }
         return .left
     }
+
     func parseText(attributes: [String: String]) {
         currentTextContent = ""
         currentTextSpans.removeAll()
@@ -112,6 +120,7 @@ extension SVGParser {
         }
         currentTextAttributes = merged
     }
+
     func finishTextElement() {
         if isInMultiLineText && !currentTextSpans.isEmpty {
             let baseX = parseLength(currentTextAttributes["x"]) ?? 0

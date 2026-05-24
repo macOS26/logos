@@ -1,20 +1,26 @@
 import Foundation
 import CoreGraphics
+
 enum AlignmentAxis {
     case both
     case xOnly
     case yOnly
 }
+
 extension VectorDocument {
+
     func alignSelectedObjectsByOrigin() {
         alignSelectedObjectsByOrigin(axis: .both)
     }
+
     func alignSelectedObjectsByOriginX() {
         alignSelectedObjectsByOrigin(axis: .xOnly)
     }
+
     func alignSelectedObjectsByOriginY() {
         alignSelectedObjectsByOrigin(axis: .yOnly)
     }
+
     private func alignSelectedObjectsByOrigin(axis: AlignmentAxis) {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
@@ -78,6 +84,7 @@ extension VectorDocument {
             }
         )
     }
+
     private func determineAlignmentAnchor(from orderedIDs: [UUID]) -> UUID {
         for objectID in orderedIDs {
             guard let obj = snapshot.objects[objectID] else { continue }
@@ -122,6 +129,7 @@ extension VectorDocument {
             return smallestID
         }
     }
+
     private func translateShapePath(_ shape: inout VectorShape, dx: CGFloat, dy: CGFloat) {
         var translatedElements: [PathElement] = []
         for element in shape.path.elements {

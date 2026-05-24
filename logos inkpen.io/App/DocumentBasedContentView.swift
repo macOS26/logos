@@ -1,7 +1,10 @@
 import SwiftUI
+
 struct DocumentBasedContentView: View {
+
     @Binding var inkpenDocument: InkpenDocument
     let fileURL: URL?
+
     @State private var hasHydratedImages = false
     @AppStorage("imagePreviewQuality") var imagePreviewQuality: Double = 1.0
     @AppStorage("imageTileSize") var imageTileSize: Int = 512
@@ -26,6 +29,7 @@ struct DocumentBasedContentView: View {
                 MetalImageTileRenderer.shared?.clearCache()
             }
     }
+
     private func hydrateLinkedImages(from sourceURL: URL) {
         let baseDirectory = sourceURL.deletingLastPathComponent()
         ImageContentRegistry.setBaseDirectory(baseDirectory, for: inkpenDocument.document)

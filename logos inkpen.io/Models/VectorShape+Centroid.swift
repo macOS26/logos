@@ -1,6 +1,8 @@
 import Foundation
 import CoreGraphics
+
 extension VectorShape {
+
     func calculateCentroid() -> CGPoint {
         var vertices: [CGPoint] = []
         for element in path.elements {

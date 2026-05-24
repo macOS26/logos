@@ -1,20 +1,26 @@
 import SwiftUI
+
 struct GradientLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption)
             .foregroundColor(Color.ui.secondaryText)
     }
 }
+
 struct GradientSubLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption2)
             .foregroundColor(Color.ui.secondaryText)
     }
 }
+
 struct GradientTextFieldStyle: ViewModifier {
     let width: CGFloat
+
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -22,17 +28,22 @@ struct GradientTextFieldStyle: ViewModifier {
             .font(.system(size: 11))
     }
 }
+
 extension View {
+
     func gradientLabel() -> some View {
         modifier(GradientLabelStyle())
     }
+
     func gradientSubLabel() -> some View {
         modifier(GradientSubLabelStyle())
     }
+
     func gradientTextField(width: CGFloat) -> some View {
         modifier(GradientTextFieldStyle(width: width))
     }
 }
+
 private struct GradientSliderControl: View {
     let label: String
     let value: Double
@@ -59,7 +70,9 @@ private struct GradientSliderControl: View {
         }
     }
 }
+
 struct GradientTypePickerView: View {
+
     @Binding var gradientType: GradientFillSection.GradientType
     @Binding var currentGradient: VectorGradient?
     @Binding var gradientId: UUID
@@ -67,6 +80,7 @@ struct GradientTypePickerView: View {
     let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
     let onGradientChange: () -> Void
+
     private func select(_ newType: GradientFillSection.GradientType) {
         gradientType = newType
         if let existing = currentGradient {
@@ -97,6 +111,7 @@ struct GradientTypePickerView: View {
         }
     }
 }
+
 struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -143,6 +158,7 @@ struct GradientAngleControlView: View {
         }
     }
 }
+
 struct GradientOriginControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -192,6 +208,7 @@ struct GradientOriginControlView: View {
         }
     }
 }
+
 struct GradientScaleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
@@ -276,6 +293,7 @@ struct GradientScaleControlView: View {
         }
     }
 }
+
 struct GradientApplyButtonView: View {
     let currentGradient: VectorGradient?
     let onApply: () -> Void

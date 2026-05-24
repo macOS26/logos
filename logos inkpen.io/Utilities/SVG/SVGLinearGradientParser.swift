@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     internal func parseLinearGradient(attributes: [String: String]) {
         guard let id = attributes["id"] else {
             return
@@ -10,6 +12,7 @@ extension SVGParser {
         currentGradientStops = []
         isParsingGradient = true
     }
+
     internal func finishLinearGradientElement(inheritedGradient: VectorGradient?) -> VectorGradient {
         let attributes = currentGradientAttributes
         let gradientUnits = parseGradientUnits(from: attributes)

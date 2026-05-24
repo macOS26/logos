@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         print("🔧 Tool change: \(oldTool.rawValue) → \(newTool.rawValue), selectedPoints: \(selectedPoints.count)")
         let isCmdPressed = NSEvent.modifierFlags.contains(.command)
@@ -31,6 +33,7 @@ extension DrawingCanvas {
         handleSelectionConversion(from: oldTool, to: newTool)
         previousTool = newTool
     }
+
     private func stopAllTextEditing() {
         var stoppedCount = 0
         for obj in document.snapshot.objects.values {
@@ -68,6 +71,7 @@ extension DrawingCanvas {
             window.makeFirstResponder(nil)
         }
     }
+
     private func finishTextEditingButKeepSelected(_ textID: UUID) {
         document.setTextEditingInUnified(id: textID, isEditing: false)
         document.viewState.selectedObjectIDs = [textID]
@@ -76,6 +80,7 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
     }
+
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
         if newTool == .selection && isTemporarySelectionViaCommand {
         }
@@ -152,6 +157,7 @@ extension DrawingCanvas {
         else if newTool == .hand || oldTool == .hand || newTool == .zoom || oldTool == .zoom {
         }
     }
+
     internal func clearToolState() {
         if document.viewState.currentTool != .bezierPen {
             showClosePathHint = false

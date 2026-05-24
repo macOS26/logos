@@ -1,7 +1,9 @@
 import SwiftUI
 import AppKit
 import ImageIO
+
 enum ImageContentRegistry {
+
     private static func isXMLPayload(_ data: Data) -> Bool {
         guard data.count >= 5 else { return false }
         var offset = 0
@@ -18,15 +20,19 @@ enum ImageContentRegistry {
         }
         return false
     }
+
     static func register(image: CGImage, for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage[shapeID] = image
     }
+
     static func image(for shapeID: UUID, in document: VectorDocument) -> CGImage? {
         return document.imageStorage[shapeID]
     }
+
     static func containsImage(_ shape: VectorShape, in document: VectorDocument) -> Bool {
         return document.imageStorage[shape.id] != nil
     }
+
     @discardableResult
     static func hydrateImageIfAvailable(for shape: VectorShape, in document: VectorDocument) -> CGImage? {
         if let existing = document.imageStorage[shape.id] {
@@ -83,21 +89,26 @@ enum ImageContentRegistry {
         }
         return nil
     }
+
     static func setBaseDirectory(_ url: URL?, for document: VectorDocument) {
         document.baseDirectoryURL = url
     }
+
     static func remove(for shapeID: UUID, in document: VectorDocument) {
         document.imageStorage.removeValue(forKey: shapeID)
     }
+
     static func cleanup(keepingShapes shapeIDs: Set<UUID>, in document: VectorDocument) {
         let keysToRemove = document.imageStorage.keys.filter { !shapeIDs.contains($0) }
         for key in keysToRemove {
             document.imageStorage.removeValue(forKey: key)
         }
     }
+
     static func clearAll(in document: VectorDocument) {
         document.imageStorage.removeAll()
     }
+
     static func storageSize(in document: VectorDocument) -> Int {
         return document.imageStorage.count
     }

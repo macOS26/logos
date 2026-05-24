@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func createGradientFromShading(from shadingDict: CGPDFDictionaryRef? = nil) -> VectorGradient {
         var stops: [GradientStop] = []
         if let shadingDict = shadingDict {

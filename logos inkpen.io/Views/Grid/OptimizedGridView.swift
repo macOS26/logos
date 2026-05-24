@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct OptimizedGridView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -76,6 +77,7 @@ struct OptimizedGridView: View {
             }
         }
     }
+
     private func createTilePatterns(
         tileSize: CGFloat,
         gridSpacing: CGFloat,

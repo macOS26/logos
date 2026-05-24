@@ -1,16 +1,21 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 final class ColorExportManager {
     static let shared = ColorExportManager()
+
     private init() {}
+
     enum ExportFormat {
         case png
     }
+
     enum ColorSpaceOption {
         case displayP3
         case sRGB
         case adobeRGB
     }
+
     @discardableResult
     func exportImage(
         _ cgImage: CGImage,
@@ -38,6 +43,7 @@ final class ColorExportManager {
             return try exportAsPNG(finalCGImage, colorSpace: colorSpace, to: outputURL)
         }
     }
+
     private func exportAsPNG(
         _ cgImage: CGImage,
         colorSpace: ColorSpaceOption,
@@ -60,6 +66,7 @@ final class ColorExportManager {
         }
         return true
     }
+
     private func getColorSpace(for option: ColorSpaceOption) -> CGColorSpace {
         switch option {
         case .displayP3:
@@ -70,6 +77,7 @@ final class ColorExportManager {
             return CGColorSpace(name: CGColorSpace.adobeRGB1998) ?? ColorManager.shared.sRGBCG
         }
     }
+
     private func getProfileName(for option: ColorSpaceOption) -> String {
         switch option {
         case .displayP3:
@@ -80,6 +88,7 @@ final class ColorExportManager {
             return "Adobe RGB (1998)"
         }
     }
+
     private func getImageProperties(for colorSpace: ColorSpaceOption) -> [CFString: Any] {
         return [
             kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
@@ -87,12 +96,14 @@ final class ColorExportManager {
             kCGImagePropertyHasAlpha: true as CFBoolean
         ]
     }
+
     private func getFileProperties(for colorSpace: ColorSpaceOption) -> [CFString: Any] {
         return [
             kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
             kCGImagePropertyProfileName: getProfileName(for: colorSpace) as CFString
         ]
     }
+
     enum ExportError: LocalizedError {
         case imageConversionFailed
         case destinationCreationFailed
@@ -109,7 +120,9 @@ final class ColorExportManager {
         }
     }
 }
+
 extension ColorExportManager {
+
     @discardableResult
     func exportFromContext(
         _ context: CGContext,

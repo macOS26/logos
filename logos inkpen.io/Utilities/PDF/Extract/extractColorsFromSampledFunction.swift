@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractColorsFromSampledFunction(_ function: CGPDFDictionaryRef) -> [VectorColor] {
         var sizeArray: CGPDFArrayRef?
         var bitsPerSample: CGPDFInteger = 8

@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractGradientFromXObjectResources(shadingName: String, resourcesDict: CGPDFDictionaryRef?) -> VectorGradient? {
         guard let xObjectResourcesDict = resourcesDict else {
             Log.error("PDF: ❌ No XObject resources dictionary provided", category: .error)
@@ -36,6 +38,7 @@ extension PDFCommandParser {
         let gradient = parseGradientFromDictionary(shadingDictionary)
         return gradient
     }
+
     func extractGradientFromPageResources(shadingName: String) -> VectorGradient? {
         guard let pageResourcesDict = pageResourcesDict else {
             Log.error("PDF: ❌ No page resources dictionary available", category: .error)
@@ -72,6 +75,7 @@ extension PDFCommandParser {
         let gradient = parseGradientFromDictionary(shadingDictionary)
         return gradient
     }
+
     func extractGradientFromShading(shadingName: String, scanner: CGPDFScannerRef) -> VectorGradient? {
         let stream = CGPDFScannerGetContentStream(scanner)
         guard let shadingCString = shadingName.cString(using: .utf8),

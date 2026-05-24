@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct CircleIcon: View {
     let isSelected: Bool
     var body: some View {

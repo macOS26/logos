@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func findObjectWithPathHitTest(_ location: CGPoint) -> VectorObject? {
         let validatedLocation = validateAndCorrectLocation(location)
         return metalHitTest(at: validatedLocation) { object, point in
@@ -35,6 +37,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func findObjectAtLocationOptimized(_ location: CGPoint) -> VectorObject? {
         let validatedLocation = validateAndCorrectLocation(location)
         var groupedChildIDs = Set<UUID>()
@@ -95,6 +98,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func metalHitTest(at point: CGPoint, testFunction: (VectorObject, CGPoint) -> Bool) -> VectorObject? {
         let candidates = spatialIndex.candidateObjectIDs(at: point)
         for layer in document.snapshot.layers.reversed() {

@@ -1,9 +1,12 @@
 import SwiftUI
+
 struct GuidesView: View {
+
     @ObservedObject var document: VectorDocument
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     @Binding var liveDragOffset: CGPoint
     var body: some View {
         if showGuides {
@@ -33,6 +36,7 @@ struct GuidesView: View {
         }
     }
 }
+
 private struct GuideLineView: View {
     let shape: VectorShape
     let orientation: Guide.Orientation
@@ -72,6 +76,7 @@ private struct GuideLineView: View {
         }
         .stroke(guideColor, lineWidth: 1)
     }
+
     private func extractGuidePosition() -> CGFloat {
         guard let firstElement = shape.path.elements.first else { return 0 }
         switch firstElement {

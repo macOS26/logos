@@ -1,4 +1,5 @@
 import SwiftUI
+
 @inline(__always)
 func addPathElements(_ elements: [PathElement], to path: inout Path) {
     for element in elements {

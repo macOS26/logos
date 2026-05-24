@@ -1,4 +1,5 @@
 import SwiftUI
+
 private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
     let offsetElements = path.elements.map { element -> PathElement in
         switch element {
@@ -23,6 +24,7 @@ private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
     }
     return VectorPath(elements: offsetElements, isClosed: path.isClosed)
 }
+
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     var inkpenMetadata: String? = nil
     if let pdfDoc = page.document {

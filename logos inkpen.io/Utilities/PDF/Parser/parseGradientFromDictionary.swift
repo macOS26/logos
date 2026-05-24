@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func parseGradientFromDictionary(_ dict: CGPDFDictionaryRef) -> VectorGradient? {
         var shadingType: CGPDFInteger = 0
         CGPDFDictionaryGetInteger(dict, "ShadingType", &shadingType)

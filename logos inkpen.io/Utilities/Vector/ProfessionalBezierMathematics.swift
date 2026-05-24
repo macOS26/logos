@@ -1,12 +1,15 @@
 import SwiftUI
 import simd
+
 struct ProfessionalBezierMathematics {
+
     struct BezierPoint: Codable, Hashable {
         var point: VectorPoint
         var incomingHandle: VectorPoint?
         var outgoingHandle: VectorPoint?
         var pointType: AnchorPointType
         var handleConstraint: HandleConstraint
+
         init(point: VectorPoint,
              incomingHandle: VectorPoint? = nil,
              outgoingHandle: VectorPoint? = nil,
@@ -18,6 +21,7 @@ struct ProfessionalBezierMathematics {
             self.pointType = pointType
             self.handleConstraint = handleConstraint
         }
+
         static func smoothPoint(at location: VectorPoint, handleLength: Double, angle: Double) -> BezierPoint {
             let handleVector = SIMD2<Double>(cos(angle), sin(angle)) * handleLength
             return BezierPoint(
@@ -28,6 +32,7 @@ struct ProfessionalBezierMathematics {
                 handleConstraint: .symmetric
             )
         }
+
         static func cornerPoint(at location: VectorPoint) -> BezierPoint {
             return BezierPoint(
                 point: location,
@@ -38,6 +43,7 @@ struct ProfessionalBezierMathematics {
             )
         }
     }
+
     enum AnchorPointType: String, CaseIterable, Codable {
         case corner = "Corner"
         case smoothCurve = "Smooth Curve"
@@ -65,6 +71,7 @@ struct ProfessionalBezierMathematics {
             }
         }
     }
+
     enum HandleConstraint: String, CaseIterable, Codable {
                 case symmetric = "Symmetric"
 case aligned = "Aligned"
@@ -83,6 +90,7 @@ case independent = "Independent"
             }
         }
     }
+
     static func deCasteljauEvaluation(points: [VectorPoint], t: Double) -> VectorPoint {
         guard !points.isEmpty else { return VectorPoint(0, 0) }
         guard points.count > 1 else { return points[0] }
@@ -99,6 +107,7 @@ case independent = "Independent"
         }
         return currentPoints[0]
     }
+
     static func bernsteinBasis(i: Int, n: Int, t: Double) -> Double {
         let binomialCoeff = binomialCoefficient(n: n, k: i)
         let tPower = pow(t, Double(i))
@@ -106,6 +115,7 @@ case independent = "Independent"
         return Double(binomialCoeff) * tPower * oneMinusTPower
     }
     private static var binomialLookup: [[Int]] = []
+
     static func binomialCoefficient(n: Int, k: Int) -> Int {
         guard n >= 0 && k >= 0 && k <= n else { return 0 }
         while binomialLookup.count <= n {
@@ -123,6 +133,7 @@ case independent = "Independent"
         }
         return binomialLookup[n][k]
     }
+
     static func evaluateCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
@@ -135,6 +146,7 @@ case independent = "Independent"
                      t3 * p3.simdPoint
         return VectorPoint(simd: result)
     }
+
     static func evaluateQuadraticBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
@@ -144,6 +156,7 @@ case independent = "Independent"
                      t2 * p2.simdPoint
         return VectorPoint(simd: result)
     }
+
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let term1 = u * u * (p1.simdPoint - p0.simdPoint)
@@ -152,6 +165,7 @@ case independent = "Independent"
         let result = 3.0 * (term1 + term2 + term3)
         return VectorPoint(simd: result)
     }
+
     static func cubicBezierSecondDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let term1 = u * (p2.simdPoint - 2.0 * p1.simdPoint + p0.simdPoint)
@@ -159,6 +173,7 @@ case independent = "Independent"
         let result = 6.0 * (term1 + term2)
         return VectorPoint(simd: result)
     }
+
     static func calculateCurvature(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> Double {
         let firstDeriv = cubicBezierFirstDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
         let secondDeriv = cubicBezierSecondDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
@@ -168,6 +183,7 @@ case independent = "Independent"
         guard speed > 1e-10 else { return 0.0 }
         return abs(crossProduct) / (speedSquared * speed)
     }
+
     static func splitCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> ([VectorPoint], [VectorPoint]) {
         let q1 = VectorPoint.lerp(p0, p1, t)
         let q2 = VectorPoint.lerp(p1, p2, t)
@@ -179,6 +195,7 @@ case independent = "Independent"
         let rightCurve = [pointOnCurve, s1, r2, p3]
         return (leftCurve, rightCurve)
     }
+
     static func generateSmoothHandles(previousPoint: VectorPoint?, currentPoint: VectorPoint, nextPoint: VectorPoint?, tension: Double = 0.33) -> (VectorPoint?, VectorPoint?) {
         var incomingHandle: VectorPoint?
         var outgoingHandle: VectorPoint?
@@ -220,6 +237,7 @@ case independent = "Independent"
         }
         return (incomingHandle, outgoingHandle)
     }
+
     enum ContinuityType: String, CaseIterable, Codable {
         case c0 = "C0"
         case g1 = "G1"
@@ -228,6 +246,7 @@ case independent = "Independent"
         case c2 = "C2"
         case none = "None"
     }
+
     static func analyzeContinuity(curve1: [VectorPoint], curve2: [VectorPoint], tolerance: Double = 1e-10) -> ContinuityType {
         guard curve1.count == 4 && curve2.count == 4 else { return .none }
         let p2 = curve1[2], p3 = curve1[3]
@@ -250,6 +269,7 @@ case independent = "Independent"
             return .g1
         }
     }
+
     static func fitCubicBezierToPoints(points: [VectorPoint]) -> [VectorPoint]? {
         guard points.count >= 4 else { return nil }
         guard let p0 = points.first, let p3 = points.last else { return nil }
@@ -259,6 +279,7 @@ case independent = "Independent"
         let p2 = points[min(midIndex2, points.count - 1)]
         return [p0, p1, p2, p3]
     }
+
     static func calculateArcLength(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, subdivisions: Int = 10) -> Double {
         var totalLength: Double = 0.0
         let dt = 1.0 / Double(subdivisions)
@@ -273,11 +294,14 @@ case independent = "Independent"
         return totalLength
     }
 }
+
 extension VectorPoint {
+
     static func lerp(_ a: VectorPoint, _ b: VectorPoint, _ t: Double) -> VectorPoint {
         let result = simd_mix(a.simdPoint, b.simdPoint, SIMD2<Double>(repeating: t))
         return VectorPoint(simd: result)
     }
+
     static func lerpBatch(_ startPoints: [VectorPoint], _ endPoints: [VectorPoint], _ t: Double) -> [VectorPoint] {
         guard startPoints.count == endPoints.count else { return [] }
         let startCGPoints = startPoints.map { CGPoint(x: $0.x, y: $0.y) }
@@ -293,9 +317,11 @@ extension VectorPoint {
             }
         }
     }
+
     func distance(to other: VectorPoint) -> Double {
         return simd_length(self.simdPoint - other.simdPoint)
     }
+
     static func distancesBatch(from sourcePoints: [VectorPoint], to targetPoints: [VectorPoint]) -> [Double] {
         guard sourcePoints.count == targetPoints.count else { return [] }
         let sourceCGPoints = sourcePoints.map { CGPoint(x: $0.x, y: $0.y) }
@@ -311,6 +337,7 @@ extension VectorPoint {
             }
         }
     }
+
     func angle(to other: VectorPoint) -> Double {
         return atan2(other.y - self.y, other.x - self.x)
     }
@@ -319,6 +346,7 @@ extension VectorPoint {
         guard length > 1e-10 else { return VectorPoint(0, 0) }
         return VectorPoint(simd: simd_normalize(simdPoint))
     }
+
     static func normalizeBatch(_ vectors: [VectorPoint]) -> [VectorPoint] {
         let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
         let metalEngine = MetalComputeEngine.shared
@@ -331,13 +359,16 @@ extension VectorPoint {
         }
     }
 }
+
 struct ProfessionalBezierFactory {
+
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
         let direction = endPoint.simdPoint - startPoint.simdPoint
         let control1 = VectorPoint(simd: startPoint.simdPoint + direction * tension)
         let control2 = VectorPoint(simd: endPoint.simdPoint - direction * tension)
         return [startPoint, control1, control2, endPoint]
     }
+
     static func createCircularArc(center: VectorPoint, radius: Double, startAngle: Double, endAngle: Double) -> [VectorPoint] {
         let kappa = 0.5522847498307935
         let startVec = SIMD2<Double>(cos(startAngle), sin(startAngle)) * radius
@@ -352,6 +383,7 @@ struct ProfessionalBezierFactory {
         return [startPoint, control1, control2, endPoint]
     }
 }
+
 extension ProfessionalBezierMathematics.ContinuityType {
     var priority: Int {
         switch self {

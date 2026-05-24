@@ -1,7 +1,9 @@
 import Foundation
 import CoreGraphics
 import simd
+
 struct GeometryUtils {
+
     static func constrainToAngle(from reference: CGPoint, to target: CGPoint, constraintAngles: [Double]) -> CGPoint {
         let delta = SIMD2<Double>(Double(target.x - reference.x), Double(target.y - reference.y))
         let distance = simd_length(delta)
@@ -29,15 +31,19 @@ struct GeometryUtils {
         return CGPoint(x: constrainedX, y: constrainedY)
     }
 }
+
 extension CGRect {
+
     @inline(__always)
     var simd: SIMD4<Double> {
         SIMD4(Double(origin.x), Double(origin.y), Double(size.width), Double(size.height))
     }
+
     @inline(__always)
     init(simd: SIMD4<Double>) {
         self.init(x: CGFloat(simd.x), y: CGFloat(simd.y), width: CGFloat(simd.z), height: CGFloat(simd.w))
     }
+
     @inline(__always)
     func intersectsSIMD(_ other: CGRect) -> Bool {
         let a = self.simd
@@ -50,27 +56,34 @@ extension CGRect {
         return all(overlap)
     }
 }
+
 extension CGSize {
+
     @inline(__always)
     var simd: SIMD2<Double> {
         SIMD2(Double(width), Double(height))
     }
+
     @inline(__always)
     init(simd: SIMD2<Double>) {
         self.init(width: CGFloat(simd.x), height: CGFloat(simd.y))
     }
+
     @inline(__always)
     var areaSIMD: CGFloat {
         let s = self.simd
         return CGFloat(s.x * s.y)
     }
+
     @inline(__always)
     var aspectRatioSIMD: CGFloat {
         let s = self.simd
         return s.y > 0 ? CGFloat(s.x / s.y) : 0
     }
 }
+
 struct SIMDRectOps {
+
     @inline(__always)
     static func unionBounds(_ rects: [CGRect]) -> CGRect {
         guard !rects.isEmpty else { return .zero }
@@ -92,6 +105,7 @@ struct SIMDRectOps {
             height: CGFloat(maxVec.y - minVec.y)
         )
     }
+
     @inline(__always)
     static func filterIntersecting(_ rects: [CGRect], viewport: CGRect) -> [CGRect] {
         rects.filter { $0.intersectsSIMD(viewport) }

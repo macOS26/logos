@@ -1,9 +1,11 @@
 import SwiftUI
+
 #if os(macOS)
 import AppKit
 #else
 import UIKit
 #endif
+
 class SlidingPopoverManager: NSObject {
     #if os(macOS)
     private var popover: NSPopover?
@@ -15,6 +17,7 @@ class SlidingPopoverManager: NSObject {
     #endif
     private var dismissCallback: (() -> Void)?
     #if os(macOS)
+
     func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
         if let existingPopover = popover, existingPopover.isShown {
@@ -47,6 +50,7 @@ class SlidingPopoverManager: NSObject {
         }
     }
     #else
+
     func show<Content: View>(content: Content, anchorView: UIView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
         if presentingViewController == nil {
@@ -72,6 +76,7 @@ class SlidingPopoverManager: NSObject {
             showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
         }
     }
+
     private func showNewPopover<Content: View>(content: Content, anchorView: UIView, edge: Edge, presentingVC: UIViewController) {
         let hostingController = UIHostingController(rootView: content)
         hostingController.modalPresentationStyle = .popover
@@ -87,6 +92,7 @@ class SlidingPopoverManager: NSObject {
     }
     #endif
     #if os(macOS)
+
     private func slideToNewAnchor(anchorView: NSView, edge: Edge, updateContent: () -> Void) {
         guard let popover = popover, popover.isShown else { return }
         updateContent()
@@ -99,6 +105,7 @@ class SlidingPopoverManager: NSObject {
         }
         self.currentAnchorView = anchorView
     }
+
     private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
         let bounds = anchorView.bounds
         return CGRect(
@@ -109,6 +116,7 @@ class SlidingPopoverManager: NSObject {
         )
     }
     #else
+
     private func calculatePositioningRect(for anchorView: UIView, edge: Edge) -> CGRect {
         let bounds = anchorView.bounds
         return CGRect(
@@ -119,6 +127,7 @@ class SlidingPopoverManager: NSObject {
         )
     }
     #endif
+
     func dismiss() {
         dismissCallback = nil
         #if os(macOS)
@@ -139,10 +148,13 @@ class SlidingPopoverManager: NSObject {
     }
 }
 #if os(macOS)
+
 extension SlidingPopoverManager: NSPopoverDelegate {
+
     func popoverWillClose(_ notification: Notification) {
         dismissCallback?()
     }
+
     func popoverDidClose(_ notification: Notification) {
         dismissCallback = nil
         popover = nil
@@ -150,10 +162,13 @@ extension SlidingPopoverManager: NSPopoverDelegate {
     }
 }
 #else
+
 extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
+
     func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
         dismissCallback?()
     }
+
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         dismissCallback = nil
         popoverController = nil
@@ -162,7 +177,9 @@ extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
 }
 #endif
 #if os(macOS)
+
 extension Edge {
+
     func toNSRectEdge() -> NSRectEdge {
         switch self {
         case .leading: return .minX
@@ -173,7 +190,9 @@ extension Edge {
     }
 }
 #else
+
 extension Edge {
+
     func toUIPopoverArrowDirection() -> UIPopoverArrowDirection {
         switch self {
         case .leading: return .left
@@ -183,6 +202,7 @@ extension Edge {
         }
     }
 }
+
 extension UIView {
     var viewController: UIViewController? {
         var responder: UIResponder? = self
@@ -196,6 +216,7 @@ extension UIView {
     }
 }
 #endif
+
 struct GlassCloseButton: View {
     let action: () -> Void
     var body: some View {
@@ -228,8 +249,10 @@ struct GlassCloseButton: View {
     }
 }
 #if os(macOS)
+
 struct PopoverAnchorView: NSViewRepresentable {
     let onViewCreated: (NSView) -> Void
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
@@ -237,12 +260,15 @@ struct PopoverAnchorView: NSViewRepresentable {
         }
         return view
     }
+
     func updateNSView(_ nsView: NSView, context: Context) {
     }
 }
 #else
+
 struct PopoverAnchorView: UIViewRepresentable {
     let onViewCreated: (UIView) -> Void
+
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         DispatchQueue.main.async {
@@ -250,6 +276,7 @@ struct PopoverAnchorView: UIViewRepresentable {
         }
         return view
     }
+
     func updateUIView(_ uiView: UIView, context: Context) {
     }
 }

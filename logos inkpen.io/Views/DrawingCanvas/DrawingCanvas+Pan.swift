@@ -1,8 +1,11 @@
 import SwiftUI
 import AppKit
 import simd
+
 fileprivate let enableHandToolLogging = false
+
 extension DrawingCanvas {
+
     internal func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
         if initialCanvasOffset == CGPoint.zero && handToolDragStart == CGPoint.zero {
             initialCanvasOffset = canvasOffset
@@ -24,6 +27,7 @@ extension DrawingCanvas {
         #endif
         canvasOffset = CGPoint(x: CGFloat(newOffset.x), y: CGFloat(newOffset.y))
     }
+
     internal func handlePanGestureEnd() {
         initialCanvasOffset = .zero
         handToolDragStart = .zero

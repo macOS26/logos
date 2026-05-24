@@ -1,15 +1,19 @@
 import SwiftUI
 import simd
+
 struct PressureCalibrationView: View {
+
     @ObservedObject private var pressureManager = PressureManager.shared
     @Environment(\.presentationMode) var presentationMode
     private let appState = AppState.shared
+
     @State private var currentPressureBarWidth: CGFloat = 0
     @State private var minPressureBarWidth: CGFloat = 0
     @State private var maxPressureBarWidth: CGFloat = 0
     @State private var tabletOnlyMode: Bool = true
     @State private var eventLog: [String] = []
     private let maxEventLogEntries = 20
+
     @State private var isDrawing = false
     @State private var currentPath: VariableStrokePath?
     @State private var drawingPaths: [VariableStrokePath] = []
@@ -145,6 +149,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     @discardableResult
     private func getThicknessFromCurve(pressure: Double) -> Double {
         return getThicknessFromPressureCurve(pressure: pressure, curve: appState.pressureCurve)
@@ -221,6 +226,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     private func handlePressureDrawing(location: CGPoint, pressure: Double, eventType: PressureSensitiveCanvasView.PressureEventType, isTabletEvent: Bool) {
         switch eventType {
         case .began:
@@ -231,6 +237,7 @@ struct PressureCalibrationView: View {
             finishDrawing()
         }
     }
+
     private func handleDrawingGesture(_ value: DragGesture.Value) {
         let pressure = 1.0
         let location = value.location
@@ -240,6 +247,7 @@ struct PressureCalibrationView: View {
             continueDrawing(to: location, pressure: pressure)
         }
     }
+
     private func startDrawing(at location: CGPoint, pressure: Double) {
         isDrawing = true
         getThicknessFromCurve(pressure: pressure)
@@ -248,6 +256,7 @@ struct PressureCalibrationView: View {
             pressureManager.startCalibration()
         }
     }
+
     private func continueDrawing(to location: CGPoint, pressure: Double) {
         guard isDrawing, var path = currentPath else { return }
         getThicknessFromCurve(pressure: pressure)
@@ -255,6 +264,7 @@ struct PressureCalibrationView: View {
         currentPath = path
         updateCanvas()
     }
+
     private func finishDrawing() {
         guard isDrawing, let path = currentPath else { return }
         let strokePath = createVariableWidthStroke(from: path.points)
@@ -265,14 +275,17 @@ struct PressureCalibrationView: View {
         currentPath = nil
         updateCanvas()
     }
+
     private func clearCanvas() {
         drawingPaths.removeAll()
         currentPath = nil
         isDrawing = false
         updateCanvas()
     }
+
     private func updateCanvas() {
     }
+
     private func createVariableWidthStroke(from pressurePoints: [PressurePoint]) -> Path {
         guard pressurePoints.count >= 2 else {
             guard let point = pressurePoints.first else {
@@ -570,12 +583,14 @@ struct PressureCalibrationView: View {
             .buttonStyle(BorderlessButtonStyle())
         }
     }
+
     private func closeCalibration() {
         if pressureManager.isCalibrating {
             pressureManager.stopCalibration()
         }
         presentationMode.wrappedValue.dismiss()
     }
+
     private func addEventToLog(_ message: String) {
         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         let logEntry = "[\(timestamp)] \(message)"
@@ -586,6 +601,7 @@ struct PressureCalibrationView: View {
             }
         }
     }
+
     private func updateVisualization() {
         let rawCurrentPressure = pressureManager.isCalibrating ? pressureManager.currentPressure : 0.0
         let rawMinPressure = pressureManager.isCalibrating ? pressureManager.calibrationMinPressure : 0.0
@@ -595,10 +611,12 @@ struct PressureCalibrationView: View {
         maxPressureBarWidth = CGFloat(rawMaxPressure) * barMaxWidth
     }
 }
+
 struct PressurePoint {
     let location: CGPoint
     let pressure: Double
 }
+
 struct VariableStrokePath {
     var points: [PressurePoint]
     var path: Path = Path()

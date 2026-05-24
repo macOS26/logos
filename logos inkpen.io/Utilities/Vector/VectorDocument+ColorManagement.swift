@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func addColorToCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -17,12 +19,15 @@ extension VectorDocument {
             }
         }
     }
+
     func addColorSwatch(_ color: VectorColor) {
         addColorToCurrentMode(color)
     }
+
     func addColorToSwatches(_ color: VectorColor) {
         addColorToCurrentMode(color)
     }
+
     func removeColorFromCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -33,22 +38,27 @@ extension VectorDocument {
             colorSwatches.hsb.removeAll { $0 == color }
         }
     }
+
     func notifyActiveToolsOfFillOpacityChange() {
         viewState.lastColorChangeType = .fillOpacity
         viewState.colorChangeNotification = UUID()
     }
+
     func notifyActiveToolsOfStrokeColorChange() {
         viewState.lastColorChangeType = .strokeColor
         viewState.colorChangeNotification = UUID()
     }
+
     func notifyActiveToolsOfStrokeOpacityChange() {
         viewState.lastColorChangeType = .strokeOpacity
         viewState.colorChangeNotification = UUID()
     }
+
     func notifyActiveToolsOfColorChange() {
         viewState.lastColorChangeType = .fillOpacity
         viewState.colorChangeNotification = UUID()
     }
+
     private func applyColorToShape(_ shape: inout VectorShape, color: VectorColor, isText: Bool) {
         if isText {
             switch viewState.activeColorTarget {
@@ -79,6 +89,7 @@ extension VectorDocument {
             }
         }
     }
+
     func setActiveColor(_ color: VectorColor) {
         let shouldSaveUndo = !viewState.selectedObjectIDs.isEmpty
         var oldColors: [UUID: VectorColor] = [:]
@@ -285,9 +296,11 @@ extension VectorDocument {
             }
         }
     }
+
     func removeColorSwatch(_ color: VectorColor) {
         removeColorFromCurrentMode(color)
     }
+
     func getSelectedObjectColor() -> VectorColor? {
         guard let firstSelectedID = viewState.selectedObjectIDs.first else { return nil }
         if let vectorObject = snapshot.objects[ firstSelectedID] {
@@ -314,6 +327,7 @@ extension VectorDocument {
         }
         return nil
     }
+
     static func createDefaultRGBSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
         let rgbColors: [VectorColor] = [
@@ -347,6 +361,7 @@ extension VectorDocument {
         ]
         return basicColors + rgbColors + p3Colors
     }
+
     static func createDefaultCMYKSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
         var cmykColors: [VectorColor] = []
@@ -381,6 +396,7 @@ extension VectorDocument {
         }
         return basicColors + cmykColors
     }
+
     static func createDefaultHSBSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
         var hsbColors: [VectorColor] = []

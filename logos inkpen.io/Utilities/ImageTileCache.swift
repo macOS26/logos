@@ -2,10 +2,14 @@ import Foundation
 import AppKit
 import ImageIO
 import simd
+
 typealias TileCoordinate = SIMD2<Int>
+
 class ImageTileCache {
     static let shared = ImageTileCache()
+
     private init() {}
+
     func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int) -> [(coord: TileCoordinate, rect: CGRect)] {
         let currentTileSize = tileSize
         let numCols = Int(ceil(imageSize.width / CGFloat(currentTileSize)))
@@ -23,6 +27,7 @@ class ImageTileCache {
         }
         return tiles
     }
+
     func getSourceImage(from imageData: Data, quality: Double, shapeID: UUID) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
@@ -42,6 +47,7 @@ class ImageTileCache {
         ]
         return CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
     }
+
     func getSourceImage(from url: URL, quality: Double, shapeID: UUID) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil

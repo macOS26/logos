@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 extension DrawingCanvas {
+
     private func geometricTypeForTool(_ tool: DrawingTool) -> GeometricShapeType? {
         switch tool {
         case .line: return .line
@@ -19,6 +21,7 @@ extension DrawingCanvas {
         default: return nil
         }
     }
+
     private func calculateDistanceWithFallback(from point1: CGPoint, to point2: CGPoint) -> Float {
         let metalEngine = MetalComputeEngine.shared
         let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
@@ -30,6 +33,7 @@ extension DrawingCanvas {
             return Float(distance)
         }
     }
+
     internal func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let dragDistance = calculateDistanceWithFallback(from: value.startLocation, to: value.location)
         let minimumDragThreshold: Double = 0.0
@@ -904,6 +908,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     internal func finishShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let path = currentPath else { return }
         let strokeStyle = StrokeStyle(
@@ -991,6 +996,7 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
     }
+
     private func isLocationOnShapeResizeHandle(_ location: CGPoint) -> Bool {
         let handleRadius: Double = 6.0
         let tolerance: Double = 15.0

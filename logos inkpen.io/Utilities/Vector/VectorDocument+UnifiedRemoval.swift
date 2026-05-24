@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func removeShapeFromUnifiedSystem(id: UUID) {
         guard let object = snapshot.objects[id] else { return }
         let layerIndex = object.layerIndex
@@ -13,6 +15,7 @@ extension VectorDocument {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func removeTextFromUnifiedSystem(id: UUID) {
         guard let object = snapshot.objects[id] else { return }
         let layerIndex = object.layerIndex
@@ -25,6 +28,7 @@ extension VectorDocument {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func updateEntireTextInUnified(id: UUID, updater: (inout VectorText) -> Void) {
         guard let object = snapshot.objects[id] else { return }
         guard case .text(let shape) = object.objectType,
@@ -39,6 +43,7 @@ extension VectorDocument {
         snapshot.objects[id] = updatedObject
         triggerLayerUpdate(for: layerIndex)
     }
+
     func getTextCount() -> Int {
         return snapshot.objects.values.filter { obj in
             if case .text = obj.objectType {
@@ -47,6 +52,7 @@ extension VectorDocument {
             return false
         }.count
     }
+
     func hasTextObjects() -> Bool {
         return snapshot.objects.values.contains { obj in
             if case .text = obj.objectType {
@@ -55,6 +61,7 @@ extension VectorDocument {
             return false
         }
     }
+
     func getTextByID(_ id: UUID) -> VectorText? {
         guard let object = snapshot.objects[id] else { return nil }
         guard case .text(let shape) = object.objectType,
@@ -62,6 +69,7 @@ extension VectorDocument {
         vectorText.layerIndex = object.layerIndex
         return vectorText
     }
+
     func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
         for object in snapshot.objects.values {
             if case .text(let shape) = object.objectType,
@@ -74,6 +82,7 @@ extension VectorDocument {
         }
         return nil
     }
+
     func removeAllText() {
         var affectedLayers = Set<Int>()
         for (id, object) in snapshot.objects {

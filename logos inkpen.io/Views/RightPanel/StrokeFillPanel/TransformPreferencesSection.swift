@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct TransformPreferencesSection: View {
+
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

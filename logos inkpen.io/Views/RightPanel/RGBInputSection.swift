@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct ColorChannelLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 11, weight: .medium))
@@ -7,7 +9,9 @@ struct ColorChannelLabelStyle: ViewModifier {
             .frame(width: 12)
     }
 }
+
 struct ColorValueTextFieldStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -15,13 +19,17 @@ struct ColorValueTextFieldStyle: ViewModifier {
             .font(.system(size: 11))
     }
 }
+
 struct ColorIndicatorStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .frame(width: 12, height: 12)
     }
 }
+
 struct HexTextFieldStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -29,23 +37,30 @@ struct HexTextFieldStyle: ViewModifier {
             .frame(width: 70)
     }
 }
+
 extension View {
+
     func colorChannelLabel() -> some View {
         modifier(ColorChannelLabelStyle())
     }
+
     func colorValueTextField() -> some View {
         modifier(ColorValueTextFieldStyle())
     }
+
     func colorIndicator() -> some View {
         modifier(ColorIndicatorStyle())
     }
+
     func hexTextField() -> some View {
         modifier(HexTextFieldStyle())
     }
 }
+
 struct ColorChannelSlider: View {
     let color: Color
     let label: String
+
     @Binding var value: Double
     let gradient: SwiftUI.LinearGradient
     let onEditingChanged: (Bool) -> Void
@@ -77,10 +92,13 @@ struct ColorChannelSlider: View {
         }
     }
 }
+
 struct RGBInputSection: View {
+
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
+
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     let defaultFillOpacity: Double
@@ -88,6 +106,7 @@ struct RGBInputSection: View {
     let onTriggerLayerUpdates: (Set<Int>) -> Void
     let onAddColorSwatch: (VectorColor) -> Void
     let onSetActiveColor: (VectorColor) -> Void
+
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @Binding var sharedColor: VectorColor
@@ -95,6 +114,7 @@ struct RGBInputSection: View {
     let disableSetActiveColor: Bool
     let onColorSelected: ((VectorColor) -> Void)?
     let onDismiss: (() -> Void)?
+
     init(
         snapshot: Binding<DocumentSnapshot>,
         selectedObjectIDs: Set<UUID>,
@@ -130,6 +150,7 @@ struct RGBInputSection: View {
         self.onColorSelected = onColorSelected
         self.onDismiss = onDismiss
     }
+
     @State private var redValue: Double = 133
     @State private var greenValue: Double = 78
     @State private var blueValue: Double = 68
@@ -141,6 +162,7 @@ struct RGBInputSection: View {
             alpha: 1.0
         )
     }
+
     private func swiftUIColor(r: Double, g: Double, b: Double) -> Color {
         return Color(.displayP3, red: r/255.0, green: g/255.0, blue: b/255.0)
     }
@@ -237,6 +259,7 @@ struct RGBInputSection: View {
             loadInitialColor()
         }
     }
+
     private func loadInitialColor() {
         let rgb: RGBColor
         switch sharedColor {
@@ -275,6 +298,7 @@ struct RGBInputSection: View {
         greenValue = rgb.green * 255
         blueValue = rgb.blue * 255
     }
+
     private func onUpdateRed(_ value: Double) {
         redValue = value
         sharedColor = VectorColor.rgb(currentColor)
@@ -292,6 +316,7 @@ struct RGBInputSection: View {
             }
         }
     }
+
     private func onUpdateGreen(_ value: Double) {
         greenValue = value
         sharedColor = VectorColor.rgb(currentColor)
@@ -309,6 +334,7 @@ struct RGBInputSection: View {
             }
         }
     }
+
     private func onUpdateBlue(_ value: Double) {
         blueValue = value
         sharedColor = VectorColor.rgb(currentColor)
@@ -326,6 +352,7 @@ struct RGBInputSection: View {
             }
         }
     }
+
     private func onRedEditingChanged(_ isEditing: Bool) {
         if isEditing {
             let currentOpacity: Double
@@ -371,6 +398,7 @@ struct RGBInputSection: View {
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
+
     private func onGreenEditingChanged(_ isEditing: Bool) {
         if isEditing {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity
@@ -406,6 +434,7 @@ struct RGBInputSection: View {
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
+
     private func onBlueEditingChanged(_ isEditing: Bool) {
         if isEditing {
             let currentOpacity = activeColorTarget == .fill ? defaultFillOpacity : defaultStrokeOpacity

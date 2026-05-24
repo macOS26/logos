@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func createShapeFromShading(gradient: VectorGradient) {
         let pageRect = [
             PathCommand.moveTo(CGPoint(x: 0, y: 0)),

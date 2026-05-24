@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum BlendMode: String, CaseIterable, Codable {
     case normal = "Normal"
     case multiply = "Multiply"
@@ -19,6 +20,7 @@ enum BlendMode: String, CaseIterable, Codable {
     var displayName: String {
         return rawValue
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)

@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum DrawingTool: String, CaseIterable, Codable {
     case selection = "Selection"
     case directSelection = "Direct Selection"

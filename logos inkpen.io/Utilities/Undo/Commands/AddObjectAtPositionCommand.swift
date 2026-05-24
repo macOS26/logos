@@ -1,13 +1,16 @@
 import Foundation
 import Combine
+
 class AddObjectAtPositionCommand: BaseCommand {
     private let objectsToAdd: [UUID: VectorObject]
     private let insertPosition: InsertPosition
+
     enum InsertPosition {
         case front
         case back
         case afterSelection(Set<UUID>)
     }
+
     init(objects: [VectorObject], position: InsertPosition = .back) {
         var dict: [UUID: VectorObject] = [:]
         for obj in objects {
@@ -16,6 +19,7 @@ class AddObjectAtPositionCommand: BaseCommand {
         self.objectsToAdd = dict
         self.insertPosition = position
     }
+
     override func execute(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         var objectsByLayer: [Int: [(UUID, VectorObject)]] = [:]
@@ -53,6 +57,7 @@ class AddObjectAtPositionCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for (uuid, obj) in objectsToAdd {

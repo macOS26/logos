@@ -1,15 +1,18 @@
 import Foundation
+
 @MainActor
 final class ImportCommand: BaseCommand {
     private let newLayers: [Layer]
     private let topLevel: [VectorObject]
     private let members: [VectorObject]
     private var appendedLayerIndexes: [Int] = []
+
     init(newLayers: [Layer], topLevel: [VectorObject], members: [VectorObject]) {
         self.newLayers = newLayers
         self.topLevel = topLevel
         self.members = members
     }
+
     override func execute(on document: VectorDocument) {
         Log.info("📥 ImportCommand.execute: \(newLayers.count) layers, \(topLevel.count) top, \(members.count) members. Doc had \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects", category: .general)
         appendedLayerIndexes.removeAll(keepingCapacity: true)
@@ -37,6 +40,7 @@ final class ImportCommand: BaseCommand {
         document.triggerLayerUpdates(for: affectedLayers)
         Log.info("📥 ImportCommand.execute DONE: doc has \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects, affectedLayers=\(affectedLayers.sorted())", category: .general)
     }
+
     override func undo(on document: VectorDocument) {
         Log.info("↩️ ImportCommand.undo: removing \(topLevel.count) top, \(members.count) members, popping layers \(appendedLayerIndexes). Doc has \(document.snapshot.layers.count) layers, \(document.snapshot.objects.count) objects", category: .general)
         var affectedLayers = Set<Int>()

@@ -1,13 +1,17 @@
 import SwiftUI
 import simd
 import Accelerate
+
 typealias Vec2D = SIMD2<Double>
 typealias Vec8D = SIMD8<Double>
+
 enum DrawingCanvasPathHelpers {
+
     static func douglasPeuckerSimplify(points: [CGPoint], tolerance: Double) -> [CGPoint] {
         guard points.count > 2 else { return points }
         return douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
     }
+
     static func douglasPeuckerRecursive(points: [CGPoint], tolerance: Double, startIndex: Int, endIndex: Int) -> [CGPoint] {
         guard endIndex - startIndex > 1 else {
             return [points[startIndex], points[endIndex]]
@@ -46,6 +50,7 @@ enum DrawingCanvasPathHelpers {
             return [startPoint, endPoint]
         }
     }
+
     static func perpendicularDistancesBatch(
         points: ArraySlice<CGPoint>,
         lineStart: CGPoint,
@@ -90,6 +95,7 @@ enum DrawingCanvasPathHelpers {
         }
         return distances
     }
+
     static func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
@@ -98,6 +104,7 @@ enum DrawingCanvasPathHelpers {
         let denominator = simd_length(Vec2D(A, B))
         return numerator / denominator
     }
+
     static func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
             return VectorPath(elements: [])
@@ -112,6 +119,7 @@ enum DrawingCanvasPathHelpers {
         }
         return VectorPath(elements: elements)
     }
+
     static func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
         var elements: [PathElement] = []
         for i in 1..<points.count {
@@ -144,6 +152,7 @@ enum DrawingCanvasPathHelpers {
         }
         return elements
     }
+
     static func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
         let v1 = Vec2D(p1.x - p0.x, p1.y - p0.y)
         let v2 = Vec2D(p2.x - p1.x, p2.y - p1.y)
@@ -156,6 +165,7 @@ enum DrawingCanvasPathHelpers {
             return CGPoint(x: 1, y: 0)
         }
     }
+
     static func removeCoincidentPoints(_ points: [CGPoint], passes: Int, tolerance: Double = 0.1) -> [CGPoint] {
         guard passes > 0 && points.count > 1 else { return points }
         var filtered = points

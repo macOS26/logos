@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 extension ScaleHandles {
+
     func getAnchorPoint(for anchor: ScalingAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
         switch anchor {
         case .center:
@@ -15,6 +17,7 @@ extension ScaleHandles {
             return CGPoint(x: bounds.maxX, y: bounds.maxY)
         }
     }
+
     func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
@@ -110,6 +113,7 @@ extension ScaleHandles {
             document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
     }
+
     func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
@@ -119,6 +123,7 @@ extension ScaleHandles {
         default: return center
         }
     }
+
     func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
         switch document.viewState.scalingAnchor {
         case .center:
@@ -133,6 +138,7 @@ extension ScaleHandles {
             return cornerIndex == 3
         }
     }
+
     func getAnchorForCorner(index: Int) -> ScalingAnchor {
         switch index {
         case 0: return .topLeft
@@ -142,14 +148,17 @@ extension ScaleHandles {
         default: return .center
         }
     }
+
     func setupKeyEventMonitoring() {
     }
+
     func teardownKeyEventMonitoring() {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
         }
     }
+
     func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
         let scaleX = simd_length(SIMD2(Double(transform.a), Double(transform.c)))

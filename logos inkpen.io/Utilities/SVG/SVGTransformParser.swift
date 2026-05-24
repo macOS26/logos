@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     func parseTransform(_ transformString: String) -> CGAffineTransform {
         var transform = CGAffineTransform.identity
         guard let transformRegex = try? NSRegularExpression(pattern: "(\\w+)\\s*\\(([^)]*)\\)", options: []) else {

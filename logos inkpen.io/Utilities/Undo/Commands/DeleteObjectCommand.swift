@@ -1,8 +1,10 @@
 import Foundation
 import Combine
+
 class DeleteObjectCommand: BaseCommand {
     private let objectsToRestore: [UUID: VectorObject]
     private var originalPositions: [UUID: (layerIndex: Int, position: Int)] = [:]
+
     init(objectIDs: [UUID], document: VectorDocument) {
         var dict: [UUID: VectorObject] = [:]
         var positions: [UUID: (layerIndex: Int, position: Int)] = [:]
@@ -19,9 +21,11 @@ class DeleteObjectCommand: BaseCommand {
         self.objectsToRestore = dict
         self.originalPositions = positions
     }
+
     private init(objectsDict: [UUID: VectorObject]) {
         self.objectsToRestore = objectsDict
     }
+
     convenience init(objects: [VectorObject]) {
         var dict: [UUID: VectorObject] = [:]
         for obj in objects {
@@ -29,9 +33,11 @@ class DeleteObjectCommand: BaseCommand {
         }
         self.init(objectsDict: dict)
     }
+
     convenience init(object: VectorObject) {
         self.init(objects: [object])
     }
+
     override func execute(on document: VectorDocument) {
         let idsToRemove = Set(objectsToRestore.keys)
         var affectedLayers = Set<Int>()
@@ -59,6 +65,7 @@ class DeleteObjectCommand: BaseCommand {
         document.viewState.selectedObjectIDs = document.viewState.selectedObjectIDs.subtracting(idsToRemove)
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         let sortedRestores = objectsToRestore.sorted { a, b in

@@ -1,7 +1,10 @@
 import SwiftUI
+
 class SystemErrorHandler {
     static let shared = SystemErrorHandler()
+
     private init() {}
+
     func handleSystemError(_ error: Error) -> Bool {
         let errorDescription = error.localizedDescription.lowercased()
         let errorDomain = (error as NSError).domain

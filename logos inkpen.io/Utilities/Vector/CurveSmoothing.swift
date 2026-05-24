@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 struct CurveSmoothing {
+
     static func chaikinSmooth(points: [CGPoint], iterations: Int = 1, ratio: Double = 0.25) -> [CGPoint] {
         guard points.count >= 3 else { return points }
         var smoothedPoints = points
@@ -23,6 +25,7 @@ struct CurveSmoothing {
         }
         return smoothedPoints
     }
+
     private static func applySingleChaikinIteration(points: [CGPoint], ratio: Double) -> [CGPoint] {
         guard points.count >= 2 else { return points }
         var newPoints: [CGPoint] = []
@@ -40,10 +43,12 @@ struct CurveSmoothing {
         }
         return newPoints
     }
+
     static func improvedDouglassPeucker(points: [CGPoint], tolerance: Double, preserveSharpCorners: Bool = true) -> [CGPoint] {
         guard points.count > 2 else { return points }
         return improvedDPRecursive(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1, preserveSharpCorners: preserveSharpCorners)
     }
+
     private static func improvedDPRecursive(points: [CGPoint], tolerance: Double, startIndex: Int, endIndex: Int, preserveSharpCorners: Bool) -> [CGPoint] {
         var maxDistance: Double = 0
         var maxIndex = 0
@@ -68,6 +73,7 @@ struct CurveSmoothing {
             return [points[startIndex], points[endIndex]]
         }
     }
+
     static func adaptiveCurveFitting(points: [CGPoint], adaptiveTension: Bool = true, baseTension: Double = 0.3) -> [PathElement] {
         guard points.count >= 2 else { return [] }
         var elements: [PathElement] = []
@@ -97,6 +103,7 @@ struct CurveSmoothing {
         }
         return elements
     }
+
     private static func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
         let pointVec = point.simd - lineStart.simd
         let lineVec = lineEnd.simd - lineStart.simd
@@ -115,6 +122,7 @@ struct CurveSmoothing {
         }
         return simd_length(point.simd - closest)
     }
+
     private static func calculateCurvature(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> Double {
         let v1 = p1.simd - p0.simd
         let v2 = p2.simd - p1.simd
@@ -128,6 +136,7 @@ struct CurveSmoothing {
         let dotProduct = simd_dot(n1, n2)
         return 1.0 - abs(dotProduct)
     }
+
     static func calculateCurvatureBatch(points: [CGPoint]) -> [Double] {
         guard points.count >= 3 else { return [] }
         if points.count >= 100 {
@@ -149,6 +158,7 @@ struct CurveSmoothing {
         curvatures.append(0.0)
         return curvatures
     }
+
     private static func calculateCentripetalControls(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tension: Double) -> (CGPoint, CGPoint) {
         let d1 = p1.distance(to: p0)
         let d2 = p2.distance(to: p1)

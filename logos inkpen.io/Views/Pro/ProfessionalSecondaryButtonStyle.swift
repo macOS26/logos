@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct ProfessionalSecondaryButtonStyle: ButtonStyle {
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13, weight: .medium))

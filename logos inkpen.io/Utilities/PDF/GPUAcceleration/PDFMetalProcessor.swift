@@ -1,5 +1,6 @@
 import Foundation
 import Metal
+
 class PDFMetalProcessor {
     private static var _shared: PDFMetalProcessor?
     private static let lock = NSLock()
@@ -11,6 +12,7 @@ class PDFMetalProcessor {
         _shared = instance
         return instance
     }
+
     static func releaseShared() {
         lock.lock()
         _shared = nil
@@ -22,9 +24,11 @@ class PDFMetalProcessor {
     private var indexedToRGBAPipeline: MTLComputePipelineState?
     private var extractGradientColorsPipeline: MTLComputePipelineState?
     private var isInitialized: Bool = false
+
     private init() {
         setupMetal()
     }
+
     private func setupMetal() {
         let metal = SharedMetalDevice.shared
         self.device = metal.device
@@ -44,6 +48,7 @@ class PDFMetalProcessor {
             Log.error("❌ Failed to create Metal compute pipelines: \(error)", category: .error)
         }
     }
+
     func convertRGBtoRGBA(rgbData: Data, maskData: Data?, width: Int, height: Int) -> Data? {
         guard isInitialized,
               let device = device,
@@ -97,6 +102,7 @@ class PDFMetalProcessor {
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
         return resultData
     }
+
     func convertIndexedToRGBA(indexData: Data, paletteData: Data, maskData: Data?, width: Int, height: Int) -> Data? {
         guard isInitialized,
               let device = device,
@@ -160,6 +166,7 @@ class PDFMetalProcessor {
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
         return resultData
     }
+
     func extractGradientColors(sampleData: Data,
                               totalSamples: Int,
                               outputComponents: Int,

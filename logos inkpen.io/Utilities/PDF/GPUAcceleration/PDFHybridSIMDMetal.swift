@@ -1,13 +1,17 @@
 import Foundation
 import CoreGraphics
 import simd
+
 class PDFHybridProcessor {
     static let shared = PDFHybridProcessor()
     private let simdBatchSize = 4
+
     private init() {}
+
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         return transformPointsSIMD(points, with: matrix)
     }
+
     private func transformPointsSIMD(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         var results = [CGPoint]()
@@ -36,17 +40,21 @@ class PDFHybridProcessor {
         }
         return results
     }
+
     func calculateBounds(for shapes: [VectorShape]) -> CGRect? {
         guard !shapes.isEmpty else { return nil }
         return calculateBoundsSIMD(for: shapes)
     }
+
     private func calculateBoundsSIMD(for shapes: [VectorShape]) -> CGRect {
         return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: .zero)
     }
+
     func batchMultiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
         return batchMultiplyMatricesSIMD(matrices)
     }
+
     private func batchMultiplyMatricesSIMD(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         var results = [PDFSIMDMatrix]()
         results.reserveCapacity(matrices.count)
@@ -56,11 +64,13 @@ class PDFHybridProcessor {
         }
         return results
     }
+
     enum ProcessingMethod {
         case gpu
         case simdCPU
         case standard
     }
+
     func chooseProcessingMethod(itemCount: Int) -> ProcessingMethod {
         if itemCount >= simdBatchSize {
             return .simdCPU
@@ -68,6 +78,7 @@ class PDFHybridProcessor {
         return .standard
     }
 }
+
 extension simd_float3x3 {
     var metalBufferArray: [Float] {
         return [
@@ -76,6 +87,7 @@ extension simd_float3x3 {
             columns.2.x, columns.2.y, columns.2.z
         ]
     }
+
     init(metalBuffer: [Float]) {
         precondition(metalBuffer.count >= 9, "Buffer must contain at least 9 floats")
         self.init(
@@ -85,7 +97,9 @@ extension simd_float3x3 {
         )
     }
 }
+
 extension PDFHybridProcessor {
+
     func processBatches<T, R>(_ items: [T], batchSize: Int = 4, processor: ([T]) -> [R]) -> [R] {
         guard !items.isEmpty else { return [] }
         var results = [R]()
@@ -100,6 +114,7 @@ extension PDFHybridProcessor {
         }
         return results
     }
+
     func processParallelSIMD<T, R>(_ items: [T], processor: (T) -> R) -> [R] {
         guard !items.isEmpty else { return [] }
         if items.count >= 1000 {

@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct MoveObjectDialog: View {
+
     @ObservedObject var document: VectorDocument
     @Binding var isPresented: Bool
     @State private var xDelta: String = "0"
@@ -72,6 +74,7 @@ struct MoveObjectDialog: View {
             focusedField = .x
         }
     }
+
     private func applyMove() {
         guard let xValue = Double(xDelta),
               let yValue = Double(yDelta) else {
@@ -161,6 +164,7 @@ struct MoveObjectDialog: View {
         }
         isPresented = false
     }
+
     private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
         let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
         var pointsByShape: [UUID: [PointID]] = [:]

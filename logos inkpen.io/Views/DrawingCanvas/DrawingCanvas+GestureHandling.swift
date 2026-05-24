@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
+
 extension DrawingCanvas {
+
     internal func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
         if case .active(let location) = phase {
             currentMouseLocation = location

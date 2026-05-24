@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     func handleConvertAnchorPointTap(at location: CGPoint) {
         let baseTolerance: Double = 8.0
         let zoomLevel = zoomLevel
@@ -15,6 +17,7 @@ extension DrawingCanvas {
         }
         tryToSelectShapeForConvertTool(at: location)
     }
+
     func restoreCollapsedHandlesIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for layerIndex in document.snapshot.layers.indices.reversed() {
             let layer = document.snapshot.layers[layerIndex]
@@ -74,6 +77,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     func collapseHandleIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for layerIndex in document.snapshot.layers.indices.reversed() {
             let layer = document.snapshot.layers[layerIndex]
@@ -146,6 +150,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     func collapseControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -191,6 +196,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     func collapseControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -224,6 +230,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     func collapseNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -257,6 +264,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     func restoreHandlesForCurveElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -296,6 +304,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     func restoreNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -340,6 +349,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     func restoreAllHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -384,6 +394,7 @@ extension DrawingCanvas {
             document.commandManager.execute(command)
         }
     }
+
     func collapseBothHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
         guard layerIndex < document.snapshot.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -429,6 +440,7 @@ extension DrawingCanvas {
             document.commandManager.execute(command)
         }
     }
+
     internal func tryToSelectShapeForConvertTool(at location: CGPoint) {
         for layerIndex in document.snapshot.layers.indices.reversed() {
             let layer = document.snapshot.layers[layerIndex]
@@ -482,6 +494,7 @@ extension DrawingCanvas {
         selectedObjectIDs.removeAll()
         syncDirectSelectionWithDocument()
     }
+
     func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
         document.viewState.selectedObjectIDs.removeAll()
         selectedPoints.removeAll()

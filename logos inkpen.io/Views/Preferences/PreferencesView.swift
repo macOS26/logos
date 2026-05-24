@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct PreferencesView: View {
+
     @Environment(AppState.self) private var appState
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
@@ -176,6 +178,7 @@ struct PreferencesView: View {
             MetalImageTileRenderer.shared?.clearCache()
         }
     }
+
     private func loadPressureCurve() {
         if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
             let loadedCurve = data.compactMap { dict -> CGPoint? in
@@ -187,12 +190,14 @@ struct PreferencesView: View {
             }
         }
     }
+
     private func savePressureCurve() {
         let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
         UserDefaults.standard.set(data, forKey: "pressureCurve")
         UserDefaults.standard.synchronize()
         appState.pressureCurve = pressureCurve
     }
+
     static func defaultPressureCurve() -> [CGPoint] {
         return [
             CGPoint(x: 0.0, y: 0.0),
@@ -202,11 +207,13 @@ struct PreferencesView: View {
             CGPoint(x: 1.0, y: 1.0)
         ]
     }
+
     static func defaultPressureCurveData() -> Data {
         let defaultCurve = defaultPressureCurve()
         return (try? JSONEncoder().encode(defaultCurve)) ?? Data()
     }
 }
+
 func defaultPressureCurveData() -> Data {
     let defaultCurve = [
         CGPoint(x: 0.0, y: 0.0),

@@ -1,27 +1,35 @@
 import SwiftUI
 import Combine
+
 struct SettingsSectionIconStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.blue)
     }
 }
+
 struct SettingsSectionTitleStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.primary)
     }
 }
+
 struct SettingsFieldLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.secondary)
     }
 }
+
 struct SettingsUnitTextStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 12, weight: .medium))
@@ -29,7 +37,9 @@ struct SettingsUnitTextStyle: ViewModifier {
             .frame(width: 60, alignment: .leading)
     }
 }
+
 struct SettingsToggleLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 13))
@@ -37,23 +47,30 @@ struct SettingsToggleLabelStyle: ViewModifier {
             .frame(width: 120, alignment: .leading)
     }
 }
+
 extension View {
+
     func settingsSectionIcon() -> some View {
         modifier(SettingsSectionIconStyle())
     }
+
     func settingsSectionTitle() -> some View {
         modifier(SettingsSectionTitleStyle())
     }
+
     func settingsFieldLabel() -> some View {
         modifier(SettingsFieldLabelStyle())
     }
+
     func settingsUnitText() -> some View {
         modifier(SettingsUnitTextStyle())
     }
+
     func settingsToggleLabel() -> some View {
         modifier(SettingsToggleLabelStyle())
     }
 }
+
 private struct SettingsSectionHeader: View {
     let icon: String
     let title: String
@@ -66,7 +83,9 @@ private struct SettingsSectionHeader: View {
         }
     }
 }
+
 struct DocumentSettingsView: View {
+
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode
     var body: some View {

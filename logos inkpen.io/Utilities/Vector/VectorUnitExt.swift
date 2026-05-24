@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension VectorUnit {
     var pointsPerUnit_Export: CGFloat {
         switch self {
@@ -18,6 +19,7 @@ extension VectorUnit {
         case .pixels:      return 0.352777778
         }
     }
+
     func convertTo(_ targetUnit: VectorUnit, value: CGFloat) -> CGFloat {
         let valueInMM = value * self.millimetersPerUnit
         let result = valueInMM / targetUnit.millimetersPerUnit

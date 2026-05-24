@@ -1,4 +1,5 @@
 import SwiftUI
+
 func createCirclePath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
@@ -22,6 +23,7 @@ func createCirclePath(rect: CGRect) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
         let controlPointOffset = radius * 0.552
         return VectorPath(elements: [
@@ -41,6 +43,7 @@ func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createEllipsePath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
@@ -64,6 +67,7 @@ func createEllipsePath(rect: CGRect) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createOvalPath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
@@ -87,6 +91,7 @@ func createOvalPath(rect: CGRect) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createEggPath(rect: CGRect) -> VectorPath {
         let centerX = rect.midX
         let centerY = rect.midY
@@ -123,6 +128,7 @@ func createEggPath(rect: CGRect) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = .pi / Double(points)
@@ -140,6 +146,7 @@ func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, p
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
 func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = 2 * .pi / Double(sides)
@@ -157,6 +164,7 @@ func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPat
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
 func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Double]) -> VectorPath {
         guard cornerRadii.count == 4 else {
             return createRoundedRectPath(rect: rect, cornerRadius: 0)
@@ -190,6 +198,7 @@ func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Doub
             .close
         ], isClosed: true)
     }
+
 func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
         let radius = min(cornerRadius, min(rect.width, rect.height) / 2)
         let controlPointOffset = radius * 0.552
@@ -214,6 +223,7 @@ func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Double, unit: MeasurementUnit) -> VectorPath {
         let normalizedRect = CGRect(
             x: min(rect.minX, rect.maxX),
@@ -253,6 +263,7 @@ func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Do
             .close
         ], isClosed: true)
     }
+
 func createRightTrianglePath(rect: CGRect, dragDirection: String) -> VectorPath {
         let normalizedRect = CGRect(
             x: min(rect.minX, rect.maxX),
@@ -302,6 +313,7 @@ func createRightTrianglePath(rect: CGRect, dragDirection: String) -> VectorPath 
             ], isClosed: true)
         }
     }
+
 func createAcuteTrianglePath(rect: CGRect) -> VectorPath {
         let normalizedRect = CGRect(
             x: min(rect.minX, rect.maxX),
@@ -321,6 +333,7 @@ func createAcuteTrianglePath(rect: CGRect) -> VectorPath {
             .close
         ], isClosed: true)
     }
+
 func createIsoscelesTrianglePath(rect: CGRect) -> VectorPath {
         let normalizedRect = CGRect(
             x: min(rect.minX, rect.maxX),

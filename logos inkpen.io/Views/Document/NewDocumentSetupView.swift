@@ -1,37 +1,48 @@
 import SwiftUI
 import AppKit
+
 struct DocumentSectionIconStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.blue)
     }
 }
+
 struct DocumentSectionTitleStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.primary)
     }
 }
+
 struct DocumentFieldLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.secondary)
     }
 }
+
 extension View {
+
     func documentSectionIcon() -> some View {
         modifier(DocumentSectionIconStyle())
     }
+
     func documentSectionTitle() -> some View {
         modifier(DocumentSectionTitleStyle())
     }
+
     func documentFieldLabel() -> some View {
         modifier(DocumentFieldLabelStyle())
     }
 }
+
 private struct DocumentSectionHeader: View {
     let icon: String
     let title: String
@@ -44,9 +55,12 @@ private struct DocumentSectionHeader: View {
         }
     }
 }
+
 struct NewDocumentSetupView: View {
+
     @Binding var isPresented: Bool
     let onDocumentCreated: (VectorDocument, URL?) -> Void
+
     @State private var setupData = DocumentSetupData()
     @State private var documentPreview: NSImage?
     @State private var isGeneratingPreview = false
@@ -318,12 +332,14 @@ struct NewDocumentSetupView: View {
             QuickSize(name: "Wide", baseWidth: 1920, baseHeight: 1080, baseUnit: .pixels)
         ]
     }
+
     private func applyQuickSize(_ size: QuickSize) {
         let targetUnit = setupData.unit
         setupData.width = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: targetUnit)
         setupData.height = UnitsConverter.convert(value: size.baseHeight, from: size.baseUnit, to: targetUnit)
         generateDocumentPreview()
     }
+
     private func generateDocumentPreview() {
         isGeneratingPreview = true
         DispatchQueue.global(qos: .userInitiated).async {
@@ -401,6 +417,7 @@ struct NewDocumentSetupView: View {
             }
         }
     }
+
     private func createDocument() {
         let document = VectorDocument(settings: setupData.documentSettings)
         document.viewState.currentTool = appState.defaultTool

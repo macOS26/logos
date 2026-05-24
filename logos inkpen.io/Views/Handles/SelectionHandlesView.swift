@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
+
 struct SelectionHandlesView: View {
+
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let zoomLevel: Double
@@ -11,6 +13,7 @@ struct SelectionHandlesView: View {
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
     let transformBoxOpacity: Double
+
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
     private var selectionID: String {
@@ -113,6 +116,7 @@ struct SelectionHandlesView: View {
             }
         }
     }
+
     @ViewBuilder
     private func renderHandlesForShape(_ shape: VectorShape) -> some View {
         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -217,6 +221,7 @@ struct SelectionHandlesView: View {
         }
         return combinedBounds
     }
+
     private func createCombinedShape(from bounds: CGRect) -> VectorShape {
         var combinedShape = VectorShape(
             name: "Combined Selection",
@@ -232,6 +237,7 @@ struct SelectionHandlesView: View {
         combinedShape.transform = CGAffineTransform(translationX: bounds.origin.x, y: bounds.origin.y)
         return combinedShape
     }
+
     @ViewBuilder
     private func renderCombinedSelectionBox() -> some View {
         if let bounds = combinedSelectionBounds {

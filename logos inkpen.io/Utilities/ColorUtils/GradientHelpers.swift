@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+
 func createNaturalNumberBinding(
     getValue: @escaping () -> Double,
     setValue: @escaping (Double) -> Void

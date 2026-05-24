@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func parseLinearGradient(from dict: CGPDFDictionaryRef) -> VectorGradient? {
         var coordsArray: CGPDFArrayRef?
         guard CGPDFDictionaryGetArray(dict, "Coords", &coordsArray),

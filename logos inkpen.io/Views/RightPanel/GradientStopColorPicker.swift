@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct GradientStopColorPicker: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
@@ -8,6 +9,7 @@ struct GradientStopColorPicker: View {
     let activeColorTarget: ColorTarget
     let onColorChanged: (VectorColor) -> Void
     let onDismiss: () -> Void
+
     @State private var currentColor: VectorColor
     @State private var isDismissing = false
     init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, stopColor: VectorColor, currentGradient: VectorGradient, activeColorTarget: ColorTarget, onColorChanged: @escaping (VectorColor) -> Void, onDismiss: @escaping () -> Void) {
@@ -163,6 +165,7 @@ struct GradientStopColorPicker: View {
             return "PMS colors with Pantone matching"
         }
     }
+
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
@@ -181,6 +184,7 @@ struct GradientStopColorPicker: View {
             }
         }
     }
+
     private func overlayText(for color: VectorColor) -> some View {
         Group {
             if case .pantone(let pantone) = color {
@@ -193,6 +197,7 @@ struct GradientStopColorPicker: View {
             }
         }
     }
+
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
             return color

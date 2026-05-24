@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func deleteSelectedPoints() {
         let pointsByShape = Dictionary(grouping: selectedPoints) { $0.shapeID }
         for (shapeID, points) in pointsByShape {
@@ -27,6 +29,7 @@ extension DrawingCanvas {
         selectedPoints.removeAll()
         selectedHandles.removeAll()
     }
+
     internal func closeBezierPath() {
         guard bezierPath != nil,
                 let activeShape = activeBezierShape,

@@ -1,16 +1,21 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 class SVGExporter {
     static let shared = SVGExporter()
+
     private init() {}
+
     func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
         let dpiScale: CGFloat = 1.0
         return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
     }
+
     func exportToAutoDeskSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = true) throws -> String {
         let dpiScale: CGFloat = 96.0 / 72.0
         return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: true, includeBackground: includeBackground, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
     }
+
     private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
         let originalSize = document.settings.sizeInPoints
         let scaledWidth = originalSize.width * dpiScale
@@ -75,6 +80,7 @@ class SVGExporter {
         svg += "</svg>"
         return svg
     }
+
     private func exportShape(_ shape: VectorShape, dpiScale: CGFloat, document: VectorDocument? = nil) -> String {
         var svg = ""
         if shape.isClippingPath {
@@ -154,6 +160,7 @@ class SVGExporter {
         svg += "/>\n"
         return svg
     }
+
     private func exportTextShape(_ shape: VectorShape, dpiScale: CGFloat, renderingMode: AppState.SVGTextRenderingMode) -> String {
         guard let vectorText = VectorText.from(shape) else { return "" }
         switch renderingMode {
@@ -163,6 +170,7 @@ class SVGExporter {
             return exportTextAsLines(vectorText: vectorText, dpiScale: dpiScale)
         }
     }
+
     private func exportTextAsGlyphs(vectorText: VectorText, dpiScale: CGFloat) -> String {
         guard !vectorText.content.isEmpty else { return "" }
         let nsFont = vectorText.typography.nsFont
@@ -265,6 +273,7 @@ class SVGExporter {
         }
         return svg
     }
+
     private func exportTextAsLines(vectorText: VectorText, dpiScale: CGFloat) -> String {
         guard !vectorText.content.isEmpty else { return "" }
         let nsFont = vectorText.typography.nsFont
@@ -462,6 +471,7 @@ class SVGExporter {
         }
         return svg
     }
+
     private func exportTextShape_OLD(_ shape: VectorShape, dpiScale: CGFloat) -> String {
         guard let textContent = shape.textContent,
               let typography = shape.typography else { return "" }
@@ -564,6 +574,7 @@ class SVGExporter {
         }
         return svg
     }
+
     private func isRectangleGlyph(_ path: CGPath) -> Bool {
         var subpaths: [[CGPoint]] = []
         var currentPath: [CGPoint] = []
@@ -585,6 +596,7 @@ class SVGExporter {
                     subpaths.append(currentPath)
                     currentPath = []
                 }
+
             @unknown default:
                 break
             }
@@ -611,6 +623,7 @@ class SVGExporter {
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
         return isNested
     }
+
     private func isRectangularPath(_ points: [CGPoint]) -> Bool {
         guard points.count >= 4 else { return false }
         for i in 0..<points.count - 1 {
@@ -626,6 +639,7 @@ class SVGExporter {
         }
         return true
     }
+
     private func boundingBox(of points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
         var minX = points[0].x
@@ -640,6 +654,7 @@ class SVGExporter {
         }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
+
     private func getSVGFontWeightFrom(variant: String?) -> String? {
         guard let variant = variant else { return nil }
         let lowercased = variant.lowercased()
@@ -652,6 +667,7 @@ class SVGExporter {
         if lowercased.contains("heavy") || lowercased.contains("black") { return "800" }
         return nil
     }
+
     private func getSVGTextAnchor(_ alignment: TextAlignment) -> String {
         switch alignment {
         case .left: return "start"
@@ -660,6 +676,7 @@ class SVGExporter {
         case .justified: return "start"
         }
     }
+
     private func exportImageShape(_ shape: VectorShape, image: CGImage, dpiScale: CGFloat) -> String {
         let transformedBounds: CGRect
         if shape.transform != .identity {
@@ -696,6 +713,7 @@ class SVGExporter {
         }
         return svg
     }
+
     private func generatePathData(from path: VectorPath, transform: CGAffineTransform, dpiScale: CGFloat = 1.0) -> String {
         var pathData = ""
         let scaleTransform = CGAffineTransform(scaleX: dpiScale, y: dpiScale)
@@ -723,6 +741,7 @@ class SVGExporter {
         }
         return pathData.trimmingCharacters(in: .whitespaces)
     }
+
     private func generateGradientDefs(from document: VectorDocument) -> String {
         var defs = ""
         var processedGradients = Set<Int>()
@@ -748,6 +767,7 @@ class SVGExporter {
         }
         return defs
     }
+
     private func generateClipPathDefs(from document: VectorDocument) -> String {
         var defs = ""
         var processedClipPaths = Set<UUID>()
@@ -772,6 +792,7 @@ class SVGExporter {
         }
         return defs
     }
+
     private func resolveClippingGroupMembers(_ shape: VectorShape, in document: VectorDocument?) -> [VectorShape]? {
         if !shape.memberIDs.isEmpty, let doc = document {
             let resolved = shape.memberIDs.compactMap { doc.findShape(by: $0) }
@@ -782,6 +803,7 @@ class SVGExporter {
         }
         return nil
     }
+
     private func generateGradientDef(_ gradient: VectorGradient, id: String) -> String {
         switch gradient {
         case .linear(let linearGradient):
@@ -790,6 +812,7 @@ class SVGExporter {
             return generateRadialGradientDef(radialGradient, id: id)
         }
     }
+
     private func generateLinearGradientDef(_ gradient: LinearGradient, id: String) -> String {
         var svg = "<linearGradient id=\"\(id)\""
         let angle = gradient.angle * .pi / 180
@@ -805,6 +828,7 @@ class SVGExporter {
         svg += "</linearGradient>\n"
         return svg
     }
+
     private func generateRadialGradientDef(_ gradient: RadialGradient, id: String) -> String {
         var svg = "<radialGradient id=\"\(id)\""
         svg += " cx=\"50%\" cy=\"50%\" r=\"50%\">\n"
@@ -814,6 +838,7 @@ class SVGExporter {
         svg += "</radialGradient>\n"
         return svg
     }
+
     private func formatSVGNumber(_ value: CGFloat) -> String {
         if value.truncatingRemainder(dividingBy: 1) == 0 {
             return String(Int(value))
@@ -821,6 +846,7 @@ class SVGExporter {
             return String(format: "%.2f", value)
         }
     }
+
     private func escapeXML(_ text: String) -> String {
         return text
             .replacingOccurrences(of: "&", with: "&amp;")

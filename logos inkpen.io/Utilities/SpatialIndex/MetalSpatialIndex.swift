@@ -1,6 +1,7 @@
 import Metal
 import MetalKit
 import SwiftUI
+
 class MetalSpatialIndex {
     private static var sharedDevice: MTLDevice?
     private static var sharedCommandQueue: MTLCommandQueue?
@@ -20,6 +21,7 @@ class MetalSpatialIndex {
     private var layerIndices: [UUID: LayerSpatialIndex] = [:]
     private static let fingerprintLock = NSLock()
     private static var sharedLayerFingerprints: [UUID: Int] = [:]
+
     fileprivate struct LayerSpatialIndex {
         var objectBoundsBuffer: MTLBuffer?
         var gridCellCountsBuffer: MTLBuffer?
@@ -33,6 +35,7 @@ class MetalSpatialIndex {
         var objectIDs: [UUID] = []
         var objectIDToIndex: [UUID: UInt32] = [:]
     }
+
     init?() {
         if !Self.sharedInitialized {
             let metal = SharedMetalDevice.shared
@@ -57,7 +60,9 @@ class MetalSpatialIndex {
         }
         guard Self.sharedInitialized else { return nil }
     }
+
     nonisolated deinit { }
+
     static func releaseSharedPipelines() {
         sharedBuildPipeline = nil
         sharedQueryPointPipeline = nil
@@ -70,6 +75,7 @@ class MetalSpatialIndex {
         sharedLayerFingerprints.removeAll()
         fingerprintLock.unlock()
     }
+
     func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
         let includeStrokesInBounds = ApplicationSettings.shared.boundingBoxIncludesStrokes
         var groupedChildIDs = Set<UUID>()
@@ -280,11 +286,13 @@ class MetalSpatialIndex {
             print("🔷 Rebuilt \(layersActuallyRebuilt) layer(s), \(totalObjectsRebuilt) objects")
         }
     }
+
     func invalidateFingerprints() {
         Self.fingerprintLock.lock()
         Self.sharedLayerFingerprints.removeAll(keepingCapacity: true)
         Self.fingerprintLock.unlock()
     }
+
     func purgeRemovedLayers(from snapshot: DocumentSnapshot) {
         let currentIDs = Set(snapshot.layers.map { $0.id })
         let staleIDs = Set(layerIndices.keys).subtracting(currentIDs)
@@ -298,6 +306,7 @@ class MetalSpatialIndex {
         }
         Self.fingerprintLock.unlock()
     }
+
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
         var result = Set<UUID>()
         for (_, layerIndex) in layerIndices {
@@ -357,6 +366,7 @@ class MetalSpatialIndex {
         }
         return result
     }
+
     func candidateObjectIDs(in rect: CGRect) -> Set<UUID> {
         var result = Set<UUID>()
         for (_, layerIndex) in layerIndices {
@@ -428,10 +438,12 @@ class MetalSpatialIndex {
         return result
     }
 }
+
 private struct ObjectBounds {
     let bounds: SIMD4<Float>
     let objectIndex: UInt32
 }
+
 private struct SpatialGridParams {
     let gridSize: Float
     let maxObjectsPerCell: UInt32

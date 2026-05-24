@@ -1,5 +1,7 @@
 import Foundation
+
 class GroupCommand: BaseCommand {
+
     enum GroupOperation {
         case group
         case ungroup
@@ -21,6 +23,7 @@ class GroupCommand: BaseCommand {
     private let newSelectedObjectIDs: Set<UUID>
     private let originalLayerIndices: [UUID: Int]
     private let behindObjectIDs: Set<UUID>
+
     init(operation: GroupOperation,
          layerIndex: Int,
          removedObjectIDs: [UUID],
@@ -42,6 +45,7 @@ class GroupCommand: BaseCommand {
         self.originalLayerIndices = originalLayerIndices
         self.behindObjectIDs = behindObjectIDs
     }
+
     override func execute(on document: VectorDocument) {
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
         if !originalLayerIndices.isEmpty {
@@ -114,6 +118,7 @@ class GroupCommand: BaseCommand {
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.triggerLayerUpdate(for: layerIndex)
     }
+
     override func undo(on document: VectorDocument) {
         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return }
         let insertionIndex = document.snapshot.layers[layerIndex].objectIDs.firstIndex { addedObjectIDs.contains($0) }

@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum JoinType: CaseIterable {
     case round
     case miter

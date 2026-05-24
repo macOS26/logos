@@ -1,4 +1,5 @@
 import AppKit
+
 class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
@@ -20,26 +21,32 @@ class DisabledContextMenuTextView: NSTextView {
     override var wantsDefaultClipping: Bool {
         return false
     }
+
     override func draw(_ dirtyRect: CGRect) {
         let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
         super.draw(extendedRect)
     }
+
     override func menu(for event: NSEvent) -> NSMenu? {
         return nil
     }
+
     override func rightMouseDown(with event: NSEvent) {
     }
+
     override func mouseDown(with event: NSEvent) {
         if allowsInteraction {
             super.mouseDown(with: event)
         }
     }
+
     override func becomeFirstResponder() -> Bool {
         if allowsInteraction {
             return super.becomeFirstResponder()
         }
         return false
     }
+
     override func drawInsertionPoint(in rect: CGRect, color: PlatformColor, turnedOn flag: Bool) {
         let cursorColor = shouldShowCursor ? color : PlatformColor.clear
         var thickerRect = rect

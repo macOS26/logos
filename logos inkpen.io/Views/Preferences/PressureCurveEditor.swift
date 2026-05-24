@@ -1,8 +1,11 @@
 import SwiftUI
+
 struct PressureCurveEditor: View {
+
     @Binding var curve: [CGPoint]
     @State private var selectedControlPoint: Int?
     let size: CGFloat
+
     init(curve: Binding<[CGPoint]>, size: CGFloat = 280) {
         self._curve = curve
         self.size = size
@@ -91,6 +94,7 @@ struct PressureCurveEditor: View {
         }
     }
 }
+
 func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double {
     guard curve.count >= 2 else { return pressure }
     let clampedPressure = max(0.0, min(1.0, pressure))

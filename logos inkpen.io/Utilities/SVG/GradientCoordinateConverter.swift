@@ -1,9 +1,12 @@
 import SwiftUI
+
 struct GradientCoordinateConverter {
+
     enum CoordinateSystem: String {
         case objectBoundingBox = "objectBoundingBox"
         case userSpaceOnUse = "userSpaceOnUse"
     }
+
     struct RadialGradient {
         let id: String
         let coordinateSystem: CoordinateSystem
@@ -14,16 +17,19 @@ struct GradientCoordinateConverter {
         let fy: Double?
         let stops: [GradientStop]
     }
+
     struct GradientStop {
         let offset: Double
         let color: String
     }
+
     struct BoundingBox {
         let x: Double
         let y: Double
         let width: Double
         let height: Double
     }
+
     static func convertBoundingBoxToUserSpace(
         gradient: RadialGradient,
         boundingBox: BoundingBox
@@ -60,6 +66,7 @@ struct GradientCoordinateConverter {
             stops: gradient.stops
         )
     }
+
     static func convertUserSpaceToBoundingBox(
         gradient: RadialGradient,
         boundingBox: BoundingBox
@@ -96,6 +103,7 @@ struct GradientCoordinateConverter {
             stops: gradient.stops
         )
     }
+
     static func parseSVGGradients(from svgContent: String) -> [RadialGradient] {
         var gradients: [RadialGradient] = []
         let gradientPattern = #"<radialGradient[^>]*id="([^"]*)"[^>]*gradientUnits="([^"]*)"[^>]*cx="([^"]*)"[^>]*cy="([^"]*)"[^>]*r="([^"]*)"[^>]*>(.*?)</radialGradient>"#
@@ -143,6 +151,7 @@ struct GradientCoordinateConverter {
         }
         return gradients
     }
+
     private static func parseGradientStops(from content: String) -> [GradientStop] {
         var stops: [GradientStop] = []
         let stopPattern = #"<stop[^>]*offset="([^"]*)"[^>]*stop-color="([^"]*)"[^>]*/>"#
@@ -167,6 +176,7 @@ struct GradientCoordinateConverter {
         }
         return stops
     }
+
     static func parseBoundingBox(from svgContent: String) -> BoundingBox? {
         let viewBoxPattern = #"viewBox="([^"]*)"#
         guard let viewBoxRegex = try? NSRegularExpression(pattern: viewBoxPattern) else {
@@ -202,6 +212,7 @@ struct GradientCoordinateConverter {
         }
         return nil
     }
+
     private static func extractValue(from string: String, range: NSRange) -> String? {
         guard range.location != NSNotFound,
               let swiftRange = Range(range, in: string) else {
@@ -209,6 +220,7 @@ struct GradientCoordinateConverter {
         }
         return String(string[swiftRange])
     }
+
     static func generateSVG(
         originalContent: String,
         convertedGradients: [RadialGradient],
@@ -231,6 +243,7 @@ struct GradientCoordinateConverter {
         }
         return result
     }
+
     private static func generateGradientSVG(gradient: RadialGradient) -> String {
         var content = #"<radialGradient id="\#(gradient.id)" gradientUnits="\#(gradient.coordinateSystem.rawValue)" cx="\#(gradient.cx)" cy="\#(gradient.cy)" r="\#(gradient.r)""#
         if let fx = gradient.fx, let fy = gradient.fy {
@@ -245,7 +258,9 @@ struct GradientCoordinateConverter {
         return content
     }
 }
+
 extension GradientCoordinateConverter {
+
     static func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false, viewBoxWidth: Double = 100.0, viewBoxHeight: Double = 100.0) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         if gradientUnits == .userSpaceOnUse {
@@ -268,6 +283,7 @@ extension GradientCoordinateConverter {
         }
         return 0.0
     }
+
     static func parseRadialGradientCoordinateExtreme(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, viewBoxWidth: Double = 100.0, viewBoxHeight: Double = 100.0) -> Double {
         return parseGradientCoordinate(value, gradientUnits: gradientUnits, isXCoordinate: isXCoordinate, useExtremeValueHandling: true, viewBoxWidth: viewBoxWidth, viewBoxHeight: viewBoxHeight)
     }

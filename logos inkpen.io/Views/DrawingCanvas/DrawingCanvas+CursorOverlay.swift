@@ -1,6 +1,8 @@
 import SwiftUI
+
 #if os(macOS)
 import AppKit
+
 struct CanvasCursorOverlayView: View {
     let isHovering: Bool
     let currentTool: DrawingTool
@@ -19,12 +21,14 @@ struct CanvasCursorOverlayView: View {
         .accessibilityHidden(true)
     }
 }
+
 private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
     let isHovering: Bool
     let currentTool: DrawingTool
     let isPanActive: Bool
     let zoomLevel: CGFloat
     let canvasOffset: CGPoint
+
     func makeNSView(context: Context) -> CursorOverlayNSView {
         let v = CursorOverlayNSView()
         v.isHovering = isHovering
@@ -32,6 +36,7 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         v.isPanActive = isPanActive
         return v
     }
+
     func updateNSView(_ nsView: CursorOverlayNSView, context: Context) {
         nsView.isHovering = isHovering
         nsView.currentTool = currentTool
@@ -44,6 +49,7 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         }
     }
 }
+
 private final class CursorOverlayNSView: NSView {
     var isHovering: Bool = false
     var currentTool: DrawingTool = .selection
@@ -52,6 +58,7 @@ private final class CursorOverlayNSView: NSView {
     private var cursorLockTimer: Timer?
     private var cursorLockUntil: Date = .distantPast
     override var isOpaque: Bool { false }
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
@@ -59,16 +66,19 @@ private final class CursorOverlayNSView: NSView {
         let area = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
         addTrackingArea(area)
     }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         removeEventMonitors()
         installEventMonitors()
     }
+
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
         removeEventMonitors()
         invalidateCursorLock()
     }
+
     override func resetCursorRects() {
         super.resetCursorRects()
         discardCursorRects()
@@ -96,6 +106,7 @@ private final class CursorOverlayNSView: NSView {
             cursor.set()
         }
     }
+
     private func installEventMonitors() {
         let cursorMonitor = NSEvent.addLocalMonitorForEvents(
             matching: [.cursorUpdate, .mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
@@ -112,10 +123,12 @@ private final class CursorOverlayNSView: NSView {
         }
         eventMonitors.append(cursorMonitor as Any)
     }
+
     private func removeEventMonitors() {
         for monitor in eventMonitors { NSEvent.removeMonitor(monitor) }
         eventMonitors.removeAll()
     }
+
     private func shouldForceCustomCursor() -> Bool {
         switch currentTool {
         case .hand, .eyedropper, .selectSameColor, .zoom,
@@ -127,6 +140,7 @@ private final class CursorOverlayNSView: NSView {
             return false
         }
     }
+
     private func applyForcedCursor() {
         let cursor: NSCursor? = {
             switch currentTool {
@@ -148,6 +162,7 @@ private final class CursorOverlayNSView: NSView {
         }()
         cursor?.set()
     }
+
     func activateCursorLock(duration: TimeInterval) {
         cursorLockUntil = Date().addingTimeInterval(duration)
         cursorLockTimer?.invalidate()
@@ -165,6 +180,7 @@ private final class CursorOverlayNSView: NSView {
             RunLoop.main.add(timer, forMode: .common)
         }
     }
+
     private func invalidateCursorLock() {
         cursorLockTimer?.invalidate()
         cursorLockTimer = nil

@@ -1,9 +1,12 @@
 import SwiftUI
+
 class CoreGraphicsPathOperations {
+
     private static func isFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite &&
                rect.size.width.isFinite && rect.size.height.isFinite
     }
+
     static func union(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !pathA.isEmpty && !pathB.isEmpty else {
             if pathA.isEmpty && pathB.isEmpty { return nil }
@@ -28,6 +31,7 @@ class CoreGraphicsPathOperations {
         let result = pathA.union(pathB, using: fillRule)
         return result.isEmpty ? nil : result
     }
+
     static func unionMultiplePaths(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> CGPath? {
         let validPaths = paths.filter { !$0.isEmpty }
         guard !validPaths.isEmpty else { return nil }
@@ -41,6 +45,7 @@ class CoreGraphicsPathOperations {
         }
         return result
     }
+
     private static func pathsCanPotentiallyUnion(_ pathA: CGPath, _ pathB: CGPath) -> Bool {
         let boundsA = pathA.boundingBox
         let boundsB = pathB.boundingBox
@@ -52,6 +57,7 @@ class CoreGraphicsPathOperations {
         let expandedBoundsA = boundsA.insetBy(dx: -tolerance, dy: -tolerance)
         return expandedBoundsA.intersects(boundsB)
     }
+
     private static func findConnectedComponents(_ pathsWithIndices: [(CGPath, Int)], using fillRule: CGPathFillRule = .winding) -> [[(CGPath, Int)]] {
         guard pathsWithIndices.count > 1 else {
             return [pathsWithIndices]
@@ -82,6 +88,7 @@ class CoreGraphicsPathOperations {
         }
         return groups
     }
+
     private static func pathsAreConnected(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> Bool {
         if !pathsCanPotentiallyUnion(pathA, pathB) {
             return false
@@ -100,6 +107,7 @@ class CoreGraphicsPathOperations {
         }
         return false
     }
+
     static func intersection(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !pathA.isEmpty && !pathB.isEmpty else {
             return nil
@@ -107,6 +115,7 @@ class CoreGraphicsPathOperations {
         let result = pathA.intersection(pathB, using: fillRule)
         return result.isEmpty ? nil : result
     }
+
     static func subtract(_ subtractPath: CGPath, from basePath: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !subtractPath.isEmpty && !basePath.isEmpty else {
             return basePath
@@ -114,6 +123,7 @@ class CoreGraphicsPathOperations {
         let result = basePath.subtracting(subtractPath, using: fillRule)
         return result.isEmpty ? nil : result
     }
+
     static func symmetricDifference(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !pathA.isEmpty && !pathB.isEmpty else {
             if pathA.isEmpty && pathB.isEmpty { return nil }
@@ -122,18 +132,22 @@ class CoreGraphicsPathOperations {
         let result = pathA.symmetricDifference(pathB, using: fillRule)
         return result.isEmpty ? nil : result
     }
+
     static func normalized(_ path: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !path.isEmpty else { return nil }
         let result = path.normalized(using: fillRule)
         return result.isEmpty ? nil : result
     }
+
     static func componentsSeparated(_ path: CGPath, using fillRule: CGPathFillRule = .winding) -> [CGPath] {
         guard !path.isEmpty else { return [] }
         return path.componentsSeparated(using: fillRule)
     }
+
     static func split(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
         return splitWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
+
     static func splitWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index) }
@@ -141,6 +155,7 @@ class CoreGraphicsPathOperations {
         let allPieces = getAllMosaicPieces(paths, using: fillRule)
         return allPieces
     }
+
     private static func getAllMosaicPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [(CGPath, Int)] {
         guard !paths.isEmpty else { return [] }
         let shapeCount = paths.count
@@ -223,6 +238,7 @@ class CoreGraphicsPathOperations {
         }
         return uniquePieces
     }
+
     private static func pathsAreEquivalent(_ path1: CGPath, _ path2: CGPath, tolerance: CGFloat) -> Bool {
         if path1.isEmpty && path2.isEmpty { return true }
         if path1.isEmpty || path2.isEmpty { return false }
@@ -238,6 +254,7 @@ class CoreGraphicsPathOperations {
         let path2ContainsMid = path2.contains(midPoint, using: .winding)
         return path1ContainsMid == path2ContainsMid
     }
+
     static func cutWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index) }
@@ -279,9 +296,11 @@ class CoreGraphicsPathOperations {
         }
         return resultPaths
     }
+
     static func cut(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
         return cutWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
+
     static func mergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else {
             return paths.enumerated().map { (index, path) in (path, index) }
@@ -314,6 +333,7 @@ class CoreGraphicsPathOperations {
         }
         return resultPaths
     }
+
     static func cropWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int, Bool)] {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index, false) }

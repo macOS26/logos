@@ -2,11 +2,14 @@ import Foundation
 import CoreGraphics
 import Metal
 import simd
+
 struct PDFSIMDMatrix {
     var matrix: simd_float3x3
+
     init() {
         self.matrix = matrix_identity_float3x3
     }
+
     init(_ transform: CGAffineTransform) {
         self.matrix = simd_float3x3(
             simd_float3(Float(transform.a), Float(transform.b), 0),
@@ -14,6 +17,7 @@ struct PDFSIMDMatrix {
             simd_float3(Float(transform.tx), Float(transform.ty), 1)
         )
     }
+
     init(a: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat, tx: CGFloat, ty: CGFloat) {
         self.matrix = simd_float3x3(
             simd_float3(Float(a), Float(b), 0),
@@ -62,6 +66,7 @@ struct PDFSIMDMatrix {
             matrix[2][0], matrix[2][1], matrix[2][2]
         ]
     }
+
     init(metalBuffer: [Float]) {
         precondition(metalBuffer.count >= 9, "Metal buffer must contain at least 9 floats for 3x3 matrix")
         self.matrix = simd_float3x3(
@@ -70,20 +75,24 @@ struct PDFSIMDMatrix {
             simd_float3(metalBuffer[6], metalBuffer[7], metalBuffer[8])
         )
     }
+
     func createMetalBuffer(device: MTLDevice) -> MTLBuffer? {
         let array = metalBufferArray
         return device.makeBuffer(bytes: array,
                                 length: array.count * MemoryLayout<Float>.size,
                                 options: .storageModeShared)
     }
+
     mutating func concatenate(_ other: PDFSIMDMatrix) {
         self.matrix = self.matrix * other.matrix
     }
+
     func concatenating(_ other: PDFSIMDMatrix) -> PDFSIMDMatrix {
         var result = self
         result.concatenate(other)
         return result
     }
+
     func transform(point: CGPoint) -> CGPoint {
         let p = simd_float3(Float(point.x), Float(point.y), 1.0)
         let transformed = matrix * p
@@ -92,10 +101,12 @@ struct PDFSIMDMatrix {
             y: CGFloat(transformed.y)
         )
     }
+
     func transformPoints(_ points: [CGPoint]) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         return PDFMetalAccelerator.shared.transformPoints(points, with: self)
     }
+
     func inverted() -> PDFSIMDMatrix? {
         let det = simd_determinant(matrix)
         guard abs(det) > 1e-6 else { return nil }
@@ -103,18 +114,21 @@ struct PDFSIMDMatrix {
         result.matrix = simd_inverse(matrix)
         return result
     }
+
     static func translation(tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         var m = PDFSIMDMatrix()
         m.matrix[2][0] = Float(tx)
         m.matrix[2][1] = Float(ty)
         return m
     }
+
     static func scale(sx: CGFloat, sy: CGFloat) -> PDFSIMDMatrix {
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = Float(sx)
         m.matrix[1][1] = Float(sy)
         return m
     }
+
     static func rotation(angle: CGFloat) -> PDFSIMDMatrix {
         let cos = Float(Foundation.cos(angle))
         let sin = Float(Foundation.sin(angle))
@@ -126,7 +140,9 @@ struct PDFSIMDMatrix {
         return m
     }
 }
+
 extension PDFSIMDMatrix {
+
     static func batchConcatenate(_ matrices: [PDFSIMDMatrix]) -> PDFSIMDMatrix {
         guard !matrices.isEmpty else { return PDFSIMDMatrix() }
         guard matrices.count > 1 else { return matrices[0] }
@@ -141,9 +157,11 @@ extension PDFSIMDMatrix {
         }
         return result
     }
+
     static func precomputeTextMatrix(fontSize: CGFloat, horizontalScaling: CGFloat) -> PDFSIMDMatrix {
         return PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
     }
+
     static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         let scaleX = fontSize * horizontalScaling / 100.0
         let scaleY = fontSize
@@ -154,6 +172,7 @@ extension PDFSIMDMatrix {
         m.matrix[2][1] = Float(ty)
         return m
     }
+
     static func batchTransformTextPositions(positions: [(x: CGFloat, y: CGFloat)],
                                             fontSize: CGFloat,
                                             horizontalScaling: CGFloat,

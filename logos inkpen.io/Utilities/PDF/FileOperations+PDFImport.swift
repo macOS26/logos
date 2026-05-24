@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension FileOperations {
+
     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
         do {
@@ -12,6 +14,7 @@ extension FileOperations {
             throw error
         }
     }
+
     static func importFromPDFSync(url: URL) throws -> VectorDocument {
         let semaphore = DispatchSemaphore(value: 0)
         var resultDocument: VectorDocument?
@@ -33,6 +36,7 @@ extension FileOperations {
         }
         return document
     }
+
     static func importFromPDF(url: URL) async throws -> VectorDocument {
         let result = await VectorImportManager.shared.importVectorFile(from: url)
         if !result.success {

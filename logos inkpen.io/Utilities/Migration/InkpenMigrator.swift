@@ -1,5 +1,7 @@
 import Foundation
+
 struct InkpenMigrator {
+
     static func migrateLegacyDocument(from data: Data) -> VectorDocument? {
         do {
             let legacyDoc = try decodeLegacy1_0(from: data)
@@ -10,6 +12,7 @@ struct InkpenMigrator {
             return nil
         }
     }
+
     private struct Legacy1_0Document: Codable {
         var canvasOffset: [Double]?
         var currentTool: String?
@@ -19,6 +22,7 @@ struct InkpenMigrator {
         var viewMode: String?
         var zoomLevel: Double?
     }
+
     private struct Legacy1_0Layer: Codable {
         var color: String?
         var id: String
@@ -28,6 +32,7 @@ struct InkpenMigrator {
         var blendMode: String?
         var isVisible: Bool?
     }
+
     private struct Legacy1_0Settings: Codable {
         var backgroundColor: AnyCodable?
         var colorMode: String?
@@ -50,14 +55,17 @@ struct InkpenMigrator {
         var customCmykSwatches: [AnyCodable]?
         var customHsbSwatches: [AnyCodable]?
     }
+
     private struct Legacy1_0Object: Codable {
         var id: String
         var layerIndex: Int
         var orderID: Int?
         var objectType: AnyCodable
     }
+
     private struct AnyCodable: Codable {
         let value: Any
+
         init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             if let dict = try? container.decode([String: AnyCodable].self) {
@@ -74,6 +82,7 @@ struct InkpenMigrator {
                 value = NSNull()
             }
         }
+
         func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             switch value {
@@ -91,15 +100,18 @@ struct InkpenMigrator {
                 try container.encodeNil()
             }
         }
+
         private init(value: Any) {
             self.value = value
         }
     }
+
     private static func decodeLegacy1_0(from data: Data) throws -> Legacy1_0Document {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(Legacy1_0Document.self, from: data)
     }
+
     private static func migrate1_0_to_1_0_27(_ legacy: Legacy1_0Document) -> VectorDocument {
         let document = VectorDocument()
         document.settings.width = legacy.settings.width
@@ -185,6 +197,7 @@ struct InkpenMigrator {
         Log.fileOperation("✅ Successfully migrated document to version 1.0.27", level: .info)
         return document
     }
+
     static func hydrateLinkedImages(in document: VectorDocument, from sourceURL: URL?) {
         guard let sourceURL = sourceURL else { return }
         let baseDirectory = sourceURL.deletingLastPathComponent()

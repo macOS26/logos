@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum ShearAnchor: String, CaseIterable, Codable {
     case center = "Center"
     case topLeft = "Top Left"

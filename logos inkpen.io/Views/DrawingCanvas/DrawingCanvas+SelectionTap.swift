@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func handleSelectionTap(at location: CGPoint) {
         let validatedLocation = validateAndCorrectLocation(location)
         if isOptionPressed && document.viewState.currentTool == .selection {
@@ -165,9 +167,11 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func performPathOnlyHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
         return performShapeHitTest(shape: shape, at: location)
     }
+
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
         if shape.typography != nil {
             let textBounds: CGRect
@@ -204,6 +208,7 @@ extension DrawingCanvas {
         let hitBounds = shape.bounds.applying(shape.transform)
         return hitBounds.contains(location)
     }
+
      internal func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
          if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
              Log.error("❌ INVALID COORDINATES: \(location) - using zero point", category: .error)
@@ -216,11 +221,13 @@ extension DrawingCanvas {
          }
          return location
      }
+
     private func isRectangleBasedShape(_ shape: VectorShape) -> Bool {
         let shapeName = shape.name.lowercased()
         return shapeName == "rectangle" || shapeName == "square" ||
                shapeName == "rounded rectangle" || shapeName == "pill"
     }
+
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
@@ -253,6 +260,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     private func findShapeByID(_ shapeID: UUID) -> VectorShape? {
         guard let object = document.snapshot.objects[shapeID] else { return nil }
         switch object.objectType {
@@ -268,6 +276,7 @@ extension DrawingCanvas {
             return nil
         }
     }
+
     internal func findAllObjectsAtLocation(_ location: CGPoint) -> [VectorObject] {
         var results: [VectorObject] = []
         for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {

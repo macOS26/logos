@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleFill() {
         if !isInCompoundPath && currentPath.isEmpty && compoundPathParts.isEmpty {
             return
@@ -21,6 +23,7 @@ extension PDFCommandParser {
             }
         }
     }
+
     func shouldSkipBlackBackground() -> Bool {
         guard let imageBounds = transparentImageBounds else { return false }
         let r = Double(currentFillColor.components?[0] ?? 0.0)
@@ -58,6 +61,7 @@ extension PDFCommandParser {
         }
         return false
     }
+
     func handleStroke() {
         if let lastShapeIndex = shapes.indices.last {
             let lastShape = shapes[lastShapeIndex]
@@ -93,9 +97,11 @@ extension PDFCommandParser {
         }
         createShapeFromCurrentPath(filled: false, stroked: true)
     }
+
     func handleFillAndStroke() {
         createShapeFromCurrentPath(filled: true, stroked: true)
     }
+
     func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
         defer {
             compoundPathParts.removeAll()
@@ -206,6 +212,7 @@ extension PDFCommandParser {
         )
         shapes.append(compoundShape)
     }
+
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool) {
         guard !currentPath.isEmpty else {
             return
@@ -315,6 +322,7 @@ extension PDFCommandParser {
         }
         currentPath.removeAll()
     }
+
     private func pathCommandEquals(_ cmd1: PathCommand, _ cmd2: PathCommand) -> Bool {
         let tolerance: CGFloat = 0.01
         switch (cmd1, cmd2) {
@@ -340,6 +348,7 @@ extension PDFCommandParser {
             return false
         }
     }
+
     private func pathCommandsAreEqual(_ path1: [PathCommand], _ path2: [PathCommand]) -> Bool {
         guard path1.count == path2.count else { return false }
         let tolerance: CGFloat = 0.01

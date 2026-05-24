@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum RotationAnchor: String, CaseIterable, Codable {
     case center = "Center"
     case topLeft = "Top Left"

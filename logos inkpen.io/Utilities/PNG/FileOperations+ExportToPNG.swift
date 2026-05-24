@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension FileOperations {
+
     static func exportSingleIcon(_ document: VectorDocument, url: URL, pixelSize: Int) throws {
         let artworkBounds = calculateArtworkBounds(from: document)
         let artworkSize = artworkBounds.size
@@ -51,6 +53,7 @@ extension FileOperations {
             to: url
         )
     }
+
     static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {
         let iconSizes: [Int] = [1024, 512, 256, 128, 64, 32, 16]
         let artworkBounds = calculateArtworkBounds(from: document)
@@ -107,6 +110,7 @@ extension FileOperations {
             )
         }
     }
+
     private static func calculateArtworkBounds(from document: VectorDocument) -> CGRect {
         var bounds = CGRect.null
         for (index, layer) in document.snapshot.layers.enumerated() {
@@ -129,6 +133,7 @@ extension FileOperations {
         }
         return bounds
     }
+
     static func exportToPNGFromView(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
         let pageSize = document.settings.sizeInPoints
         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
@@ -171,6 +176,7 @@ extension FileOperations {
         }
         try pngData.write(to: url)
     }
+
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
         let pageSize = document.settings.sizeInPoints
         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
@@ -229,6 +235,7 @@ extension FileOperations {
             to: url
         )
     }
+
     internal static func drawShapeInPDF(_ shape: VectorShape, context: CGContext, document: VectorDocument? = nil) {
         context.saveGState()
         context.setAlpha(shape.opacity)
@@ -315,6 +322,7 @@ extension FileOperations {
         }
         context.restoreGState()
     }
+
     internal static func drawTextInPDF(_ text: VectorText, context: CGContext) {
         context.saveGState()
         context.setAlpha(text.isVisible ? 1.0 : 0.0)
@@ -335,11 +343,13 @@ extension FileOperations {
         context.restoreGState()
     }
 }
+
 private struct PNGExportView: View {
     let document: VectorDocument
     let scale: CGFloat
     let includeBackground: Bool
     let outputSize: CGSize
+
     @State private var activeGradientDelta: VectorGradient? = nil
     var body: some View {
         ZStack {

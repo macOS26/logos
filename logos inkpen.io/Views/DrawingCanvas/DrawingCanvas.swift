@@ -1,11 +1,14 @@
 import SwiftUI
+
 enum ShiftConstraintAxis {
     case none
     case horizontal
     case vertical
 }
+
 struct DrawingCanvas: View {
     var document: VectorDocument = VectorDocument()
+
     @Binding var zoomLevel: Double
     @Binding var canvasOffset: CGPoint
     @Binding var layerPreviewOpacities: [UUID: Double]
@@ -135,6 +138,7 @@ struct DrawingCanvas: View {
             document.viewState.selectedObjectIDs.removeAll()
         }
     }
+
     internal func rebuildLockedObjectsCache() {
         lockedObjectIDs.removeAll(keepingCapacity: true)
         for layer in document.snapshot.layers where layer.isLocked {
@@ -148,6 +152,7 @@ struct DrawingCanvas: View {
             }
         }
     }
+
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     @State internal var originalDragShapes: [UUID: VectorShape] = [:]

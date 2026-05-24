@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     private func expandSelectionForClippingMasks(_ selectedIDs: Set<UUID>, in layerObjects: [VectorObject]) -> Set<UUID> {
         var expandedSelectedIDs = selectedIDs
         for selectedID in selectedIDs {
@@ -28,6 +30,7 @@ extension VectorDocument {
         }
         return expandedSelectedIDs
     }
+
     func bringSelectedToFront() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
@@ -45,6 +48,7 @@ extension VectorDocument {
         )
         commandManager.execute(command)
     }
+
     func bringSelectedForward() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
@@ -69,6 +73,7 @@ extension VectorDocument {
         )
         commandManager.execute(command)
     }
+
     func sendSelectedBackward() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
@@ -93,6 +98,7 @@ extension VectorDocument {
         )
         commandManager.execute(command)
     }
+
     func sendSelectedToBack() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }

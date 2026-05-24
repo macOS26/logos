@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
         if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
@@ -53,6 +55,7 @@ extension VectorDocument {
             }
         )
     }
+
     private func nudgePath(_ path: VectorPath, by nudgeAmount: CGVector) -> VectorPath {
         var nudgedElements: [PathElement] = []
         for element in path.elements {
@@ -78,6 +81,7 @@ extension VectorDocument {
         }
         return VectorPath(elements: nudgedElements, isClosed: path.isClosed)
     }
+
     private func nudgeSelectedPoints(by nudgeAmount: CGVector) {
         guard !viewState.selectedPoints.isEmpty else { return }
         var pointsByShape: [UUID: [PointID]] = [:]

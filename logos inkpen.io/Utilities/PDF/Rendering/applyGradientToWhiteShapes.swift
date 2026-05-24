@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func applyGradientToWhiteShapes(gradient: VectorGradient) {
         activeGradient = gradient
         gradientShapes.removeAll()

@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     func parseStrokeStyle(_ attributes: [String: String]) -> StrokeStyle? {
         if let strokeWidth = attributes["stroke-width"] {
             let width = parseLength(strokeWidth) ?? 1.0
@@ -26,6 +28,7 @@ extension SVGParser {
         let color = parseColor(stroke) ?? .black
         return StrokeStyle(color: color, width: width, placement: .center, dashPattern: dashPattern, lineCap: lineCap, lineJoin: lineJoin, miterLimit: miterLimit, opacity: opacity)
     }
+
     private func parseLineCap(_ value: String?) -> CGLineCap {
         switch value?.lowercased() {
         case "round": return .round
@@ -33,6 +36,7 @@ extension SVGParser {
         default: return .butt
         }
     }
+
     private func parseLineJoin(_ value: String?) -> CGLineJoin {
         switch value?.lowercased() {
         case "round": return .round
@@ -40,6 +44,7 @@ extension SVGParser {
         default: return .miter
         }
     }
+
     private func parseDashArray(_ value: String?) -> [Double] {
         guard let value = value, value != "none" else { return [] }
         return value
@@ -47,6 +52,7 @@ extension SVGParser {
             .split(separator: " ")
             .compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
     }
+
     func parseFillStyle(_ attributes: [String: String]) -> FillStyle? {
         let fill = attributes["fill"] ?? "black"
         guard fill != "none" else { return nil }
@@ -67,6 +73,7 @@ extension SVGParser {
         }
         return fillStyle
     }
+
     func parseColor(_ colorString: String) -> VectorColor? {
         let color = colorString.trimmingCharacters(in: .whitespaces)
         if color == "none" || color == "transparent" { return .clear }
@@ -279,6 +286,7 @@ extension SVGParser {
         "yellow": (1, 1, 0),
         "yellowgreen": (154/255.0, 205/255.0, 50/255.0),
     ]
+
     private func convertSRGBToP3(red: Double, green: Double, blue: Double, alpha: Double = 1.0) -> RGBColor {
         let srgbComponents: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
         guard let srgbColor = CGColor(colorSpace: ColorManager.shared.sRGBCG, components: srgbComponents) else {
@@ -296,6 +304,7 @@ extension SVGParser {
         }
         return RGBColor(red: red, green: green, blue: blue, alpha: alpha, colorSpace: .displayP3)
     }
+
     func parseLength(_ value: String?) -> Double? {
         guard let value = value else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespaces)

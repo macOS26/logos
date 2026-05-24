@@ -1,7 +1,10 @@
 import SwiftUI
+
 class PasteboardDiagnostics {
     static let shared = PasteboardDiagnostics()
+
     private init() {}
+
     func runDiagnostics(on document: VectorDocument) -> DiagnosticReport {
         var report = DiagnosticReport()
         report.layerStructure = testLayerStructure(document)
@@ -11,6 +14,7 @@ class PasteboardDiagnostics {
         report.performance = testPerformance(document)
         return report
     }
+
     private func testLayerStructure(_ document: VectorDocument) -> LayerStructureTest {
         var test = LayerStructureTest()
         test.layerCount = document.snapshot.layers.count
@@ -38,6 +42,7 @@ class PasteboardDiagnostics {
         Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         return test
     }
+
     private func testBackgroundShapes(_ document: VectorDocument) -> BackgroundShapesTest {
         var test = BackgroundShapesTest()
         if document.snapshot.layers.count >= 2 {
@@ -83,6 +88,7 @@ class PasteboardDiagnostics {
         Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         return test
     }
+
     private func testHitTestingSimulation(_ document: VectorDocument) -> HitTestingTest {
         var test = HitTestingTest()
         guard document.snapshot.layers.count >= 3 else {
@@ -115,6 +121,7 @@ class PasteboardDiagnostics {
         Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         return test
     }
+
     private func testLayerIteration(_ document: VectorDocument) -> LayerIterationTest {
         var test = LayerIterationTest()
         let testPoint = CGPoint(x: 100, y: 100)
@@ -149,6 +156,7 @@ class PasteboardDiagnostics {
         test.passed = test.allLayersTested && test.allBackgroundShapesTested
         return test
     }
+
     private func testRealWorldScenarios(_ document: VectorDocument) -> RealWorldScenariosTest {
         var test = RealWorldScenariosTest()
         let pasteboardShape = document.getShapeAtIndex(layerIndex: 0, shapeIndex: 0)
@@ -216,6 +224,7 @@ class PasteboardDiagnostics {
         Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         return test
     }
+
     private func testPerformance(_ document: VectorDocument) -> PerformanceTest {
         var test = PerformanceTest()
         let originalShapeCount = document.getShapesForLayer(2).count
@@ -246,6 +255,7 @@ class PasteboardDiagnostics {
         Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         return test
     }
+
     @discardableResult
     private func simulateHitTest(document: VectorDocument, at location: CGPoint) -> HitTestResult {
         var hitShape: VectorShape?
@@ -284,6 +294,7 @@ class PasteboardDiagnostics {
         )
     }
 }
+
 struct DiagnosticReport {
     var layerStructure = LayerStructureTest()
     var backgroundShapes = BackgroundShapesTest()
@@ -297,6 +308,7 @@ struct DiagnosticReport {
                realWorldScenarios.passed &&
                performance.passed
     }
+
     func printSummary() {
         Log.error("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         Log.error("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
@@ -306,6 +318,7 @@ struct DiagnosticReport {
         Log.error("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")", category: .error)
     }
 }
+
 struct LayerStructureTest {
     var layerCount = 0
     var expectedLayerCount = 3
@@ -320,6 +333,7 @@ struct LayerStructureTest {
     var lockStatusCorrect = false
     var passed = false
 }
+
 struct BackgroundShapesTest {
     var pasteboardShapeCount = 0
     var pasteboardShapeName = ""
@@ -333,6 +347,7 @@ struct BackgroundShapesTest {
     var positioningCorrect = false
     var passed = false
 }
+
 struct HitTestingTest {
     var pasteboardOnlyHit = HitTestResult()
     var pasteboardHitCorrect = false
@@ -341,11 +356,13 @@ struct HitTestingTest {
     var layerIterationTest = LayerIterationTest()
     var passed = false
 }
+
 struct LayerIterationTest {
     var allLayersTested = false
     var allBackgroundShapesTested = false
     var passed = false
 }
+
 struct RealWorldScenariosTest {
     var pasteboardObjectHit = HitTestResult()
     var pasteboardObjectHitCorrect = false
@@ -355,11 +372,13 @@ struct RealWorldScenariosTest {
     var emptyPasteboardHitCorrect = false
     var passed = false
 }
+
 struct PerformanceTest {
     var totalTime: Double = 0.0
     var averageTimePerHitTest: Double = 0.0
     var passed = false
 }
+
 struct HitTestResult {
     var hitShape: VectorShape?
     var layerIndex: Int?

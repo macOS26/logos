@@ -1,17 +1,21 @@
 import SwiftUI
 import Combine
+
 final class VectorDocument: ObservableObject, Codable {
     var snapshot: DocumentSnapshot = DocumentSnapshot()
     var viewState: DocumentViewState = DocumentViewState()
+
     @Published var settings: DocumentSettings = DocumentSettings()
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
+
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
             settings.fillColor = documentColorDefaults.fillColor
             settings.strokeColor = documentColorDefaults.strokeColor
         }
     }
+
     @Published var colorSwatches: ColorSwatches = .empty {
         didSet {
             settings.customRgbSwatches = colorSwatches.rgb
@@ -29,10 +33,12 @@ final class VectorDocument: ObservableObject, Codable {
     var currentDragOffset: CGPoint = .zero
     var cachedSelectionBounds: CGRect? = nil
     var dragPreviewCoordinates: CGPoint = .zero
+
     enum FreehandFillMode: String, CaseIterable {
         case fill = "Fill"
         case noFill = "No Fill"
     }
+
     @Published var gridSettings: GridSettings = .default
     internal var isUndoRedoOperation: Bool = false
     lazy var commandManager: CommandManager = {
@@ -43,18 +49,21 @@ final class VectorDocument: ObservableObject, Codable {
     internal var imageStorage: [UUID: CGImage] = [:]
     internal var baseDirectoryURL: URL? = nil
     internal var lastDrawnImageHash: [UUID: Int] = [:]
+
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
     }
     internal let maxUndoStackSize = 50
     var originalHandlePositions: [String: VectorPoint] = [:]
+
     deinit {
         let objCount = snapshot.objects.count
         let imgCount = imageStorage.count
         imageStorage.removeAll()
         print("🗑️ [MemDiag] VectorDocument.deinit: \(objCount) objects, \(imgCount) cached images freed, process=\(MemoryDiag.processMemoryMB())MB")
     }
+
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
         self.documentColorDefaults = ColorDefaults()
@@ -108,6 +117,7 @@ final class VectorDocument: ObservableObject, Codable {
         )
         setupViewStateForwarding()
     }
+
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
@@ -168,6 +178,7 @@ final class VectorDocument: ObservableObject, Codable {
             self?.refreshSystemLayers()
         }
     }
+
     private func setupViewStateForwarding() {
         viewState.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
@@ -179,9 +190,11 @@ final class VectorDocument: ObservableObject, Codable {
             self?.objectWillChange.send()
         }.store(in: &cancellables)
     }
+
     private func refreshSystemLayers() {
         changeNotifier.notifyGeneralChange()
     }
+
     func triggerLayerUpdates(for layerIndices: Set<Int>) {
         for layerIndex in layerIndices {
             guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { continue }
@@ -189,11 +202,13 @@ final class VectorDocument: ObservableObject, Codable {
             viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
         }
     }
+
     func triggerLayerUpdate(for layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         let layerID = snapshot.layers[layerIndex].id
         viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
     }
+
     func updateLayerObjectIDs(layerIndex: Int, newObjectIDs: [UUID]) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         var layer = snapshot.layers[layerIndex]
@@ -201,6 +216,7 @@ final class VectorDocument: ObservableObject, Codable {
         snapshot.layers[layerIndex] = layer
         triggerLayerUpdate(for: layerIndex)
     }
+
     func appendToLayer(layerIndex: Int, objectID: UUID) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         if !snapshot.layers[layerIndex].objectIDs.contains(objectID) {
@@ -210,6 +226,7 @@ final class VectorDocument: ObservableObject, Codable {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func removeFromLayer(layerIndex: Int, objectID: UUID) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         var layer = snapshot.layers[layerIndex]
@@ -217,6 +234,7 @@ final class VectorDocument: ObservableObject, Codable {
         snapshot.layers[layerIndex] = layer
         triggerLayerUpdate(for: layerIndex)
     }
+
     func insertIntoLayer(layerIndex: Int, objectID: UUID, at index: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         var layer = snapshot.layers[layerIndex]
@@ -224,6 +242,7 @@ final class VectorDocument: ObservableObject, Codable {
         snapshot.layers[layerIndex] = layer
         triggerLayerUpdate(for: layerIndex)
     }
+
     func findParentGroup(for childID: UUID) -> VectorObject? {
         for object in snapshot.objects.values {
             switch object.objectType {
@@ -237,6 +256,7 @@ final class VectorDocument: ObservableObject, Codable {
         }
         return nil
     }
+
     func updateChildInParentGroup(childID: UUID, updatedShape: VectorShape) {
         guard let parentGroup = findParentGroup(for: childID) else { return }
         var parentShape = parentGroup.shape
@@ -248,6 +268,7 @@ final class VectorDocument: ObservableObject, Codable {
             triggerLayerUpdate(for: parentGroup.layerIndex)
         }
     }
+
     func regenerateAllImages() {
         imageStorage.removeAll()
         lastDrawnImageHash.removeAll()

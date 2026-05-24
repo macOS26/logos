@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func createGradientStopsFromColors(_ colors: [VectorColor]) -> [GradientStop] {
         guard colors.count > 1 else {
             return [GradientStop(position: 0.0, color: colors.first ?? .black, opacity: 1.0)]

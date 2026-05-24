@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ArchitecturalTemplatePreview: View {
     var body: some View {
         VStack(spacing: 4) {

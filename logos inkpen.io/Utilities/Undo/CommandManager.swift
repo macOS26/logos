@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+
 class CommandManager: ObservableObject {
+
     @Published private(set) var canUndo: Bool = false
     @Published private(set) var canRedo: Bool = false
     private var undoStack: [Command] = []
@@ -8,9 +10,11 @@ class CommandManager: ObservableObject {
     private let maxStackSize: Int
     var undoCount: Int { undoStack.count }
     weak var document: VectorDocument?
+
     init(maxStackSize: Int = 100) {
         self.maxStackSize = maxStackSize
     }
+
     func execute(_ command: Command) {
         guard let document = document else { return }
         document.isUndoRedoOperation = true
@@ -19,9 +23,11 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = false
         addToUndoStack(command)
     }
+
     func recordCompletedCommand(_ command: Command) {
         addToUndoStack(command)
     }
+
     private func addToUndoStack(_ command: Command) {
         if let lastCommand = undoStack.last,
            let mergedCommand = lastCommand.mergeWith(command) {
@@ -35,6 +41,7 @@ class CommandManager: ObservableObject {
         redoStack.removeAll()
         updateState()
     }
+
     func undo() {
         guard let document = document, !undoStack.isEmpty else { return }
         document.isUndoRedoOperation = true
@@ -45,6 +52,7 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = false
         updateState()
     }
+
     func redo() {
         guard let document = document, !redoStack.isEmpty else { return }
         document.isUndoRedoOperation = true
@@ -55,11 +63,13 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = false
         updateState()
     }
+
     func clear() {
         undoStack.removeAll()
         redoStack.removeAll()
         updateState()
     }
+
     private func updateState() {
         canUndo = !undoStack.isEmpty
         canRedo = !redoStack.isEmpty

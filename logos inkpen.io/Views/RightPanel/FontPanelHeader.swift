@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct FontPanelHeader: View {
     let selectedText: VectorText?
     let editingText: VectorText?

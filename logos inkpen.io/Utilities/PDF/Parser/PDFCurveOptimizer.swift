@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 struct PDFCurveOptimizer {
+
     static func convertToQuadCurve(
         from start: CGPoint,
         cp1: CGPoint,
@@ -26,6 +28,7 @@ struct PDFCurveOptimizer {
         }
         return nil
     }
+
     static func batchConvertToQuadCurves(curves: [(start: CGPoint, cp1: CGPoint, cp2: CGPoint, end: CGPoint)]) -> [PathCommand?] {
         guard !curves.isEmpty else { return [] }
         var results = [PathCommand?]()
@@ -40,16 +43,19 @@ struct PDFCurveOptimizer {
         }
         return results
     }
+
     static func arePointsCollinear(_ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint, tolerance: CGFloat = 0.1) -> Bool {
         let v1 = simd_float2(Float(p2.x - p1.x), Float(p2.y - p1.y))
         let v2 = simd_float2(Float(p3.x - p1.x), Float(p3.y - p1.y))
         let cross = v1.x * v2.y - v1.y * v2.x
         return abs(cross) < Float(tolerance)
     }
+
     static func batchCheckCollinearity(triplets: [(CGPoint, CGPoint, CGPoint)], tolerance: CGFloat = 0.1) -> [Bool] {
         guard !triplets.isEmpty else { return [] }
         return PDFMetalAccelerator.shared.batchCheckCollinearity(triplets: triplets, tolerance: Float(tolerance))
     }
+
     static func calculateCurveFlatness(
         start: CGPoint,
         cp1: CGPoint,
@@ -73,6 +79,7 @@ struct PDFCurveOptimizer {
         let dist2 = simd_distance(cp2Vec, proj2)
         return CGFloat(max(dist1, dist2))
     }
+
     static func batchCalculateFlatness(curves: [(start: CGPoint, cp1: CGPoint, cp2: CGPoint, end: CGPoint)]) -> [CGFloat] {
         guard !curves.isEmpty else { return [] }
         var results = [CGFloat]()

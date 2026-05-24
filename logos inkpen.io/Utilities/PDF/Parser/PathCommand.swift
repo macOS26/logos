@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum PathCommand: Equatable {
     case moveTo(CGPoint)
     case lineTo(CGPoint)

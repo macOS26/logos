@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct PathfinderOperationButton: View {
     let operation: PathfinderOperation
     let isEnabled: Bool

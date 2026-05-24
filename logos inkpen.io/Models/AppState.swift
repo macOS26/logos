@@ -1,4 +1,5 @@
 import SwiftUI
+
 @Observable
 class AppState {
     static let shared = AppState()
@@ -41,11 +42,13 @@ class AppState {
             savePressureCurve()
         }
     }
+
     private func savePressureCurve() {
         let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
         UserDefaults.standard.set(data, forKey: "pressureCurve")
         UserDefaults.standard.synchronize()
     }
+
     private func loadPressureCurve() {
         if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
             let loadedCurve = data.compactMap { dict -> CGPoint? in
@@ -67,6 +70,7 @@ class AppState {
     var pendingNewDocument: VectorDocument? = nil
     var showSetupOnNewDoc: Bool = false
     var shouldShowDocumentSetup: Bool = false
+
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
     var brushPreviewStyle: BrushPreviewStyle = .fill {
         didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
@@ -74,6 +78,7 @@ class AppState {
     var brushPreviewIsFinal: Bool = false {
         didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
     }
+
     enum PDFGradientMethod: String, CaseIterable {
         case cgGradient = "cgGradient"
         case cgShading = "cgShading"
@@ -86,6 +91,7 @@ class AppState {
             UserDefaults.standard.set(pdfGradientMethod.rawValue, forKey: "pdfGradientMethod")
         }
     }
+
     enum PDFTextRenderingMode: String, CaseIterable {
         case glyphs = "glyphs"
         case lines = "lines"
@@ -101,6 +107,7 @@ class AppState {
             UserDefaults.standard.set(svgTextRenderingMode.rawValue, forKey: "svgTextRenderingMode")
         }
     }
+
     enum ExportColorSpace: String, CaseIterable {
         case displayP3 = "displayP3"
         case sRGB = "sRGB"
@@ -137,6 +144,7 @@ class AppState {
             UserDefaults.standard.set(pdfMeshGridY, forKey: "pdfMeshGridY")
         }
     }
+
     private init() {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
@@ -178,6 +186,7 @@ class AppState {
             self.exportColorSpace = colorSpace
         }
     }
+
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
         self.openWindowAction = { id in
             openWindow(id)

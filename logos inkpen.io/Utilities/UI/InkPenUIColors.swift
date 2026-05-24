@@ -1,7 +1,9 @@
 import SwiftUI
 import Combine
+
 class InkPenUIColors: ObservableObject {
     static let shared = InkPenUIColors()
+
     private init() {}
     var windowBackground: Color {
         Color.platformWindowBackground
@@ -66,13 +68,16 @@ class InkPenUIColors: ObservableObject {
     var textBackground: Color {
         Color.platformTextBackground
     }
+
     func color(_ baseColor: Color, opacity: Double) -> Color {
         baseColor.opacity(opacity)
     }
+
     func systemColor(_ nsColor: PlatformColor, opacity: Double = 1.0) -> Color {
         Color(nsColor).opacity(opacity)
     }
 }
+
 extension Color {
     static var ui: InkPenUIColors {
         InkPenUIColors.shared

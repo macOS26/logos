@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func performPathfinderOperation(_ operation: PathfinderOperation) -> Bool {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {

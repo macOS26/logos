@@ -1,12 +1,16 @@
 import Foundation
+
 class MoveObjectToLayerCommand: BaseCommand {
     private let moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)]
+
     init(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int) {
         self.moves = [(objectID: objectID, oldLayerIndex: oldLayerIndex, newLayerIndex: newLayerIndex)]
     }
+
     init(moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)]) {
         self.moves = moves
     }
+
     override func execute(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for move in moves {
@@ -16,6 +20,7 @@ class MoveObjectToLayerCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for move in moves.reversed() {
@@ -25,6 +30,7 @@ class MoveObjectToLayerCommand: BaseCommand {
         }
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyMove(objectID: UUID, toLayerIndex: Int, document: VectorDocument) {
         guard let object = document.snapshot.objects[objectID] else {
             return

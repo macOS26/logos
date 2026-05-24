@@ -1,16 +1,19 @@
 import SwiftUI
+
 struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     var id: UUID
     var points: [ProfessionalBezierMathematics.BezierPoint]
     var isClosed: Bool
     var pathStyle: PathStyle
     var continuityConstraints: [ContinuityConstraint]
+
     struct PathStyle: Codable, Hashable {
         var tension: Double = 0.33
         var handleVisibility: HandleVisibility = .selected
         var snapToGrid: Bool = false
         var smartGuides: Bool = true
         var precisionMode: Bool = false
+
         enum HandleVisibility: String, Codable, CaseIterable {
             case never = "Never"
             case selected = "Selected"
@@ -18,6 +21,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             case onHover = "On Hover"
         }
     }
+
     struct ContinuityConstraint: Codable, Hashable, Identifiable {
         var id: UUID = UUID()
         var pointIndex: Int
@@ -25,6 +29,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         var isLocked: Bool = false
         var tolerance: Double = 1e-6
     }
+
     init(points: [ProfessionalBezierMathematics.BezierPoint] = [],
          isClosed: Bool = false,
          pathStyle: PathStyle = PathStyle()) {
@@ -42,6 +47,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             }
         }
     }
+
     mutating func addPoint(_ point: ProfessionalBezierMathematics.BezierPoint) {
         points.append(point)
         if points.count > 1 {
@@ -51,6 +57,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             ))
         }
     }
+
     mutating func insertPoint(_ point: ProfessionalBezierMathematics.BezierPoint, at index: Int) {
         guard index >= 0 && index <= points.count else { return }
         if index == points.count {
@@ -60,11 +67,13 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         points.insert(point, at: index)
         regenerateContinuityConstraints()
     }
+
     mutating func removePoint(at index: Int) {
         guard index >= 0 && index < points.count else { return }
         points.remove(at: index)
         regenerateContinuityConstraints()
     }
+
     mutating func updatePoint(at index: Int, newPoint: ProfessionalBezierMathematics.BezierPoint, maintainContinuity: Bool = true) {
         guard index >= 0 && index < points.count else { return }
         points[index] = newPoint
@@ -72,6 +81,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             enforceLocalContinuity(at: index)
         }
     }
+
     mutating func close() {
         guard !isClosed && points.count >= 3 else { return }
         isClosed = true
@@ -81,11 +91,13 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         ))
         enforceClosingContinuity()
     }
+
     mutating func open() {
         guard isClosed else { return }
         isClosed = false
         continuityConstraints.removeAll { $0.pointIndex == points.count - 1 }
     }
+
     mutating func generateSmoothHandles() {
         for i in 0..<points.count {
             let previousPoint = (i > 0) ? points[i - 1].point : (isClosed ? points.last?.point : nil)
@@ -102,6 +114,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             }
         }
     }
+
     mutating func convertPointType(at index: Int, to newType: ProfessionalBezierMathematics.AnchorPointType) {
         guard index >= 0 && index < points.count else { return }
         let oldPoint = points[index]
@@ -126,6 +139,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
         points[index] = newPoint
     }
+
     private mutating func generateHandlesForPoint(at index: Int, pointType: ProfessionalBezierMathematics.AnchorPointType) {
         guard index >= 0 && index < points.count else { return }
         let previousPoint = (index > 0) ? points[index - 1].point : (isClosed ? points.last?.point : nil)
@@ -160,6 +174,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             break
         }
     }
+
     private mutating func regenerateContinuityConstraints() {
         continuityConstraints.removeAll()
         for i in 0..<max(0, points.count - 1) {
@@ -175,6 +190,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             ))
         }
     }
+
     private mutating func enforceLocalContinuity(at index: Int) {
         guard index >= 0 && index < points.count else { return }
         let relevantConstraints = continuityConstraints.filter { constraint in
@@ -184,6 +200,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             enforceContinuityConstraint(constraint)
         }
     }
+
     private mutating func enforceContinuityConstraint(_ constraint: ContinuityConstraint) {
         let index = constraint.pointIndex
         guard index >= 0 && index < points.count - 1 else { return }
@@ -213,6 +230,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             break
         }
     }
+
     private mutating func enforceClosingContinuity() {
         guard isClosed && points.count > 2 else { return }
         let lastIndex = points.count - 1
@@ -228,6 +246,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             )
         }
     }
+
     func toLegacyVectorPath() -> VectorPath {
         guard !points.isEmpty else {
             return VectorPath(elements: [], isClosed: isClosed)
@@ -265,6 +284,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
         return VectorPath(elements: elements, isClosed: isClosed)
     }
+
     static func fromLegacyVectorPath(_ legacyPath: VectorPath) -> ProfessionalVectorPath {
         var professionalPoints: [ProfessionalBezierMathematics.BezierPoint] = []
         var currentPoint: VectorPoint?
@@ -326,14 +346,17 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         professionalPath.generateSmoothHandles()
         return professionalPath
     }
+
     struct PathAnalysis {
         var issues: [String] = []
         var suggestions: [String] = []
         var quality: Double = 1.0
         var continuityIssues: [ContinuityIssue] = []
     }
+
     struct ContinuityIssue {
     }
+
     func analyzePath() -> PathAnalysis {
         var analysis = PathAnalysis()
         for i in 0..<points.count - 1 {
@@ -354,6 +377,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
         return analysis
     }
+
     private func getSegmentPoints(at index: Int) -> [VectorPoint]? {
         guard index >= 0 && index < points.count - 1 else { return nil }
         let p0 = points[index].point

@@ -1,12 +1,15 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 class VectorImportManager {
     static let shared = VectorImportManager()
+
     private init() {}
     private static let freehandExtensions: Set<String> = [
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
         "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
     ]
+
     func importVectorFile(from url: URL) async -> VectorImportResult {
         if Self.freehandExtensions.contains(url.pathExtension.lowercased()) {
             return await importFreeHand(from: url)
@@ -39,6 +42,7 @@ class VectorImportManager {
             return await importPDF(from: url)
         }
     }
+
     func importSVGWithExtremeValueHandling(from url: URL) -> VectorImportResult {
         guard let format = detectFormat(from: url) else {
             return VectorImportResult(
@@ -71,6 +75,7 @@ class VectorImportManager {
             )
         }
     }
+
     private func detectFormat(from url: URL) -> VectorFileFormat? {
         let pathExtension = url.pathExtension.lowercased()
         if let format = VectorFileFormat.allCases.first(where: { $0.rawValue == pathExtension }) {
@@ -79,6 +84,7 @@ class VectorImportManager {
         guard let data = try? Data(contentsOf: url) else { return nil }
         return detectFormatByContent(data)
     }
+
     enum RasterFormat: String, CaseIterable {
         case png = "png"
         case jpg = "jpg"
@@ -92,10 +98,12 @@ class VectorImportManager {
         case gif = "gif"
         case webp = "webp"
     }
+
     private func detectRaster(from url: URL) -> RasterFormat? {
         let ext = url.pathExtension.lowercased()
         return RasterFormat.allCases.first { $0.rawValue == ext }
     }
+
     private func detectFormatByContent(_ data: Data) -> VectorFileFormat? {
         guard let string = String(data: data.prefix(1024), encoding: .utf8) else { return nil }
         if string.contains("<svg") || string.contains("<?xml") && string.contains("svg") {
@@ -109,6 +117,7 @@ class VectorImportManager {
         }
         return nil
     }
+
     private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) -> VectorImportResult {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
@@ -197,6 +206,7 @@ class VectorImportManager {
             )
         }
     }
+
     private func importFreeHand(from url: URL) async -> VectorImportResult {
         do {
             let direct = try FreeHandDirectImporter.parseToShapes(url: url)
@@ -244,6 +254,7 @@ class VectorImportManager {
             )
         }
     }
+
     private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
@@ -302,6 +313,7 @@ class VectorImportManager {
         )
         return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
+
     private func importPDF(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
@@ -407,6 +419,7 @@ class VectorImportManager {
             )
         }
     }
+
     private func createDefaultMetadata() -> VectorImportMetadata {
         return VectorImportMetadata(
             originalFormat: .svg,

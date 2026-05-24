@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func updatePathWithHandles() {
         guard let path = bezierPath, bezierPoints.count >= 1 else { return }
         var newElements: [PathElement] = []

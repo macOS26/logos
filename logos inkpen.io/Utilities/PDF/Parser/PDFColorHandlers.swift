@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleRGBFillColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &b),
@@ -16,6 +18,7 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
+
     func handleRGBStrokeColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &b),
@@ -29,6 +32,7 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
+
     func handleGrayFillColor(scanner: CGPDFScannerRef) {
         var gray: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &gray) else { return }
@@ -40,6 +44,7 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
+
     func handleGrayStrokeColor(scanner: CGPDFScannerRef) {
         var gray: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &gray) else { return }
@@ -51,6 +56,7 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
+
     func handleCMYKFillColor(scanner: CGPDFScannerRef) {
         var c: CGFloat = 0, m: CGFloat = 0, y: CGFloat = 0, k: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &k),
@@ -71,6 +77,7 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
+
     func handleCMYKStrokeColor(scanner: CGPDFScannerRef) {
         var c: CGFloat = 0, m: CGFloat = 0, y: CGFloat = 0, k: CGFloat = 0
         guard CGPDFScannerPopNumber(scanner, &k),
@@ -91,6 +98,7 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
+
     func handleGenericFillColor(scanner: CGPDFScannerRef) {
         var values: [CGFloat] = []
         var value: CGFloat = 0
@@ -115,6 +123,7 @@ extension PDFCommandParser {
             currentFillColor = color
         }
     }
+
     func handleGenericStrokeColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
         if CGPDFScannerPopNumber(scanner, &b) &&
@@ -129,12 +138,14 @@ extension PDFCommandParser {
             currentStrokeColor = color
         }
     }
+
     func handleFillAlpha(scanner: CGPDFScannerRef) {
         var alpha: CGFloat = 0
         if CGPDFScannerPopNumber(scanner, &alpha) {
             currentFillOpacity = Double(alpha)
         }
     }
+
     func handleStrokeAlpha(scanner: CGPDFScannerRef) {
         var alpha: CGFloat = 0
         if CGPDFScannerPopNumber(scanner, &alpha) {

@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
     static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf, .freehandDocument, .encapsulatedPostScript] }
@@ -8,9 +9,11 @@ struct InkpenDocument: FileDocument {
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
         "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
     ]
+
     init() {
         self.document = VectorDocument()
     }
+
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
             Log.error("❌ InkpenDocument: regularFileContents is nil for \(configuration.file.preferredFilename ?? "?")", category: .error)
@@ -145,6 +148,7 @@ struct InkpenDocument: FileDocument {
         MemoryDiag.checkpoint("InkpenDocument.init DONE (\(configuration.file.preferredFilename ?? "?"))")
         MemoryDiag.dumpObjects(self.document)
     }
+
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         if configuration.contentType == .svg ||
             configuration.contentType.conforms(to: .svg) ||

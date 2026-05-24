@@ -1,7 +1,9 @@
 import SwiftUI
 import Combine
 import simd
+
 extension DrawingCanvas {
+
     @ViewBuilder
     func cornerRadiusEditTool(geometry: GeometryProxy) -> some View {
         if let selectedShape = getSelectedRectangleShape() {
@@ -20,6 +22,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     @ViewBuilder
     private func cornerRadiusHandle(
         cornerIndex: Int,
@@ -54,6 +57,7 @@ extension DrawingCanvas {
                 }
         )
     }
+
     internal func getSelectedRectangleShape() -> VectorShape? {
         guard document.viewState.selectedObjectIDs.count == 1 else { return nil }
         for newVectorObject in document.snapshot.objects.values {
@@ -65,11 +69,13 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     private func isRectangleBasedShape(_ shape: VectorShape) -> Bool {
         let shapeName = shape.name.lowercased()
         return shapeName == "rectangle" || shapeName == "square" ||
                shapeName == "rounded rectangle" || shapeName == "pill"
     }
+
     internal func getProperShapeBounds(for shape: VectorShape) -> CGRect {
         var pathBounds = shape.path.cgPath.boundingBox
         if !shape.transform.isIdentity {
@@ -89,6 +95,7 @@ extension DrawingCanvas {
         }
         return pathBounds
     }
+
     internal func applyTransformToCornerRadii(shape: inout VectorShape) {
         guard !shape.transform.isIdentity else { return }
         let colX = SIMD2<Double>(Double(shape.transform.a), Double(shape.transform.c))
@@ -121,6 +128,7 @@ extension DrawingCanvas {
         shape.transform = .identity
         shape.originalBounds = getProperShapeBounds(for: shape)
     }
+
     func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
         let transformedBounds = bounds
         var curvePositions: [CGPoint] = []
@@ -159,6 +167,7 @@ extension DrawingCanvas {
         }
         return curvePositions.map { canvasToScreen($0, geometry: geometry) }
     }
+
     private func handleCornerRadiusDrag(
         cornerIndex: Int,
         value: DragGesture.Value,
@@ -264,6 +273,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func finishCornerRadiusDrag() {
         if isDraggingCorner {
             if let selectedShape = getSelectedRectangleShape() {
@@ -315,6 +325,7 @@ extension DrawingCanvas {
             currentMousePosition = .zero
         }
     }
+
     private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
         guard var obj = document.snapshot.objects[shape.id] else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -322,6 +333,7 @@ extension DrawingCanvas {
         document.snapshot.objects[shape.id] = obj
         document.triggerLayerUpdate(for: layerIndex)
     }
+
     private func updateCornerRadius(shapeID: UUID, cornerIndex: Int, radiusChange: Double) {
         for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -360,6 +372,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
         for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -389,6 +402,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
         for layerIndex in document.snapshot.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -417,7 +431,9 @@ extension DrawingCanvas {
         }
     }
 }
+
 extension Array {
+
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil
     }

@@ -1,7 +1,10 @@
 import SwiftUI
+
 struct CMYKInputSection: View {
+
     @Binding var sharedColor: VectorColor
     let activeColorTarget: ColorTarget
+
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Binding var colorDeltaColor: VectorColor?
@@ -10,6 +13,7 @@ struct CMYKInputSection: View {
     let onColorSelected: ((VectorColor) -> Void)?
     let disableSetActiveColor: Bool
     let onDismiss: (() -> Void)?
+
     init(sharedColor: Binding<VectorColor>, activeColorTarget: ColorTarget, defaultFillColor: Binding<VectorColor>, defaultStrokeColor: Binding<VectorColor>, colorDeltaColor: Binding<VectorColor?>, onSetActiveColor: @escaping (VectorColor) -> Void, onAddColorSwatch: @escaping (VectorColor) -> Void, onColorSelected: ((VectorColor) -> Void)? = nil, disableSetActiveColor: Bool = false, onDismiss: (() -> Void)? = nil) {
         self._sharedColor = sharedColor
         self.activeColorTarget = activeColorTarget
@@ -22,6 +26,7 @@ struct CMYKInputSection: View {
         self.disableSetActiveColor = disableSetActiveColor
         self.onDismiss = onDismiss
     }
+
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
     @State private var yellowValue: String = "0"
@@ -44,6 +49,7 @@ struct CMYKInputSection: View {
             black: max(0, min(1, k))
         )
     }
+
     private func swiftUIColorFromCMYK(c: Double, m: Double, y: Double, k: Double) -> Color {
         let cmykColor = CMYKColor(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)
         return cmykColor.color
@@ -302,6 +308,7 @@ struct CMYKInputSection: View {
             loadFromSharedColor()
         }
     }
+
     private func updateSharedColor() {
         if isDisplayingGradient {
             return
@@ -318,6 +325,7 @@ struct CMYKInputSection: View {
             defaultStrokeColor = cmykColor
         }
     }
+
     private func loadFromSharedColor() {
         isDisplayingGradient = false
         switch sharedColor {
@@ -404,6 +412,7 @@ struct CMYKInputSection: View {
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
         }
     }
+
     private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
         isProgrammaticallyUpdating = true
         cyanValue = String(cyan)
@@ -416,6 +425,7 @@ struct CMYKInputSection: View {
         blackSlider = Double(black)
         isProgrammaticallyUpdating = false
     }
+
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
         if !disableSetActiveColor {
@@ -423,6 +433,7 @@ struct CMYKInputSection: View {
         }
         onAddColorSwatch(vectorColor)
     }
+
     private func addCMYKColorToSwatches() {
         let vectorColor = VectorColor.cmyk(currentColor)
         onAddColorSwatch(vectorColor)

@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct FontSizeControls: View {
     let selectedObjectIDs: Set<UUID>
     let selectedFontSize: CGFloat
@@ -7,6 +8,7 @@ struct FontSizeControls: View {
     let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
+
     @Binding var fontSizeDelta: Double?
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
@@ -194,12 +196,14 @@ struct FontSizeControls: View {
             syncFontStates()
         }
     }
+
     private func syncFontStates() {
         currentFontSizeState = currentFontSize
         currentLineSpacingState = currentLineSpacing
         currentLineHeightState = currentLineHeight
         currentLetterSpacingState = currentLetterSpacing
     }
+
     private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
@@ -224,6 +228,7 @@ struct FontSizeControls: View {
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
     }
+
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
         var affectedLayerIndices = Set<Int>()
@@ -243,6 +248,7 @@ struct FontSizeControls: View {
         document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineSpacing = Double(newSpacing)
     }
+
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
         var affectedLayerIndices = Set<Int>()
@@ -262,6 +268,7 @@ struct FontSizeControls: View {
         document.triggerLayerUpdates(for: affectedLayerIndices)
         document.fontManager.selectedLineHeight = Double(newHeight)
     }
+
     private func updateLetterSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLetterSpacingState = newSpacing
         var affectedLayerIndices = Set<Int>()

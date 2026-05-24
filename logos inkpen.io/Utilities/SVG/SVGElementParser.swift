@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     func parseRectangle(attributes: [String: String]) {
         let x = parseLength(attributes["x"]) ?? 0
         let y = parseLength(attributes["y"]) ?? 0
@@ -64,6 +66,7 @@ extension SVGParser {
             shapes.append(shape)
         }
     }
+
     func parseCircle(attributes: [String: String]) {
         let cx = parseLength(attributes["cx"]) ?? 0
         let cy = parseLength(attributes["cy"]) ?? 0
@@ -83,6 +86,7 @@ extension SVGParser {
             shapes.append(finalShape)
         }
     }
+
     func parseEllipse(attributes: [String: String]) {
         let cx = parseLength(attributes["cx"]) ?? 0
         let cy = parseLength(attributes["cy"]) ?? 0
@@ -118,6 +122,7 @@ extension SVGParser {
             shapes.append(shape)
         }
     }
+
     func parseLine(attributes: [String: String]) {
         let x1 = parseLength(attributes["x1"]) ?? 0
         let y1 = parseLength(attributes["y1"]) ?? 0
@@ -136,6 +141,7 @@ extension SVGParser {
         )
         shapes.append(shape)
     }
+
     func parsePolyline(attributes: [String: String], closed: Bool) {
         guard let pointsString = attributes["points"] else { return }
         let points = parsePoints(pointsString)

@@ -1,11 +1,14 @@
 import SwiftUI
 import Combine
+
 class DocumentViewState: ObservableObject {
+
     @Published var currentTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
         }
     }
+
     @Published var scalingAnchor: ScalingAnchor = .center
     @Published var rotationAnchor: RotationAnchor = .center
     @Published var shearAnchor: ShearAnchor = .center
@@ -19,11 +22,13 @@ class DocumentViewState: ObservableObject {
     @Published var objectPositionUpdateTrigger: Bool = false
     @Published var layerUpdateTriggers: [UUID: UInt] = [:]
     var isLivePointDrag: Bool = false
+
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     @Published var hasPressureInput: Bool = false
     var isDraggingVisibility: Bool = false
     var isDraggingLock: Bool = false
+
     @Published var liveGradientOriginX: Double? = nil
     @Published var liveGradientOriginY: Double? = nil
     @Published var liveNudgeOffset: CGVector = .zero
@@ -33,6 +38,7 @@ class DocumentViewState: ObservableObject {
             orderedSelectedObjectIDs = orderedSelectedObjectIDs.filter { selectedObjectIDs.contains($0) }
         }
     }
+
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
     var orderedSelectedObjectIDs: [UUID] = []
     var selectedPoints: Set<PointID> = [] {
@@ -40,12 +46,14 @@ class DocumentViewState: ObservableObject {
             PublishedSelectedPoints = selectedPoints
         }
     }
+
     @Published var PublishedSelectedPoints: Set<PointID> = []
     var selectedHandles: Set<HandleID> = [] {
         didSet {
             PublishedSelectedHandles = selectedHandles
         }
     }
+
     @Published var PublishedSelectedHandles: Set<HandleID> = []
     init() {}
 }

@@ -1,9 +1,11 @@
 import SwiftUI
 import Combine
 import AppKit
+
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: Layer
+
     @ObservedObject var document: VectorDocument
     @Binding var selectedLayerIndex: Int?
     @State private var isEditingName: Bool = false
@@ -45,6 +47,7 @@ struct ProfessionalLayerRow: View {
             }
         )
     }
+
     init(layerIndex: Int, layer: Layer, document: VectorDocument, selectedLayerIndex: Binding<Int?>) {
         self.layerIndex = layerIndex
         self.layer = layer
@@ -57,9 +60,11 @@ struct ProfessionalLayerRow: View {
         }
         _cachedObjectIDs = State(initialValue: Array(layer.objectIDs.reversed()))
     }
+
     private func updateCachedObjects() {
         cachedObjectIDs = Array(layer.objectIDs.reversed())
     }
+
     private func setExpanded(_ value: Bool) {
         isExpanded = value
         var updatedSettings = document.settings
@@ -325,6 +330,7 @@ struct ProfessionalLayerRow: View {
         }
         .background(Color.clear)
     }
+
     @ViewBuilder
     private func objectRowForType(newVectorObject: VectorObject, isLast: Bool) -> some View {
         switch newVectorObject.objectType {
@@ -388,6 +394,7 @@ struct ProfessionalLayerRow: View {
             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
         }
     }
+
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         guard document.snapshot.objects[objectID] != nil else {
             return

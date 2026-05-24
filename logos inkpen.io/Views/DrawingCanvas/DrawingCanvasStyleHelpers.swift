@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func getCurrentFillColor() -> VectorColor {
         if let firstSelectedTextID = document.viewState.selectedObjectIDs.first,
            let textObject = document.findText(by: firstSelectedTextID) {
@@ -12,6 +14,7 @@ extension DrawingCanvas {
         }
         return document.defaultFillColor
     }
+
     internal func getCurrentFillOpacity() -> Double {
         if let firstSelectedTextID = document.viewState.selectedObjectIDs.first,
            let textObject = document.findText(by: firstSelectedTextID) {
@@ -24,6 +27,7 @@ extension DrawingCanvas {
         }
         return document.defaultFillOpacity
     }
+
     internal func getCurrentStrokeColor() -> VectorColor {
         if let firstSelectedTextID = document.viewState.selectedObjectIDs.first,
            let textObject = document.findText(by: firstSelectedTextID) {
@@ -36,6 +40,7 @@ extension DrawingCanvas {
         }
         return document.defaultStrokeColor
     }
+
     internal func getCurrentStrokeOpacity() -> Double {
         if let firstSelectedTextID = document.viewState.selectedObjectIDs.first,
            let textObject = document.findText(by: firstSelectedTextID) {
@@ -48,6 +53,7 @@ extension DrawingCanvas {
         }
         return document.defaultStrokeOpacity
     }
+
     internal func getCurrentStrokeWidth() -> Double {
         if let firstSelectedID = document.viewState.selectedObjectIDs.first,
            let shape = document.findShape(by: firstSelectedID),

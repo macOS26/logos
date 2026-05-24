@@ -2,7 +2,9 @@ import SwiftUI
 import AppKit
 import SwiftUI
 import Combine
+
 struct TransformBoxHandles: View {
+
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
@@ -12,6 +14,7 @@ struct TransformBoxHandles: View {
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
     var strokeColor: Color = Color.black.opacity(0.5)
+
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
     @State private var isScaling: Bool = false
@@ -28,6 +31,7 @@ struct TransformBoxHandles: View {
         guard isSingleSelection else { return false }
         return shape.isLocked
     }
+
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -267,6 +271,7 @@ struct TransformBoxHandles: View {
         initialTransform = .identity
     }
     }
+
     private func computeTransformedBounds() -> CGRect {
         let baseBounds: CGRect
         if shape.typography != nil, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
@@ -289,10 +294,12 @@ struct TransformBoxHandles: View {
         }
         return strokeExpandedBounds.applying(t)
     }
+
     private func containsTextBoxInGroup() -> Bool {
         guard shape.isGroupContainer else { return false }
         return shape.groupedShapes.contains { $0.typography != nil }
     }
+
     private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: rect.minX, y: rect.minY)
@@ -306,6 +313,7 @@ struct TransformBoxHandles: View {
         default: return CGPoint(x: rect.midX, y: rect.midY)
         }
     }
+
     private func isHandleTheAnchor(index: Int) -> Bool {
         let handleToOrigin: [TransformOrigin] = [
             .topLeft, .topCenter, .topRight,
@@ -314,6 +322,7 @@ struct TransformBoxHandles: View {
         ]
         return index < handleToOrigin.count && handleToOrigin[index] == transformOrigin
     }
+
     private func isHandleAdjacentToAnchor(index: Int) -> Bool {
         switch transformOrigin {
         case .topLeft:      return index == 1 || index == 7
@@ -327,6 +336,7 @@ struct TransformBoxHandles: View {
         case .center:       return false
         }
     }
+
     private func getTransformAnchor(in rect: CGRect) -> CGPoint {
         let origin = transformOrigin.point
         return CGPoint(
@@ -334,6 +344,7 @@ struct TransformBoxHandles: View {
             y: rect.minY + rect.height * origin.y
         )
     }
+
     private func toggleShapeLock() {
         guard let objectID = document.viewState.selectedObjectIDs.first else { return }
         document.updateShapeByID(objectID, silent: false) { shape in
@@ -343,6 +354,7 @@ struct TransformBoxHandles: View {
             document.triggerLayerUpdate(for: obj.layerIndex)
         }
     }
+
     private func setAnchorPoint(forHandle index: Int) {
         let handleToOrigin: [TransformOrigin] = [
             .topLeft, .topCenter, .topRight,
@@ -359,6 +371,7 @@ struct TransformBoxHandles: View {
             }
         }
     }
+
     private func beginScaling(startValue: DragGesture.Value) {
         isScaling = true
         startLocation = startValue.startLocation
@@ -368,6 +381,7 @@ struct TransformBoxHandles: View {
             liveScaleTransform = .identity
         }
     }
+
     private func updateScaling(forHandle index: Int, dragValue: DragGesture.Value, bounds: CGRect) {
         if index == 8 {
             let anchor = getTransformAnchor(in: bounds)
@@ -415,6 +429,7 @@ struct TransformBoxHandles: View {
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
         let minStart: CGFloat = 4.0
+
         func axisScale(_ cur: CGFloat, _ start: CGFloat) -> CGFloat {
             abs(start) > minStart ? cur / start : 1.0
         }
@@ -447,6 +462,7 @@ struct TransformBoxHandles: View {
         let newBounds = currentBounds.applying(scaleTransform)
         liveScaleDimensions = CGSize(width: newBounds.width, height: newBounds.height)
     }
+
     private func endScaling() {
         isScaling = false
         document.isHandleScalingActive = false
@@ -494,6 +510,7 @@ struct TransformBoxHandles: View {
         )
         document.executeCommand(command)
     }
+
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
         let t = transform
         if t.isIdentity {
@@ -573,6 +590,7 @@ struct TransformBoxHandles: View {
             document.snapshot.objects[shapeID] = updatedObject
         }
     }
+
     private func applyMultiSelectionScaling() {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]

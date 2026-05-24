@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import simd
+
 struct GridCanvasView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -48,6 +49,7 @@ struct GridCanvasView: View {
             )
         }
     }
+
     private func drawGridLines(
         context: GraphicsContext,
         gridSpacing: CGFloat,
@@ -104,12 +106,14 @@ struct GridCanvasView: View {
         )
     }
 }
+
 struct GridView: View, Equatable {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
     let unit: MeasurementUnit
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     static func == (lhs: GridView, rhs: GridView) -> Bool {
         lhs.gridSpacing == rhs.gridSpacing &&
         lhs.canvasSize == rhs.canvasSize &&

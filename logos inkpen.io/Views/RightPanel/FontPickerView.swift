@@ -1,13 +1,17 @@
 import SwiftUI
 import AppKit
+
 struct FontPickerLabelStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.caption)
             .foregroundColor(.secondary)
     }
 }
+
 struct FontPickerPickerStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .pickerStyle(.menu)
@@ -15,20 +19,25 @@ struct FontPickerPickerStyle: ViewModifier {
             .padding(.vertical, 4)
     }
 }
+
 extension View {
+
     func fontPickerLabel() -> some View {
         modifier(FontPickerLabelStyle())
     }
+
     func fontPickerStyle() -> some View {
         modifier(FontPickerPickerStyle())
     }
 }
+
 struct FontPickerView: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
     let selectedTextTypography: TypographyProperties?
     let selectedText: VectorText?
     let editingText: VectorText?
+
     @Binding var fontFamilyUpdateTrigger: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -108,6 +117,7 @@ struct FontPickerView: View {
             .fontPickerStyle()
         }
     }
+
     private func getFontForVariant(family: String, variantName: String) -> Font {
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
@@ -120,6 +130,7 @@ struct FontPickerView: View {
         }
         return Font.system(size: 12)
     }
+
     private func cleanVariantName(_ name: String) -> String {
         let weightMap: [String: String] = [
             "W0": "Ultra Light",

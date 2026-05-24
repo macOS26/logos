@@ -1,6 +1,8 @@
 import SwiftUI
+
 let IconStrokeWidth: CGFloat = 1.0
 let IconStrokeExpand: CGFloat = IconStrokeWidth / 2.0
+
 struct ToolItem {
     let tool: DrawingTool
     let starVariant: StarVariant?

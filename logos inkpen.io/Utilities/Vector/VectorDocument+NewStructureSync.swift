@@ -1,5 +1,7 @@
 import Foundation
+
 extension VectorDocument {
+
     func addObjectToNewStructure(_ object: VectorObject, layerID: UUID) {
         guard let layerIndex = snapshot.layers.firstIndex(where: { $0.id == layerID }) else { return }
         let updatedObject = VectorObject(shape: object.shape, layerIndex: layerIndex)
@@ -8,12 +10,14 @@ extension VectorDocument {
             snapshot.layers[layerIndex].objectIDs.append(updatedObject.id)
         }
     }
+
     func removeObjectFromNewStructure(objectID: UUID) {
         snapshot.objects.removeValue(forKey: objectID)
         for index in snapshot.layers.indices {
             snapshot.layers[index].objectIDs.removeAll { $0 == objectID }
         }
     }
+
     func moveObjectInNewStructure(objectID: UUID, fromLayerID: UUID, toLayerID: UUID) {
         guard let fromIndex = snapshot.layers.firstIndex(where: { $0.id == fromLayerID }) else { return }
         guard let toIndex = snapshot.layers.firstIndex(where: { $0.id == toLayerID }) else { return }
@@ -25,6 +29,7 @@ extension VectorDocument {
             snapshot.layers[toIndex].objectIDs.append(objectID)
         }
     }
+
     func reorderObjectInNewStructure(objectID: UUID, layerID: UUID, toIndex: Int) {
         guard let layerIndex = snapshot.layers.firstIndex(where: { $0.id == layerID }) else { return }
         guard let fromIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: objectID) else { return }
@@ -32,9 +37,11 @@ extension VectorDocument {
         let safeIndex = min(toIndex, snapshot.layers[layerIndex].objectIDs.count)
         snapshot.layers[layerIndex].objectIDs.insert(objectID, at: safeIndex)
     }
+
     func updateObjectInNewStructure(_ object: VectorObject) {
         snapshot.objects[object.id] = object
     }
+
     func findLayerContaining(objectID: UUID) -> UUID? {
         return snapshot.layers.first { $0.objectIDs.contains(objectID) }?.id
     }

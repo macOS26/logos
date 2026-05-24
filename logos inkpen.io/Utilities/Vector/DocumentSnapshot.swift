@@ -1,4 +1,5 @@
 import Foundation
+
 struct
 DocumentSnapshot: Equatable, Codable {
     var formatVersion: String
@@ -9,9 +10,11 @@ DocumentSnapshot: Equatable, Codable {
     var gridSettings: GridSettings
     var parentGroupCache: [UUID: UUID] = [:]
     var clippedObjectsCache: [UUID: [UUID]] = [:]
+
     enum CodingKeys: String, CodingKey {
         case formatVersion, objects, layers, settings, colorSwatches, gridSettings
     }
+
     init(
         formatVersion: String = "1.0.27",
         objects: [UUID: VectorObject] = [:],
@@ -29,6 +32,7 @@ DocumentSnapshot: Equatable, Codable {
         self.parentGroupCache = [:]
         self.clippedObjectsCache = [:]
     }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.formatVersion = try container.decodeIfPresent(String.self, forKey: .formatVersion) ?? "1.0"

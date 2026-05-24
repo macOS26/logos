@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 struct RealTimeSmoothing {
+
     static func applyRealTimeSmoothing(
         newPoint: CGPoint,
         recentPoints: inout [CGPoint],
@@ -17,6 +19,7 @@ struct RealTimeSmoothing {
         let smoothed = weightedAverageSmoothing(points: recentPoints, strength: strength)
         return smoothed.last ?? newPoint
     }
+
     private static func weightedAverageSmoothing(points: [CGPoint], strength: Double) -> [CGPoint] {
         guard points.count >= 3 else { return points }
         var smoothedPoints = points

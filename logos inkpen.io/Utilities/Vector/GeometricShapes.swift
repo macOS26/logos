@@ -1,6 +1,8 @@
 import CoreGraphics
 import simd
+
 class GeometricShapes {
+
     static func createRectangle(origin: CGPoint, size: CGSize, cornerRadius: CGFloat = 0) -> VectorPath {
         let rect = CGRect(origin: origin, size: size)
         var elements: [PathElement] = []
@@ -33,6 +35,7 @@ class GeometricShapes {
         }
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Double]) -> VectorPath {
         guard cornerRadii.count == 4 else {
             return createRectangle(origin: rect.origin, size: rect.size, cornerRadius: 0)
@@ -66,6 +69,7 @@ class GeometricShapes {
             .close
         ], isClosed: true)
     }
+
     static func createCircle(center: CGPoint, radius: CGFloat) -> VectorPath {
         let controlPointOffset = radius * 0.552
         let elements: [PathElement] = [
@@ -86,6 +90,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createEllipse(center: CGPoint, radiusX: CGFloat, radiusY: CGFloat) -> VectorPath {
         let controlPointOffsetX = radiusX * 0.552
         let controlPointOffsetY = radiusY * 0.552
@@ -107,6 +112,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createTriangle(center: CGPoint, radius: CGFloat, orientation: CGFloat = 0) -> VectorPath {
         let points = regularPolygonPoints(center: center, radius: radius, sides: 3, orientation: orientation)
         let elements: [PathElement] = [
@@ -117,6 +123,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createRegularPolygon(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat = 0) -> VectorPath {
         let points = regularPolygonPoints(center: center, radius: radius, sides: sides, orientation: orientation)
         var elements: [PathElement] = [.move(to: VectorPoint(points[0]))]
@@ -126,6 +133,7 @@ class GeometricShapes {
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createStar(center: CGPoint, outerRadius: CGFloat, innerRadius: CGFloat, points: Int, orientation: CGFloat = 0) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = .pi / Double(points)
@@ -144,15 +152,19 @@ class GeometricShapes {
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createPentagon(center: CGPoint, radius: CGFloat, orientation: CGFloat = 0) -> VectorPath {
         return createRegularPolygon(center: center, radius: radius, sides: 5, orientation: orientation)
     }
+
     static func createHexagon(center: CGPoint, radius: CGFloat, orientation: CGFloat = 0) -> VectorPath {
         return createRegularPolygon(center: center, radius: radius, sides: 6, orientation: orientation)
     }
+
     static func createOctagon(center: CGPoint, radius: CGFloat, orientation: CGFloat = 0) -> VectorPath {
         return createRegularPolygon(center: center, radius: radius, sides: 8, orientation: orientation)
     }
+
     static func createDiamond(center: CGPoint, width: CGFloat, height: CGFloat) -> VectorPath {
         let halfWidth = width / 2
         let halfHeight = height / 2
@@ -165,6 +177,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createHeart(center: CGPoint, size: CGFloat) -> VectorPath {
         let scale = size / 100.0
         var elements: [PathElement] = []
@@ -190,6 +203,7 @@ class GeometricShapes {
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createArrow(start: CGPoint, end: CGPoint, headLength: CGFloat = 20, headWidth: CGFloat = 10) -> VectorPath {
         let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
         let endVec = SIMD2<Double>(Double(end.x), Double(end.y))
@@ -215,9 +229,11 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createStopSign(center: CGPoint, radius: CGFloat) -> VectorPath {
         return createRegularPolygon(center: center, radius: radius, sides: 8, orientation: .pi / 8)
     }
+
     static func createLine(start: CGPoint, end: CGPoint) -> VectorPath {
         let elements: [PathElement] = [
             .move(to: VectorPoint(start)),
@@ -225,6 +241,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: false)
     }
+
     static func createBezierCurve(start: CGPoint, end: CGPoint, control1: CGPoint, control2: CGPoint) -> VectorPath {
         let elements: [PathElement] = [
             .move(to: VectorPoint(start)),
@@ -232,6 +249,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: false)
     }
+
     static func createQuadraticCurve(start: CGPoint, end: CGPoint, control: CGPoint) -> VectorPath {
         let elements: [PathElement] = [
             .move(to: VectorPoint(start)),
@@ -239,6 +257,7 @@ class GeometricShapes {
         ]
         return VectorPath(elements: elements, isClosed: false)
     }
+
     private static func regularPolygonPoints(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat) -> [CGPoint] {
         var points: [CGPoint] = []
         let angleStep = 2 * .pi / Double(sides)
@@ -251,6 +270,7 @@ class GeometricShapes {
         }
         return points
     }
+
     static func createCog(center: CGPoint, outerRadius: CGFloat, innerRadius: CGFloat, teeth: Int = 12) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = 2 * .pi / Double(teeth)
@@ -284,6 +304,7 @@ class GeometricShapes {
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
+
     static func createSpiral(center: CGPoint, startRadius: CGFloat, endRadius: CGFloat, turns: Double) -> VectorPath {
         var elements: [PathElement] = []
         let steps = Int(turns * 36)

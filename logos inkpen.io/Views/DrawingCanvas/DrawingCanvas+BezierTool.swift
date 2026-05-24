@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func cancelBezierDrawing() {
         if let activeBezierShape = activeBezierShape {
             ensureIncompletePathHasProperColors(shape: activeBezierShape)
@@ -18,9 +20,11 @@ extension DrawingCanvas {
         activeBezierShape = nil
         currentShapeId = nil
     }
+
     internal func distance(_ p1: CGPoint, _ p2: CGPoint) -> Double {
         return p1.distance(to: p2)
     }
+
     private func findNearestSnapPoint(to point: CGPoint) -> CGPoint? {
         let snapTolerance: CGFloat = 10.0 / zoomLevel
         var nearestPoint: CGPoint?
@@ -52,6 +56,7 @@ extension DrawingCanvas {
                             nearestDistance = dist
                             nearestPoint = CGPoint(x: p.x, y: p.y)
                         }
+
                     @unknown default:
                         break
                     }

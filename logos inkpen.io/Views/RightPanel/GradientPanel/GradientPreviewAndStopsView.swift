@@ -1,8 +1,10 @@
 import SwiftUI
+
 struct GradientPreviewAndStopsView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let activeColorTarget: ColorTarget
+
     @Binding var editingGradientStopId: UUID?
     @Binding var editingGradientStopColor: VectorColor
     @Binding var showingGradientColorPicker: Bool
@@ -25,6 +27,7 @@ struct GradientPreviewAndStopsView: View {
     let applyGradientToSelectedShapesOptimized: (Bool) -> Void
     let activateGradientStop: (UUID, VectorColor) -> Void
     let onStopEditingChanged: (Bool) -> Void
+
     @State private var popoverStopID: UUID? = nil
     @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
     @State private var popoverManager = SlidingPopoverManager()
@@ -104,6 +107,7 @@ struct GradientPreviewAndStopsView: View {
         }
         .frame(width: squareSize + padding * 2, height: squareSize + padding * 2)
     }
+
     private func renderGradientToCGContext(gradient: VectorGradient, context: CGContext, size: CGSize, liveOriginX: Double, liveOriginY: Double) {
         context.saveGState()
         let pathBounds = CGRect(origin: .zero, size: size)
@@ -162,6 +166,7 @@ struct GradientPreviewAndStopsView: View {
         }
         context.restoreGState()
     }
+
     @State private var dragStartGradient: VectorGradient? = nil
     @State private var dragStartOpacities: [UUID: Double] = [:]
     @State private var isDragging = false
@@ -220,6 +225,7 @@ struct GradientPreviewAndStopsView: View {
         (0.25, 0.5), (0.75, 0.5),
         (0.5, 0.25), (0.5, 0.75)
     ]
+
     private func findSnapPoint(for location: CGPoint, squareSize: CGFloat, padding: CGFloat, snapRadius: CGFloat) -> (x: CGFloat, y: CGFloat)? {
         for point in snapPoints {
             let pointPos = CGPoint(x: point.x * squareSize + padding, y: point.y * squareSize + padding)
@@ -230,6 +236,7 @@ struct GradientPreviewAndStopsView: View {
         }
         return nil
     }
+
     private func createPreviewContent(geometry: GeometryProxy) -> some View {
         let padding: CGFloat = 8
         let fullWidth = geometry.size.width

@@ -1,4 +1,5 @@
 import SwiftUI
+
 enum TransformOrigin: String, CaseIterable {
     case topLeft = "Top Left"
     case topCenter = "Top Center"
@@ -23,7 +24,9 @@ enum TransformOrigin: String, CaseIterable {
         }
     }
 }
+
 struct NinePointOriginSelector: View {
+
     @Binding var selectedOrigin: TransformOrigin
     var body: some View {
         VStack(spacing: 2) {
@@ -56,12 +59,15 @@ struct NinePointOriginSelector: View {
         )
         .help("Transform origin: \(selectedOrigin.rawValue)")
     }
+
     private func originForPosition(row: Int, col: Int) -> TransformOrigin {
         let index = row * 3 + col
         return TransformOrigin.allCases[index]
     }
 }
+
 struct TransformationControls: View {
+
     @ObservedObject var document: VectorDocument
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
@@ -347,6 +353,7 @@ struct TransformationControls: View {
             updateValuesFromSelection()
         }
     }
+
     private func syncTransformOriginFromSelection() {
         guard let firstID = document.viewState.selectedObjectIDs.first,
               let obj = document.snapshot.objects[firstID] else {
@@ -358,6 +365,7 @@ struct TransformationControls: View {
             }
         }
     }
+
     private func updatePositionOnly() {
         let bounds = document.cachedSelectionBounds ?? getSelectionBounds()
         guard let bounds = bounds else {
@@ -372,6 +380,7 @@ struct TransformationControls: View {
         xValue = currentUnit.format(currentUnit.fromPoints(xInPoints))
         yValue = currentUnit.format(currentUnit.fromPoints(yInPoints))
     }
+
     private func updateValuesFromSelection() {
         guard let bounds = getSelectionBounds() else {
             xValue = ""
@@ -391,16 +400,19 @@ struct TransformationControls: View {
         heightValue = currentUnit.format(currentUnit.fromPoints(bounds.height))
         aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : 1.0
     }
+
     private func updateHeightProportionally() {
         guard let width = Double(widthValue), aspectRatio > 0 else { return }
         let newHeight = width / aspectRatio
         heightValue = currentUnit.format(newHeight)
     }
+
     private func updateWidthProportionally() {
         guard let height = Double(heightValue), aspectRatio > 0 else { return }
         let newWidth = height * aspectRatio
         widthValue = currentUnit.format(newWidth)
     }
+
     private func transformPoint(_ point: CGPoint, currentOrigin: CGPoint, newOrigin: CGPoint, scaleX: CGFloat, scaleY: CGFloat) -> CGPoint {
         let dx = point.x - currentOrigin.x
         let dy = point.y - currentOrigin.y
@@ -408,6 +420,7 @@ struct TransformationControls: View {
         let scaledY = dy * scaleY
         return CGPoint(x: scaledX + newOrigin.x, y: scaledY + newOrigin.y)
     }
+
     private func getSelectionBounds() -> CGRect? {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
         var combinedBounds: CGRect?
@@ -439,6 +452,7 @@ struct TransformationControls: View {
         }
         return combinedBounds
     }
+
     private func applyTransformation() {
         guard let currentBounds = getSelectionBounds(),
               let newXInUnit = Double(xValue),
@@ -608,6 +622,7 @@ struct TransformationControls: View {
         )
         updateValuesFromSelection()
     }
+
     private func applyScale() {
         guard let scaleX = Double(scaleXValue),
               let scaleY = Double(scaleYValue),
@@ -670,6 +685,7 @@ struct TransformationControls: View {
         scaleYValue = "100"
         updateValuesFromSelection()
     }
+
     private func scaleShapePath(_ shape: inout VectorShape, scaleX: CGFloat, scaleY: CGFloat, originX: CGFloat, originY: CGFloat) {
         var scaledElements: [PathElement] = []
         for element in shape.path.elements {
@@ -710,6 +726,7 @@ struct TransformationControls: View {
         shape.path = VectorPath(elements: scaledElements)
         shape.updateBounds()
     }
+
     private func applyRotation() {
         guard let angle = Double(rotationValue),
               let currentBounds = getSelectionBounds() else { return }
@@ -763,6 +780,7 @@ struct TransformationControls: View {
         rotationValue = "0"
         updateValuesFromSelection()
     }
+
     private func rotateShapePath(_ shape: inout VectorShape, radians: CGFloat, originX: CGFloat, originY: CGFloat) {
         var rotatedElements: [PathElement] = []
         for element in shape.path.elements {
@@ -796,6 +814,7 @@ struct TransformationControls: View {
         shape.path = VectorPath(elements: rotatedElements)
         shape.updateBounds()
     }
+
     private func rotatePoint(x: CGFloat, y: CGFloat, originX: CGFloat, originY: CGFloat, radians: CGFloat) -> CGPoint {
         let dx = x - originX
         let dy = y - originY

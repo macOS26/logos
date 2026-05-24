@@ -1,6 +1,8 @@
 import SwiftUI
+
 struct RightPanel: View {
     let snapshot: DocumentSnapshot
+
     @ObservedObject var viewState: DocumentViewState
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]

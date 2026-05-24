@@ -1,7 +1,10 @@
 import SwiftUI
+
 struct ColorPanel: View {
+
     @Binding var snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
+
     @Binding var activeColorTarget: ColorTarget
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
@@ -13,6 +16,7 @@ struct ColorPanel: View {
     let onAddColorSwatch: (VectorColor) -> Void
     let onRemoveColorSwatch: (VectorColor) -> Void
     let onSetActiveColor: (VectorColor) -> Void
+
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @State private var searchText = ""
@@ -23,6 +27,7 @@ struct ColorPanel: View {
     let hasInitialColor: Bool
     let initialColor: VectorColor?
     let onDismiss: (() -> Void)?
+
     init(
         snapshot: Binding<DocumentSnapshot>,
         selectedObjectIDs: Set<UUID>,
@@ -239,6 +244,7 @@ struct ColorPanel: View {
             }
         }
     }
+
     private func selectColor(_ color: VectorColor) {
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
@@ -247,6 +253,7 @@ struct ColorPanel: View {
             onSetActiveColor(color)
         }
     }
+
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
@@ -271,6 +278,7 @@ struct ColorPanel: View {
             }
         }
     }
+
     @ViewBuilder
     private func overlayText(for color: VectorColor) -> some View {
         if case .pantone(let pantone) = color {
@@ -285,6 +293,7 @@ struct ColorPanel: View {
                 .allowsTightening(true)
         }
     }
+
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
             return color

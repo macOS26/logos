@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import SwiftUI
+
 #if canImport(AppKit)
 import AppKit
 typealias PlatformColor = NSColor
@@ -8,6 +9,7 @@ typealias PlatformColor = NSColor
 import UIKit
 typealias PlatformColor = UIColor
 #endif
+
 extension Color {
     static var platformControlBackground: Color {
         #if canImport(AppKit)
@@ -38,6 +40,7 @@ extension Color {
         #endif
     }
 }
+
 extension CGColor {
     var platformColor: PlatformColor {
         #if canImport(AppKit)
@@ -70,6 +73,7 @@ extension CGColor {
         }
         return (0, 0, 0, 1)
     }
+
     func withAlpha(_ alpha: CGFloat) -> CGColor {
         let rgba = self.rgbaComponents
         return CGColor(red: rgba.r, green: rgba.g, blue: rgba.b, alpha: alpha)

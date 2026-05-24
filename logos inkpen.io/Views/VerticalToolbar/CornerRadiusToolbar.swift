@@ -1,9 +1,11 @@
 import SwiftUI
 import Combine
+
 struct CornerRadiusToolbar: View {
     let selectedObjectIDs: Set<UUID>
     let snapshot: DocumentSnapshot
     let document: VectorDocument
+
     @State private var cornerValues: [Double] = []
     @State private var cornerCount: Int = 0
     var body: some View {
@@ -22,6 +24,7 @@ struct CornerRadiusToolbar: View {
             updateCornerValues()
         }
     }
+
     @ViewBuilder
     private var cornerRadiusDisplay: some View {
         HStack(spacing: 4) {
@@ -36,6 +39,7 @@ struct CornerRadiusToolbar: View {
         .background(Color.ui.controlBackground)
         .cornerRadius(6)
     }
+
     @ViewBuilder
     private var cornerFieldsView: some View {
         if cornerCount == 4 {
@@ -46,6 +50,7 @@ struct CornerRadiusToolbar: View {
             }
         }
     }
+
     @ViewBuilder
     private func cornerField(index: Int, label: String) -> some View {
         let isRounded = getSelectedShape().map { isCornerRounded(shape: $0, cornerIndex: index) } ?? false
@@ -96,6 +101,7 @@ struct CornerRadiusToolbar: View {
         default: return "circle"
         }
     }
+
     private func updateCornerValues() {
         guard let selectedShape = getSelectedShape() else {
             cornerValues = []
@@ -108,6 +114,7 @@ struct CornerRadiusToolbar: View {
             currentRadii[safe: index] ?? 0.0
         }
     }
+
     private func countShapeCorners(shape: VectorShape) -> Int {
         let shapeName = shape.name.lowercased()
         if shapeName.contains("triangle") {
@@ -141,6 +148,7 @@ struct CornerRadiusToolbar: View {
         }
         return 0
     }
+
     private func getSelectedShape() -> VectorShape? {
         guard selectedObjectIDs.count == 1,
               let selectedID = selectedObjectIDs.first else { return nil }
@@ -152,6 +160,7 @@ struct CornerRadiusToolbar: View {
         }
         return nil
     }
+
     private func isCornerRounded(shape: VectorShape, cornerIndex: Int) -> Bool {
         let elements = shape.path.elements
         var lineSegments: [PathElement] = []
@@ -175,6 +184,7 @@ struct CornerRadiusToolbar: View {
         let radius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
         return radius > 0.0
     }
+
     private func updateCornerRadius(index: Int, value: Double) {
         guard let selectedShape = getSelectedShape() else { return }
         document.modifyShapesWithUndo(shapeIDs: [selectedShape.id]) { shape in
@@ -205,6 +215,7 @@ struct CornerRadiusToolbar: View {
         }
         updateCornerValues()
     }
+
     private func isRectangleShape(_ shape: VectorShape) -> Bool {
         let shapeName = shape.name.lowercased()
         return shapeName == "rectangle" || shapeName == "square" ||

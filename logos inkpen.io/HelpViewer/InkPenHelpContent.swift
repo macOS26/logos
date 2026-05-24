@@ -1,4 +1,5 @@
 import Foundation
+
 struct InkPenHelpContent {
     static let pages: [String: HelpPage] = [
         "index": HelpPage(
@@ -130,10 +131,12 @@ struct InkPenHelpContent {
             """
         )
     ]
+
     static func getPage(_ name: String) -> HelpPage? {
         return pages[name]
     }
 }
+
 struct HelpPage {
     let title: String
     let content: String

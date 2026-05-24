@@ -1,5 +1,6 @@
 import MetalKit
 import simd
+
 class GPUCoordinateTransform {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue?
@@ -15,11 +16,13 @@ class GPUCoordinateTransform {
         _shared = instance
         return instance
     }
+
     static func releaseShared() {
         lock.lock()
         _shared = nil
         lock.unlock()
     }
+
     private init() {
         let metal = SharedMetalDevice.shared
         self.device = metal.device
@@ -27,22 +30,26 @@ class GPUCoordinateTransform {
         self.computePipeline = metal.makePipeline(named: "coordinate_transform")
         self.isMetalAvailable = (computePipeline != nil)
     }
+
     struct CoordinateTransformParams {
         var offset: SIMD2<Float>
         var zoom: Float
         var isScreenToCanvas: Bool
+
         init(offset: SIMD2<Float>, zoom: Float, isScreenToCanvas: Bool) {
             self.offset = offset
             self.zoom = zoom
             self.isScreenToCanvas = isScreenToCanvas
         }
     }
+
     func transformPoints(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
         guard points.count > 100, isMetalAvailable else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
         return transformPointsGPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
     }
+
     private func transformPointsCPU(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
         let offsetVec = SIMD2<Float>(Float(offset.x), Float(offset.y))
         let zoomFloat = Float(zoom)
@@ -57,6 +64,7 @@ class GPUCoordinateTransform {
             return CGPoint(x: CGFloat(transformed.x), y: CGFloat(transformed.y))
         }
     }
+
     private func transformPointsGPU(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
         guard let commandQueue = commandQueue,
               let pipeline = computePipeline else {
@@ -103,6 +111,7 @@ class GPUCoordinateTransform {
     var isGPUAvailable: Bool {
         return isMetalAvailable
     }
+
     func getDeviceInfo() -> String {
         if isMetalAvailable {
             return "GPU Transform: \(device.name)"

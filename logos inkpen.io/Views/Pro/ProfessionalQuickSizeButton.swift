@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ProfessionalQuickSizeButton: View {
     let size: QuickSize
     let displayUnit: MeasurementUnit

@@ -1,5 +1,7 @@
 import SwiftUI
+
 class ColorManagement {
+
     static func rgbToCMYK(_ rgb: RGBColor) -> CMYKColor {
         let r = rgb.red
         let g = rgb.green
@@ -13,6 +15,7 @@ class ColorManagement {
         let y = (1 - b - k) / (1 - k)
         return CMYKColor(cyan: c, magenta: m, yellow: y, black: k, alpha: rgb.alpha)
     }
+
     static func loadPantoneColors() -> [PantoneLibraryColor] {
         PantoneLibrary.shared.ensureLoaded()
         return PantoneLibrary.shared.allColors

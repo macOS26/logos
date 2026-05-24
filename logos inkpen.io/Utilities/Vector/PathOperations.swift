@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+
 enum PathfinderOperation: String, CaseIterable, Codable {
     case union = "Union"
 case minusFront = "Punch"
@@ -54,40 +55,53 @@ case exclude = "Exclude"
         }
     }
 }
+
 class ProfessionalPathOperations {
+
     static func union(_ paths: [CGPath]) -> CGPath? {
         return professionalUnion(paths)
     }
+
     static func minusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return professionalMinusFront(frontPath, from: backPath)
     }
+
     static func intersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         return professionalIntersect(path1, path2)
     }
+
     static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return professionalExclude(path1, path2)
     }
+
     static func mosaic(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.professionalMosaic(paths)
     }
+
     static func cut(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.professionalCut(paths)
     }
+
     static func merge(_ paths: [CGPath]) -> [CGPath] {
         return professionalCut(paths)
     }
+
     static func crop(_ paths: [CGPath]) -> [CGPath] {
         return professionalCrop(paths)
     }
+
     static func dieline(_ paths: [CGPath]) -> [CGPath] {
         return professionalDieline(paths)
     }
+
     static func separate(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.professionalSeparate(paths)
     }
+
     static func kick(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return professionalMinusFront(backPath, from: frontPath)
     }
+
     private static func pathToPolygon(_ path: CGPath) -> [[CGPoint]]? {
         var subpaths: [[CGPoint]] = []
         var currentSubpath: [CGPoint] = []
@@ -119,6 +133,7 @@ class ProfessionalPathOperations {
                     subpaths.append(currentSubpath)
                     currentSubpath = []
                 }
+
             @unknown default:
                 break
             }
@@ -128,6 +143,7 @@ class ProfessionalPathOperations {
         }
         return subpaths.isEmpty ? nil : subpaths
     }
+
     private static func polygonToPath(_ polygons: [[CGPoint]]) -> CGPath? {
         guard !polygons.isEmpty else { return nil }
         let path = CGMutablePath()
@@ -141,20 +157,25 @@ class ProfessionalPathOperations {
         }
         return path
     }
+
     private static func unionPolygons(_ polygon1: [[CGPoint]], _ polygon2: [[CGPoint]]) -> [[CGPoint]] {
         return sutherland_hodgman_union(polygon1, polygon2)
     }
+
     private static func differencePolygons(_ polygon1: [[CGPoint]], _ polygon2: [[CGPoint]]) -> [[CGPoint]] {
         return sutherland_hodgman_difference(polygon1, polygon2)
     }
+
     private static func intersectPolygons(_ polygon1: [[CGPoint]], _ polygon2: [[CGPoint]]) -> [[CGPoint]] {
         return sutherland_hodgman_intersection(polygon1, polygon2)
     }
+
     private static func xorPolygons(_ polygon1: [[CGPoint]], _ polygon2: [[CGPoint]]) -> [[CGPoint]] {
         let union = unionPolygons(polygon1, polygon2)
         let intersection = intersectPolygons(polygon1, polygon2)
         return differencePolygons(union, intersection)
     }
+
     private static func sutherland_hodgman_union(_ poly1: [[CGPoint]], _ poly2: [[CGPoint]]) -> [[CGPoint]] {
         guard let first1 = poly1.first, let first2 = poly2.first else { return poly1 + poly2 }
         let bounds1 = getBounds(first1)
@@ -166,6 +187,7 @@ class ProfessionalPathOperations {
             return poly1 + poly2
         }
     }
+
     private static func sutherland_hodgman_difference(_ poly1: [[CGPoint]], _ poly2: [[CGPoint]]) -> [[CGPoint]] {
         guard let first1 = poly1.first, let first2 = poly2.first else { return poly1 }
         let bounds1 = getBounds(first1)
@@ -181,6 +203,7 @@ class ProfessionalPathOperations {
             return poly1
         }
     }
+
     private static func sutherland_hodgman_intersection(_ poly1: [[CGPoint]], _ poly2: [[CGPoint]]) -> [[CGPoint]] {
         guard let first1 = poly1.first, let first2 = poly2.first else { return [] }
         let bounds1 = getBounds(first1)
@@ -196,6 +219,7 @@ class ProfessionalPathOperations {
             CGPoint(x: intersection.minX, y: intersection.maxY)
         ]]
     }
+
     private static func bezierToLineSegments(start: CGPoint, control: CGPoint, end: CGPoint, segments: Int = 10) -> [CGPoint] {
         var points: [CGPoint] = []
         for i in 1...segments {
@@ -205,6 +229,7 @@ class ProfessionalPathOperations {
         }
         return points
     }
+
     private static func cubicBezierToLineSegments(start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint, segments: Int = 15) -> [CGPoint] {
         var points: [CGPoint] = []
         for i in 1...segments {
@@ -214,16 +239,19 @@ class ProfessionalPathOperations {
         }
         return points
     }
+
     private static func quadraticBezierPoint(t: CGFloat, start: CGPoint, control: CGPoint, end: CGPoint) -> CGPoint {
         let x = (1-t)*(1-t)*start.x + 2*(1-t)*t*control.x + t*t*end.x
         let y = (1-t)*(1-t)*start.y + 2*(1-t)*t*control.y + t*t*end.y
         return CGPoint(x: x, y: y)
     }
+
     private static func cubicBezierPoint(t: CGFloat, start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint) -> CGPoint {
         let x = (1-t)*(1-t)*(1-t)*start.x + 3*(1-t)*(1-t)*t*control1.x + 3*(1-t)*t*t*control2.x + t*t*t*end.x
         let y = (1-t)*(1-t)*(1-t)*start.y + 3*(1-t)*(1-t)*t*control1.y + 3*(1-t)*t*t*control2.y + t*t*t*end.y
         return CGPoint(x: x, y: y)
     }
+
     private static func getBounds(_ points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
         var minX = points[0].x
@@ -238,6 +266,7 @@ class ProfessionalPathOperations {
         }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
+
     private static func polygonArea(_ points: [CGPoint]) -> CGFloat {
         guard points.count >= 3 else { return 0 }
         var area: CGFloat = 0
@@ -248,6 +277,7 @@ class ProfessionalPathOperations {
         }
         return abs(area) / 2.0
     }
+
     private static func convexHull(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count > 2 else { return points }
         let sortedPoints = points.sorted { point1, point2 in
@@ -274,9 +304,11 @@ class ProfessionalPathOperations {
         upper.removeLast()
         return lower + upper
     }
+
     private static func cross(_ O: CGPoint, _ A: CGPoint, _ B: CGPoint) -> CGFloat {
         return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x)
     }
+
     static func canPerformOperation(_ operation: PathfinderOperation, on paths: [CGPath]) -> Bool {
         switch operation {
         case .mosaic, .cut, .merge, .crop:
@@ -293,11 +325,13 @@ class ProfessionalPathOperations {
             return paths.count >= 2
         }
     }
+
     static func isValidPath(_ path: CGPath) -> Bool {
         guard !path.isEmpty else { return false }
         let bounds = path.boundingBoxOfPath
         return !bounds.isEmpty && bounds.width > 0 && bounds.height > 0
     }
+
     static func pathToSVGString(_ path: CGPath) -> String {
         var pathString = ""
         path.applyWithBlock { element in
@@ -319,6 +353,7 @@ class ProfessionalPathOperations {
                 pathString += "C \(control1.x) \(control1.y) \(control2.x) \(control2.y) \(point.x) \(point.y) "
             case .closeSubpath:
                 pathString += "Z "
+
             @unknown default:
                 break
             }
@@ -326,34 +361,45 @@ class ProfessionalPathOperations {
         return pathString.trimmingCharacters(in: .whitespaces)
     }
 }
+
 class PathOperations {
+
     static func unite(_ paths: [CGPath]) -> CGPath? {
         return ProfessionalPathOperations.professionalUnion(paths)
     }
+
     static func union(_ paths: [CGPath]) -> CGPath? {
         return ProfessionalPathOperations.professionalUnion(paths)
     }
+
     static func intersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         return ProfessionalPathOperations.professionalIntersect(path1, path2)
     }
+
     static func minusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return ProfessionalPathOperations.professionalMinusFront(frontPath, from: backPath)
     }
+
     static func subtract(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return minusFront(frontPath, from: backPath)
     }
+
     static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return ProfessionalPathOperations.professionalExclude(path1, path2)
     }
+
     static func split(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.mosaic(paths)
     }
+
     static func cut(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.cut(paths)
     }
+
     static func crop(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.crop(paths)
     }
+
     static func canPerformOperation(_ operation: PathOperation, on paths: [CGPath]) -> Bool {
         switch operation {
         case .union: return ProfessionalPathOperations.canPerformOperation(.union, on: paths)
@@ -363,12 +409,15 @@ class PathOperations {
         case .exclude: return ProfessionalPathOperations.canPerformOperation(.exclude, on: paths)
         }
     }
+
     static func isValidPath(_ path: CGPath) -> Bool {
         return ProfessionalPathOperations.isValidPath(path)
     }
+
     static func pathToSVGString(_ path: CGPath) -> String {
         return ProfessionalPathOperations.pathToSVGString(path)
     }
+
 	private static func pathHasClosedSubpath(_ path: CGPath) -> Bool {
 		var hasClosed = false
 		path.applyWithBlock { element in
@@ -376,6 +425,7 @@ class PathOperations {
 		}
 		return hasClosed
 	}
+
     static func outlineStroke(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
 		let bounds = path.boundingBoxOfPath
 		let hasClosed = pathHasClosedSubpath(path)
@@ -426,6 +476,7 @@ class PathOperations {
 			return unifiedStroke
 		}
     }
+
     private static func outlineStrokeWithDashPattern(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
         let bounds = path.boundingBoxOfPath
         let expandedBounds = bounds.insetBy(dx: -strokeStyle.width * 2, dy: -strokeStyle.width * 2)
@@ -459,12 +510,14 @@ class PathOperations {
         context.replacePathWithStrokedPath()
         return context.path
     }
+
     static func canOutlineStroke(path: CGPath, strokeStyle: StrokeStyle) -> Bool {
         guard !path.isEmpty else { return false }
         guard strokeStyle.width > 0 else { return false }
         let bounds = path.boundingBoxOfPath
         return !bounds.isEmpty && bounds.width > 0 && bounds.height > 0
     }
+
     static func hitTest(_ path: CGPath, point: CGPoint, tolerance: CGFloat = 5.0) -> Bool {
         guard !point.x.isNaN && !point.y.isNaN && !point.x.isInfinite && !point.y.isInfinite else {
             return false
@@ -480,6 +533,7 @@ class PathOperations {
         }
         return MetalComputeEngine.shared.pathHitTestGPU(path, point: point, tolerance: tolerance)
     }
+
     private static func isPointNearStroke(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
         guard !point.x.isNaN && !point.y.isNaN && !point.x.isInfinite && !point.y.isInfinite else {
             return false
@@ -510,6 +564,7 @@ class PathOperations {
                 }
             case .closeSubpath:
                 break
+
             @unknown default:
                 break
             }
@@ -517,7 +572,9 @@ class PathOperations {
         return isNear
     }
 }
+
 extension ProfessionalPathOperations {
+
     static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.1) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
@@ -585,6 +642,7 @@ extension ProfessionalPathOperations {
         }
         return VectorPath(elements: cleanedElements, isClosed: path.isClosed)
     }
+
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
@@ -635,6 +693,7 @@ extension ProfessionalPathOperations {
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
         return cleanedPath
     }
+
     static func mergeDuplicatePoints(in shape: VectorShape, tolerance: Double = 1.0) -> VectorShape {
         let cleanedPath = mergeDuplicatePoints(in: shape.path, tolerance: tolerance)
         var cleanedShape = shape
@@ -643,7 +702,9 @@ extension ProfessionalPathOperations {
         return cleanedShape
     }
 }
+
 extension ProfessionalPathOperations {
+
     static func cleanupDocumentDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -669,6 +730,7 @@ extension ProfessionalPathOperations {
             document.commandManager.execute(command)
         }
     }
+
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
         guard !document.viewState.selectedObjectIDs.isEmpty else {
             return

@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct SVGContent {
     let shapes: [VectorShape]
     let documentSize: CGSize
@@ -11,6 +12,7 @@ struct SVGContent {
     let version: String?
     let inkpenMetadata: String?
 }
+
 func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
     guard let xmlString = String(data: data, encoding: .utf8) else {
         throw VectorImportError.parsingError("Could not decode SVG as UTF-8", line: nil)

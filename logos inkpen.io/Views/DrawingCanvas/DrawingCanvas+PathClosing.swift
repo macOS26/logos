@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func closeSelectedPaths() {
         let selectedShapeIDs = Set(selectedPoints.map { $0.shapeID })
         for shapeID in selectedShapeIDs {

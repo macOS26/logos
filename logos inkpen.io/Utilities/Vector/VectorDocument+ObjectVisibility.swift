@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func lockSelectedObjects() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let allIDs = viewState.selectedObjectIDs
@@ -30,6 +32,7 @@ extension VectorDocument {
         executeCommand(command)
         viewState.selectedObjectIDs.removeAll()
     }
+
     func unlockAllObjects() {
         guard let layerIndex = selectedLayerIndex,
               layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
@@ -65,6 +68,7 @@ extension VectorDocument {
             executeCommand(command)
         }
     }
+
     func hideSelectedObjects() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let allIDs = viewState.selectedObjectIDs
@@ -95,6 +99,7 @@ extension VectorDocument {
         executeCommand(command)
         viewState.selectedObjectIDs.removeAll()
     }
+
     func showAllObjects() {
         guard let layerIndex = selectedLayerIndex,
               layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }

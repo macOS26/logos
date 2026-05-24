@@ -1,20 +1,25 @@
 import Foundation
 import Combine
+
 class TextEditCommand: BaseCommand {
     private let textID: UUID
     private let oldContent: String
     private let newContent: String
+
     init(textID: UUID, oldContent: String, newContent: String) {
         self.textID = textID
         self.oldContent = oldContent
         self.newContent = newContent
     }
+
     override func execute(on document: VectorDocument) {
         applyContent(newContent, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyContent(oldContent, to: document)
     }
+
     private func applyContent(_ content: String, to document: VectorDocument) {
         guard var obj = document.snapshot.objects[textID] else { return }
         switch obj.objectType {
@@ -27,6 +32,7 @@ class TextEditCommand: BaseCommand {
             break
         }
     }
+
     func mergeWith(_ other: Command) -> Command? {
         guard let otherTextEdit = other as? TextEditCommand,
               otherTextEdit.textID == self.textID else {

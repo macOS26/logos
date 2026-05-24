@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct FullWidthSecondaryButtonStyle: ButtonStyle {
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13, weight: .medium))
@@ -20,6 +22,7 @@ struct FullWidthSecondaryButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
 struct ConvertToOutlinesButton: View {
     let selectedObjectIDs: Set<UUID>
     let selectedLayerIndex: Int?
@@ -35,6 +38,7 @@ struct ConvertToOutlinesButton: View {
         .keyboardShortcut("o", modifiers: [.command, .shift])
         .disabled(selectedText == nil)
     }
+
     private func convertSelectedTextToOutlines() {
         guard !selectedObjectIDs.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)

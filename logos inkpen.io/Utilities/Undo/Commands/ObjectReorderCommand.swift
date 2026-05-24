@@ -1,5 +1,7 @@
 import Foundation
+
 class ObjectReorderCommand: BaseCommand {
+
     enum ReorderType {
         case moveObjectToLayer(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int, oldIndex: Int, newIndex: Int)
         case moveUp(objectIDs: [UUID], oldIndices: [UUID: Int], newIndices: [UUID: Int])
@@ -9,17 +11,21 @@ class ObjectReorderCommand: BaseCommand {
         case sendToBack(objectID: UUID, oldIndex: Int, newIndex: Int, layerIndex: Int)
     }
     private let reorderType: ReorderType
+
     init(reorderType: ReorderType) {
         self.reorderType = reorderType
     }
+
     override func execute(on document: VectorDocument) {
         let affectedLayers = applyReorder(forward: true, to: document)
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     override func undo(on document: VectorDocument) {
         let affectedLayers = applyReorder(forward: false, to: document)
         document.triggerLayerUpdates(for: affectedLayers)
     }
+
     private func applyReorder(forward: Bool, to document: VectorDocument) -> Set<Int> {
         var affectedLayers = Set<Int>()
         switch reorderType {
@@ -80,6 +86,7 @@ class ObjectReorderCommand: BaseCommand {
         }
         return affectedLayers
     }
+
     private func moveObjectsToIndices(objectIDs: [UUID], targetIndices: [UUID: Int], document: VectorDocument) {
         var objectsByLayer: [Int: [(UUID, Int)]] = [:]
         for id in objectIDs {

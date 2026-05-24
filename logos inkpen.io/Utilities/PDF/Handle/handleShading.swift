@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func handleShading(scanner: CGPDFScannerRef) {
         var nameObj: UnsafePointer<Int8>?
         if CGPDFScannerPopName(scanner, &nameObj),

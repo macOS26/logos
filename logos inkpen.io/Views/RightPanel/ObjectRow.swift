@@ -1,14 +1,18 @@
 import SwiftUI
+
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
     }
 }
+
 struct ObjectRowTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -16,9 +20,11 @@ struct ObjectRowTextStyle: ViewModifier {
             .lineLimit(1)
     }
 }
+
 struct ObjectRowChildTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -26,28 +32,37 @@ struct ObjectRowChildTextStyle: ViewModifier {
             .lineLimit(1)
     }
 }
+
 struct ObjectRowIndicatorStyle: ViewModifier {
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: 8))
             .foregroundColor(.secondary)
     }
 }
+
 extension View {
+
     func objectRowIcon(size: CGFloat) -> some View {
         modifier(ObjectRowIconStyle(size: size))
     }
+
     func objectRowText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowTextStyle(size: size, isSelected: isSelected))
     }
+
     func objectRowChildText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowChildTextStyle(size: size, isSelected: isSelected))
     }
+
     func objectRowIndicator() -> some View {
         modifier(ObjectRowIndicatorStyle())
     }
 }
+
 struct ObjectRow: View {
+
     enum ObjectType: String {
         case shape = "shape"
         case text = "text"
@@ -62,16 +77,19 @@ struct ObjectRow: View {
     let document: VectorDocument
     let memberIDs: [UUID]
     let showBottomIndicator: Bool
+
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     private var isGroupExpanded: Bool {
         document.settings.groupExpansionState[objectId] ?? false
     }
+
     private func setGroupExpanded(_ value: Bool) {
         var updatedSettings = document.settings
         updatedSettings.groupExpansionState[objectId] = value
         document.settings = updatedSettings
     }
+
     private func saveRenamedObject() {
         guard !editedName.isEmpty else {
             isEditingName = false
@@ -91,6 +109,7 @@ struct ObjectRow: View {
         }
         isEditingName = false
     }
+
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, memberIDs: [UUID] = [], showBottomIndicator: Bool = false) {
         self.objectType = objectType
         self.objectId = objectId
@@ -186,6 +205,7 @@ struct ObjectRow: View {
             }
         )
     }
+
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -209,6 +229,7 @@ struct ObjectRow: View {
             }
         )
     }
+
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -558,10 +579,12 @@ struct ObjectRow: View {
         }
     }
 }
+
 struct NestedGroupChildrenView: View {
     let memberIDs: [UUID]
     let layerIndex: Int
     let parentObjectId: UUID
+
     @ObservedObject var document: VectorDocument
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
@@ -586,6 +609,7 @@ struct NestedGroupChildrenView: View {
             }
         )
     }
+
     private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -751,6 +775,7 @@ struct NestedGroupChildrenView: View {
         }
     }
 }
+
 extension ObjectRow {
     private var objectIcon: String {
         switch objectType {
@@ -769,6 +794,7 @@ extension ObjectRow {
         case .group: return "folder.fill"
         }
     }
+
     private func childIconName(for shape: VectorShape) -> String {
         if shape.isWarpObject {
             return "waveform.path"
@@ -778,6 +804,7 @@ extension ObjectRow {
         }
         return "square"
     }
+
     private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
         if let object = document.snapshot.objects[objectId] {
             switch object.objectType {
@@ -797,6 +824,7 @@ extension ObjectRow {
         }
         return childIconName(for: childShape)
     }
+
     private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
         if let object = document.snapshot.objects[objectId] {
             switch object.objectType {

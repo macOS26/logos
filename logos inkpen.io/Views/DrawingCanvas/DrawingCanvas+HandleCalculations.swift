@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     internal func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
            case .shape(let shape) = object.objectType {
@@ -63,6 +65,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func optionPressed() -> Bool {
         return isOptionPressed
     }

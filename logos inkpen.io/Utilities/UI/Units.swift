@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+
 enum MeasurementUnit: String, CaseIterable, Codable {
     case inches = "Inches"
     case centimeters = "cm"
@@ -50,16 +51,20 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .picas: return 6
         }
     }
+
     func fromPoints(_ points: Double) -> Double {
         return points / pointsPerUnit
     }
+
     func toPoints(_ value: Double) -> Double {
         return value * pointsPerUnit
     }
+
     func format(_ value: Double) -> String {
         return String(format: "%.3f", value)
     }
 }
+
 enum ZoomMode: Equatable {
     case zoomIn
     case zoomOut
@@ -67,9 +72,11 @@ enum ZoomMode: Equatable {
     case actualSize
     case custom(CGPoint)
 }
+
 struct ZoomRequest: Equatable {
     let targetZoom: CGFloat
     let mode: ZoomMode
+
     init(targetZoom: CGFloat, mode: ZoomMode) {
         self.targetZoom = targetZoom
         self.mode = mode

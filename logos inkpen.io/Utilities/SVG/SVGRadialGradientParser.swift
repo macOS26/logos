@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension SVGParser {
+
     internal func parseRadialGradientCoordinates(from attributes: [String: String]) -> (cx: String, cy: String, r: String, fx: String?, fy: String?) {
         return (
             cx: attributes["cx"] ?? "50%",
@@ -9,6 +11,7 @@ extension SVGParser {
             fy: attributes["fy"]
         )
     }
+
     internal func parseRadialGradient(attributes: [String: String]) {
         guard let id = attributes["id"] else {
             return
@@ -27,6 +30,7 @@ extension SVGParser {
             useExtremeValueHandling = true
         }
     }
+
     internal func detectExtremeValuesInRadialGradient(cx: String, cy: String, r: String, fx: String?, fy: String?) -> Bool {
         let coordinates = [cx, cy, r, fx, fy].compactMap { $0 }
         for coord in coordinates {
@@ -46,6 +50,7 @@ extension SVGParser {
         }
         return false
     }
+
     internal func finishRadialGradientElement(inheritedGradient: VectorGradient?) -> VectorGradient {
         let attributes = currentGradientAttributes
         let gradientUnits = parseGradientUnits(from: attributes)

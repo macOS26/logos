@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
         if let currentPath = currentPath {
@@ -218,6 +220,7 @@ extension DrawingCanvas {
             liveDragOffset: $liveDragOffset
         )
     }
+
     @ViewBuilder
     private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy, textContentDelta: Binding<(id: UUID, content: String)?>, fontSizeDelta: Double?, lineSpacingDelta: Double?, lineHeightDelta: Double?, letterSpacingDelta: Double?, imagePreviewQuality: Double, imageTileSize: Int, imageInterpolationQuality: CGInterpolationQuality) -> some View {
         let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
@@ -315,6 +318,7 @@ extension DrawingCanvas {
             .id(document.viewState.layerUpdateTriggers[layer.id] ?? 0)
         }
     }
+
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int, imageInterpolationQuality: CGInterpolationQuality) -> some View {
         ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
@@ -323,6 +327,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     @ViewBuilder
     internal func drawingDimensionsOverlay(for path: VectorPath) -> some View {
         if isDrawing {
@@ -352,6 +357,7 @@ extension DrawingCanvas {
                 .position(screenPosition)
         }
     }
+
     @ViewBuilder
     internal func bezierDrawingDimensionsOverlay() -> some View {
         if let bezierPath = bezierPath, bezierPoints.count >= 2 {
@@ -381,6 +387,7 @@ extension DrawingCanvas {
                 .position(screenPosition)
         }
     }
+
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
@@ -432,6 +439,7 @@ extension DrawingCanvas {
                 directSelectionContextMenu
             }
     }
+
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
         if document.viewState.currentTool == .brush || document.viewState.currentTool == .freehand || document.viewState.currentTool == .marker {
@@ -444,6 +452,7 @@ extension DrawingCanvas {
             .background(Color.clear)
         }
     }
+
     private func handlePressureEvent(
         location: CGPoint,
         pressure: Double,
@@ -462,6 +471,7 @@ extension DrawingCanvas {
             handlePressureDrawingEnd(at: canvasLocation)
         }
     }
+
     private func handlePressureDrawingStart(at location: CGPoint) {
         switch document.viewState.currentTool {
         case .brush:
@@ -480,6 +490,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     private func handlePressureDrawingUpdate(at location: CGPoint) {
         let currentPressure = PressureManager.shared.currentPressure
         switch document.viewState.currentTool {
@@ -499,6 +510,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     private func handlePressureDrawingEnd(at location: CGPoint) {
         switch document.viewState.currentTool {
         case .brush:
@@ -518,7 +530,9 @@ extension DrawingCanvas {
         }
     }
 }
+
 extension DrawingCanvas {
+
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
         if dragDelta != .zero && !document.viewState.selectedObjectIDs.isEmpty {
@@ -528,6 +542,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     @ViewBuilder
     private func draggedObjectView(_ object: VectorObject, dragDelta: CGPoint) -> some View {
         switch object.objectType {
@@ -543,6 +558,7 @@ extension DrawingCanvas {
             EmptyView()
         }
     }
+
     @ViewBuilder
     private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
         let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
@@ -558,6 +574,7 @@ extension DrawingCanvas {
         )
         .opacity(0.8)
     }
+
     @ViewBuilder
     private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
         let currentZoom = zoomLevel
@@ -571,6 +588,7 @@ extension DrawingCanvas {
             )
             .opacity(0.8)
     }
+
     private func applyDragOffsetToShape(_ shape: VectorShape, offset: CGPoint) -> VectorShape {
         var offsetShape = shape
         offsetShape.path = VectorPath(elements: shape.path.elements.map { element in

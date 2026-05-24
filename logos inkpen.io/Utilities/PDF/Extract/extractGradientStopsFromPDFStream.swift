@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractGradientStopsFromPDFStream(shadingDict: CGPDFDictionaryRef) -> [GradientStop] {
         var functionObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
@@ -58,6 +60,7 @@ extension PDFCommandParser {
         Log.error("PDF: ❌ Could not extract gradient stops from PDF Function - using subsampling fallback", category: .error)
         return createSubsampledGradientStops(from: shadingDict)
     }
+
     private func createSubsampledGradientStops(from shadingDict: CGPDFDictionaryRef? = nil) -> [GradientStop] {
         var allColors: [VectorColor] = []
         if let shadingDict = shadingDict {
@@ -91,6 +94,7 @@ extension PDFCommandParser {
             GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0)), opacity: 1.0)
         ]
     }
+
     private func extractExponentialFunctionGradientStops(dictionary: CGPDFDictionaryRef) -> [GradientStop] {
         var c0Array: CGPDFArrayRef?
         var c1Array: CGPDFArrayRef?
@@ -110,6 +114,7 @@ extension PDFCommandParser {
         ]
         return gradientStops
     }
+
     private func extractStitchingFunctionGradientStops(dictionary: CGPDFDictionaryRef) -> [GradientStop] {
         var functionsArray: CGPDFArrayRef?
         var boundsArray: CGPDFArrayRef?

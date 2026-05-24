@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreGraphics
 import simd
+
 struct PasteboardBackgroundView: View {
     let pasteboardSize: CGSize
     let pasteboardOrigin: CGPoint
@@ -16,6 +17,7 @@ struct PasteboardBackgroundView: View {
         }
     }
 }
+
 struct CanvasBackgroundView: View {
     let canvasSize: CGSize
     let backgroundColor: Color
@@ -29,6 +31,7 @@ struct CanvasBackgroundView: View {
         }
     }
 }
+
 struct LayerCanvasView: View {
     let objectIDs: [UUID]
     let document: VectorDocument
@@ -48,9 +51,11 @@ struct LayerCanvasView: View {
     let strokeDeltaWidth: Double?
     let colorDeltaColor: VectorColor?
     let colorDeltaOpacity: Double?
+
     @Binding var activeGradientDelta: VectorGradient?
     let isPanning: Bool
     let activeColorTarget: ColorTarget
+
     @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
@@ -63,6 +68,7 @@ struct LayerCanvasView: View {
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt?
     var appState = AppState.shared
+
     private func viewportRect(canvasSize: CGSize) -> CGRect {
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
@@ -76,6 +82,7 @@ struct LayerCanvasView: View {
             height: CGFloat(docSize.y)
         )
     }
+
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
         if isPanning {
             return objectIDs.compactMap { id in
@@ -102,6 +109,7 @@ struct LayerCanvasView: View {
         }
         return "Layer[\(obj.layerIndex)]"
     }
+
     private func applyLivePositions(to shape: VectorShape) -> VectorShape {
         let shapeID = shape.id
         var hasLivePositions = false
@@ -160,6 +168,7 @@ struct LayerCanvasView: View {
         modifiedShape.updateBounds()
         return modifiedShape
     }
+
     private func applyLiveCornerRadii(to shape: VectorShape) -> VectorShape {
         guard !liveCornerRadii.isEmpty,
               selectedShapeIDForCornerRadius == shape.id else {
@@ -234,6 +243,7 @@ struct LayerCanvasView: View {
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
                                 let liveContentShape = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                 let liveMaskForClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
+
                                 func renderKeylineClippedLeaf(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
                                     if shape.isGroupContainer {
@@ -278,6 +288,7 @@ struct LayerCanvasView: View {
                                 let liveMaskShapeNoClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                                 renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
+
                             func renderKeylineLeafOutline(_ shape: VectorShape) {
                                 guard shape.isVisible else { return }
                                 if shape.isGroupContainer {
@@ -341,6 +352,7 @@ struct LayerCanvasView: View {
                                 let maskPath = liveMaskColorMode.cachedCGPath
                                 layerContext.clip(to: Path(maskPath))
                                 layerContext.transform = contentTransform
+
                                 func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
                                     if shape.isGroupContainer {
@@ -374,6 +386,7 @@ struct LayerCanvasView: View {
                     guard groupShape.isGroupContainer else { break }
                     let memberShapes = document.resolveGroupMembers(groupShape)
                     let parentTransform = context.transform
+
                     func renderGroupMembers(_ shapes: [VectorShape], parentXform: CGAffineTransform) {
                         for childShape in shapes {
                             guard childShape.isVisible else { continue }
@@ -472,6 +485,7 @@ struct LayerCanvasView: View {
             }
         }
     }
+
     private func calculateViewportBounds(size: CGSize) -> CGRect {
         let padding: CGFloat = 200.0
         let minX = (-canvasOffset.x - padding) / zoomLevel
@@ -480,9 +494,11 @@ struct LayerCanvasView: View {
         let maxY = (size.height - canvasOffset.y + padding) / zoomLevel
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
+
     private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
         return bounds.intersects(viewport)
     }
+
     private func isObjectInViewportSIMD(_ bounds: CGRect, viewport: CGRect) -> Bool {
         let objMin = SIMD2<Double>(bounds.minX, bounds.minY)
         let objMax = SIMD2<Double>(bounds.maxX, bounds.maxY)
@@ -492,6 +508,7 @@ struct LayerCanvasView: View {
         let overlapMax = objMin .<= vpMax
         return all(overlapMin) && all(overlapMax)
     }
+
     private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
         let hasVisibleFill = viewMode == .color && shape.fillStyle?.color != .clear
         let hasVisibleStroke = shape.strokeStyle?.color != .clear
@@ -676,6 +693,7 @@ struct LayerCanvasView: View {
             }
         }
     }
+
     private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
         guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: strokeStyle) else {
             return
@@ -689,6 +707,7 @@ struct LayerCanvasView: View {
             )
         }
     }
+
     private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
         context.withCGContext { cgContext in
             cgContext.saveGState()
@@ -713,6 +732,7 @@ struct LayerCanvasView: View {
             cgContext.restoreGState()
         }
     }
+
     private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
         cgContext.saveGState()
         let pathBounds = path.boundingBoxOfPath
@@ -806,6 +826,7 @@ struct LayerCanvasView: View {
         }
         cgContext.restoreGState()
     }
+
     private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, strokeDeltaOpacity: Double? = nil, strokeDeltaWidth: Double? = nil, textContentDelta: (id: UUID, content: String)? = nil, maskShape: VectorShape? = nil) {
         guard let vectorText = VectorText.from(shape) else { return }
         let effectiveContent: String
@@ -1003,9 +1024,11 @@ struct LayerCanvasView: View {
             cgContext.restoreGState()
         }
     }
+
     private func hasImageData(_ shape: VectorShape) -> Bool {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
+
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         guard let bookmarkData = bookmarkData else {
             print("❌ No bookmark data for image: \(linkedPath)")
@@ -1040,6 +1063,7 @@ struct LayerCanvasView: View {
     }
     private static var renderImageCallCount = 0
     private static var lastRenderImageMemMB = 0
+
     private func renderImage(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil, canvasSize: CGSize) {
         Self.renderImageCallCount += 1
         if Self.renderImageCallCount % 60 == 1 {
@@ -1144,6 +1168,7 @@ struct LayerCanvasView: View {
         }
     }
 }
+
 struct IsolatedLayerView: View {
     let objectIDs: [UUID]
     let document: VectorDocument
@@ -1164,8 +1189,10 @@ struct IsolatedLayerView: View {
     let strokeDeltaWidth: Double?
     let colorDeltaColor: VectorColor?
     let colorDeltaOpacity: Double?
+
     @Binding var activeGradientDelta: VectorGradient?
     let activeColorTarget: ColorTarget
+
     @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?

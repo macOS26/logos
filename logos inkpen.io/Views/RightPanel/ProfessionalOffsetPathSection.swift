@@ -1,8 +1,10 @@
 import SwiftUI
 import AppKit
+
 struct ProfessionalOffsetPathSection: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+
     @State private var offsetDistance: Double = 0.5
     @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
@@ -200,9 +202,11 @@ struct ProfessionalOffsetPathSection: View {
             offsetDistance = min(max(offsetDistance, -maxOffset), maxOffset)
         }
     }
+
     private func canPerformOffset() -> Bool {
         return !selectedObjectIDs.isEmpty
     }
+
     private func performOffsetPath() {
         guard !selectedObjectIDs.isEmpty else { return }
         guard let layerIndex = document.selectedLayerIndex else { return }
@@ -272,6 +276,7 @@ struct ProfessionalOffsetPathSection: View {
         document.viewState.selectedObjectIDs = Set(newShapes.keys)
         document.viewState.orderedSelectedObjectIDs = Array(newShapes.keys)
     }
+
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
         switch joinType {
         case .round: return .round
@@ -280,6 +285,7 @@ struct ProfessionalOffsetPathSection: View {
         case .square: return .miter
         }
     }
+
     private func findOutsidePath(from trimmedPaths: [CGPath], original: CGPath, offset: CGPath) -> CGPath? {
         guard !trimmedPaths.isEmpty else { return nil }
         let offsetBounds = offset.boundingBoxOfPath

@@ -1,20 +1,25 @@
 import Foundation
 import Combine
+
 class StrokeWidthCommand: BaseCommand {
     private let objectIDs: [UUID]
     private let oldWidths: [UUID: Double]
     private let newWidths: [UUID: Double]
+
     init(objectIDs: [UUID], oldWidths: [UUID: Double], newWidths: [UUID: Double]) {
         self.objectIDs = objectIDs
         self.oldWidths = oldWidths
         self.newWidths = newWidths
     }
+
     override func execute(on document: VectorDocument) {
         applyWidths(newWidths, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyWidths(oldWidths, to: document)
     }
+
     private func applyWidths(_ widths: [UUID: Double], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
         for id in objectIDs {

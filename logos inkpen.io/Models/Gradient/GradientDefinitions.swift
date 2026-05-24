@@ -1,28 +1,34 @@
 import SwiftUI
+
 struct GradientStop: Codable, Hashable, Identifiable {
     var id: UUID
     var position: Double
     var color: VectorColor
     var opacity: Double
+
     init(position: Double, color: VectorColor, opacity: Double = 1.0, id: UUID = UUID()) {
         self.id = id
         self.position = max(0.0, min(1.0, position))
         self.color = color
         self.opacity = max(0.0, min(1.0, opacity))
     }
+
     private enum CodingKeys: String, CodingKey {
         case id, position, color, opacity
     }
 }
+
 enum GradientSpreadMethod: String, Codable, CaseIterable {
     case pad = "pad"
     case reflect = "reflect"
     case `repeat` = "repeat"
 }
+
 enum GradientUnits: String, Codable {
     case objectBoundingBox = "objectBoundingBox"
     case userSpaceOnUse = "userSpaceOnUse"
 }
+
 struct LinearGradient: Codable, Hashable, Identifiable {
     var id: UUID
     var startPoint: CGPoint
@@ -35,6 +41,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     var scaleX: Double = 1.0
     var scaleY: Double = 1.0
     var storedAngle: Double = 0.0
+
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {
         self.id = id
         self.startPoint = startPoint
@@ -47,6 +54,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         let radians = atan2(deltaY, deltaX)
         self.storedAngle = radians * 180.0 / .pi
     }
+
     private enum CodingKeys: String, CodingKey {
         case id, startPoint, endPoint, stops, spreadMethod, units
         case originPoint, scaleX, scaleY, storedAngle, scale
@@ -59,6 +67,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
             setAngle(newValue)
         }
     }
+
     mutating func setAngle(_ degrees: Double) {
         storedAngle = degrees
         let radians = degrees * .pi / 180.0
@@ -84,6 +93,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         }
     }
 }
+
 struct RadialGradient: Codable, Hashable, Identifiable {
     var id: UUID
     var centerPoint: CGPoint
@@ -97,6 +107,7 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     var scaleX: Double = 1.0
     var scaleY: Double = 1.0
     var angle: Double = 0.0
+
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {
         self.id = id
         self.centerPoint = centerPoint
@@ -106,6 +117,7 @@ struct RadialGradient: Codable, Hashable, Identifiable {
         self.spreadMethod = spreadMethod
         self.units = units
     }
+
     private enum CodingKeys: String, CodingKey {
         case id, centerPoint, focalPoint, radius, stops, spreadMethod, units
         case originPoint, scaleX, scaleY, angle, scale

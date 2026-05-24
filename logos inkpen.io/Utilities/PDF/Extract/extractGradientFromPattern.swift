@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractGradientFromPattern(patternName: String, scanner: CGPDFScannerRef) -> VectorGradient? {
         let stream = CGPDFScannerGetContentStream(scanner)
         guard let patternCString = patternName.cString(using: .utf8),

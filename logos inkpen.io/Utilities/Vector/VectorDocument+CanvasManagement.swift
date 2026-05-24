@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     internal func createCanvasAndWorkingLayers() {
         snapshot.layers.removeAll()
         snapshot.layers.append(Layer(
@@ -47,6 +49,7 @@ extension VectorDocument {
     var documentBounds: CGRect {
         return CGRect(origin: .zero, size: settings.sizeInPoints)
     }
+
     func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
         guard delta != .zero else { return }
         for layerIndex in snapshot.layers.indices {
@@ -60,9 +63,11 @@ extension VectorDocument {
         }
         translateAllTextInUnified(delta: delta)
     }
+
     func onSettingsChanged() {
         gridSettings.gridSpacing = settings.gridSpacing
     }
+
     func migrateBackgroundShapesToCanvas() {
         var needsMigration = false
         if snapshot.layers.count > 0 && snapshot.layers[0].name == "Pasteboard" {

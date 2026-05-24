@@ -1,5 +1,7 @@
 import SwiftUI
+
 struct StylusToggleButton: View {
+
     @Binding var isOn: Bool
     var label: String = ""
     var onChange: ((Bool) -> Void)?

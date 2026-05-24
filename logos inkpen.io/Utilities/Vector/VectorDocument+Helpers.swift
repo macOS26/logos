@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension VectorDocument {
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches
@@ -76,6 +77,7 @@ extension VectorDocument {
             return hsbSwatches
         }
     }
+
     func addCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -92,6 +94,7 @@ extension VectorDocument {
             }
         }
     }
+
     func removeCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
@@ -102,6 +105,7 @@ extension VectorDocument {
             colorSwatches.hsb.removeAll(where: { $0 == color })
         }
     }
+
     func updateTransformPanelValues() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         var combinedBounds: CGRect?
@@ -133,6 +137,7 @@ extension VectorDocument {
         }
         viewState.objectPositionUpdateTrigger.toggle()
     }
+
     func cleanupImageRegistry() {
         var allShapeIDs = Set<UUID>()
         for object in snapshot.objects.values {
@@ -157,6 +162,7 @@ extension VectorDocument {
         }
         ImageContentRegistry.cleanup(keepingShapes: allShapeIDs, in: self)
     }
+
     func collectUsedColors() -> Set<VectorColor> {
         var colors = Set<VectorColor>()
         for object in snapshot.objects.values {
@@ -188,6 +194,7 @@ extension VectorDocument {
         }
         return colors
     }
+
     static func isPermanentColor(_ color: VectorColor) -> Bool {
         switch color {
         case .black, .white, .clear:
@@ -196,6 +203,7 @@ extension VectorDocument {
             return false
         }
     }
+
     func applyScalingToShape(
         shapeId: UUID,
         scaleX: CGFloat,
@@ -221,6 +229,7 @@ extension VectorDocument {
             }
         }
     }
+
     func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform
@@ -244,6 +253,7 @@ extension VectorDocument {
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
+
     func saveStrokeStyleDefaults() {
         var prefs: [String: Any] = [:]
         prefs["strokePlace"] = strokeDefaults.placement.rawValue
@@ -252,6 +262,7 @@ extension VectorDocument {
         prefs["strokeMiter"] = strokeDefaults.miterLimit
         UserDefaults.standard.set(prefs, forKey: "strokeStylePrefs")
     }
+
     func loadStrokeStyleDefaults() {
         guard let prefs = UserDefaults.standard.dictionary(forKey: "strokeStylePrefs") else { return }
         if let placement = prefs["strokePlace"] as? String {
@@ -267,9 +278,11 @@ extension VectorDocument {
             strokeDefaults.miterLimit = miter
         }
     }
+
     func findObject(by id: UUID) -> VectorObject? {
         return snapshot.objects[id]
     }
+
     func findShape(by id: UUID) -> VectorShape? {
         guard let object = snapshot.objects[id] else {
             return nil
@@ -287,6 +300,7 @@ extension VectorDocument {
             return shape
         }
     }
+
     func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
         if !groupShape.memberIDs.isEmpty {
             let resolved = groupShape.memberIDs.compactMap { findShape(by: $0) }
@@ -302,6 +316,7 @@ extension VectorDocument {
         }
         return groupShape.groupedShapes
     }
+
     func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
         let members = resolveGroupMembers(groupShape)
         var result: [VectorShape] = []
@@ -314,6 +329,7 @@ extension VectorDocument {
         }
         return result
     }
+
     func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
         guard groupShape.isGroupContainer else { return groupShape.bounds }
         let members = resolveGroupMembers(groupShape)
@@ -331,6 +347,7 @@ extension VectorDocument {
         }
         return calculatedBounds.isEmpty ? groupShape.bounds : calculatedBounds
     }
+
     func findText(by id: UUID) -> VectorText? {
         if let object = snapshot.objects[id] {
             if case .text(let shape) = object.objectType,
@@ -351,6 +368,7 @@ extension VectorDocument {
         }
         return nil
     }
+
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
         for layer in snapshot.layers {
             for objectID in layer.objectIDs {
@@ -362,6 +380,7 @@ extension VectorDocument {
             }
         }
     }
+
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return [] }
         let layer = snapshot.layers[layerIndex]

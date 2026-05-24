@@ -1,9 +1,11 @@
 import Foundation
+
 class WarpObjectCommand: BaseCommand {
     private let affectedObjectIDs: [UUID]
     private let oldShapes: [UUID: VectorShape]
     private let newShapes: [UUID: VectorShape]
     private let layerIndices: [UUID: Int]
+
     init(affectedObjectIDs: [UUID],
          oldShapes: [UUID: VectorShape],
          newShapes: [UUID: VectorShape],
@@ -13,12 +15,15 @@ class WarpObjectCommand: BaseCommand {
         self.newShapes = newShapes
         self.layerIndices = layerIndices
     }
+
     override func execute(on document: VectorDocument) {
         applyShapes(from: oldShapes, to: newShapes, document: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyShapes(from: newShapes, to: oldShapes, document: document)
     }
+
     private func applyShapes(from sourceShapes: [UUID: VectorShape],
                               to targetShapes: [UUID: VectorShape],
                               document: VectorDocument) {

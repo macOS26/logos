@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct CheckerboardPattern: View {
     let size: CGFloat
     var body: some View {
@@ -23,6 +24,7 @@ struct CheckerboardPattern: View {
         }
     }
 }
+
 @ViewBuilder
 func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
     ZStack {
@@ -82,6 +84,7 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
         }
     }
 }
+
 struct GradientSwatchCanvas: View {
     let gradient: VectorGradient
     let size: CGFloat

@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension VectorDocument {
+
     func renameLayer(at index: Int, to newName: String) {
         guard index >= 0 && index < snapshot.layers.count else {
             Log.error("❌ Invalid layer index for rename: \(index)", category: .error)
@@ -16,6 +18,7 @@ extension VectorDocument {
         }
         changeNotifier.notifyLayersChanged()
     }
+
     func duplicateLayer(at index: Int) {
         guard index >= 0 && index < snapshot.layers.count else {
             Log.error("❌ Invalid layer index for duplicate: \(index)", category: .error)
@@ -52,6 +55,7 @@ extension VectorDocument {
         onSettingsChanged()
         changeNotifier.notifyLayersChanged()
     }
+
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
         guard sourceIndex >= 0 && sourceIndex < snapshot.layers.count,
               targetIndex >= 0 && targetIndex <= snapshot.layers.count,
@@ -99,12 +103,14 @@ extension VectorDocument {
         }
         changeNotifier.notifyLayersChanged()
     }
+
     private func extractShape(from object: VectorObject) -> VectorShape {
         if case .shape(let shape) = object.objectType {
             return shape
         }
         fatalError("VectorObject does not contain a shape")
     }
+
     func addLayer(name: String = "New Layer") {
         let colors: [LayerColor] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         let color = colors[snapshot.layers.count % colors.count]
@@ -165,6 +171,7 @@ extension VectorDocument {
         onSettingsChanged()
         changeNotifier.notifyLayersChanged()
     }
+
     func removeLayer(at index: Int) {
         guard index >= 0 && index < snapshot.layers.count && snapshot.layers.count > 1 else {
             return
@@ -194,6 +201,7 @@ extension VectorDocument {
         }
         changeNotifier.notifyLayersChanged()
     }
+
     func ensureGuidesLayerExists() {
         if snapshot.layers.count > 2 && snapshot.layers[2].name == "Guides" {
             return
@@ -219,6 +227,7 @@ extension VectorDocument {
             }
         }
     }
+
     func validateSelectedLayer() {
         if let savedId = settings.selectedLayerId,
            snapshot.layers.first(where: { $0.id == savedId }) != nil {
@@ -251,6 +260,7 @@ extension VectorDocument {
             addLayer(name: "Layer 1")
         }
     }
+
     func moveObjectToLayer(objectId: UUID, targetLayerIndex: Int) {
         guard let object = snapshot.objects[objectId] else {
             Log.error("❌ Object not found for layer move: \(objectId)", category: .error)
@@ -272,6 +282,7 @@ extension VectorDocument {
         )
         commandManager.execute(command)
     }
+
     func moveObjectsToLayer(objectIds: [UUID], targetLayerIndex: Int) {
         guard targetLayerIndex >= 0 && targetLayerIndex < snapshot.layers.count else {
             Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
@@ -293,6 +304,7 @@ extension VectorDocument {
             commandManager.execute(command)
         }
     }
+
     func selectNextObjectUp() {
         let visibleObjects = snapshot.objects.values
             .filter { obj in
@@ -323,6 +335,7 @@ extension VectorDocument {
         let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
     }
+
     func selectNextObjectDown() {
         let visibleObjects = snapshot.objects.values
             .filter { obj in
@@ -351,6 +364,7 @@ extension VectorDocument {
         let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
     }
+
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
         guard let sourceObject = snapshot.objects[objectId],
               let targetObject = snapshot.objects[targetObjectId] else {
@@ -376,6 +390,7 @@ extension VectorDocument {
         updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: newObjectIDs)
         changeNotifier.notifyLayersChanged()
     }
+
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
         guard let sourceIndex = snapshot.layers.firstIndex(where: { $0.id == sourceLayerId }),
               let targetIndex = snapshot.layers.firstIndex(where: { $0.id == targetLayerId }) else {

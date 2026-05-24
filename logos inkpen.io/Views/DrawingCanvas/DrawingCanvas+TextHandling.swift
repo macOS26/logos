@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     func handleFontToolTap(at location: CGPoint) {
         lastTapLocation = location
         let hasSelectedOrEditingText = document.viewState.selectedObjectIDs.contains { id in
@@ -19,6 +21,7 @@ extension DrawingCanvas {
             createNewTextAt(location: location)
         }
     }
+
     func handleAggressiveBackgroundTap(at location: CGPoint) {
         let tapHitsText = document.snapshot.objects.values.contains { obj in
             switch obj.objectType {
@@ -76,6 +79,7 @@ extension DrawingCanvas {
             finishTextEditing()
         }
     }
+
     func findTextAt(location: CGPoint) -> UUID? {
         for obj in document.snapshot.objects.values {
             switch obj.objectType {
@@ -113,6 +117,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     func startEditingText(textID: UUID, at location: CGPoint, isDoubleClickFromArrow: Bool = false) {
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType,
@@ -131,6 +136,7 @@ extension DrawingCanvas {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }
+
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false, at location: CGPoint = .zero) {
         guard let textObject = document.findText(by: textID) else {
             Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
@@ -171,6 +177,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
         let relativePoint = CGPoint(
             x: tapLocation.x - textObj.position.x,
@@ -198,9 +205,11 @@ extension DrawingCanvas {
         let finalIndex = max(0, min(textObj.content.count, characterIndex))
         return finalIndex
     }
+
     func createNewTextAt(location: CGPoint) {
         createNewTextWithSize(at: location, width: 300, height: 100)
     }
+
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
@@ -239,6 +248,7 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
     }
+
     func insertTextAtCursor(_ text: String) {
         guard let editingID = editingTextID,
               var textObj = document.findText(by: editingID) else { return }
@@ -252,6 +262,7 @@ extension DrawingCanvas {
         textObj.updateBounds()
         document.updateTextInUnified(textObj)
     }
+
     func deleteBackward() {
         guard let editingID = editingTextID,
               var textObj = document.findText(by: editingID) else { return }
@@ -269,6 +280,7 @@ extension DrawingCanvas {
             document.updateTextInUnified(textObj)
         }
     }
+
     func deleteSelectedText() {
         guard let editingID = editingTextID,
               var textObj = document.findText(by: editingID),
@@ -287,18 +299,21 @@ extension DrawingCanvas {
         textObj.updateBounds()
         document.updateTextInUnified(textObj)
     }
+
     func selectAll() {
         guard let editingID = editingTextID,
               let textObj = document.findText(by: editingID) else { return }
         currentSelectionRange = NSRange(location: 0, length: textObj.content.count)
         currentCursorPosition = textObj.content.count
     }
+
     func moveCursorLeft() {
         if currentCursorPosition > 0 {
             currentCursorPosition -= 1
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
         }
     }
+
     func moveCursorRight() {
         guard let editingID = editingTextID,
               let textObj = document.findText(by: editingID) else { return }
@@ -307,16 +322,19 @@ extension DrawingCanvas {
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
         }
     }
+
     func moveCursorToBeginning() {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
     }
+
     func moveCursorToEnd() {
         guard let editingID = editingTextID,
               let textObj = document.findText(by: editingID) else { return }
         currentCursorPosition = textObj.content.count
         currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
     }
+
     func finishTextEditing() {
         if let editingID = editingTextID {
             if var textObj = document.findText(by: editingID) {
@@ -337,6 +355,7 @@ extension DrawingCanvas {
             window.makeFirstResponder(nil)
         }
     }
+
     func cancelTextEditing() {
         if let editingID = editingTextID {
             if let textObj = document.findText(by: editingID) {
@@ -360,6 +379,7 @@ extension DrawingCanvas {
         }
         Log.error("❌ Cancelled text editing", category: .error)
     }
+
     func handleTextKeyPress(_ key: String) {
         guard isEditingText else { return }
         switch key {
@@ -377,6 +397,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     private func deleteForward() {
         guard let editingID = editingTextID,
               var textObj = document.findText(by: editingID) else { return }
@@ -392,6 +413,7 @@ extension DrawingCanvas {
             document.updateTextInUnified(textObj)
         }
     }
+
     func handleTextSelectionChange(textID: UUID, isSelected: Bool) {
         if isSelected {
             document.viewState.selectedObjectIDs.insert(textID)
@@ -399,6 +421,7 @@ extension DrawingCanvas {
             document.viewState.selectedObjectIDs.remove(textID)
         }
     }
+
     func handleTextEditingChange(textID: UUID, isEditing: Bool) {
         if isEditing {
             isEditingText = true
@@ -419,24 +442,28 @@ extension DrawingCanvas {
             }
         }
     }
+
     func handleTextContentChange(textID: UUID, newContent: String) {
         guard var textObj = document.findText(by: textID) else { return }
         document.updateTextContentInUnified(id: textObj.id, content: newContent)
         textObj.updateBounds()
         document.updateTextInUnified(textObj)
     }
+
     func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
         guard let textObj = document.findText(by: textID) else { return }
         document.modifyShapesWithUndo(shapeIDs: [textID]) { _ in
             document.updateTextPositionInUnified(id: textObj.id, position: newPosition)
         }
     }
+
     func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
         guard let textObj = document.findText(by: textID) else { return }
         document.modifyShapesWithUndo(shapeIDs: [textID]) { _ in
             document.updateTextBoundsInUnified(id: textObj.id, bounds: newBounds)
         }
     }
+
     func handleCanvasBackgroundTap(at location: CGPoint) {
         let hitAnyTextBox = document.snapshot.objects.values.contains { obj in
             guard case .text(let shape) = obj.objectType,
@@ -461,6 +488,7 @@ extension DrawingCanvas {
             editingTextID = nil
         }
     }
+
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         if findTextAt(location: startLocation) != nil {
@@ -499,6 +527,7 @@ extension DrawingCanvas {
             .close
         ])
     }
+
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let hasSelectedText = document.viewState.selectedObjectIDs.contains { id in
             if let obj = document.findObject(by: id),
@@ -553,6 +582,7 @@ extension DrawingCanvas {
         isEditingText = true
         editingTextID = shape.id
     }
+
     func resetTextBoxDrawingState() {
         isDrawing = false
         currentPath = nil
@@ -560,6 +590,7 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
     }
+
     private func isLocationOnTextResizeHandle(_ location: CGPoint) -> Bool {
         let handleRadius: Double = 6.0
         let tolerance: Double = 15.0

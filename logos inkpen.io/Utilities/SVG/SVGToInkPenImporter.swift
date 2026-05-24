@@ -1,8 +1,10 @@
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
+
 class SVGToInkPenImporter: ObservableObject {
     static var svgShapeRegistry: [UUID: (data: Data, document: SVGDocument)] = [:]
+
     @Published var importResults: [ImportResult] = []
     @Published var currentOperation: String = "Ready"
     @Published var isImporting: Bool = false
@@ -14,18 +16,23 @@ class SVGToInkPenImporter: ObservableObject {
         let details: String
         let timestamp: Date
     }
+
     @objc class CGSVGDocument: NSObject { }
     static let CoreSVG = dlopen("/System/Library/PrivateFrameworks/CoreSVG.framework/CoreSVG", RTLD_NOW)
     static var CGSVGDocumentRelease: (@convention(c) (CGSVGDocument?) -> Void) = load("CGSVGDocumentRelease")
     static var CGSVGDocumentCreateFromData: (@convention(c) (CFData?, CFDictionary?) -> Unmanaged<CGSVGDocument>?) = load("CGSVGDocumentCreateFromData")
     static var CGContextDrawSVGDocument: (@convention(c) (CGContext?, CGSVGDocument?) -> Void) = load("CGContextDrawSVGDocument")
     static var CGSVGDocumentGetCanvasSize: (@convention(c) (CGSVGDocument?) -> CGSize) = load("CGSVGDocumentGetCanvasSize")
+
     static func load<T>(_ name: String) -> T {
         unsafeBitCast(dlsym(CoreSVG, name), to: T.self)
     }
+
     class SVGDocument {
+
         deinit { SVGToInkPenImporter.CGSVGDocumentRelease(document) }
         let document: CGSVGDocument
+
         init?(_ data: Data) {
             guard let document = SVGToInkPenImporter.CGSVGDocumentCreateFromData(data as CFData, nil)?.takeUnretainedValue() else { return nil }
             guard SVGToInkPenImporter.CGSVGDocumentGetCanvasSize(document) != .zero else { return nil }
@@ -34,6 +41,7 @@ class SVGToInkPenImporter: ObservableObject {
         var size: CGSize {
             SVGToInkPenImporter.CGSVGDocumentGetCanvasSize(document)
         }
+
         func renderToVectorContext(_ context: CGContext, targetSize: CGSize) {
             let originalSize = self.size
             context.saveGState()
@@ -50,6 +58,7 @@ class SVGToInkPenImporter: ObservableObject {
             context.restoreGState()
         }
     }
+
     func importSVGFile(from url: URL) -> VectorDocument? {
         isImporting = true
         importResults.removeAll()
@@ -73,6 +82,7 @@ class SVGToInkPenImporter: ObservableObject {
             return nil
         }
     }
+
     func importSVGString(_ svgString: String, name: String = "Imported SVG") -> VectorDocument? {
         isImporting = true
         importResults.removeAll()
@@ -93,6 +103,7 @@ class SVGToInkPenImporter: ObservableObject {
         isImporting = false
         return document
     }
+
     private func createVectorDocumentFromSVG(_ svgDoc: SVGDocument, svgData: Data, name: String = "Imported SVG") -> VectorDocument {
         let svgSize = svgDoc.size
         let settings = createDocumentSettings(from: svgSize)
@@ -114,6 +125,7 @@ class SVGToInkPenImporter: ObservableObject {
         addResult("Shapes Extracted", success: true, message: "Created \(shapes.count) shapes from SVG")
         return document
     }
+
     private func createDocumentSettings(from svgSize: CGSize) -> DocumentSettings {
         let widthInPoints = svgSize.width
         let heightInPoints = svgSize.height
@@ -132,6 +144,7 @@ class SVGToInkPenImporter: ObservableObject {
             backgroundColor: .white
         )
     }
+
     private func extractShapesFromSVG(_ svgDoc: SVGDocument, svgData: Data) -> [VectorShape] {
         var shapes: [VectorShape] = []
         let svgSize = svgDoc.size
@@ -142,6 +155,7 @@ class SVGToInkPenImporter: ObservableObject {
                  details: "Shape will be rendered using CoreSVG when drawn")
         return shapes
     }
+
     private func createSVGContentShape(size: CGSize, document: SVGDocument, svgData: Data) -> VectorShape {
         let svgShape = VectorShape(
             name: "[SVG] Content (\(Int(size.width))×\(Int(size.height)))",
@@ -165,12 +179,15 @@ class SVGToInkPenImporter: ObservableObject {
         SVGToInkPenImporter.svgShapeRegistry[svgShape.id] = (data: svgData, document: document)
         return svgShape
     }
+
     static func containsSVGContent(_ shape: VectorShape) -> Bool {
         return svgShapeRegistry[shape.id] != nil || shape.name.hasPrefix("[SVG]")
     }
+
     static func getSVGData(for shape: VectorShape) -> (data: Data, document: SVGDocument)? {
         return svgShapeRegistry[shape.id]
     }
+
     private func addResult(_ operation: String, success: Bool, message: String, details: String = "") {
         DispatchQueue.main.async {
             self.currentOperation = operation

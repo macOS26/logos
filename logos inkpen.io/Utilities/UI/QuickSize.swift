@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct QuickSize: Hashable {
     let name: String
     let baseWidth: Double

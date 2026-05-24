@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import simd
+
 func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
     let metalEngine = MetalComputeEngine.shared
     let results = metalEngine.calculateLinkedHandlesGPU(
@@ -18,6 +19,7 @@ func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, origina
     }
     return calculateLinkedHandleCPU(anchorPoint: anchorPoint, draggedHandle: draggedHandle, originalOppositeHandle: originalOppositeHandle)
 }
+
 private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
     let anchorVec = SIMD2<Double>(Double(anchorPoint.x), Double(anchorPoint.y))
     let draggedVec = SIMD2<Double>(Double(draggedHandle.x), Double(draggedHandle.y))

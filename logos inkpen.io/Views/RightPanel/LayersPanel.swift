@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension Color {
     static let layerColorPalette: [(name: String, color: Color)] = [
         (LayerColorName.maroon, Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),
@@ -31,7 +32,9 @@ extension Color {
 private let kLayerTextStyle: Font = .system(size: 11)
 private let kLayerControlLabelWidth: CGFloat = 50
 private let kLayerPercentageWidth: CGFloat = 35
+
 extension View {
+
     @ViewBuilder
     func layerText(width: CGFloat? = nil, alignment: Alignment = .leading) -> some View {
         if let width = width {
@@ -46,7 +49,9 @@ extension View {
         }
     }
 }
+
 struct LayersPanel: View {
+
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var selectedLayerIndex: Int?
@@ -63,6 +68,7 @@ struct LayersPanel: View {
     private var overlaysEnabled: Bool {
         return !visibleRows.isEmpty
     }
+
     private enum RowType: Hashable {
         case layer(index: Int)
         case object(layerIndex: Int, objectId: UUID)
@@ -70,6 +76,7 @@ struct LayersPanel: View {
     }
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
+
         func addNestedGroupChildren(childShape: VectorShape, layerIndex: Int, parentObjectId: UUID) {
             guard childShape.isGroupContainer else { return }
             let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
@@ -171,6 +178,7 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
+
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -269,6 +277,7 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
+
     private func dragOverlay(
         xPosition: CGFloat,
         isDragging: WritableKeyPath<DocumentViewState, Bool>,
@@ -335,6 +344,7 @@ struct LayersPanel: View {
             }
         }
     }
+
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
@@ -343,6 +353,7 @@ struct LayersPanel: View {
             selectedLayerIndex: $selectedLayerIndex
         )
     }
+
     private func toggleVisibility(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -392,6 +403,7 @@ struct LayersPanel: View {
             }
         }
     }
+
     private func toggleLock(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -438,14 +450,18 @@ struct LayersPanel: View {
         }
     }
 }
+
 struct ColorSwatchButton<Content: View>: View {
+
     @Binding var color: Color
     let availableColors: [(name: String, color: Color)]
     let buttonContent: () -> Content
+
     @State private var showColorPicker: Bool = false
     init(
         color: Binding<Color>,
         availableColors: [(name: String, color: Color)],
+
         @ViewBuilder buttonContent: @escaping () -> Content
     ) {
         self._color = color
@@ -487,7 +503,9 @@ struct ColorSwatchButton<Content: View>: View {
         }
     }
 }
+
 extension ColorSwatchButton where Content == AnyView {
+
     init(color: Binding<Color>, availableColors: [(name: String, color: Color)]) {
         self._color = color
         self.availableColors = availableColors

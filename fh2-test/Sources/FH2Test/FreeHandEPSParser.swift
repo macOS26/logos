@@ -1,6 +1,8 @@
 import Foundation
 import CoreGraphics
+
 enum FreeHandEPSParser {
+
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
         guard let text = String(data: data, encoding: .ascii) ?? String(data: data, encoding: .utf8),
               text.hasPrefix("%!PS-Adobe") else {
@@ -56,11 +58,14 @@ enum FreeHandEPSParser {
             stats: stats
         )
     }
+
     private struct Transform {
         var a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0
+
         func apply(_ x: Double, _ y: Double) -> (Double, Double) {
             (a * x + c * y + tx, b * x + d * y + ty)
         }
+
         func concat(_ other: Transform) -> Transform {
             Transform(
                 a: a * other.a + c * other.b,
@@ -72,12 +77,14 @@ enum FreeHandEPSParser {
             )
         }
     }
+
     private struct GraphicsState {
         var fillColor: VectorColor = .black
         var strokeColor: VectorColor = .black
         var lineWidth: Double = 1.0
         var transform: Transform = Transform()
     }
+
     private static func parsePostScript(_ text: String, pageHeight: Double, originX: Double = 0, originY: Double = 0) -> [VectorShape] {
         var shapes: [VectorShape] = []
         var stack: [Double] = []
@@ -279,6 +286,7 @@ enum FreeHandEPSParser {
         }
         return shapes
     }
+
     private static func mergeFillStrokePairs(_ shapes: [VectorShape]) -> [VectorShape] {
         var merged: [VectorShape] = []
         var i = 0
@@ -305,12 +313,14 @@ enum FreeHandEPSParser {
         }
         return merged
     }
+
     private static func cmykToColor(_ c: Double, _ m: Double, _ y: Double, _ k: Double) -> VectorColor {
         let r = (1 - c) * (1 - k)
         let g = (1 - m) * (1 - k)
         let b = (1 - y) * (1 - k)
         return .rgb(RGBColor(red: r, green: g, blue: b))
     }
+
     private static func tokenize(_ text: String) -> [String] {
         let keywords = ["rectfill","eoclip","closepath","moveto","lineto","curveto",
                         "newpath","gsave","grestore","setlinewidth","setcolor","setcmykcolor",

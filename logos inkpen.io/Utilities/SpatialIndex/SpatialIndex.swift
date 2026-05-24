@@ -1,13 +1,16 @@
 import SwiftUI
+
 struct SpatialIndex {
     private let gridSize: CGFloat = 50
     private var grid: [GridCell: Set<UUID>] = [:]
     private var objectBounds: [UUID: CGRect] = [:]
     private var layerGrids: [UUID: [GridCell: [UUID]]] = [:]
+
     struct GridCell: Hashable {
         let x: Int
         let y: Int
     }
+
     mutating func rebuild(from snapshot: DocumentSnapshot) {
         grid.removeAll(keepingCapacity: true)
         objectBounds.removeAll(keepingCapacity: true)
@@ -86,6 +89,7 @@ struct SpatialIndex {
             layerGrids[layer.id] = layerGrid
         }
     }
+
     mutating func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
         guard !layerIDs.isEmpty else { return }
         for layerID in layerIDs {
@@ -176,6 +180,7 @@ struct SpatialIndex {
             layerGrids[layer.id] = layerGrid
         }
     }
+
     mutating func updateObject(_ objectID: UUID, in snapshot: DocumentSnapshot) {
         var targetLayerID: UUID?
         for layer in snapshot.layers {
@@ -208,6 +213,7 @@ struct SpatialIndex {
             objectBounds.removeValue(forKey: objectID)
         }
     }
+
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
         let cell = GridCell(
             x: Int(floor(point.x / gridSize)),
@@ -215,6 +221,7 @@ struct SpatialIndex {
         )
         return grid[cell] ?? []
     }
+
     func candidateObjectIDs(in rect: CGRect) -> Set<UUID> {
         let cells = cellsForBounds(rect)
         var candidates = Set<UUID>()
@@ -225,6 +232,7 @@ struct SpatialIndex {
         }
         return candidates
     }
+
     func hitTest(at point: CGPoint, in snapshot: DocumentSnapshot, testFunction: (VectorObject, CGPoint) -> Bool) -> VectorObject? {
         let cell = GridCell(
             x: Int(floor(point.x / gridSize)),
@@ -242,6 +250,7 @@ struct SpatialIndex {
         }
         return nil
     }
+
     private func cellsForBounds(_ bounds: CGRect) -> Set<GridCell> {
         let minX = Int(floor(bounds.minX / gridSize))
         let maxX = Int(floor(bounds.maxX / gridSize))
@@ -256,6 +265,7 @@ struct SpatialIndex {
         }
         return cells
     }
+
     func getAllCachedBounds() -> [UUID: CGRect] {
         return objectBounds
     }

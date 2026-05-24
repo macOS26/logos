@@ -1,8 +1,11 @@
 import SwiftUI
+
 extension VectorDocument {
+
     enum CodingKeys: CodingKey {
         case settings, snapshot, layers
     }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         var settingsToSave = settings

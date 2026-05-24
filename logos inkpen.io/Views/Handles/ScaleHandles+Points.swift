@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension ScaleHandles {
+
     func extractPathPoints() {
         pathPoints.removeAll()
         if shape.isGroup && !shape.groupedShapes.isEmpty {
@@ -29,6 +31,7 @@ extension ScaleHandles {
         }
         centerPoint = VectorPoint(shape.calculateCentroid())
     }
+
     @ViewBuilder
     func pathPointsView() -> some View {
         ForEach(pathPoints.indices, id: \.self) { index in
@@ -60,6 +63,7 @@ extension ScaleHandles {
                 )
         }
     }
+
     func setLockedPinPoint(_ pointIndex: Int?) {
         lockedPinPointIndex = pointIndex
         if let index = pointIndex {
@@ -82,6 +86,7 @@ extension ScaleHandles {
             scalingAnchorPoint = shape.calculateCentroid()
         }
     }
+
     func updatePathPointsAfterScaling() {
         pathPoints.removeAll()
         if shape.isGroup && !shape.groupedShapes.isEmpty {

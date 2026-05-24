@@ -1,11 +1,14 @@
 import SwiftUI
+
 extension DrawingCanvas {
+
     struct SnapPoint {
         let point: CGPoint
         let objectID: UUID
         let isAnchor: Bool
         let description: String
     }
+
     func findNearestSnapPoint(to point: CGPoint, threshold: CGFloat = 10.0) -> SnapPoint? {
         guard document.gridSettings.snapToPoint else { return nil }
         var allSnapPoints: [CGPoint] = []
@@ -45,6 +48,7 @@ extension DrawingCanvas {
         }
         return nil
     }
+
     private func extractSnapPoints(from shape: VectorShape) -> [SnapPoint] {
         var snapPoints: [SnapPoint] = []
         if shape.typography != nil {
@@ -89,6 +93,7 @@ extension DrawingCanvas {
         }
         return transformedSnapPoints
     }
+
     func applySnapping(to point: CGPoint) -> CGPoint {
         if document.gridSettings.snapToPoint {
             if let snapPoint = findNearestSnapPoint(to: point) {
@@ -104,6 +109,7 @@ extension DrawingCanvas {
         currentSnapPoint = nil
         return point
     }
+
     func drawSnapPointFeedback(in context: CGContext, at mousePoint: CGPoint, snapPointView: CGPoint) {
         guard document.gridSettings.snapToPoint else { return }
         context.saveGState()
@@ -126,6 +132,7 @@ extension DrawingCanvas {
         }
         context.restoreGState()
     }
+
     func drawSnapPointFeedback(in context: CGContext, at mousePoint: CGPoint) {
         guard document.gridSettings.snapToPoint, let snapPoint = currentSnapPoint else { return }
         drawSnapPointFeedback(in: context, at: mousePoint, snapPointView: snapPoint)

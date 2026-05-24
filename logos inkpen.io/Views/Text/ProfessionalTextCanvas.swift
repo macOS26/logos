@@ -1,7 +1,9 @@
 import SwiftUI
 import AppKit
 import simd
+
 struct ProfessionalTextCanvas: View {
+
     @ObservedObject var document: VectorDocument
     @StateObject private var viewModel: ProfessionalTextViewModel
     let textObjectID: UUID
@@ -14,6 +16,7 @@ struct ProfessionalTextCanvas: View {
     let lineHeightDelta: Double?
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
+
     @Binding var textContentDelta: (id: UUID, content: String)?
     init(document: VectorDocument, textObjectID: UUID, zoomLevel: Double, canvasOffset: CGPoint, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color, letterSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, textContentDelta: Binding<(id: UUID, content: String)?>) {
         self.document = document
@@ -74,6 +77,7 @@ struct ProfessionalTextCanvas: View {
                 y: shouldApplyDragPreview() ? CGFloat(scaledDrag.y) : 0)
         .onKeyPress(action: handleKeyPress)
     }
+
     private func shouldApplyDragPreview() -> Bool {
         if document.viewState.selectedObjectIDs.contains(textObjectID) {
             return true
@@ -92,6 +96,7 @@ struct ProfessionalTextCanvas: View {
         }
         return false
     }
+
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
         guard viewModel.isEditing && keyPress.key == .escape else { return .ignored }
         viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
@@ -101,7 +106,9 @@ struct ProfessionalTextCanvas: View {
         NSApp.keyWindow?.makeFirstResponder(nil)
         return .handled
     }
+
     struct TextViewRepresentable: NSViewRepresentable {
+
         @ObservedObject var viewModel: ProfessionalTextViewModel
         @State var isUpdatingFromTyping: Bool = false
         let viewMode: ViewMode
@@ -113,6 +120,7 @@ struct ProfessionalTextCanvas: View {
         let fontVariant: String?
         let fillColor: VectorColor
         let fontManager: FontManager
+
         @Binding var textContentDelta: (id: UUID, content: String)?
         func makeNSView(context: Context) -> DisabledContextMenuTextView {
             let textView = DisabledContextMenuTextView()
@@ -169,6 +177,7 @@ struct ProfessionalTextCanvas: View {
             }
             return textView
         }
+
         func updateNSView(_ nsView: DisabledContextMenuTextView, context: Context) {
             let coordinator = context.coordinator
             if !isUpdatingFromTyping {
@@ -221,6 +230,7 @@ struct ProfessionalTextCanvas: View {
                 }
             }
         }
+
         private func applyStyle(to textView: NSTextView) {
             let cursorColor: PlatformColor
             if viewMode == .keyline {
@@ -268,9 +278,11 @@ struct ProfessionalTextCanvas: View {
                 }
             }
         }
+
         func makeCoordinator() -> Coordinator {
             Coordinator(self)
         }
+
         class Coordinator: NSObject, NSTextViewDelegate {
             var parent: TextViewRepresentable
             var lastUpdateTime: Date = Date()
@@ -278,10 +290,12 @@ struct ProfessionalTextCanvas: View {
             weak var textView: DisabledContextMenuTextView?
             var updateTimer: Timer?
             var originalText: String?
+
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
                 self.originalText = parent.viewModel.text
             }
+
             func textDidChange(_ notification: Notification) {
                 guard let textView = notification.object as? NSTextView, textView.isEditable else { return }
                 let newText = textView.string
@@ -314,6 +328,7 @@ struct ProfessionalTextCanvas: View {
                     self?.parent.isUpdatingFromTyping = false
                 }
             }
+
             func textViewDidChangeSelection(_ notification: Notification) {
                 guard !isRestoringSelection, let textView = notification.object as? NSTextView else { return }
                 let selectedRange = textView.selectedRange()
@@ -323,6 +338,7 @@ struct ProfessionalTextCanvas: View {
                     }
                 }
             }
+
             func textDidEndEditing(_ notification: Notification) {
                 let finalText = parent.viewModel.text
                 let textFrame = parent.viewModel.textBoxFrame

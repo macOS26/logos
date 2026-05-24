@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractGradientStops(from dict: CGPDFDictionaryRef) -> [GradientStop] {
         var stops: [GradientStop] = []
         var functionObjRef: CGPDFObjectRef?

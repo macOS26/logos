@@ -1,8 +1,10 @@
 import SwiftUI
+
 struct FontPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+
     @Binding var fontSizeDelta: Double?
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?

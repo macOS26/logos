@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension Color {
     var components: (red: Double, green: Double, blue: Double, alpha: Double) {
         #if canImport(AppKit)

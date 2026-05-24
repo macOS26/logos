@@ -1,6 +1,8 @@
 import SwiftUI
 import simd
+
 struct PDFBoundsCalculator {
+
     static func calculateArtworkBounds(from shapes: [VectorShape], pageSize: CGSize) -> CGRect {
         guard !shapes.isEmpty else { return CGRect(origin: .zero, size: pageSize) }
         if shapes.count >= 4 {
@@ -24,6 +26,7 @@ struct PDFBoundsCalculator {
             height: maxY - minY
         )
     }
+
     private static func calculateArtworkBoundsSIMD(from shapes: [VectorShape]) -> CGRect {
         var minVec = simd_float4(Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude,
                                  Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude)
@@ -88,6 +91,7 @@ struct PDFBoundsCalculator {
             height: finalMaxY - finalMinY
         )
     }
+
     static func isPageBoundaryRectangle(_ rect: CGRect, pageSize: CGSize, tolerance: CGFloat = 2.0) -> Bool {
         let rectVec = simd_float4(Float(rect.width), Float(rect.height),
                                   Float(rect.origin.x), Float(rect.origin.y))
@@ -106,6 +110,7 @@ struct PDFBoundsCalculator {
         }
         return false
     }
+
     static func calculateCombinedBounds(_ rects: [CGRect]) -> CGRect {
         guard !rects.isEmpty else { return .zero }
         guard rects.count >= 4 else {
@@ -143,6 +148,7 @@ struct PDFBoundsCalculator {
                      width: finalMaxX - finalMinX,
                      height: finalMaxY - finalMinY)
     }
+
     static func batchContainsPoints(rect: CGRect, points: [CGPoint]) -> [Bool] {
         guard !points.isEmpty else { return [] }
         var results = [Bool]()

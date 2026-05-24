@@ -1,9 +1,11 @@
 import Foundation
 import Combine
+
 class ObjectArrangementCommand: BaseCommand {
     private let affectedObjectIDs: [UUID]
     private let oldIndices: [UUID: Int]
     private let newIndices: [UUID: Int]
+
     init(affectedObjectIDs: [UUID],
          oldIndices: [UUID: Int],
          newIndices: [UUID: Int]) {
@@ -11,12 +13,15 @@ class ObjectArrangementCommand: BaseCommand {
         self.oldIndices = oldIndices
         self.newIndices = newIndices
     }
+
     override func execute(on document: VectorDocument) {
         applyIndices(newIndices, to: document)
     }
+
     override func undo(on document: VectorDocument) {
         applyIndices(oldIndices, to: document)
     }
+
     private func applyIndices(_ targetIndices: [UUID: Int], to document: VectorDocument) {
         var objectsByLayer: [Int: [(UUID, Int)]] = [:]
         for id in affectedObjectIDs {

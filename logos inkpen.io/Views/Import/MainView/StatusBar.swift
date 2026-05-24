@@ -1,6 +1,8 @@
 import SwiftUI
+
 struct StatusBar: View {
     let zoomLevel: Double
+
     @ObservedObject var document: VectorDocument
     var body: some View {
         HStack {
@@ -63,6 +65,7 @@ struct StatusBar: View {
             alignment: .top
         )
     }
+
     private func formatDimension(_ value: Double) -> String {
         let formatted = String(format: "%.5f", value)
         if formatted.contains(".") {
@@ -74,6 +77,7 @@ struct StatusBar: View {
         }
         return formatted
     }
+
     private func formatPreciseDimension(_ value: CGFloat) -> String {
         let formatted = String(format: "%.5f", value)
         if formatted.contains(".") {
@@ -85,6 +89,7 @@ struct StatusBar: View {
         }
         return formatted
     }
+
     private func getSelectionBounds() -> CGRect? {
         var combinedBounds: CGRect?
         for vectorObject in document.snapshot.objects.values {
@@ -121,9 +126,11 @@ struct StatusBar: View {
         }
         return combinedBounds
     }
+
     private func getTotalObjectCount() -> Int {
         return document.snapshot.objects.count
     }
+
     private func getTotalPointCount() -> Int {
         var totalPoints = 0
         for vectorObject in document.snapshot.objects.values {
@@ -136,6 +143,7 @@ struct StatusBar: View {
         }
         return totalPoints
     }
+
     private func countPointsInPath(_ path: VectorPath) -> Int {
         var count = 0
         for element in path.elements {
@@ -148,6 +156,7 @@ struct StatusBar: View {
         }
         return count
     }
+
     private func formatNumber(_ number: Int) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal

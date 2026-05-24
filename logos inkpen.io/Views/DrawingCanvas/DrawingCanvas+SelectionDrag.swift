@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func startSelectionDrag() {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
@@ -102,6 +104,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
@@ -204,6 +207,7 @@ extension DrawingCanvas {
             }
         }
     }
+
     internal func finishSelectionDrag() {
         if document.isHandleScalingActive {
             initialObjectPositions.removeAll()
@@ -230,6 +234,7 @@ extension DrawingCanvas {
             layerPreviewOpacities.removeAll()
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
+
             func collectGroupMembers(_ shape: VectorShape) {
                 guard !shape.memberIDs.isEmpty else { return }
                 for memberID in shape.memberIDs {
@@ -339,6 +344,7 @@ extension DrawingCanvas {
             document.cachedSelectionBounds = nil
         }
     }
+
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
         guard let object = document.snapshot.objects[objectID] else {
             return
@@ -350,10 +356,12 @@ extension DrawingCanvas {
             return
         }
     }
+
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         applyDragDeltaToShape(shape: shape, delta: delta)
     }
+
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
         let hasNonIdentityTransform = !shape.transform.isIdentity
         if ImageContentRegistry.containsImage(shape, in: document) || hasNonIdentityTransform {
@@ -461,6 +469,7 @@ extension DrawingCanvas {
         } else {
         }
     }
+
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform

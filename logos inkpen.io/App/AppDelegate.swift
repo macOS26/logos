@@ -1,8 +1,11 @@
 import SwiftUI
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
     }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
@@ -30,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupFallbackTimer()
         NSHelpManager.shared.registerBooks(in: Bundle.main)
     }
+
     private func setupFallbackTimer() {
         Timer.scheduledTimer(withTimeInterval: 15.0, repeats: false) { _ in
             DispatchQueue.main.async {
@@ -43,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+
     private func setupGlobalErrorHandling() {
         NSSetUncaughtExceptionHandler { exception in
             let exceptionName = exception.name.rawValue
@@ -63,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Log.error("📄 GlobalErrorHandler: Allowing exception to propagate", category: .error)
         }
     }
+
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "HasLaunchedBefore")
         let hasDocuments = NSDocumentController.shared.documents.count > 0
@@ -78,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return true
     }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         for window in NSApplication.shared.windows {
             if window.title == "Document Setup" || window.identifier?.rawValue == "onboarding-setup" {
@@ -88,6 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SharedMetalDevice.releaseAll()
         return .terminateNow
     }
+
     func application(_ application: NSApplication, willPresentError error: Error) -> Error {
         Log.error("📄 App: Error intercepted: \(error)", category: .error)
         if SystemErrorHandler.shared.handleSystemError(error) {
@@ -98,11 +106,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return error
     }
+
     func applicationWillTerminate(_ notification: Notification) {
         saveAllOpenDocuments()
         DocumentStateRegistry.shared.forceCleanupAll()
         UserDefaults.standard.synchronize()
     }
+
     private func saveAllOpenDocuments() {
         let documentController = NSDocumentController.shared
         for document in documentController.documents {

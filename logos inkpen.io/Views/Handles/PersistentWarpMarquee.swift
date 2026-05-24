@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftUI
+
 struct PersistentWarpMarquee: View {
+
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
@@ -22,6 +24,7 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
+
     @ViewBuilder
     private func warpEnvelopeOutline() -> some View {
         if shape.warpEnvelope.count >= 4 {
@@ -45,6 +48,7 @@ struct PersistentWarpMarquee: View {
             .transformEffect(shape.transform)
         }
     }
+
     @ViewBuilder
     private func warpCornerHandles() -> some View {
         if shape.warpEnvelope.count >= 4 {
@@ -61,6 +65,7 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
+
     @ViewBuilder
     private func warpCornerDots() -> some View {
         if shape.warpEnvelope.count >= 4 {
@@ -76,6 +81,7 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
+
     @ViewBuilder
     private func warpGridOverlay() -> some View {
         if shape.warpEnvelope.count >= 4 {
@@ -135,6 +141,7 @@ struct PersistentWarpMarquee: View {
             }
         }
     }
+
     private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
         let top = CGPoint(
             x: topLeft.x * (1 - u) + topRight.x * u,

@@ -1,6 +1,8 @@
 import MetalKit
 import Combine
+
 class MetalDeviceManager: ObservableObject {
+
     @Published var device: MTLDevice
     @Published var commandQueue: MTLCommandQueue
     init() {
@@ -13,9 +15,11 @@ class MetalDeviceManager: ObservableObject {
         self.device = metalDevice
         self.commandQueue = cmdQueue
     }
+
     func executeRenderCommand<T>(_ command: (MTLDevice, MTLCommandQueue) -> T) -> T {
         return command(device, commandQueue)
     }
+
     func validateMetalSupport() -> Bool {
         return true
     }

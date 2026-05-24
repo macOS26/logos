@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension VectorDocument {
+
     func cleanupOrphanedObjects() {
         var validObjectIDs = Set<UUID>()
         for layer in snapshot.layers {
@@ -24,6 +26,7 @@ extension VectorDocument {
             }
         }
     }
+
     private func collectMemberIDsRecursively(_ memberIDs: [UUID], into validIDs: inout Set<UUID>) {
         for memberID in memberIDs {
             validIDs.insert(memberID)
@@ -37,14 +40,17 @@ extension VectorDocument {
             }
         }
     }
+
     func getShapeAtIndex(layerIndex: Int, shapeIndex: Int) -> VectorShape? {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return nil }
         return shapes[shapeIndex]
     }
+
     func getShapeCount(layerIndex: Int) -> Int {
         return getShapesForLayer(layerIndex).count
     }
+
     func setShapeAtIndex(layerIndex: Int, shapeIndex: Int, shape: VectorShape) {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return }
@@ -53,6 +59,7 @@ extension VectorDocument {
         snapshot.objects[shape.id] = updatedObject
         triggerLayerUpdate(for: layerIndex)
     }
+
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
         if let object = snapshot.objects[shapeID] {
             let layerIndex = object.layerIndex
@@ -126,6 +133,7 @@ extension VectorDocument {
             }
         }
     }
+
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return [] }
         let layer = snapshot.layers[layerIndex]
@@ -151,6 +159,7 @@ extension VectorDocument {
             }
         }
     }
+
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else {
             return
@@ -167,6 +176,7 @@ extension VectorDocument {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -178,6 +188,7 @@ extension VectorDocument {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         let objectType = VectorObject.determineType(for: shape)
@@ -200,6 +211,7 @@ extension VectorDocument {
             }
         }
     }
+
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         var textWithLayer = text
@@ -213,6 +225,7 @@ extension VectorDocument {
             triggerLayerUpdate(for: layerIndex)
         }
     }
+
     func rebuildParentGroupCache() {
         snapshot.parentGroupCache.removeAll()
         snapshot.clippedObjectsCache.removeAll()
@@ -243,6 +256,7 @@ extension VectorDocument {
             }
         }
     }
+
     func updateParentCacheForGroup(_ groupID: UUID, childIDs: [UUID]) {
         for (childID, parentID) in snapshot.parentGroupCache where parentID == groupID {
             snapshot.parentGroupCache.removeValue(forKey: childID)
@@ -251,9 +265,11 @@ extension VectorDocument {
             snapshot.parentGroupCache[childID] = groupID
         }
     }
+
     func removeParentCacheForGroup(_ groupID: UUID) {
         snapshot.parentGroupCache = snapshot.parentGroupCache.filter { $0.value != groupID }
     }
+
     func removeParentCacheForChild(_ childID: UUID) {
         snapshot.parentGroupCache.removeValue(forKey: childID)
     }

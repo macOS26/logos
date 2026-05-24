@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
+
 extension DrawingCanvas {
+
     internal func handleDoubleClick(at location: CGPoint, geometry: GeometryProxy) {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         if let textID = findTextAt(location: canvasLocation) {
@@ -12,6 +14,7 @@ extension DrawingCanvas {
             #endif
         }
     }
+
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         let modifierFlags = NSEvent.modifierFlags
         isShiftPressed = modifierFlags.contains(.shift)
@@ -88,6 +91,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     internal func handleUnifiedDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
         switch document.viewState.currentTool {
         case .hand:
@@ -137,6 +141,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         switch document.viewState.currentTool {
         case .hand:
@@ -175,6 +180,7 @@ extension DrawingCanvas {
             break
         }
     }
+
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDrawing && !document.isHandleScalingActive {
             for objectID in document.viewState.selectedObjectIDs {
@@ -209,6 +215,7 @@ extension DrawingCanvas {
             handleSelectionDrag(value: value, geometry: geometry)
         }
     }
+
     private func finishPanGesture() {
         handlePanGestureEnd()
         #if os(macOS)
@@ -219,6 +226,7 @@ extension DrawingCanvas {
         }
         #endif
     }
+
     private func resetShapeDrawingState() {
         isDrawing = false
         currentPath = nil
@@ -227,6 +235,7 @@ extension DrawingCanvas {
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
     }
+
     private func startEyedropperColorPick() {
         #if canImport(AppKit)
         let sampler = NSColorSampler()
@@ -239,6 +248,7 @@ extension DrawingCanvas {
         }
         #endif
     }
+
     private func selectSameColorAt(_ location: CGPoint) {
         var tappedObject: VectorObject?
         var tappedShape: VectorShape?
@@ -308,6 +318,7 @@ extension DrawingCanvas {
             document.viewState.selectedObjectIDs = matchingObjectIDs
         }
     }
+
     private func validateCanvasLocation(_ location: CGPoint) -> CGPoint {
         if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
             Log.error("❌ INVALID CANVAS COORDINATES: \(location) - using zero point", category: .error)

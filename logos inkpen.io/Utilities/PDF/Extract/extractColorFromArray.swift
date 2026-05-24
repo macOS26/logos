@@ -1,5 +1,7 @@
 import SwiftUI
+
 extension PDFCommandParser {
+
     func extractColorFromArray(_ array: CGPDFArrayRef) -> VectorColor {
         let count = CGPDFArrayGetCount(array)
         if count >= 3 {

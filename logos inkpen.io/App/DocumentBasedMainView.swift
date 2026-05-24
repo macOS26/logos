@@ -1,8 +1,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
+
 struct DocumentBasedMainView: View {
+
     @ObservedObject var document: VectorDocument
     let fileURL: URL?
+
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
     @Binding var imagePreviewQuality: Double
@@ -339,6 +342,7 @@ struct DocumentBasedMainView: View {
         }
         .focusedSceneObject(documentState)
     }
+
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.settings = importedDoc.settings
         document.snapshot.layers = importedDoc.snapshot.layers
@@ -351,6 +355,7 @@ struct DocumentBasedMainView: View {
         document.gridSettings = importedDoc.gridSettings
         calculateInitialZoom()
     }
+
     private func importVectorFile(from url: URL) {
         showingImportProgress = true
         Task {
@@ -369,6 +374,7 @@ struct DocumentBasedMainView: View {
             }
         }
     }
+
     private func runPasteboardDiagnostics() {
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
@@ -382,12 +388,15 @@ struct DocumentBasedMainView: View {
             alert.runModal()
         }
     }
+
     private func calculateInitialZoom() {
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
 }
+
 struct HostingWindowFinder: NSViewRepresentable {
     var callback: (NSWindow?) -> Void
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async { [weak view] in
@@ -395,5 +404,6 @@ struct HostingWindowFinder: NSViewRepresentable {
         }
         return view
     }
+
     func updateNSView(_ nsView: NSView, context: Context) {}
 }

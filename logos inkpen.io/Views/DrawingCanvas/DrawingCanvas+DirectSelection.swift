@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
+
 extension DrawingCanvas {
+
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
         for shapeID in selectedObjectIDs {
             if let object = document.snapshot.objects[shapeID],
@@ -29,6 +31,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
         let pointSelectionRadius: Double = 6.0 / zoomLevel
         let handleSelectionRadius: Double = 4.0 / zoomLevel
@@ -152,6 +155,7 @@ extension DrawingCanvas {
         }
         return false
     }
+
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
         guard let hitShape = findShapeAtLocationForDirectSelect(at: location) else {
             return false
@@ -180,6 +184,7 @@ extension DrawingCanvas {
         syncDirectSelectionWithDocument()
         return true
     }
+
     private func findShapeAtLocationForDirectSelect(at location: CGPoint) -> VectorShape? {
         var bestHit: (shape: VectorShape, zOrder: Int)? = nil
         for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
@@ -228,6 +233,7 @@ extension DrawingCanvas {
         }
         return bestHit?.shape
     }
+
     internal func handleDirectSelectionTap(at location: CGPoint) {
         let screenTolerance: Double = 15.0
         let tolerance: Double = screenTolerance / zoomLevel
@@ -251,6 +257,7 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
     }
+
     private func directSelectBehind(at location: CGPoint) -> Bool {
         var shapesAtLocation: [VectorShape] = []
         for (_, layer) in document.snapshot.layers.enumerated().reversed() {
@@ -310,6 +317,7 @@ extension DrawingCanvas {
         syncDirectSelectionWithDocument()
         return true
     }
+
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
         let anchorPoint: CGPoint?
         let pointIndex: Int

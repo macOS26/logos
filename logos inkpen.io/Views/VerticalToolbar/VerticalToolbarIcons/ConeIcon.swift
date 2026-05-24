@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ConeIcon: View {
     let isSelected: Bool
     var body: some View {

@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ImagePropertiesSection: View {
     let imageOpacity: Double
     let onUpdateImageOpacity: (Double) -> Void
