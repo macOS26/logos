@@ -5,25 +5,13 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 #include <cstdarg>
 #include <cstdio>
-
 #include "unicode_stub.h"
 #include "unicode_stub.h"
 #include "libfreehand_utils.h"
-
 namespace
 {
-
 static const unsigned _macRomanCharacterMap[] =
 {
   0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
@@ -55,9 +43,7 @@ static const unsigned _macRomanCharacterMap[] =
   0xf8ff, 0x00d2, 0x00da, 0x00db, 0x00d9, 0x0131, 0x02c6, 0x02dc,
   0x00af, 0x02d8, 0x02d9, 0x02da, 0x00b8, 0x02dd, 0x02db, 0x02c7
 };
-
 }
-
 #ifdef LIBFH_VERBOSE_LOG
 void libfreehand::debugPrint(const char *format, ...)
 {
@@ -67,7 +53,6 @@ void libfreehand::debugPrint(const char *format, ...)
   va_end(args);
 }
 #endif
-
 uint8_t libfreehand::readU8(librevenge::RVNGInputStream *input)
 {
   if (!input || input->isEnd())
@@ -77,18 +62,15 @@ uint8_t libfreehand::readU8(librevenge::RVNGInputStream *input)
   }
   unsigned long numBytesRead;
   uint8_t const *p = input->read(sizeof(uint8_t), numBytesRead);
-
   if (p && numBytesRead == sizeof(uint8_t))
     return *(uint8_t const *)(p);
   FH_DEBUG_MSG(("Throwing EndOfStreamException\n"));
   throw EndOfStreamException();
 }
-
 int8_t libfreehand::readS8(librevenge::RVNGInputStream *input)
 {
   return (int8_t)readU8(input);
 }
-
 uint16_t libfreehand::readU16(librevenge::RVNGInputStream *input)
 {
   if (!input || input->isEnd())
@@ -98,19 +80,15 @@ uint16_t libfreehand::readU16(librevenge::RVNGInputStream *input)
   }
   unsigned long numBytesRead;
   uint8_t const *p = input->read(sizeof(uint16_t), numBytesRead);
-
   if (p && numBytesRead == sizeof(uint16_t))
     return (uint16_t)p[1]|((uint16_t)p[0]<<8);
-
   FH_DEBUG_MSG(("Throwing EndOfStreamException\n"));
   throw EndOfStreamException();
 }
-
 int16_t libfreehand::readS16(librevenge::RVNGInputStream *input)
 {
   return (int16_t)readU16(input);
 }
-
 uint32_t libfreehand::readU32(librevenge::RVNGInputStream *input)
 {
   if (!input || input->isEnd())
@@ -120,52 +98,40 @@ uint32_t libfreehand::readU32(librevenge::RVNGInputStream *input)
   }
   unsigned long numBytesRead;
   uint8_t const *p = input->read(sizeof(uint32_t), numBytesRead);
-
   if (p && numBytesRead == sizeof(uint32_t))
     return (uint32_t)p[3]|((uint32_t)p[2]<<8)
            |((uint32_t)p[1]<<16)|((uint32_t)p[0]<<24);
-
   FH_DEBUG_MSG(("Throwing EndOfStreamException\n"));
   throw EndOfStreamException();
 }
-
 int32_t libfreehand::readS32(librevenge::RVNGInputStream *input)
 {
   return (int32_t)readU32(input);
 }
-
 unsigned long libfreehand::getRemainingLength(librevenge::RVNGInputStream *const input)
 {
   if (!input || input->tell() < 0)
     throw EndOfStreamException();
-
   const long begin = input->tell();
-
   if (input->seek(0, librevenge::RVNG_SEEK_END) != 0)
   {
-    // librevenge::RVNG_SEEK_END does not work. Use the harder way.
     while (!input->isEnd())
       readU8(input);
   }
   const long end = input->tell();
-
   if (input->seek(begin, librevenge::RVNG_SEEK_SET) != 0)
     throw EndOfStreamException();
-
   if (end < begin)
     throw EndOfStreamException();
   return static_cast<unsigned long>(end - begin);
 }
-
 void libfreehand::_appendUTF16(librevenge::RVNGString &text, std::vector<unsigned short> &characters)
 {
   if (characters.empty())
     return;
-
   const unsigned short *s = &characters[0];
   int j = 0;
   int length = static_cast<int>(characters.size());
-
   while (j < length)
   {
     UChar32 c;
@@ -174,17 +140,14 @@ void libfreehand::_appendUTF16(librevenge::RVNGString &text, std::vector<unsigne
     int i = 0;
     U8_APPEND_UNSAFE(&outbuf[0], i, c);
     outbuf[i] = 0;
-
     text.append((char *)outbuf);
   }
 }
-
 void libfreehand::writeU16(librevenge::RVNGBinaryData &buffer, const int value)
 {
   buffer.append((unsigned char)(value & 0xFF));
   buffer.append((unsigned char)((value >> 8) & 0xFF));
 }
-
 void libfreehand::writeU32(librevenge::RVNGBinaryData &buffer, const int value)
 {
   buffer.append((unsigned char)(value & 0xFF));
@@ -192,25 +155,18 @@ void libfreehand::writeU32(librevenge::RVNGBinaryData &buffer, const int value)
   buffer.append((unsigned char)((value >> 16) & 0xFF));
   buffer.append((unsigned char)((value >> 24) & 0xFF));
 }
-
 void libfreehand::_appendMacRoman(librevenge::RVNGString &text, unsigned char character)
 {
   if (character < 0x20)
     text.append((char)character);
   else
   {
-    /* Mapping of Apple's MacRoman character set in Unicode */
-
     UChar32 c = _macRomanCharacterMap[character - 0x20];
     unsigned char outbuf[U8_MAX_LENGTH+1];
     int i = 0;
     U8_APPEND_UNSAFE(&outbuf[0], i, c);
     outbuf[i] = 0;
-
     text.append((char *)outbuf);
   }
 }
-
-
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
 #pragma clang diagnostic pop

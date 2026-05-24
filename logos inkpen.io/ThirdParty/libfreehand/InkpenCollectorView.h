@@ -1,24 +1,15 @@
-/* InkpenCollectorView — POD view over FHCollector's private maps for the direct translator.
-   Populated by FHCollector::inkpenBuildView so the InkPen translator can walk FreeHand
-   records without going through librevenge's SVG generator. Phase 1 only carries the
-   maps needed for plain FHPath emission; later phases extend the struct. */
-
 #ifndef INKPEN_COLLECTOR_VIEW_H
 #define INKPEN_COLLECTOR_VIEW_H
-
 #include <map>
 #include "FHTypes.h"
 #include "FHPath.h"
 #include "FHTransform.h"
-
 namespace libfreehand {
-
 struct InkpenCollectorView
 {
   const FHPageInfo *pageInfo;
   const FHTail *fhTail;
   const std::pair<unsigned, FHBlock> *block;
-
   const std::map<unsigned, FHList> *lists;
   const std::map<unsigned, FHLayer> *layers;
   const std::map<unsigned, FHPath> *paths;
@@ -46,13 +37,9 @@ struct InkpenCollectorView
   const std::map<unsigned, FHNewBlend> *newBlends;
   const std::map<unsigned, FHSymbolClass> *symbolClasses;
   const std::map<unsigned, FHSymbolInstance> *symbolInstances;
-
-  /* Session token IDs assigned when the parser sees the "fill"/"stroke"/"content"
-     attribute names. Needed to probe FHPropList::m_elements and FHGraphicStyle::m_elements. */
   unsigned fillId;
   unsigned strokeId;
   unsigned contentId;
-
   InkpenCollectorView()
     : pageInfo(nullptr), fhTail(nullptr), block(nullptr),
       lists(nullptr), layers(nullptr), paths(nullptr),
@@ -66,7 +53,5 @@ struct InkpenCollectorView
       newBlends(nullptr), symbolClasses(nullptr), symbolInstances(nullptr),
       fillId(0), strokeId(0), contentId(0) {}
 };
-
-} // namespace libfreehand
-
+}
 #endif

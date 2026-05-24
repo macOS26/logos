@@ -5,7 +5,6 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 #include "FreeHandBridge.h"
 #include "libfreehand.h"
 #include "FHCollector.h"
@@ -16,7 +15,6 @@
 #include "InkpenCollectorView.h"
 #include "RVNGMemoryStream.h"
 #include "librevenge.h"
-
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -24,55 +22,42 @@
 #include <vector>
 #include <deque>
 #include <set>
-
 namespace {
-
 struct FHResultPathElement
 {
-    int kind;          // FH_PATH_*
-    double x, y;       // endpoint
-    double x1, y1;     // first control (cubic/quad)
-    double x2, y2;     // second control (cubic)
+    int kind;
+    double x, y;
+    double x1, y1;
+    double x2, y2;
 };
-
 struct FHResultColor
 {
     bool present;
     double r, g, b, a;
     FHResultColor() : present(false), r(0), g(0), b(0), a(1) {}
 };
-
 struct FHResultGradientStop
 {
     double position;
     double r, g, b, a;
     FHResultGradientStop() : position(0), r(0), g(0), b(0), a(1) {}
 };
-
-/* Fill kinds come from FreeHandBridge.h (FH_FILL_NONE/SOLID/LINEAR/RADIAL). */
-
 struct FHResultShape
 {
     int kind;
     bool isClosed;
     bool evenOdd;
     std::vector<FHResultPathElement> elements;
-
     int fillKind;
     FHResultColor fill;
     std::vector<FHResultGradientStop> gradientStops;
     double fillAngle;
     double fillCenterX;
     double fillCenterY;
-
     FHResultColor stroke;
     double strokeWidth;
     double opacity;
-    /* For group / clipGroup / compound containers: indices of member shapes
-       within the same fh_result::shapes array. Children are always emitted
-       before their container, so these indices are < containerIndex. */
     std::vector<size_t> memberIndices;
-
     FHResultShape()
         : kind(FH_SHAPE_KIND_PATH), isClosed(false), evenOdd(false),
           elements(),
@@ -81,16 +66,12 @@ struct FHResultShape
           stroke(), strokeWidth(0.0), opacity(1.0),
           memberIndices() {}
 };
-
-} // namespace
-
+}
 struct fh_result
 {
     std::vector<FHResultShape> shapes;
     double pageWidth;
     double pageHeight;
-
-    /* Diagnostic counts filled by the walker and logged by Swift. */
     size_t statPaths;
     size_t statGroups;
     size_t statClipGroups;
@@ -98,17 +79,12 @@ struct fh_result
     size_t statNewBlends;
     size_t statSymbolInstances;
     size_t statContentIdPaths;
-
     fh_result() : shapes(), pageWidth(0.0), pageHeight(0.0),
                   statPaths(0), statGroups(0), statClipGroups(0),
                   statCompositePaths(0), statNewBlends(0),
                   statSymbolInstances(0), statContentIdPaths(0) {}
 };
-
 namespace {
-
-/* Resolve an attribute map (m_elements on FHPropList / FHGraphicStyle) by walking
-   the parent chain. Returns the terminal value or 0 if not found. */
 template <typename MapT>
 unsigned resolveElement(const libfreehand::InkpenCollectorView &view,
                         const MapT &map,
@@ -128,13 +104,11 @@ unsigned resolveElement(const libfreehand::InkpenCollectorView &view,
     }
     return 0;
 }
-
 unsigned resolveAttributeId(const libfreehand::InkpenCollectorView &view,
                             unsigned graphicStyleId,
                             unsigned attrTokenId)
 {
     if (!attrTokenId || !graphicStyleId) return 0;
-
     std::set<unsigned> visited;
     if (view.graphicStyles)
     {
@@ -149,12 +123,10 @@ unsigned resolveAttributeId(const libfreehand::InkpenCollectorView &view,
     }
     return 0;
 }
-
 FHResultColor rgbFromColorId(const libfreehand::InkpenCollectorView &view, unsigned colorId, int depth)
 {
     FHResultColor out;
     if (!colorId || depth > 8) return out;
-
     if (view.rgbColors)
     {
         auto it = view.rgbColors->find(colorId);
@@ -189,7 +161,6 @@ FHResultColor rgbFromColorId(const libfreehand::InkpenCollectorView &view, unsig
     }
     return out;
 }
-
 void buildGradientStopsFromMultiColor(const libfreehand::InkpenCollectorView &view,
                                        unsigned multiColorListId,
                                        std::vector<FHResultGradientStop> &out)
@@ -208,7 +179,6 @@ void buildGradientStopsFromMultiColor(const libfreehand::InkpenCollectorView &vi
         out.push_back(stop);
     }
 }
-
 void buildGradientStopsFromPair(const libfreehand::InkpenCollectorView &view,
                                  unsigned color1Id, unsigned color2Id,
                                  std::vector<FHResultGradientStop> &out)
@@ -221,11 +191,7 @@ void buildGradientStopsFromPair(const libfreehand::InkpenCollectorView &view,
     out.push_back(s0);
     out.push_back(s1);
 }
-
-/* Walk a FHTileFill's referenced group to find a representative color for the
-   solid fallback. Uses the first BasicFill encountered in the group's children. */
 FHResultColor firstBasicFillInGroup(const libfreehand::InkpenCollectorView &view, unsigned groupId, int depth);
-
 FHResultColor firstBasicFillInPathStyle(const libfreehand::InkpenCollectorView &view, unsigned gsId)
 {
     if (!gsId) return FHResultColor();
@@ -235,7 +201,6 @@ FHResultColor firstBasicFillInPathStyle(const libfreehand::InkpenCollectorView &
     if (it == view.basicFills->end()) return FHResultColor();
     return rgbFromColorId(view, it->second.m_colorId, 0);
 }
-
 FHResultColor firstBasicFillInGroup(const libfreehand::InkpenCollectorView &view, unsigned groupId, int depth)
 {
     if (!groupId || depth > 4 || !view.groups || !view.lists) return FHResultColor();
@@ -262,20 +227,13 @@ FHResultColor firstBasicFillInGroup(const libfreehand::InkpenCollectorView &view
     }
     return FHResultColor();
 }
-
-/* Resolve a graphicStyleId's fill into `shape`. Handles BasicFill as solid,
-   LinearFill/RadialFill as gradients, TileFill/PatternFill/LensFill as
-   dominant-color solid fallbacks. Leaves fillKind=FH_FILL_NONE when nothing
-   resolves so callers can decide whether to drop the shape or apply a stroke. */
 void resolveFillIntoShape(const libfreehand::InkpenCollectorView &view,
                           unsigned graphicStyleId,
                           FHResultShape &shape)
 {
     if (!graphicStyleId) return;
-
     unsigned fillRecId = resolveAttributeId(view, graphicStyleId, view.fillId);
     if (!fillRecId) return;
-
     if (view.basicFills)
     {
         auto it = view.basicFills->find(fillRecId);
@@ -294,7 +252,7 @@ void resolveFillIntoShape(const libfreehand::InkpenCollectorView &view,
             buildGradientStopsFromMultiColor(view, it->second.m_multiColorListId, shape.gradientStops);
             if (shape.gradientStops.empty())
                 buildGradientStopsFromPair(view, it->second.m_color1Id, it->second.m_color2Id, shape.gradientStops);
-            shape.fillAngle = 90.0 - it->second.m_angle; // FH degrees → InkPen convention
+            shape.fillAngle = 90.0 - it->second.m_angle;
             shape.fillKind = FH_FILL_LINEAR;
             return;
         }
@@ -344,7 +302,6 @@ void resolveFillIntoShape(const libfreehand::InkpenCollectorView &view,
         }
     }
 }
-
 struct StrokeResult
 {
     FHResultColor color;
@@ -352,15 +309,12 @@ struct StrokeResult
     bool present;
     StrokeResult() : color(), width(0.0), present(false) {}
 };
-
 StrokeResult resolveStroke(const libfreehand::InkpenCollectorView &view, unsigned graphicStyleId)
 {
     StrokeResult out;
     if (!graphicStyleId) return out;
-
     unsigned strokeRecId = resolveAttributeId(view, graphicStyleId, view.strokeId);
     if (!strokeRecId) return out;
-
     if (view.basicLines)
     {
         auto it = view.basicLines->find(strokeRecId);
@@ -385,12 +339,10 @@ StrokeResult resolveStroke(const libfreehand::InkpenCollectorView &view, unsigne
     }
     return out;
 }
-
 double resolveOpacity(const libfreehand::InkpenCollectorView &view, unsigned graphicStyleId)
 {
     if (!graphicStyleId || !view.filterAttributeHolders || !view.opacityFilters)
         return 1.0;
-
     std::set<unsigned> visited;
     unsigned curId = graphicStyleId;
     while (curId && visited.find(curId) == visited.end())
@@ -407,13 +359,7 @@ double resolveOpacity(const libfreehand::InkpenCollectorView &view, unsigned gra
     }
     return 1.0;
 }
-
-/* FreeHand stores coordinates in inches. librevenge multiplies by 72 to convert
-   to PostScript points when emitting SVG; the direct translator has to do the
-   same scaling so shapes land in InkPen's point space. Also flips Y and offsets
-   by the page origin so the result is top-left-origin (Y grows downward). */
 static constexpr double FH_POINTS_PER_INCH = 72.0;
-
 libfreehand::FHTransform makeNormalizeTransform(const libfreehand::FHPageInfo &page)
 {
     return libfreehand::FHTransform(
@@ -423,9 +369,6 @@ libfreehand::FHTransform makeNormalizeTransform(const libfreehand::FHPageInfo &p
         FH_POINTS_PER_INCH * page.m_maxY
     );
 }
-
-/* Build a per-element FHResultPathElement list by calling FHPath::writeOut into
-   a librevenge property list vector and reading back the path-action keys. */
 void flattenPath(const libfreehand::FHPath &path,
                  const std::vector<libfreehand::FHTransform> &xforms,
                  const libfreehand::FHTransform &normalize,
@@ -435,13 +378,10 @@ void flattenPath(const libfreehand::FHPath &path,
     for (auto rit = xforms.rbegin(); rit != xforms.rend(); ++rit)
         working.transform(*rit);
     working.transform(normalize);
-
     librevenge::RVNGPropertyListVector vec;
     working.writeOut(vec);
-
     out.isClosed = working.isClosed();
     out.evenOdd = working.getEvenOdd();
-
     for (unsigned long i = 0; i < vec.count(); ++i)
     {
         const librevenge::RVNGPropertyList &node = vec[i];
@@ -449,10 +389,8 @@ void flattenPath(const libfreehand::FHPath &path,
         if (!actionProp) continue;
         librevenge::RVNGString action = actionProp->getStr();
         if (action.empty()) continue;
-
         FHResultPathElement el;
         el.x = el.y = el.x1 = el.y1 = el.x2 = el.y2 = 0.0;
-
         char first = action.cstr()[0];
         switch (first)
         {
@@ -483,8 +421,6 @@ void flattenPath(const libfreehand::FHPath &path,
             if (auto *p = node["svg:y"]) el.y = p->getDouble();
             break;
         case 'A':
-            // Phase 1: approximate an arc as a straight line to its endpoint.
-            // Phase 2+ can flatten to cubic Beziers. Arcs are rare in FH files.
             el.kind = FH_PATH_LINE;
             if (auto *p = node["svg:x"]) el.x = p->getDouble();
             if (auto *p = node["svg:y"]) el.y = p->getDouble();
@@ -498,10 +434,6 @@ void flattenPath(const libfreehand::FHPath &path,
         out.elements.push_back(el);
     }
 }
-
-/* FH3-era files leave m_pageInfo uninitialized and store the real page bounds
-   on m_fhTail.m_pageInfo instead. Pick the first one with non-zero extent so
-   the Y-flip normalize transform pivots on the correct maxY. */
 const libfreehand::FHPageInfo &effectivePageInfo(const libfreehand::InkpenCollectorView &v)
 {
     const libfreehand::FHPageInfo *primary = v.pageInfo;
@@ -511,7 +443,6 @@ const libfreehand::FHPageInfo &effectivePageInfo(const libfreehand::InkpenCollec
     static libfreehand::FHPageInfo zero;
     return zero;
 }
-
 struct WalkContext
 {
     const libfreehand::InkpenCollectorView &view;
@@ -519,8 +450,6 @@ struct WalkContext
     std::vector<libfreehand::FHTransform> xformStack;
     std::set<unsigned> visited;
     fh_result &result;
-
-    /* Diagnostic counters for debugging what the walker is finding. */
     size_t statPaths;
     size_t statGroups;
     size_t statClipGroups;
@@ -528,18 +457,12 @@ struct WalkContext
     size_t statNewBlends;
     size_t statSymbolInstances;
     size_t statContentIdPaths;
-
     WalkContext(const libfreehand::InkpenCollectorView &v, fh_result &r)
         : view(v), normalize(makeNormalizeTransform(effectivePageInfo(v))),
           xformStack(), visited(), result(r),
           statPaths(0), statGroups(0), statClipGroups(0), statCompositePaths(0),
           statNewBlends(0), statSymbolInstances(0), statContentIdPaths(0) {}
 };
-
-/* Forward decls for the mutually-recursive walkers. Each walker returns the
-   index of the TOP-LEVEL emitted shape (a container or leaf) it produced, or
-   SIZE_MAX if nothing was emitted. Callers collecting children should push
-   only that return value, not every shape emitted into ctx.result.shapes. */
 size_t walkSomething(unsigned id, WalkContext &ctx);
 size_t walkPath(const libfreehand::FHPath *path, WalkContext &ctx);
 size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asClipGroup);
@@ -548,14 +471,11 @@ size_t walkNewBlend(const libfreehand::FHNewBlend *nb, WalkContext &ctx);
 size_t walkSymbolInstance(const libfreehand::FHSymbolInstance *sym, WalkContext &ctx);
 void walkListElementsTopLevel(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx);
 void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &out, WalkContext &ctx);
-
 size_t emitPathShape(const libfreehand::FHPath *path, WalkContext &ctx, bool forceCompound)
 {
     if (!path || path->empty()) return SIZE_MAX;
-
     FHResultShape shape;
     shape.kind = forceCompound ? FH_SHAPE_KIND_COMPOUND_PATH : FH_SHAPE_KIND_PATH;
-
     std::vector<libfreehand::FHTransform> xforms = ctx.xformStack;
     if (path->getXFormId() && ctx.view.transforms)
     {
@@ -563,27 +483,20 @@ size_t emitPathShape(const libfreehand::FHPath *path, WalkContext &ctx, bool for
         if (xt != ctx.view.transforms->end())
             xforms.push_back(xt->second);
     }
-
     flattenPath(*path, xforms, ctx.normalize, shape);
     if (shape.elements.empty()) return SIZE_MAX;
-
     unsigned gsId = path->getGraphicStyleId();
     resolveFillIntoShape(ctx.view, gsId, shape);
     StrokeResult st = resolveStroke(ctx.view, gsId);
     shape.stroke = st.color;
     shape.strokeWidth = st.width * FH_POINTS_PER_INCH;
     shape.opacity = resolveOpacity(ctx.view, gsId);
-
     ctx.result.shapes.push_back(shape);
     return ctx.result.shapes.size() - 1;
 }
-
 size_t walkPath(const libfreehand::FHPath *path, WalkContext &ctx)
 {
     ctx.statPaths++;
-    /* Check if the path's graphic style has a contentId — meaning FH wants to
-       render nested content (e.g., a tile fill group) clipped by this path.
-       Count it so we can diagnose whether CrnkBait uses this pattern. */
     if (path && ctx.view.contentId)
     {
         unsigned gsId = path->getGraphicStyleId();
@@ -596,28 +509,20 @@ size_t walkPath(const libfreehand::FHPath *path, WalkContext &ctx)
     }
     return emitPathShape(path, ctx, false);
 }
-
 size_t walkCompositePath(const libfreehand::FHCompositePath *cp, WalkContext &ctx)
 {
     if (!cp || !ctx.view.lists) return SIZE_MAX;
     ctx.statCompositePaths++;
-
     auto listIt = ctx.view.lists->find(cp->m_elementsId);
     if (listIt == ctx.view.lists->end()) return SIZE_MAX;
-
-    /* Merge all child FHPath geometries into one FHPath so the composite renders
-       as a single CGPath with its fill rule applied. This mirrors how the SVG
-       parser flattens multi-move-to paths into compound shapes. */
     libfreehand::FHPath merged;
     bool anyEvenOdd = false;
     unsigned inheritGsId = cp->m_graphicStyleId;
-
     for (unsigned elemId : listIt->second.m_elements)
     {
         if (!ctx.view.paths) continue;
         auto pathIt = ctx.view.paths->find(elemId);
         if (pathIt == ctx.view.paths->end()) continue;
-
         libfreehand::FHPath child(pathIt->second);
         if (child.getEvenOdd()) anyEvenOdd = true;
         if (child.getXFormId() && ctx.view.transforms)
@@ -629,18 +534,11 @@ size_t walkCompositePath(const libfreehand::FHCompositePath *cp, WalkContext &ct
         merged.appendPath(child);
         if (!inheritGsId) inheritGsId = child.getGraphicStyleId();
     }
-
     if (merged.empty()) return SIZE_MAX;
     merged.setEvenOdd(anyEvenOdd);
     merged.setGraphicStyleId(inheritGsId);
     return emitPathShape(&merged, ctx, true);
 }
-
-/* Recursively walks the elements of a clip group, flattening nested Groups and
-   nested ClipGroups so the result is a flat list of leaf shape indices (paths,
-   composite paths, blends, symbol instances). Native InkPen clipping groups
-   require the mask + content all to be direct child shapes, never a group.
-   The first leaf in the flat list is FreeHand's clip mask (FH convention). */
 void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &out, WalkContext &ctx)
 {
     if (!ctx.view.lists) return;
@@ -648,7 +546,6 @@ void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &
     if (listIt == ctx.view.lists->end()) return;
     for (unsigned elemId : listIt->second.m_elements)
     {
-        /* Nested Group → descend into its elements directly, preserving xform. */
         if (ctx.view.groups)
         {
             auto git = ctx.view.groups->find(elemId);
@@ -669,8 +566,6 @@ void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &
                 continue;
             }
         }
-        /* Nested ClipGroup inside a ClipGroup → also flatten. Native InkPen
-           clipping groups can't contain other clipping groups as members. */
         if (ctx.view.clipGroups)
         {
             auto git = ctx.view.clipGroups->find(elemId);
@@ -691,13 +586,6 @@ void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &
                 continue;
             }
         }
-        /* Leaf or other type — walk normally and collect emitted indices.
-           Containers (e.g., newBlend's group wrapper, symbolInstance's class
-           group) are already populated with children that were emitted BEFORE
-           the container in this batch — so those children are already in
-           `out` via this loop's earlier leaf branch. Draining the container
-           means simply clearing its memberIndices so Swift drops it, without
-           re-adding the children (which would create duplicates). */
         size_t before = ctx.result.shapes.size();
         walkSomething(elemId, ctx);
         for (size_t k = before; k < ctx.result.shapes.size(); ++k)
@@ -714,17 +602,13 @@ void walkLeafElementsForClipGroup(unsigned elementsListId, std::vector<size_t> &
         }
     }
 }
-
 size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asClipGroup)
 {
     if (!group || !ctx.view.lists) return SIZE_MAX;
-
     if (asClipGroup) ctx.statClipGroups++;
     else ctx.statGroups++;
-
     auto listIt = ctx.view.lists->find(group->m_elementsId);
     if (listIt == ctx.view.lists->end()) return SIZE_MAX;
-
     bool pushed = false;
     if (group->m_xFormId && ctx.view.transforms)
     {
@@ -735,22 +619,13 @@ size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asCli
             pushed = true;
         }
     }
-
     std::vector<size_t> childIndices;
-
     if (asClipGroup)
     {
-        /* Clipping group: gather ONLY flat leaves. Native InkPen requires the
-           mask (first leaf) and every clipped content shape to be direct child
-           shapes of the clip group — never nested groups. */
         walkLeafElementsForClipGroup(group->m_elementsId, childIndices, ctx);
     }
     else
     {
-        /* Regular group: walk each child in document order and take ONLY its
-           top-level emitted index. Nested leaves belong to their immediate
-           container; this group references only the top-level containers or
-           leaves directly, never duplicating the nested content. */
         for (unsigned elemId : listIt->second.m_elements)
         {
             size_t topIdx = walkSomething(elemId, ctx);
@@ -758,14 +633,9 @@ size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asCli
                 childIndices.push_back(topIdx);
         }
     }
-
     if (pushed) ctx.xformStack.pop_back();
-
     if (childIndices.empty()) return SIZE_MAX;
-
-    /* Skip trivial single-child groups — they just add noise in the Layers panel. */
     if (childIndices.size() == 1 && !asClipGroup) return childIndices.back();
-
     FHResultShape container;
     container.kind = asClipGroup ? FH_SHAPE_KIND_CLIP_GROUP : FH_SHAPE_KIND_GROUP;
     container.memberIndices = childIndices;
@@ -773,13 +643,11 @@ size_t walkGroup(const libfreehand::FHGroup *group, WalkContext &ctx, bool asCli
     ctx.result.shapes.push_back(container);
     return ctx.result.shapes.size() - 1;
 }
-
 size_t walkSomething(unsigned id, WalkContext &ctx)
 {
     if (!id) return SIZE_MAX;
     if (ctx.visited.find(id) != ctx.visited.end()) return SIZE_MAX;
     ctx.visited.insert(id);
-
     size_t topIdx = SIZE_MAX;
     if (ctx.view.paths)
     {
@@ -811,17 +679,10 @@ size_t walkSomething(unsigned id, WalkContext &ctx)
         auto it = ctx.view.symbolInstances->find(id);
         if (it != ctx.view.symbolInstances->end()) { topIdx = walkSymbolInstance(&it->second, ctx); goto done; }
     }
-    /* Text / images / pathText / displayText come in Phase 3. */
 done:
     ctx.visited.erase(id);
     return topIdx;
 }
-
-/* Walks each element of a list and pushes only the TOP-LEVEL emitted index
-   per element (the walker's return value) — never the intermediate children
-   that the walker emitted into ctx.result.shapes. Prevents the same leaves
-   being referenced by both their immediate parent container AND an enclosing
-   container (which caused the duplicate-UUID ForEach bug). */
 void walkListElementsTopLevel(unsigned listId, std::vector<size_t> &childIndices, WalkContext &ctx)
 {
     if (!listId || !ctx.view.lists) return;
@@ -834,25 +695,16 @@ void walkListElementsTopLevel(unsigned listId, std::vector<size_t> &childIndices
             childIndices.push_back(topIdx);
     }
 }
-
-/* FHNewBlend: libfreehand doesn't interpolate — it just emits the three source
-   lists as a group. We replicate that: walk list1 + list2 + list3, wrap the
-   resulting shapes in a group container. Uses walkListElementsTopLevel so
-   the childIndices contain ONLY top-level container/leaf indices, never
-   intermediate nested leaves that would otherwise end up double-referenced. */
 size_t walkNewBlend(const libfreehand::FHNewBlend *nb, WalkContext &ctx)
 {
     if (!nb) return SIZE_MAX;
     ctx.statNewBlends++;
-
     std::vector<size_t> childIndices;
     walkListElementsTopLevel(nb->m_list1Id, childIndices, ctx);
     walkListElementsTopLevel(nb->m_list2Id, childIndices, ctx);
     walkListElementsTopLevel(nb->m_list3Id, childIndices, ctx);
-
     if (childIndices.empty()) return SIZE_MAX;
     if (childIndices.size() == 1) return childIndices.back();
-
     FHResultShape container;
     container.kind = FH_SHAPE_KIND_GROUP;
     container.memberIndices = childIndices;
@@ -860,39 +712,22 @@ size_t walkNewBlend(const libfreehand::FHNewBlend *nb, WalkContext &ctx)
     ctx.result.shapes.push_back(container);
     return ctx.result.shapes.size() - 1;
 }
-
-/* FHSymbolInstance: recurse into the symbol class's group with the instance's
-   transform pushed onto the xform stack. Phase 2 treats every instance as a
-   full clone of its symbol — no shared-symbol deduplication. */
 size_t walkSymbolInstance(const libfreehand::FHSymbolInstance *sym, WalkContext &ctx)
 {
     if (!sym || !ctx.view.symbolClasses) return SIZE_MAX;
     ctx.statSymbolInstances++;
-
     auto classIt = ctx.view.symbolClasses->find(sym->m_symbolClassId);
     if (classIt == ctx.view.symbolClasses->end()) return SIZE_MAX;
-
     ctx.xformStack.push_back(sym->m_xForm);
-
-    /* Walk the symbol class's top-level group and take ONLY its return value
-       as the result — never enumerate intermediate emitted leaves. */
     size_t topIdx = walkSomething(classIt->second.m_groupId, ctx);
-
     ctx.xformStack.pop_back();
-
     if (topIdx == SIZE_MAX) return SIZE_MAX;
-
-    /* The symbol's root group has already been emitted with the instance xform
-       applied via ctx.xformStack. Just return its top index — no extra wrapper. */
     return topIdx;
 }
-
 void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &result)
 {
     if (!view.pageInfo) return;
     WalkContext ctx(view, result);
-
-    /* m_block → layerListId → FHList of layer IDs → each FHLayer → m_elementsId → FHList of element IDs. */
     if (view.block && view.lists && view.layers)
     {
         unsigned layerListId = view.block->second.m_layerListId;
@@ -903,28 +738,19 @@ void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &resu
             {
                 auto layerIt = view.layers->find(layerId);
                 if (layerIt == view.layers->end()) continue;
-                if (layerIt->second.m_visibility == 0) continue; // Hidden layer.
-
+                if (layerIt->second.m_visibility == 0) continue;
                 auto elemListIt = view.lists->find(layerIt->second.m_elementsId);
                 if (elemListIt == view.lists->end()) continue;
-                /* Each layer element's walk emits its top-level index via the
-                   walker return, but this level doesn't need to collect them —
-                   top-level layer shapes float via the consumed-set dedupe in
-                   Swift. Just drive the walk so the shapes land in result. */
                 for (unsigned elemId : elemListIt->second.m_elements)
                     (void)walkSomething(elemId, ctx);
             }
         }
     }
-
-    /* Fallback: if no layer tree was walked (unusual FH files), walk every path directly. */
     if (result.shapes.empty() && view.paths)
     {
         for (auto it = view.paths->begin(); it != view.paths->end(); ++it)
             walkPath(&it->second, ctx);
     }
-
-    /* Copy diagnostic counters from the walker context to the result. */
     result.statPaths = ctx.statPaths;
     result.statGroups = ctx.statGroups;
     result.statClipGroups = ctx.statClipGroups;
@@ -932,15 +758,9 @@ void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &resu
     result.statNewBlends = ctx.statNewBlends;
     result.statSymbolInstances = ctx.statSymbolInstances;
     result.statContentIdPaths = ctx.statContentIdPaths;
-
     const libfreehand::FHPageInfo &page = effectivePageInfo(view);
     result.pageWidth = (page.m_maxX - page.m_minX) * FH_POINTS_PER_INCH;
     result.pageHeight = (page.m_maxY - page.m_minY) * FH_POINTS_PER_INCH;
-
-    /* Auto-fit: some FH files place content on the "pasteboard" outside the page
-       box, so after the Y-flip the shapes land at negative X or Y. Compute the
-       combined bbox of every emitted path element and, if it starts above/left
-       of the page origin, translate everything so (minX, minY) = (0, 0). */
     double minX = std::numeric_limits<double>::infinity();
     double minY = std::numeric_limits<double>::infinity();
     for (const FHResultShape &shape : result.shapes)
@@ -987,56 +807,42 @@ void walkLayerTree(const libfreehand::InkpenCollectorView &view, fh_result &resu
         }
     }
 }
-
-} // namespace
-
+}
 extern "C" {
-
 int freehand_parse_to_shapes(const unsigned char *data, size_t length, fh_result **out_result)
 {
     if (!data || length == 0 || !out_result) return 1;
     *out_result = nullptr;
-
     librevenge::RVNGMemoryInputStream input(const_cast<unsigned char *>(data), (unsigned long)length);
     if (!libfreehand::FreeHandDocument::isSupported(&input)) return 2;
-
     input.seek(0, librevenge::RVNG_SEEK_SET);
-
     libfreehand::FHCollector collector;
     libfreehand::FHParser parser;
-
     try {
         if (!parser.parse(&input, &collector)) return 3;
     } catch (...) {
         return 3;
     }
-
     libfreehand::InkpenCollectorView view;
     collector.inkpenBuildView(view);
-
     fh_result *result = new (std::nothrow) fh_result();
     if (!result) return 5;
-
     try {
         walkLayerTree(view, *result);
     } catch (...) {
         delete result;
         return 3;
     }
-
     *out_result = result;
     return 0;
 }
-
 void fh_result_free(fh_result *result)
 {
     delete result;
 }
-
 double fh_result_page_width(const fh_result *r) { return r ? r->pageWidth : 0.0; }
 double fh_result_page_height(const fh_result *r) { return r ? r->pageHeight : 0.0; }
 size_t fh_result_shape_count(const fh_result *r) { return r ? r->shapes.size() : 0; }
-
 size_t fh_result_stat_paths(const fh_result *r) { return r ? r->statPaths : 0; }
 size_t fh_result_stat_groups(const fh_result *r) { return r ? r->statGroups : 0; }
 size_t fh_result_stat_clip_groups(const fh_result *r) { return r ? r->statClipGroups : 0; }
@@ -1044,31 +850,26 @@ size_t fh_result_stat_composite_paths(const fh_result *r) { return r ? r->statCo
 size_t fh_result_stat_new_blends(const fh_result *r) { return r ? r->statNewBlends : 0; }
 size_t fh_result_stat_symbol_instances(const fh_result *r) { return r ? r->statSymbolInstances : 0; }
 size_t fh_result_stat_content_id_paths(const fh_result *r) { return r ? r->statContentIdPaths : 0; }
-
 int fh_result_shape_kind(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return -1;
     return r->shapes[index].kind;
 }
-
 int fh_result_shape_is_closed(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return 0;
     return r->shapes[index].isClosed ? 1 : 0;
 }
-
 int fh_result_shape_even_odd(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return 0;
     return r->shapes[index].evenOdd ? 1 : 0;
 }
-
 size_t fh_result_shape_path_element_count(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return 0;
     return r->shapes[index].elements.size();
 }
-
 int fh_result_shape_path_element_kind(const fh_result *r, size_t index, size_t elIndex)
 {
     if (!r || index >= r->shapes.size()) return -1;
@@ -1076,7 +877,6 @@ int fh_result_shape_path_element_kind(const fh_result *r, size_t index, size_t e
     if (elIndex >= els.size()) return -1;
     return els[elIndex].kind;
 }
-
 double fh_result_shape_path_element_coord(const fh_result *r, size_t index, size_t elIndex, int which)
 {
     if (!r || index >= r->shapes.size()) return 0.0;
@@ -1094,7 +894,6 @@ double fh_result_shape_path_element_coord(const fh_result *r, size_t index, size
     default: return 0.0;
     }
 }
-
 int fh_result_shape_fill_kind(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return FH_FILL_NONE;
@@ -1112,7 +911,6 @@ double fh_result_shape_fill_a(const fh_result *r, size_t i) { return (r && i < r
 double fh_result_shape_fill_angle(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].fillAngle : 0.0; }
 double fh_result_shape_fill_center_x(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].fillCenterX : 0.5; }
 double fh_result_shape_fill_center_y(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].fillCenterY : 0.5; }
-
 size_t fh_result_shape_gradient_stop_count(const fh_result *r, size_t i)
 {
     if (!r || i >= r->shapes.size()) return 0;
@@ -1148,7 +946,6 @@ double fh_result_shape_gradient_stop_a(const fh_result *r, size_t i, size_t s)
     const auto &stops = r->shapes[i].gradientStops;
     return s < stops.size() ? stops[s].a : 1.0;
 }
-
 int fh_result_shape_has_stroke(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return 0;
@@ -1159,15 +956,12 @@ double fh_result_shape_stroke_g(const fh_result *r, size_t i) { return (r && i <
 double fh_result_shape_stroke_b(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].stroke.b : 0.0; }
 double fh_result_shape_stroke_a(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].stroke.a : 1.0; }
 double fh_result_shape_stroke_width(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].strokeWidth : 0.0; }
-
 double fh_result_shape_opacity(const fh_result *r, size_t i) { return (r && i < r->shapes.size()) ? r->shapes[i].opacity : 1.0; }
-
 size_t fh_result_shape_member_count(const fh_result *r, size_t index)
 {
     if (!r || index >= r->shapes.size()) return 0;
     return r->shapes[index].memberIndices.size();
 }
-
 size_t fh_result_shape_member_index(const fh_result *r, size_t index, size_t memberIndex)
 {
     if (!r || index >= r->shapes.size()) return SIZE_MAX;
@@ -1175,7 +969,5 @@ size_t fh_result_shape_member_index(const fh_result *r, size_t index, size_t mem
     if (memberIndex >= members.size()) return SIZE_MAX;
     return members[memberIndex];
 }
-
-} // extern "C"
-
+}
 #pragma clang diagnostic pop

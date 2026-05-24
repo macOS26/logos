@@ -1,0 +1,42 @@
+librevenge
+==========
+
+This directory contains code from the librevenge project.
+Upstream: https://sourceforge.net/projects/libwpd/ (librevenge component)
+
+Dual licensed: MPL 2.0 / LGPLv2.1+
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+  Alternatively, the contents of this directory may be used under the
+  terms of the GNU Lesser General Public License Version 2.1 or later
+  (LGPLv2.1+), in which case the provisions of the LGPLv2.1+ are
+  applicable instead of those above.
+
+Major Contributors (collected from the original per-file headers):
+
+  Copyright (C) 2002      Marc Maurer            (uwog@uwog.net)
+  Copyright (C) 2002      William Lachance       (wrlach@gmail.com)
+  Copyright (C) 2002-2003 Marc Maurer            (uwog@uwog.net)
+  Copyright (C) 2002-2004 Marc Maurer            (uwog@uwog.net)
+  Copyright (C) 2002,2004 Marc Maurer            (uwog@uwog.net)
+  Copyright (C) 2002-2005 William Lachance       (wrlach@gmail.com)
+  Copyright (C) 2004      Marc Oude Kotte        (marc@solcon.nl)
+  Copyright (C) 2004      William Lachance       (wrlach@gmail.com)
+  Copyright (C) 2004-2005 William Lachance       (wrlach@gmail.com)
+  Copyright (C) 2005      William Lachance       (wrlach@gmail.com)
+  Copyright (C) 2005      Fridrich Strba         (fridrich.strba@bluewin.ch)
+  Copyright (C) 2005      Net Integration Technologies, Inc. (http://www.net-itech.com)
+  Copyright (C) 2006      Ariya Hidayat          (ariya@kde.org)
+  Copyright (C) 2006      Fridrich Strba         (fridrich.strba@bluewin.ch)
+  Copyright (C) 2007      Fridrich Strba         (fridrich.strba@bluewin.ch)
+  Copyright (C) 2012      Fridrich Strba         (fridrich.strba@bluewin.ch)
+
+For minor contributions see the upstream git repository.
+
+All comment-form copyright and license notices that originally appeared
+inside individual source files in this directory have been consolidated
+into this LICENSE file. The MPL 2.0 / LGPLv2.1+ terms continue to govern
+this code as if those notices remained inline.

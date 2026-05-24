@@ -1,0 +1,16 @@
+libfreehand
+===========
+
+This directory contains code from the libfreehand project.
+Upstream: https://sourceforge.net/projects/libfreehand/
+
+Licensed under the Mozilla Public License, v. 2.0.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+All comment-form copyright and license notices that originally appeared
+inside individual source files in this directory have been consolidated
+into this LICENSE file. The MPL 2.0 terms continue to govern this code
+as if those notices remained inline.

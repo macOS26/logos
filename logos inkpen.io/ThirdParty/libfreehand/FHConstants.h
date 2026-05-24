@@ -1,17 +1,5 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 #ifndef __FHCONSTANTS_H__
 #define __FHCONSTANTS_H__
-
-// VMpObj properties
-
 #define FH_NAME 0x0321
 #define FH_UID 0x065b
 #define FH_PARA_TEXT_ALIGN 0x15e3
@@ -46,13 +34,9 @@
 #define FH_PAGE_START_Y2 0x1c84
 #define FH_PAGE_WIDTH 0x1c34
 #define FH_PAGE_HEIGHT 0x1c3c
-
-// AGDFont properties
-
 #define FH_AGD_FONT_NAME 0x0e11
 #define FH_AGD_STYLE 0x0e1b
 #define FH_AGD_SIZE 0x0e24
-
 #define FH_DISLAY_BORDER 0x1302
 #define FH_INSET_BOTTOM 0x130c
 #define FH_DIMENSION_HEIGHT 0x131c
@@ -71,21 +55,15 @@
 #define FH_TEXT_END_POS 0x13fb
 #define FH_TEXT_BEGIN_POS 0x1403
 #define FH_DIMENSION_WIDTH 0x140c
-
 #define FH_EFFECT_NAME 0x1a91
 #define FH_UNDERLINE_COLOR_ID 0x1ab9
 #define FH_UNDERLINE_DASH_ID 0x1ac1
 #define FH_UNDERLINE_POSITION 0x1acc
 #define FH_STROKE_WIDTH 0x1ad4
-
-// LensFill modes
-
 #define FH_LENSFILL_MODE_TRANSPARENCY 0
 #define FH_LENSFILL_MODE_MAGNIFY 1
 #define FH_LENSFILL_MODE_LIGHTEN 2
 #define FH_LENSFILL_MODE_DARKEN 3
 #define FH_LENSFILL_MODE_INVERT 4
 #define FH_LENSFILL_MODE_MONOCHROME 5
-
-#endif //  __FHCONSTANTS_H__
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
+#endif

@@ -5,21 +5,11 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 #include <algorithm>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <string.h>
-
 #include "unicode_stub.h"
 #include "unicode_stub.h"
 #include "lcms2_stub.h"
@@ -30,13 +20,9 @@
 #include "FHParser.h"
 #include "libfreehand_utils.h"
 #include "tokens.h"
-
-
 namespace
 {
-
 #include "tokenhash.h"
-
 static int getTokenId(const char *name)
 {
   const fhtoken *token = Perfect_Hash::in_word_set(name, strlen(name));
@@ -45,7 +31,6 @@ static int getTokenId(const char *name)
   else
     return FH_TOKEN_INVALID;
 }
-
 #ifdef LIBFH_VERBOSE_LOG
 const char *getTokenName(int tokenId)
 {
@@ -61,28 +46,22 @@ const char *getTokenName(int tokenId)
   return nullptr;
 }
 #endif
-
-} // anonymous namespace
-
+}
 libfreehand::FHParser::FHParser()
   : m_input(nullptr), m_collector(nullptr), m_version(-1), m_dictionary(),
     m_records(), m_currentRecord(0), m_pageInfo(), m_colorTransform(nullptr)
 {
   cmsHPROFILE inProfile  = cmsOpenProfileFromMem(CMYK_icc, sizeof(CMYK_icc)/sizeof(CMYK_icc[0]));
   cmsHPROFILE outProfile = cmsCreate_sRGBProfile();
-
   m_colorTransform = cmsCreateTransform(inProfile, TYPE_CMYK_16, outProfile, TYPE_RGB_16, INTENT_PERCEPTUAL, 0);
-
   cmsCloseProfile(inProfile);
   cmsCloseProfile(outProfile);
 }
-
 libfreehand::FHParser::~FHParser()
 {
   if (m_colorTransform)
     cmsDeleteTransform(m_colorTransform);
 }
-
 bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter)
 {
   FHCollector contentCollector;
@@ -91,12 +70,10 @@ bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, librevenge
   contentCollector.outputDrawing(painter);
   return true;
 }
-
 bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (!collector)
     return false;
-
   long dataOffset = input->tell();
   unsigned agd = readU32(input);
   if (((agd >> 24) & 0xff) == 'A' && ((agd >> 16) & 0xff) == 'G' && ((agd >> 8) & 0xff) == 'D')
@@ -105,25 +82,17 @@ bool libfreehand::FHParser::parse(librevenge::RVNGInputStream *input, libfreehan
     m_version = 3;
   else
     return false;
-
-  // Skip a dword
   input->seek(4, librevenge::RVNG_SEEK_CUR);
-
   unsigned dataLength = readU32(input);
   input->seek(dataOffset+dataLength, librevenge::RVNG_SEEK_SET);
-
   parseDictionary(input);
   parseRecordList(input);
-
   input->seek(dataOffset+12, librevenge::RVNG_SEEK_SET);
-
   FHInternalStream dataStream(input, dataLength-12, m_version >= 9);
   dataStream.seek(0, librevenge::RVNG_SEEK_SET);
   parseDocument(&dataStream, collector);
-
   return true;
 }
-
 void libfreehand::FHParser::parseDictionary(librevenge::RVNGInputStream *input)
 {
   unsigned count = readU16(input);
@@ -138,11 +107,9 @@ void libfreehand::FHParser::parseDictionary(librevenge::RVNGInputStream *input)
     unsigned char tmpChar = 0;
     while (0 != (tmpChar = readU8(input)))
       name.append((char)tmpChar);
-
     auto nameToken = getTokenId(name.cstr());
     FH_DEBUG_MSG(("FHParser::parseDictionary - ID: 0x%x, name: %s%s\n",
                   id, name.cstr(), nameToken == FH_TOKEN_INVALID ? " (unknown)" : ""));
-
     if (m_version <= 8)
     {
       for (unsigned f = 0; f < 2;)
@@ -151,11 +118,9 @@ void libfreehand::FHParser::parseDictionary(librevenge::RVNGInputStream *input)
           f++;
       }
     }
-
     m_dictionary[id] = nameToken;
   }
 }
-
 void libfreehand::FHParser::parseRecordList(librevenge::RVNGInputStream *input)
 {
   unsigned count = readU32(input);
@@ -168,7 +133,6 @@ void libfreehand::FHParser::parseRecordList(librevenge::RVNGInputStream *input)
     FH_DEBUG_MSG(("FHParser::parseRecordList - ID: 0x%x\n", id));
   }
 }
-
 void libfreehand::FHParser::parseRecord(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector, int recordId)
 {
   FH_DEBUG_MSG(("Parsing record number 0x%x: %s Offset 0x%lx\n", (unsigned)m_currentRecord+1, getTokenName(recordId), input->tell()));
@@ -546,9 +510,7 @@ void libfreehand::FHParser::parseRecord(librevenge::RVNGInputStream *input, libf
     FH_DEBUG_MSG(("FHParser::parseRecords UNKNOWN TOKEN\n"));
     return;
   }
-
 }
-
 void libfreehand::FHParser::parseRecords(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   for (m_currentRecord = 0; m_currentRecord < m_records.size() && !input->isEnd(); ++m_currentRecord)
@@ -570,13 +532,11 @@ void libfreehand::FHParser::parseRecords(librevenge::RVNGInputStream *input, lib
   }
   readFHTail(input, collector);
 }
-
 void libfreehand::FHParser::parseDocument(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   parseRecords(input, collector);
   collector->collectPageInfo(m_pageInfo);
 }
-
 void libfreehand::FHParser::readAGDFont(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
@@ -608,13 +568,11 @@ void libfreehand::FHParser::readAGDFont(librevenge::RVNGInputStream *input, libf
   if (collector)
     collector->collectAGDFont(m_currentRecord+1, font);
 }
-
-void libfreehand::FHParser::readAGDSelection(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readAGDSelection(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   unsigned short size = readU16(input);
   input->seek(6+size*4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readArrowPath(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (m_version > 8)
@@ -625,7 +583,6 @@ void libfreehand::FHParser::readArrowPath(librevenge::RVNGInputStream *input, li
   if (m_version > 3)
     input->seek(4, librevenge::RVNG_SEEK_CUR);
   input->seek(4, librevenge::RVNG_SEEK_CUR);
-
   long endPos=input->tell()+27*numPoints;
   std::vector<unsigned char> ptrTypes;
   std::vector<std::vector<std::pair<double, double> > > path;
@@ -654,13 +611,11 @@ void libfreehand::FHParser::readArrowPath(librevenge::RVNGInputStream *input, li
     FH_DEBUG_MSG(("libfreehand::FHParser::readArrowPath:Caught EndOfStreamException, continuing\n"));
   }
   input->seek(endPos, librevenge::RVNG_SEEK_SET);
-
   if (path.empty())
   {
     FH_DEBUG_MSG(("libfreehand::FHParser::readArrowPath:No path was read\n"));
     return;
   }
-
   FHPath fhPath;
   fhPath.appendMoveTo(path[0][0].first / 72.0, path[0][0].second / 72.0);
   size_t i = 0;
@@ -675,7 +630,6 @@ void libfreehand::FHParser::readArrowPath(librevenge::RVNGInputStream *input, li
   if (collector && !fhPath.empty())
     collector->collectArrowPath(m_currentRecord+1, fhPath);
 }
-
 void libfreehand::FHParser::readAttributeHolder(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHAttributeHolder attributeHolder;
@@ -684,7 +638,6 @@ void libfreehand::FHParser::readAttributeHolder(librevenge::RVNGInputStream *inp
   if (collector)
     collector->collectAttributeHolder(m_currentRecord+1, attributeHolder);
 }
-
 void libfreehand::FHParser::readBasicFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHBasicFill fill;
@@ -693,7 +646,6 @@ void libfreehand::FHParser::readBasicFill(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectBasicFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readBasicLine(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHBasicLine line;
@@ -707,21 +659,17 @@ void libfreehand::FHParser::readBasicLine(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectBasicLine(m_currentRecord+1, line);
 }
-
-void libfreehand::FHParser::readBendFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readBendFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(10, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readBlendObject(librevenge::RVNGInputStream *input, libfreehand::FHCollector */*collector*/)
+void libfreehand::FHParser::readBlendObject(librevenge::RVNGInputStream *input, libfreehand::FHCollector *)
 {
-  // osnola useme
   for (int i=0; i<2; ++i) _readRecordId(input);
   input->seek(8, librevenge::RVNG_SEEK_CUR);
   _readRecordId(input);
   input->seek(16, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readBlock(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned layerListId = 0;
@@ -767,39 +715,33 @@ void libfreehand::FHParser::readBlock(librevenge::RVNGInputStream *input, libfre
     collector->collectBlock(m_currentRecord+1, block);
   }
 }
-
-void libfreehand::FHParser::readBrush(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readBrush(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   _readRecordId(input);
 }
-
-void libfreehand::FHParser::readBrushStroke(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readBrushStroke(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   _readRecordId(input);
   _readRecordId(input);
 }
-
-void libfreehand::FHParser::readBrushTip(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readBrushTip(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   input->seek(60, librevenge::RVNG_SEEK_CUR);
   if (m_version == 11)
     input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readCalligraphicStroke(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readCalligraphicStroke(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   input->seek(12, librevenge::RVNG_SEEK_CUR);
   _readRecordId(input);
 }
-
-void libfreehand::FHParser::readCharacterFill(librevenge::RVNGInputStream * /* input */, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readCharacterFill(librevenge::RVNGInputStream * , libfreehand::FHCollector * )
 {
 }
-
 void libfreehand::FHParser::readClipGroup(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHGroup group;
@@ -813,12 +755,10 @@ void libfreehand::FHParser::readClipGroup(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectClipGroup(m_currentRecord+1, group);
 }
-
-void libfreehand::FHParser::readCollector(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readCollector(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readColor6(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned var = readU16(input);
@@ -839,7 +779,6 @@ void libfreehand::FHParser::readColor6(librevenge::RVNGInputStream *input, libfr
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
 void libfreehand::FHParser::readCompositePath(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHCompositePath compositePath;
@@ -852,38 +791,29 @@ void libfreehand::FHParser::readCompositePath(librevenge::RVNGInputStream *input
   if (collector)
     collector->collectCompositePath(m_currentRecord+1, compositePath);
 }
-
 void libfreehand::FHParser::readConeFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
-  /* It is actually a conic gradient that goes from a line on an angle phi
-     to a line at an angle phi + M_PI both CW and CCW. We are unable though
-   to map it to anything that exists in SVG or ODF :( The visually less
-   lame approximation is a linear gradient. */
-
   FHLinearFill fill;
   fill.m_color1Id = _readRecordId(input);
   fill.m_color2Id = _readRecordId(input);
   fill.m_angle = 90.0;
-  _readCoordinate(input); // cx
-  _readCoordinate(input); // 1 - cy
+  _readCoordinate(input);
+  _readCoordinate(input);
   input->seek(8, librevenge::RVNG_SEEK_CUR);
   fill.m_multiColorListId = _readRecordId(input);
   input->seek(14, librevenge::RVNG_SEEK_CUR);
   if (collector)
     collector->collectLinearFill(m_currentRecord+1, fill);
 }
-
-void libfreehand::FHParser::readConnectorLine(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readConnectorLine(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(20, librevenge::RVNG_SEEK_CUR);
   unsigned short num = readU16(input);
   input->seek(46+num*27, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readContentFill(librevenge::RVNGInputStream * /* input */, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readContentFill(librevenge::RVNGInputStream * , libfreehand::FHCollector * )
 {
 }
-
 void libfreehand::FHParser::readContourFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (m_version > 9)
@@ -912,13 +842,12 @@ void libfreehand::FHParser::readContourFill(librevenge::RVNGInputStream *input, 
     input->seek(6+size*2, librevenge::RVNG_SEEK_CUR);
   }
 }
-
 void libfreehand::FHParser::readCustomProc(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHCustomProc line;
   unsigned short size = readU16(input);
-  _readRecordId(input); // name
-  input->seek(4, librevenge::RVNG_SEEK_CUR); // ?, and N
+  _readRecordId(input);
+  input->seek(4, librevenge::RVNG_SEEK_CUR);
   for (int i=0; i<size; ++i)
   {
     int type=readU8(input);
@@ -948,7 +877,6 @@ void libfreehand::FHParser::readCustomProc(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectCustomProc(m_currentRecord+1, line);
 }
-
 void libfreehand::FHParser::readDataList(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size = readU16(input);
@@ -963,7 +891,6 @@ void libfreehand::FHParser::readDataList(librevenge::RVNGInputStream *input, lib
   if (collector)
     collector->collectDataList(m_currentRecord+1, list);
 }
-
 void libfreehand::FHParser::readData(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned blockSize = readU16(input);
@@ -975,12 +902,10 @@ void libfreehand::FHParser::readData(librevenge::RVNGInputStream *input, libfree
   if (collector)
     collector->collectData(m_currentRecord+1, data);
 }
-
-void libfreehand::FHParser::readDateTime(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readDateTime(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readDisplayText(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
@@ -1002,7 +927,6 @@ void libfreehand::FHParser::readDisplayText(librevenge::RVNGInputStream *input, 
   unsigned short textLength = readU16(input);
   displayText.m_justify=readU8(input);
   input->seek(1, librevenge::RVNG_SEEK_CUR);
-
   FH3CharProperties charProps;
   do
   {
@@ -1032,22 +956,18 @@ void libfreehand::FHParser::readDisplayText(librevenge::RVNGInputStream *input, 
     collector->collectDisplayText(m_currentRecord+1, displayText);
   FH_DEBUG_MSG(("FHParser::readDisplayText: %s\n", text.cstr()));
 }
-
-void libfreehand::FHParser::readDuetFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readDuetFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readElemList(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readElemList(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readElemPropLst(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (m_version > 8)
@@ -1063,8 +983,7 @@ void libfreehand::FHParser::readElemPropLst(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectPropList(m_currentRecord+1, propertyList);
 }
-
-void libfreehand::FHParser::readEnvelope(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readEnvelope(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
   _readRecordId(input);
@@ -1076,20 +995,15 @@ void libfreehand::FHParser::readEnvelope(librevenge::RVNGInputStream *input, lib
   unsigned short num2 = readU16(input);
   input->seek(4*num2+27*num, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readEPSImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readEPSImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
-  // TODO: Needs to be verified. The size has been determined
-  // experimentally from a single v.7 (Mac) document.
   input->seek(38, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readExpandFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readExpandFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readExtrusion(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readExtrusion(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   long startPosition = input->tell();
   input->seek(96, librevenge::RVNG_SEEK_CUR);
@@ -1100,12 +1014,10 @@ void libfreehand::FHParser::readExtrusion(librevenge::RVNGInputStream *input, li
   _readRecordId(input);
   input->seek(92 + _xformCalc(var1, var2) + 2, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readFHDocHeader(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFHDocHeader(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readFHTail(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FH_DEBUG_MSG(("Reading FHTail fake record\n"));
@@ -1120,17 +1032,14 @@ void libfreehand::FHParser::readFHTail(librevenge::RVNGInputStream *input, libfr
   input->seek(0x32+startPosition, librevenge::RVNG_SEEK_SET);
   fhTail.m_pageInfo.m_minX = 0.0;
   fhTail.m_pageInfo.m_minY = 0.0;
-
   if (collector)
     collector->collectFHTail(m_currentRecord+1, fhTail);
 }
-
-void libfreehand::FHParser::readFigure(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFigure(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readFileDescriptor(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFileDescriptor(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   _readRecordId(input);
@@ -1138,7 +1047,6 @@ void libfreehand::FHParser::readFileDescriptor(librevenge::RVNGInputStream *inpu
   unsigned short size = readU16(input);
   input->seek(size, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readFilterAttributeHolder(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHFilterAttributeHolder filterAttributeHolder;
@@ -1148,23 +1056,19 @@ void libfreehand::FHParser::readFilterAttributeHolder(librevenge::RVNGInputStrea
   if (collector)
     collector->collectFilterAttributeHolder(m_currentRecord+1, filterAttributeHolder);
 }
-
-void libfreehand::FHParser::readFWBevelFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFWBevelFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   input->seek(28, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readFWBlurFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFWBlurFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(12, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readFWFeatherFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFWFeatherFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(8, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readFWGlowFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FWGlowFilter filter;
@@ -1179,7 +1083,6 @@ void libfreehand::FHParser::readFWGlowFilter(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectFWGlowFilter(m_currentRecord+1, filter);
 }
-
 void libfreehand::FHParser::readFWShadowFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FWShadowFilter filter;
@@ -1196,17 +1099,14 @@ void libfreehand::FHParser::readFWShadowFilter(librevenge::RVNGInputStream *inpu
   if (collector)
     collector->collectFWShadowFilter(m_currentRecord+1, filter);
 }
-
-void libfreehand::FHParser::readFWSharpenFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readFWSharpenFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(16, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readGradientMaskFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readGradientMaskFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
 }
-
 void libfreehand::FHParser::readGraphicStyle(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
@@ -1219,7 +1119,6 @@ void libfreehand::FHParser::readGraphicStyle(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectGraphicStyle(m_currentRecord+1, graphicStyle);
 }
-
 void libfreehand::FHParser::readGroup(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHGroup group;
@@ -1233,41 +1132,36 @@ void libfreehand::FHParser::readGroup(librevenge::RVNGInputStream *input, libfre
   if (collector)
     collector->collectGroup(m_currentRecord+1, group);
 }
-
-void libfreehand::FHParser::readGuides(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readGuides(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   unsigned short size = readU16(input);
   _readRecordId(input);
   _readRecordId(input);
-  /* osnola: todo, useme, there is one guide by "page", ... */
   if (m_version > 3)
     input->seek(4, librevenge::RVNG_SEEK_CUR);
   input->seek(12+size*8, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readHalftone(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readHalftone(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   _readRecordId(input);
   input->seek(8, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readImageFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readImageFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(6, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readImageImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHImageImport image;
   image.m_graphicStyleId = _readRecordId(input);
-  _readRecordId(input); // parent
+  _readRecordId(input);
   if (m_version > 3)
     input->seek(4, librevenge::RVNG_SEEK_CUR);
   input->seek(4, librevenge::RVNG_SEEK_CUR);
   if (m_version > 8)
-    _readRecordId(input); // format name
+    _readRecordId(input);
   image.m_dataListId = _readRecordId(input);
-  _readRecordId(input); // file descriptor
+  _readRecordId(input);
   image.m_xFormId = _readRecordId(input);
   image.m_startX = _readCoordinate(input) / 72.0;
   image.m_startY = _readCoordinate(input) / 72.0;
@@ -1285,18 +1179,15 @@ void libfreehand::FHParser::readImageImport(librevenge::RVNGInputStream *input, 
     }
     while (character);
   }
-
   if (m_version > 10)
     input->seek(2, librevenge::RVNG_SEEK_CUR);
   if (collector)
     collector->collectImage(m_currentRecord+1, image);
 }
-
-void libfreehand::FHParser::readImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(34, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readLayer(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHLayer layer;
@@ -1311,7 +1202,6 @@ void libfreehand::FHParser::readLayer(librevenge::RVNGInputStream *input, libfre
   if (collector)
     collector->collectLayer(m_currentRecord+1, layer);
 }
-
 void libfreehand::FHParser::readLensFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHLensFill fill;
@@ -1323,7 +1213,6 @@ void libfreehand::FHParser::readLensFill(librevenge::RVNGInputStream *input, lib
   if (collector)
     collector->collectLensFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readLinearFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHLinearFill fill;
@@ -1336,13 +1225,11 @@ void libfreehand::FHParser::readLinearFill(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectLinearFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readLinePat(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short numStrokes = readU16(input);
   if (!numStrokes && m_version == 8)
   {
-    // osnola: does not seems logical, what is that ?
     FH_DEBUG_MSG(("libfreehand::FHParser::readLinePat: checkme something is not right here"));
     input->seek(26, librevenge::RVNG_SEEK_CUR);
     return;
@@ -1357,8 +1244,7 @@ void libfreehand::FHParser::readLinePat(librevenge::RVNGInputStream *input, libf
   if (collector)
     collector->collectLinePattern(m_currentRecord+1, pattern);
 }
-
-void libfreehand::FHParser::readLineTable(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readLineTable(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   unsigned short tmpSize = readU16(input);
   unsigned short size = readU16(input);
@@ -1370,44 +1256,37 @@ void libfreehand::FHParser::readLineTable(librevenge::RVNGInputStream *input, li
     _readRecordId(input);
   }
 }
-
-void libfreehand::FHParser::readMasterPageDocMan(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageDocMan(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMasterPageElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMasterPageLayerElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageLayerElement(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMasterPageLayerInstance(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageLayerInstance(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
   unsigned char var1 = readU8(input);
   unsigned char var2 = readU8(input);
   input->seek(_xformCalc(var1, var2) + 2, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMasterPageSymbolClass(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageSymbolClass(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(12, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMasterPageSymbolInstance(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMasterPageSymbolInstance(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(14, librevenge::RVNG_SEEK_CUR);
   unsigned char var1 = readU8(input);
   unsigned char var2 = readU8(input);
   input->seek(_xformCalc(var1, var2) + 2, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
   unsigned short size = readU16(input);
@@ -1418,7 +1297,6 @@ void libfreehand::FHParser::readMDict(librevenge::RVNGInputStream *input, libfre
     _readRecordId(input);
   }
 }
-
 void libfreehand::FHParser::readList(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size2 = readU16(input);
@@ -1436,7 +1314,6 @@ void libfreehand::FHParser::readList(librevenge::RVNGInputStream *input, libfree
   if (collector)
     collector->collectList(m_currentRecord+1, lst);
 }
-
 void libfreehand::FHParser::readMName(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   long startPosition = input->tell();
@@ -1454,18 +1331,15 @@ void libfreehand::FHParser::readMName(librevenge::RVNGInputStream *input, libfre
     collector->collectName(m_currentRecord+1, name);
   }
 }
-
-void libfreehand::FHParser::readMpObject(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMpObject(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readMQuickDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMQuickDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   unsigned short size = readU16(input);
   input->seek(5+size*4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readMString(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   long startPosition = input->tell();
@@ -1480,8 +1354,7 @@ void libfreehand::FHParser::readMString(librevenge::RVNGInputStream *input, libf
   if (collector)
     collector->collectString(m_currentRecord+1, str);
 }
-
-void libfreehand::FHParser::readMultiBlend(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readMultiBlend(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   unsigned short size = readU16(input);
   _readRecordId(input);
@@ -1491,7 +1364,6 @@ void libfreehand::FHParser::readMultiBlend(librevenge::RVNGInputStream *input, l
   _readRecordId(input);
   input->seek(32 + size*6, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readMultiColorList(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   std::vector<FHColorStop> colorStops;
@@ -1511,7 +1383,6 @@ void libfreehand::FHParser::readMultiColorList(librevenge::RVNGInputStream *inpu
   if (collector)
     collector->collectMultiColorList(m_currentRecord+1, colorStops);
 }
-
 void libfreehand::FHParser::readNewBlend(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHNewBlend newBlend;
@@ -1525,7 +1396,6 @@ void libfreehand::FHParser::readNewBlend(librevenge::RVNGInputStream *input, lib
   if (collector)
     collector->collectNewBlend(m_currentRecord+1, newBlend);
 }
-
 void libfreehand::FHParser::readNewContourFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHRadialFill fill;
@@ -1536,13 +1406,12 @@ void libfreehand::FHParser::readNewContourFill(librevenge::RVNGInputStream *inpu
   input->seek(8, librevenge::RVNG_SEEK_CUR);
   fill.m_multiColorListId = _readRecordId(input);
   input->seek(2, librevenge::RVNG_SEEK_CUR);
-  _readCoordinate(input); // handle angle
-  _readCoordinate(input); // handle wide
+  _readCoordinate(input);
+  _readCoordinate(input);
   input->seek(4, librevenge::RVNG_SEEK_CUR);
   if (collector)
     collector->collectRadialFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readNewRadialFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHRadialFill fill;
@@ -1556,7 +1425,6 @@ void libfreehand::FHParser::readNewRadialFill(librevenge::RVNGInputStream *input
   if (collector)
     collector->collectRadialFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readOpacityFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   _readRecordId(input);
@@ -1564,11 +1432,10 @@ void libfreehand::FHParser::readOpacityFilter(librevenge::RVNGInputStream *input
   if (collector)
     collector->collectOpacityFilter(m_currentRecord+1, opacity);
 }
-
 void libfreehand::FHParser::readOval(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short graphicStyle = _readRecordId(input);
-  _readRecordId(input); // Layer
+  _readRecordId(input);
   if (m_version > 3)
     input->seek(4, librevenge::RVNG_SEEK_CUR);
   input->seek(8, librevenge::RVNG_SEEK_CUR);
@@ -1587,22 +1454,18 @@ void libfreehand::FHParser::readOval(librevenge::RVNGInputStream *input, libfree
     closed = bool(readU8(input));
     input->seek(1, librevenge::RVNG_SEEK_CUR);
   }
-
   double cx = (xb + xa) / 2.0;
   double cy = (yb + ya) / 2.0;
   double rx = fabs(xb - xa) / 2.0;
   double ry = fabs(yb - ya) / 2.0;
-
   while (arc1 < 0.0)
     arc1 += 2*M_PI;
   while (arc1 > 2*M_PI)
     arc1 -= 2*M_PI;
-
   while (arc2 < 0.0)
     arc2 += 2*M_PI;
   while (arc2 > 2*M_PI)
     arc2 -= 2*M_PI;
-
   FHPath path;
   if (arc1 != arc2)
   {
@@ -1610,12 +1473,9 @@ void libfreehand::FHParser::readOval(librevenge::RVNGInputStream *input, libfree
       arc2 += 2*M_PI;
     double x0 = cx + rx*cos(arc1);
     double y0 = cy + ry*sin(arc1);
-
     double x1 = cx + rx*cos(arc2);
     double y1 = cy + ry*sin(arc2);
-
     bool largeArc = (arc2 - arc1 > M_PI);
-
     path.appendMoveTo(x0, y0);
     path.appendArcTo(rx, ry, 0.0, largeArc, true, x1, y1);
     if (closed)
@@ -1630,10 +1490,8 @@ void libfreehand::FHParser::readOval(librevenge::RVNGInputStream *input, libfree
     arc2 += M_PI/2.0;
     double x0 = cx + rx*cos(arc1);
     double y0 = cy + ry*sin(arc1);
-
     double x1 = cx + rx*cos(arc2);
     double y1 = cy + ry*sin(arc2);
-
     path.appendMoveTo(x0, y0);
     path.appendArcTo(rx, ry, 0.0, false, true, x1, y1);
     path.appendArcTo(rx, ry, 0.0, true, true, x0, y0);
@@ -1645,7 +1503,6 @@ void libfreehand::FHParser::readOval(librevenge::RVNGInputStream *input, libfree
   if (collector && !path.empty())
     collector->collectPath(m_currentRecord+1, path);
 }
-
 void libfreehand::FHParser::readPantoneColor(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   _readRecordId(input);
@@ -1655,7 +1512,6 @@ void libfreehand::FHParser::readPantoneColor(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
 void libfreehand::FHParser::readParagraph(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
@@ -1678,10 +1534,9 @@ void libfreehand::FHParser::readParagraph(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectParagraph(m_currentRecord+1, paragraph);
 }
-
 void libfreehand::FHParser::readPath(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
-  unsigned short size = readU16(input); // 0-2
+  unsigned short size = readU16(input);
   unsigned graphicStyle = _readRecordId(input);
   _readRecordId(input);
   if (m_version > 3)
@@ -1693,10 +1548,8 @@ void libfreehand::FHParser::readPath(librevenge::RVNGInputStream *input, libfree
   unsigned short numPoints = readU16(input);
   if (m_version > 8)
     size = numPoints;
-
   std::vector<unsigned char> ptrTypes;
   std::vector<std::vector<std::pair<double, double> > > path;
-
   try
   {
     for (unsigned short i = 0; i < numPoints  && !input->isEnd(); ++i)
@@ -1722,16 +1575,13 @@ void libfreehand::FHParser::readPath(librevenge::RVNGInputStream *input, libfree
   {
     FH_DEBUG_MSG(("Caught EndOfStreamException, continuing\n"));
   }
-
   if (path.empty())
   {
     FH_DEBUG_MSG(("No path was read\n"));
     return;
   }
-
   FHPath fhPath;
   fhPath.appendMoveTo(path[0][0].first / 72.0, path[0][0].second / 72.0);
-
   size_t i = 0;
   for (i = 0; i<path.size()-1; ++i)
     fhPath.appendCubicBezierTo(path[i][2].first / 72.0, path[i][2].second / 72.0,
@@ -1742,37 +1592,30 @@ void libfreehand::FHParser::readPath(librevenge::RVNGInputStream *input, libfree
     fhPath.appendCubicBezierTo(path[i][2].first / 72.0, path[i][2].second / 72.0,
                                path[0][1].first / 72.0, path[0][1].second / 72.0,
                                path[0][0].first / 72.0, path[0][0].second / 72.0);
-
     fhPath.appendClosePath();
   }
-
   fhPath.setGraphicStyleId(graphicStyle);
   fhPath.setEvenOdd(evenOdd);
   if (collector && !fhPath.empty())
     collector->collectPath(m_currentRecord+1, fhPath);
 }
-
 void libfreehand::FHParser::readPathText(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHPathText group;
   group.m_elementsId=_readRecordId(input);
   group.m_layerId=_readRecordId(input);
-  input->seek(2, librevenge::RVNG_SEEK_CUR); // debText?
+  input->seek(2, librevenge::RVNG_SEEK_CUR);
   group.m_textSize=readU16(input);
-  input->seek(4, librevenge::RVNG_SEEK_CUR); // 0,0
+  input->seek(4, librevenge::RVNG_SEEK_CUR);
   group.m_displayTextId=_readRecordId(input);
   group.m_shapeId=_readRecordId(input);
-
   if (collector)
     collector->collectPathText(m_currentRecord+1, group);
 }
-
-void libfreehand::FHParser::readPathTextLineInfo(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readPathTextLineInfo(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
-  // osnola: only try for N0=5, N1=2, N2=5
   input->seek(46, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readPatternFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHPatternFill fill;
@@ -1782,7 +1625,6 @@ void libfreehand::FHParser::readPatternFill(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectPatternFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readPatternLine(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHPatternLine line;
@@ -1804,31 +1646,27 @@ void libfreehand::FHParser::readPatternLine(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectPatternLine(m_currentRecord+1, line);
 }
-
-void libfreehand::FHParser::readPerspectiveEnvelope(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readPerspectiveEnvelope(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(177, librevenge::RVNG_SEEK_CUR);
 }
-
-void libfreehand::FHParser::readPerspectiveGrid(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readPerspectiveGrid(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   while (readU8(input))
   {
   }
   input->seek(58, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readPolygonFigure(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short graphicStyle = _readRecordId(input);
-  _readRecordId(input); // Layer
+  _readRecordId(input);
   input->seek(12, librevenge::RVNG_SEEK_CUR);
   unsigned short xform = _readRecordId(input);
   unsigned short numSegments = readU16(input);
   auto evenodd = bool(readU8(input));
   double cx = _readCoordinate(input) / 72.0;
   double cy = _readCoordinate(input) / 72.0;
-
   double r1 = _readCoordinate(input) / 72.0;
   double r2 = _readCoordinate(input) / 72.0;
   double arc1 = _readCoordinate(input) * M_PI / 180.0;
@@ -1837,7 +1675,6 @@ void libfreehand::FHParser::readPolygonFigure(librevenge::RVNGInputStream *input
     arc1 += 2.0 * M_PI;
   while (arc1 > 2.0 * M_PI)
     arc1 -= 2.0 * M_PI;
-
   while (arc2 < 0.0)
     arc2 += 2.0 * M_PI;
   while (arc2 > 2*M_PI)
@@ -1847,7 +1684,6 @@ void libfreehand::FHParser::readPolygonFigure(librevenge::RVNGInputStream *input
     std::swap(arc1, arc2);
     std::swap(r1, r2);
   }
-
   FHPath path;
   if (numSegments > 0)
   {
@@ -1868,12 +1704,10 @@ void libfreehand::FHParser::readPolygonFigure(librevenge::RVNGInputStream *input
   if (collector && !path.empty())
     collector->collectPath(m_currentRecord+1, path);
 }
-
-void libfreehand::FHParser::readProcedure(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readProcedure(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readProcessColor(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   _readRecordId(input);
@@ -1887,7 +1721,6 @@ void libfreehand::FHParser::readProcessColor(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
 void libfreehand::FHParser::readPropLst(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size2 = readU16(input);
@@ -1895,39 +1728,34 @@ void libfreehand::FHParser::readPropLst(librevenge::RVNGInputStream *input, libf
   input->seek(4, librevenge::RVNG_SEEK_CUR);
   FHPropList propertyList;
   _readPropLstElements(input, propertyList.m_elements, size);
-  /* osnola: TODO
-     - if version>3, look if pages is defined, if yes, the zone defines the list of pages, */
   if (m_version < 9)
     input->seek((size2 - size)*4, librevenge::RVNG_SEEK_CUR);
   if (collector)
     collector->collectPropList(m_currentRecord+1, propertyList);
 }
-
 void libfreehand::FHParser::readPSFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHBasicFill fill;
   fill.m_colorId = _readRecordId(input);
-  _readRecordId(input); // command string
+  _readRecordId(input);
   if (collector)
     collector->collectBasicFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readPSLine(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHBasicLine line;
   line.m_colorId = _readRecordId(input);
-  _readRecordId(input); // command string
+  _readRecordId(input);
   line.m_width = _readCoordinate(input) / 72.0;
   if (collector)
     collector->collectBasicLine(m_currentRecord+1, line);
 }
-
 void libfreehand::FHParser::readRadialFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHRadialFill fill;
   fill.m_color1Id = _readRecordId(input);
   fill.m_color2Id = _readRecordId(input);
-  if (m_version==3)   // 0,0 => center
+  if (m_version==3)
   {
     fill.m_cx = 0.5+0.5*_readCoordinate(input);
     fill.m_cy = 0.5+0.5*_readCoordinate(input);
@@ -1941,7 +1769,6 @@ void libfreehand::FHParser::readRadialFill(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectRadialFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readRadialFillX(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHRadialFill fill;
@@ -1954,12 +1781,10 @@ void libfreehand::FHParser::readRadialFillX(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectRadialFill(m_currentRecord+1, fill);
 }
-
-void libfreehand::FHParser::readRaggedFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readRaggedFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(16, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readRectangle(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned graphicStyle = _readRecordId(input);
@@ -1995,7 +1820,6 @@ void libfreehand::FHParser::readRectangle(librevenge::RVNGInputStream *input, li
     input->seek(9, librevenge::RVNG_SEEK_CUR);
   }
   FHPath path;
-
   if (FH_ALMOST_ZERO(rbll) || FH_ALMOST_ZERO(rblb))
     path.appendMoveTo(x1, y1);
   else
@@ -2041,19 +1865,16 @@ void libfreehand::FHParser::readRectangle(librevenge::RVNGInputStream *input, li
   else
     path.appendLineTo(x1 + rblb, y1);
   path.appendClosePath();
-
   path.setXFormId(xform);
   path.setGraphicStyleId(graphicStyle);
   path.setEvenOdd(true);
   if (collector && !path.empty())
     collector->collectPath(m_currentRecord+1, path);
 }
-
-void libfreehand::FHParser::readSketchFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readSketchFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(11, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readSpotColor(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   _readRecordId(input);
@@ -2063,7 +1884,6 @@ void libfreehand::FHParser::readSpotColor(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
 void libfreehand::FHParser::readSpotColor6(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size = readU16(input);
@@ -2077,7 +1897,6 @@ void libfreehand::FHParser::readSpotColor6(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
 void libfreehand::FHParser::readStylePropLst(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   if (m_version > 8)
@@ -2093,16 +1912,15 @@ void libfreehand::FHParser::readStylePropLst(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectPropList(m_currentRecord+1, propertyList);
 }
-
 void libfreehand::FHParser::readSwfImport(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHImageImport image;
   image.m_graphicStyleId = _readRecordId(input);
-  _readRecordId(input); // parent
+  _readRecordId(input);
   input->seek(8, librevenge::RVNG_SEEK_CUR);
-  _readRecordId(input); // format name
+  _readRecordId(input);
   image.m_dataListId = _readRecordId(input);
-  _readRecordId(input); // file descriptor
+  _readRecordId(input);
   image.m_xFormId = _readRecordId(input);
   image.m_startX = _readCoordinate(input) / 72.0;
   image.m_startY = _readCoordinate(input) / 72.0;
@@ -2112,7 +1930,6 @@ void libfreehand::FHParser::readSwfImport(librevenge::RVNGInputStream *input, li
   if (collector)
     collector->collectImage(m_currentRecord+1, image);
 }
-
 void libfreehand::FHParser::readSymbolClass(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHSymbolClass symbolClass;
@@ -2124,7 +1941,6 @@ void libfreehand::FHParser::readSymbolClass(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectSymbolClass(m_currentRecord+1, symbolClass);
 }
-
 void libfreehand::FHParser::readSymbolInstance(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHSymbolInstance symbolInstance;
@@ -2152,8 +1968,7 @@ void libfreehand::FHParser::readSymbolInstance(librevenge::RVNGInputStream *inpu
   if (collector)
     collector->collectSymbolInstance(m_currentRecord+1, symbolInstance);
 }
-
-void libfreehand::FHParser::readSymbolLibrary(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readSymbolLibrary(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
   unsigned short size = readU16(input);
@@ -2161,7 +1976,6 @@ void libfreehand::FHParser::readSymbolLibrary(librevenge::RVNGInputStream *input
   for (unsigned short i = 0; i < size+3; ++i)
     _readRecordId(input);
 }
-
 void libfreehand::FHParser::readTabTable(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size = readU16(input);
@@ -2184,7 +1998,6 @@ void libfreehand::FHParser::readTabTable(librevenge::RVNGInputStream *input, lib
     collector->collectTabTable(m_currentRecord+1, tabs);
   input->seek(endPos, librevenge::RVNG_SEEK_SET);
 }
-
 void libfreehand::FHParser::readTaperedFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHLinearFill fill;
@@ -2195,7 +2008,6 @@ void libfreehand::FHParser::readTaperedFill(librevenge::RVNGInputStream *input, 
   if (collector)
     collector->collectLinearFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readTaperedFillX(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHLinearFill fill;
@@ -2207,7 +2019,6 @@ void libfreehand::FHParser::readTaperedFillX(librevenge::RVNGInputStream *input,
   if (collector)
     collector->collectLinearFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readTEffect(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHTEffect eff;
@@ -2242,7 +2053,6 @@ void libfreehand::FHParser::readTEffect(librevenge::RVNGInputStream *input, libf
   if (collector)
     collector->collectTEffect(m_currentRecord+1, eff);
 }
-
 void libfreehand::FHParser::readTextBlok(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size = readU16(input);
@@ -2262,7 +2072,6 @@ void libfreehand::FHParser::readTextBlok(librevenge::RVNGInputStream *input, lib
   FH_DEBUG_MSG(("FHParser::readTextBlock %s\n", text.cstr()));
 #endif
 }
-
 void libfreehand::FHParser::readTextEffs(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned num = readU16(input);
@@ -2292,7 +2101,6 @@ void libfreehand::FHParser::readTextEffs(librevenge::RVNGInputStream *input, lib
   if (collector)
     collector->collectTEffect(m_currentRecord+1, eff);
 }
-
 void libfreehand::FHParser::readTextObject(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
@@ -2305,7 +2113,6 @@ void libfreehand::FHParser::readTextObject(librevenge::RVNGInputStream *input, l
   textObject.m_xFormId = _readRecordId(input);
   textObject.m_tStringId = _readRecordId(input);
   textObject.m_vmpObjId = _readRecordId(input);
-
   for (unsigned short i = 0; i < num; ++i)
   {
     unsigned key = readU32(input);
@@ -2357,7 +2164,6 @@ void libfreehand::FHParser::readTextObject(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectTextObject(m_currentRecord+1, textObject);
 }
-
 void libfreehand::FHParser::readTileFill(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   FHTileFill fill;
@@ -2372,7 +2178,6 @@ void libfreehand::FHParser::readTileFill(librevenge::RVNGInputStream *input, lib
   if (collector)
     collector->collectTileFill(m_currentRecord+1, fill);
 }
-
 void libfreehand::FHParser::readTintColor(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   _readRecordId(input);
@@ -2396,7 +2201,6 @@ void libfreehand::FHParser::readTintColor(librevenge::RVNGInputStream *input, li
       collector->collectColor(m_currentRecord+1, color);
   }
 }
-
 void libfreehand::FHParser::readTintColor6(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(2, librevenge::RVNG_SEEK_CUR);
@@ -2409,12 +2213,10 @@ void libfreehand::FHParser::readTintColor6(librevenge::RVNGInputStream *input, l
   if (collector)
     collector->collectColor(m_currentRecord+1, color);
 }
-
-void libfreehand::FHParser::readTransformFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readTransformFilter(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(39, librevenge::RVNG_SEEK_CUR);
 }
-
 void libfreehand::FHParser::readTString(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   unsigned short size2 = readU16(input);
@@ -2431,7 +2233,6 @@ void libfreehand::FHParser::readTString(librevenge::RVNGInputStream *input, libf
   if (collector && !elements.empty())
     collector->collectTString(m_currentRecord+1, elements);
 }
-
 void libfreehand::FHParser::readUString(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   long startPosition = input->tell();
@@ -2449,17 +2250,14 @@ void libfreehand::FHParser::readUString(librevenge::RVNGInputStream *input, libf
       break;
     ustr.push_back(character);
   }
-
   librevenge::RVNGString str;
   _appendUTF16(str, ustr);
-
   FH_DEBUG_MSG(("FHParser::readUString %i (%s)\n", length, str.cstr()));
   input->seek(startPosition + (size+1)*4, librevenge::RVNG_SEEK_SET);
   if (collector)
     collector->collectString(m_currentRecord+1, str);
 }
-
-void libfreehand::FHParser::readVDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * /* collector */)
+void libfreehand::FHParser::readVDict(librevenge::RVNGInputStream *input, libfreehand::FHCollector * )
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
   unsigned short num = readU16(input);
@@ -2474,7 +2272,6 @@ void libfreehand::FHParser::readVDict(librevenge::RVNGInputStream *input, libfre
       input->seek(4, librevenge::RVNG_SEEK_CUR);
   }
 }
-
 void libfreehand::FHParser::readVMpObj(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   input->seek(4, librevenge::RVNG_SEEK_CUR);
@@ -2598,7 +2395,6 @@ void libfreehand::FHParser::readVMpObj(librevenge::RVNGInputStream *input, libfr
       collector->collectParagraphProps(m_currentRecord+1, paraProps);
   }
 }
-
 void libfreehand::FHParser::readXform(librevenge::RVNGInputStream *input, libfreehand::FHCollector *collector)
 {
   double m11 = 1.0;
@@ -2644,7 +2440,6 @@ void libfreehand::FHParser::readXform(librevenge::RVNGInputStream *input, libfre
   if (collector)
     collector->collectXform(m_currentRecord+1, m11, m21, m12, m22, m13, m23);
 }
-
 unsigned libfreehand::FHParser::_readRecordId(librevenge::RVNGInputStream *input)
 {
   unsigned recid = readU16(input);
@@ -2652,7 +2447,6 @@ unsigned libfreehand::FHParser::_readRecordId(librevenge::RVNGInputStream *input
     recid = 0x1ff00 - readU16(input);
   return recid;
 }
-
 unsigned libfreehand::FHParser::_xformCalc(unsigned char var1, unsigned char var2)
 {
   if (var1&0x4)
@@ -2672,12 +2466,10 @@ unsigned libfreehand::FHParser::_xformCalc(unsigned char var1, unsigned char var
     length += 4;
   return length;
 }
-
 double libfreehand::FHParser::_readCoordinate(librevenge::RVNGInputStream *input)
 {
   return (double)readS32(input)/65536.;
 }
-
 libfreehand::FHRGBColor libfreehand::FHParser::_readRGBColor(librevenge::RVNGInputStream *input)
 {
   FHRGBColor tmpColor;
@@ -2686,20 +2478,15 @@ libfreehand::FHRGBColor libfreehand::FHParser::_readRGBColor(librevenge::RVNGInp
   tmpColor.m_blue = readU16(input);
   return tmpColor;
 }
-
 libfreehand::FHRGBColor libfreehand::FHParser::_readCMYKColor(librevenge::RVNGInputStream *input)
 {
   unsigned short cmyk[4] = { 0, 0, 0, 0 };
-
-  cmyk[3] = readU16(input); // K
-  cmyk[0] = readU16(input); // C
-  cmyk[1] = readU16(input); // M
-  cmyk[2] = readU16(input); // Y
-
+  cmyk[3] = readU16(input);
+  cmyk[0] = readU16(input);
+  cmyk[1] = readU16(input);
+  cmyk[2] = readU16(input);
   unsigned short rgb[3] = { 0, 0, 0 };
-
   cmsDoTransform(m_colorTransform, cmyk, rgb, 1);
-
   FHRGBColor tmpColor;
   tmpColor.m_red = rgb[0];
   tmpColor.m_green = rgb[1];
@@ -2711,7 +2498,6 @@ libfreehand::FHRGBColor libfreehand::FHParser::_readCMYKColor(librevenge::RVNGIn
   tmpColor.m_black_k = cmyk[3];
   return tmpColor;
 }
-
 void libfreehand::FHParser::_readBlockInformation(librevenge::RVNGInputStream *input, unsigned i, unsigned &layerListId)
 {
   if (i == 5)
@@ -2719,7 +2505,6 @@ void libfreehand::FHParser::_readBlockInformation(librevenge::RVNGInputStream *i
   else
     _readRecordId(input);
 }
-
 void libfreehand::FHParser::_readPropLstElements(librevenge::RVNGInputStream *input, std::map<unsigned, unsigned> &properties, unsigned size)
 {
   for (unsigned i = 0; i < size; ++i)
@@ -2730,14 +2515,13 @@ void libfreehand::FHParser::_readPropLstElements(librevenge::RVNGInputStream *in
       properties[nameId] = valueId;
   }
 }
-
 void libfreehand::FHParser::_readFH3CharProperties(librevenge::RVNGInputStream *input, FH3CharProperties &charProps)
 {
   charProps.m_offset = readU16(input);
   unsigned flags = readU16(input);
-  if (flags & 0x1) // xPos
+  if (flags & 0x1)
     _readCoordinate(input);
-  if (flags & 0x2) // kerning
+  if (flags & 0x2)
     _readCoordinate(input);
   if (flags & 0x4)
     charProps.m_fontNameId = _readRecordId(input);
@@ -2767,7 +2551,7 @@ void libfreehand::FHParser::_readFH3CharProperties(librevenge::RVNGInputStream *
     charProps.m_letterSpacing=_readCoordinate(input);
   if (flags & 0x200)
     charProps.m_wordSpacing=_readCoordinate(input);
-  if (flags & 0x400) // in percent
+  if (flags & 0x400)
     charProps.m_horizontalScale=_readCoordinate(input);
   if (flags & 0x800)
     charProps.m_baselineShift = _readCoordinate(input);
@@ -2776,14 +2560,9 @@ void libfreehand::FHParser::_readFH3CharProperties(librevenge::RVNGInputStream *
     FH_DEBUG_MSG(("FHParser::_readFH3CharProperties: NEW FLAG IN DISPLAY TEXT! %x\n", flags));
   }
 }
-
 void libfreehand::FHParser::_readFH3ParaProperties(librevenge::RVNGInputStream *input, FH3ParaProperties &paraProps)
 {
   paraProps.m_offset = readU16(input);
   input->seek(28, librevenge::RVNG_SEEK_CUR);
-  // osnola: todo
 }
-
-
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
 #pragma clang diagnostic pop

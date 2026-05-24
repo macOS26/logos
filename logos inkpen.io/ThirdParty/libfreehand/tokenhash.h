@@ -1,7 +1,3 @@
-/* C++ code produced by gperf version 3.0.3 */
-/* Command-line: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/gperf --compare-strncmp -C -m 20 tokens.gperf  */
-/* Computed positions: -k'1,4-5,8' */
-
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
       && (')' == 41) && ('*' == 42) && ('+' == 43) && (',' == 44) \
@@ -25,24 +21,19 @@
       && ('s' == 115) && ('t' == 116) && ('u' == 117) && ('v' == 118) \
       && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
       && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
-/* The character set is not based on ISO-646.  */
 #error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
 #endif
-
 #line 5 "tokens.gperf"
 struct fhtoken
 {
   const char *name;
   int tokenId;
 };
-
 #define TOTAL_KEYWORDS 124
 #define MIN_WORD_LENGTH 4
 #define MAX_WORD_LENGTH 24
 #define MIN_HASH_VALUE 18
 #define MAX_HASH_VALUE 187
-/* maximum key range = 170, duplicates = 0 */
-
 class Perfect_Hash
 {
 private:
@@ -50,7 +41,6 @@ private:
 public:
   static const struct fhtoken *in_word_set (const char *str, unsigned int len);
 };
-
 inline unsigned int
 Perfect_Hash::hash (const char *str, unsigned int len)
 {
@@ -84,20 +74,16 @@ Perfect_Hash::hash (const char *str, unsigned int len)
       188, 188, 188, 188, 188, 188
     };
   unsigned int hval = len;
-
   switch (hval)
     {
       default:
         hval += asso_values[(unsigned char)str[7]];
-      /*FALLTHROUGH*/
       case 7:
       case 6:
       case 5:
         hval += asso_values[(unsigned char)str[4]];
-      /*FALLTHROUGH*/
       case 4:
         hval += asso_values[(unsigned char)str[3]];
-      /*FALLTHROUGH*/
       case 3:
       case 2:
       case 1:
@@ -106,7 +92,6 @@ Perfect_Hash::hash (const char *str, unsigned int len)
     }
   return hval;
 }
-
 static const struct fhtoken wordlist[] =
   {
     {(char*)0, 0}, {(char*)0, 0}, {(char*)0, 0}, {(char*)0, 0},
@@ -384,18 +369,15 @@ static const struct fhtoken wordlist[] =
 #line 85 "tokens.gperf"
     {"NewBlend",FH_NEWBLEND}
   };
-
 const struct fhtoken *
 Perfect_Hash::in_word_set (const char *str, unsigned int len)
 {
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
       unsigned int key = hash (str, len);
-
       if (key <= MAX_HASH_VALUE)
         {
           const char *s = wordlist[key].name;
-
           if (s && *str == *s && !strncmp (str + 1, s + 1, len - 1) && s[len] == '\0')
             return &wordlist[key];
         }
@@ -403,4 +385,3 @@ Perfect_Hash::in_word_set (const char *str, unsigned int len)
   return 0;
 }
 #line 135 "tokens.gperf"
-

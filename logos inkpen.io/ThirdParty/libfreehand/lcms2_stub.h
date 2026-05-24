@@ -1,19 +1,15 @@
 #pragma once
 #include <cstdint>
-
 typedef void* cmsHPROFILE;
 typedef void* cmsHTRANSFORM;
-
 #define TYPE_CMYK_16 0
 #define TYPE_RGB_16 0
 #define INTENT_PERCEPTUAL 0
-
 static inline cmsHPROFILE cmsOpenProfileFromMem(const void*, uint32_t) { return (cmsHPROFILE)1; }
 static inline cmsHPROFILE cmsCreate_sRGBProfile(void) { return (cmsHPROFILE)1; }
 static inline cmsHTRANSFORM cmsCreateTransform(cmsHPROFILE, int, cmsHPROFILE, int, int, int) { return (cmsHTRANSFORM)1; }
 static inline void cmsCloseProfile(cmsHPROFILE) {}
 static inline void cmsDeleteTransform(cmsHTRANSFORM) {}
-
 static inline void cmsDoTransform(cmsHTRANSFORM, const void* in, void* out, uint32_t) {
     const uint16_t* cmyk = (const uint16_t*)in;
     uint16_t* rgb = (uint16_t*)out;

@@ -1,15 +1,5 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 #ifndef __FHCOLLECTOR_H__
 #define __FHCOLLECTOR_H__
-
 #include <deque>
 #include <map>
 #include <stack>
@@ -19,17 +9,13 @@
 #include "FHTypes.h"
 #include "FHPath.h"
 #include "InkpenCollectorView.h"
-
 namespace libfreehand
 {
-
 class FHCollector
 {
 public:
   FHCollector();
   virtual ~FHCollector();
-
-  // collector functions
   void collectString(unsigned recordId, const librevenge::RVNGString &str);
   void collectName(unsigned recordId, const librevenge::RVNGString &str);
   void collectPath(unsigned recordId, const FHPath &path);
@@ -65,9 +51,7 @@ public:
   void collectOpacityFilter(unsigned recordId, double opacity);
   void collectFWShadowFilter(unsigned recordId, const FWShadowFilter &filter);
   void collectFWGlowFilter(unsigned recordId, const FWGlowFilter &filter);
-
   void collectPageInfo(const FHPageInfo &pageInfo);
-
   void collectColor(unsigned recordId, const FHRGBColor &color);
   void collectTintColor(unsigned recordId, const FHTintColor &color);
   void collectBasicFill(unsigned recordId, const FHBasicFill &fill);
@@ -81,23 +65,15 @@ public:
   void collectPatternFill(unsigned recordId, const FHPatternFill &fill);
   void collectLinePattern(unsigned recordId, const FHLinePattern &line);
   void collectArrowPath(unsigned recordId, const FHPath &path);
-
   void collectSymbolClass(unsigned recordId, const FHSymbolClass &symbolClass);
   void collectSymbolInstance(unsigned recordId, const FHSymbolInstance &symbolInstance);
-
   void outputDrawing(librevenge::RVNGDrawingInterface *painter);
-
-  /* Populates view with const pointers to private maps so the InkPen direct
-     translator can walk FreeHand records without running the SVG generator. */
   void inkpenBuildView(InkpenCollectorView &view);
-
 private:
   FHCollector(const FHCollector &);
   FHCollector &operator=(const FHCollector &);
-
   void _normalizePath(FHPath &path);
   void _normalizePoint(double &x, double &y);
-
   void _outputPath(const FHPath *path, librevenge::RVNGDrawingInterface *painter);
   void _outputLayer(unsigned layerId, librevenge::RVNGDrawingInterface *painter);
   void _outputGroup(const FHGroup *group, librevenge::RVNGDrawingInterface *painter);
@@ -113,7 +89,6 @@ private:
   void _outputNewBlend(const FHNewBlend *newBlend, librevenge::RVNGDrawingInterface *painter);
   void _outputSymbolInstance(const FHSymbolInstance *symbolInstance, librevenge::RVNGDrawingInterface *painter);
   void _outputSomething(unsigned somethingId, librevenge::RVNGDrawingInterface *painter);
-
   void _getBBofPath(const FHPath *path,FHBoundingBox &bBox);
   void _getBBofLayer(unsigned layerId,FHBoundingBox &bBox);
   void _getBBofGroup(const FHGroup *group,FHBoundingBox &bBox);
@@ -126,7 +101,6 @@ private:
   void _getBBofNewBlend(const FHNewBlend *newBlend,FHBoundingBox &bBox);
   void _getBBofSymbolInstance(const FHSymbolInstance *symbolInstance,FHBoundingBox &bBox);
   void _getBBofSomething(unsigned somethingId,FHBoundingBox &bBox);
-
   const std::vector<unsigned> *_findListElements(unsigned id);
   void _appendParagraphProperties(librevenge::RVNGPropertyList &propList, unsigned paraPropsId);
   void _appendParagraphProperties(librevenge::RVNGPropertyList &propList, const FH3ParaProperties &paraProps);
@@ -153,7 +127,6 @@ private:
   void _appendGlow(librevenge::RVNGPropertyList &propList, const FWGlowFilter *filter);
   void _applyFilter(librevenge::RVNGPropertyList &propList, unsigned filterId);
   const std::vector<unsigned> *_findTStringElements(unsigned id);
-
   const FHPath *_findPath(unsigned id);
   const FHGroup *_findGroup(unsigned id);
   const FHGroup *_findClipGroup(unsigned id);
@@ -200,7 +173,6 @@ private:
   librevenge::RVNGBinaryData getImageData(unsigned id);
   FHRGBColor getRGBFromTint(const FHTintColor &tint);
   void _generateBitmapFromPattern(librevenge::RVNGBinaryData &bitmap, unsigned colorId, const std::vector<unsigned char> &pattern);
-
   FHPageInfo m_pageInfo;
   FHTail m_fhTail;
   std::pair<unsigned, FHBlock> m_block;
@@ -253,15 +225,11 @@ private:
   std::map<unsigned, FHPatternFill> m_patternFills;
   std::map<unsigned, FHLinePattern> m_linePatterns;
   std::map<unsigned, FHPath> m_arrowPaths;
-
   unsigned m_strokeId;
   unsigned m_fillId;
   unsigned m_contentId;
   unsigned m_textBoxNumberId;
   std::deque<unsigned> m_visitedObjects;
 };
-
-} // namespace libfreehand
-
-#endif /* __FHCOLLECTOR_H__ */
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
+}
+#endif

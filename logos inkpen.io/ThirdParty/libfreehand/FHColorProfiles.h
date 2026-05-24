@@ -1,23 +1,3 @@
-/* libfreehand
- *
- * Public Domain
- *
- * The profile is taken from the Scribus project distribution. The notice
- * inside Scribus reads:
- *
- * The GenericCMYK.icm profile was created thanks to Graeme Gill from
- * the Argyll CMS project and given to us as public domain. You can confirm
- * this when viewing the profile with an ICC aware profile viewing
- * applications or a hex editor.
- *
- * This particular profile was modified to be input-only using littlecms'
- * linkicc utility with following options:
- * linkicc -t0  -n13  -x -o CMYK.icc GenericCMYK.icm *lab
- *
- * The binary blob that follows was generated verbatim from the profile
- * using "xxd -i" command
- */
-
 static const unsigned char CMYK_icc[] =
 {
   0x00, 0x02, 0xa1, 0xe0, 0x6c, 0x63, 0x6d, 0x73, 0x04, 0x30, 0x00, 0x00,

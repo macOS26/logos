@@ -5,24 +5,11 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
-
 #include <zlib.h>
 #include "FHInternalStream.h"
 #include "libfreehand_utils.h"
-#include <string.h>  // for memcpy
-
-
+#include <string.h>
 #define CHUNK 16384
-
 libfreehand::FHInternalStream::FHInternalStream(librevenge::RVNGInputStream *input, unsigned long size, bool compressed) :
   librevenge::RVNGInputStream(),
   m_offset(0),
@@ -30,15 +17,12 @@ libfreehand::FHInternalStream::FHInternalStream(librevenge::RVNGInputStream *inp
 {
   if (!size)
     return;
-
   if (!compressed)
   {
     unsigned long tmpNumBytesRead = 0;
     const unsigned char *tmpBuffer = input->read(size, tmpNumBytesRead);
-
     if (size != tmpNumBytesRead)
       return;
-
     m_buffer = std::vector<unsigned char>(size);
     memcpy(&m_buffer[0], tmpBuffer, size);
   }
@@ -48,8 +32,6 @@ libfreehand::FHInternalStream::FHInternalStream(librevenge::RVNGInputStream *inp
     unsigned have;
     z_stream strm;
     unsigned char out[CHUNK];
-
-    /* allocate inflate state */
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
@@ -58,19 +40,15 @@ libfreehand::FHInternalStream::FHInternalStream(librevenge::RVNGInputStream *inp
     ret = inflateInit(&strm);
     if (ret != Z_OK)
       return;
-
     unsigned long tmpNumBytesRead = 0;
     const unsigned char *tmpBuffer = input->read(size, tmpNumBytesRead);
-
     if (size != tmpNumBytesRead)
     {
       (void)inflateEnd(&strm);
       return;
     }
-
     strm.avail_in = (uInt)tmpNumBytesRead;
     strm.next_in = (Bytef *)tmpBuffer;
-
     do
     {
       strm.avail_out = CHUNK;
@@ -85,43 +63,31 @@ libfreehand::FHInternalStream::FHInternalStream(librevenge::RVNGInputStream *inp
         m_buffer.clear();
         return;
       }
-
       have = CHUNK - strm.avail_out;
-
       for (unsigned long i=0; i<have; i++)
         m_buffer.push_back(out[i]);
-
     }
     while (strm.avail_out == 0);
     (void)inflateEnd(&strm);
   }
 }
-
 const unsigned char *libfreehand::FHInternalStream::read(unsigned long numBytes, unsigned long &numBytesRead)
 {
   numBytesRead = 0;
-
   if (numBytes == 0)
     return nullptr;
-
   unsigned numBytesToRead;
-
   if ((m_offset+numBytes) < m_buffer.size())
     numBytesToRead = numBytes;
   else
     numBytesToRead = m_buffer.size() - m_offset;
-
-  numBytesRead = numBytesToRead; // about as paranoid as we can be..
-
+  numBytesRead = numBytesToRead;
   if (numBytesToRead == 0)
     return nullptr;
-
   long oldOffset = m_offset;
   m_offset += numBytesToRead;
-
   return &m_buffer[oldOffset];
 }
-
 int libfreehand::FHInternalStream::seek(long offset, librevenge::RVNG_SEEK_TYPE seekType)
 {
   if (seekType == librevenge::RVNG_SEEK_CUR)
@@ -130,7 +96,6 @@ int libfreehand::FHInternalStream::seek(long offset, librevenge::RVNG_SEEK_TYPE 
     m_offset = offset;
   else if (seekType == librevenge::RVNG_SEEK_END)
     m_offset = long(static_cast<unsigned long>(m_buffer.size())) + offset;
-
   if (m_offset < 0)
   {
     m_offset = 0;
@@ -141,21 +106,16 @@ int libfreehand::FHInternalStream::seek(long offset, librevenge::RVNG_SEEK_TYPE 
     m_offset = m_buffer.size();
     return 1;
   }
-
   return 0;
 }
-
 long libfreehand::FHInternalStream::tell()
 {
   return m_offset;
 }
-
 bool libfreehand::FHInternalStream::isEnd()
 {
   if ((long)m_offset >= (long)m_buffer.size())
     return true;
-
   return false;
 }
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
 #pragma clang diagnostic pop

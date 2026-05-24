@@ -1,45 +1,28 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/*
- * This file is part of the libfreehand project.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 #ifndef __FHPARSER_H__
 #define __FHPARSER_H__
-
 #include <map>
 #include <vector>
 #include "lcms2_stub.h"
 #include "librevenge.h"
 #include "FHTypes.h"
-
 namespace libfreehand
 {
-
 class FHCollector;
-
 class FHParser
 {
 public:
   explicit FHParser();
   virtual ~FHParser();
   bool parse(librevenge::RVNGInputStream *input, librevenge::RVNGDrawingInterface *painter);
-  /* Parses the FH document into an externally-owned collector. Does NOT call
-     outputDrawing. Used by the InkPen direct translator. */
   bool parse(librevenge::RVNGInputStream *input, FHCollector *collector);
 private:
   FHParser(const FHParser &);
   FHParser &operator=(const FHParser &);
-
   void parseDictionary(librevenge::RVNGInputStream *input);
   void parseRecordList(librevenge::RVNGInputStream *input);
   void parseRecord(librevenge::RVNGInputStream *input, FHCollector *collector, int recordId);
   void parseRecords(librevenge::RVNGInputStream *input, FHCollector *collector);
   void parseDocument(librevenge::RVNGInputStream *input, FHCollector *collector);
-
   void readAGDFont(librevenge::RVNGInputStream *input, FHCollector *collector);
   void readAGDSelection(librevenge::RVNGInputStream *input, FHCollector *collector);
   void readArrowPath(librevenge::RVNGInputStream *input, FHCollector *collector);
@@ -161,11 +144,8 @@ private:
   void readVDict(librevenge::RVNGInputStream *input, FHCollector *collector);
   void readVMpObj(librevenge::RVNGInputStream *input, FHCollector *collector);
   void readXform(librevenge::RVNGInputStream *input, FHCollector *collector);
-
   unsigned _readRecordId(librevenge::RVNGInputStream *input);
-
   unsigned _xformCalc(unsigned char var1, unsigned char var2);
-
   double _readCoordinate(librevenge::RVNGInputStream *input);
   FHRGBColor _readRGBColor(librevenge::RVNGInputStream *input);
   FHRGBColor _readCMYKColor(librevenge::RVNGInputStream *input);
@@ -173,7 +153,6 @@ private:
   void _readBlockInformation(librevenge::RVNGInputStream *input, unsigned i, unsigned &layerListId);
   void _readFH3CharProperties(librevenge::RVNGInputStream *input, FH3CharProperties &charProps);
   void _readFH3ParaProperties(librevenge::RVNGInputStream *input, FH3ParaProperties &paraProps);
-
   librevenge::RVNGInputStream *m_input;
   FHCollector *m_collector;
   int m_version;
@@ -183,8 +162,5 @@ private:
   FHPageInfo m_pageInfo;
   cmsHTRANSFORM m_colorTransform;
 };
-
-} // namespace libfreehand
-
-#endif //  __FHPARSER_H__
-/* vim:set shiftwidth=2 softtabstop=2 expandtab: */
+}
+#endif

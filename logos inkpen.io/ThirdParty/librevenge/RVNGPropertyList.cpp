@@ -5,29 +5,7 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-/* librevenge
- * Version: MPL 2.0 / LGPLv2.1+
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Major Contributor(s):
- * Copyright (C) 2004 William Lachance (wrlach@gmail.com)
- * Copyright (C) 2005 Net Integration Technologies (http://www.net-itech.com)
- * Copyright (C) 2006 Fridrich Strba (fridrich.strba@bluewin.ch)
- *
- * For minor contributions see the git repository.
- *
- * Alternatively, the contents of this file may be used under the terms
- * of the GNU Lesser General Public License Version 2.1 or later
- * (LGPLv2.1+), in which case the provisions of the LGPLv2.1+ are
- * applicable instead of those above.
- */
-
 #include "librevenge.h"
-
 #include <map>
 #include <memory>
 #include <string>
@@ -35,33 +13,26 @@
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
-
 namespace
 {
-
 static const char *skipSpaces(const char *p, const char *end)
 {
 	while (p < end && std::isspace((unsigned char)*p)) p++;
 	return p;
 }
-
 bool findDouble(const librevenge::RVNGString &str, double &res, librevenge::RVNGUnit &unit)
 {
 	if (str.empty())
 		return false;
-
 	const char *first = str.cstr();
 	const char *const last = first + str.size();
-
 	first = skipSpaces(first, last);
 	if (first == last) return false;
-
 	char *endp = nullptr;
 	double val = std::strtod(first, &endp);
 	if (endp == first) return false;
 	first = endp;
 	first = skipSpaces(first, last);
-
 	double ratio = 1.0;
 	if (first == last)
 	{
@@ -97,16 +68,13 @@ bool findDouble(const librevenge::RVNGString &str, double &res, librevenge::RVNG
 	}
 	first = skipSpaces(first, last);
 	if (first != last) return false;
-
 	res = val / ratio;
 	return true;
 }
-
 bool findInt(const librevenge::RVNGString &str, int &res)
 {
 	if (str.empty())
 		return false;
-
 	const char *first = str.cstr();
 	const char *const last = first + str.size();
 	first = skipSpaces(first, last);
@@ -120,12 +88,10 @@ bool findInt(const librevenge::RVNGString &str, int &res)
 	res = (int)v;
 	return true;
 }
-
 bool findBool(const librevenge::RVNGString &str, bool &res)
 {
 	if (str.empty())
 		return false;
-
 	const char *first = str.cstr();
 	const char *const last = first + str.size();
 	first = skipSpaces(first, last);
@@ -141,12 +107,9 @@ bool findBool(const librevenge::RVNGString &str, bool &res)
 	first = skipSpaces(first, last);
 	return first == last;
 }
-
-} // anonymous namespace
-
+}
 namespace librevenge
 {
-
 class RVNGPropertyListElement
 {
 public:
@@ -154,11 +117,6 @@ public:
 	RVNGPropertyListElement(const RVNGPropertyListElement &elem)
 		: m_prop(elem.m_prop ? elem.m_prop->clone() : nullptr),
 		  m_vec(elem.m_vec ? static_cast<RVNGPropertyListVector *>(elem.m_vec->clone()) : nullptr) {}
-	/*
-	 * Caution, following constructor does not allocate memory but takes as
-	 * arguments pre-allocated memory that this class takes ownership of.
-	 * Deallocating this memory outside this class can result in double free.
-	 */
 	RVNGPropertyListElement(RVNGProperty *prop, RVNGPropertyListVector *vec)
 		: m_prop(prop), m_vec(vec) {}
 	~RVNGPropertyListElement()
@@ -173,7 +131,6 @@ public:
 	std::unique_ptr<RVNGProperty> m_prop;
 	std::unique_ptr<RVNGPropertyListVector> m_vec;
 };
-
 class RVNGPropertyListImpl
 {
 public:
@@ -188,16 +145,13 @@ public:
 	void remove(const char *name);
 	void clear();
 	bool empty() const;
-
 	mutable std::map<std::string, RVNGPropertyListElement> m_map;
 };
-
 RVNGPropertyListImpl &RVNGPropertyListImpl::operator=(const RVNGPropertyListImpl &plist)
 {
 	m_map = plist.m_map;
 	return *this;
 }
-
 const RVNGProperty *RVNGPropertyListImpl::operator[](const char *name) const
 {
 	auto i = m_map.find(name);
@@ -205,7 +159,6 @@ const RVNGProperty *RVNGPropertyListImpl::operator[](const char *name) const
 		return i->second.m_prop.get();
 	return nullptr;
 }
-
 const RVNGPropertyListVector *RVNGPropertyListImpl::child(const char *name) const
 {
 	auto i = m_map.find(name);
@@ -213,10 +166,8 @@ const RVNGPropertyListVector *RVNGPropertyListImpl::child(const char *name) cons
 	{
 		return i->second.m_vec.get();
 	}
-
 	return nullptr;
 }
-
 void RVNGPropertyListImpl::insert(const char *name, RVNGProperty *prop)
 {
 	auto i = m_map.lower_bound(name);
@@ -228,7 +179,6 @@ void RVNGPropertyListImpl::insert(const char *name, RVNGProperty *prop)
 	}
 	m_map.insert(i, std::map<std::string, RVNGPropertyListElement>::value_type(name, RVNGPropertyListElement(prop, nullptr)));
 }
-
 void RVNGPropertyListImpl::insert(const char *name, RVNGPropertyListVector *vec)
 {
 	auto i = m_map.lower_bound(name);
@@ -240,7 +190,6 @@ void RVNGPropertyListImpl::insert(const char *name, RVNGPropertyListVector *vec)
 	}
 	m_map.insert(i, std::map<std::string, RVNGPropertyListElement>::value_type(name, RVNGPropertyListElement(nullptr, vec)));
 }
-
 void RVNGPropertyListImpl::remove(const char *name)
 {
 	auto i = m_map.find(name);
@@ -249,52 +198,42 @@ void RVNGPropertyListImpl::remove(const char *name)
 		m_map.erase(i);
 	}
 }
-
 void RVNGPropertyListImpl::clear()
 {
 	m_map.clear();
 }
-
 bool RVNGPropertyListImpl::empty() const
 {
 	return m_map.empty();
 }
-
 RVNGPropertyList::RVNGPropertyList() :
 	m_impl(new RVNGPropertyListImpl())
 {
 }
-
 RVNGPropertyList::RVNGPropertyList(const RVNGPropertyList &propList) :
 	m_impl(new RVNGPropertyListImpl(*(propList.m_impl)))
 {
 }
-
 RVNGPropertyList::~RVNGPropertyList()
 {
 	delete m_impl;
 }
-
 void RVNGPropertyList::insert(const char *name, RVNGProperty *prop)
 {
 	m_impl->insert(name, prop);
 }
-
 void RVNGPropertyList::insert(const char *name, const int val)
 {
 	m_impl->insert(name, RVNGPropertyFactory::newIntProp(val));
 }
-
 void RVNGPropertyList::insert(const char *name, const bool val)
 {
 	m_impl->insert(name, RVNGPropertyFactory::newBoolProp(val));
 }
-
 void RVNGPropertyList::insert(const char *name, const char *val)
 {
 	insert(name, RVNGString(val));
 }
-
 void RVNGPropertyList::insert(const char *name, const RVNGString &val)
 {
 	int valInt = 0;
@@ -318,17 +257,14 @@ void RVNGPropertyList::insert(const char *name, const RVNGString &val)
 	}
 	m_impl->insert(name, RVNGPropertyFactory::newStringProp(val));
 }
-
 void RVNGPropertyList::insert(const char *name, const unsigned char *buffer, const unsigned long bufferSize)
 {
 	m_impl->insert(name, RVNGPropertyFactory::newBinaryDataProp(buffer, bufferSize));
 }
-
 void RVNGPropertyList::insert(const char *name, const RVNGBinaryData &data)
 {
 	m_impl->insert(name, RVNGPropertyFactory::newBinaryDataProp(data));
 }
-
 void RVNGPropertyList::insert(const char *name, const double val, const RVNGUnit units)
 {
 	if (units == RVNG_INCH)
@@ -342,45 +278,36 @@ void RVNGPropertyList::insert(const char *name, const double val, const RVNGUnit
 	else if (units == RVNG_GENERIC)
 		m_impl->insert(name, RVNGPropertyFactory::newDoubleProp(val));
 }
-
 void RVNGPropertyList::insert(const char *name, const RVNGPropertyListVector &vec)
 {
 	m_impl->insert(name, static_cast<RVNGPropertyListVector *>(vec.clone()));
 }
-
 void RVNGPropertyList::remove(const char *name)
 {
 	m_impl->remove(name);
 }
-
 const RVNGPropertyList &RVNGPropertyList::operator=(const RVNGPropertyList &propList)
 {
 	RVNGPropertyList tmp(propList);
 	std::swap(m_impl, tmp.m_impl);
 	return *this;
 }
-
 const RVNGProperty *RVNGPropertyList::operator[](const char *name) const
 {
 	return (*m_impl)[name];
 }
-
 const RVNGPropertyListVector *RVNGPropertyList::child(const char *name) const
 {
 	return m_impl->child(name);
 }
-
 void RVNGPropertyList::clear()
 {
 	m_impl->clear();
 }
-
 bool RVNGPropertyList::empty() const
 {
 	return m_impl->empty();
 }
-
-
 RVNGString RVNGPropertyList::getPropString() const
 {
 	RVNGString propString;
@@ -406,14 +333,12 @@ RVNGString RVNGPropertyList::getPropString() const
 	}
 	return propString;
 }
-
 #if 0
 void RVNGPropertyList::swap(RVNGPropertyList &other)
 {
 	std::swap(m_impl, other.m_impl);
 }
 #endif
-
 class RVNGPropertyListIterImpl
 {
 public:
@@ -424,33 +349,25 @@ public:
 	const RVNGProperty *operator()() const;
 	const RVNGPropertyListVector *child() const;
 	const char *key() const;
-
 private:
-	// not implemented
 	RVNGPropertyListIterImpl(const RVNGPropertyListIterImpl &other);
 	RVNGPropertyListIterImpl &operator=(const RVNGPropertyListIterImpl &other);
-
 private:
 	bool m_imaginaryFirst;
 	std::map<std::string, RVNGPropertyListElement>::iterator m_iter;
 	std::map<std::string, RVNGPropertyListElement> *m_map;
 };
-
-
 RVNGPropertyListIterImpl::RVNGPropertyListIterImpl(const RVNGPropertyListImpl *impl) :
 	m_imaginaryFirst(false),
 	m_iter(impl->m_map.begin()),
 	m_map(&impl->m_map)
 {
 }
-
 void RVNGPropertyListIterImpl::rewind()
 {
-	// rewind to an imaginary element that preceeds the first one
 	m_imaginaryFirst = true;
 	m_iter = m_map->begin();
 }
-
 bool RVNGPropertyListIterImpl::next()
 {
 	if (!m_imaginaryFirst)
@@ -458,15 +375,12 @@ bool RVNGPropertyListIterImpl::next()
 	if (m_iter==m_map->end())
 		return false;
 	m_imaginaryFirst = false;
-
 	return true;
 }
-
 bool RVNGPropertyListIterImpl::last()
 {
 	return m_iter == m_map->end();
 }
-
 const RVNGProperty *RVNGPropertyListIterImpl::operator()() const
 {
 	if (m_iter->second.m_prop)
@@ -475,61 +389,47 @@ const RVNGProperty *RVNGPropertyListIterImpl::operator()() const
 		return m_iter->second.m_vec.get();
 	return nullptr;
 }
-
 const RVNGPropertyListVector *RVNGPropertyListIterImpl::child() const
 {
 	if (m_iter->second.m_vec)
 		return m_iter->second.m_vec.get();
 	return nullptr;
 }
-
 const char *RVNGPropertyListIterImpl::key() const
 {
 	return m_iter->first.c_str();
 }
-
 RVNGPropertyList::Iter::Iter(const RVNGPropertyList &propList) :
 	m_iterImpl(new RVNGPropertyListIterImpl(propList.m_impl))
 {
 }
-
 RVNGPropertyList::Iter::~Iter()
 {
 	delete m_iterImpl;
 }
-
 void RVNGPropertyList::Iter::rewind()
 {
-	// rewind to an imaginary element that preceeds the first one
 	m_iterImpl->rewind();
 }
-
 bool RVNGPropertyList::Iter::next()
 {
 	return m_iterImpl->next();
 }
-
 bool RVNGPropertyList::Iter::last()
 {
 	return m_iterImpl->last();
 }
-
 const RVNGProperty *RVNGPropertyList::Iter::operator()() const
 {
 	return (*m_iterImpl)();
 }
-
 const RVNGPropertyListVector *RVNGPropertyList::Iter::child() const
 {
 	return m_iterImpl->child();
 }
-
 const char *RVNGPropertyList::Iter::key() const
 {
 	return m_iterImpl->key();
 }
-
 }
-
-/* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */
 #pragma clang diagnostic pop

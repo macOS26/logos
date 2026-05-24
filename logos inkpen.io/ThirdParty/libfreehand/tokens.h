@@ -1,6 +1,5 @@
 #ifndef __FHTOKENS_HXX__
 #define __FHTOKENS_HXX__
-
 const int FH_AGDFONT = 1;
 const int FH_AGDSELECTION = 2;
 const int FH_ARROWPATH = 3;
@@ -125,9 +124,6 @@ const int FH_USTRING = 121;
 const int FH_VDICT = 122;
 const int FH_VMPOBJ = 123;
 const int FH_XFORM = 124;
-
 const int FH_TOKEN_COUNT = 125;
-
 const int FH_TOKEN_INVALID = -1;
-
 #endif

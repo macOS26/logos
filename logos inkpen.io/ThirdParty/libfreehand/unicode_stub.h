@@ -1,11 +1,8 @@
 #pragma once
 #include <cstdint>
-
 typedef int32_t UChar32;
 typedef uint16_t UChar;
-
 #define U8_MAX_LENGTH 4
-
 #define U8_APPEND_UNSAFE(buf, i, c) do { \
     uint32_t __u8c = (uint32_t)(c); \
     if (__u8c < 0x80) { \
@@ -24,7 +21,6 @@ typedef uint16_t UChar;
         (buf)[(i)++] = (uint8_t)((__u8c & 0x3F) | 0x80); \
     } \
 } while(0)
-
 #define U16_NEXT(s, i, length, c) do { \
     (c) = (s)[(i)++]; \
     if ((c) >= 0xD800 && (c) <= 0xDBFF && (i) < (length)) { \
