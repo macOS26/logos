@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ThreePointStarIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
@@ -29,6 +30,7 @@ struct ThreePointStarIcon: View {
 
 struct FourPointStarIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
@@ -56,6 +58,7 @@ struct FourPointStarIcon: View {
 
 struct FivePointStarIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
@@ -83,6 +86,7 @@ struct FivePointStarIcon: View {
 
 struct SixPointStarIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
@@ -110,6 +114,7 @@ struct SixPointStarIcon: View {
 
 struct SevenPointStarIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)

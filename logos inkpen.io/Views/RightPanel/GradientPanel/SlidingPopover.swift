@@ -13,6 +13,7 @@ class SlidingPopoverManager: NSObject {
     #else
     private var popoverController: UIViewController?
     private var currentAnchorView: UIView?
+
     private weak var presentingViewController: UIViewController?
     #endif
     private var dismissCallback: (() -> Void)?
@@ -139,6 +140,7 @@ class SlidingPopoverManager: NSObject {
         #endif
         currentAnchorView = nil
     }
+
     var isShown: Bool {
         #if os(macOS)
         return popover?.isShown ?? false
@@ -204,6 +206,7 @@ extension Edge {
 }
 
 extension UIView {
+
     var viewController: UIViewController? {
         var responder: UIResponder? = self
         while let nextResponder = responder?.next {
@@ -219,6 +222,7 @@ extension UIView {
 
 struct GlassCloseButton: View {
     let action: () -> Void
+
     var body: some View {
         if #available(macOS 26.0, *) {
             Button(action: action) {

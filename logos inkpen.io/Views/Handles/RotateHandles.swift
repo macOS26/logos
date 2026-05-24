@@ -5,6 +5,7 @@ import simd
 struct RotateHandles: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -24,7 +25,9 @@ struct RotateHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State private var pointsRefreshTrigger: Int = 0
     @State private var cachedPreviewPath: Path? = nil
+
     private let handleSize: CGFloat = 10
+
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) && !shape.transform.isIdentity {
             let baseBounds = shape.bounds
@@ -44,9 +47,11 @@ struct RotateHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
+
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
+
     var body: some View {
         let bounds = calculatedBounds
         let center = calculatedCenter
@@ -54,6 +59,7 @@ struct RotateHandles: View {
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
+
                 var path = Path()
                 for element in shape.path.elements {
                     switch element {
@@ -92,6 +98,7 @@ struct RotateHandles: View {
                     let zoom = zoomLevel
                     let offset = canvasOffset
                     let currentTransform = previewTransform
+
                     var path = Path()
                     if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                         for memberID in shape.memberIDs {
@@ -252,7 +259,9 @@ struct RotateHandles: View {
         let startVector = CGPoint(x: startLocation.x - rotationCenter.x, y: startLocation.y - rotationCenter.y)
         let currentAngle = atan2(currentVector.y, currentVector.x)
         let initialAngle = atan2(startVector.y, startVector.x)
+
         var rotationAngle = currentAngle - initialAngle
+
         let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             let increment: CGFloat = .pi / 4
@@ -432,6 +441,7 @@ struct RotateHandles: View {
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
         if let vectorObject = document.findObject(by: shape.id),
+
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
@@ -560,6 +570,7 @@ struct RotateHandles: View {
             }
         }
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity

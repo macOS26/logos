@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LetterheadTemplatePreview: View {
+
     var body: some View {
         VStack(spacing: 0) {
             Rectangle()

@@ -31,7 +31,9 @@ struct DrawingCanvas: View {
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
     @Binding var imageInterpolationQuality: Int
+
     @Environment(AppState.self) internal var appState
+
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
     @State internal var isDrawing = false
@@ -125,6 +127,7 @@ struct DrawingCanvas: View {
     @State internal var curveSegmentDragT: Double = 0.5
     @State internal var dragStartLocation: CGPoint = .zero
     @State internal var lockedObjectIDs: Set<UUID> = []
+
     @State private var cachedObjectCount: Int = 0
     internal func syncDirectSelectionWithDocument() {
         document.viewState.selectedObjectIDs = selectedObjectIDs
@@ -175,6 +178,7 @@ struct DrawingCanvas: View {
     @State internal var hasPerformedInitialFitToPage = false
     @State internal var hasSpatialIndexInitialized = false
     @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
+
     @State private var previousWindowSize: CGSize = .zero
     var body: some View {
         GeometryReader { geometry in
@@ -222,6 +226,7 @@ struct DrawingCanvas: View {
                         let start = CFAbsoluteTimeGetCurrent()
                         spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
                         let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
+
                         var layerObjectCount = 0
                         for layer in document.snapshot.layers where changedLayerIDs.contains(layer.id) {
                             layerObjectCount += layer.objectIDs.count

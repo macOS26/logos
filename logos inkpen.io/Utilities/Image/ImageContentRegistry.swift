@@ -41,6 +41,7 @@ enum ImageContentRegistry {
         var loadedCGImage: CGImage? = nil
         if let data = shape.embeddedImageData, !isXMLPayload(data),
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
+
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
             print("✅ Loaded embedded image for shape: \(shape.id)")
@@ -54,6 +55,7 @@ enum ImageContentRegistry {
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+
                    let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                     let width = sourceCGImage.width
                     let height = sourceCGImage.height

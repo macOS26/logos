@@ -3,10 +3,15 @@ import SwiftUI
 struct PreferencesView: View {
 
     @Environment(AppState.self) private var appState
+
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
+
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
+
     @AppStorage("imageTileSize") var tileSize: Int = 512
+
     @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1
+
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {
         HStack(alignment: .top, spacing: 20) {

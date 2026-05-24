@@ -44,6 +44,7 @@ extension VectorDocument {
             var duplicatedShape = shape
             duplicatedShape.id = UUID()
             if ImageContentRegistry.containsImage(shape, in: self),
+
                let image = ImageContentRegistry.image(for: shape.id, in: self) {
                 ImageContentRegistry.register(image: image, for: duplicatedShape.id, in: self)
             }
@@ -74,6 +75,7 @@ extension VectorDocument {
             for objectID in snapshot.layers[layerIdx].objectIDs {
                 guard let object = snapshot.objects[objectID] else { continue }
                 let currentLayerIndex = object.layerIndex
+
                 var newLayerIndex = currentLayerIndex
                 if currentLayerIndex == sourceIndex {
                     newLayerIndex = adjustedTargetIndex
@@ -114,12 +116,14 @@ extension VectorDocument {
     func addLayer(name: String = "New Layer") {
         let colors: [LayerColor] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         let color = colors[snapshot.layers.count % colors.count]
+
         var layerName = name
         if name == "New Layer" {
             var existingNumbers = Set<Int>()
             for layer in snapshot.layers {
                 if layer.name.hasPrefix("Layer "),
                    let numberPart = layer.name.split(separator: " ").last,
+
                    let num = Int(numberPart) {
                     existingNumbers.insert(num)
                 }
@@ -289,6 +293,7 @@ extension VectorDocument {
             return
         }
         let finalTargetIndex = targetLayerIndex <= 2 ? 3 : targetLayerIndex
+
         var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
         for objectId in objectIds {
             guard let object = snapshot.objects[objectId] else {
@@ -321,11 +326,13 @@ extension VectorDocument {
             }
         guard !visibleObjects.isEmpty else { return }
         if viewState.selectedObjectIDs.isEmpty,
+
            let firstObject = visibleObjects.first {
             viewState.selectedObjectIDs = [firstObject.id]
             return
         }
         guard let currentID = viewState.selectedObjectIDs.first,
+
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             if let firstObject = visibleObjects.first {
                 viewState.selectedObjectIDs = [firstObject.id]
@@ -357,6 +364,7 @@ extension VectorDocument {
             return
         }
         guard let currentID = viewState.selectedObjectIDs.first,
+
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             viewState.selectedObjectIDs = [lastObject.id]
             return
@@ -367,6 +375,7 @@ extension VectorDocument {
 
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
         guard let sourceObject = snapshot.objects[objectId],
+
               let targetObject = snapshot.objects[targetObjectId] else {
             Log.error("❌ Objects not found for reordering", category: .error)
             return
@@ -377,10 +386,12 @@ extension VectorDocument {
         let layerIndex = sourceObject.layerIndex
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         guard let sourceObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: objectId),
+
               let targetObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: targetObjectId) else {
             return
         }
         let draggingUp = sourceObjIndex > targetObjIndex
+
         var newObjectIDs = snapshot.layers[layerIndex].objectIDs
         newObjectIDs.remove(at: sourceObjIndex)
         if let newTargetIndex = newObjectIDs.firstIndex(of: targetObjectId) {
@@ -393,15 +404,18 @@ extension VectorDocument {
 
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
         guard let sourceIndex = snapshot.layers.firstIndex(where: { $0.id == sourceLayerId }),
+
               let targetIndex = snapshot.layers.firstIndex(where: { $0.id == targetLayerId }) else {
             Log.error("❌ Layers not found for reordering", category: .error)
             return
         }
         guard sourceIndex != targetIndex else { return }
         var affectedObjectUpdates: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
+
         let newSourceIndex = targetIndex
         for (objectID, object) in snapshot.objects {
             let currentLayerIndex = object.layerIndex
+
             var newLayerIndex = currentLayerIndex
             if currentLayerIndex == sourceIndex {
                 newLayerIndex = newSourceIndex

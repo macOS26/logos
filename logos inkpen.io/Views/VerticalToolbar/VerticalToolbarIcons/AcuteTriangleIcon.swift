@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AcuteTriangleIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let baseWidth: CGFloat = 8

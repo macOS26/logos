@@ -4,6 +4,7 @@ import Combine
 struct StrokeFillPanel: View {
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
     let selectedPoints: Set<PointID>
     let selectedHandles: Set<HandleID>
@@ -15,6 +16,7 @@ struct StrokeFillPanel: View {
     @Binding var defaultFillOpacity: Double
     @Binding var defaultStrokeOpacity: Double
     @Binding var defaultStrokeWidth: Double
+
     let strokeDefaults: StrokeDefaults
     let currentSwatches: [VectorColor]
     let currentTool: DrawingTool
@@ -31,6 +33,7 @@ struct StrokeFillPanel: View {
     @Binding var fillDeltaOpacity: Double?
     @Binding var strokeDeltaOpacity: Double?
     @Binding var strokeDeltaWidth: Double?
+
     let onSetActiveColorTarget: (ColorTarget) -> Void
     let onUpdateStrokeDefaults: (StrokeDefaults) -> Void
     let onOutlineSelectedStrokes: () -> Void
@@ -51,6 +54,7 @@ struct StrokeFillPanel: View {
     let onUpdateShapeStrokePlacementInUnified: (UUID, StrokePlacement) -> Void
 
     @Environment(AppState.self) private var appState
+
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
     @State private var strokeWidthState: Double = 1.0
@@ -104,6 +108,7 @@ struct StrokeFillPanel: View {
             return closedType
         }
         let element = elements[pointID.elementIndex]
+
         var incomingControl: CGPoint?
         var anchorPoint: CGPoint?
         switch element {
@@ -199,6 +204,7 @@ struct StrokeFillPanel: View {
         let dot = norm1.x * norm2.x + norm1.y * norm2.y
         return dot < -0.9998 ? .smooth : .cusp
     }
+
     private var prototypeAnchorTypeSelector: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Anchor Point Type")
@@ -265,6 +271,7 @@ struct StrokeFillPanel: View {
                 continue
             }
             let elementIndex = pointID.elementIndex
+
             var elements = shape.path.elements
             guard let anchorPosCG = getAnchorPosition(from: elements[elementIndex]) else { continue }
             var coincidentIndex: Int? = nil
@@ -316,6 +323,7 @@ struct StrokeFillPanel: View {
             case .cusp:
                 let handleLength: Double = 40.0
                 let isCoincidentPoint = coincidentIndex != nil
+
                 var prevPos: CGPoint?
                 var nextPos: CGPoint?
                 if isCoincidentPoint {
@@ -457,8 +465,10 @@ struct StrokeFillPanel: View {
         guard len > 0.001 else { return CGPoint(x: 1, y: 0) }
         return CGPoint(x: dx / len, y: dy / len)
     }
+
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -479,8 +489,10 @@ struct StrokeFillPanel: View {
         }
         return defaultStrokeColor
     }
+
     private var selectedFillColor: VectorColor {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -499,8 +511,10 @@ struct StrokeFillPanel: View {
         }
         return defaultFillColor
     }
+
     private var strokeWidth: Double {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -517,8 +531,10 @@ struct StrokeFillPanel: View {
         }
         return defaultStrokeWidth
     }
+
     private var strokePlacement: StrokePlacement {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
@@ -535,8 +551,10 @@ struct StrokeFillPanel: View {
         }
         return strokeDefaults.placement
     }
+
     private var isTextSelected: Bool {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             if case .text = newVectorObject.objectType {
                 return true
@@ -544,8 +562,10 @@ struct StrokeFillPanel: View {
         }
         return false
     }
+
     private var fillOpacity: Double {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -564,8 +584,10 @@ struct StrokeFillPanel: View {
         }
         return defaultFillOpacity
     }
+
     private var strokeOpacity: Double {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -584,8 +606,10 @@ struct StrokeFillPanel: View {
         }
         return defaultStrokeOpacity
     }
+
     private var strokeLineJoin: CGLineJoin {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text(let shape):
@@ -602,8 +626,10 @@ struct StrokeFillPanel: View {
         }
         return strokeDefaults.lineJoin
     }
+
     private var strokeLineCap: CGLineCap {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
@@ -620,8 +646,10 @@ struct StrokeFillPanel: View {
         }
         return strokeDefaults.lineCap
     }
+
     private var strokeMiterLimit: Double {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
@@ -638,8 +666,10 @@ struct StrokeFillPanel: View {
         }
         return strokeDefaults.miterLimit
     }
+
     private var strokeScaleWithTransform: Bool {
         if let firstSelectedObjectID = selectedObjectIDs.first,
+
            let newVectorObject = snapshot.objects[firstSelectedObjectID] {
             switch newVectorObject.objectType {
             case .text:
@@ -656,6 +686,7 @@ struct StrokeFillPanel: View {
         }
         return false
     }
+
     private var hasSelectedImages: Bool {
         return selectedObjectIDs.contains { objectID in
             if let newVectorObject = snapshot.objects[objectID] {
@@ -675,6 +706,7 @@ struct StrokeFillPanel: View {
             return false
         }
     }
+
     private var selectedImageOpacity: Double {
         for objectID in selectedObjectIDs {
             if let newVectorObject = snapshot.objects[objectID] {
@@ -696,6 +728,7 @@ struct StrokeFillPanel: View {
         }
         return 1.0
     }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {

@@ -157,6 +157,7 @@ extension DrawingCanvas {
               elementIndex < shape.path.elements.count else { return }
         let oldPath = shape.path
         let element = shape.path.elements[elementIndex]
+
         var elements = shape.path.elements
         switch element {
         case .curve(let to, let originalControl1, let control2):
@@ -203,6 +204,7 @@ extension DrawingCanvas {
               elementIndex < shape.path.elements.count else { return }
         let oldPath = shape.path
         let element = shape.path.elements[elementIndex]
+
         var elements = shape.path.elements
         switch element {
         case .curve(let to, let control1, let originalControl2):
@@ -237,6 +239,7 @@ extension DrawingCanvas {
               elementIndex + 1 < shape.path.elements.count else { return }
         let oldPath = shape.path
         let nextElement = shape.path.elements[elementIndex + 1]
+
         var elements = shape.path.elements
         switch nextElement {
         case .curve(let to, let originalControl1, let control2):
@@ -271,6 +274,7 @@ extension DrawingCanvas {
               elementIndex < shape.path.elements.count else { return }
         let oldPath = shape.path
         let element = shape.path.elements[elementIndex]
+
         var elements = shape.path.elements
         switch element {
         case .curve(let to, let control1, let control2):
@@ -284,6 +288,7 @@ extension DrawingCanvas {
             let hasControl2Original = (control2X != 0.0 || control2Y != 0.0)
             let control1Collapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
             let control2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+
             var restoredControl1 = control1
             var restoredControl2 = control2
             if control1Collapsed && hasControl1Original {
@@ -311,6 +316,7 @@ extension DrawingCanvas {
               elementIndex + 1 < shape.path.elements.count else { return }
         let oldPath = shape.path
         let nextElement = shape.path.elements[elementIndex + 1]
+
         var elements = shape.path.elements
         switch nextElement {
         case .curve(let to, _, let control2):
@@ -318,6 +324,7 @@ extension DrawingCanvas {
             let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
             let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
             let hasControl1Original = (control1X != 0.0 || control1Y != 0.0)
+
             var restoredControl1: VectorPoint
             if hasControl1Original {
                 restoredControl1 = VectorPoint(control1X, control1Y)
@@ -355,12 +362,14 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
         let oldPath = shape.path
+
         var elements = shape.path.elements
         var needsUpdate = false
         for (checkIndex, checkElement) in elements.enumerated() {
             if case .curve(let to, let control1, let control2) = checkElement {
                 let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                 let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
+
                 var restoredControl1 = control1
                 var restoredControl2 = control2
                 var elementNeedsUpdate = false
@@ -400,6 +409,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
         let oldPath = shape.path
+
         var elements = shape.path.elements
         var needsUpdate = false
         for (checkIndex, checkElement) in elements.enumerated() {
@@ -452,6 +462,7 @@ extension DrawingCanvas {
             for shape in shapes.reversed() {
                 if !shape.isVisible { continue }
                 var isHit = false
+
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 if isBackgroundShape {
                     continue

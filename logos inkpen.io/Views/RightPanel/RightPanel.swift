@@ -5,6 +5,7 @@ struct RightPanel: View {
 
     @ObservedObject var viewState: DocumentViewState
     @ObservedObject var document: VectorDocument
+
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
@@ -20,6 +21,7 @@ struct RightPanel: View {
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
+
     @Environment(AppState.self) private var appState
     var body: some View {
         VStack(spacing: 0) {

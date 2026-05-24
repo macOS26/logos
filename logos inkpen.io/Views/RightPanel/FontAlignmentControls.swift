@@ -6,6 +6,7 @@ struct FontAlignmentControls: View {
     let document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
+
     private var currentTextAlignment: NSTextAlignment {
         if let selectedText = selectedText {
             return selectedText.typography.alignment.nsTextAlignment
@@ -15,6 +16,7 @@ struct FontAlignmentControls: View {
             return selectedTextAlignment.nsTextAlignment
         }
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Alignment")

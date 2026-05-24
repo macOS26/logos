@@ -32,12 +32,14 @@ struct CurrentColorsView: View {
     let fillOpacity: Double
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
 
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     let defaultFillOpacity: Double
     let defaultStrokeOpacity: Double
     let currentSwatches: [VectorColor]
@@ -48,10 +50,12 @@ struct CurrentColorsView: View {
 
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
+
     let onSetActiveColorTarget: (ColorTarget) -> Void
     let onColorSelected: (VectorColor) -> Void
 
     @Environment(AppState.self) private var appState
+
     @State private var popoverManager = SlidingPopoverManager()
     @State private var anchorViews: [String: NSView] = [:]
     @State private var activeAnchorKey: String? = nil
@@ -138,15 +142,18 @@ private struct ColorSwatchView: View {
 
     @Binding var anchorViews: [String: NSView]
     @Binding var activeAnchorKey: String?
+
     let appState: AppState
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
 
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     let defaultFillOpacity: Double
     let defaultStrokeOpacity: Double
     let currentSwatches: [VectorColor]
@@ -157,6 +164,7 @@ private struct ColorSwatchView: View {
 
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
+
     let onColorSelected: (VectorColor) -> Void
     let onSetActiveColorTarget: (ColorTarget) -> Void
 
@@ -189,6 +197,7 @@ private struct ColorSwatchView: View {
         self.onSetActiveColorTarget = onSetActiveColorTarget
         self._localActiveColorTarget = State(initialValue: activeColorTarget)
     }
+
     var body: some View {
         VStack(spacing: 4) {
             Button(action: {

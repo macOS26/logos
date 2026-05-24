@@ -3,9 +3,11 @@ import AppKit
 class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
+
     override var insertionPointColor: PlatformColor? {
         didSet {
             if let layoutManager = layoutManager,
+
                let textContainer = textContainer {
                 let glyphRange = layoutManager.glyphRange(for: textContainer)
                 if glyphRange.length > 0 {
@@ -18,6 +20,7 @@ class DisabledContextMenuTextView: NSTextView {
             }
         }
     }
+
     override var wantsDefaultClipping: Bool {
         return false
     }
@@ -49,6 +52,7 @@ class DisabledContextMenuTextView: NSTextView {
 
     override func drawInsertionPoint(in rect: CGRect, color: PlatformColor, turnedOn flag: Bool) {
         let cursorColor = shouldShowCursor ? color : PlatformColor.clear
+
         var thickerRect = rect
         thickerRect.size.width = 1.0
         super.drawInsertionPoint(in: thickerRect, color: cursorColor, turnedOn: flag)

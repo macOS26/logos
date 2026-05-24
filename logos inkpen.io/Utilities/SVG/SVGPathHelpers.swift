@@ -16,7 +16,9 @@ extension SVGParser {
 
     func tokenizeSVGPath(_ pathData: String) -> [String] {
         var tokens: [String] = []
+
         let chars = Array(pathData)
+
         var i = 0
         while i < chars.count {
             let char = chars[i]
@@ -85,7 +87,9 @@ extension SVGParser {
         var currentPoint = CGPoint.zero
         var subpathStart = CGPoint.zero
         var lastControlPoint: CGPoint?
+
         let tokens = tokenizeSVGPath(pathData)
+
         var coordinateCount = 0
         var commandCount = 0
         for token in tokens {
@@ -378,6 +382,7 @@ extension SVGParser {
             case "A", "a":
                 let isRelative = currentCommand == "a"
                 let arcTokens = expandArcTokens(tokens, from: i)
+
                 var ai = 0
                 while ai + 6 < arcTokens.count {
                     let rx = abs(Double(arcTokens[ai]) ?? 0)
@@ -458,8 +463,10 @@ extension SVGParser {
         let y1p = -sinPhi * dx + cosPhi * dy
         let x1pSq = x1p * x1p
         let y1pSq = y1p * y1p
+
         var rxSq = rx * rx
         var rySq = ry * ry
+
         let radiusCheck = x1pSq / rxSq + y1pSq / rySq
         if radiusCheck > 1.0 {
             let scale = sqrt(radiusCheck)
@@ -480,6 +487,7 @@ extension SVGParser {
         let vx = (-x1p - cxp) / rx
         let vy = (-y1p - cyp) / ry
         let startAngle = atan2(uy, ux)
+
         var sweepAngle = atan2(vy * ux - vx * uy, vx * ux + vy * uy)
         if !sweep && sweepAngle > 0 {
             sweepAngle -= 2.0 * .pi
@@ -488,6 +496,7 @@ extension SVGParser {
         }
         let segmentCount = max(1, Int(ceil(abs(sweepAngle) / (.pi / 2.0))))
         let segmentAngle = sweepAngle / Double(segmentCount)
+
         var elements: [PathElement] = []
         var angle = startAngle
         for _ in 0..<segmentCount {

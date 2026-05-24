@@ -28,6 +28,7 @@ class SVGExporter {
         let viewBoxHeightStr = formatSVGNumber(viewBoxHeight)
         let widthAttr = isAutoDesk ? "\(widthStr)px" : widthStr
         let heightAttr = isAutoDesk ? "\(heightStr)px" : heightStr
+
         var svg = """
         <?xml version="1.0" encoding="UTF-8"?>
         <svg width="\(widthAttr)" height="\(heightAttr)" viewBox="0 0 \(viewBoxWidthStr) \(viewBoxHeightStr)"
@@ -492,6 +493,7 @@ class SVGExporter {
             svg += "<rect x=\"\(boxX)\" y=\"\(boxY)\" width=\"\(boxWidth)\" height=\"\(boxHeight)\""
             svg += " fill=\"none\" stroke=\"#808080\" stroke-width=\"1\"/>\n"
             let fontSize = typography.fontSize * dpiScale
+
             var textX: CGFloat
             switch typography.alignment {
             case .center:
@@ -688,6 +690,7 @@ class SVGExporter {
         let y = transformedBounds.minY * dpiScale
         let width = transformedBounds.width * dpiScale
         let height = transformedBounds.height * dpiScale
+
         var href: String
         if let embeddedData = shape.embeddedImageData {
             href = "data:image/png;base64,\(embeddedData.base64EncodedString())"
@@ -716,6 +719,7 @@ class SVGExporter {
 
     private func generatePathData(from path: VectorPath, transform: CGAffineTransform, dpiScale: CGFloat = 1.0) -> String {
         var pathData = ""
+
         let scaleTransform = CGAffineTransform(scaleX: dpiScale, y: dpiScale)
         let combinedTransform = transform.concatenating(scaleTransform)
         for element in path.elements {
@@ -782,6 +786,7 @@ class SVGExporter {
             }
             if candidate.isClippingGroup && !processedClipPaths.contains(candidate.id),
                let members = resolveClippingGroupMembers(candidate, in: document),
+
                let mask = members.first {
                 processedClipPaths.insert(candidate.id)
                 let pathData = generatePathData(from: mask.path, transform: mask.transform)
@@ -815,6 +820,7 @@ class SVGExporter {
 
     private func generateLinearGradientDef(_ gradient: LinearGradient, id: String) -> String {
         var svg = "<linearGradient id=\"\(id)\""
+
         let angle = gradient.angle * .pi / 180
         let x1 = 0.5 - cos(angle) * 0.5
         let y1 = 0.5 - sin(angle) * 0.5

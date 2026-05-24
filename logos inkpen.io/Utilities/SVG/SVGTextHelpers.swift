@@ -8,6 +8,7 @@ extension SVGParser {
             return cached
         }
         let byPostScriptName = PlatformFont(name: family, size: size)
+
         let byFamily: PlatformFont? = {
             let descriptor = NSFontDescriptor(fontAttributes: [.family: family])
             return NSFont(descriptor: descriptor, size: size)
@@ -33,6 +34,7 @@ extension SVGParser {
 
     internal func calculateMaxLineWidth(for text: String, font: PlatformFont, alignment: TextAlignment) -> CGFloat {
         let lines = text.components(separatedBy: "\n")
+
         var maxWidth: CGFloat = 0
         for line in lines {
             let lineWidth = calculateTextWidth(for: line, font: font, alignment: alignment)
@@ -77,6 +79,7 @@ extension SVGParser {
     func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
         if let firstTspan = tspans.first,
+
            let textAnchor = firstTspan.attributes["text-anchor"] {
             switch textAnchor.lowercased() {
             case "start": return .left
@@ -127,6 +130,7 @@ extension SVGParser {
             let baseY = parseLength(currentTextAttributes["y"]) ?? 0
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
+
             var combinedContent: [String] = []
             var firstFontSize: Double = 12
             var firstFontFamily: String = "System Font"
@@ -182,6 +186,7 @@ extension SVGParser {
                 maxTextWidth = max(maxTextWidth, actualWidth)
                 let actualHeight = lineHeight * Double(max(1, combinedContent.count))
                 let finalY = baseY - (firstFontSize)
+
                 var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
@@ -250,6 +255,7 @@ extension SVGParser {
             let lineCount = max(1, trimmedContent.components(separatedBy: "\n").count)
             let actualHeight = lineHeight * Double(lineCount)
             let finalY = y - (fontSize)
+
             var textObject = VectorText(
                 content: trimmedContent,
                 typography: typography,

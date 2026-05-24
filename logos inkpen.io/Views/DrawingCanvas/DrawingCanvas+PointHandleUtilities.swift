@@ -65,7 +65,9 @@ extension DrawingCanvas {
               case .shape(let shape) = object.objectType else { return }
                 guard pointID.elementIndex < shape.path.elements.count else { return }
                 let newPoint = VectorPoint(newPosition.x, newPosition.y)
+
                 var elements = shape.path.elements
+
                 let originalPosition: CGPoint
                 switch elements[pointID.elementIndex] {
                 case .move(let to), .line(let to):
@@ -112,6 +114,7 @@ extension DrawingCanvas {
         switch elements[elementIndex] {
         case .curve(let to, _, let control2):
             let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+
             var outgoingHandleCollapsed = true
             if elementIndex + 1 < elements.count {
                 let nextElement = elements[elementIndex + 1]
@@ -164,6 +167,7 @@ extension DrawingCanvas {
               case .shape(let shape) = object.objectType else { return }
         guard handleID.elementIndex < shape.path.elements.count else { return }
         let newHandle = VectorPoint(newPosition.x, newPosition.y)
+
         var elements = shape.path.elements
         switch elements[handleID.elementIndex] {
         case .curve(let to, let control1, let control2):

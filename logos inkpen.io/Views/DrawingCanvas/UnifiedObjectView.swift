@@ -7,6 +7,7 @@ struct PasteboardBackgroundView: View {
     let pasteboardOrigin: CGPoint
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     var body: some View {
         Canvas { context, size in
             let x = pasteboardOrigin.x * zoomLevel + canvasOffset.x
@@ -23,6 +24,7 @@ struct CanvasBackgroundView: View {
     let backgroundColor: Color
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     var body: some View {
         Canvas { context, size in
             let w = canvasSize.width * zoomLevel
@@ -53,10 +55,12 @@ struct LayerCanvasView: View {
     let colorDeltaOpacity: Double?
 
     @Binding var activeGradientDelta: VectorGradient?
+
     let isPanning: Bool
     let activeColorTarget: ColorTarget
 
     @Binding var textContentDelta: (id: UUID, content: String)?
+
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
@@ -67,6 +71,7 @@ struct LayerCanvasView: View {
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt?
+
     var appState = AppState.shared
 
     private func viewportRect(canvasSize: CGSize) -> CGRect {
@@ -102,8 +107,10 @@ struct LayerCanvasView: View {
             return objectBounds.intersectsSIMD(viewport) ? object : nil
         }
     }
+
     private var layerInfo: String {
         guard let firstID = objectIDs.first,
+
               let obj = document.snapshot.objects[firstID] else {
             return "Empty"
         }
@@ -112,6 +119,7 @@ struct LayerCanvasView: View {
 
     private func applyLivePositions(to shape: VectorShape) -> VectorShape {
         let shapeID = shape.id
+
         var hasLivePositions = false
         for pointID in livePointPositions.keys {
             if pointID.shapeID == shapeID {
@@ -185,6 +193,7 @@ struct LayerCanvasView: View {
         modifiedShape.updateBounds()
         return modifiedShape
     }
+
     var body: some View {
         Canvas { context, size in
             let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
@@ -222,6 +231,7 @@ struct LayerCanvasView: View {
                         if showClipped {
                             guard maskShape.isVisible else { break }
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
+
                             let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
                                 baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
@@ -235,6 +245,7 @@ struct LayerCanvasView: View {
                                 guard contentShape.isVisible else { continue }
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                                 let isChildText = contentShape.typography != nil
+
                                 let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
                                     baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
@@ -330,6 +341,7 @@ struct LayerCanvasView: View {
                     } else {
                         guard maskShape.isVisible else { break }
                         let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
+
                         let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
                             baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                         } else {
@@ -339,6 +351,7 @@ struct LayerCanvasView: View {
                             guard contentShape.isVisible else { continue }
                             let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                             let isChildText = contentShape.typography != nil
+
                             let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
                                 baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
@@ -399,8 +412,10 @@ struct LayerCanvasView: View {
                                 context.transform = parentXform
                             }
                             let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
+
                             let maskShape: VectorShape? = {
                                 guard let maskID = childShape.clippedByShapeID,
+
                                       let maskObject = document.snapshot.objects[maskID] else {
                                     return nil
                                 }
@@ -452,8 +467,10 @@ struct LayerCanvasView: View {
                     }
                     renderGroupMembers(memberShapes, parentXform: parentTransform)
                 case .shape(let shape), .warp(let shape), .clipMask(let shape), .guide(let shape):
+
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
+
                               let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
@@ -462,8 +479,10 @@ struct LayerCanvasView: View {
                     let liveShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     renderShape(liveShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape)
                 case .image(let shape):
+
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
+
                               let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
@@ -472,8 +491,10 @@ struct LayerCanvasView: View {
                     let liveImageShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
                     renderImage(liveImageShape, context: &context, isSelected: isSelected, scaleTransform: shapeTransform, maskShape: maskShape, canvasSize: size)
                 case .text(let shape):
+
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
+
                               let maskObject = document.snapshot.objects[maskID] else {
                             return nil
                         }
@@ -885,6 +906,7 @@ struct LayerCanvasView: View {
                 effectiveLineSpacing = vectorText.typography.lineSpacing
                 effectiveLetterSpacing = vectorText.typography.letterSpacing
             }
+
             let nsFont: PlatformFont = {
                 if let variant = vectorText.typography.fontVariant {
                     let fontManager = NSFontManager.shared
@@ -943,8 +965,10 @@ struct LayerCanvasView: View {
             layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
                 let lineString = (effectiveContent as NSString).substring(with: lineRange)
                 let lineAttribString = NSAttributedString(string: lineString, attributes: renderAttributes)
+
                 var line = CTLineCreateWithAttributedString(lineAttribString)
                 if vectorText.typography.alignment.nsTextAlignment == .justified,
+
                    let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
                     line = justifiedLine
                 }
@@ -1045,6 +1069,7 @@ struct LayerCanvasView: View {
         let started = url.startAccessingSecurityScopedResource()
         defer { if started { url.stopAccessingSecurityScopedResource() } }
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+
               let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             print("❌ Failed to load image from bookmark URL: \(url.path)")
             return nil
@@ -1075,6 +1100,7 @@ struct LayerCanvasView: View {
             Self.lastRenderImageMemMB = mb
         }
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
+
         var renderBounds = pathBounds
         if scaleTransform != .identity {
             renderBounds = pathBounds.applying(scaleTransform)
@@ -1089,6 +1115,7 @@ struct LayerCanvasView: View {
             let sourceCGImage: CGImage?
             if let imageData = shape.embeddedImageData,
                let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+
                let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                 sourceCGImage = cgImage
             } else if let linkedPath = shape.linkedImagePath,
@@ -1191,9 +1218,11 @@ struct IsolatedLayerView: View {
     let colorDeltaOpacity: Double?
 
     @Binding var activeGradientDelta: VectorGradient?
+
     let activeColorTarget: ColorTarget
 
     @Binding var textContentDelta: (id: UUID, content: String)?
+
     let fontSizeDelta: Double?
     let lineSpacingDelta: Double?
     let lineHeightDelta: Double?
@@ -1205,6 +1234,7 @@ struct IsolatedLayerView: View {
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt
     let isPanning: Bool
+
     private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
         guard document.viewState.currentTool == .font else {
             return []
@@ -1240,6 +1270,7 @@ struct IsolatedLayerView: View {
         }
         return shapes
     }
+
     var body: some View {
         ZStack {
             LayerCanvasView(

@@ -3,19 +3,25 @@ import SwiftUI
 struct MoveObjectDialog: View {
 
     @ObservedObject var document: VectorDocument
+
     @Binding var isPresented: Bool
+
     @State private var xDelta: String = "0"
     @State private var yDelta: String = "0"
+
     @FocusState private var focusedField: Field?
     enum Field {
         case x, y
     }
+
     private var currentUnit: MeasurementUnit {
         document.settings.unit
     }
+
     private var unitSuffix: String {
         currentUnit.abbreviation
     }
+
     var body: some View {
         VStack(spacing: 16) {
             Text("Move")
@@ -77,6 +83,7 @@ struct MoveObjectDialog: View {
 
     private func applyMove() {
         guard let xValue = Double(xDelta),
+
               let yValue = Double(yDelta) else {
             isPresented = false
             return
@@ -167,6 +174,7 @@ struct MoveObjectDialog: View {
 
     private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
         let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
+
         var pointsByShape: [UUID: [PointID]] = [:]
         for pointID in document.viewState.selectedPoints {
             pointsByShape[pointID.shapeID, default: []].append(pointID)

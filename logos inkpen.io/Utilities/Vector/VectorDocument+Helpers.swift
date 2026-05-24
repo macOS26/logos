@@ -1,21 +1,25 @@
 import SwiftUI
 
 extension VectorDocument {
+
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches
         swatches.append(contentsOf: colorSwatches.rgb)
         return swatches
     }
+
     var cmykSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.cmykSwatches
         swatches.append(contentsOf: colorSwatches.cmyk)
         return swatches
     }
+
     var hsbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.hsbSwatches
         swatches.append(contentsOf: colorSwatches.hsb)
         return swatches
     }
+
     var allShapes: [VectorShape] {
         return snapshot.objects.values.compactMap { object in
             switch object.objectType {
@@ -32,6 +36,7 @@ extension VectorDocument {
             }
         }
     }
+
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
@@ -39,6 +44,7 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
+
     var defaultStrokeColor: VectorColor {
         get { documentColorDefaults.strokeColor }
         set {
@@ -46,6 +52,7 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
+
     var defaultFillOpacity: Double {
         get { documentColorDefaults.fillOpacity }
         set {
@@ -53,6 +60,7 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
+
     var defaultStrokeOpacity: Double {
         get { documentColorDefaults.strokeOpacity }
         set {
@@ -60,6 +68,7 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
+
     var defaultStrokeWidth: Double {
         get { documentColorDefaults.strokeWidth }
         set {
@@ -67,6 +76,7 @@ extension VectorDocument {
             documentColorDefaults.saveToUserDefaults()
         }
     }
+
     var currentSwatches: [VectorColor] {
         switch settings.colorMode {
         case .rgb:
@@ -319,6 +329,7 @@ extension VectorDocument {
 
     func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
         let members = resolveGroupMembers(groupShape)
+
         var result: [VectorShape] = []
         for member in members {
             if member.isGroupContainer {
@@ -333,6 +344,7 @@ extension VectorDocument {
     func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
         guard groupShape.isGroupContainer else { return groupShape.bounds }
         let members = resolveGroupMembers(groupShape)
+
         var calculatedBounds = CGRect.null
         for member in members {
             let memberBounds: CGRect
@@ -351,6 +363,7 @@ extension VectorDocument {
     func findText(by id: UUID) -> VectorText? {
         if let object = snapshot.objects[id] {
             if case .text(let shape) = object.objectType,
+
                var vectorText = VectorText.from(shape) {
                 vectorText.layerIndex = object.layerIndex
                 return vectorText
@@ -360,6 +373,7 @@ extension VectorDocument {
             if case .group(let shape) = object.objectType {
                 let members = resolveGroupMembers(shape)
                 if let textShape = members.first(where: { $0.id == id && $0.typography != nil }),
+
                    var vectorText = VectorText.from(textShape) {
                     vectorText.layerIndex = object.layerIndex
                     return vectorText
@@ -374,6 +388,7 @@ extension VectorDocument {
             for objectID in layer.objectIDs {
                 guard let object = snapshot.objects[objectID] else { continue }
                 if case .text(let shape) = object.objectType,
+
                    let text = VectorText.from(shape) {
                     try action(text)
                 }

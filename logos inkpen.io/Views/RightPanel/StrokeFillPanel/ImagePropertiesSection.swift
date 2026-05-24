@@ -3,6 +3,7 @@ import SwiftUI
 struct ImagePropertiesSection: View {
     let imageOpacity: Double
     let onUpdateImageOpacity: (Double) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {

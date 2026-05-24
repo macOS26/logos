@@ -56,7 +56,9 @@ extension DrawingCanvas {
         if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
+
             var interpolatedPoints: [BrushPoint] = [startPoint]
+
             let numIntermediatePoints = 4
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
@@ -94,6 +96,7 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
         var dedupedPoints: [BrushPoint] = []
+
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
@@ -110,7 +113,9 @@ extension DrawingCanvas {
         if dedupedPoints.count == 2 {
             let startPoint = dedupedPoints[0]
             let endPoint = dedupedPoints[1]
+
             var interpolatedPoints: [BrushPoint] = [startPoint]
+
             let startVec = SIMD2<Double>(Double(startPoint.location.x), Double(startPoint.location.y))
             let endVec = SIMD2<Double>(Double(endPoint.location.x), Double(endPoint.location.y))
             let delta = endVec - startVec
@@ -177,6 +182,7 @@ extension DrawingCanvas {
         )
         if ApplicationSettings.shared.brushRemoveOverlap {
             let cg = finalShape.path.cgPath
+
             var cleaned: CGPath? = nil
             cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
             if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
@@ -193,7 +199,9 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil else { return }
         guard brushRawPoints.count >= 2 else { return }
         var dedupedPoints: [BrushPoint] = []
+
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
+
         var usedMetal = false
         if brushRawPoints.count > 10 {
             print("🚀 FINAL: Using Metal GPU to simplify \(brushRawPoints.count) points")
@@ -271,6 +279,7 @@ extension DrawingCanvas {
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
         if ApplicationSettings.shared.brushRemoveOverlap {
             let currentPath = finalPath.cgPath
+
             var cleaned: CGPath? = nil
             cleaned = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding)
             if cleaned == nil {
@@ -291,6 +300,7 @@ extension DrawingCanvas {
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
+
             var finalThickness = thickness
             var mappedPressure = 1.0
             if appState.pressureSensitivityEnabled && !recentRawPoints.isEmpty {
@@ -308,6 +318,7 @@ extension DrawingCanvas {
             }
             let taperStart = max(0.0, ApplicationSettings.shared.currentBrushTaperStart)
             let taperEnd = max(0.0, ApplicationSettings.shared.currentBrushTaperEnd)
+
             var taperMultiplier = 1.0
             if taperStart > 0 && progress < taperStart {
                 let t = progress / taperStart
@@ -334,6 +345,7 @@ extension DrawingCanvas {
         guard !rawPoints.isEmpty else { return 1.0 }
         var firstClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
         var secondClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
+
         let targetVec = SIMD2<Double>(Double(targetPoint.x), Double(targetPoint.y))
         for rawPoint in rawPoints {
             let rawVec = SIMD2<Double>(Double(rawPoint.location.x), Double(rawPoint.location.y))
@@ -363,6 +375,7 @@ extension DrawingCanvas {
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
+
             var finalThickness = thickness
             var mappedPressure = 1.0
             if appState.pressureSensitivityEnabled {
@@ -372,6 +385,7 @@ extension DrawingCanvas {
             }
             let taperStart = max(0.0, ApplicationSettings.shared.currentBrushTaperStart)
             let taperEnd = max(0.0, ApplicationSettings.shared.currentBrushTaperEnd)
+
             var taperMultiplier = 1.0
             if taperStart > 0 && progress < taperStart {
                 let t = progress / taperStart
@@ -399,6 +413,7 @@ extension DrawingCanvas {
         for i in 0..<centerPoints.count {
             let point = centerPoints[i]
             let thickness = point.thickness
+
             var perpVec: SIMD2<Double>
             if i == 0 {
                 if i + 1 < centerPoints.count {

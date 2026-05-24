@@ -47,6 +47,7 @@ struct VectorObject: Identifiable, Hashable {
         self.layerIndex = layerIndex
         self.objectType = VectorObject.determineType(for: shape)
     }
+
     var isVisible: Bool {
         switch objectType {
         case .shape(let shape),
@@ -60,6 +61,7 @@ struct VectorObject: Identifiable, Hashable {
             return shape.isVisible
         }
     }
+
     var isLocked: Bool {
         switch objectType {
         case .shape(let shape),
@@ -73,6 +75,7 @@ struct VectorObject: Identifiable, Hashable {
             return shape.isLocked
         }
     }
+
     var shape: VectorShape {
         switch objectType {
         case .shape(let shape),
@@ -132,6 +135,7 @@ extension VectorObject: Codable {
         id = try container.decode(UUID.self, forKey: .id)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
+
         var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
         if shape.typography != nil, let textPosition = shape.textPosition {
             if shape.transform.tx == 0 && shape.transform.ty == 0 {

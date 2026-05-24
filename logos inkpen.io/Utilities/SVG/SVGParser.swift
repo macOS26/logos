@@ -2,12 +2,16 @@ import SwiftUI
 
 class SVGParser: NSObject, XMLParserDelegate {
     var shapes: [VectorShape] = []
+
     internal var textObjects: [VectorText] = []
     internal var currentTransform = CGAffineTransform.identity
+
     private var transformStack: [CGAffineTransform] = []
     private var documentSize = CGSize(width: 100, height: 100)
+
     internal var viewBoxWidth: Double = 100.0
     internal var viewBoxHeight: Double = 100.0
+
     private var viewBoxX: Double = 0.0
     private var viewBoxY: Double = 0.0
     private var hasViewBox: Bool = false
@@ -16,11 +20,14 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentElementName = ""
     private var cssStyles: [String: [String: String]] = [:]
     private var currentStyleContent = ""
+
     internal var currentTextContent = ""
     internal var currentTextAttributes: [String: String] = [:]
+
     internal lazy var sharedTextStorage = NSTextStorage()
     internal lazy var sharedLayoutManager = NSLayoutManager()
     internal lazy var sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+
     internal var fontCache: [String: PlatformFont] = [:]
     internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
     internal var isInMultiLineText: Bool = false
@@ -83,7 +90,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var defsDepth: Int = 0
     internal var hiddenDepth: Int = 0
     internal var elementHiddenStack: [Bool] = []
+
     private var useRecursionDepth = 0
+
     private let maxUseRecursionDepth = 10
 
     struct MarkerDefinition {
@@ -107,9 +116,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         return false
     }
     var inkpenMetadata: String? = nil
+
     private var isInMetadata = false
     private var isInInkpenDocument = false
     private var currentMetadataContent = ""
+
     private var viewBoxScale: (x: Double, y: Double) {
         return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
     }
@@ -151,10 +162,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             if !unclippedImages.isEmpty, let firstClipPathEntry = clipPathDefinitions.first {
                 let clipPath = firstClipPathEntry.value
+
                 var updatedShapes: [VectorShape] = []
                 for shape in finalShapes {
                     if shape.id == unclippedImages[0].id {
                         var maskedImage = shape
+
                         let clipShapeId = UUID()
                         maskedImage.clippedByShapeID = clipShapeId
                         maskedImage.name = "Masked Image"
@@ -178,6 +191,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
+
         var topLevelGroups = 0
         var topLevelCompound = 0
         var topLevelImages = 0
@@ -292,6 +306,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             let tspanX = parseLength(overlay["x"]) ?? 0
             let tspanY = parseLength(overlay["y"]) ?? 0
+
             var tspanAttributes = currentTextAttributes
             if let fam = overlay["font-family"], !fam.isEmpty { tspanAttributes["font-family"] = fam }
             if let size = overlay["font-size"], !size.isEmpty { tspanAttributes["font-size"] = size }
@@ -371,6 +386,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     break
                 }
                 let children = Array(shapes[childRange])
+
                 let allClippingRelated = children.allSatisfy {
                     $0.isClippingPath || $0.clippedByShapeID != nil
                 }
@@ -386,6 +402,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                         var cleanedMask = mask
                         cleanedMask.isClippingPath = false
                         let members = [cleanedMask] + contentShapes
+
                         var clipGroup = VectorShape.group(
                             from: members,
                             name: "Clipping Group",
@@ -412,6 +429,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                 }
                 let groupOpacity = parseLength(mergedAttrs["opacity"]) ?? 1.0
+
                 var groupShape = VectorShape.group(from: children, name: "Group")
                 groupShape.memberIDs = []
                 groupShape.groupedShapes = children
@@ -501,7 +519,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             if parts.count == 2 {
                 let selector = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
                 let declarations = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+
                 var styles: [String: String] = [:]
+
                 let declParts = declarations.components(separatedBy: ";")
                 for decl in declParts {
                     let keyValue = decl.components(separatedBy: ":")
@@ -660,6 +680,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 instance.id = UUID()
                 if !currentTransform.isIdentity {
                     let useTransform = CGAffineTransform(translationX: useX, y: useY)
+
                     var combined = useTransform
                     if let userTransform = attributes["transform"].map(parseTransform) {
                         combined = combined.concatenating(userTransform)
@@ -709,6 +730,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
         if let patternId = Self.patternIdInFill(attributes: attributes),
+
            let patternShapes = patternDefinitions[patternId] {
             expandPatternInPlace(patternShapes: patternShapes, pathElements: pathData, originalAttributes: attributes)
             return
@@ -891,6 +913,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     closedClipPath = VectorPath(elements: elements, isClosed: true)
                 }
                 var maskedImageShape = imageShape
+
                 let clipShapeId = UUID()
                 maskedImageShape.clippedByShapeID = clipShapeId
                 maskedImageShape.name = "Masked Image"
@@ -988,6 +1011,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "polygon":
             if let points = attributes["points"] {
                 let parsedPoints = parsePoints(points)
+
                 var elements: [PathElement] = []
                 for (index, point) in parsedPoints.enumerated() {
                     if index == 0 {
@@ -1059,6 +1083,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             transform = currentTransform.isIdentity ? .identity : currentTransform
         }
         var resolvedPath = path
+
         let fillRuleAttr = mergedAttributes["fill-rule"] ?? "nonzero"
         if fillRuleAttr == "evenodd" {
             resolvedPath.fillRule = .evenOdd
@@ -1172,6 +1197,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             closedClipPath = VectorPath(elements: elements, isClosed: true)
         }
         var maskedShape = shape
+
         let clipShapeId = UUID()
         maskedShape.clippedByShapeID = clipShapeId
         maskedShape.name = "Masked \(shape.name)"

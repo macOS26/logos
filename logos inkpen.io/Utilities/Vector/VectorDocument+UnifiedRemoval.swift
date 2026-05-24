@@ -73,6 +73,7 @@ extension VectorDocument {
     func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
         for object in snapshot.objects.values {
             if case .text(let shape) = object.objectType,
+
                var vectorText = VectorText.from(shape) {
                 vectorText.layerIndex = object.layerIndex
                 if predicate(vectorText) {

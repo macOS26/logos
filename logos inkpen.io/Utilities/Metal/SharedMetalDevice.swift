@@ -2,6 +2,7 @@ import Metal
 
 final class SharedMetalDevice {
     static let shared = SharedMetalDevice()
+
     let device: MTLDevice
     let library: MTLLibrary
 

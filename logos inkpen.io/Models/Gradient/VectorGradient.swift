@@ -3,6 +3,7 @@ import SwiftUI
 enum VectorGradient: Codable, Hashable {
     case linear(LinearGradient)
     case radial(RadialGradient)
+
     var stops: [GradientStop] {
         switch self {
         case .linear(let gradient):
@@ -11,6 +12,7 @@ enum VectorGradient: Codable, Hashable {
             return gradient.stops
         }
     }
+
     var signature: String {
 
         func stopSig(_ s: GradientStop) -> String {

@@ -37,12 +37,15 @@ struct CTLineTextConverter {
         layoutManager.ensureGlyphs(forGlyphRange: textRange)
         layoutManager.ensureLayout(for: textContainer)
         let glyphRange = layoutManager.glyphRange(for: textContainer)
+
         var linePaths: [CGPath] = []
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
             let lineString = (text as NSString).substring(with: lineRange)
             let lineAttribString = NSAttributedString(string: lineString, attributes: attributes)
+
             var line = CTLineCreateWithAttributedString(lineAttribString)
             if alignment == .justified,
+
                let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
                 line = justifiedLine
             }
@@ -73,6 +76,7 @@ struct CTLineTextConverter {
             guard let attributes = CTRunGetAttributes(run) as? [NSAttributedString.Key: Any] else { continue }
             guard let font = attributes[.font] as? PlatformFont else { continue }
             let ctFont = font as CTFont
+
             var glyphs = [CGGlyph](repeating: 0, count: glyphCount)
             var positions = [CGPoint](repeating: .zero, count: glyphCount)
             CTRunGetGlyphs(run, CFRangeMake(0, glyphCount), &glyphs)

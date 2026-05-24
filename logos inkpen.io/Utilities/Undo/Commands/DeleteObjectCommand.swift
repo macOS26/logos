@@ -3,6 +3,7 @@ import Combine
 
 class DeleteObjectCommand: BaseCommand {
     private let objectsToRestore: [UUID: VectorObject]
+
     private var originalPositions: [UUID: (layerIndex: Int, position: Int)] = [:]
 
     init(objectIDs: [UUID], document: VectorDocument) {
@@ -13,6 +14,7 @@ class DeleteObjectCommand: BaseCommand {
                 dict[uuid] = obj
                 let layerIdx = obj.layerIndex
                 if layerIdx >= 0 && layerIdx < document.snapshot.layers.count,
+
                    let pos = document.snapshot.layers[layerIdx].objectIDs.firstIndex(of: uuid) {
                     positions[uuid] = (layerIndex: layerIdx, position: pos)
                 }
@@ -40,6 +42,7 @@ class DeleteObjectCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         let idsToRemove = Set(objectsToRestore.keys)
+
         var affectedLayers = Set<Int>()
         for (_, obj) in objectsToRestore {
             affectedLayers.insert(obj.layerIndex)
@@ -48,6 +51,7 @@ class DeleteObjectCommand: BaseCommand {
             for (uuid, obj) in objectsToRestore {
                 let layerIdx = obj.layerIndex
                 if layerIdx >= 0 && layerIdx < document.snapshot.layers.count,
+
                    let pos = document.snapshot.layers[layerIdx].objectIDs.firstIndex(of: uuid) {
                     originalPositions[uuid] = (layerIndex: layerIdx, position: pos)
                 }
@@ -68,6 +72,7 @@ class DeleteObjectCommand: BaseCommand {
 
     override func undo(on document: VectorDocument) {
         var affectedLayers = Set<Int>()
+
         let sortedRestores = objectsToRestore.sorted { a, b in
             let posA = originalPositions[a.key]?.position ?? Int.max
             let posB = originalPositions[b.key]?.position ?? Int.max

@@ -5,6 +5,7 @@ extension PDFCommandParser {
     func parseRadialGradient(from dict: CGPDFDictionaryRef) -> VectorGradient? {
         var coordsArray: CGPDFArrayRef?
         guard CGPDFDictionaryGetArray(dict, "Coords", &coordsArray),
+
               let coords = coordsArray else {
             return nil
         }

@@ -19,6 +19,7 @@ struct ProfessionalBezierView: View {
         }
         return baseSize
     }
+
     var body: some View {
         Canvas { context, size in
             let zoom = zoomLevel
@@ -91,6 +92,7 @@ struct ProfessionalBezierView: View {
                 context.fill(circlePath, with: .color(.green.opacity(0.1)))
                 context.stroke(circlePath, with: .color(.green), lineWidth: 2.0)
                 var xPath = Path()
+
                 let xSize: CGFloat = 6
                 xPath.move(to: CGPoint(x: hintX - xSize/2, y: hintY - xSize/2))
                 xPath.addLine(to: CGPoint(x: hintX + xSize/2, y: hintY + xSize/2))
@@ -111,6 +113,7 @@ struct ProfessionalBezierView: View {
                 context.fill(circlePath, with: .color(.blue.opacity(0.1)))
                 context.stroke(circlePath, with: .color(.blue), lineWidth: 2.0)
                 var arrowPath = Path()
+
                 let arrowSize: CGFloat = 6
                 arrowPath.move(to: CGPoint(x: hintX - arrowSize/2, y: hintY))
                 arrowPath.addLine(to: CGPoint(x: hintX + arrowSize/2, y: hintY))
@@ -124,6 +127,7 @@ struct ProfessionalBezierView: View {
 
     private func drawBezierHandle(_ handlePoint: VectorPoint, anchor: CGPoint, context: inout GraphicsContext, zoom: CGFloat) {
         let handleLocation = CGPoint(x: handlePoint.x, y: handlePoint.y)
+
         var linePath = Path()
         linePath.move(to: anchor)
         linePath.addLine(to: handleLocation)

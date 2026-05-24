@@ -108,6 +108,7 @@ final class ColorExportManager {
         case imageConversionFailed
         case destinationCreationFailed
         case finalizationFailed
+
         var errorDescription: String? {
             switch self {
             case .imageConversionFailed:

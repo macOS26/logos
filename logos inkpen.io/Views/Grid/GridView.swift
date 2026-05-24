@@ -8,6 +8,7 @@ struct GridCanvasView: View {
     let majorGridInterval: Int
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     var body: some View {
         Canvas { context, size in
             let minorLineWidth: CGFloat = 0.5
@@ -66,6 +67,7 @@ struct GridCanvasView: View {
         let zoom = Float(zoomLevel)
         let scaledSize = sizeVec * zoom
         let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / gridSpacing)) + 1
+
         var path = Path()
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
@@ -121,8 +123,10 @@ struct GridView: View, Equatable {
         lhs.zoomLevel == rhs.zoomLevel &&
         lhs.canvasOffset == rhs.canvasOffset
     }
+
     var body: some View {
         let baseSpacing = gridSpacing * unit.pointsPerUnit
+
         let spacingMultiplier: CGFloat = {
             switch unit {
             case .pixels, .points:

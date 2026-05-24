@@ -4,13 +4,16 @@ import SwiftUI
 
 #if canImport(AppKit)
 import AppKit
+
 typealias PlatformColor = NSColor
 #elseif canImport(UIKit)
 import UIKit
+
 typealias PlatformColor = UIColor
 #endif
 
 extension Color {
+
     static var platformControlBackground: Color {
         #if canImport(AppKit)
         return Color(NSColor.controlBackgroundColor)
@@ -18,6 +21,7 @@ extension Color {
         return Color(UIColor.systemBackground)
         #endif
     }
+
     static var platformWindowBackground: Color {
         #if canImport(AppKit)
         return Color(NSColor.windowBackgroundColor)
@@ -25,6 +29,7 @@ extension Color {
         return Color(UIColor.systemBackground)
         #endif
     }
+
     static var platformTextBackground: Color {
         #if canImport(AppKit)
         return Color(NSColor.textBackgroundColor)
@@ -32,6 +37,7 @@ extension Color {
         return Color(UIColor.systemBackground)
         #endif
     }
+
     static var platformSecondaryLabel: Color {
         #if canImport(AppKit)
         return Color(NSColor.secondaryLabelColor)
@@ -42,6 +48,7 @@ extension Color {
 }
 
 extension CGColor {
+
     var platformColor: PlatformColor {
         #if canImport(AppKit)
         return NSColor(cgColor: self) ?? NSColor.black
@@ -49,15 +56,19 @@ extension CGColor {
         return UIColor(cgColor: self)
         #endif
     }
+
     static var black: CGColor {
         CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     }
+
     static var white: CGColor {
         CGColor(red: 1, green: 1, blue: 1, alpha: 1)
     }
+
     static var clear: CGColor {
         CGColor(red: 0, green: 0, blue: 0, alpha: 0)
     }
+
     var rgbaComponents: (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
         guard let components = self.components else {
             return (0, 0, 0, 1)

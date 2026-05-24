@@ -7,7 +7,9 @@ struct ProfessionalLayerRow: View {
     let layer: Layer
 
     @ObservedObject var document: VectorDocument
+
     @Binding var selectedLayerIndex: Int?
+
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var isExpanded: Bool
@@ -19,10 +21,12 @@ struct ProfessionalLayerRow: View {
     private var isSelected: Bool {
         document.settings.selectedLayerId == layer.id
     }
+
     private var layerObjects: [VectorObject] {
         cachedObjectIDs.compactMap { document.snapshot.objects[$0] }
     }
     private var layerInBounds: Bool { layerIndex >= 0 && layerIndex < document.snapshot.layers.count }
+
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: { guard layerInBounds else { return true }; return document.snapshot.layers[layerIndex].isVisible },
@@ -35,6 +39,7 @@ struct ProfessionalLayerRow: View {
             }
         )
     }
+
     private var isLockedBinding: Binding<Bool> {
         Binding(
             get: { guard layerInBounds else { return false }; return document.snapshot.layers[layerIndex].isLocked },
@@ -71,6 +76,7 @@ struct ProfessionalLayerRow: View {
         updatedSettings.layerExpansionState[layer.id] = value
         document.settings = updatedSettings
     }
+
     private var layerColor: Binding<Color> {
         Binding(
             get: {
@@ -87,6 +93,7 @@ struct ProfessionalLayerRow: View {
             }
         )
     }
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
@@ -159,6 +166,7 @@ struct ProfessionalLayerRow: View {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
                                 if NSEvent.modifierFlags.contains(.option) {
                                     var updatedSettings = document.settings
+
                                     let shouldExpand = !isExpanded
                                     for layer in document.snapshot.layers {
                                         updatedSettings.layerExpansionState[layer.id] = shouldExpand
@@ -414,6 +422,7 @@ struct ProfessionalLayerRow: View {
                 let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
                 let reversedIDs = Array(objectIDs.reversed())
                 if let anchorIndex = reversedIDs.firstIndex(of: anchorID),
+
                    let clickedIndex = reversedIDs.firstIndex(of: objectID) {
                     let currentMin = selectionRangeMin ?? anchorIndex
                     let currentMax = selectionRangeMax ?? anchorIndex

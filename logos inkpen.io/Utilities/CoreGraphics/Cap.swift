@@ -1,6 +1,7 @@
 import SwiftUI
 
 extension CGLineCap {
+
     var swiftUILineCap: SwiftUI.CGLineCap {
         switch self {
         case .butt: return .butt
@@ -13,6 +14,7 @@ extension CGLineCap {
 }
 
 extension CGLineJoin {
+
     var swiftUILineJoin: SwiftUI.CGLineJoin {
         switch self {
         case .miter: return .miter

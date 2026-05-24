@@ -5,6 +5,7 @@ struct VerticalToolbar: View {
     let currentTool: DrawingTool
 
     @ObservedObject var viewState: DocumentViewState
+
     let document: VectorDocument
 
     @Binding var colorDeltaColor: VectorColor?
@@ -12,6 +13,7 @@ struct VerticalToolbar: View {
     @Binding var colorDeltaBlendMode: BlendMode?
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     @ObservedObject private var toolGroupManager = ToolGroupManager.shared
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
@@ -82,9 +84,11 @@ struct VerticalToolbar: View {
 
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []
+
         let allToolGroups = getAllToolGroups()
         for toolGroup in allToolGroups {
             var groupTools: [ToolItem] = []
+
             let primaryTool = toolGroup[0]
             let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
             if toolGroupManager.expandedGroups.contains(groupName) {
@@ -123,6 +127,7 @@ struct VerticalToolbar: View {
 
     private func getToolsToDisplay() -> [ToolItem] {
         var toolsToShow: [ToolItem] = []
+
         let allToolGroups = getAllToolGroups()
         for toolGroup in allToolGroups {
             let primaryTool = toolGroup[0]
@@ -192,6 +197,7 @@ struct VerticalToolbar: View {
         }
         return false
     }
+
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -412,6 +418,7 @@ struct VerticalToolbarButton: View {
             }
         }
     }
+
     var body: some View {
         Button(action: {
             FreeHandMXLongPress()

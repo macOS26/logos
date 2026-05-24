@@ -46,6 +46,7 @@ extension View {
 private struct DocumentSectionHeader: View {
     let icon: String
     let title: String
+
     var body: some View {
         HStack {
             Image(systemName: icon)
@@ -59,13 +60,16 @@ private struct DocumentSectionHeader: View {
 struct NewDocumentSetupView: View {
 
     @Binding var isPresented: Bool
+
     let onDocumentCreated: (VectorDocument, URL?) -> Void
 
     @State private var setupData = DocumentSetupData()
     @State private var documentPreview: NSImage?
     @State private var isGeneratingPreview = false
     @State private var skipNextUnitConversion = false
+
     @Environment(AppState.self) private var appState
+
     @Environment(\.dismissWindow) private var dismissWindow
     var body: some View {
             VStack(spacing: 0) {
@@ -85,6 +89,7 @@ struct NewDocumentSetupView: View {
             generateDocumentPreview()
         }
     }
+
     private var professionalHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -128,6 +133,7 @@ struct NewDocumentSetupView: View {
         }
         .background(Color.ui.controlBackground)
     }
+
     private var settingsPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -140,6 +146,7 @@ struct NewDocumentSetupView: View {
         .frame(width: 450)
         .background(Color.ui.controlBackground)
     }
+
     private var documentNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             DocumentSectionHeader(icon: "doc.text", title: "Document Name")
@@ -153,6 +160,7 @@ struct NewDocumentSetupView: View {
             }
         }
     }
+
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             DocumentSectionHeader(icon: "ruler", title: "Document Size")
@@ -198,6 +206,7 @@ struct NewDocumentSetupView: View {
             generateDocumentPreview()
         }
     }
+
     private var quickSizesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             DocumentSectionHeader(icon: "square.grid.2x2", title: "Quick Sizes")
@@ -210,6 +219,7 @@ struct NewDocumentSetupView: View {
             }
         }
     }
+
     private var previewPanel: some View {
              VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
@@ -297,6 +307,7 @@ struct NewDocumentSetupView: View {
         .padding(20)
         .frame(maxWidth: .infinity)
     }
+
     private var professionalFooter: some View {
         VStack(spacing: 0) {
             Divider()
@@ -317,9 +328,11 @@ struct NewDocumentSetupView: View {
         }
         .background(Color.ui.controlBackground)
     }
+
     private var unitLabel: String {
         setupData.unit.rawValue
     }
+
     private var quickSizes: [QuickSize] {
         [
             QuickSize(name: "Letter", baseWidth: 8.5, baseHeight: 11.0, baseUnit: .inches),

@@ -15,12 +15,14 @@ extension PDFCommandParser {
             var startColor = VectorColor.black
             var endColor = VectorColor.white
             if CGPDFDictionaryGetArray(function, "C0", &c0Array),
+
                let c0 = c0Array {
                 startColor = extractColorFromArray(c0)
             } else {
                 Log.error("PDF: ❌ No C0 array found in function", category: .error)
             }
             if CGPDFDictionaryGetArray(function, "C1", &c1Array),
+
                let c1 = c1Array {
                 endColor = extractColorFromArray(c1)
             } else {

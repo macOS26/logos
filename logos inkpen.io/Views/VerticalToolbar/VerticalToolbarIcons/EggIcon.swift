@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EggIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)

@@ -25,40 +25,49 @@ struct ColorDefaults: Codable {
 
     mutating func loadFromUserDefaults() {
         guard let data = UserDefaults.standard.data(forKey: Self.userDefaultsKey),
+
               let dict = try? JSONDecoder().decode([String: Data].self, from: data) else {
             return
         }
         if let fillData = dict["fill"],
+
            let color = try? JSONDecoder().decode(VectorColor.self, from: fillData) {
             if color != .black {
                 fillColor = color
             }
         }
         if let strokeData = dict["stroke"],
+
            let color = try? JSONDecoder().decode(VectorColor.self, from: strokeData) {
             strokeColor = color
         }
         if let fillOpData = dict["fillOp"],
+
            let value = try? JSONDecoder().decode(Double.self, from: fillOpData) {
             fillOpacity = value
         }
         if let strokeOpData = dict["strokeOp"],
+
            let value = try? JSONDecoder().decode(Double.self, from: strokeOpData) {
             strokeOpacity = value
         }
         if let strokeWData = dict["strokeW"],
+
            let value = try? JSONDecoder().decode(Double.self, from: strokeWData) {
             strokeWidth = value
         }
         if let rgbData = dict["rgb"],
+
            let swatches = try? JSONDecoder().decode([VectorColor].self, from: rgbData) {
             rgbSwatches = swatches.count == 40 ? swatches : Self.createDefaultRGBSwatches()
         }
         if let cmykData = dict["cmyk"],
+
            let swatches = try? JSONDecoder().decode([VectorColor].self, from: cmykData) {
             cmykSwatches = swatches.count == 40 ? swatches : Self.createDefaultCMYKSwatches()
         }
         if let hsbData = dict["hsb"],
+
            let swatches = try? JSONDecoder().decode([VectorColor].self, from: hsbData) {
             hsbSwatches = swatches.count == 40 ? swatches : Self.createDefaultHSBSwatches()
         }

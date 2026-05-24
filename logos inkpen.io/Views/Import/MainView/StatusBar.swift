@@ -110,6 +110,7 @@ struct StatusBar: View {
         for vectorObject in document.snapshot.objects.values {
             if case .text(let shape) = vectorObject.objectType,
                document.viewState.selectedObjectIDs.contains(shape.id),
+
                let textObj = VectorText.from(shape) {
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,

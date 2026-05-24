@@ -92,6 +92,7 @@ struct CornerRadiusToolbar: View {
             .background(isRounded && (getSelectedShape()?.cornerRadii[safe: index] ?? 0.0) > 0 ? InkPenUIColors.shared.veryLightBlueBackground : Color.clear)
         }
     }
+
     private var shapeIcon: String {
         switch cornerCount {
         case 3: return "triangle"
@@ -124,6 +125,7 @@ struct CornerRadiusToolbar: View {
             return 4
         }
         let elements = shape.path.elements
+
         var lineCount = 0
         var curveCount = 0
         for element in elements {
@@ -163,6 +165,7 @@ struct CornerRadiusToolbar: View {
 
     private func isCornerRounded(shape: VectorShape, cornerIndex: Int) -> Bool {
         let elements = shape.path.elements
+
         var lineSegments: [PathElement] = []
         var curves: [PathElement] = []
         for element in elements {

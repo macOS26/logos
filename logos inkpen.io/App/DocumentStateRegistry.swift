@@ -2,7 +2,9 @@ import SwiftUI
 
 final class DocumentStateRegistry {
     static let shared = DocumentStateRegistry()
+
     let table = NSHashTable<DocumentState>.weakObjects()
+
     private let lock = NSLock()
 
     private init() {}

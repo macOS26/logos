@@ -58,9 +58,12 @@ extension SVGParser {
         let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
         let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
         let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling)
+
         var r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
+
         let fx = fxRaw.map { parseGradientCoordinate($0, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) } ?? cx
         let fy = fyRaw.map { parseGradientCoordinate($0, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) } ?? cy
+
         var centerPoint: CGPoint
         var focalPoint: CGPoint
         if useExtremeHandling {
@@ -123,6 +126,7 @@ extension SVGParser {
         let focalDx = transformedFocal.x - transformedCenter.x
         let focalDy = transformedFocal.y - transformedCenter.y
         let resolvedFocal: CGPoint? = (abs(focalDx) < 1e-9 && abs(focalDy) < 1e-9) ? nil : CGPoint(x: focalDx, y: focalDy)
+
         var radialGradient = RadialGradient(
             centerPoint: transformedCenter,
             radius: max(0.001, finalRadius),

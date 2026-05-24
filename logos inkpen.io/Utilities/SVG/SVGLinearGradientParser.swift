@@ -20,6 +20,7 @@ extension SVGParser {
         let y1Raw = attributes["y1"] ?? "0%"
         let x2Raw = attributes["x2"] ?? "100%"
         let y2Raw = attributes["y2"] ?? "0%"
+
         var x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         var y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
         var x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
@@ -52,6 +53,7 @@ extension SVGParser {
             let originX = (startPoint.x + endPoint.x) / 2.0
             let originY = (startPoint.y + endPoint.y) / 2.0
             let angleDegrees = radiansToDegrees(atan2(y2 - y1, x2 - x1))
+
             var linearGradient = LinearGradient(
                 startPoint: startPoint,
                 endPoint: endPoint,
@@ -70,6 +72,7 @@ extension SVGParser {
         let gradTransform = attributes["gradientTransform"].map { parseTransform($0) } ?? .identity
         let transformedStart = startPoint.applying(gradTransform)
         let transformedEnd = endPoint.applying(gradTransform)
+
         var linearGradient = LinearGradient(
             startPoint: transformedStart,
             endPoint: transformedEnd,

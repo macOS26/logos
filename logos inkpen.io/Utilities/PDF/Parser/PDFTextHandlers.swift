@@ -200,6 +200,7 @@ extension PDFCommandParser {
     func handleShowText(scanner: CGPDFScannerRef) {
         var stringRef: CGPDFStringRef?
         if CGPDFScannerPopString(scanner, &stringRef),
+
            let stringRef = stringRef {
             let text = extractTextFromPDFString(stringRef)
             currentTextContent += text
@@ -210,13 +211,16 @@ extension PDFCommandParser {
     func handleShowTextWithPositioning(scanner: CGPDFScannerRef) {
         var arrayRef: CGPDFArrayRef?
         if CGPDFScannerPopArray(scanner, &arrayRef),
+
            let arrayRef = arrayRef {
             let count = CGPDFArrayGetCount(arrayRef)
+
             var combinedText = ""
             for index in 0..<count {
                 var stringRef: CGPDFStringRef?
                 var numberValue: CGPDFReal = 0
                 if CGPDFArrayGetString(arrayRef, index, &stringRef),
+
                    let stringRef = stringRef {
                     let text = extractTextFromPDFString(stringRef)
                     combinedText += text
@@ -287,6 +291,7 @@ extension PDFCommandParser {
     private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
         var toUnicodeStream: CGPDFStreamRef?
         guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
+
               let toUnicodeStream = toUnicodeStream else {
             return nil
         }
@@ -306,6 +311,7 @@ extension PDFCommandParser {
         }
         let isTwoByteFont = isCIDFont(fontDict) || codeToUnicode.keys.contains(where: { $0 > 0xFF })
         let stride = isTwoByteFont ? 2 : 1
+
         var result = ""
         var i = 0
         while i < length {
@@ -329,6 +335,7 @@ extension PDFCommandParser {
     private func isCIDFont(_ fontDict: CGPDFDictionaryRef) -> Bool {
         var subtype: UnsafePointer<CChar>?
         if CGPDFDictionaryGetName(fontDict, "Subtype", &subtype),
+
            let subtype = subtype {
             let name = String(cString: subtype)
             return name == "Type0"
@@ -338,6 +345,7 @@ extension PDFCommandParser {
 
     private func parseCMap(_ cmapString: String) -> [UInt16: String] {
         var mapping: [UInt16: String] = [:]
+
         let bfcharPattern = "<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>"
         if let regex = try? NSRegularExpression(pattern: bfcharPattern, options: []) {
             let range = NSRange(cmapString.startIndex..., in: cmapString)
@@ -345,6 +353,7 @@ extension PDFCommandParser {
                 guard let match = match,
                       match.numberOfRanges == 3,
                       let charCodeRange = Range(match.range(at: 1), in: cmapString),
+
                       let unicodeRange = Range(match.range(at: 2), in: cmapString) else {
                     return
                 }
@@ -352,11 +361,13 @@ extension PDFCommandParser {
                 let unicodeHex = String(cmapString[unicodeRange])
                 if let charCode = UInt16(charCodeHex, radix: 16) {
                     var unicodeString = ""
+
                     let hexChars = Array(unicodeHex)
                     for i in stride(from: 0, to: hexChars.count, by: 4) {
                         if i + 4 <= hexChars.count {
                             let hexValue = String(hexChars[i..<min(i+4, hexChars.count)])
                             if let scalar = UInt32(hexValue, radix: 16),
+
                                let unicodeScalar = UnicodeScalar(scalar) {
                                 unicodeString.append(Character(unicodeScalar))
                             }
@@ -376,6 +387,7 @@ extension PDFCommandParser {
                       match.numberOfRanges == 4,
                       let startCodeRange = Range(match.range(at: 1), in: cmapString),
                       let endCodeRange = Range(match.range(at: 2), in: cmapString),
+
                       let unicodeRange = Range(match.range(at: 3), in: cmapString) else {
                     return
                 }
@@ -384,16 +396,20 @@ extension PDFCommandParser {
                 let unicodeHex = String(cmapString[unicodeRange])
                 if let startCode = UInt16(startCodeHex, radix: 16),
                    let endCode = UInt16(endCodeHex, radix: 16),
+
                    let baseUnicode = UInt32(unicodeHex, radix: 16) {
                     for charCode in startCode...endCode {
                         let unicodeValue = baseUnicode + UInt32(charCode - startCode)
+
                         var unicodeString = ""
+
                         let hexChars = String(format: "%04X", unicodeValue)
                         for i in stride(from: 0, to: hexChars.count, by: 4) {
                             let startIdx = hexChars.index(hexChars.startIndex, offsetBy: i)
                             let endIdx = hexChars.index(startIdx, offsetBy: min(4, hexChars.count - i))
                             let hexValue = String(hexChars[startIdx..<endIdx])
                             if let scalar = UInt32(hexValue, radix: 16),
+
                                let unicodeScalar = UnicodeScalar(scalar) {
                                 unicodeString.append(Character(unicodeScalar))
                             }
@@ -419,12 +435,15 @@ extension PDFCommandParser {
         guard let resources = pageResourcesDict else { return nil }
         var fontDict: CGPDFDictionaryRef?
         if CGPDFDictionaryGetDictionary(resources, "Font", &fontDict),
+
            let fontDict = fontDict {
             var fontRef: CGPDFDictionaryRef?
             if CGPDFDictionaryGetDictionary(fontDict, resourceName, &fontRef),
+
                let fontRef = fontRef {
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
+
                    let baseFontName = baseFontName {
                     return cleanPDFFontName(String(cString: baseFontName))
                 }
@@ -437,12 +456,15 @@ extension PDFCommandParser {
         guard let resources = pageResourcesDict else { return nil }
         var fontDict: CGPDFDictionaryRef?
         if CGPDFDictionaryGetDictionary(resources, "Font", &fontDict),
+
            let fontDict = fontDict {
             var fontRef: CGPDFDictionaryRef?
             if CGPDFDictionaryGetDictionary(fontDict, resourceName, &fontRef),
+
                let fontRef = fontRef {
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
+
                    let baseFontName = baseFontName {
                     return (cleanPDFFontName(String(cString: baseFontName)), fontRef)
                 }
@@ -456,6 +478,7 @@ extension PDFCommandParser {
             return result
         }
         let suffixesToStrip = ["PSMT", "PS", "MT"]
+
         var stripped = rawName
         for suffix in suffixesToStrip {
             if stripped.hasSuffix(suffix) {
@@ -526,6 +549,7 @@ extension PDFCommandParser {
             let isItalic = n.contains("italic") || n.contains("oblique")
             let isLight = n.contains("light") || n.contains("thin")
             let isMedium = n.contains("medium")
+
             var s = 0
             if isBold == wantBold { s += 8 }
             if isItalic == wantItalic { s += 4 }
@@ -553,6 +577,7 @@ extension PDFCommandParser {
         currentTextContent = normalized
         var pdfX = currentTextStartPosition.x
         var pdfY = currentTextStartPosition.y
+
         let tm = currentTextMatrix
         let matrixFontSize = abs(tm.d)
         let actualFontSize = currentFontSize * matrixFontSize
@@ -599,6 +624,7 @@ extension PDFCommandParser {
         let maxLineLength = lines.map { $0.count }.max() ?? 0
         let estimatedWidth = Double(maxLineLength) * fontSize * 0.6
         let estimatedHeight = Double(lines.count) * fontSize * 1.2
+
         var vectorText = VectorText(
             content: currentTextContent,
             typography: typography,

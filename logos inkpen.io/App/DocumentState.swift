@@ -31,6 +31,7 @@ class DocumentState: ObservableObject {
     @Published var canExpandWarpObject = false
     @Published var canEmbedLinkedImages = false
     @Published var showMoveDialog = false
+
     private var isTerminating = false
     private var pasteboardChangeCount: Int = 0
     private var pasteboardTimer: Timer?
@@ -942,6 +943,7 @@ class DocumentState: ObservableObject {
         document?.alignSelectedObjectsByOriginY()
         updateAllStates()
     }
+
     var canAlign: Bool {
         guard let doc = document else { return false }
         return doc.viewState.orderedSelectedObjectIDs.count >= 2
@@ -1159,6 +1161,7 @@ class DocumentState: ObservableObject {
         panel.begin { [weak self] response in
             guard let self = self,
                   response == .OK,
+
                   let newURL = panel.url else {
                 return
             }

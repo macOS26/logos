@@ -9,6 +9,7 @@ extension DrawingCanvas {
             for layerIndex in document.snapshot.layers.indices {
                 let shapes = document.getShapesForLayer(layerIndex)
                 if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+
                    let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                     let pathPointCount = shape.path.elements.filter { element in
                         switch element {
@@ -46,6 +47,7 @@ extension DrawingCanvas {
         let lastIndex = bezierPoints.count - 1
         let lastPointHandles = bezierHandles[lastIndex]
         let firstPointHandles = bezierHandles[0]
+
         var finalElements = updatedPath.elements
         if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstControl1))
@@ -58,6 +60,7 @@ extension DrawingCanvas {
         }
         finalElements.append(.close)
         let closedPath = VectorPath(elements: finalElements, isClosed: true)
+
         var targetLayerIndex = document.selectedLayerIndex
         if targetLayerIndex == nil {
             for (index, layer) in document.snapshot.layers.enumerated() {

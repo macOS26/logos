@@ -4,6 +4,7 @@ struct VariableStrokeSection: View {
     let hasPressureInput: Bool
 
     @Environment(AppState.self) private var appState
+
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

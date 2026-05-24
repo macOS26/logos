@@ -5,9 +5,13 @@ class GPUCoordinateTransform {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue?
     private let computePipeline: MTLComputePipelineState?
+
     private var isMetalAvailable: Bool = false
+
     private static var _shared: GPUCoordinateTransform?
+
     private static let lock = NSLock()
+
     static var shared: GPUCoordinateTransform {
         lock.lock()
         defer { lock.unlock() }
@@ -67,12 +71,14 @@ class GPUCoordinateTransform {
 
     private func transformPointsGPU(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
         guard let commandQueue = commandQueue,
+
               let pipeline = computePipeline else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
         let inputData = points.map { SIMD2<Float>(Float($0.x), Float($0.y)) }
         let dataSize = inputData.count * MemoryLayout<SIMD2<Float>>.stride
         guard let inputBuffer = device.makeBuffer(bytes: inputData, length: dataSize, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: dataSize, options: .storageModeShared) else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
@@ -85,6 +91,7 @@ class GPUCoordinateTransform {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }
@@ -108,6 +115,7 @@ class GPUCoordinateTransform {
             return CGPoint(x: CGFloat(result.x), y: CGFloat(result.y))
         }
     }
+
     var isGPUAvailable: Bool {
         return isMetalAvailable
     }

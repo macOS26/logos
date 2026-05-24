@@ -7,8 +7,11 @@ class CommandManager: ObservableObject {
     @Published private(set) var canRedo: Bool = false
     private var undoStack: [Command] = []
     private var redoStack: [Command] = []
+
     private let maxStackSize: Int
+
     var undoCount: Int { undoStack.count }
+
     weak var document: VectorDocument?
 
     init(maxStackSize: Int = 100) {
@@ -30,6 +33,7 @@ class CommandManager: ObservableObject {
 
     private func addToUndoStack(_ command: Command) {
         if let lastCommand = undoStack.last,
+
            let mergedCommand = lastCommand.mergeWith(command) {
             undoStack[undoStack.count - 1] = mergedCommand
         } else {

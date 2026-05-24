@@ -27,9 +27,13 @@ enum LogLevel: String, CaseIterable {
 struct Log {
     #if DEBUG
     private static let subsystem = Bundle.main.bundleIdentifier ?? "com.logos.inkpen"
+
     private static var loggers: [LogCategory: Logger] = [:]
+
     private static let loggersQueue = DispatchQueue(label: "com.logos.logger.queue", attributes: .concurrent)
+
     private static var messageCounters: [String: Int] = [:]
+
     private static let maxRepeatedMessages = 3
     private static let counterQueue = DispatchQueue(label: "com.logos.logger.counters", qos: .utility)
     private static let fontRelatedPatterns = [

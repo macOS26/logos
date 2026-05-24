@@ -3,11 +3,13 @@ import SwiftUI
 struct CMYKInputSection: View {
 
     @Binding var sharedColor: VectorColor
+
     let activeColorTarget: ColorTarget
 
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Binding var colorDeltaColor: VectorColor?
+
     let onSetActiveColor: (VectorColor) -> Void
     let onAddColorSwatch: (VectorColor) -> Void
     let onColorSelected: ((VectorColor) -> Void)?
@@ -54,6 +56,7 @@ struct CMYKInputSection: View {
         let cmykColor = CMYKColor(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)
         return cmykColor.color
     }
+
     private var cyanGradient: SwiftUI.LinearGradient {
         let m = Double(magentaValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -67,6 +70,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var magentaGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -80,6 +84,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var yellowGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -93,6 +98,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var blackGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -106,6 +112,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 8) {

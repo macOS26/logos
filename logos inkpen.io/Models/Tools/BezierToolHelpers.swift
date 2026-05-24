@@ -6,6 +6,7 @@ extension DrawingCanvas {
     internal func snapToGrid(_ point: CGPoint) -> CGPoint {
         guard document.gridSettings.snapToGrid else { return point }
         let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+
         let spacingMultiplier: CGFloat = {
             switch document.settings.unit {
             case .pixels, .points:
@@ -76,6 +77,7 @@ extension DrawingCanvas {
         if !isBezierDrawing {
             if let selectedPointID = selectedPoints.first {
                 if getShapeForPoint(selectedPointID) != nil,
+
                    let pointPosition = getPointPosition(selectedPointID) {
                     continueExistingPath(from: pointPosition)
                     return
@@ -111,6 +113,7 @@ extension DrawingCanvas {
         }
         let basePointTolerance: Double = 8.0
         let tolerance = max(2.0, basePointTolerance / zoomLevel)
+
         var draggedPointIndex: Int? = nil
         for (index, point) in bezierPoints.enumerated() {
             let pointLocation = CGPoint(x: point.x, y: point.y)
@@ -248,11 +251,13 @@ extension DrawingCanvas {
             return (false, nil)
         }
         if let selectedPointID = selectedPoints.first,
+
            let pointPosition = getPointPosition(selectedPointID) {
             return (true, CGPoint(x: pointPosition.x, y: pointPosition.y))
         }
         return (false, nil)
     }
+
     internal var constraintAngles: [Double] {
         return [0, 45, 90, 135, 180, 225, 270, 315]
     }
@@ -262,6 +267,7 @@ extension DrawingCanvas {
         let dx = target.x - currentPoint.x
         let dy = target.y - currentPoint.y
         let currentAngle = atan2(dy, dx)
+
         var currentAngleDegrees = currentAngle * 180.0 / .pi
         if currentAngleDegrees < 0 {
             currentAngleDegrees += 360
@@ -277,8 +283,10 @@ extension DrawingCanvas {
             }
         }
         let angleFromCurrentRad = closestAngleFromCurrent * .pi / 180.0
+
         var bestIntersection: CGPoint?
         var bestScore = Double.infinity
+
         let dir1 = SIMD2<Double>(cos(angleFromCurrentRad), sin(angleFromCurrentRad))
         let currentVec = SIMD2<Double>(Double(currentPoint.x), Double(currentPoint.y))
         let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
@@ -318,6 +326,7 @@ extension DrawingCanvas {
             }
         }
         let angle = atan2(delta.y, delta.x)
+
         var angleDegrees = angle * 180.0 / .pi
         if angleDegrees < 0 {
             angleDegrees += 360
@@ -386,6 +395,7 @@ extension DrawingCanvas {
 
     internal func continueExistingPath(from pointPosition: VectorPoint) {
         guard let selectedPointID = selectedPoints.first,
+
               let shape = getShapeForPoint(selectedPointID) else {
             createNewPathFromPoint(pointPosition)
             return
@@ -402,6 +412,7 @@ extension DrawingCanvas {
         var handles: [Int: BezierHandleInfo] = [:]
         var currentIndex = 0
         var previousPoint: VectorPoint?
+
         let pendingStartHandle = shape.path.pendingStartHandle
         let pendingEndHandle = shape.path.pendingEndHandle
         print("🔧 continueExistingPath - pendingStartHandle: \(pendingStartHandle != nil ? "YES" : "nil")")
@@ -498,6 +509,7 @@ extension DrawingCanvas {
             var reversedHandles: [Int: BezierHandleInfo] = [:]
             for (index, handleInfo) in handles {
                 let newIndex = points.count - 1 - index
+
                 var newHandleInfo = BezierHandleInfo()
                 newHandleInfo.control1 = handleInfo.control2
                 newHandleInfo.control2 = handleInfo.control1
@@ -615,6 +627,7 @@ extension DrawingCanvas {
         }
         if previousPointIndex >= 0,
            let previousHandles = bezierHandles[previousPointIndex],
+
            let previousControl2 = previousHandles.control2 {
             bezierPath?.addElement(.curve(to: newPoint, control1: previousControl2, control2: newPoint))
             print("🔧 addCornerPoint: added CURVE")
@@ -653,6 +666,7 @@ extension DrawingCanvas {
     private func handleFirstPointCreationFromDrag(startLocation: CGPoint) {
         if let selectedPointID = selectedPoints.first {
             if getShapeForPoint(selectedPointID) != nil,
+
                let pointPosition = getPointPosition(selectedPointID) {
                 continueExistingPath(from: pointPosition)
             } else {

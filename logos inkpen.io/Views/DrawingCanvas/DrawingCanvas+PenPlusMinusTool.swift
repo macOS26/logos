@@ -26,6 +26,7 @@ extension DrawingCanvas {
               elementIndex < shape.path.elements.count else { return }
         let element = shape.path.elements[elementIndex]
         let oldPath = shape.path
+
         var startPoint: VectorPoint
         if elementIndex > 0 {
             let prevElement = shape.path.elements[elementIndex - 1]

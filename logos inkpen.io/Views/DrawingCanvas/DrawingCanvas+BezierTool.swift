@@ -27,6 +27,7 @@ extension DrawingCanvas {
 
     private func findNearestSnapPoint(to point: CGPoint) -> CGPoint? {
         let snapTolerance: CGFloat = 10.0 / zoomLevel
+
         var nearestPoint: CGPoint?
         var nearestDistance = snapTolerance
         for newVectorObject in document.snapshot.objects.values {

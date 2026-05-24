@@ -3,12 +3,14 @@ import SwiftUI
 struct ColorPanel: View {
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
 
     @Binding var activeColorTarget: ColorTarget
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     let defaultFillOpacity: Double
     let defaultStrokeOpacity: Double
     let currentSwatches: [VectorColor]
@@ -19,10 +21,12 @@ struct ColorPanel: View {
 
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
+
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
     @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3))
     @State private var isLoaded = false
+
     let onColorSelected: ((VectorColor) -> Void)?
     let hasInitialColor: Bool
     let initialColor: VectorColor?
@@ -70,6 +74,7 @@ struct ColorPanel: View {
         let color = initialColor ?? (activeColorTarget.wrappedValue == .stroke ? defaultStrokeColor.wrappedValue : defaultFillColor.wrappedValue)
         self._currentPreviewColor = State(initialValue: color)
     }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if isLoaded {
@@ -90,6 +95,7 @@ struct ColorPanel: View {
             }
         }
     }
+
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
                 Spacer()
@@ -225,6 +231,7 @@ struct ColorPanel: View {
             }
         }
     }
+
     private var colorModeDescription: String {
         switch colorMode {
         case .rgb:
@@ -235,6 +242,7 @@ struct ColorPanel: View {
             return "PMS colors with Pantone matching"
         }
     }
+
     private var filteredColors: [VectorColor] {
         if searchText.isEmpty {
             return currentSwatches

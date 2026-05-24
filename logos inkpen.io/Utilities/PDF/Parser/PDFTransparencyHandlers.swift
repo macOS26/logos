@@ -28,6 +28,7 @@ extension PDFCommandParser {
             name = String(cString: namePtrUnwrapped)
         } else if CGPDFScannerPopString(scanner, &nameRef) {
             guard let nameRefUnwrapped = nameRef,
+
                   let textString = CGPDFStringCopyTextString(nameRefUnwrapped) else {
                 Log.error("PDF: Failed to copy text string from graphics state name", category: .error)
                 return
@@ -59,6 +60,7 @@ extension PDFCommandParser {
         }
         var stateDict: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(extGState, name, &stateDict),
+
               let state = stateDict else {
             return
         }
@@ -99,6 +101,7 @@ extension PDFCommandParser {
             return
         }
         let name = String(cString: namePtr)
+
         var savedFillOpacity: Double
         var savedStrokeOpacity: Double
         if name == "Fm1" {

@@ -6,6 +6,7 @@ enum ScalingAnchor: String, CaseIterable, Codable {
     case topRight = "Top Right"
     case bottomLeft = "Bottom Left"
     case bottomRight = "Bottom Right"
+
     var displayName: String {
         return self.rawValue
     }

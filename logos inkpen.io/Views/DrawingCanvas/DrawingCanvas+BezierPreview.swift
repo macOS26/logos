@@ -5,6 +5,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func fillClosePreview(geometry: GeometryProxy) -> some View {
         if showClosePathHint && bezierPoints.count >= 3,
+
            let currentBezierPath = bezierPath {
             let lastPointIndex = bezierPoints.count - 1
             let firstPoint = bezierPoints[0]
@@ -80,6 +81,7 @@ extension DrawingCanvas {
                     }
                     let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
                     if let lastPointHandles = lastPointHandles,
+
                        let lastControl2 = lastPointHandles.control2 {
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         path.addCurve(
@@ -92,6 +94,7 @@ extension DrawingCanvas {
                     }
                     let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
                     if let firstPointHandles = firstPointHandles,
+
                        let firstControl1 = firstPointHandles.control1 {
                         let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
                         path.addCurve(
@@ -213,6 +216,7 @@ extension DrawingCanvas {
                         path.move(to: lastPointLocation)
                         let lastPointHandlesForRubber = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
                         if let lastPointHandles = lastPointHandlesForRubber,
+
                            let lastControl2 = lastPointHandles.control2 {
                             let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                             path.addCurve(

@@ -8,6 +8,7 @@ struct PDFAdvancedSIMD {
     static func calculatePathBounds(points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
         let count = points.count
+
         var xValues = [Float](repeating: 0, count: count)
         var yValues = [Float](repeating: 0, count: count)
         for (i, point) in points.enumerated() {
@@ -33,9 +34,11 @@ struct PDFAdvancedSIMD {
     static func batchCalculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
         let count = points.count
+
         var xDiffs = [Float](repeating: 0, count: count)
         var yDiffs = [Float](repeating: 0, count: count)
         var distances = [Float](repeating: 0, count: count)
+
         let originX = Float(origin.x)
         let originY = Float(origin.y)
         for (i, point) in points.enumerated() {
@@ -56,7 +59,9 @@ struct PDFAdvancedSIMD {
     static func batchApplyTransform(_ transform: CGAffineTransform, to points: [CGPoint]) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         let count = points.count
+
         var results = [CGPoint](repeating: .zero, count: count)
+
         let a = Float(transform.a)
         let b = Float(transform.b)
         let c = Float(transform.c)
@@ -92,6 +97,7 @@ struct PDFAdvancedSIMD {
     static func batchInterpolate(from start: CGPoint, to end: CGPoint, steps: Int) -> [CGPoint] {
         guard steps > 0 else { return [] }
         var results = [CGPoint](repeating: .zero, count: steps)
+
         let startVec = simd_float2(Float(start.x), Float(start.y))
         let endVec = simd_float2(Float(end.x), Float(end.y))
         let delta = endVec - startVec
@@ -129,6 +135,7 @@ struct PDFAdvancedSIMD {
     ) -> [CGPoint] {
         guard !tValues.isEmpty else { return [] }
         var results = [CGPoint](repeating: .zero, count: tValues.count)
+
         let p0Vec = simd_float2(Float(p0.x), Float(p0.y))
         let p1Vec = simd_float2(Float(p1.x), Float(p1.y))
         let p2Vec = simd_float2(Float(p2.x), Float(p2.y))
@@ -182,6 +189,7 @@ struct PDFAdvancedSIMD {
     ) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         let cacheOptimalBatchSize = 1024
+
         var results = [CGPoint](repeating: .zero, count: points.count)
         var index = 0
         while index < points.count {
@@ -197,6 +205,7 @@ struct PDFAdvancedSIMD {
     static func batchRectIntersections(rect: CGRect, testRects: [CGRect]) -> [Bool] {
         guard !testRects.isEmpty else { return [] }
         var results = [Bool](repeating: false, count: testRects.count)
+
         let rectMin = simd_float2(Float(rect.minX), Float(rect.minY))
         let rectMax = simd_float2(Float(rect.maxX), Float(rect.maxY))
         let stride = 4
@@ -228,6 +237,7 @@ struct PDFAdvancedSIMD {
         if points.count >= 10000 {
             let coreCount = ProcessInfo.processInfo.processorCount
             let batchSize = (points.count + coreCount - 1) / coreCount
+
             var results = [CGPoint](repeating: .zero, count: points.count)
             results.withUnsafeMutableBufferPointer { buffer in
                 DispatchQueue.concurrentPerform(iterations: coreCount) { coreIndex in

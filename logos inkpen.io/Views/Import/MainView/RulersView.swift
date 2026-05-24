@@ -3,9 +3,11 @@ import SwiftUI
 struct RulersView: View {
 
     @ObservedObject var document: VectorDocument
+
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
+
     private let rulerThickness: CGFloat = 20
 
     @State private var isDraggingGuide = false
@@ -138,16 +140,21 @@ struct RulersView: View {
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
+
         var loopStep = tickSpacing
+
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         let offsetFromOrigin = startX - pageOrigin.x
+
         var x = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.x
         while x <= endX {
             let rulerX = x * zoomLevel + canvasOffset.x
             if rulerX >= 0 && rulerX <= size.width {
                 let relativePosition = x - pageOrigin.x
+
                 var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
+
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
@@ -306,16 +313,21 @@ struct RulersView: View {
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
+
         var loopStep = tickSpacing
+
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         let offsetFromOrigin = startY - pageOrigin.y
+
         var y = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.y
         while y <= endY {
             let rulerY = y * zoomLevel + canvasOffset.y
             if rulerY >= 0 && rulerY <= size.height {
                 let relativePosition = y - pageOrigin.y
+
                 var isMajorTick = abs(relativePosition.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
+
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
@@ -605,6 +617,7 @@ extension VectorDocument {
         var snappedPoint = point
         var didSnapX = false
         var didSnapY = false
+
         let guideShapes = getShapesForLayer(2).filter { $0.isGuide }
         for shape in guideShapes {
             guard let orientation = shape.guideOrientation else { continue }
@@ -688,6 +701,7 @@ private func gcd(_ a: Int, _ b: Int) -> Int {
 struct PageOriginCrosshair: View {
 
     @ObservedObject var document: VectorDocument
+
     let geometry: GeometryProxy
     let rulerThickness: CGFloat
     let zoomLevel: Double
@@ -829,6 +843,7 @@ struct PageOriginCrosshair: View {
 }
 
 struct CrosshairIcon: View {
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -851,6 +866,7 @@ struct CrosshairIcon: View {
 }
 
 extension CGSize {
+
     var asCGPoint: CGPoint {
         CGPoint(x: width, y: height)
     }

@@ -4,6 +4,7 @@ struct ProfessionalQuickSizeButton: View {
     let size: QuickSize
     let displayUnit: MeasurementUnit
     let action: () -> Void
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
@@ -35,6 +36,7 @@ struct ProfessionalQuickSizeButton: View {
         .buttonStyle(BorderlessButtonStyle())
         .help("\(displayText) \(displayUnit.rawValue)")
     }
+
     private var iconName: String {
         switch size.name {
         case "Letter", "Legal", "Letter Wide":
@@ -51,6 +53,7 @@ struct ProfessionalQuickSizeButton: View {
             return "doc"
         }
     }
+
     private var displayText: String {
         let w = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: displayUnit)
         let h = UnitsConverter.convert(value: size.baseHeight, from: size.baseUnit, to: displayUnit)

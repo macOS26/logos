@@ -58,6 +58,7 @@ extension VectorDocument {
     func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
         if let textObject = findText(by: id) {
             var previewTypography = textObject.typography
+
             let oldFontSize = previewTypography.fontSize
             let lineHeightRatio = previewTypography.lineHeight / oldFontSize
             previewTypography.fontSize = fontSize

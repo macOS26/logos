@@ -23,6 +23,7 @@ struct GradientStopColorPicker: View {
         self.onDismiss = onDismiss
         self._currentColor = State(initialValue: stopColor)
     }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             loadedContent
@@ -30,6 +31,7 @@ struct GradientStopColorPicker: View {
         }
         .frame(width: 300, height: 480)
     }
+
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Spacer()
@@ -155,6 +157,7 @@ struct GradientStopColorPicker: View {
                 currentColor = newStopColor
             }
     }
+
     private var colorModeDescription: String {
         switch document.settings.colorMode {
         case .rgb:
@@ -216,6 +219,7 @@ struct GradientStopColorPicker: View {
             let c = hsb.brightness * hsb.saturation
             let x = c * (1 - abs(((hsb.hue / 60).truncatingRemainder(dividingBy: 2)) - 1))
             let m = hsb.brightness - c
+
             var r: Double = 0, g: Double = 0, b: Double = 0
             if hsb.hue < 60 { r = c; g = x; b = 0 }
             else if hsb.hue < 120 { r = x; g = c; b = 0 }
@@ -243,6 +247,7 @@ struct GradientStopColorPicker: View {
             let maxVal = max(rgbColor.red, rgbColor.green, rgbColor.blue)
             let minVal = min(rgbColor.red, rgbColor.green, rgbColor.blue)
             let delta = maxVal - minVal
+
             var hue: Double = 0
             if delta != 0 {
                 if maxVal == rgbColor.red {

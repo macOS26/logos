@@ -131,7 +131,9 @@ extension DrawingCanvas {
 
     func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
         let transformedBounds = bounds
+
         var curvePositions: [CGPoint] = []
+
         let cornerPositions = [
             CGPoint(x: transformedBounds.minX, y: transformedBounds.minY),
             CGPoint(x: transformedBounds.maxX, y: transformedBounds.minY),
@@ -312,6 +314,7 @@ extension DrawingCanvas {
                 }
             }
             if let originalShape = sharedOriginalShape,
+
                let finalShape = getSelectedRectangleShape() {
                 document.modifyShapesWithUndo(shapeIDs: [originalShape.id]) { shape in
                     shape = finalShape
@@ -348,6 +351,7 @@ extension DrawingCanvas {
                 }
                 let currentRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
                 let newRadius = max(0.0, currentRadius + radiusChange)
+
                 var updatedRadii = shape.cornerRadii
                 if cornerIndex < updatedRadii.count {
                     updatedRadii[cornerIndex] = newRadius

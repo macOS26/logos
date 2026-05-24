@@ -38,6 +38,7 @@ extension PDFCommandParser {
             }
         }
         let vectorPath = VectorPath(elements: vectorElements, isClosed: currentPath.contains(.closePath))
+
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
         if filled {

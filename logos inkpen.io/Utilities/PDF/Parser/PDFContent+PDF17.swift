@@ -23,9 +23,11 @@ extension PDFCommandParser {
         if let parentResources = parentResourcesDict {
             var parentXObjectDictRef: CGPDFDictionaryRef? = nil
             if CGPDFDictionaryGetDictionary(parentResources, "XObject", &parentXObjectDictRef),
+
                let parentXObjectDict = parentXObjectDictRef {
                 var parentXObjectRef: CGPDFObjectRef? = nil
                 if CGPDFDictionaryGetObject(parentXObjectDict, name, &parentXObjectRef),
+
                    let parentXObject = parentXObjectRef {
                     foundXObject = parentXObject
                     foundResourcesDict = parentResources
@@ -41,17 +43,20 @@ extension PDFCommandParser {
             }
             var resourcesRef: CGPDFDictionaryRef? = nil
             guard CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
+
                   let resourcesDict = resourcesRef else {
                 return
             }
             pageResourcesDict = resourcesDict
             var xObjectDictRef: CGPDFDictionaryRef? = nil
             guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
+
                   let xObjectDict = xObjectDictRef else {
                 return
             }
             var xObjectRef: CGPDFObjectRef? = nil
             guard CGPDFDictionaryGetObject(xObjectDict, name, &xObjectRef),
+
                   let xObject = xObjectRef else {
                 return
             }
@@ -63,6 +68,7 @@ extension PDFCommandParser {
         }
         var xObjectStreamRef: CGPDFStreamRef? = nil
         guard CGPDFObjectGetValue(xObject, .stream, &xObjectStreamRef),
+
               let xObjectStream = xObjectStreamRef else {
             return
         }
@@ -86,6 +92,7 @@ extension PDFCommandParser {
     func parseXObjectContentStream(_ xObjectStream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef, name: String, resourcesDict: CGPDFDictionaryRef? = nil) {
         let savedFillOpacity = xObjectSavedFillOpacity
         let savedStrokeOpacity = xObjectSavedStrokeOpacity
+
         var format = CGPDFDataFormat.raw
         guard let data = CGPDFStreamCopyData(xObjectStream, &format) else {
             Log.error("\(detectedPDFVersion): XObject '\(name)' - FAILED to get stream data", category: .error)
@@ -136,6 +143,7 @@ extension PDFCommandParser {
                 if i >= 3,
                    let r = Double(operations[i - 3]),
                    let g = Double(operations[i - 2]),
+
                    let b = Double(operations[i - 1]) {
                     currentFillColor = CGColor(red: r, green: g, blue: b, alpha: 1.0)
                 }
@@ -143,6 +151,7 @@ extension PDFCommandParser {
             case "m":
                 if i >= 2,
                    let x = Double(operations[i - 2]),
+
                    let y = Double(operations[i - 1]) {
                     currentPath.append(.moveTo(CGPoint(x: x, y: y)))
                     hasPath = true
@@ -154,6 +163,7 @@ extension PDFCommandParser {
             case "l":
                 if i >= 2,
                    let x = Double(operations[i - 2]),
+
                    let y = Double(operations[i - 1]) {
                     currentPath.append(.lineTo(CGPoint(x: x, y: y)))
                     hasPath = true
@@ -166,6 +176,7 @@ extension PDFCommandParser {
                    let x2 = Double(operations[i - 4]),
                    let y2 = Double(operations[i - 3]),
                    let x3 = Double(operations[i - 2]),
+
                    let y3 = Double(operations[i - 1]) {
                     let cp1 = CGPoint(x: x1, y: y1)
                     let cp2 = CGPoint(x: x2, y: y2)
@@ -188,6 +199,7 @@ extension PDFCommandParser {
                    let c = Double(operations[i - 4]),
                    let d = Double(operations[i - 3]),
                    let tx = Double(operations[i - 2]),
+
                    let ty = Double(operations[i - 1]) {
                     let newTransform = CGAffineTransform(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
                     currentTransformMatrix = currentTransformMatrix.concatenating(newTransform)
@@ -195,6 +207,7 @@ extension PDFCommandParser {
                 } else { i += 1 }
             case "sh":
                 if i >= 1,
+
                    let shadingName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
                     if let gradient = extractGradientFromXObjectResources(shadingName: shadingName, resourcesDict: resourcesDict) {
                         if hasPath {
@@ -221,6 +234,7 @@ extension PDFCommandParser {
                 i += 1
             case "Do":
                 if i >= 1,
+
                    let xobjectName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
                     processXObjectWithImageSupport(name: xobjectName)
                     i += 1

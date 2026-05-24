@@ -1,6 +1,7 @@
 import SwiftUI
 
 extension VectorUnit {
+
     var pointsPerUnit_Export: CGFloat {
         switch self {
         case .points:      return 1.0
@@ -10,6 +11,7 @@ extension VectorUnit {
         case .picas:       return 12.0
         }
     }
+
     var millimetersPerUnit: CGFloat {
         switch self {
         case .millimeters: return 1.0
@@ -25,6 +27,7 @@ extension VectorUnit {
         let result = valueInMM / targetUnit.millimetersPerUnit
         return round(result * 1000000) / 1000000
     }
+
     var scaleFactorFor100Percent: CGFloat {
         return 1.0
     }

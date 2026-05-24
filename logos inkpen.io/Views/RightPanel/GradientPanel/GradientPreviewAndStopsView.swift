@@ -8,6 +8,7 @@ struct GradientPreviewAndStopsView: View {
     @Binding var editingGradientStopId: UUID?
     @Binding var editingGradientStopColor: VectorColor
     @Binding var showingGradientColorPicker: Bool
+
     let getGradientStops: (VectorGradient) -> [GradientStop]
     let getOriginX: (VectorGradient) -> Double
     let getOriginY: (VectorGradient) -> Double
@@ -32,8 +33,11 @@ struct GradientPreviewAndStopsView: View {
     @State private var currentEditingStop: (id: UUID, color: VectorColor)? = nil
     @State private var popoverManager = SlidingPopoverManager()
     @State private var anchorViews: [UUID: NSView] = [:]
+
     @FocusState private var focusedStopID: UUID?
+
     @State private var isEditingOpacity: Bool = false
+
     @Environment(AppState.self) private var appState
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
         let liveX = document.viewState.liveGradientOriginX
@@ -60,6 +64,7 @@ struct GradientPreviewAndStopsView: View {
                 let isCenter = position == 0.5
                 let opacity = isCenter ? 0.9 : 0.3
                 let width: CGFloat = isCenter ? 1.0 : 0.5
+
                 var vLine = Path()
                 vLine.move(to: CGPoint(x: xPos, y: 0))
                 vLine.addLine(to: CGPoint(x: xPos, y: contentSize.height))
@@ -259,6 +264,7 @@ struct GradientPreviewAndStopsView: View {
                         }
                         dragTranslation = value.translation
                         let snapRadius: CGFloat = 6.0
+
                         var finalX: Double
                         var finalY: Double
                         if let snapPoint = findSnapPoint(for: value.location, squareSize: squareSize, padding: padding, snapRadius: snapRadius) {
@@ -278,6 +284,7 @@ struct GradientPreviewAndStopsView: View {
                     }
             )
     }
+
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {

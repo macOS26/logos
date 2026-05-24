@@ -2,7 +2,9 @@ import SwiftUI
 
 final class DrawingCanvasRegistry {
     static let shared = DrawingCanvasRegistry()
+
     private let lock = NSLock()
+
     weak var activeDocument: VectorDocument?
 
     private init() {}

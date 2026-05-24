@@ -5,6 +5,7 @@ extension SVGParser {
     func finishGradientElement() {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
         let attributes = currentGradientAttributes
+
         var inheritedGradient: VectorGradient? = nil
         if let hrefRaw = attributes["xlink:href"] ?? attributes["href"] {
             var refId = hrefRaw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -62,6 +63,7 @@ extension SVGParser {
     internal func parseGradientStop(attributes: [String: String]) {
         guard isParsingGradient else { return }
         let offset = parseLength(attributes["offset"]) ?? 0.0
+
         var stopColor = VectorColor.black
         var stopOpacity = 1.0
         if let colorValue = attributes["stop-color"] {
@@ -89,6 +91,7 @@ extension SVGParser {
 
     internal func parseStyleAttribute(_ style: String) -> [String: String] {
         var styleDict: [String: String] = [:]
+
         let declarations = style.components(separatedBy: ";")
         for declaration in declarations {
             let keyValue = declaration.components(separatedBy: ":")

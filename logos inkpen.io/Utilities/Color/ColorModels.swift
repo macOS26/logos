@@ -4,6 +4,7 @@ enum ColorMode: String, CaseIterable, Codable {
     case rgb = "RGB"
     case cmyk = "CMYK"
     case pms = "PMS"
+
     var iconName: String {
         switch self {
         case .rgb: return "display"
@@ -42,9 +43,11 @@ struct RGBColor: Codable, Hashable {
         self.blue = blue
         self.alpha = alpha
     }
+
     var color: Color {
         return ColorManager.shared.makeColor(r: red, g: green, b: blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
+
     var cgColor: CGColor {
         let comps: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
         return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: red, green: green, blue: blue, alpha: alpha)
@@ -65,11 +68,13 @@ struct CMYKColor: Codable, Hashable {
         self.black = black
         self.alpha = alpha
     }
+
     var rgbColor: RGBColor {
         let cmyk = SIMD4<Double>(1.0 - cyan, 1.0 - magenta, 1.0 - yellow, 1.0 - black)
         let rgb = SIMD3<Double>(cmyk.x, cmyk.y, cmyk.z) * cmyk.w
         return RGBColor(red: rgb.x, green: rgb.y, blue: rgb.z, alpha: alpha)
     }
+
     var color: Color {
         return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
@@ -87,11 +92,13 @@ struct HSBColorModel: Codable, Hashable {
         self.brightness = brightness
         self.alpha = alpha
     }
+
     var rgbColor: RGBColor {
         let h = hue / 60.0
         let c = brightness * saturation
         let x = c * (1.0 - abs(h.truncatingRemainder(dividingBy: 2.0) - 1.0))
         let m = brightness - c
+
         var rgb: (Double, Double, Double)
         if h >= 0 && h < 1 {
             rgb = (c, x, 0)
@@ -113,6 +120,7 @@ struct HSBColorModel: Codable, Hashable {
             alpha: alpha
         )
     }
+
     var color: Color {
         return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
@@ -121,7 +129,9 @@ struct HSBColorModel: Codable, Hashable {
         let max = Swift.max(rgb.red, rgb.green, rgb.blue)
         let min = Swift.min(rgb.red, rgb.green, rgb.blue)
         let delta = max - min
+
         var hue: Double = 0
+
         let saturation: Double = max == 0 ? 0 : delta / max
         let brightness: Double = max
         if delta != 0 {

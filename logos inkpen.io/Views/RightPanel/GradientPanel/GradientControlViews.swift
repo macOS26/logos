@@ -51,6 +51,7 @@ private struct GradientSliderControl: View {
     let textFieldWidth: CGFloat
     let onChange: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
@@ -76,6 +77,7 @@ struct GradientTypePickerView: View {
     @Binding var gradientType: GradientFillSection.GradientType
     @Binding var currentGradient: VectorGradient?
     @Binding var gradientId: UUID
+
     let getGradientStops: (VectorGradient) -> [GradientStop]
     let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
@@ -92,6 +94,7 @@ struct GradientTypePickerView: View {
         gradientId = UUID()
         onGradientChange()
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type")
@@ -117,8 +120,10 @@ struct GradientAngleControlView: View {
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         if let gradient = currentGradient {
+
             let angle: Double = {
                 switch gradient {
                 case .linear(let linear):
@@ -165,8 +170,10 @@ struct GradientOriginControlView: View {
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         if let gradient = currentGradient {
+
             let originX: Double = {
                 switch gradient {
                 case .linear(let linear):
@@ -175,6 +182,7 @@ struct GradientOriginControlView: View {
                     return radial.originPoint.x
                 }
             }()
+
             let originY: Double = {
                 switch gradient {
                 case .linear(let linear):
@@ -219,6 +227,7 @@ struct GradientScaleControlView: View {
     let getRadius: (VectorGradient) -> Double
     let updateRadius: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -299,6 +308,7 @@ struct GradientApplyButtonView: View {
     let onApply: () -> Void
     let onAddSwatch: () -> Void
     let addColorStop: () -> Void
+
     var body: some View {
         VStack(spacing: 8) {
             Button {

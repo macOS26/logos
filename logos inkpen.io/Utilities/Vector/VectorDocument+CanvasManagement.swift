@@ -46,6 +46,7 @@ extension VectorDocument {
             color: .green
         ))
     }
+
     var documentBounds: CGRect {
         return CGRect(origin: .zero, size: settings.sizeInPoints)
     }

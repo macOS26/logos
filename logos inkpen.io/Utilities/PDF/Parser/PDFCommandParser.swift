@@ -79,6 +79,7 @@ class PDFCommandParser {
         commands.removeAll()
         shapes.removeAll()
         guard let dataProvider = CGDataProvider(url: url as CFURL),
+
               let document = CGPDFDocument(dataProvider) else {
             Log.error("Failed to load PDF document", category: .error)
             return []
@@ -138,6 +139,7 @@ class PDFCommandParser {
         for shape in input {
             if let prev = pending, canMerge(prev, shape) {
                 var merged = prev
+
                 let prevContent = (prev.textContent ?? "")
                 let nextContent = (shape.textContent ?? "")
                 let joiner: String
@@ -166,10 +168,12 @@ class PDFCommandParser {
 
     private func finalizeTextShapeWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
+
               let typography = shape.typography else {
             return shape
         }
         var result = shape
+
         let nsFont = typography.nsFont
         let attrs: [NSAttributedString.Key: Any] = [
             .font: nsFont,
@@ -228,6 +232,7 @@ class PDFCommandParser {
         for shape in input {
             if let prev = pending, canContinueParagraph(prev, shape, prevLineY: pendingLineY) {
                 var merged = prev
+
                 let prevContent = (prev.textContent ?? "")
                 let nextContent = (shape.textContent ?? "")
                 merged.textContent = prevContent + "\n" + nextContent
@@ -249,16 +254,19 @@ class PDFCommandParser {
 
     private func finalizeParagraphWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
+
               let typography = shape.typography else {
             return shape
         }
         var result = shape
+
         let nsFont = typography.nsFont
         let attrs: [NSAttributedString.Key: Any] = [
             .font: nsFont,
             .kern: typography.letterSpacing
         ]
         let lines = content.components(separatedBy: "\n")
+
         var maxLineWidth: CGFloat = 0
         for line in lines {
             let w = (line as NSString).size(withAttributes: attrs).width
@@ -295,6 +303,7 @@ class PDFCommandParser {
         }
         var creatorStringRef: CGPDFStringRef?
         if CGPDFDictionaryGetString(info, "Creator", &creatorStringRef),
+
            let creatorStringRef = creatorStringRef {
             if let cfString = CGPDFStringCopyTextString(creatorStringRef) {
                 pdfCreator = cfString as String

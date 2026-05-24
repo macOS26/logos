@@ -14,6 +14,7 @@ class ImageTileCache {
         let currentTileSize = tileSize
         let numCols = Int(ceil(imageSize.width / CGFloat(currentTileSize)))
         let numRows = Int(ceil(imageSize.height / CGFloat(currentTileSize)))
+
         var tiles: [(TileCoordinate, CGRect)] = []
         for row in 0..<numRows {
             for col in 0..<numCols {
@@ -34,6 +35,7 @@ class ImageTileCache {
         }
         guard let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
               let width = properties[kCGImagePropertyPixelWidth] as? Int,
+
               let height = properties[kCGImagePropertyPixelHeight] as? Int else {
             return nil
         }
@@ -54,6 +56,7 @@ class ImageTileCache {
         }
         guard let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
               let width = properties[kCGImagePropertyPixelWidth] as? Int,
+
               let height = properties[kCGImagePropertyPixelHeight] as? Int else {
             return nil
         }

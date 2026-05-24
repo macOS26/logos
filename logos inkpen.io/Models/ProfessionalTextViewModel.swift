@@ -13,7 +13,9 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var isEditing: Bool = false
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100)
     @Published var textObject: VectorText
+
     let document: VectorDocument
+
     var linePaths: [CGPath] = []
 
     init(textObject: VectorText, document: VectorDocument) {
@@ -265,6 +267,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         let targetLayerIndex = document.selectedLayerIndex ?? 2
         let textPositionInLayer = document.snapshot.layers[targetLayerIndex].objectIDs.firstIndex(of: textObject.id)
+
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
             let unionedPath = linePath.union(linePath, using: .winding)
@@ -355,6 +358,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
     private func makeCurvesSmooth(_ elements: [PathElement]) -> [PathElement] {
         var smoothedElements: [PathElement] = []
+
         let angleTolerance = 10.0 * .pi / 180.0
         for i in 0..<elements.count {
             let currentElement = elements[i]
@@ -366,6 +370,7 @@ class ProfessionalTextViewModel: ObservableObject {
             let outgoingVec = CGVector(dx: outgoingHandle.x - anchor.x, dy: outgoingHandle.y - anchor.y)
             let incomingAngle = atan2(incomingVec.dy, incomingVec.dx)
             let outgoingAngle = atan2(outgoingVec.dy, outgoingVec.dx)
+
             var angleDiff = abs(incomingAngle - outgoingAngle)
             if angleDiff > .pi { angleDiff = 2 * .pi - angleDiff }
             if abs(angleDiff - .pi) < angleTolerance {

@@ -3,6 +3,7 @@ import SwiftUI
 struct AppleSystemColor: Codable, Hashable {
     var name: String
     var lightMode: RGBColor
+
     var color: Color {
         switch name {
         case "systemBlue": return Color(.systemBlue)
@@ -42,6 +43,7 @@ struct AppleSystemColor: Codable, Hashable {
         default: return lightMode.color
         }
     }
+
     var rgbEquivalent: RGBColor {
         return lightMode
     }

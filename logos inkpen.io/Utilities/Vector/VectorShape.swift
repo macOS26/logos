@@ -27,6 +27,7 @@ struct LineCap: Codable, Hashable {
         var container = encoder.singleValueContainer()
         try container.encode(cap)
     }
+
     var cgLineCap: CGLineCap {
         switch cap {
         case "butt":
@@ -70,6 +71,7 @@ struct LineJoin: Codable, Hashable {
         var container = encoder.singleValueContainer()
         try container.encode(join)
     }
+
     var cgLineJoin: CGLineJoin {
         switch join {
         case "miter":
@@ -91,6 +93,7 @@ enum StrokePlacement: String, CaseIterable, Codable {
     case center = "Center"
     case inside = "Inside"
     case outside = "Outside"
+
     var iconName: String {
         switch self {
         case .center: return "circle"
@@ -137,18 +140,21 @@ struct StrokeStyle: Hashable {
         self.blendMode = blendMode
         self.scaleWithTransform = scaleWithTransform
     }
+
     var isGradient: Bool {
         if case .gradient = color {
             return true
         }
         return false
     }
+
     var gradient: VectorGradient? {
         if case .gradient(let gradient) = color {
             return gradient
         }
         return nil
     }
+
     var isSolidColor: Bool {
         return !isGradient
     }
@@ -235,21 +241,25 @@ struct FillStyle: Codable, Hashable {
         self.opacity = opacity
         self.blendMode = blendMode
     }
+
     var isGradient: Bool {
         if case .gradient = color {
             return true
         }
         return false
     }
+
     var gradient: VectorGradient? {
         if case .gradient(let gradient) = color {
             return gradient
         }
         return nil
     }
+
     var isSolidColor: Bool {
         return !isGradient
     }
+
     var solidColor: VectorColor? {
         if isGradient {
             return nil
@@ -308,6 +318,7 @@ enum GeometricShapeType: String, CaseIterable, Codable {
     case heart = "Heart"
     case stopSign = "Stop Sign"
     case brushStroke = "Brush Stroke"
+
     var iconName: String {
         switch self {
         case .rectangle: return "rectangle"
@@ -335,12 +346,14 @@ enum GeometricShapeType: String, CaseIterable, Codable {
 struct VectorShape: Hashable, Identifiable {
     var id: UUID
     var name: String
+
     var path: VectorPath {
         didSet { _cachedCGPath = nil }
     }
     var geometricType: GeometricShapeType?
     var strokeStyle: StrokeStyle?
     var fillStyle: FillStyle?
+
     var transform: CGAffineTransform {
         didSet { _cachedCGPath = nil }
     }
@@ -379,8 +392,10 @@ struct VectorShape: Hashable, Identifiable {
     var metadata: [String: String] = [:]
     var transformOrigin: TransformOrigin? = nil
     var anchorTypes: [Int: AnchorPointType] = [:]
+
     private var _cachedCGPath: CGPath?
     private var _cacheUpdateTrigger: UInt = 0
+
     var cachedRenderedImage: CGImage? = nil
     var cachedImageQuality: Double = 1.0
     var cachedImageTileSize: Int = 32
@@ -394,6 +409,7 @@ struct VectorShape: Hashable, Identifiable {
         }
         return buildCGPath()
     }
+
     var cachedCGPath: CGPath {
         if let cached = _cachedCGPath {
             return cached
@@ -468,6 +484,7 @@ struct VectorShape: Hashable, Identifiable {
         self.metadata = metadata
         self.anchorTypes = anchorTypes
     }
+
     var transformedPath: CGPath {
         var mutableTransform = transform
         return path.cgPath.copy(using: &mutableTransform) ?? path.cgPath
@@ -506,6 +523,7 @@ struct VectorShape: Hashable, Identifiable {
         }
         let memberIDs = shapes.map { $0.id }
         let groupPath = VectorPath(elements: [], isClosed: false)
+
         var groupShape = VectorShape(
             name: name,
             path: groupPath,
@@ -526,12 +544,15 @@ struct VectorShape: Hashable, Identifiable {
         groupShape.bounds = calculatedGroupBounds
         return groupShape
     }
+
     var isGroupContainer: Bool {
         return isGroup && (!memberIDs.isEmpty || !groupedShapes.isEmpty)
     }
+
     var isCompoundPathContainer: Bool {
         return isCompoundPath
     }
+
     var groupBounds: CGRect {
         guard isGroupContainer else { return bounds }
         if !memberIDs.isEmpty {
@@ -623,6 +644,7 @@ struct VectorShape: Hashable, Identifiable {
     static func from(_ vectorText: VectorText) -> VectorShape {
         let emptyPath = VectorPath(elements: [], isClosed: false)
         let finalTransform = CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform)
+
         var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,
@@ -811,15 +833,19 @@ extension VectorShape: Codable {
 }
 
 extension VectorShape {
+
     var isEvenOddCompoundPath: Bool {
         return isCompoundPath && path.fillRule.cgPathFillRule == .evenOdd
     }
+
     var isWindingLoopingPath: Bool {
         return isCompoundPath && path.fillRule.cgPathFillRule == .winding
     }
+
     var isTrueCompoundPath: Bool {
         return isEvenOddCompoundPath
     }
+
     var isTrueLoopingPath: Bool {
         return isWindingLoopingPath
     }
@@ -870,6 +896,7 @@ extension VectorShape {
 
     static func star(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int = 5) -> VectorShape {
         var elements: [PathElement] = []
+
         let angleStep = .pi / Double(points)
         for i in 0..<(points * 2) {
             let angle = Double(i) * angleStep - .pi / 2
@@ -965,6 +992,7 @@ extension VectorLayer: Codable {
 enum DraggableItem: Codable, Transferable {
     case vectorObject(DraggableVectorObject)
     case layer(DraggableLayer)
+
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .draggableItem)
     }
@@ -985,6 +1013,7 @@ struct DraggableVectorObject: Codable, Transferable {
         self.objectId = objectId
         self.sourceLayerIndex = sourceLayerIndex
     }
+
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .draggableVectorObject)
     }
@@ -998,27 +1027,34 @@ struct DraggableLayer: Codable, Transferable {
         self.layerIndex = layerIndex
         self.layerId = layerId
     }
+
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .draggableLayer)
     }
 }
 
 extension UTType {
+
     static var inkpen: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.document")
     }
+
     static var inkpenSVG: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.svg")
     }
+
     static var inkpenPDF: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.pdf")
     }
+
     static var draggableVectorObject: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableVectorObject")
     }
+
     static var draggableLayer: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableLayer")
     }
+
     static var draggableItem: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableItem")
     }

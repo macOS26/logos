@@ -72,6 +72,7 @@ extension FileOperations {
         )
         document.snapshot.layers.append(importedLayer)
         let targetLayer = document.snapshot.layers.count - 1
+
         var clippingMasks: [UUID: (mask: VectorShape, clippedShapes: [VectorShape])] = [:]
         var standaloneShapes: [VectorShape] = []
         for shape in result.shapes {
@@ -89,6 +90,7 @@ extension FileOperations {
                         clippingMasks[clipId]?.clippedShapes.append(shape)
                     }
                 } else {
+
                     let shouldSkip: Bool = {
                         let tempObject = VectorObject(shape: shape, layerIndex: 0)
                         switch tempObject.objectType {

@@ -3,11 +3,13 @@ import SwiftUI
 struct HSBInputSection: View {
 
     @Binding var sharedColor: VectorColor
+
     let activeColorTarget: ColorTarget
 
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
     @Binding var colorDeltaColor: VectorColor?
+
     let onSetActiveColor: (VectorColor) -> Void
     let onAddColorSwatch: (VectorColor) -> Void
     let disableSetActiveColor: Bool
@@ -37,6 +39,7 @@ struct HSBInputSection: View {
     @State private var isDisplayingGradient: Bool = false
     @State private var pmsEntryText: String = ""
     @State private var livePMSPreview: PantoneLibraryColor? = nil
+
     @ObservedObject private var pantoneLibrary = PantoneLibrary.shared
     private var currentColor: HSBColorModel {
         let h = Double(hueValue) ?? 0
@@ -44,6 +47,7 @@ struct HSBInputSection: View {
         let b = (Double(brightnessValue) ?? 0) / 100.0
         return HSBColorModel(hue: h, saturation: s, brightness: b)
     }
+
     private var closestPantoneColor: PantoneLibraryColor? {
         let userHue = Double(hueValue) ?? 0
         let normalizedHue = userHue >= 360 ? 0 : userHue
@@ -52,6 +56,7 @@ struct HSBInputSection: View {
         let matchingColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
         return pantoneLibrary.findClosestMatch(to: matchingColor)
     }
+
     private var livePreviewColor: (pms: PantoneLibraryColor?, hsb: HSBColorModel) {
         if let livePMS = livePMSPreview {
             let hsbApproximation = HSBColorModel.fromRGB(livePMS.rgbEquivalent)
@@ -64,15 +69,18 @@ struct HSBInputSection: View {
             return (pms: closestPantoneColor, hsb: preservedHSB)
         }
     }
+
     private var currentHueColor: Color {
         Color(hue: (Double(hueValue) ?? 0) / 360.0, saturation: 1.0, brightness: 1.0)
     }
+
     private var currentSaturationColor: Color {
         let h = Double(hueValue) ?? 0
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = Double(brightnessValue) ?? 100
         return Color(hue: h/360.0, saturation: s, brightness: b/100.0)
     }
+
     private var currentBrightnessColor: Color {
         let h = Double(hueValue) ?? 0
         let s = Double(saturationValue) ?? 100
@@ -83,6 +91,7 @@ struct HSBInputSection: View {
     private func swiftUIColor(h: Double, s: Double, b: Double) -> Color {
         return Color(hue: h/360.0, saturation: s/100.0, brightness: b/100.0)
     }
+
     private var hueGradient: SwiftUI.LinearGradient {
         SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -98,6 +107,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var saturationGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let b = Double(brightnessValue) ?? 100
@@ -110,6 +120,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var brightnessGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let s = Double(saturationValue) ?? 100
@@ -122,6 +133,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(spacing: 6) {

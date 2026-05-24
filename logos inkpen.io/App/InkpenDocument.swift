@@ -3,8 +3,10 @@ import UniformTypeIdentifiers
 
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
+
     static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf, .freehandDocument, .encapsulatedPostScript] }
     static var writableContentTypes: [UTType] { [.inkpen, .svg, .pdf] }
+
     private static let freehandExtensions: Set<String> = [
         "fh", "fh1", "fh2", "fh3", "fh4", "fh5", "fh6", "fh7", "fh8", "fh9",
         "fh10", "fh11", "fhmx", "ft11", "ftmx", "eps"
@@ -22,6 +24,7 @@ struct InkpenDocument: FileDocument {
         let fileExtension = configuration.file.preferredFilename?.components(separatedBy: ".").last?.lowercased()
         let contentType = configuration.contentType
         Log.info("📂 InkpenDocument.init: filename=\(configuration.file.preferredFilename ?? "?") ext=\(fileExtension ?? "nil") contentType=\(contentType.identifier) bytes=\(data.count)", category: .general)
+
         let hasFHMagic: Bool = {
             guard data.count >= 4 else { return false }
             let b0 = data[0], b1 = data[1], b2 = data[2]
@@ -32,6 +35,7 @@ struct InkpenDocument: FileDocument {
             if b0 == 0x1c { return true }
             return false
         }()
+
         let extSaysFreehand: Bool = {
             if let ext = fileExtension, Self.freehandExtensions.contains(ext) { return true }
             if contentType == .freehandDocument { return true }
@@ -104,6 +108,7 @@ struct InkpenDocument: FileDocument {
                     }
                 }
                 let fallbackLayer = parsedToDocLayer[0] ?? defaultLayerIndex
+
                 var shapeIDToParsedLayer: [UUID: Int] = [:]
                 for (idx, parsedLayer) in parsed.layers.enumerated() {
                     for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }

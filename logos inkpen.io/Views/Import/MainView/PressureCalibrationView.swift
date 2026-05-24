@@ -4,7 +4,9 @@ import simd
 struct PressureCalibrationView: View {
 
     @ObservedObject private var pressureManager = PressureManager.shared
+
     @Environment(\.presentationMode) var presentationMode
+
     private let appState = AppState.shared
 
     @State private var currentPressureBarWidth: CGFloat = 0
@@ -12,14 +14,17 @@ struct PressureCalibrationView: View {
     @State private var maxPressureBarWidth: CGFloat = 0
     @State private var tabletOnlyMode: Bool = true
     @State private var eventLog: [String] = []
+
     private let maxEventLogEntries = 20
 
     @State private var isDrawing = false
     @State private var currentPath: VariableStrokePath?
     @State private var drawingPaths: [VariableStrokePath] = []
     @State private var selectedControlPoint: Int?
+
     private let barMaxWidth: CGFloat = 280
     private let maxPressureValue: Double = 1.0
+
     var body: some View {
         VStack(spacing: 12) {
                 HStack {
@@ -76,6 +81,7 @@ struct PressureCalibrationView: View {
             updateVisualization()
         }
     }
+
     private var pressureCurveEditor: some View {
         VStack(spacing: 8) {
             Text("Pressure Curve")
@@ -154,6 +160,7 @@ struct PressureCalibrationView: View {
     private func getThicknessFromCurve(pressure: Double) -> Double {
         return getThicknessFromPressureCurve(pressure: pressure, curve: appState.pressureCurve)
     }
+
     private var pressureTestCanvas: some View {
         VStack(spacing: 6) {
             Text("Pressure-Sensitive Drawing Canvas")
@@ -268,6 +275,7 @@ struct PressureCalibrationView: View {
     private func finishDrawing() {
         guard isDrawing, let path = currentPath else { return }
         let strokePath = createVariableWidthStroke(from: path.points)
+
         var completedStroke = VariableStrokePath(points: path.points)
         completedStroke.path = strokePath
         drawingPaths.append(completedStroke)
@@ -374,6 +382,7 @@ struct PressureCalibrationView: View {
         }
         return path
     }
+
     private var currentPressureSection: some View {
         VStack(spacing: 6) {
             Text("Current (0-1)")
@@ -390,6 +399,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     private var pressureRangeSection: some View {
         VStack(spacing: 8) {
             Text("Range (0-1)")
@@ -434,6 +444,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     private var pressureVisualizationSection: some View {
         VStack(spacing: 12) {
             Text("Pressure Visualization")
@@ -489,6 +500,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     private var eventLogSection: some View {
         VStack(spacing: 8) {
             HStack {
@@ -522,6 +534,7 @@ struct PressureCalibrationView: View {
         .background(Color.platformControlBackground)
         .cornerRadius(8)
     }
+
     private var controlButtonsSection: some View {
         HStack(spacing: 12) {
             HStack(spacing: 6) {

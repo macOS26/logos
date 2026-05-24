@@ -3,6 +3,7 @@ import SwiftUI
 struct GuidesView: View {
 
     @ObservedObject var document: VectorDocument
+
     let showGuides: Bool
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -46,12 +47,14 @@ private struct GuideLineView: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let viewSize: CGSize
+
     private var guideColor: Color {
         if isKeylineMode {
             return .black
         }
         return isSelected ? Color.nonPhotoBlueSelected : Color.nonPhotoBlue
     }
+
     var body: some View {
         Path { p in
             var position = extractGuidePosition()

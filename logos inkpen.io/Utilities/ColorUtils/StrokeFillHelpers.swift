@@ -9,6 +9,7 @@ func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {
 }
 
 extension CGLineJoin {
+
     var iconName: String {
         switch self {
         case .miter: return "triangle"
@@ -18,6 +19,7 @@ extension CGLineJoin {
         @unknown default: return "triangle"
         }
     }
+
     var displayName: String {
         switch self {
         case .miter: return "Miter"
@@ -27,6 +29,7 @@ extension CGLineJoin {
         @unknown default: return "Miter"
         }
     }
+
     var description: String {
         switch self {
         case .miter: return "Sharp pointed corners (Professional default)"
@@ -39,6 +42,7 @@ extension CGLineJoin {
 }
 
 extension CGLineCap {
+
     var iconName: String {
         switch self {
         case .butt: return "minus"
@@ -48,6 +52,7 @@ extension CGLineCap {
         @unknown default: return "minus"
         }
     }
+
     var displayName: String {
         switch self {
         case .butt: return "Butt"
@@ -57,6 +62,7 @@ extension CGLineCap {
         @unknown default: return "Butt"
         }
     }
+
     var description: String {
         switch self {
         case .butt: return "Square end aligned with path endpoint"

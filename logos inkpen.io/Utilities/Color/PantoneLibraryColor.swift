@@ -19,6 +19,7 @@ struct PantoneLibraryColor: Codable, Hashable {
         self.cmykEquivalent = PantoneLibraryColor.rgbToCMYK(self.rgbEquivalent)
         self.hsbEquivalent = HSBColorModel.fromRGB(self.rgbEquivalent)
     }
+
     var color: Color {
         rgbEquivalent.color
     }
@@ -57,6 +58,7 @@ class PantoneLibrary: ObservableObject {
     static let shared = PantoneLibrary()
 
     @Published var allColors: [PantoneLibraryColor] = []
+
     private var isLoaded = false
 
     private init() {}
@@ -74,6 +76,7 @@ class PantoneLibrary: ObservableObject {
     private func loadPantoneColors() {
         guard let url = Bundle.main.url(forResource: "pantone_library", withExtension: "json"),
               let data = try? Data(contentsOf: url),
+
               let pantoneData = try? JSONDecoder().decode([PantoneRawData].self, from: data) else {
             allColors = [
                 PantoneLibraryColor(pantone: "032 C", hex: "#ef3340"),

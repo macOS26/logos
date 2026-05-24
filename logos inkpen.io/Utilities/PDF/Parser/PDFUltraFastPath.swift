@@ -42,7 +42,9 @@ struct PDFUltraFastPath {
         lineEnd: CGPoint
     ) -> [Float] {
         let count = points.count
+
         var distances = [Float](repeating: 0, count: count)
+
         let dx = Float(lineEnd.x - lineStart.x)
         let dy = Float(lineEnd.y - lineStart.y)
         let lineLengthSquared = dx * dx + dy * dy
@@ -51,8 +53,10 @@ struct PDFUltraFastPath {
         }
         var xCoords = points.map { Float($0.x) }
         var yCoords = points.map { Float($0.y) }
+
         let startX = Float(lineStart.x)
         let startY = Float(lineStart.y)
+
         var negStartX = -startX
         var negStartY = -startY
         vDSP_vsadd(xCoords, 1, &negStartX, &xCoords, 1, vDSP_Length(count))
@@ -243,6 +247,7 @@ struct PDFUltraFastPath {
         }
         let transformedPoints = PDFAdvancedSIMD.batchApplyTransform(transform, to: points)
         let newPath = CGMutablePath()
+
         var pointIndex = 0
         path.applyWithBlock { element in
             switch element.pointee.type {

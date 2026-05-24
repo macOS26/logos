@@ -9,6 +9,7 @@ struct FontPanel: View {
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
     @Binding var letterSpacingDelta: Double?
+
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false
     private var selectedTextTypography: TypographyProperties? {
@@ -27,9 +28,11 @@ struct FontPanel: View {
         }
         return nil
     }
+
     private var selectedTextID: UUID? {
         return selectedObjectIDs.first
     }
+
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
         if let newVectorObj = snapshot.objects[textID],
@@ -38,6 +41,7 @@ struct FontPanel: View {
         }
         return nil
     }
+
     private var selectedText: VectorText? {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
@@ -53,6 +57,7 @@ struct FontPanel: View {
         text.id = textID
         return text
     }
+
     private var editingText: VectorText? {
         if let newVectorObj = document.snapshot.objects.values.first(where: { obj in
             if case .text(let shape) = obj.objectType {
@@ -66,6 +71,7 @@ struct FontPanel: View {
         }
         return nil
     }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {

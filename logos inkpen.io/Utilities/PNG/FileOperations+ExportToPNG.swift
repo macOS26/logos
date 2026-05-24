@@ -251,6 +251,7 @@ extension FileOperations {
         }
         if let imageData = shape.embeddedImageData {
             if let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+
                let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                 let bounds = shape.bounds
                 context.saveGState()
@@ -272,6 +273,7 @@ extension FileOperations {
             return
         }
         let path = shape.path.cgPath
+
         var hasValidStroke = false
         if let strokeStyle = shape.strokeStyle {
             if case .clear = strokeStyle.color {

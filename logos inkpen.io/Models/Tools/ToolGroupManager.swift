@@ -23,6 +23,7 @@ class ToolGroupManager: ObservableObject {
     }
 
     @Published var anchorVariantByGroup: [String: StarVariant?] = [:]
+
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
 
     @Published var customToolOrder: [String: [DrawingTool]] = [:] {
@@ -84,6 +85,7 @@ class ToolGroupManager: ObservableObject {
             }
         }
         if let savedVariant = UserDefaults.standard.string(forKey: starVariantKey),
+
            let variant = StarVariant(rawValue: savedVariant) {
             selectedVariant = variant
         }
@@ -114,6 +116,7 @@ class ToolGroupManager: ObservableObject {
             expandedGroups.remove(groupName)
         } else {
             let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
+
             var reorderedTools = [tool]
             for groupTool in toolGroup {
                 if groupTool != tool {

@@ -46,6 +46,7 @@ struct FontPickerView: View {
             Picker("", selection: Binding(
                 get: {
                     if let textID = selectedObjectIDs.first,
+
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }
@@ -101,8 +102,10 @@ struct FontPickerView: View {
                     }
                 }
             )) {
+
                 let currentFamily = {
                     if let textID = selectedObjectIDs.first,
+
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }

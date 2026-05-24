@@ -93,7 +93,9 @@ enum FreeHandEPSParser {
         var stateStack: [GraphicsState] = []
         var currentColor: VectorColor = .black
         var pendingGradient: (color1: VectorColor, color2: VectorColor)? = nil
+
         let tokens = tokenize(text)
+
         var i = 0
         while i < tokens.count {
             let token = tokens[i]
@@ -257,6 +259,7 @@ enum FreeHandEPSParser {
                         state.strokeColor = color
                         if j < tokens.count && tokens[j].hasPrefix("[") {
                             let firstColor = color
+
                             var color2Nums: [Double] = []
                             var tk2 = tokens[j].dropFirst()
                             if tk2.hasSuffix("]") { tk2 = tk2.dropLast() }

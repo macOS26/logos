@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CheckerboardPattern: View {
     let size: CGFloat
+
     var body: some View {
         GeometryReader { geometry in
             let tileSize = self.size
@@ -88,6 +89,7 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
 struct GradientSwatchCanvas: View {
     let gradient: VectorGradient
     let size: CGFloat
+
     var body: some View {
         Canvas { context, canvasSize in
             context.withCGContext { cgContext in

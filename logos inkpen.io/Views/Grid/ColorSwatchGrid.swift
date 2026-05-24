@@ -3,18 +3,23 @@ import SwiftUI
 struct ColorSwatchGrid: View {
 
     @ObservedObject var document: VectorDocument
+
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     @State private var showingColorPicker = false
     @State private var showingCustomColorPopover = false
+
     let columns = [
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1)
     ]
+
     private var currentFillColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
+
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
             case .text(let shape):
@@ -35,8 +40,10 @@ struct ColorSwatchGrid: View {
         }
         return defaultFillColor
     }
+
     private var currentStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
+
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
             case .text(let shape):
@@ -61,8 +68,10 @@ struct ColorSwatchGrid: View {
         }
         return defaultStrokeColor
     }
+
     private var currentFillOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
+
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
             case .text(let shape):
@@ -83,8 +92,10 @@ struct ColorSwatchGrid: View {
         }
         return document.defaultFillOpacity
     }
+
     private var currentStrokeOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
+
            let object = document.findObject(by: firstSelectedObjectID) {
             switch object.objectType {
             case .text(let shape):
@@ -105,6 +116,7 @@ struct ColorSwatchGrid: View {
         }
         return document.defaultStrokeOpacity
     }
+
     var body: some View {
         VStack(spacing: 4) {
             ZStack {

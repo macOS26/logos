@@ -4,6 +4,7 @@ import simd
 
 class PDFHybridProcessor {
     static let shared = PDFHybridProcessor()
+
     private let simdBatchSize = 4
 
     private init() {}
@@ -80,6 +81,7 @@ class PDFHybridProcessor {
 }
 
 extension simd_float3x3 {
+
     var metalBufferArray: [Float] {
         return [
             columns.0.x, columns.0.y, columns.0.z,

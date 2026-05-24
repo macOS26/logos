@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BlankTemplatePreview: View {
+
     var body: some View {
         VStack {
             Image(systemName: "doc")

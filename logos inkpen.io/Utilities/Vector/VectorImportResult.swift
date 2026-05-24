@@ -7,11 +7,13 @@ struct VectorImportResult: Identifiable {
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
+
     var layers: [Layer] = []
     var groupShapeIDs: [UUID] = []
 }
 
 extension VectorImportResult {
+
     typealias ShapeFilter = (VectorShape) -> Bool
 
     @MainActor
@@ -39,6 +41,7 @@ extension VectorImportResult {
             )
         }
         let baseCount = document.snapshot.layers.count
+
         var parsedToDocLayer: [Int: Int] = [:]
         if layersToAppend.isEmpty {
             parsedToDocLayer[0] = target
@@ -48,6 +51,7 @@ extension VectorImportResult {
             }
         }
         let defaultTarget = parsedToDocLayer[0] ?? target
+
         var shapeIDToParsedLayer: [UUID: Int] = [:]
         for (idx, parsedLayer) in layers.enumerated() {
             for id in parsedLayer.objectIDs { shapeIDToParsedLayer[id] = idx }
@@ -121,6 +125,7 @@ enum VectorUnit: String, CaseIterable {
     case millimeters = "mm"
     case pixels = "px"
     case picas = "pc"
+
     var pointsPerUnit: Double {
         switch self {
         case .points: return 1.0
@@ -142,6 +147,7 @@ enum VectorImportError: Error, LocalizedError {
     case scalingError(String)
     case parsingError(String, line: Int?)
     case commercialLicenseRequired(VectorFileFormat)
+
     var errorDescription: String? {
         switch self {
         case .fileNotFound:

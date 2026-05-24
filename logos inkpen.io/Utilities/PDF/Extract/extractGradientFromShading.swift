@@ -9,18 +9,21 @@ extension PDFCommandParser {
         }
         var shadingResourceDict: CGPDFDictionaryRef?
         guard CGPDFDictionaryGetDictionary(xObjectResourcesDict, "Shading", &shadingResourceDict),
+
               let shadingDict = shadingResourceDict else {
             Log.error("PDF: ❌ No Shading resources found in XObject dictionary", category: .error)
             return nil
         }
         var shadingObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, shadingName, &shadingObj),
+
               let shadingObject = shadingObj else {
             Log.error("PDF: ❌ Shading '\(shadingName)' not found in XObject Shading resources", category: .error)
             return nil
         }
         var pdfShadingDict: CGPDFDictionaryRef?
         guard CGPDFObjectGetValue(shadingObject, .dictionary, &pdfShadingDict),
+
               let shadingDictionary = pdfShadingDict else {
             Log.error("PDF: ❌ Could not extract shading dictionary for '\(shadingName)' from XObject resources", category: .error)
             return nil
@@ -46,18 +49,21 @@ extension PDFCommandParser {
         }
         var shadingResourceDict: CGPDFDictionaryRef?
         guard CGPDFDictionaryGetDictionary(pageResourcesDict, "Shading", &shadingResourceDict),
+
               let shadingDict = shadingResourceDict else {
             Log.error("PDF: ❌ No Shading resources found in page dictionary", category: .error)
             return nil
         }
         var shadingObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, shadingName, &shadingObj),
+
               let shadingObject = shadingObj else {
             Log.error("PDF: ❌ Shading '\(shadingName)' not found in Shading resources", category: .error)
             return nil
         }
         var pdfShadingDict: CGPDFDictionaryRef?
         guard CGPDFObjectGetValue(shadingObject, .dictionary, &pdfShadingDict),
+
               let shadingDictionary = pdfShadingDict else {
             Log.error("PDF: ❌ Could not extract shading dictionary for '\(shadingName)'", category: .error)
             return nil
@@ -79,12 +85,14 @@ extension PDFCommandParser {
     func extractGradientFromShading(shadingName: String, scanner: CGPDFScannerRef) -> VectorGradient? {
         let stream = CGPDFScannerGetContentStream(scanner)
         guard let shadingCString = shadingName.cString(using: .utf8),
+
               let pdfShading = CGPDFContentStreamGetResource(stream, "Shading", shadingCString) else {
             Log.error("PDF: ❌ Could not find shading resource '\(shadingName)' in content stream resources", category: .error)
             return nil
         }
         var shadingDictRef: CGPDFDictionaryRef?
         guard CGPDFObjectGetValue(pdfShading, .dictionary, &shadingDictRef),
+
               let shadingDict = shadingDictRef else {
             Log.error("PDF: ❌ Could not extract shading dictionary for '\(shadingName)'", category: .error)
             return nil

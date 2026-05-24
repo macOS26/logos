@@ -23,6 +23,7 @@ struct ProfessionalDirectSelectionView: View {
         }
         return baseSize
     }
+
     var body: some View {
         Canvas { context, size in
             let zoom = zoomLevel
@@ -49,6 +50,7 @@ struct ProfessionalDirectSelectionView: View {
                     if let point = extractPoint(element) {
                         let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                         let isSelected = selectedPoints.contains(pointID)
+
                         let pointPosition = if let livePos = livePointPositions[pointID] {
                             livePos
                         } else {
@@ -103,6 +105,7 @@ struct ProfessionalDirectSelectionView: View {
 
     private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
         let isDraggingSegmentOnThisShape = draggedCurveSegment?.shapeID == shape.id
+
         var outlinePath = Path()
         var draggedSegmentPath: Path?
         var lastPoint: CGPoint?
@@ -201,6 +204,7 @@ struct ProfessionalDirectSelectionView: View {
 
     private func drawHandle(_ handleID: HandleID, shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat, isSelected: Bool) {
         let element = shape.path.elements[handleID.elementIndex]
+
         var anchorPoint: CGPoint?
         var handlePoint: CGPoint?
         var anchorPointID: PointID?
@@ -238,6 +242,7 @@ struct ProfessionalDirectSelectionView: View {
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         let transformedAnchor = anchor.applying(shapeTransform)
         let transformedHandle = handle.applying(shapeTransform)
+
         var linePath = Path()
         linePath.move(to: transformedAnchor)
         linePath.addLine(to: transformedHandle)

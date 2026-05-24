@@ -69,6 +69,7 @@ class PasteboardDiagnostics {
                 test.canvasShapeName == "Canvas Background"
             )
             if let canvasBounds = test.canvasBounds,
+
                let pasteboardBounds = test.pasteboardBounds {
                 let expectedPasteboardWidth = canvasBounds.width * 10
                 let expectedPasteboardHeight = canvasBounds.height * 10
@@ -124,7 +125,9 @@ class PasteboardDiagnostics {
 
     private func testLayerIteration(_ document: VectorDocument) -> LayerIterationTest {
         var test = LayerIterationTest()
+
         let testPoint = CGPoint(x: 100, y: 100)
+
         var testedLayers: [String] = []
         var testedShapes: [String] = []
         for layerIndex in document.snapshot.layers.indices.reversed() {
@@ -159,6 +162,7 @@ class PasteboardDiagnostics {
 
     private func testRealWorldScenarios(_ document: VectorDocument) -> RealWorldScenariosTest {
         var test = RealWorldScenariosTest()
+
         let pasteboardShape = document.getShapeAtIndex(layerIndex: 0, shapeIndex: 0)
         let pasteboardBounds = pasteboardShape?.bounds ?? .zero
         let canvasShape = document.getShapeAtIndex(layerIndex: 1, shapeIndex: 0)
@@ -227,6 +231,7 @@ class PasteboardDiagnostics {
 
     private func testPerformance(_ document: VectorDocument) -> PerformanceTest {
         var test = PerformanceTest()
+
         let originalShapeCount = document.getShapesForLayer(2).count
         for i in 0..<100 {
             let testRect = VectorShape.rectangle(
@@ -271,6 +276,7 @@ class PasteboardDiagnostics {
                 if !shape.isVisible { continue }
                 testedShapes.append("Layer \(layerIndex) - Shape: \(shape.name)")
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+
                 var isHit = false
                 if isBackgroundShape {
                     let shapeBounds = shape.bounds.applying(shape.transform)
@@ -301,6 +307,7 @@ struct DiagnosticReport {
     var hitTesting = HitTestingTest()
     var realWorldScenarios = RealWorldScenariosTest()
     var performance = PerformanceTest()
+
     var overallPassed: Bool {
         return layerStructure.passed &&
                backgroundShapes.passed &&

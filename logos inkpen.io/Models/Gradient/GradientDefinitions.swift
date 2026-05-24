@@ -59,6 +59,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         case id, startPoint, endPoint, stops, spreadMethod, units
         case originPoint, scaleX, scaleY, storedAngle, scale
     }
+
     var angle: Double {
         get {
             return storedAngle
@@ -71,6 +72,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     mutating func setAngle(_ degrees: Double) {
         storedAngle = degrees
         let radians = degrees * .pi / 180.0
+
         var centerX = originPoint.x
         var centerY = originPoint.y
         if units == .objectBoundingBox &&

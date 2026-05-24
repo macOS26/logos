@@ -41,6 +41,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case zoom = "Zoom"
     case gradient = "Gradient"
     case cornerRadius = "Corner Radius"
+
     var iconName: String {
         switch self {
         case .selection: return "arrow.up.left"

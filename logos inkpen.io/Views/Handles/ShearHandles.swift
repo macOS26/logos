@@ -4,6 +4,7 @@ import SwiftUI
 struct ShearHandles: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -22,7 +23,9 @@ struct ShearHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State private var pointsRefreshTrigger: Int = 0
     @State private var cachedPreviewPath: Path? = nil
+
     private let handleSize: CGFloat = 10
+
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) && !shape.transform.isIdentity {
             let baseBounds = shape.bounds
@@ -42,9 +45,11 @@ struct ShearHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
+
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
+
     var body: some View {
         ZStack {
             Canvas { context, size in
@@ -229,6 +234,7 @@ struct ShearHandles: View {
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
         if let vectorObject = document.findObject(by: shape.id),
+
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
@@ -399,8 +405,10 @@ struct ShearHandles: View {
         let deltaY = currentDistance.y - startDistance.y
         let shearFactorX = deltaX * sensitivity
         let shearFactorY = deltaY * sensitivity
+
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
+
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             if abs(deltaX) > abs(deltaY) {
@@ -506,6 +514,7 @@ struct ShearHandles: View {
             }
         }
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity

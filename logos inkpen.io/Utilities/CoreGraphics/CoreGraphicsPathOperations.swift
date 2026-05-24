@@ -174,6 +174,7 @@ class CoreGraphicsPathOperations {
             if intersectingIndices.count == 1 {
                 let shapeIndex = intersectingIndices[0]
                 let currentPath = paths[shapeIndex]
+
                 var exclusivePath = currentPath
                 for otherIndex in 0..<shapeCount {
                     if otherIndex != shapeIndex {
@@ -223,6 +224,7 @@ class CoreGraphicsPathOperations {
             }
         }
         var uniquePieces: [(CGPath, Int)] = []
+
         let tolerance: CGFloat = 0.1
         for (candidate, candidateIndex) in allPieces {
             var isDuplicate = false
@@ -306,6 +308,7 @@ class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         let cutResults = cutWithShapeTracking(paths, using: fillRule)
+
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
         for (cutPath, originalIndex) in cutResults {
             let color = colors[originalIndex]
@@ -344,6 +347,7 @@ class CoreGraphicsPathOperations {
         }
         let shapesToCrop = Array(paths.dropLast())
         let cropShapeIndex = paths.count - 1
+
         var croppedPaths: [CGPath] = []
         var originalIndices: [Int] = []
         for (index, path) in shapesToCrop.enumerated() {
@@ -359,6 +363,7 @@ class CoreGraphicsPathOperations {
         }
         if croppedPaths.count >= 2 {
             let cutResults = cutWithShapeTracking(croppedPaths, using: fillRule)
+
             var finalResults: [(CGPath, Int, Bool)] = []
             for (cutPath, cutIndex) in cutResults {
                 if cutIndex < originalIndices.count {

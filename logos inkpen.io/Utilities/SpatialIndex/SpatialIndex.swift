@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SpatialIndex {
     private let gridSize: CGFloat = 50
+
     private var grid: [GridCell: Set<UUID>] = [:]
     private var objectBounds: [UUID: CGRect] = [:]
     private var layerGrids: [UUID: [GridCell: [UUID]]] = [:]
@@ -224,6 +225,7 @@ struct SpatialIndex {
 
     func candidateObjectIDs(in rect: CGRect) -> Set<UUID> {
         let cells = cellsForBounds(rect)
+
         var candidates = Set<UUID>()
         for cell in cells {
             if let objectIDs = grid[cell] {
@@ -256,6 +258,7 @@ struct SpatialIndex {
         let maxX = Int(floor(bounds.maxX / gridSize))
         let minY = Int(floor(bounds.minY / gridSize))
         let maxY = Int(floor(bounds.maxY / gridSize))
+
         var cells = Set<GridCell>()
         cells.reserveCapacity((maxX - minX + 1) * (maxY - minY + 1))
         for x in minX...maxX {
@@ -269,6 +272,7 @@ struct SpatialIndex {
     func getAllCachedBounds() -> [UUID: CGRect] {
         return objectBounds
     }
+
     var debugInfo: String {
         let totalCells = grid.count
         let totalObjects = objectBounds.count

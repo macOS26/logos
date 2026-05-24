@@ -13,6 +13,7 @@ struct FontSizeControls: View {
     @Binding var lineSpacingDelta: Double?
     @Binding var lineHeightDelta: Double?
     @Binding var letterSpacingDelta: Double?
+
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
     @State private var isDraggingLineHeight = false
@@ -34,6 +35,7 @@ struct FontSizeControls: View {
             return selectedFontSize
         }
     }
+
     private var currentLineSpacing: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.lineSpacing
@@ -43,6 +45,7 @@ struct FontSizeControls: View {
             return selectedLineSpacing
         }
     }
+
     private var currentLineHeight: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.lineHeight
@@ -52,6 +55,7 @@ struct FontSizeControls: View {
             return selectedLineHeight
         }
     }
+
     private var currentLetterSpacing: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.letterSpacing
@@ -61,6 +65,7 @@ struct FontSizeControls: View {
             return 0.0
         }
     }
+
     var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {

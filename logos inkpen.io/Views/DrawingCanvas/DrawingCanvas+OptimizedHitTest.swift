@@ -40,6 +40,7 @@ extension DrawingCanvas {
 
     internal func findObjectAtLocationOptimized(_ location: CGPoint) -> VectorObject? {
         let validatedLocation = validateAndCorrectLocation(location)
+
         var groupedChildIDs = Set<UUID>()
         for obj in document.snapshot.objects.values {
             switch obj.objectType {

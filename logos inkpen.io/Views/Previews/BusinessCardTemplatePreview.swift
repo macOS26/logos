@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BusinessCardTemplatePreview: View {
+
     var body: some View {
         VStack(spacing: 8) {
             Rectangle()

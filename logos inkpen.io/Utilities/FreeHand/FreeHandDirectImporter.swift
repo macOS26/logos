@@ -67,6 +67,7 @@ enum FreeHandDirectImporter {
                 throw FreeHandImportError.notSupported
             }
             var handle: OpaquePointer? = nil
+
             let rc = freehand_parse_to_shapes(base, fhData.count, &handle)
             guard rc == 0, let result = handle else {
                 switch rc {
@@ -102,6 +103,7 @@ enum FreeHandDirectImporter {
 
     private static func buildShapes(from result: OpaquePointer) -> [VectorShape] {
         let count = fh_result_shape_count(result)
+
         var built: [VectorShape?] = Array(repeating: nil, count: count)
         var consumed = Set<size_t>()
         for idx in 0..<count {
@@ -174,6 +176,7 @@ enum FreeHandDirectImporter {
             fillRule: evenOdd ? .evenOdd : .winding
         )
         let fillKind = Int(fh_result_shape_fill_kind(result, index))
+
         var fillStyle: FillStyle? = nil
         switch fillKind {
         case FH_FILL_SOLID:
@@ -216,6 +219,7 @@ enum FreeHandDirectImporter {
             }
         }
         let opacity = fh_result_shape_opacity(result, index)
+
         var detectedType: GeometricShapeType? = nil
         var baseName = isCompound ? "Compound Path" : "Path"
         if !isCompound, let detected = PathShapeDetector.detect(elements: elements) {
@@ -235,6 +239,7 @@ enum FreeHandDirectImporter {
 
     private static func readGradientStops(from result: OpaquePointer, index: size_t) -> [GradientStop] {
         let count = fh_result_shape_gradient_stop_count(result, index)
+
         var stops: [GradientStop] = []
         stops.reserveCapacity(count)
         for s in 0..<count {
@@ -310,6 +315,7 @@ enum FreeHandDirectImporter {
             }
         }
         let name = isClip ? "Clipping Group" : "Group"
+
         var container = VectorShape.group(from: memberShapes, name: name, isClippingGroup: isClip)
         container.memberIDs = []
         container.groupedShapes = memberShapes

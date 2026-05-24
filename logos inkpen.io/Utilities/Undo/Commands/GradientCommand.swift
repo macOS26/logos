@@ -42,6 +42,7 @@ class GradientCommand: BaseCommand {
         for id in objectIDs {
             guard let gradient = gradients[id],
                   let opacity = opacities[id],
+
                   var obj = document.snapshot.objects[id] else { continue }
             switch obj.objectType {
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):

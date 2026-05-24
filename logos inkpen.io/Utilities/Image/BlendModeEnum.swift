@@ -17,6 +17,7 @@ enum BlendMode: String, CaseIterable, Codable {
     case saturation = "Saturation"
     case color = "Color"
     case luminosity = "Luminosity"
+
     var displayName: String {
         return rawValue
     }
@@ -31,6 +32,7 @@ enum BlendMode: String, CaseIterable, Codable {
             self = .normal
         }
     }
+
     var cgBlendMode: CGBlendMode {
         switch self {
         case .normal: return .normal
@@ -51,6 +53,7 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return .luminosity
         }
     }
+
     var svgBlendMode: String {
         switch self {
         case .normal: return "normal"
@@ -71,6 +74,7 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return "luminosity"
         }
     }
+
     var swiftUIBlendMode: SwiftUI.BlendMode {
         switch self {
         case .normal: return .normal

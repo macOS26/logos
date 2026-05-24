@@ -3,6 +3,7 @@ import simd
 import Accelerate
 
 typealias Vec2D = SIMD2<Double>
+
 typealias Vec8D = SIMD8<Double>
 
 enum DrawingCanvasPathHelpers {
@@ -18,8 +19,10 @@ enum DrawingCanvasPathHelpers {
         }
         let startPoint = points[startIndex]
         let endPoint = points[endIndex]
+
         var maxDistance: Double = 0
         var maxIndex = startIndex
+
         let count = endIndex - startIndex - 1
         if count >= 8 {
             let distances = perpendicularDistancesBatch(
@@ -62,11 +65,14 @@ enum DrawingCanvasPathHelpers {
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
         let denominator = simd_length(Vec2D(A, B))
+
         var distances = [Double](repeating: 0, count: count)
+
         let stride = 8
         let fullBatches = count / stride
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
+
             var xs = Vec8D()
             var ys = Vec8D()
             for i in 0..<stride {
@@ -75,6 +81,7 @@ enum DrawingCanvasPathHelpers {
                 ys[i] = pt.y
             }
             let values = xs * Vec8D(repeating: A) + ys * Vec8D(repeating: B) + Vec8D(repeating: C)
+
             var numerators = Vec8D()
             for i in 0..<8 {
                 numerators[i] = abs(values[i])

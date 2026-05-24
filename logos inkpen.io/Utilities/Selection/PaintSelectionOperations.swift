@@ -332,6 +332,7 @@ enum PaintSelectionOperations {
         for shapeID in document.viewState.selectedObjectIDs {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+
                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 if ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     document.updateShapeOpacityInUnified(id: shape.id, opacity: opacity)
@@ -383,6 +384,7 @@ enum PaintSelectionOperations {
             guard let object = document.snapshot.objects[objectID] else { continue }
             affectedLayers.insert(object.layerIndex)
             let newID = UUID()
+
             var duplicatedShape = object.shape
             duplicatedShape.id = newID
             duplicatedShape.transform = duplicatedShape.transform.translatedBy(x: 20, y: 20)

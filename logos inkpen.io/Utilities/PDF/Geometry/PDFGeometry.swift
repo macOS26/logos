@@ -73,6 +73,7 @@ struct PDFBoundsCalculator {
         let minY = min(minVec.y, minVec.w)
         let maxX = max(maxVec.x, maxVec.z)
         let maxY = max(maxVec.y, maxVec.w)
+
         var finalMinX = Double(minX)
         var finalMinY = Double(minY)
         var finalMaxX = Double(maxX)

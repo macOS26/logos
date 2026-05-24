@@ -38,6 +38,7 @@ extension VectorDocument {
                 for objectID in orderedIDs where objectID != anchorID {
                     guard let obj = snapshot.objects[objectID] else { continue }
                     var shape = obj.shape
+
                     let shapeOrigin = shape.transformOrigin ?? .center
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                     let currentOriginPoint = CGPoint(

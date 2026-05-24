@@ -3,26 +3,33 @@ import SwiftUI
 @Observable
 class AppState {
     static let shared = AppState()
+
     var selectedPanelTab: PanelTab = .layers
+
     var enableVerboseLogging: Bool = false {
         didSet { UserDefaults.standard.set(enableVerboseLogging, forKey: "enableVerboseLogging") }
     }
+
     var enablePressureLogging: Bool = false {
         didSet { UserDefaults.standard.set(enablePressureLogging, forKey: "enablePressureLogging") }
     }
+
     var showSpatialIndexBounds: Bool = false {
         didSet { UserDefaults.standard.set(showSpatialIndexBounds, forKey: "showSpatialIndexBounds") }
     }
+
     var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
         }
     }
+
     var pressureSensitivityEnabled: Bool = false {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
         }
     }
+
     var showClippingInKeyline: Bool = UserDefaults.standard.object(forKey: "showClippingInKeyline") as? Bool ?? false {
         didSet {
             UserDefaults.standard.set(showClippingInKeyline, forKey: "showClippingInKeyline")
@@ -35,6 +42,7 @@ class AppState {
         CGPoint(x: 0.75, y: 0.75),
         CGPoint(x: 1.0, y: 1.0)
     ]
+
     var pressureCurve: [CGPoint] {
         get { _pressureCurve }
         set {
@@ -60,6 +68,7 @@ class AppState {
             }
         }
     }
+
     var enableClippingMaskContentSelection: Bool = false {
         didSet {
             UserDefaults.standard.set(enableClippingMaskContentSelection, forKey: "enableClippingMaskContentSelection")
@@ -72,9 +81,11 @@ class AppState {
     var shouldShowDocumentSetup: Bool = false
 
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
+
     var brushPreviewStyle: BrushPreviewStyle = .fill {
         didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
     }
+
     var brushPreviewIsFinal: Bool = false {
         didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
     }
@@ -86,6 +97,7 @@ class AppState {
         case blend = "blend"
         case mesh = "mesh"
     }
+
     var pdfGradientMethod: PDFGradientMethod = .cgGradient {
         didSet {
             UserDefaults.standard.set(pdfGradientMethod.rawValue, forKey: "pdfGradientMethod")
@@ -96,12 +108,15 @@ class AppState {
         case glyphs = "glyphs"
         case lines = "lines"
     }
+
     var pdfTextRenderingMode: PDFTextRenderingMode = .glyphs {
         didSet {
             UserDefaults.standard.set(pdfTextRenderingMode.rawValue, forKey: "pdfTextRenderingMode")
         }
     }
+
     typealias SVGTextRenderingMode = PDFTextRenderingMode
+
     var svgTextRenderingMode: SVGTextRenderingMode = .glyphs {
         didSet {
             UserDefaults.standard.set(svgTextRenderingMode.rawValue, forKey: "svgTextRenderingMode")
@@ -112,11 +127,13 @@ class AppState {
         case displayP3 = "displayP3"
         case sRGB = "sRGB"
     }
+
     var exportColorSpace: ExportColorSpace = .displayP3 {
         didSet {
             UserDefaults.standard.set(exportColorSpace.rawValue, forKey: "exportColorSpace")
         }
     }
+
     var pdfBlendSteps: Int = 20 {
         didSet {
             let clampedValue = min(max(pdfBlendSteps, 10), 255)
@@ -126,6 +143,7 @@ class AppState {
             UserDefaults.standard.set(pdfBlendSteps, forKey: "pdfBlendSteps")
         }
     }
+
     var pdfMeshGridX: Int = 8 {
         didSet {
             let clampedValue = min(max(pdfMeshGridX, 4), 50)
@@ -135,6 +153,7 @@ class AppState {
             UserDefaults.standard.set(pdfMeshGridX, forKey: "pdfMeshGridX")
         }
     }
+
     var pdfMeshGridY: Int = 8 {
         didSet {
             let clampedValue = min(max(pdfMeshGridY, 4), 50)
@@ -147,6 +166,7 @@ class AppState {
 
     private init() {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
+
            let tool = DrawingTool(rawValue: toolRawValue) {
             self.defaultTool = tool
         } else {
@@ -155,6 +175,7 @@ class AppState {
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? false
         loadPressureCurve()
         if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
+
            let style = BrushPreviewStyle(rawValue: styleRaw) {
             self.brushPreviewStyle = style
         }
@@ -174,14 +195,17 @@ class AppState {
         let savedGridY = UserDefaults.standard.object(forKey: "pdfMeshGridY") as? Int
         self.pdfMeshGridY = savedGridY ?? 8
         if let modeRaw = UserDefaults.standard.string(forKey: "pdfTextRenderingMode"),
+
            let mode = PDFTextRenderingMode(rawValue: modeRaw) {
             self.pdfTextRenderingMode = mode
         }
         if let modeRaw = UserDefaults.standard.string(forKey: "svgTextRenderingMode"),
+
            let mode = SVGTextRenderingMode(rawValue: modeRaw) {
             self.svgTextRenderingMode = mode
         }
         if let colorSpaceRaw = UserDefaults.standard.string(forKey: "exportColorSpace"),
+
            let colorSpace = ExportColorSpace(rawValue: colorSpaceRaw) {
             self.exportColorSpace = colorSpace
         }

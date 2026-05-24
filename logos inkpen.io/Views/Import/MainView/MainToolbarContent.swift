@@ -4,6 +4,7 @@ import Combine
 struct MainToolbarContent: ToolbarContent {
 
     @ObservedObject var document: VectorDocument
+
     let appState: AppState
 
     @Binding var currentDocumentURL: URL?
@@ -16,6 +17,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingSFSymbolsPicker: Bool
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
+
     let onRunDiagnostics: () -> Void
 
     private func hasOpenPaths() -> Bool {
@@ -110,6 +112,7 @@ struct MainToolbarContent: ToolbarContent {
             document.commandManager.execute(command)
         }
     }
+
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
             Menu {

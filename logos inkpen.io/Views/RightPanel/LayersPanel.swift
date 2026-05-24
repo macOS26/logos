@@ -53,10 +53,12 @@ extension View {
 struct LayersPanel: View {
 
     @ObservedObject var document: VectorDocument
+
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
+
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
     private var selectedIndex: Int? {
@@ -65,6 +67,7 @@ struct LayersPanel: View {
         }
         return document.snapshot.layers.count > 2 ? 2 : nil
     }
+
     private var overlaysEnabled: Bool {
         return !visibleRows.isEmpty
     }
@@ -74,6 +77,7 @@ struct LayersPanel: View {
         case object(layerIndex: Int, objectId: UUID)
         case childObject(layerIndex: Int, parentObjectId: UUID, childShapeId: UUID)
     }
+
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
 
@@ -82,6 +86,7 @@ struct LayersPanel: View {
             let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
             guard isChildGroupExpanded else { return }
             let nestedMembers = document.resolveGroupMembers(childShape)
+
             let orderedNested: [VectorShape] = {
                 if childShape.isClippingGroup { return nestedMembers }
                 return Array(nestedMembers.reversed())
@@ -93,6 +98,7 @@ struct LayersPanel: View {
         }
         for (layerIndex, layer) in document.snapshot.layers.enumerated().reversed() {
             rows.append(.layer(index: layerIndex))
+
             let isExpanded = if layerIndex <= 1 {
                 document.settings.layerExpansionState[layer.id] ?? false
             } else {
@@ -108,6 +114,7 @@ struct LayersPanel: View {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
                                 let memberShapes = document.resolveGroupMembers(shape)
+
                                 let ordered: [VectorShape] = {
                                     if case .clipGroup = object.objectType { return memberShapes }
                                     return Array(memberShapes.reversed())
@@ -126,6 +133,7 @@ struct LayersPanel: View {
         }
         return rows
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -149,6 +157,7 @@ struct LayersPanel: View {
             }
         }
     }
+
     private var layersHeader: some View {
         HStack {
             Text("Layer")
@@ -319,6 +328,7 @@ struct LayersPanel: View {
                 }
         )
     }
+
     private var layersScrollContent: some View {
         return ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
@@ -454,6 +464,7 @@ struct LayersPanel: View {
 struct ColorSwatchButton<Content: View>: View {
 
     @Binding var color: Color
+
     let availableColors: [(name: String, color: Color)]
     let buttonContent: () -> Content
 
@@ -468,6 +479,7 @@ struct ColorSwatchButton<Content: View>: View {
         self.availableColors = availableColors
         self.buttonContent = buttonContent
     }
+
     var body: some View {
         Button(action: {
             showColorPicker = true

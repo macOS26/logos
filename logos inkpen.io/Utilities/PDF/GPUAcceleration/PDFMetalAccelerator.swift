@@ -5,7 +5,9 @@ import simd
 
 class PDFMetalAccelerator {
     private static var _shared: PDFMetalAccelerator?
+
     private static let lock = NSLock()
+
     static var shared: PDFMetalAccelerator {
         lock.lock()
         defer { lock.unlock() }
@@ -75,6 +77,7 @@ class PDFMetalAccelerator {
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
         let count = points.count
+
         var inputPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         var matrixData = matrix.matrix
         guard let inputBuffer = device.makeBuffer(bytes: &inputPoints,
@@ -88,6 +91,7 @@ class PDFMetalAccelerator {
             return points
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return points
         }
@@ -108,6 +112,7 @@ class PDFMetalAccelerator {
     func multiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
         let count = matrices.count
+
         var matrices1 = matrices.map { $0.0.matrix }
         var matrices2 = matrices.map { $0.1.matrix }
         guard let buffer1 = device.makeBuffer(bytes: &matrices1,
@@ -121,6 +126,7 @@ class PDFMetalAccelerator {
             return matrices.map { $0.0.concatenating($0.1) }
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return matrices.map { $0.0.concatenating($0.1) }
         }
@@ -141,6 +147,7 @@ class PDFMetalAccelerator {
     func calculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
         let count = points.count
+
         var originVec = simd_float2(Float(origin.x), Float(origin.y))
         var pointVecs = points.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let originBuffer = device.makeBuffer(bytes: &originVec,
@@ -154,6 +161,7 @@ class PDFMetalAccelerator {
             return points.map { hypot($0.x - origin.x, $0.y - origin.y) }
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return points.map { hypot($0.x - origin.x, $0.y - origin.y) }
         }
@@ -174,6 +182,7 @@ class PDFMetalAccelerator {
     func perpendicularDistances(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> [Float] {
         guard !points.isEmpty else { return [] }
         let count = points.count
+
         var pointVecs = points.map { simd_float2(Float($0.x), Float($0.y)) }
         var startVec = simd_float2(Float(lineStart.x), Float(lineStart.y))
         var endVec = simd_float2(Float(lineEnd.x), Float(lineEnd.y))
@@ -191,6 +200,7 @@ class PDFMetalAccelerator {
             return []
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return []
         }
@@ -224,6 +234,7 @@ class PDFMetalAccelerator {
             return (maxValue, maxIndex)
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             let maxValue = distances.max() ?? 0
             let maxIndex = distances.firstIndex(of: maxValue) ?? 0
@@ -254,6 +265,7 @@ class PDFMetalAccelerator {
             var p3: simd_float2
         }
         let count = tValues.count
+
         var curve = CubicCurve(
             p0: simd_float2(Float(p0.x), Float(p0.y)),
             p1: simd_float2(Float(p1.x), Float(p1.y)),
@@ -272,6 +284,7 @@ class PDFMetalAccelerator {
             return []
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return []
         }
@@ -292,6 +305,7 @@ class PDFMetalAccelerator {
     func batchCheckCollinearity(triplets: [(CGPoint, CGPoint, CGPoint)], tolerance: Float) -> [Bool] {
         guard !triplets.isEmpty else { return [] }
         let count = triplets.count
+
         var p1Array = triplets.map { simd_float2(Float($0.0.x), Float($0.0.y)) }
         var p2Array = triplets.map { simd_float2(Float($0.1.x), Float($0.1.y)) }
         var p3Array = triplets.map { simd_float2(Float($0.2.x), Float($0.2.y)) }
@@ -313,6 +327,7 @@ class PDFMetalAccelerator {
             return []
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return []
         }

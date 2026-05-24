@@ -2,6 +2,7 @@ import SwiftUI
 
 class TemplateManager {
     static let shared = TemplateManager()
+
     private var isInitialized = false
 
     private init() {

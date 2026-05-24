@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RoundedRectangleIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let rect = CGRect(x: 4 - IconStrokeExpand, y: 6 - IconStrokeExpand, width: 12 + IconStrokeWidth, height: 8 + IconStrokeWidth)

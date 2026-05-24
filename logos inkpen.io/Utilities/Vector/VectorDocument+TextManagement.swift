@@ -26,6 +26,7 @@ extension VectorDocument {
             return
         }
         let oldSelection = viewState.selectedObjectIDs
+
         var modifiedText = text
         modifiedText.layerIndex = layerIndex
         let shape = VectorShape.from(modifiedText)
@@ -42,6 +43,7 @@ extension VectorDocument {
 
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
+
         var removedObjects: [UUID: VectorObject] = [:]
         var removedPositions: [UUID: Int] = [:]
         for objectID in viewState.selectedObjectIDs {
@@ -50,6 +52,7 @@ extension VectorDocument {
                 removedObjects[objectID] = obj
                 let layerIdx = obj.layerIndex
                 if layerIdx >= 0 && layerIdx < snapshot.layers.count,
+
                    let pos = snapshot.layers[layerIdx].objectIDs.firstIndex(of: objectID) {
                     removedPositions[objectID] = pos
                 }
@@ -67,10 +70,12 @@ extension VectorDocument {
     func duplicateSelectedText() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let oldSelection = viewState.selectedObjectIDs
+
         var newTextIDs: Set<UUID> = []
         var duplicatedObjects: [UUID: VectorObject] = [:]
         for textID in viewState.selectedObjectIDs {
             if let originalText = findText(by: textID),
+
                let obj = snapshot.objects[textID] {
                 var duplicateText = originalText
                 duplicateText.id = UUID()
@@ -116,6 +121,7 @@ extension VectorDocument {
         }
         let oldSelection = viewState.selectedObjectIDs
         let removedTextIDs = Array(viewState.selectedObjectIDs)
+
         var removedTextObjects: [UUID: VectorObject] = [:]
         var removedPositions: [UUID: Int] = [:]
         for uuid in viewState.selectedObjectIDs {
@@ -127,6 +133,7 @@ extension VectorDocument {
             }
         }
         var newShapeIDs: Set<UUID> = []
+
         let shapesBefore = Set(snapshot.objects.keys.filter {
             if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
             return false
@@ -135,6 +142,7 @@ extension VectorDocument {
             let viewModel = ProfessionalTextViewModel(textObject: textObj, document: self)
             viewModel.convertToPath()
         }
+
         let shapesAfter = Set(snapshot.objects.keys.filter {
             if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
             return false

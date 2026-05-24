@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PosterTemplatePreview: View {
+
     var body: some View {
         VStack(spacing: 8) {
             Rectangle()

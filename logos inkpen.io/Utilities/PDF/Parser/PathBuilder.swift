@@ -31,11 +31,13 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
         if let catalog = pdfDoc.catalog {
             var metadataRef: CGPDFStreamRef?
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
+
                let metadataStream = metadataRef {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
                         if let range = xmpString.range(of: "<inkpen:document>"),
+
                            let endRange = xmpString.range(of: "</inkpen:document>") {
                             let startIndex = range.upperBound
                             let endIndex = endRange.lowerBound
@@ -48,6 +50,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
         }
     }
     let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("temp_pdf_page.pdf")
+
     var mediaBox = page.getBoxRect(.mediaBox)
     guard let context = CGContext(tempURL as CFURL, mediaBox: &mediaBox, nil) else {
         throw VectorImportError.parsingError("Cannot create PDF context", line: nil)
@@ -57,6 +60,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     context.endPDFPage()
     context.closePDF()
     let parser = PDFCommandParser()
+
     var shapes = parser.parseDocument(at: tempURL)
     if mediaBox.origin != .zero {
         let offset = CGPoint(x: -mediaBox.origin.x, y: -mediaBox.origin.y)

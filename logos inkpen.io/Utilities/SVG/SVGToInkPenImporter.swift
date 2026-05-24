@@ -19,6 +19,7 @@ class SVGToInkPenImporter: ObservableObject {
 
     @objc class CGSVGDocument: NSObject { }
     static let CoreSVG = dlopen("/System/Library/PrivateFrameworks/CoreSVG.framework/CoreSVG", RTLD_NOW)
+
     static var CGSVGDocumentRelease: (@convention(c) (CGSVGDocument?) -> Void) = load("CGSVGDocumentRelease")
     static var CGSVGDocumentCreateFromData: (@convention(c) (CFData?, CFDictionary?) -> Unmanaged<CGSVGDocument>?) = load("CGSVGDocumentCreateFromData")
     static var CGContextDrawSVGDocument: (@convention(c) (CGContext?, CGSVGDocument?) -> Void) = load("CGContextDrawSVGDocument")
@@ -38,6 +39,7 @@ class SVGToInkPenImporter: ObservableObject {
             guard SVGToInkPenImporter.CGSVGDocumentGetCanvasSize(document) != .zero else { return nil }
             self.document = document
         }
+
         var size: CGSize {
             SVGToInkPenImporter.CGSVGDocumentGetCanvasSize(document)
         }
@@ -147,6 +149,7 @@ class SVGToInkPenImporter: ObservableObject {
 
     private func extractShapesFromSVG(_ svgDoc: SVGDocument, svgData: Data) -> [VectorShape] {
         var shapes: [VectorShape] = []
+
         let svgSize = svgDoc.size
         addResult("SVG Processing", success: true, message: "Processing SVG with dimensions \(Int(svgSize.width)) × \(Int(svgSize.height))")
         let svgContentShape = createSVGContentShape(size: svgSize, document: svgDoc, svgData: svgData)

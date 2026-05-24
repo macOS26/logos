@@ -156,6 +156,7 @@ extension DrawingCanvas {
             shiftConstraintAxis = .none
         }
         let preciseZoom = Double(zoomLevel)
+
         var canvasDelta = CGPoint(
             x: cursorDelta.x / preciseZoom,
             y: cursorDelta.y / preciseZoom
@@ -163,6 +164,7 @@ extension DrawingCanvas {
         if document.gridSettings.snapToGrid || document.gridSettings.snapToPoint {
             if let firstObjectID = document.viewState.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
+
                let firstObject = document.snapshot.objects[firstObjectID] {
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -438,6 +440,7 @@ extension DrawingCanvas {
             }
         }
         let updatedPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+
         var movedShape = shape
         movedShape.path = updatedPath
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {

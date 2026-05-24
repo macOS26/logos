@@ -11,6 +11,7 @@ enum VectorColor: Hashable {
     case clear
     case black
     case white
+
     var color: Color {
         switch self {
         case .rgb(let rgb):
@@ -35,6 +36,7 @@ enum VectorColor: Hashable {
             return Color.white
         }
     }
+
     var cgColor: CGColor {
         switch self {
         case .rgb(let rgb):
@@ -69,6 +71,7 @@ enum VectorColor: Hashable {
     static let basicColors: [VectorColor] = [
         .black, .white, .clear
     ]
+
     var svgColor: String {
         let useDisplayP3 = AppState.shared.exportColorSpace == .displayP3
         switch self {

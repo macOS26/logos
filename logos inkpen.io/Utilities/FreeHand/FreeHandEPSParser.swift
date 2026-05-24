@@ -107,6 +107,7 @@ enum FreeHandEPSParser {
                 break
             }
         }
+
         let sortedSmallestFirst = raw.sorted {
             ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound)
         }
@@ -140,6 +141,7 @@ enum FreeHandEPSParser {
                     rangeEmitted.insert(rIdx)
                     let r = ranges[rIdx]
                     let members = Array(shapes[r])
+
                     var union = CGRect.null
                     for m in members {
                         let b = m.bounds.applying(m.transform)
@@ -168,6 +170,7 @@ enum FreeHandEPSParser {
 
     private static func extractFontTable(from text: String) -> [String: String] {
         var table: [String: String] = [:]
+
         let lines = text.components(separatedBy: .newlines)
         for line in lines {
             if let fRange = line.range(of: #"/f\d+\s+/"#, options: .regularExpression) {
@@ -190,6 +193,7 @@ enum FreeHandEPSParser {
                                          originX: Double, originY: Double,
                                          fontTable: [String: String]) -> [VectorShape] {
         var results: [VectorShape] = []
+
         let ns = drawingText as NSString
         guard let blockRegex = try? NSRegularExpression(
             pattern: #"\{([^{}]*)\}\s*\[([^\]]*)\]\s*sts"#,
@@ -209,9 +213,11 @@ enum FreeHandEPSParser {
             guard bodyRange.location != NSNotFound else { continue }
             let body = ns.substring(with: bodyRange)
             let bodyNs = body as NSString
+
             var psFont = "Helvetica-Bold"
             var fontSize: Double = 12
             if let fr = fontRegex,
+
                let m = fr.firstMatch(in: body, range: NSRange(location: 0, length: bodyNs.length)) {
                 let fKey = bodyNs.substring(with: m.range(at: 1))
                 let sizeStr = bodyNs.substring(with: m.range(at: 2))
@@ -248,6 +254,7 @@ enum FreeHandEPSParser {
             let ascender = fontSize * 0.8
             let baselineY = pageHeight - (first.y - originY)
             let textOrigin = CGPoint(x: first.x - originX, y: baselineY - ascender)
+
             var shape = VectorShape(
                 name: literal,
                 path: VectorPath(elements: [], isClosed: false),
@@ -257,6 +264,7 @@ enum FreeHandEPSParser {
             )
             shape.textContent = literal
             shape.textPosition = textOrigin
+
             let variant: String? = {
                 switch (bold, italic) {
                 case (true, true):   return "BoldItalic"
@@ -330,7 +338,9 @@ enum FreeHandEPSParser {
         var stateStack: [GraphicsState] = []
         var currentColor: VectorColor = .black
         var pendingGradient: (color1: VectorColor, color2: VectorColor)? = nil
+
         let tokens = tokenize(text)
+
         var i = 0
         while i < tokens.count {
             let token = tokens[i]
@@ -492,6 +502,7 @@ enum FreeHandEPSParser {
                         state.strokeColor = color
                         if j < tokens.count && tokens[j].hasPrefix("[") {
                             let firstColor = color
+
                             var color2Nums: [Double] = []
                             var tk2 = tokens[j].dropFirst()
                             if tk2.hasSuffix("]") { tk2 = tk2.dropLast() }

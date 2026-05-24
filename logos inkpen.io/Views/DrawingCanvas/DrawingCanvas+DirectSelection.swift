@@ -35,6 +35,7 @@ extension DrawingCanvas {
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
         let pointSelectionRadius: Double = 6.0 / zoomLevel
         let handleSelectionRadius: Double = 4.0 / zoomLevel
+
         var points: [CGPoint] = []
         var elementIndices: [Int] = []
         for (elementIndex, element) in shape.path.elements.enumerated() {
@@ -237,7 +238,9 @@ extension DrawingCanvas {
     internal func handleDirectSelectionTap(at location: CGPoint) {
         let screenTolerance: Double = 15.0
         let tolerance: Double = screenTolerance / zoomLevel
+
         var foundSelection = false
+
         let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
         if isOptionCurrentlyPressed {
             foundSelection = directSelectBehind(at: location)

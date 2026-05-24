@@ -6,6 +6,7 @@ enum AlignmentAnchorMode: String, CaseIterable {
     case lastSelected = "lastSelected"
     case largestArea = "largestArea"
     case smallestArea = "smallestArea"
+
     var displayName: String {
         switch self {
         case .firstSelected: return "First Selected"

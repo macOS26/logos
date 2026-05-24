@@ -8,10 +8,12 @@ extension VectorDocument {
         guard selectedShapes.count >= 2 else { return }
         guard let targetLayerIndex = selectedLayerIndex else { return }
         var shapesInOrder = selectedShapes
+
         let maskShape = shapesInOrder.removeLast()
         let contentShapes = shapesInOrder
         let groupShapes = [maskShape] + contentShapes
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
+
         var originalLayerIndices: [UUID: Int] = [:]
         var removedShapes: [UUID: VectorShape] = [:]
         var allRemovedObjectIDs: [UUID] = []

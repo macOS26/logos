@@ -6,7 +6,9 @@ extension DrawingCanvas {
     func findCoincidentPoints(to targetPointID: PointID, tolerance: Double = 1.0) -> Set<PointID> {
         guard let targetPosition = getPointPosition(targetPointID) else { return [] }
         var coincidentPoints: Set<PointID> = []
+
         let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
+
 		let allowedShapeIDs: Set<UUID> = {
 			let active = document.getActiveShapeIDs()
 			return active.isEmpty ? [targetPointID.shapeID] : active
@@ -111,6 +113,7 @@ extension DrawingCanvas {
                         }
                     }
                     if let moveIndex = moveToIndex, let lastIndex = lastPointIndex,
+
                        let firstPoint = moveToPoint, let endPoint = lastPoint {
                         let distance = firstPoint.distance(to: endPoint)
                         let tolerance = 0.1
@@ -175,6 +178,7 @@ extension DrawingCanvas {
                     guard coincidentPointID.elementIndex < shape.path.elements.count else { continue }
                     var updatedShape = shape
                     var elements = shape.path.elements
+
                     let newPoint = VectorPoint(newPosition.x, newPosition.y)
                     switch elements[coincidentPointID.elementIndex] {
                     case .move(_):
@@ -205,6 +209,7 @@ extension DrawingCanvas {
         switch elements[elementIndex] {
         case .curve(let to, _, let control2):
             let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+
             var outgoingHandleCollapsed = true
             if elementIndex + 1 < elements.count {
                 let nextElement = elements[elementIndex + 1]
@@ -368,6 +373,7 @@ extension DrawingCanvas {
         excludeIndex: Int
     ) -> [Int] {
         var coincidentIndices: [Int] = []
+
         let tolerance = 0.1
         for (index, element) in elements.enumerated() {
             if index == excludeIndex { continue }
@@ -394,6 +400,7 @@ extension DrawingCanvas {
         guard elements.count >= 2 else { return false }
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
            case .shape(let shape) = object.objectType,
+
            let explicitType = shape.anchorTypes[0] {
             switch explicitType {
             case .cusp, .corner:

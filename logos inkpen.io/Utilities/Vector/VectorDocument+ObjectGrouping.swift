@@ -8,6 +8,7 @@ extension VectorDocument {
         }
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard let firstObjectID = viewState.orderedSelectedObjectIDs.first ?? viewState.selectedObjectIDs.first,
+
               let firstObject = snapshot.objects[firstObjectID] else {
             return
         }
@@ -50,6 +51,7 @@ extension VectorDocument {
             }
         }
         let selectedShapes = getSelectedShapesInStackingOrder()
+
         var combinedBounds = CGRect.zero
         for shape in selectedShapes {
             let shapeBounds = shape.bounds
@@ -154,6 +156,7 @@ extension VectorDocument {
             removedShapes[selectedShapeID] = flattenedGroup
         }
         let restoredShapes = flattenedGroup.groupedShapes
+
         var newSelectedIDs: Set<UUID> = []
         var shapesToAdd: [VectorShape] = []
         for originalShape in restoredShapes {
@@ -289,6 +292,7 @@ extension VectorDocument {
             removedShapes[selectedShapeID] = compoundShape
         }
         let subpaths = extractSubpaths(from: compoundShape.path.cgPath)
+
         var newShapes: [VectorShape] = []
         var newSelectedIDs: Set<UUID> = []
         for (index, subpath) in subpaths.enumerated() {
@@ -334,6 +338,7 @@ extension VectorDocument {
             removedShapes[selectedShapeID] = loopingShape
         }
         let subpaths = extractSubpaths(from: loopingShape.path.cgPath)
+
         var newShapes: [VectorShape] = []
         var newSelectedIDs: Set<UUID> = []
         for (index, subpath) in subpaths.enumerated() {

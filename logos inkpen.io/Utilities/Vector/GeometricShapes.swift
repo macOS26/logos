@@ -5,6 +5,7 @@ class GeometricShapes {
 
     static func createRectangle(origin: CGPoint, size: CGSize, cornerRadius: CGFloat = 0) -> VectorPath {
         let rect = CGRect(origin: origin, size: size)
+
         var elements: [PathElement] = []
         if cornerRadius > 0 {
             let radius = min(cornerRadius, min(size.width, size.height) / 2)
@@ -126,6 +127,7 @@ class GeometricShapes {
 
     static func createRegularPolygon(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat = 0) -> VectorPath {
         let points = regularPolygonPoints(center: center, radius: radius, sides: sides, orientation: orientation)
+
         var elements: [PathElement] = [.move(to: VectorPoint(points[0]))]
         for i in 1..<points.count {
             elements.append(.line(to: VectorPoint(points[i])))
@@ -136,6 +138,7 @@ class GeometricShapes {
 
     static func createStar(center: CGPoint, outerRadius: CGFloat, innerRadius: CGFloat, points: Int, orientation: CGFloat = 0) -> VectorPath {
         var elements: [PathElement] = []
+
         let angleStep = .pi / Double(points)
         let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
         for i in 0..<(points * 2) {
@@ -180,6 +183,7 @@ class GeometricShapes {
 
     static func createHeart(center: CGPoint, size: CGFloat) -> VectorPath {
         let scale = size / 100.0
+
         var elements: [PathElement] = []
         elements.append(.move(to: VectorPoint(center.x, center.y + 30 * scale)))
         elements.append(.curve(to: VectorPoint(center.x - 25 * scale, center.y - 10 * scale),
@@ -260,6 +264,7 @@ class GeometricShapes {
 
     private static func regularPolygonPoints(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat) -> [CGPoint] {
         var points: [CGPoint] = []
+
         let angleStep = 2 * .pi / Double(sides)
         let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
         for i in 0..<sides {
@@ -273,6 +278,7 @@ class GeometricShapes {
 
     static func createCog(center: CGPoint, outerRadius: CGFloat, innerRadius: CGFloat, teeth: Int = 12) -> VectorPath {
         var elements: [PathElement] = []
+
         let angleStep = 2 * .pi / Double(teeth)
         let toothAngle = angleStep * 0.3
         let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
@@ -307,6 +313,7 @@ class GeometricShapes {
 
     static func createSpiral(center: CGPoint, startRadius: CGFloat, endRadius: CGFloat, turns: Double) -> VectorPath {
         var elements: [PathElement] = []
+
         let steps = Int(turns * 36)
         let centerVec = SIMD2<Double>(Double(center.x), Double(center.y))
         let startRad = Double(startRadius)

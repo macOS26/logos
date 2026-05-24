@@ -4,8 +4,11 @@ import UniformTypeIdentifiers
 
 class MetalImageTileRenderer {
     private static var _shared: MetalImageTileRenderer?
+
     private static let lock = NSLock()
+
     private static var initialized = false
+
     static var shared: MetalImageTileRenderer? {
         lock.lock()
         defer { lock.unlock() }
@@ -27,7 +30,9 @@ class MetalImageTileRenderer {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
+
     private var diskCachePaths: [String: String] = [:]
+
     private let diskCacheLock = NSLock()
 
     func getCachedImage(for key: String) -> CGImage? {
@@ -48,6 +53,7 @@ class MetalImageTileRenderer {
         self.device = metal.device
         self.commandQueue = commandQueue
         guard let vertexFunction = metal.library.makeFunction(name: "tileVertexShader"),
+
               let fragmentFunction = metal.library.makeFunction(name: "tileFragmentShader") else {
             return nil
         }
@@ -123,12 +129,14 @@ class MetalImageTileRenderer {
         diskCacheLock.lock()
         if let cachedPath = diskCachePaths[cacheKey],
            FileManager.default.fileExists(atPath: cachedPath),
+
            let cachedImage = loadImageFromDisk(path: cachedPath) {
             diskCacheLock.unlock()
             return cachedImage
         }
         diskCacheLock.unlock()
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let sourceTexture = getTexture(from: image) else {
             return nil
         }
@@ -158,6 +166,7 @@ class MetalImageTileRenderer {
         let scaleY = Float(outputSize.height / CGFloat(image.height))
         let imageWidth = Float(image.width)
         let imageHeight = Float(image.height)
+
         var vertices: [Float] = []
         var indices: [UInt16] = []
         for (index, (_, tileRect)) in tiles.enumerated() {
@@ -182,6 +191,7 @@ class MetalImageTileRenderer {
             ])
         }
         guard let vertexBuffer = device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Float>.size, options: []),
+
               let indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: []) else {
             return nil
         }
@@ -217,6 +227,7 @@ class MetalImageTileRenderer {
         viewportSize: CGSize
     ) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let texture = getTexture(from: image) else {
             return
         }
@@ -341,6 +352,7 @@ class MetalImageTileRenderer {
 
     private func loadImageFromDisk(path: String) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+
               let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             print("❌ Failed to load image from disk cache at \(path)")
             return nil

@@ -26,6 +26,7 @@ class GPUMathAcceleratorSimple {
             }
             let lineStart = points[startIndex]
             let lineEnd = points[endIndex]
+
             var maxDistance: Float = 0
             var maxIndex = startIndex
             for i in (startIndex + 1)..<endIndex {
@@ -65,6 +66,7 @@ class GPUMathAcceleratorSimple {
             return points
         }
     }
+
     var isGPUReady: Bool {
         return true
     }

@@ -62,8 +62,10 @@ struct ColorChannelSlider: View {
     let label: String
 
     @Binding var value: Double
+
     let gradient: SwiftUI.LinearGradient
     let onEditingChanged: (Bool) -> Void
+
     var body: some View {
         HStack(spacing: 8) {
             Circle()
@@ -96,11 +98,13 @@ struct ColorChannelSlider: View {
 struct RGBInputSection: View {
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
 
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     let defaultFillOpacity: Double
     let defaultStrokeOpacity: Double
     let onTriggerLayerUpdates: (Set<Int>) -> Void
@@ -110,7 +114,9 @@ struct RGBInputSection: View {
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
     @Binding var sharedColor: VectorColor
+
     @Environment(AppState.self) private var appState
+
     let disableSetActiveColor: Bool
     let onColorSelected: ((VectorColor) -> Void)?
     let onDismiss: (() -> Void)?
@@ -166,6 +172,7 @@ struct RGBInputSection: View {
     private func swiftUIColor(r: Double, g: Double, b: Double) -> Color {
         return Color(.displayP3, red: r/255.0, green: g/255.0, blue: b/255.0)
     }
+
     private var redGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -176,6 +183,7 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var greenGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -186,6 +194,7 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
+
     private var blueGradient: SwiftUI.LinearGradient {
         return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -196,6 +205,7 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 8) {
@@ -357,6 +367,7 @@ struct RGBInputSection: View {
         if isEditing {
             let currentOpacity: Double
             if let firstSelectedID = selectedObjectIDs.first,
+
                let object = snapshot.objects[firstSelectedID] {
                 if activeColorTarget == .fill {
                     currentOpacity = object.shape.fillStyle?.opacity ?? defaultFillOpacity

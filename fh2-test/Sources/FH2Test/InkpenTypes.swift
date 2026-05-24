@@ -68,6 +68,7 @@ enum VectorColor: Equatable {
         default: return false
         }
     }
+
     var rgbValues: (Double, Double, Double) {
         switch self {
         case .rgb(let c): return (c.red, c.green, c.blue)
@@ -105,6 +106,7 @@ enum GeometricShapeType {
 
 struct VectorShape {
     var name: String
+
     let path: VectorPath
     let geometricType: GeometricShapeType?
     let strokeStyle: StrokeStyle?
@@ -145,5 +147,6 @@ struct PathShapeDetector {
 
 struct ApplicationSettings {
     static let shared = ApplicationSettings()
+
     let importFreeHandEffects = true
 }

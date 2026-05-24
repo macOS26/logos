@@ -17,7 +17,9 @@ extension FileOperations {
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         let documentSize = document.settings.sizeInPoints
         let pdfData = NSMutableData()
+
         var mediaBox = CGRect(origin: .zero, size: documentSize)
+
         let auxiliaryDict: [String: Any] = [
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
@@ -27,6 +29,7 @@ extension FileOperations {
         ]
         let auxiliaryInfo = auxiliaryDict as CFDictionary
         guard let pdfConsumer = CGDataConsumer(data: pdfData),
+
               let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, auxiliaryInfo) else {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
         }
@@ -313,6 +316,7 @@ extension FileOperations {
 
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             Log.error("Failed to create CGImage from embedded data", category: .error)
             return
@@ -382,6 +386,7 @@ extension FileOperations {
         context.setFont(cgFont)
         context.setFontSize(nsFont.pointSize)
         var skippedGlyphCount = 0
+
         let glyphRange = layoutManager.glyphRange(for: textContainer)
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
             for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
@@ -538,6 +543,7 @@ extension FileOperations {
             let lineRange = NSRange(location: lineRange.location, length: lineRange.length)
             let lineString = (vectorText.content as NSString).substring(with: lineRange)
             let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
+
             var line = CTLineCreateWithAttributedString(lineAttribString)
             if vectorText.typography.alignment.nsTextAlignment == .justified {
                 if let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {

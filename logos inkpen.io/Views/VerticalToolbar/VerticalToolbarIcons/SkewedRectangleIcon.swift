@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SkewedRectangleIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Image(systemName: "rectangle")
             .font(.system(size: 16))

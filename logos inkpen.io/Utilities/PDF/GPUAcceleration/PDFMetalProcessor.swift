@@ -3,7 +3,9 @@ import Metal
 
 class PDFMetalProcessor {
     private static var _shared: PDFMetalProcessor?
+
     private static let lock = NSLock()
+
     static var shared: PDFMetalProcessor {
         lock.lock()
         defer { lock.unlock() }
@@ -53,6 +55,7 @@ class PDFMetalProcessor {
         guard isInitialized,
               let device = device,
               let commandQueue = commandQueue,
+
               let pipeline = rgbToRGBAPipeline else {
             Log.warning("⚠️ Metal not available, falling back to CPU for RGB->RGBA conversion", category: .general)
             return nil
@@ -83,6 +86,7 @@ class PDFMetalProcessor {
                                               length: MemoryLayout<UInt32>.size,
                                               options: .storageModeShared)
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
@@ -107,6 +111,7 @@ class PDFMetalProcessor {
         guard isInitialized,
               let device = device,
               let commandQueue = commandQueue,
+
               let pipeline = indexedToRGBAPipeline else {
             Log.warning("⚠️ Metal not available, falling back to CPU for indexed->RGBA conversion", category: .general)
             return nil
@@ -138,6 +143,7 @@ class PDFMetalProcessor {
             hasMaskValue = 1
         }
         var paletteEntriesValue = UInt32(paletteEntries)
+
         let paletteEntriesBuffer = device.makeBuffer(bytes: &paletteEntriesValue,
                                                       length: MemoryLayout<UInt32>.size,
                                                       options: .storageModeShared)
@@ -145,6 +151,7 @@ class PDFMetalProcessor {
                                               length: MemoryLayout<UInt32>.size,
                                               options: .storageModeShared)
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
@@ -175,6 +182,7 @@ class PDFMetalProcessor {
         guard isInitialized,
               let device = device,
               let commandQueue = commandQueue,
+
               let pipeline = extractGradientColorsPipeline else {
             Log.warning("⚠️ Metal not available, falling back to CPU for gradient extraction", category: .general)
             return nil
@@ -198,10 +206,12 @@ class PDFMetalProcessor {
             return nil
         }
         var outputComponentsValue = UInt32(outputComponents)
+
         let componentsBuffer = device.makeBuffer(bytes: &outputComponentsValue,
                                                  length: MemoryLayout<UInt32>.size,
                                                  options: .storageModeShared)
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
@@ -220,6 +230,7 @@ class PDFMetalProcessor {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let floatPointer = colorBuffer.contents().assumingMemoryBound(to: Float.self)
+
         var colors: [VectorColor] = []
         colors.reserveCapacity(actualSamples)
         for i in 0..<actualSamples {

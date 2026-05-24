@@ -173,6 +173,7 @@ extension PDFCommandParser {
             }
         }
         let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close), fillRule: .evenOdd)
+
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
         if filled {
@@ -218,6 +219,7 @@ extension PDFCommandParser {
             return
         }
         var vectorElements: [PathElement] = []
+
         let shouldApplyFlip = filled && !stroked
         for command in currentPath {
             switch command {
@@ -269,6 +271,7 @@ extension PDFCommandParser {
             }
         }
         let vectorPath = VectorPath(elements: vectorElements, isClosed: currentPath.contains(.closePath))
+
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
         if filled {

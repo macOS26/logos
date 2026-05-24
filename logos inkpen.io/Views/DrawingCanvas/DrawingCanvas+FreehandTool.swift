@@ -20,6 +20,7 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         freehandPath = VectorPath(elements: [.move(to: startPoint)])
         var strokeColor = getCurrentStrokeColor()
+
         let fillColor = getCurrentFillColor()
         if strokeColor == .clear {
             strokeColor = fillColor

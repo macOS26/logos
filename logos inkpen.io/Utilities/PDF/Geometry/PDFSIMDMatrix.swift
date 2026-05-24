@@ -25,6 +25,7 @@ struct PDFSIMDMatrix {
             simd_float3(Float(tx), Float(ty), 1)
         )
     }
+
     var cgAffineTransform: CGAffineTransform {
         return CGAffineTransform(
             a: CGFloat(matrix[0][0]),
@@ -35,30 +36,37 @@ struct PDFSIMDMatrix {
             ty: CGFloat(matrix[2][1])
         )
     }
+
     var tx: CGFloat {
         get { CGFloat(matrix[2][0]) }
         set { matrix[2][0] = Float(newValue) }
     }
+
     var ty: CGFloat {
         get { CGFloat(matrix[2][1]) }
         set { matrix[2][1] = Float(newValue) }
     }
+
     var a: CGFloat {
         get { CGFloat(matrix[0][0]) }
         set { matrix[0][0] = Float(newValue) }
     }
+
     var b: CGFloat {
         get { CGFloat(matrix[0][1]) }
         set { matrix[0][1] = Float(newValue) }
     }
+
     var c: CGFloat {
         get { CGFloat(matrix[1][0]) }
         set { matrix[1][0] = Float(newValue) }
     }
+
     var d: CGFloat {
         get { CGFloat(matrix[1][1]) }
         set { matrix[1][1] = Float(newValue) }
     }
+
     var metalBufferArray: [Float] {
         return [
             matrix[0][0], matrix[0][1], matrix[0][2],
@@ -132,6 +140,7 @@ struct PDFSIMDMatrix {
     static func rotation(angle: CGFloat) -> PDFSIMDMatrix {
         let cos = Float(Foundation.cos(angle))
         let sin = Float(Foundation.sin(angle))
+
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = cos
         m.matrix[0][1] = sin
@@ -147,6 +156,7 @@ extension PDFSIMDMatrix {
         guard !matrices.isEmpty else { return PDFSIMDMatrix() }
         guard matrices.count > 1 else { return matrices[0] }
         var pairs = [(PDFSIMDMatrix, PDFSIMDMatrix)]()
+
         let result = matrices[0]
         for i in 1..<matrices.count {
             pairs.append((result, matrices[i]))
@@ -165,6 +175,7 @@ extension PDFSIMDMatrix {
     static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         let scaleX = fontSize * horizontalScaling / 100.0
         let scaleY = fontSize
+
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = Float(scaleX)
         m.matrix[1][1] = Float(scaleY)

@@ -31,6 +31,7 @@ struct SVGConsolidationHelpers {
                 continue
             }
             let cgPaths: [CGPath] = shapes.map { $0.path.cgPath }
+
             var combined: CGPath? = cgPaths.first
             for p in cgPaths.dropFirst() {
                 if let c = combined, let u = CoreGraphicsPathOperations.union(c, p, using: .winding) {
@@ -52,6 +53,7 @@ struct SVGConsolidationHelpers {
                 compoundPath = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
             }
             let base = shapes[0]
+
             var compound = VectorShape(
                 name: "Compound Gradient",
                 path: compoundPath,

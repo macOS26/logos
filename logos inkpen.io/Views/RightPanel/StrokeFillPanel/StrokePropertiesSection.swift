@@ -20,6 +20,7 @@ struct StrokePropertiesSection: View {
     let onStrokeWidthEditingChanged: (Bool) -> Void
     let onStrokeOpacityEditingChanged: (Bool) -> Void
     let onMiterLimitEditingChanged: (Bool) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Stroke")

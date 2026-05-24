@@ -11,6 +11,7 @@ struct GeometryUtils {
         let dx = delta.x
         let dy = delta.y
         let angle = atan2(dy, dx)
+
         var angleDegrees = angle * 180.0 / .pi
         if angleDegrees < 0 {
             angleDegrees += 360
@@ -89,6 +90,7 @@ struct SIMDRectOps {
         guard !rects.isEmpty else { return .zero }
         guard rects.count > 1 else { return rects[0] }
         let first = rects[0].simd
+
         var minVec = SIMD2<Double>(first.x, first.y)
         var maxVec = SIMD2<Double>(first.x + first.z, first.y + first.w)
         for rect in rects.dropFirst() {

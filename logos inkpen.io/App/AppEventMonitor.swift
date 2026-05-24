@@ -3,7 +3,9 @@ import AppKit
 
 final class AppEventMonitor {
     static let shared = AppEventMonitor()
+
     private var keyEventMonitor: Any?
+
     private let lock = NSLock()
     private(set) weak var activeDocument: VectorDocument?
     private var isSpacebarPressed = false
@@ -104,6 +106,7 @@ final class AppEventMonitor {
             return nil
         }
         if event.type == .keyDown,
+
            let characters = event.charactersIgnoringModifiers {
             let arrowUp = "\u{F700}"
             let arrowDown = "\u{F701}"
@@ -161,6 +164,7 @@ final class AppEventMonitor {
             }
         }
         if event.type == .keyUp,
+
            let characters = event.charactersIgnoringModifiers {
             let arrowUp = "\u{F700}"
             let arrowDown = "\u{F701}"

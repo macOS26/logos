@@ -14,6 +14,7 @@ struct WindowAccessor: NSViewRepresentable {
 
 private class WindowAccessorView: NSView {
     private let callback: (NSWindow?) -> Void
+
     private var hasCalledBack = false
 
     init(callback: @escaping (NSWindow?) -> Void) {

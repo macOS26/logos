@@ -4,11 +4,14 @@ import SwiftUI
 struct PersistentWarpMarquee: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isEnvelopeTool: Bool
+
     private let handleSize: CGFloat = 8
+
     var body: some View {
         ZStack {
             if shape.isWarpObject && !shape.warpEnvelope.isEmpty {

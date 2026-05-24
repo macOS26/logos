@@ -27,6 +27,7 @@ enum AnchorPointType {
 func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
     guard let targetPosition = getPointPositionExternal(targetPointID, in: document) else { return [] }
     var coincidentPoints: Set<PointID> = []
+
     let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
     for layerIndex in document.snapshot.layers.indices {
         let layer = document.snapshot.layers[layerIndex]

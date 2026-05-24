@@ -14,6 +14,7 @@ case exclude = "Exclude"
     case kick = "Kick"
     case separate = "Separate"
     case combine = "Combine"
+
     var iconName: String {
         switch self {
         case .union: return "plus.circle"
@@ -30,6 +31,7 @@ case exclude = "Exclude"
         case .combine: return "square.on.square"
         }
     }
+
     var isShapeMode: Bool {
         switch self {
         case .union, .minusFront, .intersect, .exclude:
@@ -38,6 +40,7 @@ case exclude = "Exclude"
             return false
         }
     }
+
     var description: String {
         switch self {
         case .union: return "Combines exactly two shapes into a single shape"
@@ -696,6 +699,7 @@ extension ProfessionalPathOperations {
 
     static func mergeDuplicatePoints(in shape: VectorShape, tolerance: Double = 1.0) -> VectorShape {
         let cleanedPath = mergeDuplicatePoints(in: shape.path, tolerance: tolerance)
+
         var cleanedShape = shape
         cleanedShape.path = cleanedPath
         cleanedShape.updateBounds()

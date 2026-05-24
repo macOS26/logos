@@ -97,6 +97,7 @@ class ObjectReorderCommand: BaseCommand {
         for (layerIndex, idsAndIndices) in objectsByLayer {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
             var layerObjectIDs = document.snapshot.layers[layerIndex].objectIDs
+
             let affectedIDs = Set(idsAndIndices.map { $0.0 })
             layerObjectIDs.removeAll { affectedIDs.contains($0) }
             let sorted = idsAndIndices.sorted { $0.1 < $1.1 }

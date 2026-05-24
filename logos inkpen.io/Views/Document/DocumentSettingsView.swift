@@ -74,6 +74,7 @@ extension View {
 private struct SettingsSectionHeader: View {
     let icon: String
     let title: String
+
     var body: some View {
         HStack {
             Image(systemName: icon)
@@ -87,6 +88,7 @@ private struct SettingsSectionHeader: View {
 struct DocumentSettingsView: View {
 
     @ObservedObject var document: VectorDocument
+
     @Environment(\.presentationMode) var presentationMode
     var body: some View {
         VStack(spacing: 0) {
@@ -122,6 +124,7 @@ struct DocumentSettingsView: View {
         .frame(width: 600, height: 700)
         .background(Color.platformWindowBackground)
     }
+
     private var professionalHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -163,6 +166,7 @@ struct DocumentSettingsView: View {
         }
         .background(Color.platformControlBackground)
     }
+
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsSectionHeader(icon: "ruler", title: "Document Size")
@@ -220,6 +224,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
+
     private var colorSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsSectionHeader(icon: "paintpalette", title: "Color Settings")
@@ -235,6 +240,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
+
     private var displaySettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsSectionHeader(icon: "eye", title: "Display Settings")
@@ -254,6 +260,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
+
     private var layerSelectionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Selected Layer")
@@ -261,6 +268,7 @@ struct DocumentSettingsView: View {
             Picker("", selection: Binding(
                     get: {
                         if let selectedId = document.settings.selectedLayerId,
+
                            let layer = document.snapshot.layers.first(where: { $0.id == selectedId }) {
                             return layer.id
                         } else if let firstLayer = document.snapshot.layers.first {
@@ -287,6 +295,7 @@ struct DocumentSettingsView: View {
                 .disabled(document.snapshot.layers.isEmpty)
         }
     }
+
     private var displayOptionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsSectionHeader(icon: "eye", title: "Display Options")
@@ -341,6 +350,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
+
     private var gridSpacingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Grid Spacing")
@@ -357,6 +367,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
+
     private var professionalFooter: some View {
         VStack(spacing: 0) {
             Divider()

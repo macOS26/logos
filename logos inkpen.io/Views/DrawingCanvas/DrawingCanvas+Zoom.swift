@@ -6,6 +6,7 @@ extension DrawingCanvas {
 
     internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
         let clamped = max(allowedZoomSteps.first ?? 0.75, min(allowedZoomSteps.last ?? 640.0, zoom))
+
         var best = allowedZoomSteps.first ?? 0.75
         var bestDiff = abs(clamped - best)
         for step in allowedZoomSteps {

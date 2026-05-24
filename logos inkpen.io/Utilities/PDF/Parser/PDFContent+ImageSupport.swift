@@ -20,7 +20,9 @@ extension PDFCommandParser {
             return
         }
         var sMaskRef: CGPDFStreamRef?
+
         let hasSMask = CGPDFDictionaryGetStream(streamDict, "SMask", &sMaskRef)
+
         var maskData: Data?
         if hasSMask, let sMask = sMaskRef {
             var maskFormat: CGPDFDataFormat = .raw
@@ -286,21 +288,25 @@ extension PDFCommandParser {
 
     func processXObjectWithImageSupport(name: String) {
         guard let page = currentPage,
+
               let resourceDict = page.dictionary else {
             return
         }
         var resourcesRef: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
+
               let resourcesDict = resourcesRef else {
             return
         }
         var xObjectDictRef: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
+
               let xObjectDict = xObjectDictRef else {
             return
         }
         var xObjectStreamRef: CGPDFStreamRef? = nil
         guard CGPDFDictionaryGetStream(xObjectDict, name, &xObjectStreamRef),
+
               let xObjectStream = xObjectStreamRef else {
             return
         }
@@ -309,6 +315,7 @@ extension PDFCommandParser {
         }
         var subtypeNamePtr: UnsafePointer<CChar>? = nil
         guard CGPDFDictionaryGetName(xObjectStreamDict, "Subtype", &subtypeNamePtr),
+
               let subtypeName = subtypeNamePtr else {
             return
         }
@@ -374,6 +381,7 @@ extension PDFCommandParser {
                 }
             }
             let clipPath = VectorPath(elements: pathElements)
+
             var clipShape = VectorShape(name: "Clipping Path", path: clipPath)
             clipShape.isClippingPath = true
             currentClippingPathId = clipShape.id
@@ -425,6 +433,7 @@ extension PDFCommandParser {
             }
         }
         let clipPath = VectorPath(elements: pathElements)
+
         var clipShape = VectorShape(name: "Clipping Path", path: clipPath)
         clipShape.isClippingPath = true
         currentClippingPathId = clipShape.id

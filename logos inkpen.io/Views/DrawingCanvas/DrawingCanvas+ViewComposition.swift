@@ -274,6 +274,7 @@ extension DrawingCanvas {
             let layerObjectIDsSet = Set(layer.objectIDs)
             let selectedInThisLayer = document.viewState.selectedObjectIDs.intersection(layerObjectIDsSet)
             let selectedRectShape = getSelectedRectangleShape()
+
             let selectedShapeInThisLayer: UUID? = {
                 if let shapeID = selectedRectShape?.id, layerObjectIDsSet.contains(shapeID) {
                     return shapeID

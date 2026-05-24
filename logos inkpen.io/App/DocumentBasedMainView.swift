@@ -4,13 +4,17 @@ import UniformTypeIdentifiers
 struct DocumentBasedMainView: View {
 
     @ObservedObject var document: VectorDocument
+
     let fileURL: URL?
 
     @StateObject private var documentState = DocumentState()
+
     @Environment(AppState.self) private var appState
+
     @Binding var imagePreviewQuality: Double
     @Binding var imageTileSize: Int
     @Binding var imageInterpolationQuality: Int
+
     @State var showingDocumentSettings = false
     @State var showingColorPicker = false
     @State var currentDocumentURL: URL? = nil
@@ -45,6 +49,7 @@ struct DocumentBasedMainView: View {
     @State var zoomLevel: Double = 1.0
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
+
     @State private var viewWindow: NSWindow? = nil
     @State private var isTabActive: Bool = true
     var body: some View {
@@ -104,6 +109,7 @@ struct DocumentBasedMainView: View {
             }
         }
     }
+
     private var fullDocumentView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {

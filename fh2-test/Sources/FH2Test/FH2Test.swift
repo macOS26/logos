@@ -144,6 +144,7 @@ struct FH2Test {
             let fill = String(format: "rgb(%d,%d,%d)", Int(r*255), Int(g*255), Int(b*255))
             let weight = run.bold ? "bold" : "normal"
             let style  = run.italic ? "italic" : "normal"
+
             let anchor: String = {
                 switch run.alignment {
                 case 1: return "middle"

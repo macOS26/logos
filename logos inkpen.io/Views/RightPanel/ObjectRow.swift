@@ -121,6 +121,7 @@ struct ObjectRow: View {
         self.memberIDs = memberIDs
         self.showBottomIndicator = showBottomIndicator
     }
+
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: {
@@ -163,6 +164,7 @@ struct ObjectRow: View {
             }
         )
     }
+
     private var isLockedBinding: Binding<Bool> {
         Binding(
             get: {
@@ -253,6 +255,7 @@ struct ObjectRow: View {
             }
         )
     }
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
@@ -633,8 +636,10 @@ struct NestedGroupChildrenView: View {
             }
         )
     }
+
     var body: some View {
         let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
+
         let parentIsClip: Bool = {
             if let parent = document.snapshot.objects[parentObjectId],
                case .clipGroup = parent.objectType { return true }
@@ -777,6 +782,7 @@ struct NestedGroupChildrenView: View {
 }
 
 extension ObjectRow {
+
     private var objectIcon: String {
         switch objectType {
         case .shape:
@@ -844,6 +850,7 @@ extension ObjectRow {
         }
         return .blue
     }
+
     private var objectIconColor: Color {
         switch objectType {
         case .shape: return .blue

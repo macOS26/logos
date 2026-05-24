@@ -6,6 +6,7 @@ final class VectorDocument: ObservableObject, Codable {
     var viewState: DocumentViewState = DocumentViewState()
 
     @Published var settings: DocumentSettings = DocumentSettings()
+
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
 
@@ -27,8 +28,11 @@ final class VectorDocument: ObservableObject, Codable {
     var processedObjectsDuringDrag: Set<UUID> = []
     var activeLayerIndexDuringDrag: Int? = nil
     var isHandleScalingActive = false
+
     let changeNotifier = DocumentChangeNotifier()
+
     private var cancellables = Set<AnyCancellable>()
+
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
     var currentDragOffset: CGPoint = .zero
     var cachedSelectionBounds: CGRect? = nil
@@ -40,7 +44,9 @@ final class VectorDocument: ObservableObject, Codable {
     }
 
     @Published var gridSettings: GridSettings = .default
+
     internal var isUndoRedoOperation: Bool = false
+
     lazy var commandManager: CommandManager = {
         let manager = CommandManager(maxStackSize: maxUndoStackSize)
         manager.document = self
@@ -55,6 +61,7 @@ final class VectorDocument: ObservableObject, Codable {
         didSet { saveStrokeStyleDefaults() }
     }
     internal let maxUndoStackSize = 50
+
     var originalHandlePositions: [String: VectorPoint] = [:]
 
     deinit {
@@ -73,6 +80,7 @@ final class VectorDocument: ObservableObject, Codable {
         loadStrokeStyleDefaults()
         self.selectedLayerIndex = nil
         if let lastToolRaw = UserDefaults.standard.string(forKey: "lastUsedTool"),
+
            let lastTool = DrawingTool(rawValue: lastToolRaw) {
             self.viewState.currentTool = lastTool
         } else {

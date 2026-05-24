@@ -161,6 +161,7 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "w") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+
             var width: CGFloat = 1.0
             if CGPDFScannerPopNumber(scanner, &width) {
                 parser.currentLineWidth = Double(width)
@@ -169,6 +170,7 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "J") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+
             var cap: CGPDFInteger = 0
             if CGPDFScannerPopInteger(scanner, &cap) {
                 parser.currentLineCap = CGLineCap(rawValue: Int32(cap)) ?? .butt
@@ -177,6 +179,7 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "j") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+
             var join: CGPDFInteger = 0
             if CGPDFScannerPopInteger(scanner, &join) {
                 parser.currentLineJoin = CGLineJoin(rawValue: Int32(join)) ?? .miter
@@ -185,6 +188,7 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "M") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+
             var limit: CGFloat = 10.0
             if CGPDFScannerPopNumber(scanner, &limit) {
                 parser.currentMiterLimit = Double(limit)

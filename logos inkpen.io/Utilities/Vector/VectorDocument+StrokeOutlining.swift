@@ -6,6 +6,7 @@ extension VectorDocument {
     func outlineSelectedStrokes() {
         guard let layerIndex = selectedLayerIndex else { return }
         let shapesToOutline = getShapesForLayer(layerIndex).filter { viewState.selectedObjectIDs.contains($0.id) && $0.strokeStyle != nil }
+
         var newShapeIDs: Set<UUID> = []
         var originalShapeIDs: Set<UUID> = []
         var oldShapes: [UUID: VectorShape] = [:]
@@ -60,6 +61,7 @@ extension VectorDocument {
             }
         }
         var newShapes: [UUID: VectorShape] = [:]
+
         let allAffectedIDs = Set(oldShapes.keys).union(newShapeIDs)
         for shapeID in allAffectedIDs {
             if let shape = getShapesForLayer(layerIndex).first(where: { $0.id == shapeID }) {
@@ -76,8 +78,10 @@ extension VectorDocument {
         }
         viewState.selectedObjectIDs = newShapeIDs
     }
+
     var canOutlineStrokes: Bool {
         guard let layerIndex = selectedLayerIndex else { return false }
+
         let shapesWithStrokes = getShapesForLayer(layerIndex).filter {
             viewState.selectedObjectIDs.contains($0.id) && $0.strokeStyle != nil
         }
@@ -86,6 +90,7 @@ extension VectorDocument {
             return PathOperations.canOutlineStroke(path: shape.path.cgPath, strokeStyle: strokeStyle)
         }
     }
+
     var outlineableStrokesCount: Int {
         guard let layerIndex = selectedLayerIndex else { return 0 }
         return getShapesForLayer(layerIndex).filter { shape in

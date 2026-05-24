@@ -30,6 +30,7 @@ extension DrawingCanvas {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let screenTolerance: Double = 15.0
             let tolerance: Double = screenTolerance / zoomLevel
+
             var foundPointOrHandle = false
             if !selectedObjectIDs.isEmpty {
                 foundPointOrHandle = selectIndividualAnchorPointOrHandle(at: canvasLocation, tolerance: tolerance)
@@ -91,6 +92,7 @@ extension DrawingCanvas {
         var snappedDelta = delta
         if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && !selectedPoints.isEmpty {
             if let firstPointID = selectedPoints.first,
+
                let originalPosition = originalPointPositions[firstPointID] {
                 let unsnappedPosition = CGPoint(
                     x: originalPosition.x + delta.x,
@@ -305,6 +307,7 @@ extension DrawingCanvas {
             return
         }
         let element = elements[handleID.elementIndex]
+
         var anchorPoint: CGPoint?
         var anchorPointID: PointID?
         var oppositeHandleID: HandleID?
@@ -374,6 +377,7 @@ extension DrawingCanvas {
         let anchorPoint = first
         if handleID.handleType == .control2 && handleID.elementIndex == 0 {
             if case .curve(_, _, _) = elements[lastElementIndex],
+
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -387,6 +391,7 @@ extension DrawingCanvas {
         }
         if handleID.handleType == .control2 && handleID.elementIndex == lastElementIndex {
             if elements.count > 1, case .curve(_, _, _) = elements[1],
+
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -400,6 +405,7 @@ extension DrawingCanvas {
         }
         if handleID.handleType == .control1 && handleID.elementIndex == 1 {
             if case .curve(_, _, _) = elements[lastElementIndex],
+
                let originalLastControl2 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: lastElementIndex, handleType: .control2)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -413,6 +419,7 @@ extension DrawingCanvas {
         }
         if handleID.handleType == .control1 && handleID.elementIndex == lastElementIndex {
             if elements.count > 1, case .curve(_, _, _) = elements[1],
+
                let originalFirstControl1 = originalHandlePositions[HandleID(shapeID: handleID.shapeID, pathIndex: 0, elementIndex: 1, handleType: .control1)] {
                 let linkedPos = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
@@ -567,6 +574,7 @@ extension DrawingCanvas {
               case .shape(let shape) = object.objectType else { return }
         guard handleID.elementIndex < shape.path.elements.count else { return }
         let newHandle = VectorPoint(newPosition.x, newPosition.y)
+
         var elements = shape.path.elements
         switch elements[handleID.elementIndex] {
         case .curve(let to, let control1, let control2):
@@ -626,6 +634,7 @@ extension DrawingCanvas {
             return
         }
         let originalSelectedHandles = selectedHandles
+
         var pointsByShape: [UUID: [(PointID, CGPoint)]] = [:]
         for (pointID, livePosition) in livePointPositions {
             pointsByShape[pointID.shapeID, default: []].append((pointID, livePosition))
@@ -747,6 +756,7 @@ extension DrawingCanvas {
         let c1 = control1.cgPoint.applying(shape.transform)
         let c2 = control2.cgPoint.applying(shape.transform)
         let end = to.cgPoint.applying(shape.transform)
+
         var bestT: Double = 0.5
         var bestDistance: Double = Double.infinity
         for i in 0...100 {
@@ -814,6 +824,7 @@ extension DrawingCanvas {
             firstPoint = to
         }
         var lastPoint: VectorPoint?
+
         let prevIndex = elementIndex - 1
         if prevIndex >= 0 {
             switch shape.path.elements[prevIndex] {
@@ -883,6 +894,7 @@ extension DrawingCanvas {
             firstPoint = to
         }
         var lastPoint: VectorPoint?
+
         let prevIndex = elementIndex - 1
         if prevIndex >= 0 {
             switch shape.path.elements[prevIndex] {
@@ -995,6 +1007,7 @@ extension DrawingCanvas {
             )
             liveHandlePositions[control1HandleID] = newControl1Pos
             let prevIndex = curveSegment.elementIndex - 1
+
             var anchorA: CGPoint?
             if prevIndex >= 0 {
                 if case .curve(let toA, _, _) = shape.path.elements[prevIndex] {

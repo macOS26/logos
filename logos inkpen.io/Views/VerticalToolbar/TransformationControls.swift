@@ -10,6 +10,7 @@ enum TransformOrigin: String, CaseIterable {
     case bottomLeft = "Bottom Left"
     case bottomCenter = "Bottom Center"
     case bottomRight = "Bottom Right"
+
     var point: CGPoint {
         switch self {
         case .topLeft: return CGPoint(x: 0, y: 0)
@@ -69,8 +70,10 @@ struct NinePointOriginSelector: View {
 struct TransformationControls: View {
 
     @ObservedObject var document: VectorDocument
+
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
+
     @State private var keepProportions: Bool = false
     @State private var xValue: String = ""
     @State private var yValue: String = ""
@@ -94,15 +97,19 @@ struct TransformationControls: View {
             }
         )
     }
+
     var hasSelection: Bool {
         !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
+
     private var currentUnit: MeasurementUnit {
         document.settings.unit
     }
+
     private var unitSuffix: String {
         currentUnit.abbreviation
     }
+
     var body: some View {
         HStack(spacing: 6) {
             NinePointOriginSelector(selectedOrigin: transformOriginBinding)
@@ -356,6 +363,7 @@ struct TransformationControls: View {
 
     private func syncTransformOriginFromSelection() {
         guard let firstID = document.viewState.selectedObjectIDs.first,
+
               let obj = document.snapshot.objects[firstID] else {
             return
         }

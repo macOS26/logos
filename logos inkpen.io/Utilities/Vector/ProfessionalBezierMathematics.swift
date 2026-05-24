@@ -50,6 +50,7 @@ struct ProfessionalBezierMathematics {
         case smoothCorner = "Smooth Corner"
         case cusp = "Cusp"
         case connector = "Connector"
+
         var description: String {
             switch self {
             case .corner:
@@ -64,6 +65,7 @@ struct ProfessionalBezierMathematics {
                 return "Intelligent connector point (FreeHand style)"
             }
         }
+
         var hasHandles: Bool {
             switch self {
             case .corner: return false
@@ -77,6 +79,7 @@ struct ProfessionalBezierMathematics {
 case aligned = "Aligned"
 case independent = "Independent"
         case automatic = "Automatic"
+
         var description: String {
             switch self {
             case .symmetric:
@@ -120,6 +123,7 @@ case independent = "Independent"
         guard n >= 0 && k >= 0 && k <= n else { return 0 }
         while binomialLookup.count <= n {
             let currentN = binomialLookup.count
+
             var newRow: [Int] = []
             for i in 0...currentN {
                 if i == 0 || i == currentN {
@@ -282,6 +286,7 @@ case independent = "Independent"
 
     static func calculateArcLength(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, subdivisions: Int = 10) -> Double {
         var totalLength: Double = 0.0
+
         let dt = 1.0 / Double(subdivisions)
         for i in 0..<subdivisions {
             let t1 = Double(i) * dt
@@ -341,6 +346,7 @@ extension VectorPoint {
     func angle(to other: VectorPoint) -> Double {
         return atan2(other.y - self.y, other.x - self.x)
     }
+
     var normalized: VectorPoint {
         let length = simd_length(simdPoint)
         guard length > 1e-10 else { return VectorPoint(0, 0) }
@@ -385,6 +391,7 @@ struct ProfessionalBezierFactory {
 }
 
 extension ProfessionalBezierMathematics.ContinuityType {
+
     var priority: Int {
         switch self {
         case .none: return 0

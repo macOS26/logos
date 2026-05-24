@@ -4,6 +4,7 @@ struct PathOperationsPanel: View {
     let snapshot: DocumentSnapshot
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -175,6 +176,7 @@ struct PathOperationsPanel: View {
     private func removeOverlapFromSelectedShapes() {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return }
         let selectedShapes = document.getSelectedShapes()
+
         var processedCount = 0
         for shape in selectedShapes {
             if removeOverlapFromShape(shape) {

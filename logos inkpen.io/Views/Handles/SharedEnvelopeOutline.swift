@@ -7,6 +7,7 @@ struct SharedEnvelopeOutline: View {
     let color: Color
     let lineWidth: Double
     let isDashed: Bool
+
     var body: some View {
         if shape.isWarpObject && shape.warpEnvelope.count >= 4 {
             let corners = shape.warpEnvelope
@@ -38,6 +39,7 @@ struct SharedEnvelopeCorners: View {
     let canvasOffset: CGPoint
     let handleSize: CGFloat
     let handleColor: Color
+
     var body: some View {
         if shape.isWarpObject && shape.warpEnvelope.count >= 4 {
             ForEach(0..<4) { cornerIndex in

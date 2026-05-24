@@ -6,6 +6,7 @@ import Combine
 struct TransformBoxHandles: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -13,20 +14,26 @@ struct TransformBoxHandles: View {
     let transformBoxOpacity: Double
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
+
     var strokeColor: Color = Color.black.opacity(0.5)
 
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
+
     @State private var isScaling: Bool = false
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
+
     @ObservedObject private var settings = ApplicationSettings.shared
+
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 10
+
     private var isSingleSelection: Bool {
         document.viewState.selectedObjectIDs.count == 1
     }
+
     private var isSingleSelectionLocked: Bool {
         guard isSingleSelection else { return false }
         return shape.isLocked
@@ -38,12 +45,15 @@ struct TransformBoxHandles: View {
         }
         return baseSize
     }
+
     private var scaledHandleSize: CGFloat {
         scaleForZoom(10, zoom: zoomLevel)
     }
+
     private var scaledHitAreaSize: CGFloat {
         scaleForZoom(10, zoom: zoomLevel)
     }
+
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
         let finalOpacity = settings.hideTransformBoxDuringDrag ? transformBoxOpacity : 1.0
@@ -88,6 +98,7 @@ struct TransformBoxHandles: View {
                                     }
                                 } else {
                                     let combinedTransform = objShape.transform.concatenating(previewTransform)
+
                                     var path = Path()
                                     for element in objShape.path.elements {
                                         switch element {
@@ -390,8 +401,10 @@ struct TransformBoxHandles: View {
             let dyCanvas = (dragValue.location.y - startLocation.y) / preciseZoom
             let denomX = abs(bounds.width) > 0 ? bounds.width : 1.0
             let denomY = abs(bounds.height) > 0 ? bounds.height : 1.0
+
             var sx = 1.0 + (dxCanvas / denomX)
             var sy = 1.0 + (dyCanvas / denomY)
+
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 let ux = dxCanvas / denomX
@@ -425,6 +438,7 @@ struct TransformBoxHandles: View {
         )
         var scaleX: CGFloat = 1.0
         var scaleY: CGFloat = 1.0
+
         let isCorner = [0,2,4,6].contains(index)
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
@@ -582,6 +596,7 @@ struct TransformBoxHandles: View {
                 }
             }
             let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+
             var updatedShape = targetShape
             updatedShape.path = newPath
             updatedShape.transform = .identity
@@ -683,6 +698,7 @@ struct TransformBoxHandles: View {
                         }
                     }
                     let newPath = VectorPath(elements: transformedElements, isClosed: oldShape.path.isClosed)
+
                     var updatedShape = oldShape
                     updatedShape.path = newPath
                     updatedShape.transform = .identity

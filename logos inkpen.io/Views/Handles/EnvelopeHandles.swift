@@ -5,6 +5,7 @@ import simd
 struct EnvelopeHandles: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -19,8 +20,10 @@ struct EnvelopeHandles: View {
     @State private var originalCorners: [CGPoint] = []
     @State private var warpedCorners: [CGPoint] = []
     @State private var draggingCornerIndex: Int? = nil
+
     private let handleSize: CGFloat = 10
     private let handleHitAreaSize: CGFloat = 15
+
     var body: some View {
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         ZStack {
@@ -225,6 +228,7 @@ struct EnvelopeHandles: View {
                 )
                 let screenStart = CGPoint(x: startPoint.x * zoom + offset.x, y: startPoint.y * zoom + offset.y)
                 let screenEnd = CGPoint(x: endPoint.x * zoom + offset.x, y: endPoint.y * zoom + offset.y)
+
                 var path = Path()
                 path.move(to: screenStart)
                 path.addLine(to: screenEnd)
@@ -248,6 +252,7 @@ struct EnvelopeHandles: View {
                 )
                 let screenStart = CGPoint(x: startPoint.x * zoom + offset.x, y: startPoint.y * zoom + offset.y)
                 let screenEnd = CGPoint(x: endPoint.x * zoom + offset.x, y: endPoint.y * zoom + offset.y)
+
                 var path = Path()
                 path.move(to: screenStart)
                 path.addLine(to: screenEnd)
@@ -263,6 +268,7 @@ struct EnvelopeHandles: View {
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
+
                 var path = Path()
                 for element in warpedPath.elements {
                     switch element {
@@ -517,6 +523,7 @@ struct EnvelopeHandles: View {
                 for groupedShape in currentShape.groupedShapes {
                     let warpedElements = warpPathElements(groupedShape.path.elements)
                     let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
+
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
                     warpedGrouped.updateBounds()
@@ -541,6 +548,7 @@ struct EnvelopeHandles: View {
                 for groupedShape in currentShape.groupedShapes {
                     let warpedElements = warpPathElements(groupedShape.path.elements)
                     let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
+
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
                     warpedGrouped.updateBounds()

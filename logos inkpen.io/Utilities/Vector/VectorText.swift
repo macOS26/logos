@@ -10,6 +10,7 @@ enum TextBoxState: String, CaseIterable {
     case editing
     case selected
     case unselected
+
     var description: String {
         switch self {
         case .editing: return "BLUE - Edit Mode"
@@ -24,6 +25,7 @@ enum TextAlignment: String, CaseIterable, Codable {
     case center = "Center"
     case right = "Right"
     case justified = "Justified"
+
     var iconName: String {
         switch self {
         case .left: return "text.alignleft"
@@ -32,6 +34,7 @@ enum TextAlignment: String, CaseIterable, Codable {
         case .justified: return "text.justify"
         }
     }
+
     var nsTextAlignment: NSTextAlignment {
         switch self {
         case .left: return .left
@@ -106,6 +109,7 @@ struct TypographyProperties: Codable, Hashable {
         self.fillColor = fillColor
         self.fillOpacity = fillOpacity
     }
+
     var nsFont: PlatformFont {
         if let variant = fontVariant {
             let fontManager = NSFontManager.shared
@@ -122,9 +126,11 @@ struct TypographyProperties: Codable, Hashable {
         }
         return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
     }
+
     var swiftUIFont: Font {
         return Font.custom(fontFamily, size: fontSize)
     }
+
     var nsParagraphStyle: NSParagraphStyle {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = alignment.nsTextAlignment
@@ -213,6 +219,7 @@ struct VectorText: Identifiable, Codable, Hashable {
             return .unselected
         }
     }
+
     var canBeEdited: Bool {
         return isVisible && !isLocked
     }
@@ -221,6 +228,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         let state = getState(in: document)
         return state == .editing || state == .selected
     }
+
     var textBounds: CGRect {
         let font = createCoreTextFont()
         let displayText = content.isEmpty ? "" : content
@@ -335,6 +343,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         } else if !vectorShape.metadata.isEmpty,
            let fontFamily = vectorShape.metadata["fontFamily"],
            let fontSizeStr = vectorShape.metadata["fontSize"],
+
            let fontSize = Double(fontSizeStr) {
             let letterSpacing = Double(vectorShape.metadata["letterSpacing"] ?? "0") ?? 0
             let lineSpacing = Double(vectorShape.metadata["lineSpacing"] ?? "0") ?? 0
@@ -359,6 +368,7 @@ struct VectorText: Identifiable, Codable, Hashable {
             )
         }
         let position = vectorShape.textPosition ?? CGPoint(x: vectorShape.transform.tx, y: vectorShape.transform.ty)
+
         var vectorText = VectorText(
             content: vectorShape.textContent ?? "",
             typography: typography,
@@ -379,9 +389,11 @@ class FontManager: ObservableObject {
     private static var sharedAvailableFonts: [String] = []
     private static var sharedSystemFonts: [String] = []
     private static var sharedFontsLoaded = false
+
     var availableFonts: [String] { Self.sharedAvailableFonts }
     var systemFonts: [String] { Self.sharedSystemFonts }
     var googleFonts: [String] = []
+
     private static var sharedFontVariantsCache: [String: [String]] = [:]
     private static var sharedPostScriptNameCache: [String: String] = [:]
 
@@ -519,6 +531,7 @@ class FontManager: ObservableObject {
             if let postScriptName = member[0] as? String,
                let displayName = member[1] as? String,
                let weightNumber = member[2] as? NSNumber,
+
                let traitsNumber = member[3] as? NSNumber {
                 let lowercasedName = displayName.lowercased()
                 let shouldExclude = excludeKeywords.contains { keyword in
@@ -583,6 +596,7 @@ extension VectorText {
         ) : nil
         let positionTranslation = CGAffineTransform(translationX: position.x, y: position.y)
         let finalTransform = positionTranslation.concatenating(transform)
+
         var shape = VectorShape(
             name: "Text: \(content.prefix(20))",
             path: VectorPath(elements: []),

@@ -39,6 +39,7 @@ class AddObjectAtPositionCommand: BaseCommand {
                 insertIndex = document.snapshot.layers[layerIndex].objectIDs.count
             case .afterSelection(let selectedIDs):
                 let objectIDs = document.snapshot.layers[layerIndex].objectIDs
+
                 var maxIndex = -1
                 for (index, objID) in objectIDs.enumerated() {
                     if selectedIDs.contains(objID) {

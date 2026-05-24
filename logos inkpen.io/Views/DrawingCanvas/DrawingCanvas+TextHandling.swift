@@ -226,6 +226,7 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         let emptyPath = VectorPath(elements: [], isClosed: false)
+
         var shape = VectorShape(
             name: "Text",
             path: emptyPath,
@@ -562,6 +563,7 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         let emptyPath = VectorPath(elements: [], isClosed: false)
+
         var shape = VectorShape(
             name: "Text",
             path: emptyPath,

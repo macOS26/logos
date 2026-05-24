@@ -21,11 +21,13 @@ class DocumentViewState: ObservableObject {
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
     @Published var objectPositionUpdateTrigger: Bool = false
     @Published var layerUpdateTriggers: [UUID: UInt] = [:]
+
     var isLivePointDrag: Bool = false
 
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     @Published var hasPressureInput: Bool = false
+
     var isDraggingVisibility: Bool = false
     var isDraggingLock: Bool = false
 
@@ -40,7 +42,9 @@ class DocumentViewState: ObservableObject {
     }
 
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
+
     var orderedSelectedObjectIDs: [UUID] = []
+
     var selectedPoints: Set<PointID> = [] {
         didSet {
             PublishedSelectedPoints = selectedPoints

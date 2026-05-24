@@ -63,6 +63,7 @@ extension VectorDocument {
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
         if let object = snapshot.objects[shapeID] {
             let layerIndex = object.layerIndex
+
             var updatedObject = object
             switch object.objectType {
             case .text(var shape):
@@ -105,6 +106,7 @@ extension VectorDocument {
             return
         }
         if let parentGroupID = snapshot.parentGroupCache[shapeID],
+
            let groupObject = snapshot.objects[parentGroupID] {
             switch groupObject.objectType {
             case .group(var groupShape), .clipGroup(var groupShape):

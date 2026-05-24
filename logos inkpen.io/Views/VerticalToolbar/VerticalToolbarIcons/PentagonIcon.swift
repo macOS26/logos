@@ -2,6 +2,7 @@ import SwiftUI
 
 private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Path {
     var p = Path()
+
     let adjustedRadius = radius + IconStrokeExpand
     let angleStep = (2.0 * .pi) / Double(sides)
     let startAngle = -Double.pi / 2 + ((sides % 2 == 0) ? angleStep / 2 : 0)

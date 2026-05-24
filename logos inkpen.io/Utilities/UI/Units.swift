@@ -8,6 +8,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
     case points = "Points"
     case pixels = "Pixels"
     case picas = "Picas"
+
     var abbreviation: String {
         switch self {
         case .inches: return "in"
@@ -18,6 +19,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .picas: return "pc"
         }
     }
+
     var pointsPerUnit: Double {
         switch self {
         case .inches: return 72.0
@@ -28,6 +30,7 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .picas: return 12.0
         }
     }
+
     var defaultGridSpacing: Double {
         switch self {
         case .inches: return 0.125
@@ -38,9 +41,11 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         case .picas: return 1.0
         }
     }
+
     var defaultGridSpacingInPoints: Double {
         return toPoints(defaultGridSpacing)
     }
+
     var majorGridInterval: Int {
         switch self {
         case .inches: return 8

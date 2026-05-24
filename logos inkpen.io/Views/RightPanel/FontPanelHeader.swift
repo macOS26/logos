@@ -3,6 +3,7 @@ import SwiftUI
 struct FontPanelHeader: View {
     let selectedText: VectorText?
     let editingText: VectorText?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {

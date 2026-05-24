@@ -32,7 +32,9 @@ struct GradientFillSection: View {
 
     @Binding var activeGradientDelta: VectorGradient?
     @Binding var activeColorTarget: ColorTarget
+
     @Environment(AppState.self) private var appState
+
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
     @State private var gradientId: UUID = UUID()
@@ -66,6 +68,7 @@ struct GradientFillSection: View {
             _currentGradient = State(initialValue: nil)
         }
     }
+
     var body: some View {
         VStack(alignment: .leading) {
             Text("Gradient Fill")
@@ -582,6 +585,7 @@ struct GradientFillSection: View {
         var newGradients: [UUID: VectorGradient?] = [:]
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
+
         let isStroke = activeColorTarget == .stroke
         for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
@@ -721,6 +725,7 @@ struct GradientFillSection: View {
 
     static func getSelectedShapeGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, activeColorTarget: ColorTarget) -> VectorGradient? {
         guard let firstID = selectedObjectIDs.first,
+
               let obj = snapshot.objects[firstID] else {
             return nil
         }
@@ -746,6 +751,7 @@ struct GradientFillSection: View {
             return nil
         }
         guard let firstID = selectedObjectIDs.first,
+
               let obj = snapshot.objects[firstID] else {
             return gradient
         }
@@ -937,6 +943,7 @@ struct GradientFillSection: View {
             return .black
         }
         guard let shape = document.findShape(by: firstSelectedID),
+
               let fillStyle = shape.fillStyle else {
             return .black
         }

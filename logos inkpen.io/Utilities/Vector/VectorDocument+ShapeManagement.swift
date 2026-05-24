@@ -317,6 +317,7 @@ extension VectorDocument {
                 var newShape = shape
                 newShape.id = UUID()
                 if ImageContentRegistry.containsImage(shape, in: self),
+
                    let image = ImageContentRegistry.image(for: shape.id, in: self) {
                     ImageContentRegistry.register(image: image, for: newShape.id, in: self)
                 }
@@ -337,6 +338,7 @@ extension VectorDocument {
             return shape
         }
         let transformedPath = shape.path.applying(transform)
+
         var newShape = shape
         newShape.path = transformedPath
         newShape.transform = .identity
@@ -361,6 +363,7 @@ extension VectorDocument {
             ], isClosed: false)
         }
         let nonPhotoBlue = VectorColor.rgb(RGBColor(red: 164/255, green: 221/255, blue: 237/255))
+
         var guideShape = VectorShape(
             name: "Guide",
             path: path,

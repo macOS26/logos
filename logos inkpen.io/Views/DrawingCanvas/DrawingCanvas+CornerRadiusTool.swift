@@ -5,6 +5,7 @@ extension DrawingCanvas {
     @ViewBuilder
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
         if document.viewState.currentTool == .cornerRadius,
+
            let currentShape = getSelectedRectangleShape() {
             let boundsToUse = getProperShapeBounds(for: currentShape)
             let corners = getCornerScreenPositions(bounds: boundsToUse, shape: currentShape, geometry: geometry)
@@ -64,6 +65,7 @@ extension DrawingCanvas {
     ) {
         if !isDraggingCorner {
             let hitRadius: CGFloat = 15.0
+
             var nearestIndex: Int?
             var nearestDistance = CGFloat.infinity
             for (index, cornerPosition) in corners.enumerated() {
@@ -167,6 +169,7 @@ extension DrawingCanvas {
                 )
             }
             if let originalShape = sharedOriginalShape,
+
                let finalShape = getSelectedRectangleShape() {
                 document.modifyShapesWithUndo(shapeIDs: [originalShape.id]) { shape in
                     shape = finalShape

@@ -12,7 +12,9 @@ struct logos_inken_ioApp: App {
     private var appState = AppState.shared
 
     @Environment(\.openWindow) private var openWindow
+
     @Environment(\.dismissWindow) private var dismissWindow
+
     @AppStorage("imagePreviewQuality") private var imagePreviewQuality: Double = 1.0
     init() {
         UserDefaults.standard.register(defaults: [
@@ -36,6 +38,7 @@ struct logos_inken_ioApp: App {
             return fileURL.deletingPathExtension().lastPathComponent
         }
     }
+
     var body: some Scene {
         DocumentGroup(newDocument: InkpenDocument()) { file in
             DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
@@ -828,6 +831,7 @@ struct logos_inken_ioApp: App {
 
 class ClipboardManager {
     static let shared = ClipboardManager()
+
     private let pasteboard = NSPasteboard.general
     private let vectorObjectsType = NSPasteboard.PasteboardType("io.logos.logos-inkpen-io.vectorObjects")
 

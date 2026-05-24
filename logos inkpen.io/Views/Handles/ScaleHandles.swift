@@ -4,6 +4,7 @@ import Combine
 struct ScaleHandles: View {
 
     @ObservedObject var document: VectorDocument
+
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -11,6 +12,7 @@ struct ScaleHandles: View {
 
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
+
     @State var isScaling = false
     @State var scalingStarted = false
     @State var initialBounds: CGRect = .zero
@@ -25,7 +27,9 @@ struct ScaleHandles: View {
     @State var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State var pointsRefreshTrigger: Int = 0
     @State var cachedPreviewPath: Path? = nil
+
     let handleSize: CGFloat = 10
+
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape, in: document) {
             let pathBounds = shape.path.cgPath.boundingBoxOfPath
@@ -34,9 +38,11 @@ struct ScaleHandles: View {
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
+
     private var calculatedCenter: CGPoint {
         return shape.calculateCentroid()
     }
+
     var body: some View {
         let bounds = calculatedBounds
         let center = calculatedCenter
@@ -191,6 +197,7 @@ struct ScaleHandles: View {
                                 height: value.location.y - value.startLocation.y
                             )
                             let sensitivity: CGFloat = 0.005 / zoomLevel
+
                             var scaleX = 1.0 + (translation.width * sensitivity)
                             var scaleY = 1.0 + (translation.height * sensitivity)
                             scaleX = min(max(scaleX, 0.1), 10.0)

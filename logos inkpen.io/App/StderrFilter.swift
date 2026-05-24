@@ -2,13 +2,16 @@ import SwiftUI
 
 final class StderrFilter {
     static let shared = StderrFilter()
+
     private var suppressPatterns: [String] = []
     private var originalStderrFD: Int32 = -1
     private var pipeReadFD: Int32 = -1
     private var pipeWriteFD: Int32 = -1
     private var readSource: DispatchSourceRead?
     private var pendingBuffer = Data()
+
     private let queue = DispatchQueue(label: "io.logos.stderr.filter", qos: .background)
+
     private var isInstalled = false
 
     private init() {}
@@ -42,6 +45,7 @@ final class StderrFilter {
         source.setEventHandler { [weak self] in
             guard let self = self else { return }
             var buffer = [UInt8](repeating: 0, count: 4096)
+
             let bytesRead = read(self.pipeReadFD, &buffer, buffer.count)
             if bytesRead > 0 {
                 self.pendingBuffer.append(buffer, count: bytesRead)

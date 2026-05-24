@@ -46,6 +46,7 @@ extension VectorDocument {
                 return false
             }
             let frontShapes = Array(selectedShapes.dropFirst())
+
             var resultPath = backShape.path.cgPath
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
@@ -104,6 +105,7 @@ extension VectorDocument {
             }
         case .mosaic:
             let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
+
             var shapeCounters: [Int: Int] = [:]
             for (mosaicPath, originalShapeIndex) in mosaicResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
@@ -122,6 +124,7 @@ extension VectorDocument {
             }
         case .cut:
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
+
             var shapeCounters: [Int: Int] = [:]
             for (cutPath, originalShapeIndex) in cutResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
@@ -145,6 +148,7 @@ extension VectorDocument {
                 return false
             }
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
+
             var shapeCounters: [Int: Int] = [:]
             for (mergedPath, originalShapeIndex) in mergeResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
@@ -163,6 +167,7 @@ extension VectorDocument {
             }
         case .crop:
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
+
             var shapeCounters: [Int: Int] = [:]
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
@@ -241,6 +246,7 @@ extension VectorDocument {
                 return false
             }
             let backShapes = Array(selectedShapes.dropLast())
+
             var resultPath = frontShape.path.cgPath
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {

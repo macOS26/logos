@@ -25,6 +25,7 @@ struct FillRule: Codable, Hashable {
         var container = encoder.singleValueContainer()
         try container.encode(rule)
     }
+
     var cgPathFillRule: CGPathFillRule {
         switch rule {
         case "evenOdd":
@@ -41,10 +42,12 @@ struct FillRule: Codable, Hashable {
 
 struct VectorPoint: Codable, Hashable {
     internal var simdPoint: SIMD2<Double>
+
     var x: Double {
         get { simdPoint.x }
         set { simdPoint.x = newValue }
     }
+
     var y: Double {
         get { simdPoint.y }
         set { simdPoint.y = newValue }
@@ -61,6 +64,7 @@ struct VectorPoint: Codable, Hashable {
     init(simd: SIMD2<Double>) {
         self.simdPoint = simd
     }
+
     var cgPoint: CGPoint {
         CGPoint(x: simdPoint.x, y: simdPoint.y)
     }
@@ -117,6 +121,7 @@ enum PathElement: Codable, Hashable {
     case curve(to: VectorPoint, control1: VectorPoint, control2: VectorPoint)
     case quadCurve(to: VectorPoint, control: VectorPoint)
     case close
+
     var endpoint: VectorPoint? {
         switch self {
         case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
@@ -125,6 +130,7 @@ enum PathElement: Codable, Hashable {
             return nil
         }
     }
+
     var endpointCGPoint: CGPoint? {
         endpoint?.cgPoint
     }
@@ -226,6 +232,7 @@ struct VectorPath: Codable, Hashable, Identifiable {
             }
         }
     }
+
     var cgPath: CGPath {
         let path = CGMutablePath()
         for element in elements {
@@ -270,6 +277,7 @@ enum PathOperation: String, CaseIterable, Codable {
     case frontMinusBack = "Front Minus Back"
     case backMinusFront = "Back Minus Front"
     case exclude = "Exclude"
+
     var iconName: String {
         switch self {
         case .union: return "plus.circle"

@@ -30,6 +30,7 @@ struct LayerColorName {
 
 struct LayerColor: Equatable, Codable, Hashable {
     let name: String
+
     static let maroon = LayerColor(name: LayerColorName.maroon)
     static let red = LayerColor(name: LayerColorName.red)
     static let vermillion = LayerColor(name: LayerColorName.vermillion)

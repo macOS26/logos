@@ -218,6 +218,7 @@ extension VectorDocument {
         case .shape, .image, .warp, .clipMask, .guide:
             updateShapeByID(memberID) { shape in
                 let combinedTransform = shape.transform.concatenating(transform)
+
                 var transformedElements: [PathElement] = []
                 for element in shape.path.elements {
                     switch element {

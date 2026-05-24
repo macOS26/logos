@@ -2,6 +2,7 @@ import CoreGraphics
 import simd
 
 extension CGPoint {
+
     var simd: SIMD2<Double> {
         SIMD2(Double(x), Double(y))
     }

@@ -2,8 +2,10 @@ import MetalKit
 
 class MetalComputeEngine {
     let device: MTLDevice
+
     private let commandQueue: MTLCommandQueue
     private let library: MTLLibrary
+
     private var douglasPeuckerPipeline: MTLComputePipelineState?
     private var bezierCalculationPipeline: MTLComputePipelineState?
     private var matrixTransformPipeline: MTLComputePipelineState?
@@ -29,8 +31,11 @@ class MetalComputeEngine {
     private var findNearestSnapPointPipeline: MTLComputePipelineState?
     private var removeCoincidentPointsPipeline: MTLComputePipelineState?
     private var smoothBrushStrokePipeline: MTLComputePipelineState?
+
     private static var _shared: MetalComputeEngine?
+
     private static let lock = NSLock()
+
     static var shared: MetalComputeEngine {
         lock.lock()
         defer { lock.unlock() }
@@ -192,6 +197,7 @@ class MetalComputeEngine {
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: bufferOptions),
+
               let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: bufferOptions) else {
             return .failure(.bufferCreationFailed)
         }
@@ -217,6 +223,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let distancesPointer = distancesBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
+
         var maxDistance: Float = 0
         var maxIndex = 0
         for i in 0..<pointCount {
@@ -248,6 +255,7 @@ class MetalComputeEngine {
         ]
         guard let inputBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let transformBuffer = device.makeBuffer(bytes: transformMatrix, length: 9 * MemoryLayout<Float>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -262,6 +270,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
+
         var result: [CGPoint] = []
         for i in 0..<pointCount {
             let point = resultPointer[i]
@@ -286,6 +295,7 @@ class MetalComputeEngine {
         let metalPolygonVertices = polygon.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         guard let testPointsBuffer = device.makeBuffer(bytes: metalTestPoints, length: testPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let polygonBuffer = device.makeBuffer(bytes: metalPolygonVertices, length: polygonVertexCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let resultsBuffer = device.makeBuffer(length: testPointCount * MemoryLayout<Bool>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -302,6 +312,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = resultsBuffer.contents().bindMemory(to: Bool.self, capacity: testPointCount)
+
         var results: [Bool] = []
         for i in 0..<testPointCount {
             results.append(resultPointer[i])
@@ -327,6 +338,7 @@ class MetalComputeEngine {
         let metalTargetPoints = targetPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         guard let sourceBuffer = device.makeBuffer(bytes: metalSourcePoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let targetBuffer = device.makeBuffer(bytes: metalTargetPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let distanceBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -341,6 +353,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = distanceBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
+
         var results: [Float] = []
         for i in 0..<pointCount {
             results.append(resultPointer[i])
@@ -361,6 +374,7 @@ class MetalComputeEngine {
         let vectorCount = vectors.count
         let metalVectors = vectors.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         guard let inputBuffer = device.makeBuffer(bytes: metalVectors, length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -374,6 +388,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: vectorCount)
+
         var results: [CGPoint] = []
         for i in 0..<vectorCount {
             let point = resultPointer[i]
@@ -400,6 +415,7 @@ class MetalComputeEngine {
         let metalEndPoints = endPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         guard let startBuffer = device.makeBuffer(bytes: metalStartPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let endBuffer = device.makeBuffer(bytes: metalEndPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -416,6 +432,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
+
         var results: [CGPoint] = []
         for i in 0..<pointCount {
             let point = resultPointer[i]
@@ -445,6 +462,7 @@ class MetalComputeEngine {
         guard let anchorBuffer = device.makeBuffer(bytes: metalAnchorPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let draggedBuffer = device.makeBuffer(bytes: metalDraggedHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
               let originalBuffer = device.makeBuffer(bytes: metalOriginalHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -460,6 +478,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
+
         var results: [CGPoint] = []
         for i in 0..<pointCount {
             let point = resultPointer[i]
@@ -484,6 +503,7 @@ class MetalComputeEngine {
         let pointCount = points.count
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+
               let curvatureBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -500,6 +520,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = curvatureBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
+
         var results: [Float] = []
         for i in 0..<pointCount {
             results.append(resultPointer[i])
@@ -524,6 +545,7 @@ class MetalComputeEngine {
         let outputCount = (inputCount - 1) * 2 + 1
         let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: inputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -542,6 +564,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: outputCount)
+
         var results: [CGPoint] = []
         for i in 0..<outputCount {
             let point = resultPointer[i]
@@ -587,6 +610,7 @@ class MetalComputeEngine {
         }
         let valueCount = values.count
         guard let inputBuffer = device.makeBuffer(bytes: values, length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -600,6 +624,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().bindMemory(to: Float.self, capacity: valueCount)
+
         var results: [Float] = []
         for i in 0..<valueCount {
             results.append(resultPointer[i])
@@ -623,6 +648,7 @@ class MetalComputeEngine {
               let path2Buffer = device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: .storageModeShared),
               let resultBuffer = device.makeBuffer(bytes: resultPoints, length: resultCount * MemoryLayout<Point2D>.size, options: .storageModeShared),
               let path1CountBuffer = device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared),
+
               let path2CountBuffer = device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -649,6 +675,7 @@ class MetalComputeEngine {
         }
         let maxIntersections = 1000
         let intersectionPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: maxIntersections)
+
         var intersectionCount: UInt32 = 0
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
@@ -661,6 +688,7 @@ class MetalComputeEngine {
               let resultBuffer = device.makeBuffer(bytes: intersectionPoints, length: maxIntersections * MemoryLayout<Point2D>.size, options: .storageModeShared),
               let countBuffer = device.makeBuffer(bytes: &intersectionCount, length: MemoryLayout<UInt32>.size, options: .storageModeShared),
               let path1CountBuffer = device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared),
+
               let path2CountBuffer = device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -698,6 +726,7 @@ class MetalComputeEngine {
         let angleCount = angles.count
         let inputBuffer = device.makeBuffer(bytes: angles, length: angleCount * MemoryLayout<Float>.stride, options: .storageModeShared)
         let outputBuffer = device.makeBuffer(length: angleCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+
         var trigFunction = UInt32(function.rawValue)
         computeEncoder.setComputePipelineState(pipeline)
         computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
@@ -733,7 +762,9 @@ class MetalComputeEngine {
             return .failure(.computeEncoderCreationFailed)
         }
         var centerPoint = Point2D(x: Float(center.x), y: Float(center.y))
+
         let outputBuffer = device.makeBuffer(length: sides * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+
         var params = PolygonParams(radius: radius, sides: UInt32(sides), startAngle: startAngle)
         computeEncoder.setComputePipelineState(pipeline)
         computeEncoder.setBuffer(outputBuffer, offset: 0, index: 0)
@@ -772,6 +803,7 @@ class MetalComputeEngine {
         let metalControlPoints = controlPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         let controlPointsBuffer = device.makeBuffer(bytes: metalControlPoints, length: 4 * MemoryLayout<Point2D>.stride, options: .storageModeShared)
         let resultBuffer = device.makeBuffer(length: steps * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+
         var stepCount = Int32(steps)
         computeEncoder.setComputePipelineState(pipeline)
         computeEncoder.setBuffer(controlPointsBuffer, offset: 0, index: 0)
@@ -800,6 +832,7 @@ class MetalComputeEngine {
         let transformedPoints = points.map { $0.applying(transform) }
         let metalPoints = transformedPoints.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
@@ -807,6 +840,7 @@ class MetalComputeEngine {
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<simd_float2>.stride, options: bufferOptions),
               let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: bufferOptions),
+
               let validIndicesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<UInt32>.stride, options: bufferOptions) else {
             return nil
         }
@@ -826,6 +860,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         let distancesPointer = distancesBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
         let validIndicesPointer = validIndicesBuffer.contents().bindMemory(to: UInt32.self, capacity: pointCount)
+
         var minDistance: Float = .infinity
         var minIndex: Int? = nil
         for i in 0..<pointCount {
@@ -848,6 +883,7 @@ class MetalComputeEngine {
         let metalHandles = transformedHandles.map { simd_float2(Float($0.x), Float($0.y)) }
         let metalAnchors = transformedAnchors.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
@@ -856,6 +892,7 @@ class MetalComputeEngine {
         guard let handlesBuffer = device.makeBuffer(bytes: metalHandles, length: handleCount * MemoryLayout<simd_float2>.stride, options: bufferOptions),
               let anchorsBuffer = device.makeBuffer(bytes: metalAnchors, length: handleCount * MemoryLayout<simd_float2>.stride, options: bufferOptions),
               let distancesBuffer = device.makeBuffer(length: handleCount * MemoryLayout<Float>.stride, options: bufferOptions),
+
               let validIndicesBuffer = device.makeBuffer(length: handleCount * MemoryLayout<UInt32>.stride, options: bufferOptions) else {
             return nil
         }
@@ -876,6 +913,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         let distancesPointer = distancesBuffer.contents().bindMemory(to: Float.self, capacity: handleCount)
         let validIndicesPointer = validIndicesBuffer.contents().bindMemory(to: UInt32.self, capacity: handleCount)
+
         var minDistance: Float = .infinity
         var minIndex: Int? = nil
         for i in 0..<handleCount {
@@ -896,6 +934,7 @@ class MetalComputeEngine {
         let transformedPoints = points.map { $0.applying(transform) }
         let metalPoints = transformedPoints.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return []
         }
@@ -903,6 +942,7 @@ class MetalComputeEngine {
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<simd_float2>.stride, options: bufferOptions),
               let matchingIndicesBuffer = device.makeBuffer(length: maxMatches * MemoryLayout<UInt32>.stride, options: bufferOptions),
+
               let matchCountBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
             return []
         }
@@ -925,6 +965,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         let matchCount = Int(matchCountBuffer.contents().bindMemory(to: UInt32.self, capacity: 1).pointee)
         let matchingIndicesPointer = matchingIndicesBuffer.contents().bindMemory(to: UInt32.self, capacity: min(matchCount, maxMatches))
+
         var results: [Int] = []
         for i in 0..<min(matchCount, maxMatches) {
             results.append(Int(matchingIndicesPointer[i]))
@@ -952,6 +993,7 @@ class MetalComputeEngine {
     func pathHitTestGPU(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
         guard let pipeline = pathHitTestPipeline,
               let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             fatalError("Metal GPU path hit test pipeline not available")
         }
@@ -1002,6 +1044,7 @@ class MetalComputeEngine {
         guard !segments.isEmpty else { return false }
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let segmentsBuffer = device.makeBuffer(bytes: segments, length: segments.count * MemoryLayout<MetalPathSegment>.stride, options: bufferOptions),
+
               let hitResultBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
             fatalError("Failed to create Metal buffers for path hit test")
         }
@@ -1032,12 +1075,14 @@ class MetalComputeEngine {
             return nil
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
         }
         let snapFloat2Array = snapPoints.map { simd_float2(Float($0.x), Float($0.y)) }
         let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         guard let snapPointsBuffer = device.makeBuffer(bytes: snapFloat2Array, length: snapFloat2Array.count * MemoryLayout<simd_float2>.stride, options: bufferOptions),
+
               let distancesBuffer = device.makeBuffer(length: snapPoints.count * MemoryLayout<Float>.stride, options: .storageModeShared) else {
             return nil
         }
@@ -1057,6 +1102,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let distancesPtr = distancesBuffer.contents().bindMemory(to: Float.self, capacity: snapPoints.count)
+
         var nearestIndex: Int?
         var nearestDist = Float(threshold)
         for i in 0..<snapPoints.count {
@@ -1080,6 +1126,7 @@ class MetalComputeEngine {
             return .failure(.pipelineNotAvailable)
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.commandBufferCreationFailed)
         }
@@ -1087,6 +1134,7 @@ class MetalComputeEngine {
         let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
               let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+
               let outputCountBuffer = device.makeBuffer(length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -1115,6 +1163,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         let outputCount = Int(outputCountBuffer.contents().assumingMemoryBound(to: UInt32.self).pointee)
         let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
+
         var resultPoints: [CGPoint] = []
         for i in 0..<outputCount {
             let simdPoint = resultPointer[i]
@@ -1136,6 +1185,7 @@ class MetalComputeEngine {
             return .failure(.pipelineNotAvailable)
         }
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.commandBufferCreationFailed)
         }
@@ -1143,6 +1193,7 @@ class MetalComputeEngine {
         let outputCount = (inputCount - 1) * subdivisions + 1
         let simdPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         guard let inputBuffer = device.makeBuffer(bytes: simdPoints, length: inputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared),
+
               let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<simd_float2>.stride, options: .storageModeShared) else {
             return .failure(.bufferCreationFailed)
         }
@@ -1171,6 +1222,7 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         let resultPointer = outputBuffer.contents().assumingMemoryBound(to: simd_float2.self)
+
         var resultPoints: [CGPoint] = []
         resultPoints.append(points[0])
         for i in 0..<totalThreads {

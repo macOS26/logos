@@ -2,6 +2,7 @@ import SwiftUI
 
 struct Guide: Identifiable, Codable, Equatable {
     let id: UUID
+
     var position: CGFloat
     var orientation: Orientation
 

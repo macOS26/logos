@@ -17,6 +17,7 @@ extension FileOperations {
 
     static func importFromPDFSync(url: URL) throws -> VectorDocument {
         let semaphore = DispatchSemaphore(value: 0)
+
         var resultDocument: VectorDocument?
         var resultError: Error?
         Task {

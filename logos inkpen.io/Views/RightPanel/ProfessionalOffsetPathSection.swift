@@ -49,6 +49,7 @@ struct ProfessionalOffsetPathSection: View {
                                 .monospacedDigit()
                         }
                         ZStack {
+
                             let maxOffset: Double = {
                                 switch document.settings.unit {
                                 case .inches: return 1.0
@@ -189,6 +190,7 @@ struct ProfessionalOffsetPathSection: View {
             }
         }
         .onChange(of: document.settings.unit) { _, newUnit in
+
             let maxOffset: Double = {
                 switch newUnit {
                 case .inches: return 1.0
@@ -211,6 +213,7 @@ struct ProfessionalOffsetPathSection: View {
         guard !selectedObjectIDs.isEmpty else { return }
         guard let layerIndex = document.selectedLayerIndex else { return }
         let selectedShapes = document.getSelectedShapes()
+
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         var removedObjectIDs: [UUID] = []
@@ -289,6 +292,7 @@ struct ProfessionalOffsetPathSection: View {
     private func findOutsidePath(from trimmedPaths: [CGPath], original: CGPath, offset: CGPath) -> CGPath? {
         guard !trimmedPaths.isEmpty else { return nil }
         let offsetBounds = offset.boundingBoxOfPath
+
         var bestPath: CGPath?
         var bestScore: CGFloat = 0
         for path in trimmedPaths {

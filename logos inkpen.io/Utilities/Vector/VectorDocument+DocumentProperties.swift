@@ -1,6 +1,7 @@
 import SwiftUI
 
 extension VectorDocument {
+
     var documentUnits: VectorUnit {
         get {
             switch settings.unit {

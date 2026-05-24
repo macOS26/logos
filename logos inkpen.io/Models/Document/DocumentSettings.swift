@@ -22,6 +22,7 @@ struct DocumentSettings: Codable, Hashable {
     var customRgbSwatches: [VectorColor]?
     var customCmykSwatches: [VectorColor]?
     var customHsbSwatches: [VectorColor]?
+
     private var _sizeInPoints: CGSize?
 
     init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", layerExpansionState: [UUID: Bool] = [:], groupExpansionState: [UUID: Bool] = [:], fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
@@ -111,6 +112,7 @@ struct DocumentSettings: Codable, Hashable {
         try container.encodeIfPresent(customCmykSwatches, forKey: .customCmykSwatches)
         try container.encodeIfPresent(customHsbSwatches, forKey: .customHsbSwatches)
     }
+
     var sizeInPoints: CGSize {
         if let storedSize = _sizeInPoints {
             return storedSize

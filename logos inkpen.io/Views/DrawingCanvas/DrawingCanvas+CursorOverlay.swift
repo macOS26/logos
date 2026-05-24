@@ -9,6 +9,7 @@ struct CanvasCursorOverlayView: View {
     let isPanActive: Bool
     let zoomLevel: CGFloat
     let canvasOffset: CGPoint
+
     var body: some View {
         CanvasCursorOverlayRepresentable(
             isHovering: isHovering,
@@ -54,9 +55,11 @@ private final class CursorOverlayNSView: NSView {
     var isHovering: Bool = false
     var currentTool: DrawingTool = .selection
     var isPanActive: Bool = false
+
     private var eventMonitors: [Any] = []
     private var cursorLockTimer: Timer?
     private var cursorLockUntil: Date = .distantPast
+
     override var isOpaque: Bool { false }
 
     override func updateTrackingAreas() {
@@ -83,6 +86,7 @@ private final class CursorOverlayNSView: NSView {
         super.resetCursorRects()
         discardCursorRects()
         guard isHovering else { return }
+
         let cursor: NSCursor? = {
             switch currentTool {
             case .hand:
@@ -142,6 +146,7 @@ private final class CursorOverlayNSView: NSView {
     }
 
     private func applyForcedCursor() {
+
         let cursor: NSCursor? = {
             switch currentTool {
             case .hand:

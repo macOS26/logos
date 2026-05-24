@@ -17,6 +17,7 @@ final class ColorManager {
 		case extendedSRGB
 	}
 	private(set) var workingSpace: WorkingSpace = .displayP3
+
 	var workingCGColorSpace: CGColorSpace {
 		let fallback = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
 		switch workingSpace {
@@ -30,6 +31,7 @@ final class ColorManager {
 			return CGColorSpace(name: CGColorSpace.extendedSRGB) ?? fallback
 		}
 	}
+
 	var workingSwiftUIColorSpace: Color.RGBColorSpace {
 		switch workingSpace {
 		case .displayP3: return .displayP3
@@ -57,9 +59,11 @@ final class ColorManager {
 		let working = toWorking(srcColor)
 		return Color(working)
 	}
+
 	var sRGBCG: CGColorSpace {
 		CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
 	}
+
 	var displayP3CG: CGColorSpace {
 		CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
  }

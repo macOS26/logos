@@ -144,9 +144,11 @@ struct InkpenMigrator {
             return order1 < order2
         }
         if let objectsData = try? JSONEncoder().encode(sortedObjects),
+
            let jsonArray = try? JSONSerialization.jsonObject(with: objectsData) as? [[String: Any]] {
             for (index, jsonObject) in jsonArray.enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
+
                    var vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
                     if case .shape(let shape) = vectorObject.objectType {
                         let hasImage = shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil

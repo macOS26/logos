@@ -17,6 +17,7 @@ enum FreeHand2Parser {
         let controlIn: CGPoint
         let onCurve: CGPoint
         let controlOut: CGPoint
+
         var isCorner: Bool { type == cornerPointType }
     }
 
@@ -90,6 +91,7 @@ enum FreeHand2Parser {
         while offset + 4 <= data.count {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
+
             var matched = false
             if (rtype == 0x1452 && size == 30) ||
                (rtype == 0x1453 && size == 30) ||
@@ -303,6 +305,7 @@ enum FreeHand2Parser {
         }
         let allNames = parseNamedStrings(data: data)
         let fontNames = Array(allNames.prefix(distinctFontRefs.count))
+
         var results: [(String, Double, Double, Double, String, VectorColor, Int, Bool, Bool, Int)] = []
         var offset = headerSize
         while offset + 4 <= data.count {
@@ -340,6 +343,7 @@ enum FreeHand2Parser {
             let colorRef = Int(readUInt16BE(data, offset: offset + 104))
             let epsX = Double(xAnchor + xDelta) / unitsPerPoint
             let epsY = Double(yAnchor + yDelta) / unitsPerPoint
+
             let family: String = {
                 if let rank = fontRefToRank[fontRef], rank < fontNames.count {
                     return fontNames[rank]
@@ -416,6 +420,7 @@ enum FreeHand2Parser {
             return [:]
         }
         let startIdx = pathStyleColors.count - pathCount
+
         var result: [Int: VectorColor] = [:]
         for i in 0..<pathCount {
             result[i] = pathStyleColors[startIdx + i]
@@ -455,12 +460,14 @@ enum FreeHand2Parser {
         let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
         _ = parseLayers(data: data)
         let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
+
         var offsetToAbsID: [Int: Int] = [:]
         var preAbsID = 2
         var preOff = headerSize
         while preOff + 4 <= data.count {
             let sz = Int(readUInt16BE(data, offset: preOff))
             let rt = readUInt16BE(data, offset: preOff + 2)
+
             var found = false
             if rt == 0x138A {  }
             else if rt == 0x1389 && sz == 56 { found = true }
@@ -552,12 +559,14 @@ enum FreeHand2Parser {
         if !positionalColors.isEmpty {
             for i in 0..<shapes.count {
                 if groupColorByAbsID[shapeAbsIDs[i]] == nil,
+
                    let c = positionalColors[i] {
                     shapes[i].fillStyle = FillStyle(color: c)
                 }
             }
         }
         var nativeLayers: [Layer] = []
+
         let totalLayers = max(1, (shapeLayerIdx + [1]).max() ?? 1)
         for layer in 1...totalLayers {
             var objectIDs: [UUID] = []
@@ -597,6 +606,7 @@ enum FreeHand2Parser {
             let flippedY = effectiveSize.height - CGFloat(run.y)
             let textOrigin = CGPoint(x: CGFloat(run.x), y: flippedY)
             let estWidth = Double(run.text.count) * run.fontSize * 0.55
+
             var textShape = VectorShape(
                 name: run.text,
                 path: VectorPath(elements: [], isClosed: false),
@@ -606,6 +616,7 @@ enum FreeHand2Parser {
             )
             textShape.textContent = run.text
             textShape.textPosition = textOrigin
+
             let variant: String? = {
                 switch (run.bold, run.italic) {
                 case (true, true): return "BoldItalic"
@@ -614,6 +625,7 @@ enum FreeHand2Parser {
                 case (false, false): return nil
                 }
             }()
+
             let alignment: TextAlignment = {
                 switch run.alignment {
                 case 1: return .center
@@ -688,6 +700,7 @@ enum FreeHand2Parser {
 
     private static func translateShapeY(_ shape: VectorShape, by dy: CGFloat) -> VectorShape {
         var s = shape
+
         let t = CGAffineTransform(translationX: 0, y: dy)
         s.path = s.path.applying(t)
         s.bounds = s.bounds.offsetBy(dx: 0, dy: dy)
@@ -710,6 +723,7 @@ enum FreeHand2Parser {
         let expectedSize = 44 + pointCount * 16
         guard recordSize >= expectedSize else { return nil }
         let pointDataStart = recordOffset + 30
+
         var fh2Points: [FH2Point] = []
         fh2Points.reserveCapacity(pointCount)
         for i in 0..<pointCount {
@@ -769,6 +783,7 @@ enum FreeHand2Parser {
     private static func scanForwardForStyleColor(data: Data, startOffset: Int,
                                                   colorTable: [Int: VectorColor]) -> VectorColor? {
         let limit = min(startOffset + 2048, data.count - 4)
+
         var o = startOffset
         while o < limit {
             let size = Int(readUInt16BE(data, offset: o))
@@ -791,6 +806,7 @@ enum FreeHand2Parser {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
         let whiteFillFlag = data[recordOffset + 13] & 0x80 != 0
+
         var fillStyle: FillStyle? = nil
         if isClosed && whiteFillFlag {
             fillStyle = FillStyle(color: .white)

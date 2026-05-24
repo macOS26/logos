@@ -5,7 +5,9 @@ import simd
 struct ProfessionalTextCanvas: View {
 
     @ObservedObject var document: VectorDocument
+
     @StateObject private var viewModel: ProfessionalTextViewModel
+
     let textObjectID: UUID
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -34,6 +36,7 @@ struct ProfessionalTextCanvas: View {
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
     }
+
     var body: some View {
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
@@ -110,7 +113,9 @@ struct ProfessionalTextCanvas: View {
     struct TextViewRepresentable: NSViewRepresentable {
 
         @ObservedObject var viewModel: ProfessionalTextViewModel
+
         @State var isUpdatingFromTyping: Bool = false
+
         let viewMode: ViewMode
         let letterSpacing: CGFloat
         let lineHeight: CGFloat
@@ -148,9 +153,11 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
+
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+
                    let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
@@ -192,9 +199,11 @@ struct ProfessionalTextCanvas: View {
             if !isUpdatingFromTyping && nsView.string != viewModel.text {
                 nsView.string = viewModel.text
             }
+
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+
                    let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
@@ -251,9 +260,11 @@ struct ProfessionalTextCanvas: View {
             paragraphStyle.minimumLineHeight = lineHeight
             paragraphStyle.maximumLineHeight = lineHeight
             textView.defaultParagraphStyle = paragraphStyle
+
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
+
                    let font = PlatformFont(name: postScriptName, size: fontSize) {
                     return font
                 }
@@ -287,7 +298,9 @@ struct ProfessionalTextCanvas: View {
             var parent: TextViewRepresentable
             var lastUpdateTime: Date = Date()
             var isRestoringSelection: Bool = false
+
             weak var textView: DisabledContextMenuTextView?
+
             var updateTimer: Timer?
             var originalText: String?
 

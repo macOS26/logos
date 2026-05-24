@@ -10,10 +10,12 @@ class PressureManager: ObservableObject {
     @Published var calibrationMaxPressure: Double = 0.0
     @Published var calibrationSampleCount: Int = 0
     @Published var tabletOnlyCalibration: Bool = true
+
     private var lastLocation: CGPoint?
     private var lastTimestamp: Date?
     private var lastRecordedPressure: Double?
     private var recentPressureValues: [Double] = []
+
     private let pressureHistorySize = 10
     private let pressureVariationThreshold = 0.01
     private let maxSpeed: Double = 100.0

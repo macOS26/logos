@@ -3,13 +3,16 @@ import SwiftUI
 struct PressureCurveEditor: View {
 
     @Binding var curve: [CGPoint]
+
     @State private var selectedControlPoint: Int?
+
     let size: CGFloat
 
     init(curve: Binding<[CGPoint]>, size: CGFloat = 280) {
         self._curve = curve
         self.size = size
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 20) {
@@ -76,6 +79,7 @@ struct PressureCurveEditor: View {
                                 .onChanged { value in
                                     let newX = max(0, min(1, value.location.x / size))
                                     let newY = max(0, min(1, (size - value.location.y) / size))
+
                                     var newCurve = curve
                                     newCurve[index] = CGPoint(x: newX, y: newY)
                                     curve = newCurve
@@ -98,6 +102,7 @@ struct PressureCurveEditor: View {
 func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double {
     guard curve.count >= 2 else { return pressure }
     let clampedPressure = max(0.0, min(1.0, pressure))
+
     var lowerIndex = 0
     for i in 0..<curve.count {
         if curve[i].x <= clampedPressure {

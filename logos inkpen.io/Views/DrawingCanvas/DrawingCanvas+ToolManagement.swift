@@ -103,6 +103,7 @@ extension DrawingCanvas {
                         let shape = obj.shape
                         if shape.isGroupContainer {
                             if let topMemberID = shape.memberIDs.last,
+
                                let _ = document.snapshot.objects[topMemberID] {
                                 newSelection.insert(topMemberID)
                             } else if let topGroupedShape = shape.groupedShapes.last {
@@ -121,6 +122,7 @@ extension DrawingCanvas {
             print("🔧 Preserving selections for bezier pen: points=\(selectedPoints.count), handles=\(selectedHandles.count)")
             if let selectedPointID = selectedPoints.first {
                 if getShapeForPoint(selectedPointID) != nil,
+
                    let pointPosition = getPointPosition(selectedPointID) {
                     print("🔧 Auto-loading path for continuation from selected point")
                     continueExistingPath(from: pointPosition)

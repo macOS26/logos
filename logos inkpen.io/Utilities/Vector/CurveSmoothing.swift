@@ -87,6 +87,7 @@ struct CurveSmoothing {
             let p1 = points[i - 1]
             let p2 = points[i]
             let p3 = points[min(points.count - 1, i + 1)]
+
             var tension = baseTension
             if adaptiveTension {
                 let curvature = calculateCurvature(p0: p0, p1: p1, p2: p2)

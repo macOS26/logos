@@ -128,17 +128,21 @@ class VectorImportManager {
             }
             if let svgString = String(data: data, encoding: .utf8) {
                 if let range = svgString.range(of: "<inkpen:document"),
+
                    let endRange = svgString.range(of: "</inkpen:document>") {
                     if let openTagEnd = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound) {
                         let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+
                         var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72)
                         if let widthRange = svgString.range(of: "width=\""),
                            let widthEnd = svgString.range(of: "\"", range: widthRange.upperBound..<svgString.endIndex),
+
                            let width = Double(svgString[widthRange.upperBound..<widthEnd.lowerBound]) {
                             documentSize.width = width
                         }
                         if let heightRange = svgString.range(of: "height=\""),
                            let heightEnd = svgString.range(of: "\"", range: heightRange.upperBound..<svgString.endIndex),
+
                            let height = Double(svgString[heightRange.upperBound..<heightEnd.lowerBound]) {
                             documentSize.height = height
                         }
@@ -257,6 +261,7 @@ class VectorImportManager {
 
     private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             return VectorImportResult(
                 success: false,
@@ -267,6 +272,7 @@ class VectorImportManager {
             )
         }
         let size = CGSize(width: cgImage.width, height: cgImage.height)
+
         var rectShape = VectorShape(
             name: "[IMG] \(url.lastPathComponent)",
             path: VectorPath(elements: [
@@ -316,7 +322,9 @@ class VectorImportManager {
 
     private func importPDF(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
+
         let warnings: [String] = []
+
         var shapes: [VectorShape] = []
         guard let pdfDocument = CGPDFDocument(url as CFURL) else {
             errors.append(.corruptedFile)
@@ -342,11 +350,13 @@ class VectorImportManager {
         if let pdfDoc = page.document, let catalog = pdfDoc.catalog {
             var metadataRef: CGPDFStreamRef?
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
+
                let metadataStream = metadataRef {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
                         if let range = xmpString.range(of: "<inkpen:document>"),
+
                            let endRange = xmpString.range(of: "</inkpen:document>") {
                             let startIndex = range.upperBound
                             let endIndex = endRange.lowerBound

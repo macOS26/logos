@@ -118,6 +118,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     mutating func convertPointType(at index: Int, to newType: ProfessionalBezierMathematics.AnchorPointType) {
         guard index >= 0 && index < points.count else { return }
         let oldPoint = points[index]
+
         var newPoint = oldPoint
         newPoint.pointType = newType
         switch newType {
@@ -209,6 +210,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         switch constraint.continuityType {
         case .g1:
             if let outgoing = currentPoint.outgoingHandle,
+
                let incoming = nextPoint.incomingHandle {
                 let direction = currentPoint.point.angle(to: outgoing)
                 let incomingLength = nextPoint.point.distance(to: incoming)
@@ -237,6 +239,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         let firstPoint = points[0]
         let lastPoint = points[lastIndex]
         if let lastOutgoing = lastPoint.outgoingHandle,
+
            let firstIncoming = firstPoint.incomingHandle {
             let direction = lastPoint.point.angle(to: lastOutgoing)
             let incomingLength = firstPoint.point.distance(to: firstIncoming)
@@ -257,6 +260,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             let currentPoint = points[i]
             let previousPoint = points[i - 1]
             if let prevOutgoing = previousPoint.outgoingHandle,
+
                let currIncoming = currentPoint.incomingHandle {
                 elements.append(.curve(
                     to: currentPoint.point,
@@ -269,8 +273,10 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
         if isClosed,
            let lastPoint = points.last,
+
            let firstPoint = points.first {
             if let lastOutgoing = lastPoint.outgoingHandle,
+
                let firstIncoming = firstPoint.incomingHandle {
                 elements.append(.curve(
                     to: firstPoint.point,

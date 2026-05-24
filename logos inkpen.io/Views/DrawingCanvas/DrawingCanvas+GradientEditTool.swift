@@ -9,6 +9,7 @@ struct GradientCenterPointCanvasView: View {
     let activeGradientDelta: VectorGradient?
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
+
     var body: some View {
         Canvas { context, size in
             guard let selectedGradient = getSelectedShapeGradient(document: document),
@@ -58,6 +59,7 @@ struct GradientCenterPointCanvasView: View {
                     height: lineHeight
                 )
                 var linePath = Path(lineRect)
+
                 let rotation = CGAffineTransform(rotationAngle: .pi / 4)
                 let translated = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
                 linePath = linePath.applying(CGAffineTransform(translationX: -centerPoint.x, y: -centerPoint.y))
@@ -126,6 +128,7 @@ extension DrawingCanvas {
                 activeGradientDelta: activeGradientDelta,
                 onDragChanged: { value in
                     if let selectedShape = getSelectedShapeWithGradient(),
+
                        let selectedGradient = getSelectedShapeGradient(document: document) {
                         handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
                     }
@@ -220,6 +223,7 @@ extension DrawingCanvas {
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
         guard let finalGradient = activeGradientDelta,
               let startGradient = dragStartGradient,
+
               let fillStyle = document.findShape(by: shape.id)?.fillStyle else {
             activeGradientDelta = nil
             dragStartGradient = nil

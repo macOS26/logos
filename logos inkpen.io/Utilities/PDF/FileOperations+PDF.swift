@@ -59,6 +59,7 @@ extension FileOperations {
         let cgColor = fillStyle.color.cgColor
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
         if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
+
            let components = convertedColor.components {
             var componentsWithOpacity = components
             if componentsWithOpacity.count > 0 {
@@ -78,6 +79,7 @@ extension FileOperations {
         let cgColor = strokeStyle.color.cgColor
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
         if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
+
            let components = convertedColor.components {
             var componentsWithOpacity = components
             if componentsWithOpacity.count > 0 {
@@ -133,6 +135,7 @@ extension FileOperations {
         switch gradient {
         case .linear(let linearGradient):
             let colorSpace = ColorManager.shared.workingCGColorSpace
+
             var colors: [CGFloat] = []
             var locations: [CGFloat] = []
             for stop in linearGradient.stops {
@@ -182,6 +185,7 @@ extension FileOperations {
             )
         case .radial(let radialGradient):
             let colorSpace = CGColorSpaceCreateDeviceRGB()
+
             var colors: [CGFloat] = []
             var locations: [CGFloat] = []
             for stop in radialGradient.stops {
@@ -317,6 +321,7 @@ extension FileOperations {
         let endY = centerY + radius * sin(angle)
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
+
         var callbacks = CGFunctionCallbacks(
             version: 0,
             evaluate: { info, input, output in
@@ -428,6 +433,7 @@ extension FileOperations {
         let endY = centerY + radius * sin(angle)
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
+
         var colors: [CGFloat] = []
         var locations: [CGFloat] = []
         for stop in linearGradient.stops {
@@ -717,6 +723,7 @@ extension FileOperations {
         let start = CGPoint(x: startX, y: startY)
         let end = CGPoint(x: endX, y: endY)
         let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
+
         var cmykComponents: [CGFloat] = []
         var locations: [CGFloat] = []
         for stop in stops {
@@ -746,6 +753,7 @@ extension FileOperations {
         let center = CGPoint(x: centerX, y: centerY)
         let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
         let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
+
         var cmykComponents: [CGFloat] = []
         var locations: [CGFloat] = []
         for stop in stops {

@@ -5,6 +5,7 @@ final class ImportCommand: BaseCommand {
     private let newLayers: [Layer]
     private let topLevel: [VectorObject]
     private let members: [VectorObject]
+
     private var appendedLayerIndexes: [Int] = []
 
     init(newLayers: [Layer], topLevel: [VectorObject], members: [VectorObject]) {

@@ -29,10 +29,12 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
     let hotspot = CGPoint(x: padding + originalHotspot.x, y: padding + originalHotspot.y)
     return NSCursor(image: composed, hotSpot: hotspot)
 }
+
 let EyedropperCursor: NSCursor = {
     let originalHotspot = CGPoint(x: 4, y: 16)
     return makeHaloCursor(symbolName: "eyedropper", pointSize: 18, originalHotspot: originalHotspot)
 }()
+
 let MagnifyingGlassCursor: NSCursor = {
     guard let base = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil) else { return .crosshair }
     let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
@@ -40,10 +42,12 @@ let MagnifyingGlassCursor: NSCursor = {
     let center = CGPoint(x: symbol.size.width * 0.35, y: symbol.size.height * 0.35)
     return makeHaloCursor(symbolName: "magnifyingglass", pointSize: 18, originalHotspot: center)
 }()
+
 let HandOpenCursor: NSCursor = {
     let originalHotspot = CGPoint(x: 9, y: 9)
     return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
+
 let HandClosedCursor: NSCursor = {
     let originalHotspot = CGPoint(x: 9, y: 9)
     return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)

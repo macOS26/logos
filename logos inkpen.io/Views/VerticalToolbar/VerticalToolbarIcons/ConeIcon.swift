@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConeIcon: View {
     let isSelected: Bool
+
     var body: some View {
         Path { path in
             let r = CGRect(

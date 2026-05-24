@@ -5,12 +5,14 @@ extension PDFCommandParser {
     func extractGradientStopsFromPDFStream(shadingDict: CGPDFDictionaryRef) -> [GradientStop] {
         var functionObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
+
               let funcObj = functionObj else {
             Log.error("PDF: ❌ No Function found in shading dictionary - falling back to subsampling", category: .error)
             return createSubsampledGradientStops(from: shadingDict)
         }
         var functionStream: CGPDFStreamRef?
         if CGPDFObjectGetValue(funcObj, .stream, &functionStream),
+
            let stream = functionStream {
             guard let streamDict = CGPDFStreamGetDictionary(stream) else {
                 Log.error("PDF: Failed to get stream dictionary", category: .error)
@@ -37,6 +39,7 @@ extension PDFCommandParser {
         }
         var functionDict: CGPDFDictionaryRef?
         if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+
            let funcDict = functionDict {
             var functionType: CGPDFInteger = 0
             CGPDFDictionaryGetInteger(funcDict, "FunctionType", &functionType)
@@ -66,15 +69,18 @@ extension PDFCommandParser {
         if let shadingDict = shadingDict {
             var functionObj: CGPDFObjectRef?
             if CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
+
                let funcObj = functionObj {
                 var functionDict: CGPDFDictionaryRef?
                 if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+
                    let funcDict = functionDict {
                     allColors = extractAllColorsFromFunction(funcDict)
                 }
                 var functionStream: CGPDFStreamRef?
                 if allColors.isEmpty,
                    CGPDFObjectGetValue(funcObj, .stream, &functionStream),
+
                    let stream = functionStream {
                     guard let streamDict = CGPDFStreamGetDictionary(stream) else {
                 Log.error("PDF: Failed to get stream dictionary", category: .error)
@@ -101,10 +107,12 @@ extension PDFCommandParser {
         var startColor = VectorColor.black
         var endColor = VectorColor.white
         if CGPDFDictionaryGetArray(dictionary, "C0", &c0Array),
+
            let c0 = c0Array {
             startColor = extractColorFromArray(c0)
         }
         if CGPDFDictionaryGetArray(dictionary, "C1", &c1Array),
+
            let c1 = c1Array {
             endColor = extractColorFromArray(c1)
         }
@@ -121,6 +129,7 @@ extension PDFCommandParser {
         var encodeArray: CGPDFArrayRef?
         var domainArray: CGPDFArrayRef?
         guard CGPDFDictionaryGetArray(dictionary, "Functions", &functionsArray),
+
               let functions = functionsArray else {
             Log.error("PDF: ❌ No Functions array in stitching function", category: .error)
             return []
@@ -129,6 +138,7 @@ extension PDFCommandParser {
         CGPDFDictionaryGetArray(dictionary, "Encode", &encodeArray)
         CGPDFDictionaryGetArray(dictionary, "Domain", &domainArray)
         let functionCount = CGPDFArrayGetCount(functions)
+
         var bounds: [Double] = [0.0]
         if let boundsArr = boundsArray {
             let boundsCount = CGPDFArrayGetCount(boundsArr)
@@ -144,12 +154,14 @@ extension PDFCommandParser {
         for i in 0..<functionCount {
             var functionObj: CGPDFObjectRef?
             guard CGPDFArrayGetObject(functions, i, &functionObj),
+
                   let funcObj = functionObj else {
                 Log.error("PDF: ❌ Could not get function \(i)", category: .error)
                 continue
             }
             var functionDict: CGPDFDictionaryRef?
             if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+
                let funcDict = functionDict {
                 let subStops = extractExponentialFunctionGradientStops(dictionary: funcDict)
                 if subStops.count >= 2 {

@@ -4,6 +4,7 @@ import AppKit
 struct SelectionHandlesView: View {
 
     @ObservedObject var document: VectorDocument
+
     let geometry: GeometryProxy
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -19,6 +20,7 @@ struct SelectionHandlesView: View {
     private var selectionID: String {
         document.viewState.selectedObjectIDs.map { $0.uuidString }.sorted().joined()
     }
+
     var body: some View {
         ZStack {
             if !document.viewState.selectedObjectIDs.isEmpty {
@@ -185,8 +187,10 @@ struct SelectionHandlesView: View {
             }
         }
     }
+
     private var combinedSelectionBounds: CGRect? {
         var combinedBounds: CGRect?
+
         let settings = ApplicationSettings.shared
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }

@@ -54,7 +54,9 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
         let layer = snapshot.layers[selectedLayerIndex]
         let oldObjectIDs = layer.objectIDs
+
         var newObjectIDs = oldObjectIDs
+
         let selectedIDs = viewState.selectedObjectIDs
         for i in stride(from: newObjectIDs.count - 2, through: 0, by: -1) {
             let objectID = newObjectIDs[i]
@@ -79,7 +81,9 @@ extension VectorDocument {
         guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
         let layer = snapshot.layers[selectedLayerIndex]
         let oldObjectIDs = layer.objectIDs
+
         var newObjectIDs = oldObjectIDs
+
         let selectedIDs = viewState.selectedObjectIDs
         for i in 1..<newObjectIDs.count {
             let objectID = newObjectIDs[i]

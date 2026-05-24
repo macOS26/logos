@@ -18,6 +18,7 @@ extension PDFCommandParser {
         let endPoint = CGPoint(x: Double(x1), y: Double(y1))
         let spreadMethod: GradientSpreadMethod = .pad
         let stops = extractGradientStops(from: dict)
+
         var linearGradient = LinearGradient(
             startPoint: startPoint,
             endPoint: endPoint,

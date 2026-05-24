@@ -3,12 +3,14 @@ import SwiftUI
 struct ColorPickerModal: View {
 
     @Binding var snapshot: DocumentSnapshot
+
     let selectedObjectIDs: Set<UUID>
     let activeColorTarget: ColorTarget
 
     @Binding var colorMode: ColorMode
     @Binding var defaultFillColor: VectorColor
     @Binding var defaultStrokeColor: VectorColor
+
     let defaultFillOpacity: Double
     let defaultStrokeOpacity: Double
     let currentSwatches: [VectorColor]
@@ -19,7 +21,9 @@ struct ColorPickerModal: View {
 
     @Binding var colorDeltaColor: VectorColor?
     @Binding var colorDeltaOpacity: Double?
+
     @Environment(\.presentationMode) var presentationMode
+
     let title: String
     let onColorSelected: (VectorColor) -> Void
 

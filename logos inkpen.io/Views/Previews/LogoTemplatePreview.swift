@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LogoTemplatePreview: View {
+
     var body: some View {
         ZStack {
             Circle()

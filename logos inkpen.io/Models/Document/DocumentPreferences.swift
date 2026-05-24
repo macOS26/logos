@@ -103,6 +103,7 @@ struct ColorSwatches: Codable, Equatable {
     var rgb: [VectorColor]
     var cmyk: [VectorColor]
     var hsb: [VectorColor]
+
     static let empty = ColorSwatches(
         rgb: [],
         cmyk: [],

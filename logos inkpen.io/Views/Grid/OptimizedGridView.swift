@@ -7,9 +7,11 @@ struct OptimizedGridView: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let pageOrigin: CGPoint
+
     var body: some View {
         Canvas { context, size in
             let baseSpacing = gridSpacing * unit.pointsPerUnit
+
             let spacingMultiplier: CGFloat = {
                 switch unit {
                 case .pixels, .points:

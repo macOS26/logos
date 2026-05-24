@@ -29,6 +29,7 @@ struct ConvertToOutlinesButton: View {
     let snapshot: DocumentSnapshot
     let document: VectorDocument
     let selectedText: VectorText?
+
     var body: some View {
         Button("Convert to Outlines") {
             convertSelectedTextToOutlines()

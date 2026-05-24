@@ -131,6 +131,7 @@ func createEggPath(rect: CGRect) -> VectorPath {
 
 func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
         var elements: [PathElement] = []
+
         let angleStep = .pi / Double(points)
         for i in 0..<(points * 2) {
             let angle = Double(i) * angleStep - .pi / 2
@@ -149,6 +150,7 @@ func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, p
 
 func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPath {
         var elements: [PathElement] = []
+
         let angleStep = 2 * .pi / Double(sides)
         let startAngle = -Double.pi / 2 + ((sides % 2 == 0) ? angleStep / 2 : 0)
         for i in 0..<sides {
@@ -232,6 +234,7 @@ func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Do
             height: abs(rect.height)
         )
         let baseSpacing = gridSpacing * unit.pointsPerUnit
+
         let spacingMultiplier: CGFloat = {
             switch unit {
             case .pixels, .points:

@@ -5,6 +5,7 @@ extension VectorDocument {
     func lockSelectedObjects() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let allIDs = viewState.selectedObjectIDs
+
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
         for id in allIDs {
@@ -39,6 +40,7 @@ extension VectorDocument {
         var affectedIDs: [UUID] = []
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
+
         let layer = snapshot.layers[layerIndex]
         for objectID in layer.objectIDs {
             guard let obj = snapshot.objects[objectID] else { continue }
@@ -72,6 +74,7 @@ extension VectorDocument {
     func hideSelectedObjects() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         let allIDs = viewState.selectedObjectIDs
+
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
         for id in allIDs {
@@ -106,6 +109,7 @@ extension VectorDocument {
         var affectedIDs: [UUID] = []
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
+
         let layer = snapshot.layers[layerIndex]
         for objectID in layer.objectIDs {
             guard let obj = snapshot.objects[objectID] else { continue }

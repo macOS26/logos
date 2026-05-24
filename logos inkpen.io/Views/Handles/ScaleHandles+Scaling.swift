@@ -29,6 +29,7 @@ extension ScaleHandles {
         let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
+
         var scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         var scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         scaleX = min(max(scaleX, minScale), maxScale)
@@ -52,9 +53,11 @@ extension ScaleHandles {
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
         if let vectorObject = document.findObject(by: shape.id),
+
         let layerIndex = vectorObject.layerIndex < document.snapshot.layers.count ? vectorObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+
            var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             updatedShape.transform = initialTransform
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -125,6 +128,7 @@ extension ScaleHandles {
         let minDistance: CGFloat = 10.0
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
+
         var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         scaleX = min(max(scaleX, minScale), maxScale)

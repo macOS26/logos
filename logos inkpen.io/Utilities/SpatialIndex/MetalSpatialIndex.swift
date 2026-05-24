@@ -10,16 +10,21 @@ class MetalSpatialIndex {
     private static var sharedQueryRectPipeline: MTLComputePipelineState?
     private static var sharedClearGridPipeline: MTLComputePipelineState?
     private static var sharedInitialized = false
+
     private var device: MTLDevice { Self.sharedDevice! }
     private var commandQueue: MTLCommandQueue { Self.sharedCommandQueue! }
     private var pipelineState: MTLComputePipelineState { Self.sharedBuildPipeline! }
     private var queryPointPipeline: MTLComputePipelineState { Self.sharedQueryPointPipeline! }
     private var queryRectPipeline: MTLComputePipelineState { Self.sharedQueryRectPipeline! }
     private var clearGridPipeline: MTLComputePipelineState { Self.sharedClearGridPipeline! }
+
     private let gridSize: Float = 50.0
     private let maxObjectsPerCell: UInt32 = 256
+
     private var layerIndices: [UUID: LayerSpatialIndex] = [:]
+
     private static let fingerprintLock = NSLock()
+
     private static var sharedLayerFingerprints: [UUID: Int] = [:]
 
     fileprivate struct LayerSpatialIndex {
@@ -46,6 +51,7 @@ class MetalSpatialIndex {
             guard let buildPipeline = metal.makePipeline(named: "build_spatial_index"),
                   let qpPipeline = metal.makePipeline(named: "query_point"),
                   let qrPipeline = metal.makePipeline(named: "query_rect"),
+
                   let cgPipeline = metal.makePipeline(named: "clear_grid") else {
                 print("❌ Failed to create Metal pipelines")
                 return nil
@@ -78,6 +84,7 @@ class MetalSpatialIndex {
 
     func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
         let includeStrokesInBounds = ApplicationSettings.shared.boundingBoxIncludesStrokes
+
         var groupedChildIDs = Set<UUID>()
         for object in snapshot.objects.values {
             switch object.objectType {
@@ -114,6 +121,7 @@ class MetalSpatialIndex {
                 }
             }
             let fingerprint = fp.finalize()
+
             let fingerprintUnchanged: Bool = {
                 Self.fingerprintLock.lock()
                 defer { Self.fingerprintLock.unlock() }
@@ -219,6 +227,7 @@ class MetalSpatialIndex {
                 layerIndex.objectIDToIndex[id] = UInt32(index)
             }
             let objectCount = boundsData.count
+
             var objectBoundsArray: [ObjectBounds] = boundsData.enumerated().map { index, data in
                 ObjectBounds(
                     bounds: SIMD4<Float>(Float(data.1.minX), Float(data.1.minY),
@@ -255,6 +264,7 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
             }
@@ -322,18 +332,21 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
             var candidateCount: UInt32 = 0
+
             let candidateCountBuffer = device.makeBuffer(
                 bytes: &candidateCount,
                 length: MemoryLayout<UInt32>.stride,
                 options: .storageModeShared
             )
             var queryPoint = simd_float2(Float(point.x), Float(point.y))
+
             let queryPointBuffer = device.makeBuffer(
                 bytes: &queryPoint,
                 length: MemoryLayout<simd_float2>.stride,
                 options: .storageModeShared
             )
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
             }
@@ -389,18 +402,21 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
             var candidateCount: UInt32 = 0
+
             let candidateCountBuffer = device.makeBuffer(
                 bytes: &candidateCount,
                 length: MemoryLayout<UInt32>.stride,
                 options: .storageModeShared
             )
             var queryRect = simd_float4(Float(rect.minX), Float(rect.minY), Float(rect.maxX), Float(rect.maxY))
+
             let queryRectBuffer = device.makeBuffer(
                 bytes: &queryRect,
                 length: MemoryLayout<simd_float4>.stride,
                 options: .storageModeShared
             )
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
+
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
             }

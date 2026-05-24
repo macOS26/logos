@@ -2,7 +2,9 @@ import Foundation
 
 final class SFSymbolsLibrary {
     static let shared = SFSymbolsLibrary()
+
     private var cache: [String: String]?
+
     private let loadLock = NSLock()
 
     private init() {}
@@ -26,6 +28,7 @@ final class SFSymbolsLibrary {
         let lower = query.lowercased()
         return dict.keys.filter { $0.lowercased().contains(lower) }.sorted()
     }
+
     var count: Int {
         return ensureLoaded()?.count ?? 0
     }

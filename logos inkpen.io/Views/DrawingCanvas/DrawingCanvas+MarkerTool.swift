@@ -120,6 +120,7 @@ extension DrawingCanvas {
             return
         }
         let rawPointLocations = markerRawPoints.map { $0.location }
+
         var processedPoints = rawPointLocations
         if ApplicationSettings.shared.advancedSmoothingEnabled {
             let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
@@ -199,6 +200,7 @@ extension DrawingCanvas {
                         unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
                     }
                     let strokeToMerge = unionedStroke ?? expandedStroke
+
                     var merged: CGPath? = nil
                     merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
                     if merged == nil {
@@ -218,6 +220,7 @@ extension DrawingCanvas {
         document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
         let objectIDs = [finalShape.id]
         let oldShapes: [UUID: VectorShape] = [:]
+
         var newShapes: [UUID: VectorShape] = [:]
         newShapes[finalShape.id] = finalShape
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
@@ -265,6 +268,7 @@ extension DrawingCanvas {
                         unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
                     }
                     let strokeToMerge = unionedStroke ?? expandedStroke
+
                     var merged: CGPath? = nil
                     merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
                     if merged == nil {
@@ -285,6 +289,7 @@ extension DrawingCanvas {
         document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
         let objectIDs = [shape.id]
         let oldShapes: [UUID: VectorShape] = [:]
+
         var newShapes: [UUID: VectorShape] = [:]
         newShapes[shape.id] = shape
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
@@ -313,7 +318,9 @@ extension DrawingCanvas {
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
             let pressure = getPressureAtPoint(point, rawPoints: rawPoints)
+
             var finalThickness = ApplicationSettings.shared.currentMarkerTipSize
+
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
             if isShortStroke {
@@ -345,10 +352,12 @@ extension DrawingCanvas {
                     curve = data.compactMap { item -> CGPoint? in
                         if let dict = item as? [String: Any],
                            let x = dict["x"] as? Double,
+
                            let y = dict["y"] as? Double {
                             return CGPoint(x: x, y: y)
                         } else if let dict = item as? [String: Double],
                                   let x = dict["x"],
+
                                   let y = dict["y"] {
                             return CGPoint(x: x, y: y)
                         }
@@ -415,6 +424,7 @@ extension DrawingCanvas {
         for i in 0..<centerPoints.count {
             let point = centerPoints[i]
             let thickness = point.thickness
+
             var perpVec: SIMD2<Double>
             if i == 0 {
                 if i + 1 < centerPoints.count {
@@ -497,7 +507,9 @@ extension DrawingCanvas {
 
     private func createMarkerDot(at center: CGPoint) -> VectorPath {
         let radius = ApplicationSettings.shared.currentMarkerTipSize / 2.0
+
         var elements: [PathElement] = []
+
         let controlPointDistance = radius * 0.552284749831
         elements.append(.move(to: VectorPoint(center.x + radius, center.y)))
         elements.append(.curve(
@@ -588,6 +600,7 @@ extension DrawingCanvas {
         let hasFill = markerStroke.fillStyle != nil
         if hasStroke && hasFill,
            let strokeColor = markerStroke.strokeStyle?.color,
+
            let fillColor = markerStroke.fillStyle?.color {
             if strokeColor == fillColor {
                 applyExpandedStrokeUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
@@ -616,6 +629,7 @@ extension DrawingCanvas {
                 return
             }
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
+
             var updatedShape = markerStroke
             updatedShape.path = cleanedVectorPath
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -635,6 +649,7 @@ extension DrawingCanvas {
             return
         }
         if let strokeStyle = markerStroke.strokeStyle,
+
            let expandedStroke = PathOperations.outlineStroke(path: originalPath, strokeStyle: strokeStyle) {
             if let unionedExpandedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding) {
                 if let finalPath = CoreGraphicsPathOperations.union(originalPath, unionedExpandedStroke, using: .winding) {
@@ -642,6 +657,7 @@ extension DrawingCanvas {
                         return
                     }
                     let finalVectorPath = VectorPath(cgPath: finalPath)
+
                     var updatedShape = markerStroke
                     updatedShape.path = finalVectorPath
                     updatedShape.strokeStyle = nil
@@ -780,6 +796,7 @@ extension DrawingCanvas {
 }
 
 private extension PathElement {
+
     var isClose: Bool {
         if case .close = self { return true }
         return false

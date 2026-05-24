@@ -14,6 +14,7 @@ extension PDFCommandParser {
             let cfData = data as CFData
             let dataBytes = CFDataGetBytePtr(cfData)
             let dataLength = CFDataGetLength(cfData)
+
             var outputComponents = 3
             if let range = rangeArray {
                 outputComponents = Int(CGPDFArrayGetCount(range)) / 2
@@ -57,6 +58,7 @@ extension PDFCommandParser {
             let maxSamples = 1024
             let samplingStep = max(1, totalSamples / maxSamples)
             let actualSamples = min(totalSamples, maxSamples)
+
             var colors: [VectorColor] = []
             colors.reserveCapacity(actualSamples)
             for i in 0..<actualSamples {
