@@ -206,7 +206,7 @@ struct CornerRadiusToolbar: View {
         guard let selectedShape = getSelectedShape() else { return }
 
         document.modifyShapesWithUndo(shapeIDs: [selectedShape.id]) { shape in
-            // Initialize rounded rectangle properties if needed
+
             if !shape.isRoundedRectangle && isRectangleShape(shape) {
                 let pathBounds = shape.path.cgPath.boundingBox
                 shape.originalBounds = pathBounds
@@ -230,13 +230,11 @@ struct CornerRadiusToolbar: View {
                 cornerRadii: updatedRadii
             )
 
-            // Update shape properties
             shape.cornerRadii = updatedRadii
             shape.path = newPath
             shape.updateBounds()
         }
 
-        // Trigger layer update
         if let obj = document.snapshot.objects[selectedShape.id] {
             document.triggerLayerUpdate(for: obj.layerIndex)
         }

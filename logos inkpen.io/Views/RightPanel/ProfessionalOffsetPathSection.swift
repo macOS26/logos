@@ -4,7 +4,7 @@ import AppKit
 struct ProfessionalOffsetPathSection: View {
     let selectedObjectIDs: Set<UUID>
     let document: VectorDocument
-    @State private var offsetDistance: Double = 0.5  // In document units
+    @State private var offsetDistance: Double = 0.5
     @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
@@ -56,15 +56,15 @@ struct ProfessionalOffsetPathSection: View {
                         }
 
                         ZStack {
-                            // Range depends on unit
+
                             let maxOffset: Double = {
                                 switch document.settings.unit {
-                                case .inches: return 1.0        // ±1 inch
-                                case .centimeters: return 10.0  // ±10cm
-                                case .millimeters: return 10.0  // ±10mm
-                                case .points: return 25.0       // ±25pt
-                                case .pixels: return 50.0       // ±50px
-                                case .picas: return 12.0        // ±12 picas
+                                case .inches: return 1.0
+                                case .centimeters: return 10.0
+                                case .millimeters: return 10.0
+                                case .points: return 25.0
+                                case .pixels: return 50.0
+                                case .picas: return 12.0
                                 }
                             }()
                             Slider(value: $offsetDistance, in: -maxOffset...maxOffset, step: 0.1)
@@ -211,7 +211,7 @@ struct ProfessionalOffsetPathSection: View {
             }
         }
         .onChange(of: document.settings.unit) { _, newUnit in
-            // Clamp offset value to new unit's range when units change
+
             let maxOffset: Double = {
                 switch newUnit {
                 case .inches: return 1.0
@@ -239,7 +239,6 @@ struct ProfessionalOffsetPathSection: View {
         var newShapes: [UUID: VectorShape] = [:]
         var removedObjectIDs: [UUID] = []
 
-        // Capture old shapes
         for shape in selectedShapes {
             oldShapes[shape.id] = shape
             if !keepOriginalPath {
@@ -247,7 +246,6 @@ struct ProfessionalOffsetPathSection: View {
             }
         }
 
-        // Create offset shapes
         let unit = document.settings.unit
         for shape in selectedShapes {
             let offsetInPoints = CGFloat(unit.toPoints(offsetDistance))
@@ -265,11 +263,11 @@ struct ProfessionalOffsetPathSection: View {
                     finalPath = offsetPath
                 }
             } else {
-                // NEGATIVE OFFSET - subtract stroke from original to get inset
+
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
                     finalPath = subtractResult
                 } else {
-                    // Offset too large - shape would be consumed, show error and skip
+
                     DispatchQueue.main.async {
                         let alert = NSAlert()
                         alert.messageText = "Invalid Offset Value"
@@ -277,7 +275,7 @@ struct ProfessionalOffsetPathSection: View {
                         alert.alertStyle = .warning
                         alert.runModal()
                     }
-                    continue // Skip this shape
+                    continue
                 }
             }
 
@@ -295,8 +293,6 @@ struct ProfessionalOffsetPathSection: View {
             newShapes[offsetShape.id] = offsetShape
         }
 
-        // Use GroupCommand for proper undo/redo that handles layer objectIDs
-        // Positive offset: place behind selection, Negative/zero offset: place in front
         let placeBehind = offsetDistance > 0 && keepOriginalPath
         let command = GroupCommand(
             operation: .pathOperation,
@@ -311,7 +307,6 @@ struct ProfessionalOffsetPathSection: View {
         )
         document.executeCommand(command)
 
-        // Always select the offset path
         document.viewState.selectedObjectIDs = Set(newShapes.keys)
         document.viewState.orderedSelectedObjectIDs = Array(newShapes.keys)
     }

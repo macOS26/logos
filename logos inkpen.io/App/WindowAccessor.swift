@@ -12,7 +12,6 @@ struct WindowAccessor: NSViewRepresentable {
     }
 }
 
-/// Custom view that calls back immediately when added to window hierarchy
 private class WindowAccessorView: NSView {
     private let callback: (NSWindow?) -> Void
     private var hasCalledBack = false
@@ -28,7 +27,7 @@ private class WindowAccessorView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        // Call immediately when window is available, not async
+
         if !hasCalledBack, let window = self.window {
             hasCalledBack = true
             callback(window)

@@ -122,7 +122,6 @@ enum PathElement: Codable, Hashable {
     case quadCurve(to: VectorPoint, control: VectorPoint)
     case close
 
-    /// Returns the endpoint of this path element, or nil for .close
     var endpoint: VectorPoint? {
         switch self {
         case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
@@ -132,7 +131,6 @@ enum PathElement: Codable, Hashable {
         }
     }
 
-    /// Returns the endpoint as a CGPoint, or nil for .close
     var endpointCGPoint: CGPoint? {
         endpoint?.cgPoint
     }
@@ -144,12 +142,10 @@ struct VectorPath: Codable, Hashable, Identifiable {
     var isClosed: Bool
     var fillRule: FillRule
 
-    /// Pending outgoing handle for the first point (used when continuing path from start)
     var pendingStartHandle: VectorPoint?
-    /// Pending outgoing handle for the last point (used when continuing path from end)
+
     var pendingEndHandle: VectorPoint?
-    /// Bezier handle state for each point (only stored for unclosed paths that need continuation)
-    /// Uses String keys for JSON compatibility
+
     var bezierHandles: [String: BezierHandleInfo]?
 
     init(elements: [PathElement] = [], isClosed: Bool = false, fillRule: CGPathFillRule = .winding, pendingStartHandle: VectorPoint? = nil, pendingEndHandle: VectorPoint? = nil, bezierHandles: [String: BezierHandleInfo]? = nil) {
@@ -180,14 +176,13 @@ struct VectorPath: Codable, Hashable, Identifiable {
 
         try container.encode(fillRule, forKey: .fillRule)
 
-        // Only encode pending handles if they exist
         if let pendingStartHandle = pendingStartHandle {
             try container.encode(pendingStartHandle, forKey: .pendingStartHandle)
         }
         if let pendingEndHandle = pendingEndHandle {
             try container.encode(pendingEndHandle, forKey: .pendingEndHandle)
         }
-        // Only encode bezierHandles for unclosed paths
+
         if let bezierHandles = bezierHandles, !bezierHandles.isEmpty {
             try container.encode(bezierHandles, forKey: .bezierHandles)
         }

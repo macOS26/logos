@@ -1,14 +1,9 @@
 import CoreGraphics
 
-/// Heuristically detects simple geometric shape types from raw VectorPath
-/// elements. Used by importers (FreeHand direct, SVG `<path>`) to upgrade
-/// generic "Path" imports to recognized shapes where confidence is high.
 enum PathShapeDetector {
 
-    /// Returns the detected `GeometricShapeType` and a human-readable name
-    /// (for use as `shape.name`), or `nil` if nothing confident matches.
     static func detect(elements: [PathElement]) -> (type: GeometricShapeType, name: String)? {
-        /* Strip the trailing .close. Keep the rest in order. */
+
         var drawn: [PathElement] = []
         for el in elements {
             if case .close = el { continue }
@@ -16,7 +11,6 @@ enum PathShapeDetector {
         }
         guard drawn.count >= 2 else { return nil }
 
-        /* First element must be a .move. */
         guard case .move(let start) = drawn[0] else { return nil }
         let body = Array(drawn.dropFirst())
 
@@ -25,7 +19,6 @@ enum PathShapeDetector {
         let allLines = lineCount == body.count && curveCount == 0
         let allCurves = curveCount == body.count && lineCount == 0
 
-        /* Gather vertices for line-only shapes to check angle / aspect. */
         if allLines {
             var points: [CGPoint] = [start.cgPoint]
             for el in body {
@@ -34,8 +27,6 @@ enum PathShapeDetector {
                 }
             }
 
-            /* Triangle: 3 vertices. Either move + 2 lines (+ implicit close),
-               or move + 3 lines where the last point returns to start. */
             if body.count == 2 {
                 return (.triangle, "Triangle")
             }
@@ -43,14 +34,11 @@ enum PathShapeDetector {
                 return (.triangle, "Triangle")
             }
 
-            /* Rectangle / square: 4 vertices with axis-aligned edges.
-               body.count == 3 means move + 3 lines + implicit close (4 vertices).
-               body.count == 4 means move + 4 lines where last returns to start. */
             let rectPoints: [CGPoint]
             let isRect: Bool
             if body.count == 3 {
-                // Implicit close: 4 vertices = start + 3 line endpoints
-                rectPoints = points + [points[0]]  // append start for edge checking
+
+                rectPoints = points + [points[0]]
                 isRect = true
             } else if body.count == 4, points.count == 5, approxEqual(points[0], points[4]) {
                 rectPoints = points
@@ -82,8 +70,6 @@ enum PathShapeDetector {
                 }
             }
 
-            /* N-gon with N in {5,6,7,8}: simple polygon heuristic — line-only
-               path that closes back to the start. Labels by vertex count. */
             if body.count >= 5 && body.count <= 8 {
                 let closed = approxEqual(points.first ?? .zero, points.last ?? .zero)
                 if closed {
@@ -98,9 +84,6 @@ enum PathShapeDetector {
             }
         }
 
-        /* Circle / ellipse: 4 cubic curves with endpoints at the bbox edge
-           midpoints (top, right, bottom, left). Any other 4-curve shape is a
-           freeform blob and should remain a generic Path. */
         if allCurves && body.count == 4 {
             var pts: [CGPoint] = [start.cgPoint]
             for el in body {
@@ -109,7 +92,7 @@ enum PathShapeDetector {
                 }
             }
             guard pts.count == 5 else { return nil }
-            /* The closing endpoint should coincide with the start. */
+
             guard approxEqual(pts[0], pts[4]) else { return nil }
 
             let xs = pts.dropLast().map { $0.x }
@@ -123,8 +106,6 @@ enum PathShapeDetector {
             let cy = (minY + maxY) / 2
             let tol = max(w, h) * 0.03
 
-            /* Verify each of the 4 endpoints lies on an edge midpoint. Order
-               doesn't matter — check set membership. */
             let expected: [CGPoint] = [
                 CGPoint(x: cx, y: minY),
                 CGPoint(x: maxX, y: cy),

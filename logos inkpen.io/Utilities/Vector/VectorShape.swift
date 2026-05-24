@@ -370,7 +370,7 @@ struct VectorShape: Hashable, Identifiable {
     var linkedImagePath: String? = nil
     var linkedImageBookmarkData: Data? = nil
     var isGroup: Bool
-    var groupedShapes: [VectorShape]  // DEPRECATED
+    var groupedShapes: [VectorShape]
     var memberIDs: [UUID]
     var groupTransform: CGAffineTransform
     var isClippingGroup: Bool = false
@@ -396,16 +396,13 @@ struct VectorShape: Hashable, Identifiable {
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
 
-    /// 9-point transform origin. Nil = center.
     var transformOrigin: TransformOrigin? = nil
 
-    /// Explicit anchor types (elementIndex -> type); nil/.auto uses geometry detection.
     var anchorTypes: [Int: AnchorPointType] = [:]
 
     private var _cachedCGPath: CGPath?
     private var _cacheUpdateTrigger: UInt = 0
 
-    // Cached rendered CGImage so pan/zoom doesn't re-render each paint.
     var cachedRenderedImage: CGImage? = nil
     var cachedImageQuality: Double = 1.0
     var cachedImageTileSize: Int = 32
@@ -513,7 +510,6 @@ struct VectorShape: Hashable, Identifiable {
             return
         }
 
-        // Groups use recalculateGroupBounds().
         if isGroup {
             return
         }
@@ -524,7 +520,6 @@ struct VectorShape: Hashable, Identifiable {
         }
     }
 
-    /// Creates a group shape with memberIDs referencing the input shapes.
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
@@ -576,7 +571,6 @@ struct VectorShape: Hashable, Identifiable {
     var groupBounds: CGRect {
         guard isGroupContainer else { return bounds }
 
-        // memberIDs groups: bounds baked at creation; members live in snapshot.objects.
         if !memberIDs.isEmpty {
             return bounds
         }
@@ -775,7 +769,6 @@ extension VectorShape: Codable {
                 try container.encode(memberIDs, forKey: .memberIDs)
             }
 
-            // Back-compat: legacy groupedShapes.
             if !groupedShapes.isEmpty {
                 try container.encode(groupedShapes, forKey: .groupedShapes)
             }

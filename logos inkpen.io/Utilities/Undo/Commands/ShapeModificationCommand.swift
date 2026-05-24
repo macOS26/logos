@@ -27,20 +27,17 @@ class ShapeModificationCommand: BaseCommand {
 
         for id in objectIDs {
             if let shape = shapes[id] {
-                // Use updateShapeByID to update BOTH snapshot.objects AND group's groupedShapes
-                // Pass silent: true to batch layer updates
+
                 document.updateShapeByID(id, silent: true) { existingShape in
                     existingShape = shape
                 }
 
-                // Track which layers are affected
                 if let obj = document.snapshot.objects[id] {
                     affectedLayers.insert(obj.layerIndex)
                 }
             }
         }
 
-        // Trigger layer updates for all affected layers
         document.triggerLayerUpdates(for: affectedLayers)
     }
 }

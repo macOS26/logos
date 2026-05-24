@@ -2,7 +2,7 @@ import SwiftUI
 
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
-    let layerIndex: Int  // DEPRECATED: use Layer.objectIDs
+    let layerIndex: Int
     let objectType: ObjectType
 
     enum ObjectType: Hashable {
@@ -140,7 +140,6 @@ extension VectorObject: Codable {
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         var shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
 
-        // MIGRATION: old text objects stored position in textPosition; copy to transform but keep textPosition (spatial index needs it).
         if shape.typography != nil, let textPosition = shape.textPosition {
             if shape.transform.tx == 0 && shape.transform.ty == 0 {
                 var newTransform = shape.transform

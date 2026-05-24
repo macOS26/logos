@@ -3,7 +3,7 @@ import AppKit
 import ImageIO
 
 enum ImageContentRegistry {
-    /// True if bytes look like XML/SVG text rather than a raster.
+
     private static func isXMLPayload(_ data: Data) -> Bool {
         guard data.count >= 5 else { return false }
         var offset = 0
@@ -41,14 +41,13 @@ enum ImageContentRegistry {
 
         var loadedCGImage: CGImage? = nil
 
-        // Try embedded image first
         if let data = shape.embeddedImageData, !isXMLPayload(data),
            let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
             print("✅ Loaded embedded image for shape: \(shape.id)")
         }
-        // ONLY use bookmark for linked images - no fallback file access
+
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
@@ -59,7 +58,7 @@ enum ImageContentRegistry {
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
                    let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                    // Force to memory — prevents CG from re-accessing file without bookmark.
+
                     let width = sourceCGImage.width
                     let height = sourceCGImage.height
                     let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()

@@ -16,7 +16,7 @@ class TextContentCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        // Update the text content in snapshot
+
         if var object = document.snapshot.objects[textID] {
             switch object.objectType {
             case .text(var shape):
@@ -27,7 +27,6 @@ class TextContentCommand: BaseCommand {
                 object = VectorObject(id: shape.id, layerIndex: object.layerIndex, objectType: .text(shape))
                 document.snapshot.objects[textID] = object
 
-                // Trigger layer update for this object's layer
                 document.triggerLayerUpdate(for: object.layerIndex)
             default:
                 break
@@ -36,7 +35,7 @@ class TextContentCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
-        // Restore the old text content
+
         if var object = document.snapshot.objects[textID] {
             switch object.objectType {
             case .text(var shape):
@@ -47,7 +46,6 @@ class TextContentCommand: BaseCommand {
                 object = VectorObject(id: shape.id, layerIndex: object.layerIndex, objectType: .text(shape))
                 document.snapshot.objects[textID] = object
 
-                // Trigger layer update for this object's layer
                 document.triggerLayerUpdate(for: object.layerIndex)
             default:
                 break

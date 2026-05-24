@@ -38,15 +38,15 @@ extension View {
     func colorChannelLabel() -> some View {
         modifier(ColorChannelLabelStyle())
     }
-    
+
     func colorValueTextField() -> some View {
         modifier(ColorValueTextFieldStyle())
     }
-    
+
     func colorIndicator() -> some View {
         modifier(ColorIndicatorStyle())
     }
-    
+
     func hexTextField() -> some View {
         modifier(HexTextFieldStyle())
     }
@@ -377,7 +377,7 @@ struct RGBInputSection: View {
 
     private func onRedEditingChanged(_ isEditing: Bool) {
         if isEditing {
-            // Drag start: seed opacity from selected object or default
+
             let currentOpacity: Double
             if let firstSelectedID = selectedObjectIDs.first,
                let object = snapshot.objects[firstSelectedID] {
@@ -391,17 +391,9 @@ struct RGBInputSection: View {
             }
             colorDeltaOpacity = currentOpacity
         } else {
-            // print("HELLO")
+
             colorDeltaColor = nil
             colorDeltaOpacity = nil
-
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorRed(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
 
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
@@ -433,7 +425,6 @@ struct RGBInputSection: View {
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
@@ -446,14 +437,6 @@ struct RGBInputSection: View {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorGreen(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
-
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
@@ -484,7 +467,6 @@ struct RGBInputSection: View {
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }
@@ -497,14 +479,6 @@ struct RGBInputSection: View {
             colorDeltaColor = nil
             colorDeltaOpacity = nil
 
-            // TODO: Re-enable when RGB methods are available
-            // PaintSelectionOperations.updateDefaultColorBlue(
-            //     normalizedValue,
-            //     target: activeColorTarget,
-            //     defaultFillColor: &defaultFillColor,
-            //     defaultStrokeColor: &defaultStrokeColor
-            // )
-
             let finalColor = VectorColor.rgb(currentColor)
             onSetActiveColor(finalColor)
 
@@ -535,7 +509,6 @@ struct RGBInputSection: View {
             }
             onTriggerLayerUpdates(affectedLayers)
 
-            // Sync with other color sections (HSB, etc.)
             sharedColor = VectorColor.rgb(currentColor)
         }
     }

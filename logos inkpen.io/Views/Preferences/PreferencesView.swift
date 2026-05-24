@@ -5,12 +5,12 @@ struct PreferencesView: View {
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
     @AppStorage("imagePreviewQuality") var imageQuality: Double = 1.0
     @AppStorage("imageTileSize") var tileSize: Int = 512
-    @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1 // 0=default, 1=none, 2=low, 3=high, 4=medium
+    @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1
     @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
-            // Left Column
+
             VStack(alignment: .leading, spacing: 16) {
                 GroupBox(label: Label("Transform", systemImage: "arrow.up.left.and.arrow.down.right").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -154,7 +154,6 @@ struct PreferencesView: View {
             }
             .frame(maxWidth: .infinity)
 
-            // Right Column
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
 

@@ -100,9 +100,6 @@ extension PDFCommandParser {
         }
     }
 
-    // Line-grouping: reverse of EXPORT's per-line CTLine split. Groups PDF text ops by baseline Y into one VectorText per line.
-
-    // Append a space if content isn't already whitespace-terminated (NBSP counted, TT1-style "space fonts" decode to NBSP).
     private func appendInterWordSpaceIfNeeded() {
         guard !currentTextContent.isEmpty else { return }
         let last = currentTextContent.unicodeScalars.last
@@ -131,7 +128,7 @@ extension PDFCommandParser {
                 }
                 currentTextStartPosition = CGPoint(x: simdTextMatrix.tx, y: simdTextMatrix.ty)
             } else {
-                // Horizontal-only move → inter-word space.
+
                 appendInterWordSpaceIfNeeded()
             }
         }
@@ -177,7 +174,6 @@ extension PDFCommandParser {
            CGPDFScannerPopNumber(scanner, &b),
            CGPDFScannerPopNumber(scanner, &a) {
 
-            // New line if Y delta > 1pt, else same-line reposition (inter-word space).
             let oldF = CGFloat(simdTextMatrix.ty)
             let newF = CGFloat(f)
             let yDelta = abs(newF - oldF)
@@ -338,8 +334,6 @@ extension PDFCommandParser {
         return ""
     }
 
-    // Decode PDF text via ToUnicode CMap (PDF 1.7 §9.10.3). Ref: pdf.js cmap.js CMap.readCharCode.
-    // 2-byte CID detection via any key > 0xFF.
     private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
         var toUnicodeStream: CGPDFStreamRef?
         guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
@@ -381,7 +375,7 @@ extension PDFCommandParser {
             if let unicodeString = codeToUnicode[charCode] {
                 result += unicodeString
             } else if stride == 1 {
-                // 1-byte fonts fall back to raw byte; CID fonts skip unmapped codes.
+
                 let scalar = UnicodeScalar(UInt8(charCode))
                 result += String(scalar)
             }
@@ -392,7 +386,6 @@ extension PDFCommandParser {
         return result.isEmpty ? nil : result
     }
 
-    // Detect Type 0 (CID) font via /Subtype; CID fonts use multi-byte codes.
     private func isCIDFont(_ fontDict: CGPDFDictionaryRef) -> Bool {
         var subtype: UnsafePointer<CChar>?
         if CGPDFDictionaryGetName(fontDict, "Subtype", &subtype),
@@ -484,7 +477,6 @@ extension PDFCommandParser {
         return mapping
     }
 
-    // Strips subset prefix (e.g. "ABCDEF+FontName" → "FontName"). macOS mapping handled by resolveMacOSFont.
     private func cleanPDFFontName(_ fontName: String) -> String {
         if let plusIndex = fontName.firstIndex(of: "+") {
             return String(fontName[fontName.index(after: plusIndex)...])
@@ -532,14 +524,11 @@ extension PDFCommandParser {
         return nil
     }
 
-    // MARK: - PDF Font → macOS Font Resolution (runtime, no hardcoded mappings)
-    // Runtime NSFontManager resolution; on miss, substitutes closest family AND closest variant (preserves weight hint).
     private func resolveMacOSFont(postScriptName rawName: String) -> (family: String, variant: String?) {
         if let result = macOSFontFromPostScriptName(rawName) {
             return result
         }
 
-        // Strip PS/TrueType suffixes — longest first so "PSMT" wins over "MT".
         let suffixesToStrip = ["PSMT", "PS", "MT"]
         var stripped = rawName
         for suffix in suffixesToStrip {
@@ -560,7 +549,6 @@ extension PDFCommandParser {
             return (family: exactFamily, variant: closestVariantDisplayName(in: exactFamily, requested: rawVariant))
         }
 
-        // Fallback: Helvetica Neue, closest variant preserves bold/italic/weight.
         let fallbackFamily = availableFamilies.first(where: { $0 == "Helvetica Neue" })
             ?? availableFamilies.first(where: { $0 == "Helvetica" })
             ?? availableFamilies.first
@@ -568,7 +556,6 @@ extension PDFCommandParser {
         return (family: fallbackFamily, variant: closestVariantDisplayName(in: fallbackFamily, requested: rawVariant))
     }
 
-    // PostScript-name lookup; PlatformFont may return system default for unknown names so we verify.
     private func macOSFontFromPostScriptName(_ name: String) -> (family: String, variant: String?)? {
         guard let font = PlatformFont(name: name, size: 12) else { return nil }
         let returnedPS = font.fontName
@@ -584,7 +571,6 @@ extension PDFCommandParser {
         return (family: family, variant: nil)
     }
 
-    // Splits "Times-BoldItalic" → ("Times", "BoldItalic"); pure string split.
     private func dashSplitFamilyVariant(_ name: String) -> (family: String, variant: String?) {
         if let dashIdx = name.lastIndex(of: "-") {
             return (family: String(name[..<dashIdx]),
@@ -593,7 +579,6 @@ extension PDFCommandParser {
         return (family: name, variant: nil)
     }
 
-    // Closest variant: exact → case-insensitive → fuzzy bold/italic/weight score.
     private func closestVariantDisplayName(in family: String, requested: String?) -> String? {
         let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
         let displayNames: [String] = members.compactMap { $0[1] as? String }
@@ -608,7 +593,6 @@ extension PDFCommandParser {
             return match
         }
 
-        // Fuzzy score: bold (8) > italic (4) > light (2) > medium (1).
         let reqLower = req.lowercased()
         let wantBold = reqLower.contains("bold") || reqLower.contains("heavy") || reqLower.contains("black")
         let wantItalic = reqLower.contains("italic") || reqLower.contains("oblique")
@@ -626,7 +610,7 @@ extension PDFCommandParser {
             if isItalic == wantItalic { s += 4 }
             if isLight == wantLight { s += 2 }
             if isMedium == wantMedium { s += 1 }
-            // Prefer shorter names so plain "Bold" beats "Condensed Bold".
+
             s -= name.count / 20
             return s
         }
@@ -642,7 +626,7 @@ extension PDFCommandParser {
     }
 
     private func createVectorTextFromAccumulated() {
-        // Trim whitespace (incl. NBSP from TT1-style space fonts) to avoid blank text boxes for <0003>Tj.
+
         let trimmed = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let normalized = trimmed
@@ -662,7 +646,6 @@ extension PDFCommandParser {
             pdfY = currentTransformMatrix.ty
         }
 
-        // Flip Y (PDF 1.7 §8.3.2.3) and shift baseline → top-left by one font-size.
         let flippedY = pageSize.height - pdfY
         let finalY = flippedY - actualFontSize
 

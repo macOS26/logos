@@ -350,7 +350,7 @@ struct PressureCalibrationView: View {
             let thickness = CGFloat(curveThickness * 10.0) * 2.0
 
             if i == 0 {
-                // SIMD-optimized vector operations
+
                 let nextPoint = pressurePoints[i + 1]
                 let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
                 let nextVec = SIMD2<Double>(Double(nextPoint.location.x), Double(nextPoint.location.y))
@@ -371,7 +371,7 @@ struct PressureCalibrationView: View {
                     rightEdgePoints.append(point.location)
                 }
             } else if i == pressurePoints.count - 1 {
-                // SIMD-optimized vector operations
+
                 let prevPoint = pressurePoints[i - 1]
                 let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
                 let prevVec = SIMD2<Double>(Double(prevPoint.location.x), Double(prevPoint.location.y))
@@ -392,7 +392,7 @@ struct PressureCalibrationView: View {
                     rightEdgePoints.append(point.location)
                 }
             } else {
-                // SIMD-optimized vector operations
+
                 let prevPoint = pressurePoints[i - 1]
                 let nextPoint = pressurePoints[i + 1]
                 let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))

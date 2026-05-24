@@ -91,12 +91,10 @@ struct RightPanel: View {
                         onOutlineSelectedStrokes: { document.outlineSelectedStrokes() },
                         onDuplicateSelectedShapes: { document.duplicateSelectedShapes() },
                         onUpdateObjectOpacity: { objectID, opacity, target in
-                            // TODO: Re-enable when method is available
-                            // document.updateObjectOpacityDirect(objectID: objectID, opacity: opacity, target: target)
+
                         },
                         onUpdateObjectStrokeWidth: { objectID, width in
-                            // TODO: Re-enable when method is available
-                            // document.updateObjectStrokeWidthDirect(objectID: objectID, width: width)
+
                         },
                         onUpdateFillOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateFillOpacityLive(opacity, document: document, isEditing: isEditing) },
                         onUpdateStrokeOpacityLive: { opacity, isEditing in PaintSelectionOperations.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing) },

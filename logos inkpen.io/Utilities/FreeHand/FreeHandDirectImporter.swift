@@ -23,21 +23,18 @@ enum FreeHandDirectImporter {
         let shapes: [VectorShape]
         let pageSize: CGSize
         let stats: Stats
-        /// Native InkPen layers parsed from the source file. `objectIDs` references
-        /// shape UUIDs from `shapes`. Empty when the source carries no layer info.
+
         let layers: [Layer]
-        /// Native InkPen groups as `VectorShape`s with `isGroup = true` and
-        /// `memberIDs` referencing child shapes. Already included in `shapes`.
+
         let groupShapeIDs: [UUID]
     }
 
-    /// Find the AGD or FH3 magic offset, stripping any IPTC wrapper (e.g. FH10).
     private static func stripIPTCWrapper(_ data: Data) -> Data {
         guard data.count >= 4 else { return data }
         let b0 = data[data.startIndex]
-        // Already starts with AGD or FH3 — no wrapper
+
         if b0 == UInt8(ascii: "A") || b0 == UInt8(ascii: "F") { return data }
-        // Scan for "AGD" signature
+
         let a = UInt8(ascii: "A"), g = UInt8(ascii: "G"), d = UInt8(ascii: "D")
         let end = data.count - 3
         for i in 1..<end {
@@ -51,22 +48,21 @@ enum FreeHandDirectImporter {
     }
 
     static func parseToShapes(data: Data) throws -> Result {
-        // FreeHand 2 has a completely different format — route to dedicated parser
+
         if data.count >= 4,
-           data[data.startIndex] == 0x46, // 'F'
-           data[data.startIndex + 1] == 0x48, // 'H'
-           data[data.startIndex + 2] == 0x44, // 'D'
-           data[data.startIndex + 3] == 0x32  // '2'
+           data[data.startIndex] == 0x46,
+           data[data.startIndex + 1] == 0x48,
+           data[data.startIndex + 2] == 0x44,
+           data[data.startIndex + 3] == 0x32
         {
             return try FreeHand2Parser.parseToShapes(data: data)
         }
 
-        // FreeHand EPS export — route to EPS parser
         if data.count >= 10,
-           data[data.startIndex] == 0x25, // '%'
-           data[data.startIndex + 1] == 0x21, // '!'
-           data[data.startIndex + 2] == 0x50, // 'P'
-           data[data.startIndex + 3] == 0x53  // 'S'
+           data[data.startIndex] == 0x25,
+           data[data.startIndex + 1] == 0x21,
+           data[data.startIndex + 2] == 0x50,
+           data[data.startIndex + 3] == 0x53
         {
             return try FreeHandEPSParser.parseToShapes(data: data)
         }
@@ -114,10 +110,7 @@ enum FreeHandDirectImporter {
     private static func buildShapes(from result: OpaquePointer) -> [VectorShape] {
         let count = fh_result_shape_count(result)
         var built: [VectorShape?] = Array(repeating: nil, count: count)
-        /* Children carried inside a group container's `groupedShapes` must NOT also
-           appear as top-level shapes — the importer's installShapeRespectingGroups
-           already unpacks them into snapshot.objects. Track which indices are
-           consumed by a group so we can drop them from the flat top-level array. */
+
         var consumed = Set<size_t>()
 
         for idx in 0..<count {
@@ -232,10 +225,6 @@ enum FreeHandDirectImporter {
             )
         }
 
-        /* If neither fill nor stroke resolved, the shape would render as nothing.
-           Respect the user's "import FH effects" preference: when ON, show a
-           dominant-color hairline so the geometry is visible; when OFF, drop the
-           shape entirely so CrnkBait-style hairline bboxes don't pollute imports. */
         if fillStyle == nil && strokeStyle == nil {
             if ApplicationSettings.shared.importFreeHandEffects {
                 strokeStyle = StrokeStyle(color: .black, width: 0.5)
@@ -246,9 +235,6 @@ enum FreeHandDirectImporter {
 
         let opacity = fh_result_shape_opacity(result, index)
 
-        /* Detect simple geometric types (rect, square, circle, ellipse,
-           triangle, pentagon, etc.) so imports show the right icon and
-           name instead of a generic "Path". Compound paths skip detection. */
         var detectedType: GeometricShapeType? = nil
         var baseName = isCompound ? "Compound Path" : "Path"
         if !isCompound, let detected = PathShapeDetector.detect(elements: elements) {
@@ -294,8 +280,7 @@ enum FreeHandDirectImporter {
         let stops = readGradientStops(from: result, index: index)
         let angleDeg = fh_result_shape_fill_angle(result, index)
         let angleRad = angleDeg * .pi / 180.0
-        /* Unit-square start/end points derived from angle so the gradient fills
-           the bbox when rendered with objectBoundingBox units. */
+
         let dx = cos(angleRad) * 0.5
         let dy = sin(angleRad) * 0.5
         let start = CGPoint(x: 0.5 - dx, y: 0.5 - dy)
@@ -336,18 +321,12 @@ enum FreeHandDirectImporter {
         }
         guard !peerIndices.isEmpty else { return nil }
 
-        /* Native InkPen clipping groups use the simplest possible model:
-           - Container: isGroup=true, isClippingGroup=true, memberIDs=[mask, ...content]
-           - Members: plain .shape — NO isClippingPath, NO clippedByShapeID
-           The renderer reads `memberShapes[0]` positionally as the mask. */
         var memberShapes: [VectorShape] = []
         memberShapes.reserveCapacity(peerIndices.count)
         for peerIdx in peerIndices {
             if let shape = built[peerIdx] { memberShapes.append(shape) }
         }
 
-        /* Match SVG clip-group naming convention: mask = "Clip Path",
-           content shapes get a "Masked " prefix (e.g. "Masked Rectangle"). */
         if isClip && !memberShapes.isEmpty {
             memberShapes[0].name = "Clip Path"
             for i in 1..<memberShapes.count {
@@ -357,9 +336,7 @@ enum FreeHandDirectImporter {
 
         let name = isClip ? "Clipping Group" : "Group"
         var container = VectorShape.group(from: memberShapes, name: name, isClippingGroup: isClip)
-        /* addImportedShape re-appends child IDs while iterating groupedShapes,
-           which would double every entry if we leave group(from:)'s memberIDs
-           in place. Clear so the import loop rebuilds them fresh. */
+
         container.memberIDs = []
         container.groupedShapes = memberShapes
         return container

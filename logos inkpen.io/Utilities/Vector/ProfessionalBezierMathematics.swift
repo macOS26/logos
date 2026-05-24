@@ -195,7 +195,6 @@ case independent = "Independent"
         let firstDeriv = cubicBezierFirstDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
         let secondDeriv = cubicBezierSecondDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
 
-        // 2D cross product = z-component of 3D cross.
         let crossProduct = firstDeriv.x * secondDeriv.y - firstDeriv.y * secondDeriv.x
 
         let speedSquared = simd_length_squared(firstDeriv.simdPoint)

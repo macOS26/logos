@@ -47,19 +47,19 @@ extension View {
     func settingsSectionIcon() -> some View {
         modifier(SettingsSectionIconStyle())
     }
-    
+
     func settingsSectionTitle() -> some View {
         modifier(SettingsSectionTitleStyle())
     }
-    
+
     func settingsFieldLabel() -> some View {
         modifier(SettingsFieldLabelStyle())
     }
-    
+
     func settingsUnitText() -> some View {
         modifier(SettingsUnitTextStyle())
     }
-    
+
     func settingsToggleLabel() -> some View {
         modifier(SettingsToggleLabelStyle())
     }
@@ -72,7 +72,7 @@ private struct SettingsSectionHeader: View {
         HStack {
             Image(systemName: icon)
                 .settingsSectionIcon()
-            
+
             Text(title)
                 .settingsSectionTitle()
         }
@@ -351,28 +351,28 @@ struct DocumentSettingsView: View {
                     HStack {
                         Text("Show Grid")
                             .settingsToggleLabel()
-                        
+
                         StylusToggleButton(isOn: $document.gridSettings.showGrid) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "showGrid")
                             document.objectWillChange.send()
                         }
                     }
-                    
+
                     HStack {
                         Text("Snap to Grid")
                             .settingsToggleLabel()
-                        
+
                         StylusToggleButton(isOn: $document.settings.snapToGrid) { newValue in
                             document.gridSettings.snapToGrid = newValue
                             UserDefaults.standard.set(newValue, forKey: "snapToGrid")
                             document.onSettingsChanged()
                         }
                     }
-                    
+
                     HStack {
                         Text("Grid on Top")
                             .settingsToggleLabel()
-                        
+
                         StylusToggleButton(isOn: $document.gridSettings.gridOnTop) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "gridOnTop")
                             document.objectWillChange.send()

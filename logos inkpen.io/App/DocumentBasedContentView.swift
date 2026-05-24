@@ -12,7 +12,7 @@ struct DocumentBasedContentView: View {
         DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL, imagePreviewQuality: $imagePreviewQuality, imageTileSize: $imageTileSize, imageInterpolationQuality: $imageInterpolationQuality)
             .onAppear {
                 MemoryDiag.report("DocumentBasedContentView.onAppear (before hydrate)", document: inkpenDocument.document)
-                // Hydrate linked images on first appear
+
                 if !hasHydratedImages, let fileURL = fileURL {
                     hydrateLinkedImages(from: fileURL)
                     hasHydratedImages = true
@@ -21,17 +21,16 @@ struct DocumentBasedContentView: View {
                 MemoryDiag.measureObjectSizes(inkpenDocument.document)
             }
             .onChange(of: imagePreviewQuality) { _, _ in
-                // Clear image caches when quality changes
+
                 ImageContentRegistry.clearAll(in: inkpenDocument.document)
                 MetalImageTileRenderer.shared?.clearCache()
             }
             .onChange(of: imageTileSize) { _, _ in
-                // Clear image caches when tile size changes
+
                 ImageContentRegistry.clearAll(in: inkpenDocument.document)
                 MetalImageTileRenderer.shared?.clearCache()
             }
     }
-
 
     private func hydrateLinkedImages(from sourceURL: URL) {
         let baseDirectory = sourceURL.deletingLastPathComponent()
@@ -54,7 +53,6 @@ struct DocumentBasedContentView: View {
                                shape.linkedImageBookmarkData != nil
             guard hasImageData else { continue }
 
-            // Drop shapes whose embedded payload is XML/SVG text or obviously too small to be a raster.
             if let data = shape.embeddedImageData,
                shape.linkedImagePath == nil,
                shape.linkedImageBookmarkData == nil,

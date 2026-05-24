@@ -1,8 +1,6 @@
 import Foundation
 import CoreGraphics
 
-// Minimal type stubs matching inkpen's actual types so FreeHand2Parser.swift compiles unmodified
-
 struct VectorPoint {
     let x: Double
     let y: Double
@@ -73,7 +71,7 @@ enum VectorColor: Equatable {
         case .rgb(let c): return (c.red, c.green, c.blue)
         case .black: return (0, 0, 0)
         case .white: return (1, 1, 1)
-        case .gradient: return (0.5, 0.5, 0.5) // placeholder for gradient
+        case .gradient: return (0.5, 0.5, 0.5)
         }
     }
 }

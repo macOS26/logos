@@ -20,7 +20,7 @@ class LayerObjectOrderCommand: BaseCommand {
     }
 
     private func applyOrder(_ objectIDs: [UUID], to document: VectorDocument) {
-        // Use helper method that automatically triggers layer update
+
         document.updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: objectIDs)
     }
 }

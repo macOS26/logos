@@ -323,7 +323,6 @@ extension VectorDocument {
             return false
         }
 
-        // GroupCommand removes old shapes; don't call removeSelectedShapes() here.
         var newShapes: [UUID: VectorShape] = [:]
         for shape in resultShapes {
             newShapes[shape.id] = shape

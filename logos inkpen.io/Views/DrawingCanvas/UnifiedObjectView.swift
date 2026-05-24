@@ -36,8 +36,8 @@ struct CanvasBackgroundView: View {
 
 struct LayerCanvasView: View {
     let objectIDs: [UUID]
-    let document: VectorDocument  // Need this for cgImageCache and mask lookups
-    let documentURL: URL?  // For resolving relative image paths
+    let document: VectorDocument
+    let documentURL: URL?
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -54,7 +54,7 @@ struct LayerCanvasView: View {
     let colorDeltaColor: VectorColor?
     let colorDeltaOpacity: Double?
     @Binding var activeGradientDelta: VectorGradient?
-    let isPanning: Bool  // When true, expand viewport for smooth pan
+    let isPanning: Bool
     let activeColorTarget: ColorTarget
     @Binding var textContentDelta: (id: UUID, content: String)?
     let fontSizeDelta: Double?
@@ -70,14 +70,12 @@ struct LayerCanvasView: View {
 
     var appState = AppState.shared
 
-    // Calculate viewport rectangle in document coordinates for culling
     private func viewportRect(canvasSize: CGSize) -> CGRect {
-        // SIMD optimization for viewport transform calculations
+
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let sizeVec = SIMD2<Float>(Float(canvasSize.width), Float(canvasSize.height))
         let zoom = Float(zoomLevel)
 
-        // Transform to document coords: (screenX - offset) / zoom
         let docOrigin = -offsetVec / zoom
         let docSize = sizeVec / zoom
 
@@ -89,13 +87,8 @@ struct LayerCanvasView: View {
         )
     }
 
-    // Pre-filter visible objects with viewport culling (O(n) once per objects change)
-    // Filters out objects that are:
-    // 1. Hidden (isVisible == false)
-    // 2. Outside the viewport bounds (performance optimization)
     private func culledObjects(canvasSize: CGSize) -> [VectorObject] {
-        // During pan, skip culling to avoid filtering overhead every frame
-        // Just return all visible objects
+
         if isPanning {
             return objectIDs.compactMap { id in
                 guard let object = document.snapshot.objects[id],
@@ -110,20 +103,16 @@ struct LayerCanvasView: View {
             guard let object = document.snapshot.objects[id],
                   object.isVisible else { return nil }
 
-            // Don't cull text objects - they need better bounds calculation
             if case .text = object.objectType {
                 return object
             }
 
-            // Get object bounds
             let objectBounds = object.shape.bounds
 
-            // Use SIMD for fast intersection test
             return objectBounds.intersectsSIMD(viewport) ? object : nil
         }
     }
 
-    // Get layer index for debug printing
     private var layerInfo: String {
         guard let firstID = objectIDs.first,
               let obj = document.snapshot.objects[firstID] else {
@@ -132,9 +121,8 @@ struct LayerCanvasView: View {
         return "Layer[\(obj.layerIndex)]"
     }
 
-    // Apply live point/handle positions to a shape for rendering preview
     private func applyLivePositions(to shape: VectorShape) -> VectorShape {
-        // Check if this shape has any live positions
+
         let shapeID = shape.id
         var hasLivePositions = false
 
@@ -155,7 +143,6 @@ struct LayerCanvasView: View {
 
         guard hasLivePositions else { return shape }
 
-        // Create modified shape with live positions
         var modifiedShape = shape
         var modifiedElements = shape.path.elements
 
@@ -205,9 +192,8 @@ struct LayerCanvasView: View {
         return modifiedShape
     }
 
-    // Apply live corner radii to a shape for rendering preview
     private func applyLiveCornerRadii(to shape: VectorShape) -> VectorShape {
-        // Only apply if this is the selected shape and we have live radii
+
         guard !liveCornerRadii.isEmpty,
               selectedShapeIDForCornerRadius == shape.id else {
             return shape
@@ -216,7 +202,6 @@ struct LayerCanvasView: View {
         var modifiedShape = shape
         modifiedShape.cornerRadii = liveCornerRadii
 
-        // Rebuild the path with the new corner radii
         let currentBounds = shape.path.cgPath.boundingBox
         let newPath = createRoundedRectPathWithIndividualCorners(
             rect: currentBounds,
@@ -229,39 +214,31 @@ struct LayerCanvasView: View {
     }
 
     var body: some View {
-        //let _ = Self._printChanges()
+
         Canvas { context, size in
-            // SIMD optimization: Convert transform values once for entire render pass
+
             let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
             let zoom = Float(zoomLevel)
-            // Combine drag delta and nudge offset
+
             let dragDelta = SIMD2<Float>(
                 Float(dragPreviewDelta.x + liveNudgeOffset.dx),
                 Float(dragPreviewDelta.y + liveNudgeOffset.dy)
             )
 
-            // Viewport culling: only render objects in visible area
             let visibleObjects = culledObjects(canvasSize: size)
 
-            // Cheap SwiftUI layer update
             _ = layerUpdateTrigger
 
-            // Apply base canvas transform (no drag delta)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: CGFloat(offsetVec.x), y: CGFloat(offsetVec.y))
                 .scaledBy(x: CGFloat(zoom), y: CGFloat(zoom))
 
-            // Render objects in original stacking order
-            // Selected objects share the same drag delta transform
             for object in visibleObjects {
-                // Skip guides - they're rendered separately by GuidesView at screen scale
+
                 if case .guide = object.objectType { continue }
 
                 let isSelected = selectedObjectIDs.contains(object.id)
 
-                // Apply selection transform (with drag delta + nudge offset) for selected objects
-                // For liveScaleTransform, we apply it to the path geometry directly (not context)
-                // to keep stroke width constant while scaling the shape
                 let isTextObject = if case .text = object.objectType { true } else { false }
                 let hasLiveOffset = dragPreviewDelta != .zero || liveNudgeOffset != .zero
 
@@ -272,35 +249,25 @@ struct LayerCanvasView: View {
                     context.transform = baseTransform
                 }
 
-                // Pass liveScaleTransform to renderShape so it can apply it to the path geometry
-                // This keeps stroke width constant during scaling
                 let shapeTransform = (isSelected && !isTextObject) ? liveScaleTransform : .identity
 
                 switch object.objectType {
                 case .clipGroup(let clipGroupShape):
-                    // ClipGroup: first grouped shape is the mask, rest are clipped content
 
-                    // Resolve member shapes using memberIDs (or fallback to groupedShapes)
                     let memberShapes = document.resolveGroupMembers(clipGroupShape)
                     guard !memberShapes.isEmpty else { break }
                     let maskShape = memberShapes[0]
                     let contentShapes = Array(memberShapes.dropFirst())
 
-                    // for (idx, child) in contentShapes.enumerated() {
-                    // }
-
-                    // Save parent's transform (includes drag delta if parent clipGroup is selected)
                     let parentTransform = context.transform
 
-                    // In keyline mode, check preference for clipping
                     if viewMode == .keyline {
                         let showClipped = appState.showClippingInKeyline
 
                         if showClipped {
-                            // Show mask outline + clipped content in keyline
+
                             guard maskShape.isVisible else { break }
 
-                            // Check if mask is individually selected
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                             let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
                                 baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
@@ -308,19 +275,16 @@ struct LayerCanvasView: View {
                                 parentTransform
                             }
 
-                            // Render mask outline
                             context.transform = maskTransform
                             let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
                             let liveMaskShape = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                             renderShape(liveMaskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
 
-                            // Then render content shapes clipped by the mask
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                                 let isChildText = contentShape.typography != nil
 
-                                // Determine content transform (independent of mask)
                                 let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
                                     baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
@@ -332,8 +296,6 @@ struct LayerCanvasView: View {
                                 let liveContentShape = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                 let liveMaskForClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
 
-                                /* Recursively render leaf outlines inside the clip
-                                   region so nested-group content still appears. */
                                 func renderKeylineClippedLeaf(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
                                     if shape.isGroupContainer {
@@ -351,14 +313,12 @@ struct LayerCanvasView: View {
                                     }
                                 }
 
-                                // Render with separate mask and content transforms
                                 context.drawLayer { layerContext in
-                                    // Apply mask transform and create clipping region
+
                                     layerContext.transform = maskTransform
                                     let maskPath = liveMaskForClip.cachedCGPath
                                     layerContext.clip(to: Path(maskPath))
 
-                                    // Apply content transform and render content
                                     layerContext.transform = contentTransform
 
                                     if liveContentShape.isGroupContainer {
@@ -373,21 +333,19 @@ struct LayerCanvasView: View {
                                 }
                             }
                         } else {
-                            // Show full outlines (no clipping) in keyline
+
                             if maskShape.isVisible {
                                 let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                                 if isMaskSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
-                                    context.transform = parentTransform  // Preserve parent's drag delta
+                                    context.transform = parentTransform
                                 }
                                 let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
                                 let liveMaskShapeNoClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
                                 renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
                             }
-                            /* Recursively draw leaf outlines for nested groups in
-                               the keyline "no clipping" fallback so grouped
-                               content inside a clip group still shows. */
+
                             func renderKeylineLeafOutline(_ shape: VectorShape) {
                                 guard shape.isVisible else { return }
                                 if shape.isGroupContainer {
@@ -413,7 +371,7 @@ struct LayerCanvasView: View {
                                 if isChildSelected && dragPreviewDelta != .zero {
                                     context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                                 } else {
-                                    context.transform = parentTransform  // Preserve parent's drag delta
+                                    context.transform = parentTransform
                                 }
                                 let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
@@ -431,10 +389,9 @@ struct LayerCanvasView: View {
                             }
                         }
                     } else {
-                        // Color mode: only render if mask is visible
+
                         guard maskShape.isVisible else { break }
 
-                        // Determine mask transform (only moves if mask itself is selected)
                         let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
                         let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
                             baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
@@ -442,14 +399,12 @@ struct LayerCanvasView: View {
                             parentTransform
                         }
 
-                        // Render each content shape with the mask (only if visible)
                         for contentShape in contentShapes {
                             guard contentShape.isVisible else { continue }
 
                             let isChildSelected = selectedObjectIDs.contains(contentShape.id)
                             let isChildText = contentShape.typography != nil
 
-                            // Determine content transform (independent of mask)
                             let contentTransform = if isChildSelected && dragPreviewDelta != .zero {
                                 baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
@@ -461,19 +416,14 @@ struct LayerCanvasView: View {
                             let liveContentColorMode = applyLivePositions(to: contentShape)
                             let liveMaskColorMode = applyLivePositions(to: maskShape)
 
-                            // Render with separate mask and content transforms
                             context.drawLayer { layerContext in
-                                // Apply mask transform and create clipping region
+
                                 layerContext.transform = maskTransform
                                 let maskPath = liveMaskColorMode.cachedCGPath
                                 layerContext.clip(to: Path(maskPath))
 
-                                // Apply content transform and render content
                                 layerContext.transform = contentTransform
 
-                                /* Recursive leaf-first renderer used inside the clip layer
-                                   so nested groups (FreeHand imports) actually render their
-                                   leaf paths instead of drawing an empty container shape. */
                                 func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
                                     if shape.isGroupContainer {
@@ -506,36 +456,29 @@ struct LayerCanvasView: View {
                     }
 
                 case .group(let groupShape):
-                    // Regular Group: render all child shapes (no clipping)
+
                     guard groupShape.isGroupContainer else { break }
 
-                    // Resolve member shapes using memberIDs (or fallback to groupedShapes)
                     let memberShapes = document.resolveGroupMembers(groupShape)
 
-                    // Save parent's transform (includes drag delta if parent group is selected)
                     let parentTransform = context.transform
 
-                    // Helper function to recursively render group members
                     func renderGroupMembers(_ shapes: [VectorShape], parentXform: CGAffineTransform) {
                         for childShape in shapes {
                             guard childShape.isVisible else { continue }
 
-                            // Check if THIS CHILD is individually selected (not just the group)
                             let isChildSelected = selectedObjectIDs.contains(childShape.id)
                             let isChildText = childShape.typography != nil
 
-                            // Apply drag preview to individual child if it's selected
                             if isChildSelected && dragPreviewDelta != .zero {
                                 context.transform = baseTransform
                                     .translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
                             } else {
-                                context.transform = parentXform  // Preserve parent's drag delta
+                                context.transform = parentXform
                             }
 
-                            // Use child-specific selection state for scale transform
                             let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
 
-                            // Check if child itself is clipped by another object
                             let maskShape: VectorShape? = {
                                 guard let maskID = childShape.clippedByShapeID,
                                       let maskObject = document.snapshot.objects[maskID] else {
@@ -546,10 +489,6 @@ struct LayerCanvasView: View {
 
                             let liveChildShape = applyLiveCornerRadii(to: applyLivePositions(to: childShape))
 
-                            /* Nested clip group: clip child is itself a clipping container.
-                               Apply its mask-then-clipped-content render inline so nested
-                               clip groups (e.g. FreeHand gradient-in-shape patterns) actually
-                               clip instead of flattening into the parent group. */
                             if liveChildShape.isClippingGroup {
                                 let nestedMembers = document.resolveGroupMembers(liveChildShape)
                                 guard let maskShape = nestedMembers.first else { continue }
@@ -582,7 +521,6 @@ struct LayerCanvasView: View {
                                 continue
                             }
 
-                            // If child is a nested non-clip group, recursively render its members
                             if liveChildShape.isGroupContainer {
                                 let nestedMembers = document.resolveGroupMembers(liveChildShape)
                                 renderGroupMembers(nestedMembers, parentXform: context.transform)
@@ -596,11 +534,10 @@ struct LayerCanvasView: View {
                         }
                     }
 
-                    // Render all members (including nested groups)
                     renderGroupMembers(memberShapes, parentXform: parentTransform)
 
                 case .shape(let shape), .warp(let shape), .clipMask(let shape), .guide(let shape):
-                    // Get mask shape if this object is clipped by another object
+
                     let maskShape: VectorShape? = {
                         guard let maskID = shape.clippedByShapeID,
                               let maskObject = document.snapshot.objects[maskID] else {
@@ -631,18 +568,16 @@ struct LayerCanvasView: View {
                         return maskObject.shape
                     }()
                     let liveTextShape = applyLiveCornerRadii(to: applyLivePositions(to: shape))
-                    // For text, pass liveScaleTransform so it can reflow (don't transform)
+
                     renderText(liveTextShape, context: &context, isSelected: isSelected, liveScaleTransform: isSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, strokeDeltaOpacity: strokeDeltaOpacity, strokeDeltaWidth: strokeDeltaWidth, textContentDelta: textContentDelta, maskShape: maskShape)
                 }
             }
         }
     }
 
-    // MARK: - Viewport Culling (O(1) operations)
-
     private func calculateViewportBounds(size: CGSize) -> CGRect {
-        // Convert viewport to document space with padding for smooth scrolling
-        let padding: CGFloat = 200.0 // Extra padding to preload nearby objects
+
+        let padding: CGFloat = 200.0
         let minX = (-canvasOffset.x - padding) / zoomLevel
         let minY = (-canvasOffset.y - padding) / zoomLevel
         let maxX = (size.width - canvasOffset.x + padding) / zoomLevel
@@ -652,39 +587,29 @@ struct LayerCanvasView: View {
     }
 
     private func isObjectInViewport(_ bounds: CGRect, viewport: CGRect) -> Bool {
-        // Fast AABB intersection test (O(1))
+
         return bounds.intersects(viewport)
     }
 
     private func isObjectInViewportSIMD(_ bounds: CGRect, viewport: CGRect) -> Bool {
-        // SIMD-accelerated AABB intersection test (O(1), vectorized)
-        // Pack bounds into SIMD vectors for parallel comparison
+
         let objMin = SIMD2<Double>(bounds.minX, bounds.minY)
         let objMax = SIMD2<Double>(bounds.maxX, bounds.maxY)
         let vpMin = SIMD2<Double>(viewport.minX, viewport.minY)
         let vpMax = SIMD2<Double>(viewport.maxX, viewport.maxY)
 
-        // Vectorized intersection test (2 comparisons in parallel)
-        // Check overlap: objMax >= vpMin AND objMin <= vpMax
         let overlapMin = objMax .>= vpMin
         let overlapMax = objMin .<= vpMax
 
-        // Combine results: all components must overlap (reduce with AND)
         return all(overlapMin) && all(overlapMax)
     }
 
-    // MARK: - Optimized Shape Rendering
-
     private func renderShape(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, scaleTransform: CGAffineTransform = .identity, maskShape: VectorShape? = nil) {
-        // Fast path: skip invisible shapes (O(1))
-        // In keyline mode, ALWAYS render - show all shape outlines regardless of fill/stroke settings
+
         let hasVisibleFill = viewMode == .color && shape.fillStyle?.color != .clear
         let hasVisibleStroke = shape.strokeStyle?.color != .clear
         guard viewMode == .keyline || hasVisibleFill || hasVisibleStroke else { return }
 
-        // Use cached CGPath (O(1) on cache hit)
-        // If scaleTransform is active, apply it to the path geometry to scale the shape
-        // while keeping stroke width constant
         let cgPath: CGPath
         if scaleTransform != .identity {
             let mutablePath = CGMutablePath()
@@ -694,17 +619,13 @@ struct LayerCanvasView: View {
             cgPath = shape.cachedCGPath
         }
 
-        // Drag delta is now applied at canvas level, not per-object
-
-        // If we have a mask, use drawLayer to isolate clipping
         if let maskShape = maskShape {
             context.drawLayer { layerContext in
                 let maskPath = maskShape.cachedCGPath
                 layerContext.clip(to: Path(maskPath))
 
-                // Render fill (O(1) for solid, O(n) for gradient where n = stops)
                 if viewMode == .color, let fillStyle = shape.fillStyle {
-                    // Use delta opacity if available and shape is selected
+
                     let effectiveFillOpacity: Double
                     if let deltaOpacity = fillDeltaOpacity, selectedObjectIDs.contains(shape.id) {
                         effectiveFillOpacity = deltaOpacity
@@ -712,19 +633,16 @@ struct LayerCanvasView: View {
                         effectiveFillOpacity = fillStyle.opacity
                     }
 
-
-                    // Check for activeGradientDelta FIRST (for live preview during drag)
-                    // ONLY apply gradient delta if activeColorTarget is .fill
                     if let gradient = activeGradientDelta, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
-                        // Create a fillStyle with activeGradientDelta and opacity
+
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if let gradient = fillStyle.gradient {
-                        // Use gradient from snapshot
+
                         let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &layerContext)
                     } else if fillStyle.color != .clear {
-                        // Check for colorDeltaColor for live preview during drag
+
                         let effectiveFillColor: VectorColor
                         if let deltaColor = colorDeltaColor, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
                             effectiveFillColor = deltaColor
@@ -736,11 +654,10 @@ struct LayerCanvasView: View {
                     }
                 }
 
-                // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
                 if viewMode == .keyline {
                     layerContext.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
                 } else if let strokeStyle = shape.strokeStyle {
-                    // Use delta values if available and shape is selected
+
                     let isSelected = selectedObjectIDs.contains(shape.id)
                     let effectiveStrokeOpacity: Double
                     if let deltaOpacity = strokeDeltaOpacity, isSelected {
@@ -748,7 +665,7 @@ struct LayerCanvasView: View {
                     } else {
                         effectiveStrokeOpacity = strokeStyle.opacity
                     }
-                    
+
                     let effectiveStrokeWidth: Double
                     if let deltaWidth = strokeDeltaWidth, isSelected {
                         effectiveStrokeWidth = deltaWidth
@@ -757,8 +674,7 @@ struct LayerCanvasView: View {
                     }
 
                     if strokeStyle.placement == .center {
-                        // Check for activeGradientDelta FIRST (for live preview during drag)
-                        // ONLY apply gradient delta if activeColorTarget is .stroke
+
                         if let gradient = activeGradientDelta, isSelected, activeColorTarget == .stroke {
                             let effectiveStrokeStyle = StrokeStyle(
                                 gradient: gradient,
@@ -771,7 +687,7 @@ struct LayerCanvasView: View {
                             )
                             renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if let gradient = strokeStyle.gradient {
-                            // Use gradient from snapshot
+
                             let effectiveStrokeStyle = StrokeStyle(
                                 gradient: gradient,
                                 width: effectiveStrokeWidth,
@@ -783,7 +699,7 @@ struct LayerCanvasView: View {
                             )
                             renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &layerContext)
                         } else if strokeStyle.color != .clear {
-                            // Check for colorDeltaColor for live preview during drag
+
                             let effectiveStrokeColor: VectorColor
                             if let delta = colorDeltaColor, isSelected, activeColorTarget == .stroke {
                                 effectiveStrokeColor = delta
@@ -802,7 +718,7 @@ struct LayerCanvasView: View {
                             )
                         }
                     } else {
-                        // Create a strokeStyle with effective values for placement strokes
+
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                         effectiveStrokeStyle.width = effectiveStrokeWidth
@@ -811,10 +727,9 @@ struct LayerCanvasView: View {
                 }
             }
         } else {
-            // No mask, render directly
-            // Render fill (O(1) for solid, O(n) for gradient where n = stops)
+
             if viewMode == .color, let fillStyle = shape.fillStyle {
-                // Use delta opacity if available and shape is selected
+
                 let effectiveFillOpacity: Double
                 if let delta = fillDeltaOpacity, selectedObjectIDs.contains(shape.id) {
                     effectiveFillOpacity = delta
@@ -822,16 +737,15 @@ struct LayerCanvasView: View {
                     effectiveFillOpacity = fillStyle.opacity
                 }
 
-                // Check for activeGradientDelta FIRST (for live preview during drag)
                 if let gradientDelta = activeGradientDelta, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
                     let effectiveFillStyle = FillStyle(gradient: gradientDelta, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: gradientDelta, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if let gradient = fillStyle.gradient {
-                    // Use gradient from snapshot
+
                     let effectiveFillStyle = FillStyle(gradient: gradient, opacity: effectiveFillOpacity)
                     renderGradientToContext(gradient: gradient, path: cgPath, isStroke: false, strokeStyle: nil, fillStyle: effectiveFillStyle, in: &context)
                 } else if fillStyle.color != .clear {
-                    // Check for colorDeltaColor for live preview during drag
+
                     let effectiveFillColor: VectorColor
                     if let delta = colorDeltaColor, selectedObjectIDs.contains(shape.id), activeColorTarget == .fill {
                         effectiveFillColor = delta
@@ -843,12 +757,10 @@ struct LayerCanvasView: View {
                 }
             }
 
-            // Render stroke (O(1) for solid, O(n) for gradient or placement strokes)
-            // Stroke width stays constant regardless of scale transform
             if viewMode == .keyline {
                 context.stroke(Path(cgPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
             } else if let strokeStyle = shape.strokeStyle {
-                // Use delta values if available and shape is selected
+
                 let isSelected = selectedObjectIDs.contains(shape.id)
                 let effectiveStrokeOpacity: Double
                 if let delta = strokeDeltaOpacity, isSelected {
@@ -864,20 +776,20 @@ struct LayerCanvasView: View {
                 }
 
                 if strokeStyle.placement == .center {
-                    // Check for activeGradientDelta FIRST (for live preview during drag)
+
                     if let gradientDelta = activeGradientDelta, isSelected, activeColorTarget == .stroke {
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                         effectiveStrokeStyle.width = effectiveStrokeWidth
                         renderGradientToContext(gradient: gradientDelta, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if let gradient = strokeStyle.gradient {
-                        // Create a strokeStyle with effective values for gradients
+
                         var effectiveStrokeStyle = strokeStyle
                         effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                         effectiveStrokeStyle.width = effectiveStrokeWidth
                         renderGradientToContext(gradient: gradient, path: cgPath, isStroke: true, strokeStyle: effectiveStrokeStyle, in: &context)
                     } else if strokeStyle.color != .clear {
-                        // Check for colorDeltaColor for live preview during drag
+
                         let effectiveStrokeColor: VectorColor
                         if let delta = colorDeltaColor, isSelected, activeColorTarget == .stroke {
                             effectiveStrokeColor = delta
@@ -896,7 +808,7 @@ struct LayerCanvasView: View {
                         )
                     }
                 } else {
-                    // Create a strokeStyle with effective values for placement strokes
+
                     var effectiveStrokeStyle = strokeStyle
                     effectiveStrokeStyle.opacity = effectiveStrokeOpacity
                     effectiveStrokeStyle.width = effectiveStrokeWidth
@@ -907,21 +819,16 @@ struct LayerCanvasView: View {
     }
 
     private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
-        // Use PathOperations.outlineStroke for inside/outside strokes
-        // Stroke width stays constant (no scaling compensation needed)
 
-        // Get the outlined stroke path
         guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: strokeStyle) else {
             return
         }
 
-        // Render the outlined path as a filled shape
         if let gradient = strokeStyle.gradient {
-            // For outlined strokes, we treat it as a fill but still need stroke opacity
-            // Pass isStroke: false since path is already outlined, but pass strokeStyle for opacity
+
             renderGradientToContext(gradient: gradient, path: outlinedPath, isStroke: false, strokeStyle: strokeStyle, fillStyle: nil, in: &context)
         } else if strokeStyle.color != .clear {
-            // Simple fill using SwiftUI's Path
+
             context.fill(
                 Path(outlinedPath),
                 with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity))
@@ -930,22 +837,19 @@ struct LayerCanvasView: View {
     }
 
     private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
-        // Paint gradient directly to CGContext (like we do for CoreText)
+
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
-            // Apply opacity based on whether we have fillStyle or strokeStyle
-            // Note: For outlined strokes, isStroke is false but we still use strokeStyle
             if let fillStyle = fillStyle {
                 cgContext.setAlpha(CGFloat(fillStyle.opacity))
             } else if let strokeStyle = strokeStyle {
                 cgContext.setAlpha(CGFloat(strokeStyle.opacity))
             }
 
-            // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                // Stroke width stays constant (no scaling compensation)
+
                 cgContext.setLineWidth(strokeStyle.width)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
@@ -957,33 +861,26 @@ struct LayerCanvasView: View {
                 finalPath = path
             }
 
-            // Render gradient directly
             renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
 
             cgContext.restoreGState()
         }
     }
 
-    // MARK: - Optimized Gradient Rendering
-
     private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
         cgContext.saveGState()
 
-        // Fast path bounds calculation (O(1))
         let pathBounds = path.boundingBoxOfPath
 
-        // Optimize color conversion - avoid creating new color objects (O(n) where n = stops)
         let colors: [CGColor] = gradient.stops.map { stop in
             if case .clear = stop.color {
                 return stop.color.cgColor
             }
-            // Direct CGColor creation is faster than SwiftUI Color wrapper
+
             return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
         }
         let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
 
-        // Interpolate in sRGB to match browser SVG rendering (CGColorSpaceCreateDeviceRGB
-        // resolves to displayP3 on P3 displays, producing different midtones than the spec).
         guard let cgGradient = CGGradient(
             colorsSpace: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
             colors: colors as CFArray,
@@ -993,16 +890,13 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Clip once (O(1))
         cgContext.addPath(path)
         cgContext.clip()
 
-        // Render gradient based on type
         switch gradient {
         case .linear(let linear):
             if linear.units == .userSpaceOnUse {
-                // userSpaceOnUse: coordinates are absolute in SVG user space,
-                // pre-resolved with gradientTransform baked in at parse time
+
                 let start = CGPoint(x: linear.startPoint.x, y: linear.startPoint.y)
                 let end = CGPoint(x: linear.endPoint.x, y: linear.endPoint.y)
 
@@ -1013,7 +907,7 @@ struct LayerCanvasView: View {
                     options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
                 )
             } else {
-                // objectBoundingBox: coordinates are 0-1 relative to shape bounds
+
                 let scale = CGFloat(linear.scaleX)
                 let originX = linear.originPoint.x * scale
                 let originY = linear.originPoint.y * scale
@@ -1046,8 +940,7 @@ struct LayerCanvasView: View {
 
         case .radial(let radial):
             if radial.units == .userSpaceOnUse {
-                // userSpaceOnUse: coordinates are absolute in SVG user space,
-                // pre-resolved with gradientTransform baked in at parse time
+
                 let center = CGPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
                 let focal = radial.focalPoint ?? center
                 let radius = CGFloat(radial.radius)
@@ -1061,7 +954,7 @@ struct LayerCanvasView: View {
                     options: [.drawsAfterEndLocation]
                 )
             } else {
-                // objectBoundingBox: coordinates are 0-1 relative to shape bounds
+
                 let center = CGPoint(
                     x: pathBounds.minX + pathBounds.width * radial.originPoint.x,
                     y: pathBounds.minY + pathBounds.height * radial.originPoint.y
@@ -1091,13 +984,10 @@ struct LayerCanvasView: View {
         cgContext.restoreGState()
     }
 
-    // MARK: - Optimized Text Rendering
-
     private func renderText(_ shape: VectorShape, context: inout GraphicsContext, isSelected: Bool, liveScaleTransform: CGAffineTransform = .identity, fontSizeDelta: Double? = nil, lineSpacingDelta: Double? = nil, lineHeightDelta: Double? = nil, letterSpacingDelta: Double? = nil, fillDeltaOpacity: Double? = nil, strokeDeltaOpacity: Double? = nil, strokeDeltaWidth: Double? = nil, textContentDelta: (id: UUID, content: String)? = nil, maskShape: VectorShape? = nil) {
-        // Fast validation (O(1))
+
         guard let vectorText = VectorText.from(shape) else { return }
 
-        // Use delta content if available and matching this shape
         let effectiveContent: String
         if let delta = textContentDelta, delta.id == shape.id && !delta.content.isEmpty {
             effectiveContent = delta.content
@@ -1107,19 +997,15 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Drag delta is now applied at canvas level, not per-object
-
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
-            // Apply clipping mask if provided
             if let maskShape = maskShape {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
                 cgContext.clip()
             }
 
-            // Apply live fill opacity delta if dragging and selected
             let effectiveFillOpacity: Double
             if let delta = fillDeltaOpacity, isSelected {
                 effectiveFillOpacity = delta
@@ -1129,39 +1015,35 @@ struct LayerCanvasView: View {
 
             cgContext.setAlpha(CGFloat(effectiveFillOpacity))
 
-            // Apply live typography deltas if dragging and selected
             let effectiveFontSize: CGFloat
             let effectiveLineHeight: CGFloat
             let effectiveLineSpacing: CGFloat
             let effectiveLetterSpacing: CGFloat
 
             if isSelected {
-                // Font size
+
                 effectiveFontSize = if let delta = fontSizeDelta {
                     CGFloat(delta)
                 } else {
                     vectorText.typography.fontSize
                 }
 
-                // Line height (explicit delta overrides proportional)
                 if let delta = lineHeightDelta {
                     effectiveLineHeight = CGFloat(delta)
                 } else if let fontDelta = fontSizeDelta {
-                    // Proportional line height based on font size delta
+
                     let lineHeightRatio = vectorText.typography.lineHeight / vectorText.typography.fontSize
                     effectiveLineHeight = CGFloat(fontDelta) * lineHeightRatio
                 } else {
                     effectiveLineHeight = vectorText.typography.lineHeight
                 }
 
-                // Line spacing delta
                 effectiveLineSpacing = if let delta = lineSpacingDelta {
                     CGFloat(delta)
                 } else {
                     vectorText.typography.lineSpacing
                 }
 
-                // Letter spacing delta
                 effectiveLetterSpacing = if let delta = letterSpacingDelta {
                     CGFloat(delta)
                 } else {
@@ -1174,7 +1056,6 @@ struct LayerCanvasView: View {
                 effectiveLetterSpacing = vectorText.typography.letterSpacing
             }
 
-            // Create PlatformFont with effective size
             let nsFont: PlatformFont = {
                 if let variant = vectorText.typography.fontVariant {
                     let fontManager = NSFontManager.shared
@@ -1194,7 +1075,6 @@ struct LayerCanvasView: View {
                 return PlatformFont(name: vectorText.typography.fontFamily, size: effectiveFontSize) ?? PlatformFont.systemFont(ofSize: effectiveFontSize)
             }()
 
-            // Build paragraph style once (O(1))
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
             paragraphStyle.lineSpacing = max(0, effectiveLineSpacing)
@@ -1203,25 +1083,22 @@ struct LayerCanvasView: View {
 
             let textColor = NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? .black
 
-            // Shared attributes to avoid duplicate dictionary creation
             let commonAttributes: [NSAttributedString.Key: Any] = [
                 .font: nsFont,
                 .paragraphStyle: paragraphStyle,
                 .kern: effectiveLetterSpacing
             ]
 
-            // Create layout system once (O(n) where n = text length)
             let attributedString = NSAttributedString(string: effectiveContent, attributes: commonAttributes)
             let textStorage = NSTextStorage(attributedString: attributedString)
             let layoutManager = NSLayoutManager()
             textStorage.addLayoutManager(layoutManager)
 
-            // Calculate text box width - use scaled width during live preview for reflow
             var textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
             var textPosition = vectorText.position
 
             if liveScaleTransform != .identity {
-                // Apply live scale transform to get new dimensions and position
+
                 let originalBounds = CGRect(
                     x: vectorText.position.x,
                     y: vectorText.position.y,
@@ -1238,31 +1115,26 @@ struct LayerCanvasView: View {
             textContainer.lineBreakMode = .byWordWrapping
             layoutManager.addTextContainer(textContainer)
 
-            // Layout glyphs once (O(n))
             let textRange = NSRange(location: 0, length: effectiveContent.count)
             layoutManager.ensureGlyphs(forGlyphRange: textRange)
             layoutManager.ensureLayout(for: textContainer)
 
-            // Rendering attributes with color (reuse common attributes)
             var renderAttributes = commonAttributes
             renderAttributes[.foregroundColor] = textColor
 
             let glyphRange = layoutManager.glyphRange(for: textContainer)
             let textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
-            // Enumerate and draw lines (O(k) where k = number of lines)
             layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
                 let lineString = (effectiveContent as NSString).substring(with: lineRange)
                 let lineAttribString = NSAttributedString(string: lineString, attributes: renderAttributes)
                 var line = CTLineCreateWithAttributedString(lineAttribString)
 
-                // Apply justification if needed
                 if vectorText.typography.alignment.nsTextAlignment == .justified,
                    let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
                     line = justifiedLine
                 }
 
-                // Calculate line position using scaled position during live preview
                 let glyphLocation = layoutManager.location(forGlyphAt: lineRange.location)
                 let lineX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
@@ -1275,14 +1147,12 @@ struct LayerCanvasView: View {
                 }
                 let lineY = textPosition.y + lineRect.origin.y + glyphLocation.y
 
-                // Draw line
                 cgContext.saveGState()
                 cgContext.textMatrix = textMatrix
                 cgContext.textPosition = CGPoint(x: lineX, y: lineY)
 
-                // Check if text has stroke
                 if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
-                    // Get glyphs and positions from CTLine to build path
+
                     guard let glyphRuns = CTLineGetGlyphRuns(line) as? [CTRun], !glyphRuns.isEmpty else {
                         cgContext.restoreGState()
                         return
@@ -1313,7 +1183,6 @@ struct LayerCanvasView: View {
                         positions.deallocate()
                     }
 
-                    // Apply deltas if selected
                     let effectiveStrokeWidth: Double
                     if let delta = strokeDeltaWidth, isSelected {
                         effectiveStrokeWidth = delta
@@ -1327,18 +1196,15 @@ struct LayerCanvasView: View {
                         effectiveStrokeOpacity = vectorText.typography.strokeOpacity
                     }
 
-                    // Draw the path with fill and stroke
                     cgContext.saveGState()
                     cgContext.translateBy(x: lineX, y: lineY)
                     cgContext.concatenate(textMatrix)
 
-                    // Draw fill first
                     cgContext.addPath(textPath)
                     cgContext.setFillColor(textColor.cgColor)
                     cgContext.setAlpha(CGFloat(effectiveFillOpacity))
                     cgContext.fillPath()
 
-                    // Draw stroke (always center for text)
                     cgContext.addPath(textPath)
                     let strokeColor = NSColor(cgColor: vectorText.typography.strokeColor.cgColor) ?? .black
                     cgContext.setStrokeColor(strokeColor.cgColor)
@@ -1350,7 +1216,7 @@ struct LayerCanvasView: View {
 
                     cgContext.restoreGState()
                 } else {
-                    // No stroke - just draw normally
+
                     CTLineDraw(line, cgContext)
                 }
 
@@ -1361,14 +1227,12 @@ struct LayerCanvasView: View {
         }
     }
 
-    // MARK: - Optimized Image Rendering
-
     private func hasImageData(_ shape: VectorShape) -> Bool {
         return shape.embeddedImageData != nil || shape.linkedImagePath != nil
     }
 
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
-        // ONLY use bookmark data (security-scoped access required)
+
         guard let bookmarkData = bookmarkData else {
             print("❌ No bookmark data for image: \(linkedPath)")
             return nil
@@ -1393,7 +1257,6 @@ struct LayerCanvasView: View {
             return nil
         }
 
-        // Force image into memory to break file reference
         let width = sourceCGImage.width
         let height = sourceCGImage.height
         let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
@@ -1421,7 +1284,7 @@ struct LayerCanvasView: View {
             }
             Self.lastRenderImageMemMB = mb
         }
-        // Get render bounds
+
         let pathBounds = shape.path.cgPath.boundingBoxOfPath
         var renderBounds = pathBounds
         if scaleTransform != .identity {
@@ -1431,12 +1294,11 @@ struct LayerCanvasView: View {
             renderBounds = renderBounds.applying(shape.transform)
         }
 
-        // Check cache FIRST - if CGImage is cached, use it (NO disk I/O!)
         let image: CGImage
         if let cachedImage = document.imageStorage[shape.id] {
             image = cachedImage
         } else {
-            // CACHE MISS - load from disk ONCE and cache it
+
             let sourceCGImage: CGImage?
             if let imageData = shape.embeddedImageData,
                let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
@@ -1458,7 +1320,6 @@ struct LayerCanvasView: View {
                 return
             }
 
-            // Downsample if quality < 1.0
             let finalImage: CGImage
             if imagePreviewQuality < 1.0 {
                 let maxDimension = max(cgImage.width, cgImage.height)
@@ -1495,7 +1356,6 @@ struct LayerCanvasView: View {
                 finalImage = cgImage
             }
 
-            // Cache the image (with quality applied)
             let beforeMB = MemoryDiag.processMemoryMB()
             document.imageStorage[shape.id] = finalImage
             image = finalImage
@@ -1503,7 +1363,6 @@ struct LayerCanvasView: View {
             print("🚨 [MemDiag] IMAGE CACHE MISS: \(finalImage.width)x\(finalImage.height) stored for \(shape.id), mem \(beforeMB)→\(afterMB)MB (+\(afterMB - beforeMB)MB)")
         }
 
-        // Check hash for debugging, but ALWAYS draw (Canvas clears every frame)
         let imageHash = ObjectIdentifier(image).hashValue
         let lastHash = document.lastDrawnImageHash[shape.id]
 
@@ -1512,30 +1371,22 @@ struct LayerCanvasView: View {
             document.lastDrawnImageHash[shape.id] = imageHash
         }
 
-        // ALWAYS draw - Canvas clears every frame, we MUST redraw
-
-        // Draw using CGContext
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
-            // Apply clipping mask if provided
             if let maskShape = maskShape {
                 let maskPath = maskShape.cachedCGPath
                 cgContext.addPath(maskPath)
                 cgContext.clip()
             }
 
-            // Apply opacity
             cgContext.setAlpha(CGFloat(shape.opacity))
 
-            // Flip coordinate system for image rendering
             cgContext.translateBy(x: renderBounds.minX, y: renderBounds.maxY)
             cgContext.scaleBy(x: 1.0, y: -1.0)
 
-            // Set rendering quality
             cgContext.interpolationQuality = imageInterpolationQuality
 
-            // Draw the image
             cgContext.draw(image, in: CGRect(origin: .zero, size: renderBounds.size))
 
             cgContext.restoreGState()
@@ -1545,7 +1396,7 @@ struct LayerCanvasView: View {
 }
 
 struct IsolatedLayerView: View {
-    let objectIDs: [UUID]  // Changed from objects array
+    let objectIDs: [UUID]
     let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -1577,30 +1428,23 @@ struct IsolatedLayerView: View {
     let liveCornerRadii: [Double]
     let selectedShapeIDForCornerRadius: UUID?
     let layerUpdateTrigger: UInt
-    let isPanning: Bool  // For expanded viewport during pan
+    let isPanning: Bool
 
-    // Helper to collect all text shapes (both top-level and grouped)
     private var editingTextShapes: [(id: UUID, dragDelta: CGPoint)] {
-        // EARLY RETURN: Skip expensive iteration if we're not in text mode
-        // This prevents 60fps calls during shape manipulation
-        // TODO: Replace with document.hasEditingText property
+
         guard document.viewState.currentTool == .font else {
             return []
         }
 
         var shapes: [(id: UUID, dragDelta: CGPoint)] = []
 
-        // print("🔍 collectEditingTextShapes: checking snapshot directly")
-
-        // Fetch FRESH data from document.snapshot.objects
         for objectID in objectIDs {
             guard let freshObject = document.snapshot.objects[objectID],
                   freshObject.isVisible else { continue }
 
             switch freshObject.objectType {
             case .text(let shape):
-                // Top-level text object
-                // print("🔍 Found top-level text: id=\(shape.id), isEditing=\(shape.isEditing ?? false)")
+
                 if let vectorText = VectorText.from(shape),
                    vectorText.getState(in: document) == .editing {
                     let isSelected = selectedObjectIDs.contains(shape.id)
@@ -1609,16 +1453,15 @@ struct IsolatedLayerView: View {
                 }
 
             case .group(let groupShape):
-                // print("🔍 Found group: id=\(groupShape.id), groupedShapes.count=\(groupShape.groupedShapes.count)")
-                // Text objects inside groups
+
                 for childShape in groupShape.groupedShapes {
                     if childShape.typography != nil {
-                        // print("🔍 Found text in group: id=\(childShape.id), isEditing=\(childShape.isEditing ?? false)")
+
                     }
                     guard childShape.isVisible else { continue }
                     if let vectorText = VectorText.from(childShape),
                        vectorText.getState(in: document) == .editing {
-                        // Check if child is individually selected or parent group is selected
+
                         let isChildSelected = selectedObjectIDs.contains(childShape.id)
                         let isParentSelected = selectedObjectIDs.contains(freshObject.id)
                         let delta = (isChildSelected || isParentSelected) ? dragPreviewDelta : .zero
@@ -1631,18 +1474,17 @@ struct IsolatedLayerView: View {
             }
         }
 
-        // print("🔍 Total editing texts found: \(shapes.count)")
         return shapes
     }
 
     var body: some View {
-        //let _ = print("🎯 IsolatedLayerView.body: activeColorTarget=\(activeColorTarget), activeGradientDelta=\(activeGradientDelta != nil)")
+
         ZStack {
-            // Render paths using Canvas (gradients and text still use SwiftUI)
+
             LayerCanvasView(
                 objectIDs: objectIDs,
                 document: document,
-                documentURL: nil,  // TODO: Pass actual document URL from window?.representedURL
+                documentURL: nil,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
                 selectedObjectIDs: selectedObjectIDs,
@@ -1674,7 +1516,6 @@ struct IsolatedLayerView: View {
                 layerUpdateTrigger: layerUpdateTrigger
             )
 
-            // For text editor - show NSTextView for all editing text (top-level and grouped)
             ForEach(editingTextShapes, id: \.id) { textInfo in
                 ProfessionalTextCanvas(
                     document: document,

@@ -15,7 +15,7 @@ extension FileOperations {
     static func openSVGFile(url: URL) throws -> VectorDocument {
 
         let document = VectorDocument(settings: DocumentSettings())
-        // Keep only Canvas and Pasteboard background objects
+
         let objectsToKeep = document.snapshot.objects.filter { (_, obj) in
             if case .shape(let shape) = obj.objectType {
                 return shape.name == "Canvas Background" || shape.name == "Pasteboard Background"
@@ -41,18 +41,15 @@ extension FileOperations {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 
-            // Try to decode as current format first
             if let inkpenDocument = try? decoder.decode(VectorDocument.self, from: inkpenData) {
-                // Log version for migration tracking
+
                 Log.fileOperation("📦 Opened inkpen document from SVG, version: \(inkpenDocument.snapshot.formatVersion)", level: .info)
 
-                // Remove legacy background objects
                 FileOperations.removeLegacyBackgroundObjects(from: inkpenDocument)
 
                 return inkpenDocument
             }
 
-            // Fallback: Try migration from legacy format
             Log.fileOperation("⚠️ Current format failed, attempting legacy migration from SVG...", level: .warning)
             if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: inkpenData) {
                 return migratedDocument
@@ -162,13 +159,11 @@ extension FileOperations {
 
         document.selectedLayerIndex = targetLayer
 
-        // Remove legacy background objects from imported SVG
         FileOperations.removeLegacyBackgroundObjects(from: document)
 
         return document
     }
 
-    /// Unpacks SVGParser <g> carriers into native memberIDs-style groups.
     private static func installShapeRespectingGroups(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         if (shape.isGroup || shape.isClippingGroup) && !shape.groupedShapes.isEmpty {
             var container = shape
@@ -185,7 +180,6 @@ extension FileOperations {
         }
     }
 
-    /// Writes a group child into snapshot.objects without touching the layer.
     private static func installGroupMemberIntoSnapshot(_ shape: VectorShape, layerIndex: Int, document: VectorDocument) {
         var toInstall = shape
         if (toInstall.isGroup || toInstall.isClippingGroup) && !toInstall.groupedShapes.isEmpty {

@@ -181,7 +181,6 @@ struct MoveObjectDialog: View {
         isPresented = false
     }
 
-    /// Move only the selected points (direct selection mode)
     private func applyMoveToSelectedPoints(deltaX: CGFloat, deltaY: CGFloat) {
         let nudgeAmount = CGVector(dx: deltaX, dy: deltaY)
 
@@ -214,7 +213,7 @@ struct MoveObjectDialog: View {
                 case .line(let to):
                     elements[pointID.elementIndex] = .line(to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy))
                 case .curve(let to, let c1, let c2):
-                    // Move the anchor point and its control handles together
+
                     elements[pointID.elementIndex] = .curve(
                         to: VectorPoint(to.x + nudgeAmount.dx, to.y + nudgeAmount.dy),
                         control1: VectorPoint(c1.x + nudgeAmount.dx, c1.y + nudgeAmount.dy),

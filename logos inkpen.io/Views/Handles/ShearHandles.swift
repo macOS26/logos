@@ -224,7 +224,7 @@ struct ShearHandles: View {
             }
             cachedPreviewPath = path
         }
-       // .id("shear-handles-\(pointsRefreshTrigger)")
+
     }
 
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
@@ -246,7 +246,6 @@ struct ShearHandles: View {
         isShearing = false
         document.isHandleScalingActive = false
 
-        // Collect all modified IDs (group + members recursively)
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
@@ -295,7 +294,6 @@ struct ShearHandles: View {
         previewTransform = .identity
     }
 
-    /// Recursively collect shape and all member shapes for undo
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
 
@@ -441,13 +439,11 @@ struct ShearHandles: View {
         let deltaX = currentDistance.x - startDistance.x
         let deltaY = currentDistance.y - startDistance.y
 
-        // Illustrator: horizontal drag shears X, vertical drag shears Y
         let shearFactorX = deltaX * sensitivity
         let shearFactorY = deltaY * sensitivity
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
 
-        // Shift constrains to pure horizontal or vertical shear
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             if abs(deltaX) > abs(deltaY) {
@@ -528,7 +524,6 @@ struct ShearHandles: View {
             return
         }
 
-        // For modern groups with memberIDs, use the proper group transform function
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
             return

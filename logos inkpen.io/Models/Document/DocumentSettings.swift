@@ -136,7 +136,6 @@ struct DocumentSettings: Codable, Hashable {
         width = currentSizeInPoints.width / newPointsPerUnit
         height = currentSizeInPoints.height / newPointsPerUnit
 
-        // Reset grid spacing to appropriate default for the new unit
         gridSpacing = newUnit.defaultGridSpacing
 
         _sizeInPoints = currentSizeInPoints

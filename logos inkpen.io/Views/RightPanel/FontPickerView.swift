@@ -22,7 +22,7 @@ extension View {
     func fontPickerLabel() -> some View {
         modifier(FontPickerLabelStyle())
     }
-    
+
     func fontPickerStyle() -> some View {
         modifier(FontPickerPickerStyle())
     }
@@ -40,7 +40,7 @@ struct FontPickerView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Font")
                 .fontPickerLabel()
-            
+
             Picker("", selection: Binding(
                 get: {
                     if let textID = selectedObjectIDs.first,
@@ -77,7 +77,7 @@ struct FontPickerView: View {
 
             Text("Weight")
                 .fontPickerLabel()
-            
+
             Picker("", selection: Binding(
                 get: {
                     if let textID = selectedObjectIDs.first,
@@ -115,7 +115,7 @@ struct FontPickerView: View {
                     Text(cleanVariantName(variant))
                         .font(getFontForVariant(family: currentFamily, variantName: variant))
                         .tag(variant)
-                        //.id("\(currentFamily)-\(variant)")
+
                 }
             }
             .fontPickerStyle()

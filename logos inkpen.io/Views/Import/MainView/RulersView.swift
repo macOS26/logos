@@ -15,7 +15,7 @@ struct RulersView: View {
     var body: some View {
         if document.gridSettings.showRulers {
             ZStack {
-                // Horizontal Ruler
+
                 Canvas { context, size in
                     context.fill(
                         Path(CGRect(origin: .zero, size: size)),
@@ -33,7 +33,7 @@ struct RulersView: View {
 
                     drawHorizontalRuler(context: context, size: size, document: document)
                 }
-                // .drawingGroup() removed — saves ~33MB per ruler
+
                 .frame(height: rulerThickness)
                 .position(x: geometry.size.width / 2, y: rulerThickness / 2)
                 .contentShape(Path { path in
@@ -42,7 +42,7 @@ struct RulersView: View {
                 .gesture(
                     DragGesture(minimumDistance: 1)
                         .onChanged { value in
-                            // Horizontal ruler drag creates a horizontal guide
+
                             isDraggingGuide = true
                             draggingGuideOrientation = .horizontal
                             let canvasY = (value.location.y - canvasOffset.y) / zoomLevel
@@ -67,7 +67,6 @@ struct RulersView: View {
                     }
                 }
 
-                // Vertical Ruler
                 Canvas { context, size in
                     context.fill(
                         Path(CGRect(origin: .zero, size: size)),
@@ -87,7 +86,7 @@ struct RulersView: View {
                     ctx.translateBy(x: 0, y: 0.5)
                     drawVerticalRuler(context: ctx, size: size, document: document)
                 }
-                // .drawingGroup() removed — saves ~33MB per ruler
+
                 .frame(width: rulerThickness)
                 .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 .contentShape(Path { path in
@@ -96,7 +95,7 @@ struct RulersView: View {
                 .gesture(
                     DragGesture(minimumDistance: 1)
                         .onChanged { value in
-                            // Vertical ruler drag creates a vertical guide
+
                             isDraggingGuide = true
                             draggingGuideOrientation = .vertical
                             let canvasX = (value.location.x - canvasOffset.x) / zoomLevel
@@ -154,7 +153,6 @@ struct RulersView: View {
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
 
-        // Align ticks with page origin
         let offsetFromOrigin = startX - pageOrigin.x
         var x = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.x
 
@@ -335,7 +333,6 @@ struct RulersView: View {
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
 
-        // Align ticks with page origin (matches horizontal ruler)
         let offsetFromOrigin = startY - pageOrigin.y
         var y = floor(offsetFromOrigin / tickSpacing) * tickSpacing + pageOrigin.y
 
@@ -611,7 +608,7 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
 }
 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
-    // Avoid showing -0
+
     let roundedValue = value.rounded()
     if abs(roundedValue) < 0.01 {
         return "0"
@@ -648,7 +645,7 @@ extension VectorDocument {
     }
 
     func snapToGuidelines(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
-        // Guides layer is index 2
+
         let guidesLayerVisible = snapshot.layers.count > 2 && snapshot.layers[2].isVisible
         guard gridSettings.snapToGuides && guidesLayerVisible else { return point }
 
@@ -695,7 +692,6 @@ extension VectorDocument {
         return snappedPoint
     }
 
-    /// Snap to both grid and guides (guides take priority)
     func snapPoint(_ point: CGPoint, snapDistance: CGFloat = 5.0) -> CGPoint {
         var result = point
         result = snapToGuidelines(result, snapDistance: snapDistance)
@@ -763,7 +759,7 @@ struct PageOriginCrosshair: View {
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             isDragging = true
-                            // Adjust for crosshair center
+
                             let adjustedLocation = CGPoint(
                                 x: value.location.x + rulerThickness / 2,
                                 y: value.location.y + rulerThickness / 2

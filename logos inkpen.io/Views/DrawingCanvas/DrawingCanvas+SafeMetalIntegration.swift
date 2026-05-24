@@ -6,12 +6,10 @@ import MetalKit
 
 extension DrawingCanvas {
 
-
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            // canvasOffset only changes at pan end, not during drag
-            // livePanDelta is applied as GPU transform via .offset() for 60fps
+
             canvasBaseContent(geometry: geometry, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: CGInterpolationQuality(rawValue: Int32(imageInterpolationQuality)) ?? .none)
 
             canvasOverlays(geometry: geometry)
@@ -28,13 +26,13 @@ extension DrawingCanvas {
             )
             #endif
         }
-        // Apply live pan/zoom as GPU transforms for 60fps performance
+
         .scaleEffect(liveZoomDelta)
         .offset(x: livePanDelta.x, y: livePanDelta.y)
         .onAppear {
             setupCanvas()
             previousTool = document.viewState.currentTool
-            // Fit to page on document open - delay to ensure geometry is ready
+
             if !hasPerformedInitialFitToPage {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     if !hasPerformedInitialFitToPage {
@@ -45,7 +43,7 @@ extension DrawingCanvas {
             }
         }
         .onDisappear {
-            // teardownKeyEventMonitoring()
+
         }
         .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
@@ -223,4 +221,3 @@ extension DrawingCanvas {
         }
     }
 }
-

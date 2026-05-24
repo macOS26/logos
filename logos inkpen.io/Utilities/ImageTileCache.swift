@@ -3,33 +3,21 @@ import AppKit
 import ImageIO
 import simd
 
-/// Tile coordinate using SIMD for efficient computation (x=col, y=row)
 typealias TileCoordinate = SIMD2<Int>
 
-/// Manages image sources and calculates visible tiles (CATiledLayer approach)
 class ImageTileCache {
     static let shared = ImageTileCache()
 
     private init() {}
 
-    /// Calculate which tiles intersect the viewport
-    /// - Parameters:
-    ///   - imageRect: The image bounds in SCREEN coordinates (with zoom applied)
-    ///   - viewportRect: The visible viewport in SCREEN coordinates
-    ///   - imageSize: The actual image pixel dimensions
-    ///   - canvasSize: The image size in CANVAS coordinates (before zoom)
-    ///   - tileSize: The tile size in pixels
-    /// - Returns: Array of tile coordinates and their rects in image coordinates
     func visibleTiles(imageRect: CGRect, viewportRect: CGRect, imageSize: CGSize, canvasSize: CGSize, tileSize: Int) -> [(coord: TileCoordinate, rect: CGRect)] {
         let currentTileSize = tileSize
 
-        // Calculate total number of tiles in the image
         let numCols = Int(ceil(imageSize.width / CGFloat(currentTileSize)))
         let numRows = Int(ceil(imageSize.height / CGFloat(currentTileSize)))
 
         var tiles: [(TileCoordinate, CGRect)] = []
 
-        // Return ALL tiles - no culling
         for row in 0..<numRows {
             for col in 0..<numCols {
                 let tileX = CGFloat(col * currentTileSize)
@@ -45,7 +33,6 @@ class ImageTileCache {
         return tiles
     }
 
-    /// Get downsampled source image (no caching - render directly)
     func getSourceImage(from imageData: Data, quality: Double, shapeID: UUID) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil) else {
             return nil
@@ -60,7 +47,6 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
-        // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -71,7 +57,6 @@ class ImageTileCache {
         return CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary)
     }
 
-    /// Get downsampled source image from URL (no caching - render directly)
     func getSourceImage(from url: URL, quality: Double, shapeID: UUID) -> CGImage? {
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil
@@ -86,7 +71,6 @@ class ImageTileCache {
         let maxDimension = max(width, height)
         let targetPixelSize = CGFloat(maxDimension) * quality
 
-        // Use thumbnail API for all cases, but set size to full resolution when quality is 1.0
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,

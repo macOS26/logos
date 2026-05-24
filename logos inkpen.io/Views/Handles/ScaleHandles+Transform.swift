@@ -25,13 +25,11 @@ extension ScaleHandles {
             return
         }
 
-        // For modern groups with memberIDs, use the proper group transform function
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
             return
         }
 
-        // For legacy groups with embedded groupedShapes
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             var mutableShape = shape
             var transformedGroupedShapes: [VectorShape] = []
@@ -187,7 +185,6 @@ extension ScaleHandles {
     func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 
-        // SIMD-optimized scale extraction
         let scaleX = simd_length(SIMD2(Double(transform.a), Double(transform.c)))
         let scaleY = simd_length(SIMD2(Double(transform.b), Double(transform.d)))
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)

@@ -3,7 +3,7 @@ import SwiftUI
 extension DrawingCanvas {
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
-        // Shape tool preview using Canvas
+
         if let currentPath = currentPath {
             Canvas { context, size in
                 context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -22,7 +22,6 @@ extension DrawingCanvas {
             drawingDimensionsOverlay(for: currentPath)
         }
 
-        // Bounding box preview using Canvas
         if let boundingBoxPath = tempBoundingBoxPath {
             Canvas { context, size in
                 context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -40,7 +39,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Polygon/Star bounding box using Canvas
         if let currentPath = currentPath,
            (document.viewState.currentTool == .polygon || document.viewState.currentTool == .pentagon ||
             document.viewState.currentTool == .hexagon || document.viewState.currentTool == .heptagon ||
@@ -66,7 +64,6 @@ extension DrawingCanvas {
 
         rubberBandPreview(geometry: geometry)
 
-        // Brush preview using Canvas
         if let preview = brushPreviewPath {
             Canvas { context, size in
                 context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -91,7 +88,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Freehand preview using Canvas
         if let preview = freehandPreviewPath {
             Canvas { context, size in
                 context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
@@ -113,7 +109,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Marker preview using Canvas
         if let preview = markerPreviewPath {
             let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
@@ -128,13 +123,11 @@ extension DrawingCanvas {
                     addPathElements(preview.elements, to: &path)
                 }
 
-                // Fill the path
                 context.fill(
                     path,
                     with: .color(markerFillColor.color.opacity(markerOpacity))
                 )
 
-                // Add stroke if needed
                 if showStroke {
                     let baseStrokeWidth = getCurrentStrokeWidth()
                     let strokeWidth = (document.strokeDefaults.placement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
@@ -153,7 +146,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Show bezier view when drawing, even when temporarily using hand/zoom/Cmd+selection
         if isBezierDrawing && (document.viewState.currentTool == .bezierPen || document.viewState.currentTool == .hand || document.viewState.currentTool == .zoom || isTemporarySelectionViaCommand) {
             ProfessionalBezierView(
                 document: document,
@@ -220,23 +212,20 @@ extension DrawingCanvas {
             cornerRadiusEditTool(geometry: geometry)
         }
 
-        // DEBUG: Show spatial index bounds (disabled for Metal spatial index)
-        // Metal spatial index stores bounds on GPU, not accessible for debug visualization
         if false && appState.showSpatialIndexBounds {
-            // let cachedBounds = spatialIndex.getAllCachedBounds()
+
             ForEach([], id: \.self) { (objectID: UUID) in
                 if true {
                     Path { path in
-                        // path.addRect(bounds)
+
                     }
                     .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / zoomLevel, dash: [10 / zoomLevel, 5 / zoomLevel]))
-                    // .scaleEffect(zoomLevel, anchor: .topLeading)
+
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
             }
         }
 
-        // Grid overlay - rendered on top of all layers (when gridOnTop is enabled)
         if document.gridSettings.showGrid && document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
             OptimizedGridView(
                 gridSpacing: document.settings.gridSpacing,
@@ -257,7 +246,6 @@ extension DrawingCanvas {
             )
         }
 
-        // Guides overlay - non-photo blue lines
         GuidesView(
             document: document,
             showGuides: document.snapshot.layers.count > 2 ? document.snapshot.layers[2].isVisible : false,
@@ -297,7 +285,6 @@ extension DrawingCanvas {
             .opacity(layerOpacity)
             .blendMode(layerBlendMode.swiftUIBlendMode)
 
-            // Grid on canvas (default behavior) - above background, clipped to canvas
             if document.gridSettings.showGrid && !document.gridSettings.gridOnTop && document.settings.gridSpacing > 0 {
                 OptimizedGridView(
                     gridSpacing: document.settings.gridSpacing,
@@ -319,18 +306,12 @@ extension DrawingCanvas {
             }
         }
 
-        // Pass objectIDs so IsolatedLayerView can fetch fresh objects on every render
-        // Skip Canvas creation entirely for empty layers — each Canvas allocates a
-        // full Retina backing store (~33 MB on a 1080p display), so empty layers waste
-        // hundreds of MB across documents.
         if !layer.objectIDs.isEmpty && layer.isVisible {
             let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
-            // Only pass selectedObjectIDs that are actually in this layer to avoid unnecessary redraws
             let layerObjectIDsSet = Set(layer.objectIDs)
             let selectedInThisLayer = document.viewState.selectedObjectIDs.intersection(layerObjectIDsSet)
 
-            // Only pass selectedShapeIDForCornerRadius if the shape is in this layer
             let selectedRectShape = getSelectedRectangleShape()
             let selectedShapeInThisLayer: UUID? = {
                 if let shapeID = selectedRectShape?.id, layerObjectIDsSet.contains(shapeID) {
@@ -374,14 +355,14 @@ extension DrawingCanvas {
                 layerUpdateTrigger: document.viewState.layerUpdateTriggers[layer.id] ?? 0,
                 isPanning: isPanGestureActive
             )
-            // Force SwiftUI to recreate view when layer content changes (group/ungroup undo/redo)
+
             .id(document.viewState.layerUpdateTriggers[layer.id] ?? 0)
         }
     }
 
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy, imagePreviewQuality: Double, imageTileSize: Int, imageInterpolationQuality: CGInterpolationQuality) -> some View {
-        // Render layers with background fills for special layers
+
         ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
             if layer.isVisible {
                 renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry, textContentDelta: $textContentDelta, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, imagePreviewQuality: imagePreviewQuality, imageTileSize: imageTileSize, imageInterpolationQuality: imageInterpolationQuality)
@@ -396,7 +377,6 @@ extension DrawingCanvas {
             let width = bounds.width
             let height = bounds.height
 
-            // Convert canvas coordinates to screen coordinates
             let canvasLabelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
@@ -430,7 +410,6 @@ extension DrawingCanvas {
             let width = bounds.width
             let height = bounds.height
 
-            // Convert canvas coordinates to screen coordinates
             let canvasLabelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
@@ -469,7 +448,7 @@ extension DrawingCanvas {
             previousTool = document.viewState.currentTool
         }
             .onDisappear {
-                // teardownKeyEventMonitoring()
+
             }
             .onChange(of: document.viewState.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
@@ -521,7 +500,7 @@ extension DrawingCanvas {
                             },
                 hasPressureSupport: .constant(PressureManager.shared.hasRealPressureInput)
             )
-            //.allowsHitTesting(true)
+
             .background(Color.clear)
         }
     }
@@ -651,8 +630,7 @@ extension DrawingCanvas {
             }
             .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
         )
-        // .scaleEffect(currentZoom, anchor: .topLeading)
-        // .offset(x: currentOffset.x, y: currentOffset.y)
+
         .opacity(0.8)
     }
 

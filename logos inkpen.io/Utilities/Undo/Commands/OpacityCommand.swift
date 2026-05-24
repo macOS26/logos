@@ -61,7 +61,7 @@ class OpacityCommand: BaseCommand {
                 affectedLayers.insert(obj.layerIndex)
 
             case .guide:
-                break  // Guides don't support opacity changes
+                break
             }
         }
 

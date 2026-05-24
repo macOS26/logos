@@ -104,7 +104,6 @@ struct EnvelopeHandles: View {
                 envelopeGridPreview()
             }
 
-            // Warped preview only shown after drag ends
             if previewPath != nil && !isWarping {
                 warpedShapePreview()
             }
@@ -337,10 +336,10 @@ struct EnvelopeHandles: View {
         if shape.path.elements.count <= 4 || shape.isGroup {
             let bounds = shape.path.cgPath.boundingBoxOfPath
             let newOriginalCorners = [
-                CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
-                CGPoint(x: bounds.maxX, y: bounds.minY), // Top-right
-                CGPoint(x: bounds.maxX, y: bounds.maxY), // Bottom-right
-                CGPoint(x: bounds.minX, y: bounds.maxY)  // Bottom-left
+                CGPoint(x: bounds.minX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.maxY),
+                CGPoint(x: bounds.minX, y: bounds.maxY)
             ]
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
@@ -401,7 +400,6 @@ struct EnvelopeHandles: View {
             y: (currentLocation.y - canvasOffset.y) / preciseZoom
         )
 
-        // Local @State only; document updates happen in finishEnvelopeWarp() (drag perf)
         warpedCorners[cornerIndex] = canvasLocation
     }
 

@@ -29,11 +29,11 @@ extension View {
     func documentSectionIcon() -> some View {
         modifier(DocumentSectionIconStyle())
     }
-    
+
     func documentSectionTitle() -> some View {
         modifier(DocumentSectionTitleStyle())
     }
-    
+
     func documentFieldLabel() -> some View {
         modifier(DocumentFieldLabelStyle())
     }
@@ -46,7 +46,7 @@ private struct DocumentSectionHeader: View {
         HStack {
             Image(systemName: icon)
                 .documentSectionIcon()
-            
+
             Text(title)
                 .documentSectionTitle()
         }
@@ -226,7 +226,7 @@ struct NewDocumentSetupView: View {
     private var quickSizesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             DocumentSectionHeader(icon: "square.grid.2x2", title: "Quick Sizes")
-            
+
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(quickSizes, id: \.self) { size in
                     ProfessionalQuickSizeButton(size: size, displayUnit: setupData.unit) {
@@ -293,7 +293,7 @@ struct NewDocumentSetupView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Units")
                         .documentFieldLabel()
-                    
+
                     Picker("Unit", selection: $setupData.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
                             Text(unit.rawValue.capitalized).tag(unit)
@@ -306,7 +306,7 @@ struct NewDocumentSetupView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Color Mode")
                             .documentFieldLabel()
-                        
+
                         Picker("Color Mode", selection: $setupData.colorMode) {
                             ForEach(ColorMode.allCases, id: \.self) { mode in
                                 Text(mode.rawValue.uppercased()).tag(mode)
@@ -318,7 +318,7 @@ struct NewDocumentSetupView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Resolution")
                             .documentFieldLabel()
-                        
+
                         HStack(spacing: 6) {
                             TextField("Resolution", value: $setupData.resolution, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
@@ -390,11 +390,10 @@ struct NewDocumentSetupView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             let previewSize = CGSize(width: 280, height: 280)
-            let scale: CGFloat = 2.0 // Retina resolution
+            let scale: CGFloat = 2.0
             let pixelWidth = Int(previewSize.width * scale)
             let pixelHeight = Int(previewSize.height * scale)
 
-            // Create CGContext for drawing (cross-platform)
             guard let context = CGContext(
                 data: nil,
                 width: pixelWidth,
@@ -410,10 +409,8 @@ struct NewDocumentSetupView: View {
                 return
             }
 
-            // Scale context for retina
             context.scaleBy(x: scale, y: scale)
 
-            // Fill background
             context.setFillColor(CGColor(gray: 0.95, alpha: 1.0))
             context.fill(CGRect(origin: .zero, size: previewSize))
 
@@ -437,16 +434,13 @@ struct NewDocumentSetupView: View {
                 height: docHeight
             )
 
-            // Draw white document rect
             context.setFillColor(CGColor(gray: 1.0, alpha: 1.0))
             context.fill(docRect)
 
-            // Draw gray border
             context.setStrokeColor(CGColor(gray: 0.5, alpha: 1.0))
             context.setLineWidth(1.0)
             context.stroke(docRect)
 
-            // Draw text
             let infoText = "\(Int(setupData.width))×\(Int(setupData.height))"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: PlatformFont.systemFont(ofSize: 12, weight: .medium),
@@ -461,7 +455,6 @@ struct NewDocumentSetupView: View {
                 height: textSize.height
             )
 
-            // Use NSAttributedString for text rendering (works on both platforms with AppKit/UIKit)
             let attrString = NSAttributedString(string: infoText, attributes: attributes)
             context.saveGState()
             context.translateBy(x: 0, y: previewSize.height)
@@ -469,7 +462,6 @@ struct NewDocumentSetupView: View {
             attrString.draw(in: textRect)
             context.restoreGState()
 
-            // Convert to NSImage
             if let cgImage = context.makeImage() {
                 let image = NSImage(cgImage: cgImage, size: previewSize)
                 DispatchQueue.main.async {

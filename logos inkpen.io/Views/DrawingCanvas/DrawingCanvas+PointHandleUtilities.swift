@@ -110,7 +110,6 @@ extension DrawingCanvas {
                     }
                 }
 
-                // Use updateShapeByID to sync to BOTH snapshot.objects AND group's groupedShapes
                 document.updateShapeByID(pointID.shapeID, silent: true) { shape in
                     shape.path.elements = elements
                     shape.updateBounds()
@@ -208,7 +207,6 @@ extension DrawingCanvas {
             )
         }
 
-        // Use updateShapeByID to sync to BOTH snapshot.objects AND group's groupedShapes
         document.updateShapeByID(handleID.shapeID, silent: true) { shape in
             shape.path.elements = elements
             shape.updateBounds()

@@ -13,7 +13,7 @@ extension DrawingCanvas {
     }
 
     private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
-        // Use GPU for large batches (> 100 points), CPU SIMD for small batches
+
         if points.count > 100 {
             return GPUCoordinateTransform.shared.transformPoints(
                 points,
@@ -23,7 +23,6 @@ extension DrawingCanvas {
             )
         }
 
-        // CPU SIMD optimization for batch coordinate transformation
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let zoom = Float(zoomLevel)
 
@@ -44,7 +43,7 @@ extension DrawingCanvas {
     }
 
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // Use GPU for large batches (> 100 points), CPU SIMD for small batches
+
         if points.count > 100 {
             return GPUCoordinateTransform.shared.transformPoints(
                 points,
@@ -54,7 +53,6 @@ extension DrawingCanvas {
             )
         }
 
-        // CPU SIMD optimization for batch coordinate transformation
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let zoom = Float(zoomLevel)
 
@@ -111,7 +109,7 @@ extension DrawingCanvas {
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = min(scaleX, scaleY)
 
-        zoomLevel = max(0.1, min(160.0, fitZoom))  // Up to 16000%
+        zoomLevel = max(0.1, min(160.0, fitZoom))
 
         let rulerBorderCompensationY: CGFloat = document.gridSettings.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
@@ -166,27 +164,24 @@ extension DrawingCanvas {
 
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
 
-        // SIMD optimization for zoom focal point calculation
         let focalVec = SIMD2<Float>(Float(focalPoint.x), Float(focalPoint.y))
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
         let oldZoom = Float(oldZoomLevel)
         let newZoom = Float(newZoomLevel)
 
-        // Calculate canvas point at focal point: (focal - offset) / oldZoom
         let canvasPointAtFocus = (focalVec - offsetVec) / oldZoom
 
-        // Calculate new offset: focal - (canvasPoint * newZoom)
         let newOffsetVec = focalVec - (canvasPointAtFocus * newZoom)
 
         let newOffset = CGPoint(x: CGFloat(newOffsetVec.x), y: CGFloat(newOffsetVec.y))
 
         if isLive {
-            // During active gesture - update deltas only (GPU transform, no Canvas re-render)
+
             liveZoomDelta = newZoomLevel / zoomLevel
             let panDeltaVec = newOffsetVec - offsetVec
             livePanDelta = CGPoint(x: CGFloat(panDeltaVec.x), y: CGFloat(panDeltaVec.y))
         } else {
-            // After gesture end - bake deltas into real values
+
             zoomLevel = newZoomLevel
             canvasOffset = newOffset
         }

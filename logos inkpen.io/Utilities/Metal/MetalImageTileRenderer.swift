@@ -30,7 +30,7 @@ class MetalImageTileRenderer {
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
 
-    private var diskCachePaths: [String: String] = [:] // [renderKey: /tmp/path]
+    private var diskCachePaths: [String: String] = [:]
     private let diskCacheLock = NSLock()
 
     func getCachedImage(for key: String) -> CGImage? {
@@ -72,7 +72,7 @@ class MetalImageTileRenderer {
         vertexDescriptor.attributes[1].format = .float2
         vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.size * 2
         vertexDescriptor.attributes[1].bufferIndex = 0
-        // 4 floats per vertex: x, y, u, v
+
         vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.size * 4
         vertexDescriptor.layouts[0].stepFunction = .perVertex
 
@@ -88,7 +88,7 @@ class MetalImageTileRenderer {
     }
 
     func getTexture(from cgImage: CGImage) -> MTLTexture? {
-        // Avoid MTKTextureLoader because it always converts to BGRA; manually build an RGBA texture.
+
         let width = cgImage.width
         let height = cgImage.height
 
@@ -122,7 +122,7 @@ class MetalImageTileRenderer {
             mipmapped: false
         )
         textureDescriptor.usage = [.shaderRead]
-        textureDescriptor.storageMode = .shared  // Required for CPU upload
+        textureDescriptor.storageMode = .shared
 
         guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
             print("❌ Failed to create Metal texture")
@@ -131,8 +131,6 @@ class MetalImageTileRenderer {
 
         let region = MTLRegionMake2D(0, 0, width, height)
         texture.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: width * 4)
-
-        // print("📊 Created Metal texture format: \(texture.pixelFormat.rawValue)")
 
         return texture
     }
@@ -150,12 +148,10 @@ class MetalImageTileRenderer {
            FileManager.default.fileExists(atPath: cachedPath),
            let cachedImage = loadImageFromDisk(path: cachedPath) {
             diskCacheLock.unlock()
-            // print("✅ MetalImageTileRenderer: DISK CACHE HIT for \(cacheKey)")
+
             return cachedImage
         }
         diskCacheLock.unlock()
-
-        // print("❌ MetalImageTileRenderer: DISK CACHE MISS for \(cacheKey), compositing...")
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let sourceTexture = getTexture(from: image) else {
@@ -256,7 +252,6 @@ class MetalImageTileRenderer {
         return resultImage
     }
 
-    /// Legacy direct-to-drawable path for screen rendering.
     func renderTiles(
         image: CGImage,
         tiles: [(coord: SIMD2<Int>, rect: CGRect)],
@@ -417,7 +412,6 @@ class MetalImageTileRenderer {
         return image
     }
 
-    /// Pixel coords (0,0 top-left) -> NDC (-1..1).
     private func createOrthographicMatrix(width: Float, height: Float) -> simd_float4x4 {
         let left: Float = 0
         let right = width

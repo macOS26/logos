@@ -66,7 +66,7 @@ extension VectorDocument {
             guard layer.isVisible else { continue }
             let shapesInLayer = getShapesForLayer(layerIndex)
             for shape in shapesInLayer where shape.isVisible {
-                // For groups, calculate bounds from member shapes
+
                 let shapeBounds: CGRect
                 if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                     shapeBounds = calculateGroupBoundsFromMembers(memberIDs: shape.memberIDs)
@@ -114,7 +114,6 @@ extension VectorDocument {
         return hasContent ? artworkBounds : nil
     }
 
-    /// Calculate bounds for a group by iterating through its member shapes
     private func calculateGroupBoundsFromMembers(memberIDs: [UUID]) -> CGRect {
         var groupBounds: CGRect = .null
 
@@ -124,13 +123,13 @@ extension VectorDocument {
 
             let memberBounds: CGRect
             if memberShape.isGroupContainer && !memberShape.memberIDs.isEmpty {
-                // Nested group - recurse
+
                 memberBounds = calculateGroupBoundsFromMembers(memberIDs: memberShape.memberIDs)
             } else if memberShape.typography != nil, let textPosition = memberShape.textPosition, let areaSize = memberShape.areaSize {
-                // Text shape
+
                 memberBounds = CGRect(origin: textPosition, size: areaSize)
             } else {
-                // Regular shape
+
                 memberBounds = memberShape.bounds.applying(memberShape.transform)
             }
 

@@ -73,7 +73,6 @@ extension DrawingCanvas {
             selectedPoints.insert(endpointID)
         }
 
-        // Show handles for selected points
         showHandlesForSelectedPoints()
     }
 
@@ -85,13 +84,11 @@ extension DrawingCanvas {
 
             let element = shape.path.elements[pointID.elementIndex]
 
-            // Add incoming handle (control2) if it's a curve
             if case .curve = element {
                 let incomingHandle = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex, handleType: .control2)
                 visibleHandles.insert(incomingHandle)
             }
 
-            // Add outgoing handle (control1) if next element is a curve
             if pointID.elementIndex + 1 < shape.path.elements.count {
                 if case .curve = shape.path.elements[pointID.elementIndex + 1] {
                     let outgoingHandle = HandleID(shapeID: pointID.shapeID, pathIndex: 0, elementIndex: pointID.elementIndex + 1, handleType: .control1)
@@ -287,24 +284,18 @@ extension DrawingCanvas {
             break
         }
     }
-    
+
     @discardableResult
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
 
-        // print("🟡 handleCoincidentSmoothPoints: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
-
         if handleFirstLastCoincidentPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
-            // print("✅ handleCoincidentSmoothPoints: Handled by handleFirstLastCoincidentPoints")
+
             return true
         }
 
-        // print("🔷 handleCoincidentSmoothPoints: Not first/last coincident, checking other coincident points")
-
-        // ✅ CHECK STORED ANCHOR TYPE for the anchor point being dragged
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
            case .shape(let shape) = object.objectType {
 
-            // Determine anchor element index
             let anchorElementIndex: Int
             if draggedHandleID.handleType == .control2 {
                 anchorElementIndex = draggedHandleID.elementIndex
@@ -312,20 +303,18 @@ extension DrawingCanvas {
                 anchorElementIndex = draggedHandleID.elementIndex - 1
             }
 
-            // print("🔶 handleCoincidentSmoothPoints: Checking anchor element \(anchorElementIndex)")
-
             if let explicitType = shape.anchorTypes[anchorElementIndex] {
-                // print("🔶 handleCoincidentSmoothPoints: Found stored anchor type: \(explicitType)")
+
                 switch explicitType {
                 case .cusp, .corner:
-                    // print("❌ handleCoincidentSmoothPoints: CUSP/CORNER - NOT linking other coincident points")
+
                     return false
                 case .smooth, .auto:
-                    // print("✅ handleCoincidentSmoothPoints: SMOOTH/AUTO - will check for coincident points")
+
                     break
                 }
             } else {
-                // print("⚠️ handleCoincidentSmoothPoints: No stored anchor type for element \(anchorElementIndex)")
+
             }
         }
 
@@ -472,26 +461,23 @@ extension DrawingCanvas {
     private func handleFirstLastCoincidentPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
 
-        // ✅ CHECK STORED ANCHOR TYPE FIRST - Don't link if cusp/corner
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
            case .shape(let shape) = object.objectType,
-           let explicitType = shape.anchorTypes[0] {  // Element 0 is the coincident point
-
-            // print("🔶 handleFirstLastCoincidentPoints: Checking stored anchor type for element 0: \(explicitType)")
+           let explicitType = shape.anchorTypes[0] {
 
             switch explicitType {
             case .cusp, .corner:
-                // print("❌ handleFirstLastCoincidentPoints: User set CUSP/CORNER - NOT linking handles")
-                return false  // Don't link handles for cusp/corner
+
+                return false
             case .smooth:
-                // print("✅ handleFirstLastCoincidentPoints: User set SMOOTH - will link handles")
+
                 break
             case .auto:
-                // print("🔷 handleFirstLastCoincidentPoints: AUTO mode - using geometry detection")
+
                 break
             }
         } else {
-            // print("⚠️ handleFirstLastCoincidentPoints: No stored anchor type - using geometry detection")
+
         }
 
         let firstPoint: CGPoint?

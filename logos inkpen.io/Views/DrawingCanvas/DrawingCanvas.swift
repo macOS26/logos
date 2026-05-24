@@ -1,17 +1,10 @@
-//
-//  DrawingCanvas.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 10/22/25.
-//
 
 import SwiftUI
 
-/// Axis constraint for shift-drag operations (like FreeHand/Illustrator/Inkscape)
 enum ShiftConstraintAxis {
-    case none       // No constraint active
-    case horizontal // Constrain to horizontal movement only
-    case vertical   // Constrain to vertical movement only
+    case none
+    case horizontal
+    case vertical
 }
 
 struct DrawingCanvas: View {
@@ -61,7 +54,6 @@ struct DrawingCanvas: View {
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
 
-    // Spatial index for O(1) hit testing (GPU-accelerated with Metal)
     @State internal var spatialIndex = MetalSpatialIndex()!
     @State internal var isDraggingDirectSelectedShapes = false
     @State internal var bezierPath: VectorPath?
@@ -115,18 +107,16 @@ struct DrawingCanvas: View {
     @State internal var isPanGestureActive = false
     @State internal var lastClickTime: Date = Date.distantPast
     @State internal var lastClickLocation: CGPoint = .zero
-    @State internal var selectBehindIndex: Int = 0  // For Cmd+click cycling through stacked objects
+    @State internal var selectBehindIndex: Int = 0
     @State internal var selectBehindLocation: CGPoint = .zero
 
     @State internal var dragStartGradient: VectorGradient? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
-    //internal let metalPerformanceMonitor = PerformanceMonitor()
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0
 
-    // Live zoom/pan deltas - applied as GPU transforms during gesture, baked on end
     @State internal var liveZoomDelta: CGFloat = 1.0
     @State internal var livePanDelta: CGPoint = .zero
     @State internal var isActivelyZooming: Bool = false
@@ -140,10 +130,10 @@ struct DrawingCanvas: View {
     @State internal var isDraggingHandle = false
     @State internal var isDraggingCurveSegment = false
     @State internal var draggedCurveSegment: (shapeID: UUID, elementIndex: Int)? = nil
-    @State internal var curveSegmentDragT: Double = 0.5  // Parametric position on curve
+    @State internal var curveSegmentDragT: Double = 0.5
     @State internal var dragStartLocation: CGPoint = .zero
-    @State internal var lockedObjectIDs: Set<UUID> = [] // O(1) cache of locked objects
-    @State private var cachedObjectCount: Int = 0 // Track object count to detect changes
+    @State internal var lockedObjectIDs: Set<UUID> = []
+    @State private var cachedObjectCount: Int = 0
 
     internal func syncDirectSelectionWithDocument() {
         document.viewState.selectedObjectIDs = selectedObjectIDs
@@ -166,7 +156,7 @@ struct DrawingCanvas: View {
                 lockedObjectIDs.insert(objectID)
             }
         }
-        // Also add individually locked objects
+
         for (id, object) in document.snapshot.objects {
             if object.shape.isLocked {
                 lockedObjectIDs.insert(id)
@@ -202,13 +192,13 @@ struct DrawingCanvas: View {
         GeometryReader { geometry in
             enhancedCanvasMainContent(geometry: geometry)
                 .onChange(of: geometry.size) { oldSize, newSize in
-                    // Auto fit-to-page when window is resized
+
                     guard hasPerformedInitialFitToPage else { return }
                     guard previousWindowSize != .zero else {
                         previousWindowSize = newSize
                         return
                     }
-                    // Only fit if size actually changed significantly (> 1 pixel)
+
                     let widthChanged = abs(newSize.width - previousWindowSize.width) > 1
                     let heightChanged = abs(newSize.height - previousWindowSize.height) > 1
                     if widthChanged || heightChanged {
@@ -225,7 +215,7 @@ struct DrawingCanvas: View {
                     rebuildLockedObjectsCache()
                     hasSpatialIndexInitialized = true
                     MemoryDiag.report("DrawingCanvas.onAppear END", document: document)
-                    // Delayed: catch SwiftUI's post-layout allocations
+
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak document] in
                         guard let document else { return }
                         MemoryDiag.checkpoint("DrawingCanvas +2s (after SwiftUI layout)")
@@ -233,18 +223,15 @@ struct DrawingCanvas: View {
                     }
                 }
                 .onChange(of: document.viewState.layerUpdateTriggers) { oldTriggers, newTriggers in
-                    // Skip rebuild during initial load
+
                     guard hasSpatialIndexInitialized else { return }
-                    // Skip spatial index rebuild during live point/handle drags for performance
-                    // Spatial index is only needed for hit testing, not during active point editing
+
                     guard !document.viewState.isLivePointDrag else { return }
                     guard !isDraggingPoint else { return }
                     guard !isDraggingHandle else { return }
 
-                    // Rebuild spatial index only for layers that changed (preferred granular approach)
                     var changedLayerIDs = Set<UUID>()
 
-                    // Find layers with changed trigger values
                     for (layerID, newValue) in newTriggers {
                         if oldTriggers[layerID] != newValue {
                             changedLayerIDs.insert(layerID)
@@ -255,7 +242,7 @@ struct DrawingCanvas: View {
                         let start = CFAbsoluteTimeGetCurrent()
                         spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
                         let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
-                        // Count objects only in the changed layers
+
                         var layerObjectCount = 0
                         for layer in document.snapshot.layers where changedLayerIDs.contains(layer.id) {
                             layerObjectCount += layer.objectIDs.count
@@ -266,9 +253,9 @@ struct DrawingCanvas: View {
                     }
                 }
                 .onChange(of: document.snapshot.objects.count) { _, newCount in
-                    // Skip rebuild during initial load
+
                     guard hasSpatialIndexInitialized else { return }
-                    // Rebuild spatial index when objects are added/removed
+
                     if newCount != cachedObjectCount {
                         cachedObjectCount = newCount
                         let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
@@ -284,23 +271,23 @@ struct DrawingCanvas: View {
                     rebuildLockedObjectsCache()
                 }
                 .onChange(of: ApplicationSettings.shared.boundingBoxIncludesStrokes) { _, _ in
-                    // Skip rebuild during initial load
+
                     guard hasSpatialIndexInitialized else { return }
-                    // Rebuild spatial index when stroke bounds setting changes
+
                     let allLayerIDs = Set(document.snapshot.layers.map { $0.id })
                     spatialIndex.rebuildLayers(allLayerIDs, from: document.snapshot)
                 }
                 .onChange(of: document.viewState.handleRefreshTrigger) {
-                    // Refresh visible handles after anchor type conversion
+
                     if document.viewState.currentTool == .directSelection {
                         showHandlesForSelectedPoints()
                     }
                 }
                 .onChange(of: document.viewState.selectedObjectIDs) { _, newSelection in
-                    // Sync local selection state when selection changes externally (e.g., from layers panel)
+
                     if selectedObjectIDs != newSelection {
                         selectedObjectIDs = newSelection
-                        // Clear point/handle selection when objects change
+
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         visibleHandles.removeAll()

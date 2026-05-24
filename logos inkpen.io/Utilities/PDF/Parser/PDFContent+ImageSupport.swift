@@ -579,9 +579,6 @@ extension PDFCommandParser {
     }
 }
 
-// MARK: - Cross-platform Image Helpers
-
-/// Create PNG data from RGBA bitmap via Core Graphics.
 fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, hasAlpha: Bool) -> Data? {
     let bytesPerPixel = 4
     let bitsPerComponent = 8
@@ -591,8 +588,6 @@ fileprivate func createPNGData(from rgbaData: Data, width: Int, height: Int, has
         return nil
     }
 
-    // PDF pixel data is bottom-to-top; CGImage expects top-to-bottom.
-    // Reverse rows so the stored PNG has correct orientation.
     let flippedData = NSMutableData(length: rgbaData.count)!
     let src = (rgbaData as NSData).bytes.bindMemory(to: UInt8.self, capacity: rgbaData.count)
     let dst = flippedData.mutableBytes.bindMemory(to: UInt8.self, capacity: rgbaData.count)

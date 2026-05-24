@@ -676,7 +676,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-        // Adjacent-only merging; rebuild pointData after each removal to handle stacked points.
         var currentPointData = pointData
         var indicesToRemove: Set<Int> = []
 

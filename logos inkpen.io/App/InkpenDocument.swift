@@ -26,21 +26,16 @@ struct InkpenDocument: FileDocument {
         let contentType = configuration.contentType
         Log.info("📂 InkpenDocument.init: filename=\(configuration.file.preferredFilename ?? "?") ext=\(fileExtension ?? "nil") contentType=\(contentType.identifier) bytes=\(data.count)", category: .general)
 
-        /* File → Duplicate routes through fileWrapper (which writes inkpen JSON
-           for an FH-opened doc) then back into init with contentType still set
-           to .freehandDocument. Don't trust contentType — sniff the actual
-           bytes for FreeHand's "AGD…" or "FH3…" magic. Anything else with an
-           FH extension falls through to JSON/inkpen loading. */
         let hasFHMagic: Bool = {
             guard data.count >= 4 else { return false }
             let b0 = data[0], b1 = data[1], b2 = data[2]
-            // "AGD" for FH5+, "FH3" for FH3, "FHD2" for FH2
+
             if b0 == UInt8(ascii: "A"), b1 == UInt8(ascii: "G"), b2 == UInt8(ascii: "D") { return true }
             if b0 == UInt8(ascii: "F"), b1 == UInt8(ascii: "H"), b2 == UInt8(ascii: "3") { return true }
             if b0 == UInt8(ascii: "F"), b1 == UInt8(ascii: "H"), b2 == UInt8(ascii: "D") { return true }
-            // EPS (PostScript) exported from FreeHand
+
             if b0 == UInt8(ascii: "%"), b1 == UInt8(ascii: "!"), b2 == UInt8(ascii: "P") { return true }
-            // 0x1c IPTC wrapper used by some FH versions (e.g. FH10)
+
             if b0 == 0x1c { return true }
             return false
         }()
@@ -55,9 +50,6 @@ struct InkpenDocument: FileDocument {
             return false
         }()
 
-        // Only take the FH path if BOTH the extension claims FH AND the bytes
-        // actually look like a FreeHand file. Duplicate's JSON roundtrip keeps
-        // the FH extension but the data is JSON — sniff prevents false parse.
         let isFreehand = extSaysFreehand && hasFHMagic
 
         if fileExtension == "svg" {
@@ -110,9 +102,6 @@ struct InkpenDocument: FileDocument {
                     newDoc.onSettingsChanged()
                 }
 
-                // Map parsed-layer index → target layer index in the new doc. The doc's
-                // default user layer ("Layer 1") is reused for the first parsed layer;
-                // additional parsed layers are appended as new native Layers.
                 let defaultLayerIndex = newDoc.snapshot.layers.firstIndex(where: { $0.name == "Layer 1" })
                     ?? newDoc.selectedLayerIndex
                     ?? (newDoc.snapshot.layers.count - 1)
@@ -132,9 +121,6 @@ struct InkpenDocument: FileDocument {
                     }
                 }
 
-                // For each parsed shape, find which parsed layer owns it (via objectIDs)
-                // and route to the corresponding doc layer. Shapes not owned by any
-                // parsed layer fall back to the first-parsed (or default) layer.
                 let fallbackLayer = parsedToDocLayer[0] ?? defaultLayerIndex
                 var shapeIDToParsedLayer: [UUID: Int] = [:]
                 for (idx, parsedLayer) in parsed.layers.enumerated() {
@@ -182,7 +168,6 @@ struct InkpenDocument: FileDocument {
             }
         }
 
-        // Clean up any orphaned objects left by buggy operations
         self.document.cleanupOrphanedObjects()
         MemoryDiag.checkpoint("InkpenDocument.init DONE (\(configuration.file.preferredFilename ?? "?"))")
         MemoryDiag.dumpObjects(self.document)

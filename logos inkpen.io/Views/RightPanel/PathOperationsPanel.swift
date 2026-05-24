@@ -187,8 +187,7 @@ struct PathOperationsPanel: View {
     }
 
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
-        // Use the document's unified implementation which properly handles
-        // undo/redo with a single GroupCommand using .pathOperation
+
         _ = document.performPathfinderOperation(operation)
     }
 

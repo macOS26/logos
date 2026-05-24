@@ -159,7 +159,6 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Development Tools")
 
-            // Align by anchor points buttons
             Button {
                 document.alignSelectedObjectsByOriginX()
             } label: {
@@ -202,9 +201,6 @@ struct MainToolbarContent: ToolbarContent {
             TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
         }
 
-        /* Trailing icon cluster lives in its own group so SwiftUI can overflow
-           it independently when the window narrows — keeps X/Y/W/H/SX/SY visible
-           as long as possible and truncates these lower-priority icons first. */
         ToolbarItemGroup(placement: .automatic) {
             Button {
                 createRectangleFromBoundingBox()
@@ -648,7 +644,6 @@ struct MainToolbarContent: ToolbarContent {
     private func createRectangleFromBoundingBox() {
         guard let bounds = getBoundingBoxForSelection(), bounds.width > 0, bounds.height > 0 else { return }
 
-        // Create path using the same formula as the rectangle tool
         let path = VectorPath(elements: [
             .move(to: VectorPoint(bounds.minX, bounds.minY)),
             .line(to: VectorPoint(bounds.maxX, bounds.minY)),
@@ -657,7 +652,6 @@ struct MainToolbarContent: ToolbarContent {
             .close
         ], isClosed: true)
 
-        // Apply document default stroke style (same as rectangle tool)
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -667,13 +661,11 @@ struct MainToolbarContent: ToolbarContent {
             opacity: document.defaultStrokeOpacity
         )
 
-        // Apply document default fill style (same as rectangle tool)
         let fillStyle = FillStyle(
             color: document.defaultFillColor,
             opacity: document.defaultFillOpacity
         )
 
-        // Create shape with same properties as rectangle tool
         let rectangle = VectorShape(
             name: "Rectangle",
             path: path,
@@ -685,11 +677,9 @@ struct MainToolbarContent: ToolbarContent {
             cornerRadii: [0.0, 0.0, 0.0, 0.0]
         )
 
-        // Add the shape (same as rectangle tool)
         document.addShape(rectangle)
     }
 
-    /// Get combined bounds for all selected objects (fast path, no transform application)
     private func getBoundingBoxForSelection() -> CGRect? {
         guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
 

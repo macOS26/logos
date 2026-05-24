@@ -6,10 +6,8 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        // Reset shift constraint axis for new drag
         shiftConstraintAxis = .none
 
-        // If bezier drawing is active during Cmd+selection, include the active bezier shape
         if isBezierDrawing, let bezierShape = activeBezierShape {
             if !document.viewState.selectedObjectIDs.contains(bezierShape.id) {
                 document.viewState.orderedSelectedObjectIDs.append(bezierShape.id)
@@ -17,12 +15,10 @@ extension DrawingCanvas {
             }
         }
 
-        // Hide transform box when drag starts (if preference enabled)
         if ApplicationSettings.shared.hideTransformBoxDuringDrag {
             transformBoxOpacity = 0.000001
         }
 
-        // Iterate UUIDs directly - O(1) lookup per object
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
             if object.layerIndex < document.snapshot.layers.count {
@@ -48,7 +44,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Calculate combined bounding box in DOCUMENT coordinates (with transforms applied)
         var combinedBounds: CGRect?
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
@@ -64,12 +59,12 @@ extension DrawingCanvas {
                  .guide(let shape):
                 let bounds: CGRect
                 if shape.isGroupContainer {
-                    // Use document's calculateGroupBounds to resolve member shapes
+
                     bounds = document.calculateGroupBounds(shape)
                 } else {
                     bounds = shape.bounds
                 }
-                // Apply transform to get bounds in document coordinates
+
                 let transformedBounds = bounds.applying(shape.transform)
                 if let existing = combinedBounds {
                     combinedBounds = existing.union(transformedBounds)
@@ -111,7 +106,7 @@ extension DrawingCanvas {
                 } else {
                     bounds = shape.bounds
                 }
-                // Calculate center in DOCUMENT coordinates (not local bounds)
+
                 let localCenter = CGPoint(x: bounds.midX, y: bounds.midY)
                 let documentCenter = localCenter.applying(shape.transform)
                 initialObjectPositions[object.id] = documentCenter
@@ -125,7 +120,6 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        // Iterate UUIDs directly - no temp array
         for objectID in document.viewState.selectedObjectIDs {
             guard let object = document.snapshot.objects[objectID] else { continue }
             if object.layerIndex < document.snapshot.layers.count {
@@ -156,21 +150,19 @@ extension DrawingCanvas {
             y: value.location.y - selectionDragStart.y
         )
 
-        // Shift-constrain: lock movement to horizontal or vertical axis (like FreeHand/Illustrator/Inkscape)
         let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
-            // Determine constraint axis based on which direction has more movement
+
             if shiftConstraintAxis == .none {
-                // First time with shift pressed - determine the axis
+
                 if abs(cursorDelta.x) > abs(cursorDelta.y) {
                     shiftConstraintAxis = .horizontal
                 } else if abs(cursorDelta.y) > abs(cursorDelta.x) {
                     shiftConstraintAxis = .vertical
                 }
-                // If equal, wait for more movement to decide
+
             }
 
-            // Apply the constraint
             switch shiftConstraintAxis {
             case .horizontal:
                 cursorDelta.y = 0
@@ -180,7 +172,7 @@ extension DrawingCanvas {
                 break
             }
         } else {
-            // Shift released - reset constraint for next drag
+
             shiftConstraintAxis = .none
         }
 
@@ -197,7 +189,7 @@ extension DrawingCanvas {
 
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                    // Calculate transformed bounds size in document coordinates
+
                     let transformedBounds = bounds.applying(shape.transform)
                     let topLeftX = initialCenter.x - transformedBounds.width/2 + canvasDelta.x
                     let topLeftY = initialCenter.y - transformedBounds.height/2 + canvasDelta.y
@@ -211,7 +203,6 @@ extension DrawingCanvas {
 
                     canvasDelta = CGPoint(x: snappedCenter.x - initialCenter.x, y: snappedCenter.y - initialCenter.y)
 
-                    // Re-apply shift constraint after snapping to prevent jumping in constrained direction
                     switch shiftConstraintAxis {
                     case .horizontal:
                         canvasDelta.y = 0
@@ -235,12 +226,10 @@ extension DrawingCanvas {
         currentDragDelta = canvasDelta
         liveDragOffset = canvasDelta
 
-        // Set active layer for performance optimization (hides other layers during drag)
         if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.viewState.selectedObjectIDs.first {
             if let obj = document.findObject(by: firstSelected) {
                 document.activeLayerIndexDuringDrag = obj.layerIndex
 
-                // Set all layers that are at 100% opacity to 0.9999999999 during drag
                 for layer in document.snapshot.layers {
                     if layer.opacity == 1.0 {
                         layerPreviewOpacities[layer.id] = 0.9999999999
@@ -267,13 +256,10 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // IMMEDIATELY show transform box before any heavy work
             transformBoxOpacity = 1.0
 
-            // Keep currentDragDelta so transform box stays in position during updates
             let finalDelta = currentDragDelta
 
-            // Clear other drag state but KEEP currentDragDelta
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.currentDragOffset = .zero
@@ -285,7 +271,6 @@ extension DrawingCanvas {
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
 
-            // Helper to recursively collect all member shapes from nested groups
             func collectGroupMembers(_ shape: VectorShape) {
                 guard !shape.memberIDs.isEmpty else { return }
                 for memberID in shape.memberIDs {
@@ -293,7 +278,6 @@ extension DrawingCanvas {
                     oldShapes[memberID] = memberObj.shape
                     affectedObjectIDs.insert(memberID)
 
-                    // Recursively collect nested group members
                     switch memberObj.objectType {
                     case .group(let nestedShape), .clipGroup(let nestedShape):
                         collectGroupMembers(nestedShape)
@@ -303,7 +287,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // First pass: collect old shapes for undo (BEFORE any modifications)
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
 
@@ -316,7 +299,6 @@ extension DrawingCanvas {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
-                    // Use O(1) cache lookup for clipped objects
                     if shape.isClippingPath, let clippedIDs = document.snapshot.clippedObjectsCache[shape.id] {
                         for clippedID in clippedIDs {
                             if let clippedObj = document.snapshot.objects[clippedID] {
@@ -331,12 +313,10 @@ extension DrawingCanvas {
                     oldShapes[object.id] = shape
                     affectedObjectIDs.insert(object.id)
 
-                    // Recursively capture old state of all member shapes (including nested groups)
                     collectGroupMembers(shape)
                 }
             }
 
-            // Second pass: apply drag delta to snapshot
             for objectID in document.viewState.selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 switch object.objectType {
@@ -378,16 +358,14 @@ extension DrawingCanvas {
             }
 
             document.updateTransformPanelValues()
-            // Note: Layer triggers handled by ShapeModificationCommand
 
-            // If bezier drawing is active, update the local bezierPoints to match the moved shape
             if isBezierDrawing, let bezierShape = activeBezierShape,
                affectedObjectIDs.contains(bezierShape.id) {
-                // Update bezierPoints with the drag delta
+
                 bezierPoints = bezierPoints.map { point in
                     VectorPoint(point.x + finalDelta.x, point.y + finalDelta.y)
                 }
-                // Update bezierHandles with the drag delta
+
                 var updatedHandles: [Int: BezierHandleInfo] = [:]
                 for (index, handleInfo) in bezierHandles {
                     var newHandleInfo = handleInfo
@@ -400,19 +378,16 @@ extension DrawingCanvas {
                     updatedHandles[index] = newHandleInfo
                 }
                 bezierHandles = updatedHandles
-                // Rebuild the bezierPath from updated points/handles
+
                 updatePathWithHandles()
-                // Update activeBezierShape reference from document
+
                 if let updatedShape = document.findShape(by: bezierShape.id) {
                     activeBezierShape = updatedShape
                 }
             }
 
-            // NOW clear currentDragDelta after snapshot is updated
-            // Transform box will stay in correct position because objects are now at final position
             currentDragDelta = .zero
 
-            // Clear remaining drag state (drag state already cleared above for immediate transform box)
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
@@ -427,15 +402,13 @@ extension DrawingCanvas {
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
         guard let object = document.snapshot.objects[objectID] else {
-            // print("🔴 DRAG: Could not find object \(objectID)")
+
             return
         }
 
-        // print("🟠 DRAG END: Applying delta to objectID=\(objectID)")
-
         switch object.objectType {
         case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
-            // print("🟠 DRAG END: Shape name=\(shape.name), isGroup=\(shape.isGroup), isClippingGroup=\(shape.isClippingGroup)")
+
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
             return
@@ -448,12 +421,7 @@ extension DrawingCanvas {
     }
 
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
-        // print("      🟢 applyDragDeltaToShape: shape.id=\(shape.id), name=\(shape.name), delta=\(delta)")
-        // print("         isGroupContainer=\(shape.isGroupContainer), hasImage=\(ImageContentRegistry.containsImage(shape, in: document))")
-        // print("         path.elements.count=\(shape.path.elements.count), bounds=\(shape.bounds)")
 
-        // Images/non-identity transforms: update transform translation instead of path coords
-        // (prevents lag when dragging rotated SVG-imported shapes)
         let hasNonIdentityTransform = !shape.transform.isIdentity
         if ImageContentRegistry.containsImage(shape, in: document) || hasNonIdentityTransform {
             var updatedShape = shape
@@ -470,13 +438,12 @@ extension DrawingCanvas {
             return
         }
 
-        // Handle groups with memberIDs - move each member shape
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             for memberID in shape.memberIDs {
                 if let memberObj = document.snapshot.objects[memberID] {
                     switch memberObj.objectType {
                     case .shape(let memberShape), .image(let memberShape), .warp(let memberShape), .group(let memberShape), .clipGroup(let memberShape), .clipMask(let memberShape), .guide(let memberShape):
-                        // Recursively apply drag to member (handles nested groups)
+
                         applyDragDeltaToShape(shape: memberShape, delta: delta)
                     case .text(let memberShape):
                         if let textPosition = memberShape.textPosition {
@@ -493,7 +460,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Update the group's bounds from the moved member shapes
             var updatedGroupShape = shape
             updatedGroupShape.bounds = document.calculateGroupBounds(shape)
 
@@ -573,16 +539,14 @@ extension DrawingCanvas {
         movedShape.updateBounds()
         document.updateShapeByID(movedShape.id) { $0 = movedShape }
 
-        // Update child in parent group's groupedShapes array
-        // print("🟠 DRAG END: Checking parent for childID=\(movedShape.id)")
         if document.findParentGroup(for: movedShape.id) != nil {
-            // print("🟠 DRAG END: Found parent group id=\(parentGroup.id), updating groupedShapes")
+
             if let updatedObject = document.snapshot.objects[movedShape.id] {
                 document.updateChildInParentGroup(childID: movedShape.id, updatedShape: updatedObject.shape)
-                // print("🟠 DRAG END: Updated child in parent group")
+
             }
         } else {
-            // print("🟠 DRAG END: No parent group found for childID=\(movedShape.id)")
+
         }
     }
 

@@ -18,7 +18,7 @@ struct GradientSubLabelStyle: ViewModifier {
 
 struct GradientTextFieldStyle: ViewModifier {
     let width: CGFloat
-    
+
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -31,11 +31,11 @@ extension View {
     func gradientLabel() -> some View {
         modifier(GradientLabelStyle())
     }
-    
+
     func gradientSubLabel() -> some View {
         modifier(GradientSubLabelStyle())
     }
-    
+
     func gradientTextField(width: CGFloat) -> some View {
         modifier(GradientTextFieldStyle(width: width))
     }
@@ -52,14 +52,14 @@ private struct GradientSliderControl: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .gradientSubLabel()
-            
+
             HStack(spacing: 8) {
                 Slider(value: Binding(
                     get: { value },
                     set: onChange
                 ), in: range, onEditingChanged: onEditingChanged)
                 .controlSize(.regular)
-                
+
                 TextField("", text: createNaturalNumberBinding(
                     getValue: { value },
                     setValue: onChange
@@ -79,11 +79,6 @@ struct GradientTypePickerView: View {
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
     let onGradientChange: () -> Void
 
-    // A segmented Picker only fires onChange when the selection *changes*, so
-    // on a fresh selection where currentGradient == nil, tapping the already-
-    // highlighted Linear button is inert — the user has to tap Radial then
-    // Linear to populate the controls. Explicit Buttons apply the gradient
-    // unconditionally on every tap.
     private func select(_ newType: GradientFillSection.GradientType) {
         gradientType = newType
         if let existing = currentGradient {
@@ -146,7 +141,7 @@ struct GradientAngleControlView: View {
                     Slider(value: Binding(
                         get: { angle },
                         set: { newAngle in
-                            // Only call callback - parent handles activeGradientDelta
+
                             onAngleChange(newAngle)
                         }
                     ), in: -180...180, onEditingChanged: onEditingChanged)
@@ -155,7 +150,7 @@ struct GradientAngleControlView: View {
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
                         setValue: { newAngle in
-                            // Only call callback - parent handles activeGradientDelta
+
                             onAngleChange(newAngle)
                         }
                     ))

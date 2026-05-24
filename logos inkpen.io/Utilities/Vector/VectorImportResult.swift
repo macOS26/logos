@@ -7,32 +7,16 @@ struct VectorImportResult: Identifiable {
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
-    /// Native InkPen layers parsed from the source file. `objectIDs` references
-    /// shape UUIDs from `shapes`. Empty when the source has no layer info.
+
     var layers: [Layer] = []
-    /// Native group VectorShape IDs within `shapes`. Already included in `shapes`.
+
     var groupShapeIDs: [UUID] = []
 }
 
 extension VectorImportResult {
-    /// Shape predicate for the standard import path. Returning false drops the
-    /// shape before it lands in the document — keeps the undo payload clean
-    /// (e.g. empty image placeholders shouldn't enter snapshot.objects).
+
     typealias ShapeFilter = (VectorShape) -> Bool
 
-    /// Build an `ImportCommand` for this result and dispatch it through
-    /// `document.commandManager`. Single source of truth for File → Import,
-    /// the in-window `.fileImporter` callback, and the SF Symbols picker.
-    ///
-    /// - Parameter document: the target doc.
-    /// - Parameter fallbackLayer: which layer index to use when the result
-    ///   carries no parsed layer info (defaults to `selectedLayerIndex`,
-    ///   then the first user layer).
-    /// - Parameter filter: optional per-shape predicate. Shapes returning
-    ///   false are dropped.
-    /// - Returns: the dispatched command (already executed and on the undo
-    ///   stack), or nil if the result was unsuccessful or no fallback
-    ///   layer was available.
     @MainActor
     @discardableResult
     func dispatchAsImportCommand(into document: VectorDocument,
@@ -46,15 +30,10 @@ extension VectorImportResult {
         let usable: [VectorShape]
         if let filter = filter { usable = shapes.filter(filter) } else { usable = shapes }
 
-        // Pre-compute where parsed layers will land once the command appends them.
-        // Each imported layer gets a FRESH UUID (so the spatial index can key it
-        // separately from any existing layer) and a NAME that doesn't collide
-        // with existing doc layer names (so the user sees them apart in the
-        // layer panel).
         let existingNames = Set(document.snapshot.layers.map { $0.name })
         let layersToAppend: [Layer] = layers.map { parsed in
             Layer(
-                id: UUID(),                                       // fresh UUID
+                id: UUID(),
                 name: Self.uniqueName(parsed.name, against: existingNames),
                 objectIDs: parsed.objectIDs,
                 isVisible: parsed.isVisible,
@@ -123,8 +102,6 @@ extension VectorImportResult {
         return command
     }
 
-    /// Pick a layer name that doesn't collide with `existing`. If `proposed`
-    /// is free, return it. Otherwise append " 2", " 3", ... until unique.
     private static func uniqueName(_ proposed: String, against existing: Set<String>) -> String {
         if !existing.contains(proposed) { return proposed }
         var n = 2

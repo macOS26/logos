@@ -18,14 +18,12 @@ struct GradientCenterPointCanvasView: View {
             let zoom = zoomLevel
             let offset = canvasOffset
 
-            // Apply canvas transform (same as direct selection)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: offset.x, y: offset.y)
                 .scaledBy(x: zoom, y: zoom)
 
             context.transform = baseTransform
 
-            // Use delta if dragging (same pattern as angle slider)
             let gradientToDisplay = activeGradientDelta ?? selectedGradient
             let originX = getGradientOriginX(gradientToDisplay)
             let originY = getGradientOriginY(gradientToDisplay)
@@ -35,12 +33,10 @@ struct GradientCenterPointCanvasView: View {
             let centerY = shapeBounds.minY + shapeBounds.height * originY
             let centerPoint = CGPoint(x: centerX, y: centerY)
 
-            // Fixed screen size - divide by zoom
             let outerSize: CGFloat = 16.0 / zoom
             let innerSize: CGFloat = 6.0 / zoom
             let strokeWidth: CGFloat = 2.0 / zoom
 
-            // Draw outer circle
             let outerRect = CGRect(
                 x: centerPoint.x - outerSize/2,
                 y: centerPoint.y - outerSize/2,
@@ -51,7 +47,6 @@ struct GradientCenterPointCanvasView: View {
             context.fill(outerCircle, with: .color(.blue.opacity(0.8)))
             context.stroke(outerCircle, with: .color(.white), lineWidth: strokeWidth)
 
-            // Draw inner indicator based on gradient type
             switch selectedGradient {
             case .radial:
                 let innerRect = CGRect(
@@ -73,7 +68,7 @@ struct GradientCenterPointCanvasView: View {
                     height: lineHeight
                 )
                 var linePath = Path(lineRect)
-                // Rotate 45 degrees
+
                 let rotation = CGAffineTransform(rotationAngle: .pi / 4)
                 let translated = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
                 linePath = linePath.applying(CGAffineTransform(translationX: -centerPoint.x, y: -centerPoint.y))
@@ -154,7 +149,7 @@ extension DrawingCanvas {
             )
         }
     }
-    
+
     private func getSelectedShapeWithGradient() -> VectorShape? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
@@ -164,29 +159,29 @@ extension DrawingCanvas {
         }
         return shape
     }
-    
+
     private func getGradientCenterPoint(gradient: VectorGradient, shape: VectorShape) -> CGPoint {
         let shapeBounds = shape.bounds
-        
+
         switch gradient {
         case .linear(let linear):
             let originX = linear.originPoint.x
             let originY = linear.originPoint.y
             let centerX = shapeBounds.minX + shapeBounds.width * originX
             let centerY = shapeBounds.minY + shapeBounds.height * originY
-            
+
             return CGPoint(x: centerX, y: centerY)
-            
+
         case .radial(let radial):
             let originX = radial.originPoint.x
             let originY = radial.originPoint.y
             let centerX = shapeBounds.minX + shapeBounds.width * originX
             let centerY = shapeBounds.minY + shapeBounds.height * originY
-            
+
             return CGPoint(x: centerX, y: centerY)
         }
     }
-    
+
     private func getGradientScale(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -195,7 +190,7 @@ extension DrawingCanvas {
             return radial.scaleX
         }
     }
-    
+
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -204,7 +199,7 @@ extension DrawingCanvas {
             return radial.originPoint.x
         }
     }
-    
+
     private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -213,9 +208,9 @@ extension DrawingCanvas {
             return radial.originPoint.y
         }
     }
-    
+
     private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
-        // Capture gradient at start of drag
+
         if dragStartGradient == nil {
             dragStartGradient = gradient
         }
@@ -226,7 +221,6 @@ extension DrawingCanvas {
         let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
-        // Update gradient directly - same pattern as fast angle/origin sliders
         let newGradient: VectorGradient
         switch gradient {
         case .linear(var linear):
@@ -240,12 +234,11 @@ extension DrawingCanvas {
             newGradient = .radial(radial)
         }
 
-        // Set delta for immediate visual feedback - that's it!
         activeGradientDelta = newGradient
     }
 
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape) {
-        // Get the final gradient from activeGradientDelta
+
         guard let finalGradient = activeGradientDelta,
               let startGradient = dragStartGradient,
               let fillStyle = document.findShape(by: shape.id)?.fillStyle else {
@@ -254,7 +247,6 @@ extension DrawingCanvas {
             return
         }
 
-        // Create undo command with before/after state
         let command = GradientCommand(
             objectIDs: [shape.id],
             target: .fill,
@@ -265,22 +257,21 @@ extension DrawingCanvas {
         )
         document.commandManager.execute(command)
 
-        // Clear delta AFTER command executes
         activeGradientDelta = nil
         dragStartGradient = nil
     }
-    
+
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
         updateGradientOriginXOptimized(newX, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
     }
-    
+
     private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
         updateGradientOriginYOptimized(newY, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
     }
-    
+
     private func updateGradientOriginXOptimized(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
-        
+
         switch selectedGradient {
         case .linear(var linear):
             linear.originPoint.x = newX
@@ -291,10 +282,10 @@ extension DrawingCanvas {
             updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
-    
+
     private func updateGradientOriginYOptimized(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
-        
+
         switch selectedGradient {
         case .linear(var linear):
             linear.originPoint.y = newY
@@ -305,7 +296,7 @@ extension DrawingCanvas {
             updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
-    
+
     private func updateGradientOriginXYOptimized(_ newX: Double, _ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
 
@@ -322,19 +313,18 @@ extension DrawingCanvas {
             newGradient = .radial(radial)
         }
 
-        // Set the delta for live preview - don't update snapshot during drag
         activeGradientDelta = newGradient
     }
-    
+
     private func updateShapeGradient(shape: VectorShape, newGradient: VectorGradient) {
         updateShapeGradientOptimized(shape: shape, newGradient: newGradient, isLiveDrag: false)
     }
-    
+
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
-        // Use the same method as the Grade panel for live updates
+
         document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: document.viewState.activeColorTarget)
     }
-    
+
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),

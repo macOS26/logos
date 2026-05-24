@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
-    
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -12,7 +12,7 @@ struct ObjectRowIconStyle: ViewModifier {
 struct ObjectRowTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
-    
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -24,7 +24,7 @@ struct ObjectRowTextStyle: ViewModifier {
 struct ObjectRowChildTextStyle: ViewModifier {
     let size: CGFloat
     let isSelected: Bool
-    
+
     func body(content: Content) -> some View {
         content
             .font(.system(size: size))
@@ -122,7 +122,7 @@ struct ObjectRow: View {
         self.memberIDs = memberIDs
         self.showBottomIndicator = showBottomIndicator
     }
-    
+
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: {
@@ -165,7 +165,7 @@ struct ObjectRow: View {
             }
         )
     }
-    
+
     private var isLockedBinding: Binding<Bool> {
         Binding(
             get: {
@@ -208,7 +208,7 @@ struct ObjectRow: View {
             }
         )
     }
-    
+
     private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
         Binding(
             get: {
@@ -264,16 +264,16 @@ struct ObjectRow: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 21, height: 1)
-                    
+
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 19, height: 1)
-                    
+
                     Spacer()
                 }
                 .padding(.leading, 2.5)
                 .padding(.trailing, 4)
-                
+
                 HStack(spacing: 2) {
                     Button(action: {
                         isVisibleBinding.wrappedValue.toggle()
@@ -283,7 +283,7 @@ struct ObjectRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isVisibleBinding.wrappedValue ? "Hide Object" : "Show Object")
-                    
+
                     Button(action: {
                         isLockedBinding.wrappedValue.toggle()
                     }) {
@@ -292,7 +292,7 @@ struct ObjectRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isLockedBinding.wrappedValue ? "Unlock Object" : "Lock Object")
-                    
+
                     HStack(spacing: 4) {
                         if objectType == .group {
                             Button(action: {
@@ -310,7 +310,7 @@ struct ObjectRow: View {
                         } else {
                             Color.clear.frame(width: 12, height: 12)
                         }
-                        
+
                         HStack(spacing: 4) {
                             Image(systemName: objectIcon)
                                 .font(.system(size: 10))
@@ -346,7 +346,6 @@ struct ObjectRow: View {
                                     }
                             }
 
-                            // Show member count for groups (like layers show object count)
                             if objectType == .group && !memberIDs.isEmpty {
                                 Spacer()
                                 Text("\(memberIDs.count)")
@@ -455,10 +454,10 @@ struct ObjectRow: View {
                     isLockedBinding.wrappedValue.toggle()
                 }
             }
-            
+
             if objectType == .group, isGroupExpanded, !memberIDs.isEmpty {
                 let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-                // Reverse for regular groups; clip groups keep order (mask must be first)
+
                 let displayShapes = document.snapshot.objects[objectId].map { obj -> [VectorShape] in
                     if case .clipGroup = obj.objectType {
                         return memberShapes
@@ -466,10 +465,7 @@ struct ObjectRow: View {
                         return Array(memberShapes.reversed())
                     }
                 } ?? memberShapes
-                /* Use index-based identity so SwiftUI doesn't confuse rows when
-                   the same shape UUID appears in multiple places in the view
-                   hierarchy (e.g., nested group children resolving to objects
-                   that are also rendered elsewhere). */
+
                 ForEach(displayShapes.indices, id: \.self) { index in
                     let childShape = displayShapes[index]
                     let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
@@ -494,8 +490,7 @@ struct ObjectRow: View {
 
                         HStack(spacing: 2) {
                             Button(action: {
-                                /* Inline read to dodge any closure-capture staleness:
-                                   re-resolve displayShapes[index] at click time. */
+
                                 let clickedShape = displayShapes[index]
                                 print("🎯 EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
                                 guard let obj = document.snapshot.objects[clickedShape.id] else {
@@ -529,7 +524,7 @@ struct ObjectRow: View {
                             .help(childLockBinding.wrappedValue ? "Unlock Object" : "Lock Object")
 
                             HStack(spacing: 4) {
-                                // Check if child is a nested group
+
                                 if childShape.isGroupContainer {
                                     let isChildGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                                     Button(action: {
@@ -566,7 +561,6 @@ struct ObjectRow: View {
                                     .lineLimit(1)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                                // Show member count for nested groups
                                 if childShape.isGroupContainer {
                                     Spacer()
                                     let childMemberCount = childShape.memberIDs.isEmpty ? childShape.groupedShapes.count : childShape.memberIDs.count
@@ -609,7 +603,6 @@ struct ObjectRow: View {
                         }
                     }
 
-                    // Recursively render nested group children if this child is an expanded group
                     if childShape.isGroupContainer {
                         let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                         if isNestedGroupExpanded {
@@ -628,12 +621,10 @@ struct ObjectRow: View {
     }
 }
 
-// Recursive view for nested group children
 struct NestedGroupChildrenView: View {
     let memberIDs: [UUID]
     let layerIndex: Int
-    /// UUID of the parent container — used to look up its objectType so the
-    /// first row can show the scissors icon when the parent is a clip group.
+
     let parentObjectId: UUID
     @ObservedObject var document: VectorDocument
 
@@ -687,9 +678,7 @@ struct NestedGroupChildrenView: View {
 
     var body: some View {
         let memberShapes = memberIDs.compactMap { document.findShape(by: $0) }
-        /* Clip groups render mask-first (memberShapes[0] is the mask and must
-           stay in position 0 so the scissors icon lands on the right row).
-           Regular groups reverse so top-of-stack appears at the top of the list. */
+
         let parentIsClip: Bool = {
             if let parent = document.snapshot.objects[parentObjectId],
                case .clipGroup = parent.objectType { return true }
@@ -697,7 +686,6 @@ struct NestedGroupChildrenView: View {
         }()
         let displayShapes = parentIsClip ? memberShapes : Array(memberShapes.reversed())
 
-        /* Use index-based identity — see the same pattern in ObjectRow above. */
         ForEach(displayShapes.indices, id: \.self) { index in
             let childShape = displayShapes[index]
             let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
@@ -829,7 +817,6 @@ struct NestedGroupChildrenView: View {
                 }
             }
 
-            // Recursively render deeper nested groups
             if childShape.isGroupContainer {
                 let isNestedGroupExpanded = document.settings.groupExpansionState[childShape.id] ?? false
                 if isNestedGroupExpanded {
@@ -890,7 +877,7 @@ extension ObjectRow {
         if childShape.typography != nil {
             return "textformat"
         }
-        // Use outlined folder icon for nested groups
+
         if childShape.isGroupContainer {
             return "folder"
         }
@@ -912,7 +899,7 @@ extension ObjectRow {
         if childShape.typography != nil {
             return .green
         }
-        // Use purple for nested groups
+
         if childShape.isGroupContainer {
             return .purple
         }

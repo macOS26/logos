@@ -7,9 +7,6 @@ extension VectorDocument {
         commandManager.execute(command)
     }
 
-    // MARK: - Shape Modification with Undo/Redo
-
-    /// Modifies selected shapes and registers a ShapeModificationCommand for undo/redo.
     @discardableResult
     func modifySelectedShapesWithUndo(
         _ modification: (inout VectorShape) -> Void
@@ -69,7 +66,6 @@ extension VectorDocument {
         return !objectIDs.isEmpty
     }
 
-    /// Variant that runs `preCapture` between old-state capture and new-state capture.
     @discardableResult
     func modifySelectedShapesWithUndo(
         preCapture: () -> Void,
@@ -134,7 +130,6 @@ extension VectorDocument {
         return !objectIDs.isEmpty
     }
 
-    /// Modifies specific shapes by ID and registers a ShapeModificationCommand.
     @discardableResult
     func modifyShapesWithUndo(
         shapeIDs: [UUID],

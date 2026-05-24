@@ -205,14 +205,7 @@ struct FontSizeControls: View {
             syncFontStates()
         }
         .onChange(of: editingText?.id) { oldID, newID in
-//            // When editing ends (editingText becomes nil), apply the preview typography to document
-//            if oldID != nil && newID == nil && previewTypography != nil, let textID = editingTextID {
-//                // Editing finished - save preview to document
-//                document.updateTextTypographyInUnified(id: textID, typography: previewTypography!)
-//                // Clear preview state
-//                previewTypography = nil
-//                editingTextID = nil
-//            }
+
             syncFontStates()
         }
     }

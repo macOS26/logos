@@ -39,14 +39,11 @@ class ObjectReorderCommand: BaseCommand {
                   targetLayer >= 0 && targetLayer < document.snapshot.layers.count,
                   let obj = document.snapshot.objects[objectID] else { return affectedLayers }
 
-            // Remove from source layer
             document.removeFromLayer(layerIndex: sourceLayer, objectID: objectID)
 
-            // Update layerIndex by creating new object
             let updatedObj = VectorObject(id: obj.id, layerIndex: targetLayer, objectType: obj.objectType)
             document.snapshot.objects[objectID] = updatedObj
 
-            // Add to target layer
             let insertIndex = min(targetIndex, document.snapshot.layers[targetLayer].objectIDs.count)
             document.insertIntoLayer(layerIndex: targetLayer, objectID: objectID, at: insertIndex)
 
@@ -109,7 +106,7 @@ class ObjectReorderCommand: BaseCommand {
     }
 
     private func moveObjectsToIndices(objectIDs: [UUID], targetIndices: [UUID: Int], document: VectorDocument) {
-        // Group objects by layer
+
         var objectsByLayer: [Int: [(UUID, Int)]] = [:]
 
         for id in objectIDs {
@@ -119,17 +116,14 @@ class ObjectReorderCommand: BaseCommand {
             objectsByLayer[obj.layerIndex, default: []].append((id, targetIndex))
         }
 
-        // Process each layer
         for (layerIndex, idsAndIndices) in objectsByLayer {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
 
             var layerObjectIDs = document.snapshot.layers[layerIndex].objectIDs
 
-            // Remove affected objects
             let affectedIDs = Set(idsAndIndices.map { $0.0 })
             layerObjectIDs.removeAll { affectedIDs.contains($0) }
 
-            // Sort by target index and reinsert
             let sorted = idsAndIndices.sorted { $0.1 < $1.1 }
             for (id, targetIdx) in sorted {
                 let insertIndex = min(targetIdx, layerObjectIDs.count)

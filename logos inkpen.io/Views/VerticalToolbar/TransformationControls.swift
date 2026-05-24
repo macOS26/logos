@@ -241,7 +241,6 @@ struct TransformationControls: View {
             Divider()
                 .frame(height: 24)
 
-            // Scale X
             HStack(spacing: 2) {
                 Text("SX:")
                     .font(.system(size: 10, weight: .medium))
@@ -266,7 +265,6 @@ struct TransformationControls: View {
                     .frame(width: 12, alignment: .leading)
             }
 
-            // Scale Y
             HStack(spacing: 2) {
                 Text("SY:")
                     .font(.system(size: 10, weight: .medium))
@@ -291,7 +289,6 @@ struct TransformationControls: View {
                     .frame(width: 12, alignment: .leading)
             }
 
-            // Link Scale button
             Button(action: {
                 linkScale.toggle()
             }) {
@@ -323,7 +320,6 @@ struct TransformationControls: View {
             Divider()
                 .frame(height: 24)
 
-            // Rotation
             HStack(spacing: 2) {
                 Text("R:")
                     .font(.system(size: 10, weight: .medium))
@@ -379,7 +375,7 @@ struct TransformationControls: View {
               let obj = document.snapshot.objects[firstID] else {
             return
         }
-        // Only sync if the object has a saved origin; don't override user's choice
+
         if let objectOrigin = obj.shape.transformOrigin {
             if document.viewState.transformOrigin != objectOrigin {
                 document.viewState.transformOrigin = objectOrigin
@@ -453,7 +449,6 @@ struct TransformationControls: View {
 
         var combinedBounds: CGRect?
 
-        // Iterate all objects; more reliable than ID lookup
         for vectorObject in document.snapshot.objects.values {
             switch vectorObject.objectType {
             case .text(let shape):
@@ -686,13 +681,13 @@ struct TransformationControls: View {
                         var shape = vectorObject.shape
 
                         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-                            // Modern groups - use applyTransformToGroup
+
                             let scaleTransform = CGAffineTransform(translationX: originX, y: originY)
                                 .scaledBy(x: scaleFactorX, y: scaleFactorY)
                                 .translatedBy(x: -originX, y: -originY)
                             document.applyTransformToGroup(groupID: shape.id, transform: scaleTransform)
                         } else if shape.isGroupContainer {
-                            // Legacy groups
+
                             for i in shape.groupedShapes.indices {
                                 var groupedShape = shape.groupedShapes[i]
                                 scaleShapePath(&groupedShape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
@@ -703,7 +698,7 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else if shape.typography != nil {
-                            // Text - scale position relative to origin
+
                             if let pos = shape.textPosition {
                                 let newX = originX + (pos.x - originX) * scaleFactorX
                                 let newY = originY + (pos.y - originY) * scaleFactorY
@@ -721,7 +716,7 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else {
-                            // Regular shape
+
                             scaleShapePath(&shape, scaleX: scaleFactorX, scaleY: scaleFactorY, originX: originX, originY: originY)
                             document.updateShapeByID(objectID, silent: false) { s in
                                 s = shape
@@ -732,7 +727,6 @@ struct TransformationControls: View {
             }
         )
 
-        // Reset scale values to 100% after applying
         scaleXValue = "100"
         scaleYValue = "100"
         updateValuesFromSelection()
@@ -797,13 +791,13 @@ struct TransformationControls: View {
                         var shape = vectorObject.shape
 
                         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
-                            // Modern groups - use applyTransformToGroup
+
                             let rotationTransform = CGAffineTransform(translationX: originX, y: originY)
                                 .rotated(by: radians)
                                 .translatedBy(x: -originX, y: -originY)
                             document.applyTransformToGroup(groupID: shape.id, transform: rotationTransform)
                         } else if shape.isGroupContainer {
-                            // Legacy groups
+
                             for i in shape.groupedShapes.indices {
                                 var groupedShape = shape.groupedShapes[i]
                                 rotateShapePath(&groupedShape, radians: radians, originX: originX, originY: originY)
@@ -814,7 +808,7 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else if shape.typography != nil {
-                            // Text - rotate position relative to origin
+
                             if let pos = shape.textPosition {
                                 let dx = pos.x - originX
                                 let dy = pos.y - originY
@@ -827,7 +821,7 @@ struct TransformationControls: View {
                                 s = shape
                             }
                         } else {
-                            // Regular shape
+
                             rotateShapePath(&shape, radians: radians, originX: originX, originY: originY)
                             document.updateShapeByID(objectID, silent: false) { s in
                                 s = shape
@@ -838,7 +832,6 @@ struct TransformationControls: View {
             }
         )
 
-        // Reset rotation to 0 after applying
         rotationValue = "0"
         updateValuesFromSelection()
     }

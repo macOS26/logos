@@ -3,7 +3,7 @@ import SwiftUI
 struct Layer: Equatable, Identifiable, Codable {
     let id: UUID
     var name: String
-    var objectIDs: [UUID]  // Draw order
+    var objectIDs: [UUID]
     var isVisible: Bool
     var isLocked: Bool
     var opacity: Double

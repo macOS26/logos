@@ -77,7 +77,6 @@ class ChangeColorCommand: BaseCommand {
                         shape.fillStyle?.color = color
                         shape.fillStyle?.opacity = opacity
 
-                        // Update children in groups
                         var updatedChildren: [VectorShape] = []
                         for var childShape in shape.groupedShapes {
                             if let childColor = colors[childShape.id], let childOpacity = opacities[childShape.id] {
@@ -98,7 +97,6 @@ class ChangeColorCommand: BaseCommand {
                         shape.strokeStyle?.color = color
                         shape.strokeStyle?.opacity = opacity
 
-                        // Update children in groups
                         var updatedChildren: [VectorShape] = []
                         for var childShape in shape.groupedShapes {
                             if let childColor = colors[childShape.id], let childOpacity = opacities[childShape.id] {
@@ -119,7 +117,7 @@ class ChangeColorCommand: BaseCommand {
                     document.snapshot.objects[id] = obj
 
                 case .guide:
-                    break  // Guides don't have color changes
+                    break
                 }
             }
         }

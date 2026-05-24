@@ -5,8 +5,6 @@ import AppKit
 import UIKit
 #endif
 
-// MARK: - Cross-Platform Popover Manager
-/// Reuses a single popover instance, sliding between anchors on macOS/iOS.
 class SlidingPopoverManager: NSObject {
     #if os(macOS)
     private var popover: NSPopover?
@@ -19,7 +17,6 @@ class SlidingPopoverManager: NSObject {
 
     private var dismissCallback: (() -> Void)?
 
-    /// Shows the popover or slides it to a new anchor if already visible.
     #if os(macOS)
     func show<Content: View>(content: Content, anchorView: NSView, edge: Edge = .leading, onDismiss: (() -> Void)? = nil) {
         self.dismissCallback = onDismiss
@@ -43,7 +40,6 @@ class SlidingPopoverManager: NSObject {
             newPopover.animates = true
             newPopover.delegate = self
 
-            // Translucent background for vibrancy
             if let popoverView = newPopover.contentViewController?.view {
                 popoverView.wantsLayer = true
                 popoverView.layer?.backgroundColor = PlatformColor.clear.cgColor
@@ -71,7 +67,7 @@ class SlidingPopoverManager: NSObject {
             if let hostingController = existingController as? UIHostingController<Content> {
                 hostingController.rootView = content
             } else {
-                // Different content type: dismiss and re-present
+
                 existingController.dismiss(animated: false) {
                     self.showNewPopover(content: content, anchorView: anchorView, edge: edge, presentingVC: presentingVC)
                 }
@@ -111,7 +107,6 @@ class SlidingPopoverManager: NSObject {
     private func slideToNewAnchor(anchorView: NSView, edge: Edge, updateContent: () -> Void) {
         guard let popover = popover, popover.isShown else { return }
 
-        // Update content without recreating the NSPopover
         updateContent()
 
         NSAnimationContext.runAnimationGroup { context in
@@ -129,7 +124,6 @@ class SlidingPopoverManager: NSObject {
     private func calculatePositioningRect(for anchorView: NSView, edge: NSRectEdge) -> CGRect {
         let bounds = anchorView.bounds
 
-        // Shift 17px right
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -141,7 +135,6 @@ class SlidingPopoverManager: NSObject {
     private func calculatePositioningRect(for anchorView: UIView, edge: Edge) -> CGRect {
         let bounds = anchorView.bounds
 
-        // Shift 17px right (matches macOS)
         return CGRect(
             x: bounds.origin.x + 17,
             y: bounds.origin.y,
@@ -152,7 +145,7 @@ class SlidingPopoverManager: NSObject {
     #endif
 
     func dismiss() {
-        // Clear callback BEFORE close to prevent double-dismiss
+
         dismissCallback = nil
         #if os(macOS)
         popover?.performClose(nil)
@@ -173,11 +166,10 @@ class SlidingPopoverManager: NSObject {
     }
 }
 
-// MARK: - macOS Delegate
 #if os(macOS)
 extension SlidingPopoverManager: NSPopoverDelegate {
     func popoverWillClose(_ notification: Notification) {
-        // Call callback BEFORE close to prevent stale updates
+
         dismissCallback?()
     }
 
@@ -188,10 +180,10 @@ extension SlidingPopoverManager: NSPopoverDelegate {
     }
 }
 #else
-// MARK: - iOS Delegate
+
 extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
     func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
-        // Call callback BEFORE dismiss to prevent stale updates
+
         dismissCallback?()
     }
 
@@ -203,7 +195,6 @@ extension SlidingPopoverManager: UIPopoverPresentationControllerDelegate {
 }
 #endif
 
-// MARK: - Edge Conversion Extensions
 #if os(macOS)
 extension Edge {
     func toNSRectEdge() -> NSRectEdge {
@@ -274,7 +265,6 @@ struct GlassCloseButton: View {
     }
 }
 
-// MARK: - Cross-Platform Anchor View
 #if os(macOS)
 struct PopoverAnchorView: NSViewRepresentable {
     let onViewCreated: (NSView) -> Void
@@ -288,7 +278,7 @@ struct PopoverAnchorView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        // No updates needed
+
     }
 }
 #else
@@ -304,7 +294,7 @@ struct PopoverAnchorView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        // No updates needed
+
     }
 }
 #endif

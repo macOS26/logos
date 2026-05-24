@@ -36,37 +36,32 @@ struct GradientPreviewAndStopsView: View {
     @Environment(AppState.self) private var appState
 
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
-        // Capture live values to force view update
+
         let liveX = document.viewState.liveGradientOriginX
         let liveY = document.viewState.liveGradientOriginY
 
-        // Add padding for dots
         let padding: CGFloat = 8
         let contentSize = CGSize(width: squareSize, height: squareSize)
 
         return Canvas { context, size in
-            // Translate context to add padding for corner dots
+
             context.translateBy(x: padding, y: padding)
             guard let gradient = currentGradient else {
-                // Draw gray background if no gradient
+
                 context.fill(Path(CGRect(origin: .zero, size: contentSize)), with: .color(.gray.opacity(0.3)))
                 context.stroke(Path(CGRect(origin: .zero, size: contentSize)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
                 return
             }
 
-            // Use captured live origin
             let originX = liveX ?? getOriginX(gradient)
             let originY = liveY ?? getOriginY(gradient)
 
-            // Draw gradient background using CGContext
             context.withCGContext { cgContext in
                 renderGradientToCGContext(gradient: gradient, context: cgContext, size: contentSize, liveOriginX: originX, liveOriginY: originY)
             }
 
-            // Draw border
             context.stroke(Path(CGRect(origin: .zero, size: contentSize)), with: .color(Color.ui.lightGrayBorder), lineWidth: 1)
 
-            // Draw grid lines
             for i in 0..<5 {
                 let position = CGFloat(i) / 4.0
                 let xPos = position * contentSize.width
@@ -75,20 +70,17 @@ struct GradientPreviewAndStopsView: View {
                 let opacity = isCenter ? 0.9 : 0.3
                 let width: CGFloat = isCenter ? 1.0 : 0.5
 
-                // Vertical line
                 var vLine = Path()
                 vLine.move(to: CGPoint(x: xPos, y: 0))
                 vLine.addLine(to: CGPoint(x: xPos, y: contentSize.height))
                 context.stroke(vLine, with: .color(.white.opacity(opacity)), lineWidth: width)
 
-                // Horizontal line
                 var hLine = Path()
                 hLine.move(to: CGPoint(x: 0, y: yPos))
                 hLine.addLine(to: CGPoint(x: contentSize.width, y: yPos))
                 context.stroke(hLine, with: .color(.white.opacity(opacity)), lineWidth: width)
             }
 
-            // Draw grid intersection dots
             let gridPoints: [(x: CGFloat, y: CGFloat, isCenter: Bool)] = [
                 (0, 0, false), (0.5, 0, false), (1, 0, false),
                 (0, 0.5, false), (0.5, 0.5, true), (1, 0.5, false),
@@ -106,7 +98,6 @@ struct GradientPreviewAndStopsView: View {
                 context.fill(circle, with: .color(color))
             }
 
-            // Draw labels
             let labels: [(text: String, x: CGFloat, y: CGFloat, alignX: CGFloat, alignY: CGFloat)] = [
                 ("(0,0)", 12, 12, 0, 0),
                 ("(0.5,0)", contentSize.width/2, 12, 0.5, 0),
@@ -124,7 +115,6 @@ struct GradientPreviewAndStopsView: View {
                 context.draw(text, at: CGPoint(x: label.x, y: label.y), anchor: UnitPoint(x: label.alignX, y: label.alignY))
             }
 
-            // Draw centerpoint dot (use originX/originY already declared above)
             let clampedX = max(0.0, min(1.0, originX))
             let clampedY = max(0.0, min(1.0, originY))
             let dotPos = CGPoint(x: clampedX * contentSize.width, y: clampedY * contentSize.height)
@@ -217,11 +207,9 @@ struct GradientPreviewAndStopsView: View {
     @State private var isColorPickerOpen = false
     @State private var isColorPickerDismissing = false
 
-    /// Shows the popover for a specific gradient stop
     private func showPopoverForStop(_ stop: GradientStop) {
         guard let anchorView = anchorViews[stop.id], let gradient = currentGradient else { return }
 
-        // Notify parent: editing started (only once when first opening)
         if !isColorPickerOpen {
             onStopEditingChanged(true)
             isColorPickerOpen = true
@@ -239,7 +227,7 @@ struct GradientPreviewAndStopsView: View {
                 activateGradientStop(stop.id, color)
             },
             onDismiss: {
-                // Notify parent: editing ended (will commit with undo)
+
                 onStopEditingChanged(false)
                 isColorPickerOpen = false
                 popoverManager.dismiss()
@@ -254,7 +242,7 @@ struct GradientPreviewAndStopsView: View {
             anchorView: anchorView,
             edge: .leading,
             onDismiss: {
-                // Called when popover is dismissed by clicking outside
+
                 guard !isColorPickerDismissing else { return }
                 isColorPickerDismissing = true
 
@@ -262,7 +250,6 @@ struct GradientPreviewAndStopsView: View {
                 isColorPickerOpen = false
                 popoverStopID = nil
 
-                // Reset flag after a delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     isColorPickerDismissing = false
                 }
@@ -306,40 +293,37 @@ struct GradientPreviewAndStopsView: View {
                             isDragging = true
                             dragTranslation = .zero
                             dragStartGradient = currentGradient
-                            // Capture old opacities
+
                             for objectID in document.viewState.selectedObjectIDs {
                                 if let shape = document.findShape(by: objectID) {
                                     dragStartOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
                                 }
                             }
-                            // Notify that drag started
+
                             onOriginEditingChanged(true)
                         }
 
                         dragTranslation = value.translation
 
-                        // Check for snap points first
                         let snapRadius: CGFloat = 6.0
                         var finalX: Double
                         var finalY: Double
 
                         if let snapPoint = findSnapPoint(for: value.location, squareSize: squareSize, padding: padding, snapRadius: snapRadius) {
-                            // Snap to grid point
+
                             finalX = snapPoint.x
                             finalY = snapPoint.y
                         } else {
-                            // Use raw position
+
                             finalX = max(0.0, min(1.0, (value.location.x - padding) / squareSize))
                             finalY = max(0.0, min(1.0, (value.location.y - padding) / squareSize))
                         }
 
-                        // Single update for both X and Y - fast like angle slider
                         updateOriginXY(finalX, finalY)
                     }
                     .onEnded { value in
                         isDragging = false
 
-                        // Notify that drag ended - this will commit with undo
                         onOriginEditingChanged(false)
 
                         dragStartGradient = nil
@@ -391,11 +375,11 @@ struct GradientPreviewAndStopsView: View {
                             ZStack {
                                 Button(action: {
                                     if popoverStopID == stop.id {
-                                        // Close if clicking the same stop
+
                                         popoverManager.dismiss()
                                         popoverStopID = nil
                                     } else {
-                                        // Open or slide to this stop
+
                                         showPopoverForStop(stop)
                                     }
                                 }) {
@@ -403,19 +387,18 @@ struct GradientPreviewAndStopsView: View {
                                 }
                                 .buttonStyle(BorderlessButtonStyle())
                                 .onHover { hovering in
-                                    // If popover is open, slide to this stop on hover
+
                                     if hovering && popoverManager.isShown && popoverStopID != stop.id {
                                         showPopoverForStop(stop)
                                     }
                                 }
                                 .background(
-                                    // Capture the anchor view for this stop
+
                                     PopoverAnchorView { view in
                                         anchorViews[stop.id] = view
                                     }
                                 )
                             }
-                        
 
                             VStack(alignment: .leading, spacing: 2) {
 
@@ -481,12 +464,12 @@ struct GradientPreviewAndStopsView: View {
                 }
             }
             .onChange(of: focusedStopID) { oldValue, newValue in
-                // Focus entered a stop opacity field
+
                 if newValue != nil && oldValue == nil && !isEditingOpacity {
                     isEditingOpacity = true
                     onStopEditingChanged(true)
                 }
-                // Focus left all stop opacity fields
+
                 else if newValue == nil && oldValue != nil && isEditingOpacity {
                     isEditingOpacity = false
                     onStopEditingChanged(false)

@@ -4,15 +4,13 @@ struct
 DocumentSnapshot: Equatable, Codable {
     var formatVersion: String
     var objects: [UUID: VectorObject]
-    var layers: [Layer]  // In stack order
+    var layers: [Layer]
     var settings: DocumentSettings
     var colorSwatches: ColorSwatches
     var gridSettings: GridSettings
 
-    // childID -> parentGroupID, rebuilt on load.
     var parentGroupCache: [UUID: UUID] = [:]
 
-    // clippingPathID -> [clippedObjectIDs], rebuilt on load.
     var clippedObjectsCache: [UUID: [UUID]] = [:]
 
     enum CodingKeys: String, CodingKey {
@@ -37,7 +35,6 @@ DocumentSnapshot: Equatable, Codable {
         self.clippedObjectsCache = [:]
     }
 
-    // Handles legacy files missing formatVersion (defaults to "1.0").
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 

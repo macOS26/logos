@@ -197,7 +197,6 @@ extension VectorDocument {
         }
     }
 
-    /// Applies transform to group members then recalculates bounds.
     func applyTransformToGroup(groupID: UUID, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 

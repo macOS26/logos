@@ -3,9 +3,6 @@ import SwiftUI
 #if os(macOS)
 import AppKit
 
-// MARK: - macOS-Only Cursor Definitions
-// Uses NSCursor/NSImage (macOS); iOS handles cursors differently.
-
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
@@ -71,7 +68,6 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
         return .crosshair
     }
 
-    // Draw shadow pass using CGPath
     context.saveGState()
     context.setShadow(offset: .zero, blur: 2.0, color: CGColor.white)
     context.setStrokeColor(CGColor.black)
@@ -87,7 +83,6 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
     context.strokePath()
     context.restoreGState()
 
-    // Draw main pass using CGPath
     context.setStrokeColor(CGColor.black)
     context.setLineWidth(1.0)
 
@@ -107,9 +102,7 @@ private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0
 
 let CrosshairCursor: NSCursor = makeCrosshairCursor()
 
-#endif // os(macOS)
-
-// MARK: - Cross-platform utilities (iOS & macOS)
+#endif
 
 struct HashableCGPoint: Hashable, Equatable {
     let point: CGPoint

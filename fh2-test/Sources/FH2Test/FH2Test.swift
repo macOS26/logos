@@ -15,7 +15,7 @@ struct FH2Test {
         print("File: \(path) (\(data.count) bytes)")
 
         do {
-            // Auto-detect format: EPS (text) or FH2 (binary)
+
             let isEPS = data.count > 10 && String(data: data.prefix(10), encoding: .ascii)?.hasPrefix("%!PS") == true
             let result = try isEPS
                 ? FreeHandEPSParser.parseToShapes(data: data)
@@ -23,18 +23,15 @@ struct FH2Test {
             if isEPS { print("Format: EPS") } else { print("Format: FH2") }
             print("Parsed: \(result.shapes.count) shapes, page \(Int(result.pageSize.width))×\(Int(result.pageSize.height))")
 
-            // Get gradient info for SVG generation
             let gradients = FreeHand2Parser.debugGradientTable(data: data)
 
-            // Generate SVG
             let svg = generateSVG(shapes: result.shapes, pageSize: result.pageSize, data: data, gradients: gradients)
-            // Always write to Downloads with a safe name — never overwrite input
+
             let baseName = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
             let outPath = "/Users/toddbruss/Downloads/\(baseName)_parsed.svg"
             try svg.write(toFile: outPath, atomically: true, encoding: .utf8)
             print("SVG written: \(outPath)")
 
-            // Scan for ALL record types between colors and styles
             print("\nAll records in file (type 0x1000-0x1FFF):")
             var scanOff = 256
             while scanOff + 4 <= data.count {
@@ -47,7 +44,6 @@ struct FH2Test {
                 scanOff += 1
             }
 
-            // Print color table debug info
             print("\nColor table entries:")
             let (ct, wt) = FreeHand2Parser.debugColorTable(data: data)
             for id in ct.keys.sorted() {
@@ -57,7 +53,6 @@ struct FH2Test {
                 print(String(format: "  ID=%d → rgb(%d,%d,%d)%@", id, Int(r*255), Int(g*255), Int(b*255), ws))
             }
 
-            // Print each shape's colors
             for (i, shape) in result.shapes.enumerated() {
                 let fill = shape.fillStyle.map { c -> String in
                     let (r,g,b) = c.color.rgbValues
@@ -75,7 +70,7 @@ struct FH2Test {
     }
 
     static func generateSVG(shapes: [VectorShape], pageSize: CGSize, data: Data, gradients: [Int: FreeHand2Parser.GradientInfo]) -> String {
-        // Helper to read fill ref from shape data (we need it for gradient lookup)
+
         func u16(_ d: Data, _ o: Int) -> Int { Int(d[d.startIndex+o])<<8|Int(d[d.startIndex+o+1]) }
 
         var defs: [String] = []
@@ -85,7 +80,6 @@ struct FH2Test {
             "<rect width=\"\(pageSize.width)\" height=\"\(pageSize.height)\" fill=\"white\"/>"
         ]
 
-        // Find shape offsets to get fill refs for gradient lookup
         var shapeOffsets: [Int] = []
         var scanOff = 256
         while scanOff + 4 <= data.count {
@@ -101,7 +95,7 @@ struct FH2Test {
         for (i, shape) in shapes.enumerated() {
             var fillStr: String
             if let f = shape.fillStyle {
-                // Check for gradient fill
+
                 if case .gradient(let vg) = f.color {
                     let gid = "grad\(i)"
                     switch vg {
@@ -138,7 +132,6 @@ struct FH2Test {
                 strokeWidth = 0
             }
 
-            // Convert path elements to SVG path data
             var d = ""
             for el in shape.path.elements {
                 switch el {
@@ -155,7 +148,6 @@ struct FH2Test {
             parts.append("<path d=\"\(d.trimmingCharacters(in: .whitespaces))\" fill=\"\(fillStr)\" stroke=\"\(strokeStr)\" stroke-width=\"\(strokeWidth)\"/>")
         }
 
-        // Emit decoded text runs (bottom-up EPS y flipped to top-down SVG).
         let (ct0, _) = FreeHand2Parser.debugColorTable(data: data)
         let nt0 = FreeHand2Parser.debugNameTable(data: data)
         let textRuns = FreeHand2Parser.parseTextRecords(data: data, colorTable: ct0, nameTable: nt0)
@@ -171,14 +163,14 @@ struct FH2Test {
             let style  = run.italic ? "italic" : "normal"
             let anchor: String = {
                 switch run.alignment {
-                case 1: return "middle"      // center
-                case 2: return "end"         // right
-                default: return "start"      // left / justified
+                case 1: return "middle"
+                case 2: return "end"
+                default: return "start"
                 }
             }()
             parts.append("<text x=\"\(run.x)\" y=\"\(flippedY)\" dominant-baseline=\"hanging\" text-anchor=\"\(anchor)\" font-family=\"\(run.fontFamily)\" font-weight=\"\(weight)\" font-style=\"\(style)\" font-size=\"\(run.fontSize)\" fill=\"\(fill)\">\(esc)</text>")
         }
-        // Insert gradient defs before shapes
+
         if !defs.isEmpty {
             parts.insert("<defs>\(defs.joined())</defs>", at: 3)
         }

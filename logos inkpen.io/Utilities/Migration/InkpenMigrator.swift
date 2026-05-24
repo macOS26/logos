@@ -1,13 +1,9 @@
 import Foundation
 
-/// Handles migration of legacy inkpen file formats to current version
 struct InkpenMigrator {
 
-    /// Attempts to migrate legacy inkpen data to current format
-    /// - Parameter data: The raw JSON data from the file
-    /// - Returns: A migrated VectorDocument, or nil if migration fails
     static func migrateLegacyDocument(from data: Data) -> VectorDocument? {
-        // Try to decode as legacy 1.0 format
+
         do {
             let legacyDoc = try decodeLegacy1_0(from: data)
             Log.fileOperation("🔄 Migrating document from version 1.0 to 1.0.27", level: .info)
@@ -17,8 +13,6 @@ struct InkpenMigrator {
             return nil
         }
     }
-
-    // MARK: - Legacy 1.0 Format
 
     private struct Legacy1_0Document: Codable {
         var canvasOffset: [Double]?
@@ -41,7 +35,7 @@ struct InkpenMigrator {
     }
 
     private struct Legacy1_0Settings: Codable {
-        var backgroundColor: AnyCodable?  // Can be String or dictionary
+        var backgroundColor: AnyCodable?
         var colorMode: String?
         var fillColor: AnyCodable?
         var strokeColor: AnyCodable?
@@ -56,9 +50,9 @@ struct InkpenMigrator {
         var snapToGrid: Bool?
         var snapToPoint: Bool?
         var unit: String?
-        var groupExpansionState: [AnyCodable]?  // Mixed array of String/Bool
-        var layerExpansionState: [AnyCodable]?  // Mixed array of String/Bool
-        var customRgbSwatches: [AnyCodable]?  // Can be [[String: Double]] or nested dictionaries
+        var groupExpansionState: [AnyCodable]?
+        var layerExpansionState: [AnyCodable]?
+        var customRgbSwatches: [AnyCodable]?
         var customCmykSwatches: [AnyCodable]?
         var customHsbSwatches: [AnyCodable]?
     }
@@ -70,7 +64,6 @@ struct InkpenMigrator {
         var objectType: AnyCodable
     }
 
-    // Helper to handle dynamic JSON structures
     private struct AnyCodable: Codable {
         let value: Any
 
@@ -123,10 +116,9 @@ struct InkpenMigrator {
     }
 
     private static func migrate1_0_to_1_0_27(_ legacy: Legacy1_0Document) -> VectorDocument {
-        // Create new document with 1.0.27 format
+
         let document = VectorDocument()
 
-        // Migrate settings
         document.settings.width = legacy.settings.width
         document.settings.height = legacy.settings.height
         document.settings.resolution = legacy.settings.resolution ?? 72
@@ -140,7 +132,6 @@ struct InkpenMigrator {
         document.settings.snapToGrid = legacy.settings.snapToGrid ?? false
         document.settings.snapToPoint = legacy.settings.snapToPoint ?? false
 
-        // Migrate layers
         var migratedLayers: [Layer] = []
         for legacyLayer in legacy.layers {
             let layer = Layer(
@@ -156,25 +147,19 @@ struct InkpenMigrator {
             migratedLayers.append(layer)
         }
 
-        // Sort objects by orderID to get correct Z-order
         let sortedObjects = legacy.vectorObjects.sorted { obj1, obj2 in
             let order1 = obj1.orderID ?? 0
             let order2 = obj2.orderID ?? 0
             return order1 < order2
         }
 
-        // Re-encode and decode sortedObjects through current VectorObject format
-        // This is a workaround to convert the legacy format to current format
-        // IMPORTANT: After sorting by orderID, objects are in back-to-front order
         if let objectsData = try? JSONEncoder().encode(sortedObjects),
            let jsonArray = try? JSONSerialization.jsonObject(with: objectsData) as? [[String: Any]] {
 
-            // Process objects IN ORDER (already sorted by orderID)
             for (index, jsonObject) in jsonArray.enumerated() {
                 if let objectData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    var vectorObject = try? JSONDecoder().decode(VectorObject.self, from: objectData) {
 
-                    // Convert legacy .shape with image data to .image type
                     if case .shape(let shape) = vectorObject.objectType {
                         let hasImage = shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || shape.embeddedImageData != nil
 
@@ -197,10 +182,8 @@ struct InkpenMigrator {
                         }
                     }
 
-                    // Add object to snapshot
                     document.snapshot.objects[vectorObject.id] = vectorObject
 
-                    // Add object ID to appropriate layer
                     let layerIndex = vectorObject.layerIndex
                     if layerIndex >= 0 && layerIndex < migratedLayers.count {
                         migratedLayers[layerIndex].objectIDs.append(vectorObject.id)
@@ -211,7 +194,6 @@ struct InkpenMigrator {
                 }
             }
 
-            // Log final layer object counts
             for (layerIdx, layer) in migratedLayers.enumerated() {
                 Log.fileOperation("  Layer \(layerIdx) '\(layer.name)': \(layer.objectIDs.count) objects", level: .info)
             }
@@ -220,10 +202,6 @@ struct InkpenMigrator {
         document.snapshot.layers = migratedLayers
         document.snapshot.formatVersion = "1.0.27"
 
-        // Migrate view state
-        // Note: zoom/canvas offset no longer saved - managed as @State in view
-
-        // Set layer expansion state: collapse layers with > 20 objects
         for layer in migratedLayers {
             if layer.objectIDs.count > 20 {
                 document.settings.layerExpansionState[layer.id] = false
@@ -231,7 +209,6 @@ struct InkpenMigrator {
             }
         }
 
-        // Set selectedLayerId to first editable layer (Layer 1 at index 2)
         if migratedLayers.count > 2 {
             document.settings.selectedLayerId = migratedLayers[2].id
             document.selectedLayerIndex = 3
@@ -243,10 +220,6 @@ struct InkpenMigrator {
         return document
     }
 
-    /// Hydrates linked images after migration
-    /// - Parameters:
-    ///   - document: The migrated document
-    ///   - sourceURL: The URL of the source .inkpen file
     static func hydrateLinkedImages(in document: VectorDocument, from sourceURL: URL?) {
         guard let sourceURL = sourceURL else { return }
 

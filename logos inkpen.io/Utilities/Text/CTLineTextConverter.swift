@@ -2,11 +2,8 @@ import Foundation
 import CoreText
 import AppKit
 
-/// Shared CTLine-based text conversion utilities
-/// Ensures WYSIWYG between Canvas rendering and Convert to Outlines
 struct CTLineTextConverter {
 
-    /// Converts text to CGPath using CTLine (same as Canvas rendering)
     static func convertTextToPaths(
         text: String,
         font: PlatformFont,
@@ -42,7 +39,6 @@ struct CTLineTextConverter {
         textContainer.lineBreakMode = .byWordWrapping
         layoutManager.addTextContainer(textContainer)
 
-        // Layout glyphs
         let textRange = NSRange(location: 0, length: text.count)
         layoutManager.ensureGlyphs(forGlyphRange: textRange)
         layoutManager.ensureLayout(for: textContainer)
@@ -50,19 +46,16 @@ struct CTLineTextConverter {
         let glyphRange = layoutManager.glyphRange(for: textContainer)
         var linePaths: [CGPath] = []
 
-        // Enumerate lines using CTLine (SAME as Canvas)
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, lineUsedRect, _, lineRange, _ in
             let lineString = (text as NSString).substring(with: lineRange)
             let lineAttribString = NSAttributedString(string: lineString, attributes: attributes)
             var line = CTLineCreateWithAttributedString(lineAttribString)
 
-            // Apply justification if needed
             if alignment == .justified,
                let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
                 line = justifiedLine
             }
 
-            // Calculate line position (SAME as Canvas)
             let glyphLocation = layoutManager.location(forGlyphAt: lineRange.location)
             let lineX: CGFloat
             switch alignment {
@@ -75,7 +68,6 @@ struct CTLineTextConverter {
             }
             let lineY = textBoxFrame.origin.y + lineRect.origin.y + glyphLocation.y
 
-            // Convert CTLine to CGPath
             if let linePath = convertCTLineToPath(line: line, position: CGPoint(x: lineX, y: lineY)) {
                 linePaths.append(linePath)
             }
@@ -84,7 +76,6 @@ struct CTLineTextConverter {
         return linePaths
     }
 
-    /// Converts a CTLine to a CGPath by extracting glyph paths
     private static func convertCTLineToPath(line: CTLine, position: CGPoint) -> CGPath? {
         let linePath = CGMutablePath()
         guard let runs = CTLineGetGlyphRuns(line) as? [CTRun], !runs.isEmpty else { return nil }
@@ -108,12 +99,11 @@ struct CTLineTextConverter {
                 let glyphPosition = positions[i]
 
                 if let glyphPath = CTFontCreatePathForGlyph(ctFont, glyph, nil) {
-                    // Skip rectangle glyphs (missing characters)
+
                     if isRectangleGlyph(glyphPath) {
                         continue
                     }
 
-                    // Transform: flip Y and translate to position
                     var transform = CGAffineTransform(scaleX: 1.0, y: -1.0)
                     transform = transform.translatedBy(
                         x: position.x + glyphPosition.x,
@@ -128,7 +118,6 @@ struct CTLineTextConverter {
         return linePath.isEmpty ? nil : linePath
     }
 
-    /// Detects if a glyph path is a rectangle placeholder (missing character)
     private static func isRectangleGlyph(_ path: CGPath) -> Bool {
         var pointCount = 0
         var hasOnlyLines = true

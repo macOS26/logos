@@ -9,17 +9,14 @@ enum AlignmentAxis {
 
 extension VectorDocument {
 
-    /// Align selected objects by transform origin (both axes). Anchor stays put.
     func alignSelectedObjectsByOrigin() {
         alignSelectedObjectsByOrigin(axis: .both)
     }
 
-    /// X-axis alignment by transform origin.
     func alignSelectedObjectsByOriginX() {
         alignSelectedObjectsByOrigin(axis: .xOnly)
     }
 
-    /// Y-axis alignment by transform origin.
     func alignSelectedObjectsByOriginY() {
         alignSelectedObjectsByOrigin(axis: .yOnly)
     }
@@ -28,7 +25,6 @@ extension VectorDocument {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
 
-        // Locked items always trump the preference.
         let anchorID = determineAlignmentAnchor(from: orderedIDs)
         guard let anchorObj = snapshot.objects[anchorID] else { return }
 
@@ -99,7 +95,6 @@ extension VectorDocument {
         )
     }
 
-    /// Anchor selection: locked items always win, otherwise use preference.
     private func determineAlignmentAnchor(from orderedIDs: [UUID]) -> UUID {
         for objectID in orderedIDs {
             guard let obj = snapshot.objects[objectID] else { continue }

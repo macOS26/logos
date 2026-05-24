@@ -43,7 +43,7 @@ struct ScaleHandles: View {
         let center = calculatedCenter
 
         ZStack {
-            // Render shape outline using Canvas (use live transform when scaling)
+
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
@@ -122,7 +122,7 @@ struct ScaleHandles: View {
             pathPointsView()
 
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-                // Use live transform if scaling, otherwise original bounds
+
                 let displayBounds = (isScaling && !previewTransform.isIdentity) ? bounds.applying(previewTransform) : bounds
                 let displayCenter = CGPoint(x: displayBounds.midX, y: displayBounds.midY)
 
@@ -228,7 +228,6 @@ struct ScaleHandles: View {
                     let zoom = zoomLevel
                     let offset = canvasOffset
 
-                    // Transform the cached path to screen coordinates
                     let transform = CGAffineTransform.identity
                         .translatedBy(x: offset.x, y: offset.y)
                         .scaledBy(x: zoom, y: zoom)
@@ -236,7 +235,6 @@ struct ScaleHandles: View {
                     context.transform = transform
                     context.stroke(cachedPath, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoom, dash: [4.0 / zoom, 4.0 / zoom]))
 
-                    // Draw green transformed bounds box for groups
                     if shape.isGroup && !shape.groupedShapes.isEmpty {
                         let transformedBounds = bounds.applying(previewTransform)
                         context.stroke(Path(transformedBounds), with: .color(.green.opacity(0.6)), style: SwiftUI.StrokeStyle(lineWidth: 1.5 / zoom, dash: [3.0 / zoom, 3.0 / zoom]))
@@ -266,7 +264,6 @@ struct ScaleHandles: View {
                 return
             }
 
-            // Build cached transformed path
             var path = Path()
             if shape.isGroup && !shape.groupedShapes.isEmpty {
                 for groupedShape in shape.groupedShapes {
@@ -317,7 +314,7 @@ struct ScaleHandles: View {
             }
             cachedPreviewPath = path
         }
-        //.id("scale-handles-\(pointsRefreshTrigger)")
+
     }
 
     @State var keyEventMonitor: Any?

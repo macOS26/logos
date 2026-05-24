@@ -69,13 +69,11 @@ class PantoneLibrary: ObservableObject {
 
     private init() {}
 
-    /// Ensure colors are loaded. Call before accessing allColors.
     func ensureLoaded() {
         guard !isLoaded else { return }
         loadPantoneColors()
     }
 
-    /// Release loaded colors to free memory. Reloads on next access.
     func releaseColors() {
         allColors = []
         isLoaded = false

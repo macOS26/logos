@@ -4,13 +4,9 @@ extension DrawingCanvas {
 
     internal func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
 
-        // print("🔵 updateLinkedHandle: Called for shapeID \(draggedHandleID.shapeID), element \(draggedHandleID.elementIndex), handle \(draggedHandleID.handleType)")
-
-        // Check if user explicitly set anchor type to cusp or corner
         if let object = document.snapshot.objects[draggedHandleID.shapeID],
            case .shape(let shape) = object.objectType {
 
-            // Determine anchor element index
             let anchorElementIndex: Int
             if draggedHandleID.handleType == .control2 {
                 anchorElementIndex = draggedHandleID.elementIndex
@@ -18,40 +14,34 @@ extension DrawingCanvas {
                 anchorElementIndex = draggedHandleID.elementIndex - 1
             }
 
-            // print("🔵 updateLinkedHandle: Checking anchor element \(anchorElementIndex)")
-
-            // Check for explicit anchor type
             if let explicitType = shape.anchorTypes[anchorElementIndex] {
-                // print("🔶 updateLinkedHandle: Found stored anchor type: \(explicitType)")
+
                 switch explicitType {
                 case .cusp, .corner:
-                    // User explicitly set cusp or corner - don't link handles
-                    // print("❌ updateLinkedHandle: CUSP/CORNER - NOT linking handles")
+
                     return
                 case .smooth, .auto:
-                    // print("✅ updateLinkedHandle: SMOOTH/AUTO - will link handles")
-                    break  // Continue with linking
+
+                    break
                 }
             } else {
-                // print("⚠️ updateLinkedHandle: No stored anchor type for element \(anchorElementIndex)")
+
             }
 
-            // Check coincident point (element 0)
             if let explicitType = shape.anchorTypes[0] {
-                // Check if this is a coincident point handle
+
                 let isCoincidentHandle = (draggedHandleID.handleType == .control1 && draggedHandleID.elementIndex == 1) ||
                                         (draggedHandleID.handleType == .control2 && draggedHandleID.elementIndex == elements.count - 1)
 
                 if isCoincidentHandle {
-                    // print("🔶 updateLinkedHandle: This is a COINCIDENT point handle, stored type: \(explicitType)")
+
                     switch explicitType {
                     case .cusp, .corner:
-                        // User explicitly set cusp or corner for coincident point - don't link
-                        // print("❌ updateLinkedHandle: COINCIDENT CUSP/CORNER - NOT linking handles")
+
                         return
                     case .smooth, .auto:
-                        // print("✅ updateLinkedHandle: COINCIDENT SMOOTH/AUTO - will link handles")
-                        break  // Continue with linking
+
+                        break
                     }
                 }
             }

@@ -9,24 +9,20 @@ extension DrawingCanvas {
             let boundsToUse = getProperShapeBounds(for: currentShape)
             let corners = getCornerScreenPositions(bounds: boundsToUse, shape: currentShape, geometry: geometry)
 
-            // Show live preview during drag using CURRENT shape position
             if isDraggingCorner && !liveCornerRadii.isEmpty {
                 cornerRadiusLivePreview(shape: currentShape, geometry: geometry)
             }
 
-            // Use Canvas for all handles - single view, single gesture
             Canvas { context, size in
                 for (index, position) in corners.enumerated() {
                     let handlePosition = (isDraggingCorner && draggedCornerIndex == index)
                         ? currentMousePosition
                         : position
 
-                    // Outer circle (orange with white stroke)
                     let outerRect = CGRect(x: handlePosition.x - 6, y: handlePosition.y - 6, width: 12, height: 12)
                     context.fill(Path(ellipseIn: outerRect), with: .color(.orange.opacity(0.8)))
                     context.stroke(Path(ellipseIn: outerRect), with: .color(.white), lineWidth: 2.0)
 
-                    // Inner circle (white)
                     let innerRect = CGRect(x: handlePosition.x - 2, y: handlePosition.y - 2, width: 4, height: 4)
                     context.fill(Path(ellipseIn: innerRect), with: .color(.white))
                 }
@@ -50,7 +46,7 @@ extension DrawingCanvas {
 
     @ViewBuilder
     private func cornerRadiusLivePreview(shape: VectorShape, geometry: GeometryProxy) -> some View {
-        // Use the transformed path bounds, not originalBounds
+
         let currentBounds = shape.path.cgPath.boundingBox
         let previewPath = createRoundedRectPathWithIndividualCorners(
             rect: currentBounds,
@@ -72,9 +68,9 @@ extension DrawingCanvas {
         corners: [CGPoint],
         geometry: GeometryProxy
     ) {
-        // Determine which corner was clicked (only on first drag event)
+
         if !isDraggingCorner {
-            let hitRadius: CGFloat = 15.0 // Slightly larger hit area
+            let hitRadius: CGFloat = 15.0
             var nearestIndex: Int?
             var nearestDistance = CGFloat.infinity
 
@@ -88,7 +84,6 @@ extension DrawingCanvas {
 
             guard let cornerIndex = nearestIndex else { return }
 
-            // Start dragging this corner
             handleCornerRadiusToolDrag(
                 cornerIndex: cornerIndex,
                 value: value,
@@ -96,7 +91,7 @@ extension DrawingCanvas {
                 geometry: geometry
             )
         } else {
-            // Continue dragging
+
             if let cornerIndex = draggedCornerIndex {
                 handleCornerRadiusToolDrag(
                     cornerIndex: cornerIndex,
@@ -114,7 +109,7 @@ extension DrawingCanvas {
         shape: VectorShape,
         geometry: GeometryProxy
     ) {
-        // Always get the CURRENT shape from document
+
         guard let currentShape = getSelectedRectangleShape() else { return }
 
         if !isDraggingCorner {
@@ -125,7 +120,6 @@ extension DrawingCanvas {
 
             sharedOriginalShape = currentShape
 
-            // Capture original corner radii for live state
             originalCornerRadii = currentShape.cornerRadii
             liveCornerRadii = currentShape.cornerRadii
             while liveCornerRadii.count < 4 {
@@ -162,7 +156,6 @@ extension DrawingCanvas {
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
 
-            // Update live state instead of actual shape during drag
             if isShiftCurrentlyPressed {
                 let originalRadius = originalCornerRadii[safe: cornerIndex] ?? 0.0
 
@@ -189,12 +182,11 @@ extension DrawingCanvas {
 
     private func finishCornerRadiusToolDrag() {
         if isDraggingCorner {
-            // Commit live radii to actual shape
+
             if let selectedShape = getSelectedRectangleShape() {
-                // Round the live radii
+
                 let finalRadii = liveCornerRadii.map { round($0) }
 
-                // Apply final rounded radii to shape
                 updateAllCornerRadiiToValues(
                     shapeID: selectedShape.id,
                     cornerRadii: finalRadii
@@ -210,7 +202,6 @@ extension DrawingCanvas {
 
             sharedOriginalShape = nil
 
-            // Clear live state
             liveCornerRadii.removeAll()
             originalCornerRadii.removeAll()
 

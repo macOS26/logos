@@ -24,7 +24,6 @@ struct logos_inken_ioApp: App {
             Log.metal("❌ Metal Engine Failed", level: .error)
         }
 
-        // Initialize shared app event monitor (one local monitor for entire app)
         _ = AppEventMonitor.shared
     }
 
@@ -49,43 +48,30 @@ struct logos_inken_ioApp: App {
                 .background(WindowAccessor { window in
                     guard let window = window else { return }
 
-                    // Never allow window to open minimized
                     if window.isMiniaturized {
                         window.deminiaturize(nil)
                     }
 
-                    // Disable state restoration — it creates duplicate windows on launch,
-                    // each consuming ~150MB. Frame position is handled by autosave name.
                     window.isRestorable = false
 
-                    // Route File>New and File>Open into the existing window's
-                    // tab group. Without this, SwiftUI DocumentGroup spawns a
-                    // fresh NSWindow for every document and ignores the system
-                    // "Prefer tabs" setting. A shared tabbingIdentifier lets
-                    // AppKit merge them automatically.
                     window.tabbingMode = .preferred
                     window.tabbingIdentifier = "InkpenDocumentTabGroup"
 
-                    // Use unique autosave name per document to preserve individual window positions
                     let autosaveName: String
                     if let fileURL = file.fileURL {
-                        // Use file path hash for unique per-document window frame
+
                         autosaveName = "InkpenDoc_\(fileURL.path.hashValue)"
                     } else {
-                        // For untitled documents, use window number for uniqueness
+
                         autosaveName = "InkpenUntitled_\(window.windowNumber)"
                     }
 
-                    // Check if window has a saved frame before setting autosave name
                     let hadSavedFrame = window.frameAutosaveName == autosaveName
 
                     if window.frameAutosaveName != autosaveName {
                         window.setFrameAutosaveName(autosaveName)
                     }
 
-                    // If no saved frame, fill the screen — but only for the
-                    // first document window. Reframing a subsequent new doc
-                    // detaches it from its tab group under "Prefer Tabs" mode.
                     let isFirstDocumentWindow = NSDocumentController.shared.documents.count <= 1
                     if !hadSavedFrame, isFirstDocumentWindow, let screen = window.screen ?? NSScreen.main {
                         let visibleFrame = screen.visibleFrame
@@ -470,11 +456,6 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("k", modifiers: [.command, .option])
                     .help("Clean duplicate points in all shapes in the document")
 
-                    // Button("Test Duplicate Point Merger") {
-                    //     documentState?.testDuplicatePointMerger()
-                    // }
-                    // .keyboardShortcut("k", modifiers: [.command, .shift, .option])
-                    // .help("Run a test to verify the duplicate point merger works correctly")
                 }
 
                 CommandMenu("Panel") {
@@ -1014,26 +995,22 @@ class ClipboardManager {
 
     private init() {}
 
-    /// Regenerates UUIDs for all shapes, maintaining a consistent mapping for memberIDs
     private func regenerateUUIDsForShapes(_ shapes: [VectorShape]) -> ([VectorShape], [UUID: UUID]) {
-        // First pass: create mapping from old to new UUIDs for ALL shapes
+
         var oldToNewID: [UUID: UUID] = [:]
         for shape in shapes {
             oldToNewID[shape.id] = UUID()
         }
 
-        // Second pass: apply new UUIDs and update memberIDs references
         var newShapes: [VectorShape] = []
         for shape in shapes {
             var newShape = shape
             newShape.id = oldToNewID[shape.id] ?? UUID()
 
-            // Update memberIDs to use new UUIDs
             if !newShape.memberIDs.isEmpty {
                 newShape.memberIDs = newShape.memberIDs.map { oldToNewID[$0] ?? $0 }
             }
 
-            // Regenerate UUIDs for grouped shapes (legacy)
             if !newShape.groupedShapes.isEmpty {
                 newShape.groupedShapes = newShape.groupedShapes.map { childShape in
                     var newChild = childShape
@@ -1052,7 +1029,6 @@ class ClipboardManager {
         var newShape = shape
         newShape.id = UUID()
 
-        // Regenerate UUIDs for grouped shapes (legacy)
         if !newShape.groupedShapes.isEmpty {
             newShape.groupedShapes = newShape.groupedShapes.map { childShape in
                 regenerateUUIDs(for: childShape)
@@ -1071,8 +1047,6 @@ class ClipboardManager {
         document.removeSelectedObjects()
     }
 
-    /// Recursively collects a shape and all of its group/clipGroup members into `out`.
-    /// De-duplicates via `visited` so a shape referenced by multiple selected parents isn't copied twice.
     private func collectShapeAndMembers(
         _ shape: VectorShape,
         from document: VectorDocument,
@@ -1148,7 +1122,6 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            // Use settings.selectedLayerId to find the correct layer index
             guard let selectedLayerId = document.settings.selectedLayerId,
                   let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
@@ -1167,10 +1140,8 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build set of all member IDs (shapes that belong to groups)
             var memberIDSet = Set<UUID>()
             for shape in newShapes {
                 if !shape.memberIDs.isEmpty {
@@ -1178,17 +1149,16 @@ class ClipboardManager {
                 }
             }
 
-            // Separate group members from top-level objects
             var topLevelObjects: [VectorObject] = []
             var memberObjects: [VectorObject] = []
 
             for shape in newShapes {
                 let obj = VectorObject(shape: shape, layerIndex: layerIndex)
                 if memberIDSet.contains(shape.id) {
-                    // This is a group member - add to snapshot.objects only
+
                     memberObjects.append(obj)
                 } else {
-                    // This is a top-level object - add to layer
+
                     topLevelObjects.append(obj)
                     newObjectIDs.insert(shape.id)
                 }
@@ -1203,7 +1173,6 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            // Add member objects directly to snapshot.objects (not to layer)
             for memberObj in memberObjects {
                 document.snapshot.objects[memberObj.id] = memberObj
             }
@@ -1211,18 +1180,16 @@ class ClipboardManager {
             let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
-                // Store current tool before executing command
+
                 let currentTool = document.viewState.currentTool
 
                 let command = AddObjectCommand(objects: objectsToAdd)
                 document.commandManager.execute(command)
 
-                // If not already on a selection tool, switch to selection tool
                 if currentTool != .selection && currentTool != .directSelection {
                     document.viewState.currentTool = .selection
                 }
 
-                // Set selection AFTER tool switch to ensure it's preserved
                 document.viewState.selectedObjectIDs = newObjectIDs
             }
 
@@ -1237,7 +1204,6 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            // Use settings.selectedLayerId to find the correct layer index
             guard let selectedLayerId = document.settings.selectedLayerId,
                   let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
@@ -1256,10 +1222,8 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build set of all member IDs (shapes that belong to groups)
             var memberIDSet = Set<UUID>()
             for shape in newShapes {
                 if !shape.memberIDs.isEmpty {
@@ -1267,7 +1231,6 @@ class ClipboardManager {
                 }
             }
 
-            // Separate group members from top-level objects
             var topLevelObjects: [VectorObject] = []
             var memberObjects: [VectorObject] = []
 
@@ -1290,7 +1253,6 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            // Add member objects directly to snapshot.objects (not to layer)
             for memberObj in memberObjects {
                 document.snapshot.objects[memberObj.id] = memberObj
             }
@@ -1298,18 +1260,16 @@ class ClipboardManager {
             let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
-                // Store current tool before executing command
+
                 let currentTool = document.viewState.currentTool
 
                 let command = AddObjectCommand(objects: objectsToAdd)
                 document.commandManager.execute(command)
 
-                // If not already on a selection tool, switch to selection tool
                 if currentTool != .selection && currentTool != .directSelection {
                     document.viewState.currentTool = .selection
                 }
 
-                // Set selection AFTER tool switch to ensure it's preserved
                 document.viewState.selectedObjectIDs = newObjectIDs
             }
 
@@ -1324,7 +1284,6 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            // Use settings.selectedLayerId to find the correct layer index
             guard let selectedLayerId = document.settings.selectedLayerId,
                   let layerIndex = document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId }) else { return }
 
@@ -1343,10 +1302,8 @@ class ClipboardManager {
 
             var newObjectIDs: Set<UUID> = []
 
-            // Regenerate UUIDs for all shapes at once to maintain memberID consistency
             let (newShapes, _) = regenerateUUIDsForShapes(clipboardData.shapes)
 
-            // Build set of all member IDs (shapes that belong to groups)
             var memberIDSet = Set<UUID>()
             for shape in newShapes {
                 if !shape.memberIDs.isEmpty {
@@ -1354,7 +1311,6 @@ class ClipboardManager {
                 }
             }
 
-            // Separate group members from top-level objects
             var topLevelObjects: [VectorObject] = []
             var memberObjects: [VectorObject] = []
 
@@ -1377,7 +1333,6 @@ class ClipboardManager {
                 return VectorObject(shape: textShape, layerIndex: layerIndex)
             }
 
-            // Add member objects directly to snapshot.objects (not to layer)
             for memberObj in memberObjects {
                 document.snapshot.objects[memberObj.id] = memberObj
             }
@@ -1385,10 +1340,9 @@ class ClipboardManager {
             let objectsToAdd = topLevelObjects + textObjects
 
             if !objectsToAdd.isEmpty {
-                // Store current tool before executing command
+
                 let currentTool = document.viewState.currentTool
 
-                // Insert after the current selection, or at front if no selection
                 let position: AddObjectAtPositionCommand.InsertPosition
                 if !document.viewState.selectedObjectIDs.isEmpty {
                     position = .afterSelection(document.viewState.selectedObjectIDs)
@@ -1399,12 +1353,10 @@ class ClipboardManager {
                 let command = AddObjectAtPositionCommand(objects: objectsToAdd, position: position)
                 document.commandManager.execute(command)
 
-                // If not already on a selection tool, switch to selection tool
                 if currentTool != .selection && currentTool != .directSelection {
                     document.viewState.currentTool = .selection
                 }
 
-                // Set selection AFTER tool switch to ensure it's preserved
                 document.viewState.selectedObjectIDs = newObjectIDs
             }
 

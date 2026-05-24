@@ -76,7 +76,7 @@ class TextManagementCommand: BaseCommand {
             document.viewState.selectedObjectIDs = oldSelection
 
         case .removeText(_, let removedObjects, let removedPositions):
-            // Restore in sorted position order so insertions don't shift indices
+
             let sorted = removedObjects.sorted { a, b in
                 (removedPositions[a.key] ?? Int.max) < (removedPositions[b.key] ?? Int.max)
             }

@@ -27,7 +27,6 @@ class LayerReorderCommand: BaseCommand {
         let fromIndex = forward ? sourceIndex : targetIndex
         let toIndex = forward ? targetIndex : sourceIndex
 
-        // Update snapshot.layers
         guard fromIndex < document.snapshot.layers.count,
               toIndex <= document.snapshot.layers.count else {
             return
@@ -35,11 +34,10 @@ class LayerReorderCommand: BaseCommand {
         let snapshotLayer = document.snapshot.layers.remove(at: fromIndex)
         document.snapshot.layers.insert(snapshotLayer, at: toIndex)
 
-        // Update object layerIndex in snapshot
         for update in affectedObjectUpdates {
             if var obj = document.snapshot.objects[update.objectID] {
                 let newLayerIndex = forward ? update.newLayerIndex : update.oldLayerIndex
-                // Update layerIndex in the object
+
                 switch obj.objectType {
                 case .shape(let shape):
                     obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
@@ -62,7 +60,6 @@ class LayerReorderCommand: BaseCommand {
             }
         }
 
-        // Update selectedLayerIndex
         if document.selectedLayerIndex == fromIndex {
             document.selectedLayerIndex = toIndex
         } else if let selectedIndex = document.selectedLayerIndex {

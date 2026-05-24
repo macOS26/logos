@@ -18,10 +18,10 @@ enum HandleType {
 }
 
 enum AnchorPointType {
-    case auto      // Geometric detection (default)
-    case corner    // No curves, sharp point
-    case cusp      // Independent curves, no tangency
-    case smooth    // 180° tangent curves
+    case auto
+    case corner
+    case cusp
+    case smooth
 }
 
 func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {

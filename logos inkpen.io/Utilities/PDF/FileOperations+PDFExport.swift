@@ -161,7 +161,6 @@ extension FileOperations {
                         continue
                     }
 
-                    // Skip group members — exported via parent group.
                     if document.snapshot.parentGroupCache[shape.id] != nil {
                         continue
                     }
@@ -220,8 +219,6 @@ extension FileOperations {
             return
         }
 
-        // Native clipping group: first member is the mask, remainder are clipped content.
-        // Members carry no isClippingPath/clippedByShapeID flags — mask is identified positionally.
         if shape.isClippingGroup,
            let members = resolveClippingGroupMembersForPDF(shape, in: document),
            members.count >= 2 {
@@ -242,7 +239,6 @@ extension FileOperations {
 
             context.beginTransparencyLayer(auxiliaryInfo: nil)
 
-            // Apply mask transform → clip → revert so content shapes draw in the group's space.
             context.concatenate(mask.transform)
             let clipPath = convertVectorPathToCGPath(mask.path)
             context.addPath(clipPath)
@@ -267,7 +263,6 @@ extension FileOperations {
             return
         }
 
-        // Handle groups and clip groups with memberIDs (new system)
         if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
             context.saveGState()
 
@@ -303,7 +298,6 @@ extension FileOperations {
             return
         }
 
-        // Handle groups with groupedShapes (legacy system)
         if shape.isGroup && !shape.groupedShapes.isEmpty {
 
             context.saveGState()

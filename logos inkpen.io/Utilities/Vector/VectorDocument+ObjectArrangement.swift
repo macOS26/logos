@@ -42,16 +42,13 @@ extension VectorDocument {
         let oldObjectIDs = layer.objectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
-        // Separate selected and unselected objects
         let unselectedIDs = oldObjectIDs.filter { !selectedIDs.contains($0) }
         let selectedObjectIDs = oldObjectIDs.filter { selectedIDs.contains($0) }
 
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // New order: unselected first, then selected (selected are now on top)
         let newObjectIDs = unselectedIDs + selectedObjectIDs
 
-        // Create undo command (it will update both snapshot and layers)
         let command = LayerObjectOrderCommand(
             layerIndex: selectedLayerIndex,
             oldObjectIDs: oldObjectIDs,
@@ -69,12 +66,11 @@ extension VectorDocument {
         var newObjectIDs = oldObjectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
-        // Move each selected object forward by one position (from end to start to avoid conflicts)
         for i in stride(from: newObjectIDs.count - 2, through: 0, by: -1) {
             let objectID = newObjectIDs[i]
             if selectedIDs.contains(objectID) && i < newObjectIDs.count - 1 {
                 let nextID = newObjectIDs[i + 1]
-                // Only swap if next object is not also selected
+
                 if !selectedIDs.contains(nextID) {
                     newObjectIDs.swapAt(i, i + 1)
                 }
@@ -83,7 +79,6 @@ extension VectorDocument {
 
         guard newObjectIDs != oldObjectIDs else { return }
 
-        // Create undo command (it will update both snapshot and layers)
         let command = LayerObjectOrderCommand(
             layerIndex: selectedLayerIndex,
             oldObjectIDs: oldObjectIDs,
@@ -101,12 +96,11 @@ extension VectorDocument {
         var newObjectIDs = oldObjectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
-        // Move each selected object backward by one position (from start to end to avoid conflicts)
         for i in 1..<newObjectIDs.count {
             let objectID = newObjectIDs[i]
             if selectedIDs.contains(objectID) && i > 0 {
                 let prevID = newObjectIDs[i - 1]
-                // Only swap if previous object is not also selected
+
                 if !selectedIDs.contains(prevID) {
                     newObjectIDs.swapAt(i, i - 1)
                 }
@@ -115,7 +109,6 @@ extension VectorDocument {
 
         guard newObjectIDs != oldObjectIDs else { return }
 
-        // Create undo command (it will update both snapshot and layers)
         let command = LayerObjectOrderCommand(
             layerIndex: selectedLayerIndex,
             oldObjectIDs: oldObjectIDs,
@@ -132,16 +125,13 @@ extension VectorDocument {
         let oldObjectIDs = layer.objectIDs
         let selectedIDs = viewState.selectedObjectIDs
 
-        // Separate selected and unselected objects
         let unselectedIDs = oldObjectIDs.filter { !selectedIDs.contains($0) }
         let selectedObjectIDs = oldObjectIDs.filter { selectedIDs.contains($0) }
 
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // New order: selected first, then unselected (selected are now at back)
         let newObjectIDs = selectedObjectIDs + unselectedIDs
 
-        // Create undo command (it will update both snapshot and layers)
         let command = LayerObjectOrderCommand(
             layerIndex: selectedLayerIndex,
             oldObjectIDs: oldObjectIDs,

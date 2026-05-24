@@ -23,7 +23,6 @@ extension DrawingCanvas {
 
         document.viewState.hasPressureInput = PressureManager.shared.hasRealPressureInput
 
-        // Use current pressure instead of hardcoded 1.0 to avoid false positive bulge at start
         let startPressure = PressureManager.shared.currentPressure
         brushRawPoints = [BrushPoint(location: location, pressure: startPressure)]
         brushSimplifiedPoints = []
@@ -33,7 +32,6 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         brushPath = VectorPath(elements: [.move(to: startPoint)])
 
-        // Brush strokes should never have a stroke outline - they ARE the stroke
         let strokeStyle: StrokeStyle? = nil
         let fillStyle = FillStyle(
             color: getCurrentFillColor(),
@@ -115,14 +113,12 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // Apply deduplication to preview points for smoother rendering
-        // Keep using CPU for live preview to avoid Metal overhead
         var dedupedPoints: [BrushPoint] = []
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
-                // SIMD-optimized distance calculation
+
                 let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
                 let lastVec = SIMD2<Double>(Double(lastPoint.location.x), Double(lastPoint.location.y))
                 let distance = simd_length(pointVec - lastVec)
@@ -135,13 +131,11 @@ extension DrawingCanvas {
 
         var pointsToProcess = dedupedPoints
 
-        // Handle straight lines with interpolation
         if dedupedPoints.count == 2 {
             let startPoint = dedupedPoints[0]
             let endPoint = dedupedPoints[1]
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
-            // SIMD-optimized line length and perpendicular
             let startVec = SIMD2<Double>(Double(startPoint.location.x), Double(startPoint.location.y))
             let endVec = SIMD2<Double>(Double(endPoint.location.x), Double(endPoint.location.y))
             let delta = endVec - startVec
@@ -174,7 +168,7 @@ extension DrawingCanvas {
         let dedupedLocations = pointsToProcess.map { $0.location }
 
         if dedupedLocations.count >= 2 {
-            // Use the same smooth path generation as the final version
+
             let newPath = generateSmoothVariableWidthPath(
                 centerPoints: dedupedLocations,
                 rawPoints: pointsToProcess,
@@ -187,7 +181,6 @@ extension DrawingCanvas {
 
         return VectorPath(elements: [.move(to: VectorPoint(dedupedLocations[0]))])
     }
-
 
     private func processBrushStroke() {
         guard brushRawPoints.count >= 2,
@@ -213,7 +206,7 @@ extension DrawingCanvas {
         var finalShape = VectorShape(
             name: "Brush Stroke",
             path: brushStrokePath,
-            strokeStyle: nil,  // Brush strokes are fill-only, never stroked
+            strokeStyle: nil,
             fillStyle: FillStyle(
                 color: getCurrentFillColor(),
                 opacity: getCurrentFillOpacity()
@@ -231,8 +224,6 @@ extension DrawingCanvas {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
             }
 
-            // Skip CPU coincident point removal - not needed with current processing
-            // Metal or CPU deduplication already happened in finalizeFromPreview
         }
 
         document.addShapeToFront(finalShape)
@@ -247,12 +238,10 @@ extension DrawingCanvas {
         var dedupedPoints: [BrushPoint] = []
         let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
-        // Use Metal GPU for coincident point removal
         var usedMetal = false
-        if brushRawPoints.count > 10 {  // Only use Metal for larger paths where it's beneficial
+        if brushRawPoints.count > 10 {
             print("🚀 FINAL: Using Metal GPU to simplify \(brushRawPoints.count) points")
 
-            // Convert to Metal-ready format (Metal functions handle SIMD internally)
             let pressures = brushRawPoints.map { Float($0.pressure) }
 
             let result = MetalComputeEngine.shared.removeCoincidentPointsGPU(
@@ -273,11 +262,11 @@ extension DrawingCanvas {
                         BrushPoint(location: $0, pressure: 1.0)
                     }
                 }
-                usedMetal = true  // Mark that we successfully used Metal
+                usedMetal = true
             case .failure(let error):
                 print("⚠️ Metal failed: \(error), using CPU fallback")
-                usedMetal = false  // Metal failed, will use CPU
-                // CPU fallback with SIMD
+                usedMetal = false
+
                 for point in brushRawPoints {
                     if let lastPoint = dedupedPoints.last {
                         let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
@@ -292,11 +281,10 @@ extension DrawingCanvas {
             }
         }
 
-        // Only use CPU if Metal wasn't used
         if !usedMetal {
             for point in brushRawPoints {
                 if let lastPoint = dedupedPoints.last {
-                    // SIMD-optimized distance calculation
+
                     let pointVec = SIMD2<Double>(Double(point.location.x), Double(point.location.y))
                     let lastVec = SIMD2<Double>(Double(lastPoint.location.x), Double(lastPoint.location.y))
                     let distance = simd_length(pointVec - lastVec)
@@ -313,7 +301,7 @@ extension DrawingCanvas {
         guard dedupedLocations.count >= 2 else { return }
 
         if dedupedLocations.count == 2 {
-            // SIMD-optimized distance check
+
             let start = dedupedLocations[0]
             let end = dedupedLocations[1]
             let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
@@ -336,7 +324,6 @@ extension DrawingCanvas {
             finalPath = preview
         }
 
-        // Brush strokes should never have a stroke outline - they ARE the stroke
         let strokeStyle: StrokeStyle? = nil
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
 
@@ -352,12 +339,10 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
 
-            // Metal already simplified - skip CPU coincident removal to avoid duplicate processing artifacts
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
     }
-
 
     private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -423,7 +408,6 @@ extension DrawingCanvas {
         var firstClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
         var secondClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
 
-        // SIMD-optimized distance calculations
         let targetVec = SIMD2<Double>(Double(targetPoint.x), Double(targetPoint.y))
 
         for rawPoint in rawPoints {
@@ -450,7 +434,6 @@ extension DrawingCanvas {
 
         return firstClosest.pressure
     }
-
 
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -500,7 +483,6 @@ extension DrawingCanvas {
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
 
-    // SIMD-optimized brush offset calculation for real-time drawing performance
     private func generateOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
         var offsetPoints: [CGPoint] = []
 
@@ -512,7 +494,7 @@ extension DrawingCanvas {
             if i == 0 {
                 if i + 1 < centerPoints.count {
                     let nextPoint = centerPoints[i + 1].location
-                    // SIMD vector subtraction
+
                     let dir = nextPoint.simd - point.location.simd
                     perpVec = SIMD2(-dir.y, dir.x)
                 } else {
@@ -520,7 +502,7 @@ extension DrawingCanvas {
                 }
             } else if i == centerPoints.count - 1 {
                 let prevPoint = centerPoints[i - 1].location
-                // SIMD vector subtraction
+
                 let dir = point.location.simd - prevPoint.simd
                 perpVec = SIMD2(-dir.y, dir.x)
             } else {
@@ -529,19 +511,16 @@ extension DrawingCanvas {
                 let incomingDir = point.location.simd - prevPoint.simd
                 let outgoingDir = nextPoint.simd - point.location.simd
 
-                // SIMD normalize with length check
                 let incomingLen = simd_length(incomingDir)
                 let outgoingLen = simd_length(outgoingDir)
 
                 let normIncoming = incomingLen > 0 ? simd_normalize(incomingDir) : incomingDir
                 let normOutgoing = outgoingLen > 0 ? simd_normalize(outgoingDir) : outgoingDir
 
-                // SIMD average and perpendicular
                 let avgDirection = (normIncoming + normOutgoing) * 0.5
                 perpVec = SIMD2(-avgDirection.y, avgDirection.x)
             }
 
-            // SIMD normalize perpendicular
             let length = simd_length(perpVec)
             if length > 0 {
                 perpVec = simd_normalize(perpVec)
@@ -549,7 +528,6 @@ extension DrawingCanvas {
                 continue
             }
 
-            // SIMD offset calculation
             let offsetDistance = thickness / 2.0
             let multiplier = isLeftSide ? 1.0 : -1.0
             let offsetVec = point.location.simd + perpVec * offsetDistance * multiplier
@@ -558,7 +536,6 @@ extension DrawingCanvas {
             offsetPoints.append(offsetPoint)
         }
 
-        // Apply coincident point removal based on user setting
         let passes = ApplicationSettings.shared.brushCoincidentPointPasses
         if passes > 0 {
             return DrawingCanvasPathHelpers.removeCoincidentPoints(offsetPoints, passes: passes, tolerance: 0.1)
@@ -567,24 +544,19 @@ extension DrawingCanvas {
         return offsetPoints
     }
 
-
     private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath) -> VectorPath {
-        // Create a path that traces the outline: down left side, across bottom, up right side, across top
-        // But we need to connect the paths properly without an explicit close
+
         var elements: [PathElement] = []
 
-        // Add the left edge (going from start to end)
         elements.append(contentsOf: leftEdgePath.elements)
 
-        // Connect to the right edge (already reversed, so goes from end back to start)
-        // Skip the first move command to make it continuous
         var isFirst = true
         for element in rightEdgePath.elements {
             if isFirst {
                 isFirst = false
                 switch element {
                 case .move(_):
-                    // Skip the move - we're already positioned at the end of left edge
+
                     continue
                 default:
                     break
@@ -593,8 +565,6 @@ extension DrawingCanvas {
             elements.append(element)
         }
 
-        // DON'T add .close - the fill rule will handle it
-        // The path naturally forms a closed shape without the explicit close line
         return VectorPath(elements: elements)
     }
 

@@ -21,7 +21,7 @@ class SVGExporter {
         let originalSize = document.settings.sizeInPoints
         let scaledWidth = originalSize.width * dpiScale
         let scaledHeight = originalSize.height * dpiScale
-        // Autodesk uses scaled viewBox matching width/height (96 DPI).
+
         let viewBoxWidth = isAutoDesk ? scaledWidth : originalSize.width
         let viewBoxHeight = isAutoDesk ? scaledHeight : originalSize.height
         let widthStr = formatSVGNumber(scaledWidth)
@@ -72,12 +72,11 @@ class SVGExporter {
             svg += "<g \(layerAttrs)>\n"
 
             let shapesInLayer = document.getShapesForLayer(layerIndex)
-            // For Autodesk, scale coordinates to 96 DPI; otherwise use 1.0 (72 DPI)
+
             let shapeScale: CGFloat = isAutoDesk ? dpiScale : 1.0
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
 
-                // Skip shapes that are members of a group - they'll be exported via their parent group
                 if document.snapshot.parentGroupCache[shape.id] != nil { continue }
 
                 if let object = document.findObject(by: shape.id), case .text = object.objectType {
@@ -102,8 +101,6 @@ class SVGExporter {
             return ""
         }
 
-        // Native clipping group: first member is the mask, rest are clipped content.
-        // The mask carries no isClippingPath flag — it is identified positionally.
         if shape.isClippingGroup, let members = resolveClippingGroupMembers(shape, in: document), members.count >= 2 {
             let content = Array(members.dropFirst())
             svg += "<g id=\"clipgroup_\(shape.id.uuidString)\" clip-path=\"url(#clip_\(shape.id.uuidString))\">\n"
@@ -121,17 +118,16 @@ class SVGExporter {
             return svg
         }
 
-        // Handle groups and clip groups with memberIDs (new system)
         if (shape.isGroup || shape.isClippingGroup) && !shape.memberIDs.isEmpty, let doc = document {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
 
             for memberID in shape.memberIDs {
                 if let memberShape = doc.findShape(by: memberID) {
-                    // Skip invisible member shapes
+
                     if !memberShape.isVisible { continue }
 
                     if let memberObject = doc.findObject(by: memberID), case .text = memberObject.objectType {
-                        // Text shapes need special handling
+
                         svg += exportTextShape(memberShape, dpiScale: dpiScale, renderingMode: .glyphs)
                     } else {
                         svg += exportShape(memberShape, dpiScale: dpiScale, document: doc)
@@ -143,12 +139,11 @@ class SVGExporter {
             return svg
         }
 
-        // Handle groups with groupedShapes (old system)
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
 
             for groupedShape in shape.groupedShapes {
-                // Skip invisible grouped shapes
+
                 if !groupedShape.isVisible { continue }
 
                 svg += exportShape(groupedShape, dpiScale: dpiScale, document: document)
@@ -852,7 +847,7 @@ class SVGExporter {
         if let embeddedData = shape.embeddedImageData {
             href = "data:image/png;base64,\(embeddedData.base64EncodedString())"
         } else {
-            // Convert CGImage to PNG data
+
             let mutableData = NSMutableData()
             guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) else {
                 return ""
@@ -880,7 +875,7 @@ class SVGExporter {
 
     private func generatePathData(from path: VectorPath, transform: CGAffineTransform, dpiScale: CGFloat = 1.0) -> String {
         var pathData = ""
-        // Combine shape transform with DPI scale for Autodesk export
+
         let scaleTransform = CGAffineTransform(scaleX: dpiScale, y: dpiScale)
         let combinedTransform = transform.concatenating(scaleTransform)
 
@@ -947,11 +942,9 @@ class SVGExporter {
         var processedClipPaths = Set<UUID>()
 
         for vectorObject in document.snapshot.objects.values {
-            // Clipping groups are wrapped in objectType == .clipGroup, not .shape — use the
-            // accessor that extracts the underlying VectorShape from any case.
+
             let candidate = vectorObject.shape
 
-            // Legacy: shape explicitly flagged as a clipping path (referenced by clippedByShapeID).
             if candidate.isClippingPath && !processedClipPaths.contains(candidate.id) {
                 processedClipPaths.insert(candidate.id)
 
@@ -962,7 +955,6 @@ class SVGExporter {
                 defs += "</clipPath>\n"
             }
 
-            // Native clipping group: first member acts as the mask. Def id keyed off the group id.
             if candidate.isClippingGroup && !processedClipPaths.contains(candidate.id),
                let members = resolveClippingGroupMembers(candidate, in: document),
                let mask = members.first {

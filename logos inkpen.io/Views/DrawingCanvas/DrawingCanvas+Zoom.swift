@@ -43,12 +43,10 @@ extension DrawingCanvas {
             isZoomGestureActive = true
         }
 
-        // SIMD optimization for performance on Apple Silicon
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Apply 1.5x speed multiplier directly to gesture
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let newZoomLevel = CGFloat(currentZoom * adjustedValue)
@@ -71,12 +69,10 @@ extension DrawingCanvas {
             return
         }
 
-        // SIMD optimization for performance on Apple Silicon
         let zoomData = SIMD2<Float>(Float(initialZoomLevel), Float(value))
         let currentZoom = zoomData.x
         let gestureValue = zoomData.y
 
-        // Apply 1.5x speed multiplier directly to gesture
         let adjustedValue = 1.0 + (gestureValue - 1.0) * 1.5
 
         let finalZoomLevel = max(0.75, min(640.0, CGFloat(currentZoom * adjustedValue)))

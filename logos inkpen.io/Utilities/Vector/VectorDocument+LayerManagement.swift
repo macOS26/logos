@@ -74,7 +74,6 @@ extension VectorDocument {
 
         snapshot.layers.insert(movingLayer, at: adjustedTargetIndex)
 
-        // Update layer indices in snapshot.objects - only check affected layers
         let affectedRange: ClosedRange<Int>
         if sourceIndex < adjustedTargetIndex {
             affectedRange = sourceIndex...adjustedTargetIndex
@@ -82,7 +81,6 @@ extension VectorDocument {
             affectedRange = adjustedTargetIndex...sourceIndex
         }
 
-        // Only process objects in affected layers
         for layerIdx in affectedRange {
             guard layerIdx < snapshot.layers.count else { continue }
             for objectID in snapshot.layers[layerIdx].objectIDs {
@@ -168,8 +166,6 @@ extension VectorDocument {
             snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
             selectedLayerIndex = currentIndex + 1
 
-            // Update layerIndex in snapshot.objects - only process affected layers
-            // Note: After insert, indices shift so we process from currentIndex + 2
             for layerIdx in (currentIndex + 2)..<snapshot.layers.count {
                 for objectID in snapshot.layers[layerIdx].objectIDs {
                     if let object = snapshot.objects[objectID] {
@@ -236,17 +232,14 @@ extension VectorDocument {
         changeNotifier.notifyLayersChanged()
     }
 
-    /// Ensures the Guides layer exists at index 2 for documents created before guides were added
     func ensureGuidesLayerExists() {
-        // Check if Guides layer already exists
+
         if snapshot.layers.count > 2 && snapshot.layers[2].name == "Guides" {
             return
         }
 
-        // Check if we have at least Pasteboard and Canvas layers
         guard snapshot.layers.count >= 2 else { return }
 
-        // Insert Guides layer at index 2
         let guidesLayer = Layer(
             id: UUID(),
             name: "Guides",
@@ -260,7 +253,6 @@ extension VectorDocument {
 
         snapshot.layers.insert(guidesLayer, at: 2)
 
-        // Update layer indices for all objects in layers 2 and above
         for layerIdx in 3..<snapshot.layers.count {
             for objectID in snapshot.layers[layerIdx].objectIDs {
                 if let object = snapshot.objects[objectID] {
@@ -318,7 +310,6 @@ extension VectorDocument {
             return
         }
 
-        // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
         let finalTargetIndex = targetLayerIndex <= 2 ? 3 : targetLayerIndex
 
         let sourceLayerIndex = object.layerIndex
@@ -341,7 +332,6 @@ extension VectorDocument {
             return
         }
 
-        // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
         let finalTargetIndex = targetLayerIndex <= 2 ? 3 : targetLayerIndex
 
         var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
@@ -419,7 +409,7 @@ extension VectorDocument {
         guard !visibleObjects.isEmpty else { return }
 
         guard let lastObject = visibleObjects.last else { return }
-        
+
         if viewState.selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = [lastObject.id]
             return
@@ -457,18 +447,15 @@ extension VectorDocument {
 
         let draggingUp = sourceObjIndex > targetObjIndex
 
-        // Create new objectIDs array with reordered objects
         var newObjectIDs = snapshot.layers[layerIndex].objectIDs
         newObjectIDs.remove(at: sourceObjIndex)
 
-        // Recalculate target index after removal
         if let newTargetIndex = newObjectIDs.firstIndex(of: targetObjectId) {
-            // If dragging up, insert before target. If dragging down, insert after target
+
             let insertIndex = draggingUp ? newTargetIndex : newTargetIndex + 1
             newObjectIDs.insert(objectId, at: insertIndex)
         }
 
-        // Use helper method to update objectIDs and trigger layer update
         updateLayerObjectIDs(layerIndex: layerIndex, newObjectIDs: newObjectIDs)
         changeNotifier.notifyLayersChanged()
     }

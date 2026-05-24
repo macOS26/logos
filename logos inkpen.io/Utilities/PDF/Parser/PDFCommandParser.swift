@@ -3,7 +3,7 @@ import SwiftUI
 class PDFCommandParser {
     var commands: [PathCommand] = []
     var currentPoint = CGPoint.zero
-    // PDF 1.7 §8.6.8 Table 52: initial fill/stroke color is black (bug ref: blue default caused text to render blue).
+
     var currentFillColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentStrokeColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
     var currentFillGradient: VectorGradient?
@@ -114,10 +114,8 @@ class PDFCommandParser {
 
         removeDuplicateClippingShapes()
 
-        // Pass #1: merge per-word text shapes into per-line (stream-time merge is unreliable for some PDFs).
         shapes = mergeTextShapesByLine(shapes)
 
-        // Pass #2: merge adjacent lines sharing paragraph characteristics into multi-line VectorText.
         shapes = mergeTextLinesByParagraph(shapes)
 
         if !shapes.isEmpty {
@@ -128,7 +126,6 @@ class PDFCommandParser {
         return shapes
     }
 
-    // Merges consecutive text shapes on the same visual line (Y within 2pt) with space-separated content.
     private func mergeTextShapesByLine(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
@@ -183,7 +180,6 @@ class PDFCommandParser {
         return result
     }
 
-    // Recomputes areaSize width via NSAttributedString layout so merged line renders on one line without wrapping.
     private func finalizeTextShapeWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {
@@ -216,7 +212,6 @@ class PDFCommandParser {
         return result
     }
 
-    // Merges adjacent lines into paragraphs (same font/size, same left X, Y delta ≈ lineHeight).
     private func mergeTextLinesByParagraph(_ input: [VectorShape]) -> [VectorShape] {
         guard !input.isEmpty else { return input }
         var result: [VectorShape] = []
@@ -269,7 +264,6 @@ class PDFCommandParser {
         return result
     }
 
-    // Sets paragraph areaSize to fit all lines via NSAttributedString measurement.
     private func finalizeParagraphWidth(_ shape: VectorShape) -> VectorShape {
         guard let content = shape.textContent, !content.isEmpty,
               let typography = shape.typography else {

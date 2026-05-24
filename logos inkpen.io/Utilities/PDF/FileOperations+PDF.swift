@@ -301,7 +301,7 @@ extension FileOperations {
             guard let first = stops.first, let last = stops.last else {
                 return (0, 0, 0, 0)
             }
-            
+
             if t <= first.position {
                 return (first.r, first.g, first.b, first.a)
             }
@@ -890,7 +890,7 @@ extension FileOperations {
         }
 
         guard let firstStop = stops.first, let lastStop = stops.last else { return .clear }
-        
+
         if t <= firstStop.position {
             let cgColor = firstStop.color.cgColor
             return cgColor.withAlpha(CGFloat(firstStop.opacity * opacity))

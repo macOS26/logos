@@ -66,7 +66,7 @@ extension DrawingCanvas {
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 let fillPath = Path { path in
-                    // Build path EXACTLY like ProfessionalBezierView does
+
                     path.move(to: firstPointLocation)
 
                     for i in 1..<bezierPoints.count {
@@ -90,7 +90,6 @@ extension DrawingCanvas {
                         }
                     }
 
-                    // Add segment from last point to mouse
                     let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
                     if let lastPointHandles = lastPointHandles,
                        let lastControl2 = lastPointHandles.control2 {
@@ -104,7 +103,6 @@ extension DrawingCanvas {
                         path.addLine(to: canvasMouseLocation)
                     }
 
-                    // Add segment from mouse back to first point
                     let firstPointHandles = liveBezierHandles[0] ?? bezierHandles[0]
                     if let firstPointHandles = firstPointHandles,
                        let firstControl1 = firstPointHandles.control1 {
@@ -144,7 +142,7 @@ extension DrawingCanvas {
 
             if isShiftPressed && bezierPoints.count >= 1 {
                 if let snapPoint = findBestIntersectionPoint(from: lastPointLocation, toward: rawCanvasMouseLocation) {
-                    // Snap point indicator circle
+
                     Circle()
                         .fill(Color.purple.opacity(0.3))
                         .frame(width: 16 / zoomLevel, height: 16 / zoomLevel)
@@ -157,12 +155,10 @@ extension DrawingCanvas {
                             y: snapPoint.y * zoomLevel + canvasOffset.y
                         )
 
-                    // Snap lines using Canvas
                     Canvas { context, size in
                         context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
                         context.scaleBy(x: zoomLevel, y: zoomLevel)
 
-                        // Line from last point to snap point
                         let path1 = Path { path in
                             path.move(to: lastPointLocation)
                             path.addLine(to: snapPoint)
@@ -178,7 +174,6 @@ extension DrawingCanvas {
                             )
                         )
 
-                        // Line from snap point to first point
                         let firstPoint = bezierPoints[0]
                         let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
 
@@ -211,13 +206,12 @@ extension DrawingCanvas {
                 fillClosePreview(geometry: geometry)
             }
 
-            // Rubber band curves using Canvas
             Canvas { context, size in
                 context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
                 context.scaleBy(x: zoomLevel, y: zoomLevel)
 
                 if showClosePathHint && bezierPoints.count >= 3 {
-                    // Close path hint curve
+
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
                     let lastPointHandles = liveBezierHandles[lastPointIndex] ?? bezierHandles[lastPointIndex]
@@ -247,7 +241,7 @@ extension DrawingCanvas {
                         style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
                     )
                 } else {
-                    // Regular rubber band curve
+
                     let rubberPath = Path { path in
                         path.move(to: lastPointLocation)
 
@@ -275,8 +269,6 @@ extension DrawingCanvas {
             }
         }
     }
-
-
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
         return GeometryUtils.constrainToAngle(from: reference, to: target, constraintAngles: constraintAngles)

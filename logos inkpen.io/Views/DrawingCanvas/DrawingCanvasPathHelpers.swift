@@ -2,7 +2,6 @@ import SwiftUI
 import simd
 import Accelerate
 
-// SIMD type aliases for clarity and portability
 typealias Vec2D = SIMD2<Double>
 typealias Vec8D = SIMD8<Double>
 
@@ -24,7 +23,6 @@ enum DrawingCanvasPathHelpers {
         var maxDistance: Double = 0
         var maxIndex = startIndex
 
-        // Use batch SIMD8 calculation for better performance
         let count = endIndex - startIndex - 1
         if count >= 8 {
             let distances = perpendicularDistancesBatch(
@@ -40,7 +38,7 @@ enum DrawingCanvasPathHelpers {
                 }
             }
         } else {
-            // Fall back to single-point calculation for small segments
+
             for i in (startIndex + 1)..<endIndex {
                 let distance = perpendicularDistance(point: points[i], lineStart: startPoint, lineEnd: endPoint)
                 if distance > maxDistance {
@@ -60,7 +58,6 @@ enum DrawingCanvasPathHelpers {
         }
     }
 
-    /// Batch calculate perpendicular distances using SIMD8 for up to 8x performance
     static func perpendicularDistancesBatch(
         points: ArraySlice<CGPoint>,
         lineStart: CGPoint,
@@ -69,7 +66,6 @@ enum DrawingCanvasPathHelpers {
         let count = points.count
         guard count > 0 else { return [] }
 
-        // Pre-calculate line equation coefficients: Ax + By + C = 0
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
@@ -77,14 +73,12 @@ enum DrawingCanvasPathHelpers {
 
         var distances = [Double](repeating: 0, count: count)
 
-        // Process in SIMD8 batches (8 points at once)
         let stride = 8
         let fullBatches = count / stride
 
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
 
-            // Load 8 x-coordinates and 8 y-coordinates into SIMD8 vectors
             var xs = Vec8D()
             var ys = Vec8D()
 
@@ -94,22 +88,19 @@ enum DrawingCanvasPathHelpers {
                 ys[i] = pt.y
             }
 
-            // Vectorized calculation: |A*x + B*y + C| / denominator
             let values = xs * Vec8D(repeating: A) + ys * Vec8D(repeating: B) + Vec8D(repeating: C)
-            // Element-wise absolute value
+
             var numerators = Vec8D()
             for i in 0..<8 {
                 numerators[i] = abs(values[i])
             }
             let results = numerators / Vec8D(repeating: denominator)
 
-            // Store results
             for i in 0..<stride {
                 distances[baseIndex + i] = results[i]
             }
         }
 
-        // Handle remaining points (less than 8)
         let remaining = count - (fullBatches * stride)
         if remaining > 0 {
             let baseIndex = fullBatches * stride
@@ -127,7 +118,7 @@ enum DrawingCanvasPathHelpers {
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        // SIMD-optimized distance calculation
+
         let numerator = abs(A * point.x + B * point.y + C)
         let denominator = simd_length(Vec2D(A, B))
         return numerator / denominator
@@ -190,7 +181,6 @@ enum DrawingCanvasPathHelpers {
         return elements
     }
 
-    // SIMD-optimized tangent calculation
     static func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
         let v1 = Vec2D(p1.x - p0.x, p1.y - p0.y)
         let v2 = Vec2D(p2.x - p1.x, p2.y - p1.y)
@@ -204,7 +194,6 @@ enum DrawingCanvasPathHelpers {
         }
     }
 
-    /// Remove coincident points; up to 3 passes, default tolerance 0.1
     static func removeCoincidentPoints(_ points: [CGPoint], passes: Int, tolerance: Double = 0.1) -> [CGPoint] {
         guard passes > 0 && points.count > 1 else { return points }
 

@@ -23,7 +23,7 @@ class ObjectArrangementCommand: BaseCommand {
     }
 
     private func applyIndices(_ targetIndices: [UUID: Int], to document: VectorDocument) {
-        // Group objects by layer
+
         var objectsByLayer: [Int: [(UUID, Int)]] = [:]
 
         for id in affectedObjectIDs {
@@ -33,17 +33,14 @@ class ObjectArrangementCommand: BaseCommand {
             objectsByLayer[obj.layerIndex, default: []].append((id, targetIndex))
         }
 
-        // Process each layer
         for (layerIndex, idsAndIndices) in objectsByLayer {
             guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { continue }
 
             var layerObjectIDs = document.snapshot.layers[layerIndex].objectIDs
 
-            // Remove affected objects
             let affectedIDs = Set(idsAndIndices.map { $0.0 })
             layerObjectIDs.removeAll { affectedIDs.contains($0) }
 
-            // Sort by target index and reinsert
             let sorted = idsAndIndices.sorted { $0.1 < $1.1 }
             for (id, targetIdx) in sorted {
                 let insertIndex = min(targetIdx, layerObjectIDs.count)

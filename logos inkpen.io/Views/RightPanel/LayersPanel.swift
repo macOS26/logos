@@ -30,7 +30,6 @@ extension Color {
     ]
 }
 
-// Layer panel style constants
 private let kLayerTextStyle: Font = .system(size: 11)
 private let kLayerControlLabelWidth: CGFloat = 50
 private let kLayerPercentageWidth: CGFloat = 35
@@ -54,14 +53,13 @@ extension View {
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
-    @Binding var selectedLayerIndex: Int?  // DEPRECATED - kept for compatibility
+    @Binding var selectedLayerIndex: Int?
     @Binding var processedLayersDuringDrag: Set<Int>
     @Binding var processedObjectsDuringDrag: Set<UUID>
 
     @State private var layerOpacityState: Double = 1.0
     @State private var lastSentPercentage: Int = 100
 
-    // Defaults to Layer 1 (index 2) when nothing is selected
     private var selectedIndex: Int? {
         if let selectedLayerId = document.settings.selectedLayerId {
             return document.snapshot.layers.firstIndex(where: { $0.id == selectedLayerId })
@@ -78,7 +76,7 @@ struct LayersPanel: View {
         case object(layerIndex: Int, objectId: UUID)
         case childObject(layerIndex: Int, parentObjectId: UUID, childShapeId: UUID)
     }
-    
+
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
 
@@ -89,9 +87,7 @@ struct LayersPanel: View {
             guard isChildGroupExpanded else { return }
 
             let nestedMembers = document.resolveGroupMembers(childShape)
-            /* Regular groups reverse (topmost-z at top of panel), clip groups
-               keep order so the mask at memberIDs[0] stays at position 0 to
-               match NestedGroupChildrenView's display order. */
+
             let orderedNested: [VectorShape] = {
                 if childShape.isClippingGroup { return nestedMembers }
                 return Array(nestedMembers.reversed())
@@ -123,9 +119,7 @@ struct LayersPanel: View {
                             switch object.objectType {
                             case .group(let shape), .clipGroup(let shape):
                                 let memberShapes = document.resolveGroupMembers(shape)
-                                /* Regular groups reverse (topmost-z at top),
-                                   clip groups keep order so the mask at index 0
-                                   matches ObjectRow's display and scissors icon. */
+
                                 let ordered: [VectorShape] = {
                                     if case .clipGroup = object.objectType { return memberShapes }
                                     return Array(memberShapes.reversed())
@@ -147,8 +141,6 @@ struct LayersPanel: View {
     }
 
     var body: some View {
-        //let _ = document.viewState.layerUpdateTriggers // Subscribe to all layer updates
-        // let _ = document.changeNotifier.layerChangeToken // Subscribe to layer changes
 
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -204,7 +196,7 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
-    
+
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -245,7 +237,7 @@ struct LayersPanel: View {
                             }
                         }
                     }
-                 
+
                     .controlSize(.regular)
                     .tint(Color.clear)
                 }
@@ -254,11 +246,11 @@ struct LayersPanel: View {
                 Text("\(Int(layerOpacityState * 100))%")
                     .layerText(width: kLayerPercentageWidth, alignment: .trailing)
             }
-            
+
             HStack(spacing: 8) {
                 Text("Blend")
                     .layerText(width: kLayerControlLabelWidth)
-                
+
                 Picker("", selection: Binding(
                     get: {
                         guard layerIndex >= 0 && layerIndex < document.snapshot.layers.count else { return BlendMode.normal }
@@ -279,7 +271,7 @@ struct LayersPanel: View {
                 .frame(width: 100)
                 .labelsHidden()
                 .pickerStyle(.menu)
-                
+
                 Spacer(minLength: 10)
                     .frame(width: 10)
                 ColorSwatchButton(
@@ -309,7 +301,7 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
-    
+
     private func dragOverlay(
         xPosition: CGFloat,
         isDragging: WritableKeyPath<DocumentViewState, Bool>,
@@ -363,7 +355,7 @@ struct LayersPanel: View {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(document.snapshot.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
-                           // .id(layer.id) // Stable identity for efficient updates
+
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.changeNotifier.layerChangeToken)
@@ -386,7 +378,7 @@ struct LayersPanel: View {
             }
         }
     }
-    
+
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
@@ -395,7 +387,7 @@ struct LayersPanel: View {
             selectedLayerIndex: $selectedLayerIndex
         )
     }
-    
+
     private func toggleVisibility(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -429,7 +421,7 @@ struct LayersPanel: View {
         case .childObject(let layerIndex, _, let childShapeId):
             print("🟡 toggleVisibility childObject: \(childShapeId)")
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                // With memberIDs, child objects are stored directly in snapshot.objects
+
                 if let childObj = document.snapshot.objects[childShapeId] {
                     var shape = childObj.shape
                     shape.isVisible.toggle()
@@ -448,7 +440,7 @@ struct LayersPanel: View {
             }
         }
     }
-    
+
     private func toggleLock(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -481,7 +473,7 @@ struct LayersPanel: View {
             }
         case .childObject(let layerIndex, _, let childShapeId):
             if !processedObjectsDuringDrag.contains(childShapeId) {
-                // With memberIDs, child objects are stored directly in snapshot.objects
+
                 if let childObj = document.snapshot.objects[childShapeId] {
                     var shape = childObj.shape
                     shape.isLocked.toggle()
@@ -551,7 +543,6 @@ struct ColorSwatchButton<Content: View>: View {
     }
 }
 
-// Convenience extension for default swatch button style
 extension ColorSwatchButton where Content == AnyView {
     init(color: Binding<Color>, availableColors: [(name: String, color: Color)]) {
         self._color = color
@@ -566,11 +557,3 @@ extension ColorSwatchButton where Content == AnyView {
         }
     }
 }
-
-/*
- 
- curl -X GET "https://api.cloudflare.com/client/v4/zones/YOUR_ZONE_ID/dns_records" \
-      -H "Authorization: Bearer YOUR_API_TOKEN" \
-      -H "Content-Type: application/json"
- 
- */

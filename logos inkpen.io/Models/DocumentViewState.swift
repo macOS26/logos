@@ -1,69 +1,55 @@
 import SwiftUI
 import Combine
 
-/// View-only state that must not trigger document saves.
 class DocumentViewState: ObservableObject {
 
-    // MARK: - Tool State
     @Published var currentTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
         }
     }
 
-    // MARK: - Transform Controls
     @Published var scalingAnchor: ScalingAnchor = .center
     @Published var rotationAnchor: RotationAnchor = .center
     @Published var shearAnchor: ShearAnchor = .center
     @Published var transformOrigin: TransformOrigin = .center
 
-    // MARK: - Viewport State
     @Published var viewMode: ViewMode = .color
     @Published var zoomRequest: ZoomRequest? = nil
     @Published var handleRefreshTrigger: Bool = false
 
-    // NOTE: zoomLevel/canvasOffset now @State in DocumentBasedMainView, passed as @Binding.
-
-    // MARK: - Color UI State
     @Published var activeColorTarget: ColorTarget = .fill
     @Published var colorChangeNotification: UUID = UUID()
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
 
-    // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
-    @Published var layerUpdateTriggers: [UUID: UInt] = [:]  // Per-layer update triggers keyed by Layer.id
-    var isLivePointDrag: Bool = false  // Skip spatial index rebuild during live point drags
-    // NOTE: scalePreviewDimensions removed - now using liveScaleDimensions as @State in DocumentBasedMainView
+    @Published var layerUpdateTriggers: [UUID: UInt] = [:]
+    var isLivePointDrag: Bool = false
+
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     @Published var hasPressureInput: Bool = false
 
-    // MARK: - Drag State (UI-only, no @Published needed)
     var isDraggingVisibility: Bool = false
     var isDraggingLock: Bool = false
 
-    // MARK: - Gradient Live State
     @Published var liveGradientOriginX: Double? = nil
     @Published var liveGradientOriginY: Double? = nil
 
-    // MARK: - Nudge Live State
     @Published var liveNudgeOffset: CGVector = .zero
 
-    // MARK: - Selection State (transient, not saved)
     var selectedObjectIDs: Set<UUID> = [] {
         didSet {
             PublishedSelectedObjectIDs = selectedObjectIDs
-            // Keep ordered array in sync - remove any IDs no longer in set
+
             orderedSelectedObjectIDs = orderedSelectedObjectIDs.filter { selectedObjectIDs.contains($0) }
         }
     }
 
     @Published var PublishedSelectedObjectIDs: Set<UUID> = []
 
-    /// Ordered selection: first-selected stays in place during alignment.
     var orderedSelectedObjectIDs: [UUID] = []
 
-    // Point selection for direct selection tool
     var selectedPoints: Set<PointID> = [] {
         didSet {
             PublishedSelectedPoints = selectedPoints
@@ -72,7 +58,6 @@ class DocumentViewState: ObservableObject {
 
     @Published var PublishedSelectedPoints: Set<PointID> = []
 
-    // Handle selection for direct selection tool
     var selectedHandles: Set<HandleID> = [] {
         didSet {
             PublishedSelectedHandles = selectedHandles

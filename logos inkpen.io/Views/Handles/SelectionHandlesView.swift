@@ -15,20 +15,19 @@ struct SelectionHandlesView: View {
     @Binding var liveScaleTransform: CGAffineTransform
     @Binding var liveScaleDimensions: CGSize
 
-    // Force view to update when selection changes
     private var selectionID: String {
         document.viewState.selectedObjectIDs.map { $0.uuidString }.sorted().joined()
     }
 
     var body: some View {
         ZStack {
-            // Only render if there are selected objects
+
             if !document.viewState.selectedObjectIDs.isEmpty {
-                // For multi-selection, show ONE combined bounding box
+
                 if document.viewState.selectedObjectIDs.count > 1 {
                     renderCombinedSelectionBox()
                 } else {
-                    // Single selection - render individual handles
+
                     ForEach(Array(document.viewState.selectedObjectIDs), id: \.self) { selectedID in
                         if let newVectorObject = document.snapshot.objects[selectedID] {
                             if case .group(let groupShape) = newVectorObject.objectType {
@@ -41,7 +40,7 @@ struct SelectionHandlesView: View {
 
                             switch newVectorObject.objectType {
                             case .guide:
-                                // Guides don't show selection handles - they're just movable lines
+
                                 EmptyView()
 
                             case .shape(let shape),
@@ -120,10 +119,10 @@ struct SelectionHandlesView: View {
                         }
                     }
                 }
-                }  // Close else block for multi-selection check
+                }
             }
         }
-        //.id(selectionID) // Force re-render when selection changes
+
     }
 
     @ViewBuilder
@@ -196,7 +195,6 @@ struct SelectionHandlesView: View {
         }
     }
 
-    // Computed property for combined selection bounds
     private var combinedSelectionBounds: CGRect? {
         var combinedBounds: CGRect?
         let settings = ApplicationSettings.shared
@@ -206,8 +204,7 @@ struct SelectionHandlesView: View {
 
             switch object.objectType {
             case .text(let shape):
-                // Text uses textPosition and areaSize for bounds
-                // textPosition is the world position - do NOT apply transform
+
                 let textBounds: CGRect
                 if let position = shape.textPosition, let size = shape.areaSize {
                     textBounds = CGRect(origin: position, size: size)
@@ -225,7 +222,6 @@ struct SelectionHandlesView: View {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 var baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
-                // Apply stroke expansion if preference is enabled and shape has stroke
                 if settings.boundingBoxIncludesStrokes && shape.strokeStyle != nil && shape.typography == nil {
                     let strokeWidth = shape.strokeStyle?.width ?? 1.0
                     let strokeExpansion = strokeWidth / 2.0
@@ -270,7 +266,7 @@ struct SelectionHandlesView: View {
                                      .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
             if document.viewState.currentTool == .selection || document.viewState.currentTool == .font || isShapeDrawingTool {
-                // Render TransformBoxHandles for the combined selection
+
                 TransformBoxHandles(
                     document: document,
                     shape: createCombinedShape(from: bounds),

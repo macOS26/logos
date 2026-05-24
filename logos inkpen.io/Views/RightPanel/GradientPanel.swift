@@ -64,7 +64,7 @@ struct GradientFillSection: View {
                 _gradientType = State(initialValue: .radial)
             }
         } else {
-            // Don't create default gradient - let it be nil until user explicitly adds one
+
             _currentGradient = State(initialValue: nil)
         }
     }
@@ -91,10 +91,10 @@ struct GradientFillSection: View {
                 onAngleChange: updateGradientAngle,
                 onEditingChanged: { isEditing in
                     if isEditing {
-                        // Drag started - capture old gradient state
+
                         captureOldGradientState()
                     } else {
-                        // Drag ended - commit with undo
+
                         commitGradientChangeWithUndo()
                     }
                 }
@@ -111,10 +111,10 @@ struct GradientFillSection: View {
                 },
                 onEditingChanged: { isEditing in
                     if isEditing {
-                        // Drag started - capture old gradient state
+
                         captureOldGradientState()
                     } else {
-                        // Drag ended - commit with undo
+
                         commitGradientChangeWithUndo()
                     }
                 }
@@ -150,8 +150,8 @@ struct GradientFillSection: View {
                 getOriginY: getGradientOriginY,
                 getScale: getGradientScale,
                 getAspectRatio: getGradientAspectRatio,
-                updateOriginX: { _, _ in },  // Deprecated - using delta pattern
-                updateOriginY: { _, _ in },  // Deprecated - using delta pattern
+                updateOriginX: { _, _ in },
+                updateOriginY: { _, _ in },
                 updateOriginXOptimized: { newX, _, _ in updateGradientOrigin(x: newX, y: nil) },
                 updateOriginYOptimized: { newY, _, _ in updateGradientOrigin(x: nil, y: newY) },
                 updateOriginXY: { newX, newY in updateGradientOrigin(x: newX, y: newY) },
@@ -195,11 +195,11 @@ struct GradientFillSection: View {
             updateSelectedGradient()
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            // Sync gradient state from document when snapshot changes (e.g., after undo)
+
             updateSelectedGradient()
         }
         .onChange(of: activeGradientDelta) { _, newDelta in
-            // Two-way binding: when canvas updates delta, sync to panel
+
             if let newGradient = newDelta {
                 currentGradient = newGradient
             }
@@ -217,7 +217,7 @@ struct GradientFillSection: View {
     }
 
     private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
-        // Simply update the stop color - popover handles the UI
+
         updateStopColor(stopId: stopId, color: color)
     }
 
@@ -232,11 +232,10 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             gradientId = UUID()
-            // Clear delta so canvas uses snapshot gradient
+
             activeGradientDelta = nil
         }
     }
-
 
     private func updateGradientAngle(_ newAngle: Double) {
         guard let gradient = currentGradient else { return }
@@ -249,19 +248,17 @@ struct GradientFillSection: View {
             normalizedAngle += 360
         }
 
-        // print("🎨 GRADIENT ANGLE DRAG: Updating to \(normalizedAngle)")
-
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
             activeGradientDelta = currentGradient
-            // print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
+
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            // print("🎨 GRADIENT ANGLE DRAG: Set activeGradientDelta = \(String(describing: activeGradientDelta))")
+
         }
     }
 
@@ -293,19 +290,14 @@ struct GradientFillSection: View {
     private func commitGradientChange() {
         guard currentGradient != nil else { return }
 
-        // print("🎨 GRADIENT DRAG END: Committing gradient change")
-
-        // Clear the delta
         activeGradientDelta = nil
-        // print("🎨 GRADIENT DRAG END: Cleared activeGradientDelta")
 
-        // Apply to document snapshot + record undo
         applyGradientToSelectedShapes()
-        // print("🎨 GRADIENT DRAG END: Applied to snapshot + recorded undo")
+
     }
 
     private func captureOldGradientState() {
-        // Capture old gradients and opacities from LIVE document.snapshot before drag starts
+
         dragStartGradients.removeAll()
         dragStartOpacities.removeAll()
 
@@ -338,17 +330,13 @@ struct GradientFillSection: View {
     private func commitGradientChangeWithUndo() {
         guard let newGradient = currentGradient else { return }
 
-        // print("🎨 COMMIT START: activeGradientDelta = \(activeGradientDelta != nil ? "SET" : "nil")")
-        // print("🎨 COMMIT START: currentGradient stops = \(newGradient.stops.map { $0.color })")
-
-        // Collect new gradients and opacities BEFORE the command updates anything
         var newGradients: [UUID: VectorGradient?] = [:]
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in selectedObjectIDs {
             newGradients[objectID] = newGradient
             if let obj = document.snapshot.objects[objectID] {
-                // Use the correct opacity based on activeColorTarget
+
                 if activeColorTarget == .fill {
                     newOpacities[objectID] = obj.shape.fillStyle?.opacity ?? 1.0
                 } else {
@@ -357,7 +345,6 @@ struct GradientFillSection: View {
             }
         }
 
-        // Create and execute undo command - this will update the snapshot and trigger layer updates
         let target: GradientCommand.GradientTarget = activeColorTarget == .fill ? .fill : .stroke
         let command = GradientCommand(
             objectIDs: Array(selectedObjectIDs),
@@ -369,20 +356,6 @@ struct GradientFillSection: View {
         )
         document.commandManager.execute(command)
 
-        // print("🎨 COMMIT END: Command executed")
-
-        // Check snapshot after command
-        // for objectID in selectedObjectIDs {
-        //     if let obj = document.snapshot.objects[objectID] {
-        //         if let fillGradient = obj.shape.fillStyle?.gradient {
-        //             print("🎨 COMMIT: Snapshot AFTER has gradient stops = \(fillGradient.stops.map { $0.color })")
-        //         }
-        //     }
-        // }
-
-        // DON'T clear delta - snapshot is updated, delta will show same gradient anyway
-        // Clearing it causes a flash because SwiftUI renders before snapshot propagates
-        // print("🎨 COMMIT END: Leaving activeGradientDelta set (snapshot now matches)")
     }
 
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
@@ -414,7 +387,7 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
-        // print("🔴 updateGradientOriginXOptimized called: newX=\(newX), applyToShapes=\(applyToShapes), isLiveDrag=\(isLiveDrag)")
+
         guard let gradient = currentGradient else { return }
 
         switch gradient {
@@ -432,7 +405,7 @@ struct GradientFillSection: View {
             } else {
                 document.viewState.liveGradientOriginX = nil
             }
-            // print("🔴 CALLING applyGradientToSelectedShapesOptimized - THIS UPDATES SNAPSHOT!")
+
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
@@ -493,7 +466,7 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
         }
         activeGradientDelta = currentGradient
-        // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
     }
 
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
@@ -506,7 +479,7 @@ struct GradientFillSection: View {
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
         }
     }
 
@@ -529,7 +502,7 @@ struct GradientFillSection: View {
             radial.radius = newRadius
             currentGradient = .radial(radial)
             activeGradientDelta = currentGradient
-            // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
         }
     }
 
@@ -552,7 +525,7 @@ struct GradientFillSection: View {
                 linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
@@ -560,7 +533,7 @@ struct GradientFillSection: View {
                 radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
             }
         }
     }
@@ -574,14 +547,14 @@ struct GradientFillSection: View {
                 linear.stops[index].opacity = opacity
                 currentGradient = .linear(linear)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].opacity = opacity
                 currentGradient = .radial(radial)
                 activeGradientDelta = currentGradient
-                // Removed: Canvas will redraw automatically when activeGradientDelta changes
+
             }
         }
     }
@@ -631,7 +604,6 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapes()
         }
 
-        // Create undo command
         if let newGradient = currentGradient {
             createGradientUndoCommand(oldGradient: oldGradient, newGradient: newGradient)
         }
@@ -658,7 +630,6 @@ struct GradientFillSection: View {
             }
         }
 
-        // Create undo command
         if let newGradient = currentGradient {
             createGradientUndoCommand(oldGradient: oldGradient, newGradient: newGradient)
         }
@@ -697,7 +668,6 @@ struct GradientFillSection: View {
     func applyGradientToSelectedShapes() {
         guard let newGradient = currentGradient else { return }
 
-        // Capture old gradients before applying
         var oldGradients: [UUID: VectorGradient?] = [:]
         var oldOpacities: [UUID: Double] = [:]
 
@@ -714,17 +684,16 @@ struct GradientFillSection: View {
             }
         }
 
-        // Check if gradient actually changed - if not, don't create undo command
         var hasChanges = false
         for objectID in selectedObjectIDs {
             if let oldGradient = oldGradients[objectID] {
-                // Object had gradient - check if it changed
+
                 if oldGradient != newGradient {
                     hasChanges = true
                     break
                 }
             } else {
-                // Object didn't have gradient - adding one is a change
+
                 hasChanges = true
                 break
             }
@@ -734,7 +703,6 @@ struct GradientFillSection: View {
 
         applyGradientToSelectedShapesOptimized(isLiveDrag: false)
 
-        // Create undo command
         var newGradients: [UUID: VectorGradient?] = [:]
         var newOpacities: [UUID: Double] = [:]
 
@@ -820,7 +788,7 @@ struct GradientFillSection: View {
                 affectedLayers.insert(updatedObject.layerIndex)
             }
         }
-        // Don't trigger layer updates - let Canvas update via .id(layerUpdateTrigger) when command executes
+
     }
 
     func addGradientToSwatches() {
@@ -840,7 +808,6 @@ struct GradientFillSection: View {
 
         let shape = obj.shape
 
-        // Check fill or stroke based on activeColorTarget
         switch activeColorTarget {
         case .fill:
             guard let fillStyle = shape.fillStyle,
@@ -857,11 +824,6 @@ struct GradientFillSection: View {
         }
     }
 
-    // Returns the selected shape's gradient in an editable form: userSpaceOnUse gradients
-    // produced by SVG import (absolute document-space coordinates) are converted to
-    // objectBoundingBox using the shape's own path bounds. The conversion is lossless and
-    // pixel-identical when rendered, so editing sliders/drag/preview can all use the single
-    // objectBoundingBox code path without workarounds.
     static func getEditableSelectedGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, activeColorTarget: ColorTarget) -> VectorGradient? {
         guard let gradient = getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, activeColorTarget: activeColorTarget) else {
             return nil
@@ -883,9 +845,6 @@ struct GradientFillSection: View {
         }
     }
 
-    // Lossless conversion of a pre-resolved userSpaceOnUse radial gradient into the
-    // objectBoundingBox representation. Produces pixel-identical rendering via the existing
-    // objectBoundingBox render path in UnifiedObjectView and GradientPreviewAndStopsView.
     static func convertRadialUserSpaceToObjectBoundingBox(_ radial: RadialGradient, shapeBounds: CGRect) -> RadialGradient {
         let maxDim = max(shapeBounds.width, shapeBounds.height)
         guard maxDim > 0 else { return radial }
@@ -904,8 +863,7 @@ struct GradientFillSection: View {
         converted.radius = radial.radius / maxDim
 
         if let focal = radial.focalPoint {
-            // objectBoundingBox focalPoint is drawn as an offset from center in local
-            // (post-translate, pre-scale) space. With scaleX=scaleY=1 that's absolute pixels.
+
             converted.focalPoint = CGPoint(
                 x: focal.x - radial.centerPoint.x,
                 y: focal.y - radial.centerPoint.y
@@ -915,11 +873,6 @@ struct GradientFillSection: View {
         return converted
     }
 
-    // Lossless conversion of a pre-resolved userSpaceOnUse linear gradient into the
-    // objectBoundingBox representation. See UnifiedObjectView.swift:927-957 for the target
-    // math. With scaleX=scaleY=1, center maps from absolute midpoint → 0-1 originPoint,
-    // direction → storedAngle, and |B-A|/maxDim is stored as the unit-vector endpoint so
-    // that canvas's length = |end-start| * scale * maxDim = pixelLength.
     static func convertLinearUserSpaceToObjectBoundingBox(_ linear: LinearGradient, shapeBounds: CGRect) -> LinearGradient {
         let maxDim = max(shapeBounds.width, shapeBounds.height)
         guard maxDim > 0, shapeBounds.width > 0, shapeBounds.height > 0 else { return linear }

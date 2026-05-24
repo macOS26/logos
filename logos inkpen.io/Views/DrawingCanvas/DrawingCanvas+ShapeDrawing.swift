@@ -28,7 +28,7 @@ extension DrawingCanvas {
         case .success(let distance):
             return distance
         case .failure(_):
-            // SIMD-optimized distance calculation
+
             let distance = simd_length(SIMD2<Double>(point2.x - point1.x, point2.y - point1.y))
             return Float(distance)
         }

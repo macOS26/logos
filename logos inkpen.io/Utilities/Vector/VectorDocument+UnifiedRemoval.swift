@@ -6,10 +6,8 @@ extension VectorDocument {
         guard let object = snapshot.objects[id] else { return }
         let layerIndex = object.layerIndex
 
-        // Remove from snapshot
         snapshot.objects.removeValue(forKey: id)
 
-        // Remove from layer's objectIDs
         if layerIndex >= 0 && layerIndex < snapshot.layers.count {
             snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
         }
@@ -17,7 +15,6 @@ extension VectorDocument {
         ImageContentRegistry.remove(for: id, in: self)
         viewState.selectedObjectIDs.remove(id)
 
-        // Trigger layer update
         if layerIndex >= 0 && layerIndex < snapshot.layers.count {
             triggerLayerUpdate(for: layerIndex)
         }
@@ -27,17 +24,14 @@ extension VectorDocument {
         guard let object = snapshot.objects[id] else { return }
         let layerIndex = object.layerIndex
 
-        // Remove from snapshot
         snapshot.objects.removeValue(forKey: id)
 
-        // Remove from layer's objectIDs
         if layerIndex >= 0 && layerIndex < snapshot.layers.count {
             snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
         }
 
         viewState.selectedObjectIDs.remove(id)
 
-        // Trigger layer update
         if layerIndex >= 0 && layerIndex < snapshot.layers.count {
             triggerLayerUpdate(for: layerIndex)
         }
@@ -57,7 +51,6 @@ extension VectorDocument {
             layerIndex: layerIndex
         )
 
-        // Update snapshot ONLY
         snapshot.objects[id] = updatedObject
         triggerLayerUpdate(for: layerIndex)
     }
@@ -109,7 +102,6 @@ extension VectorDocument {
                 affectedLayers.insert(object.layerIndex)
                 snapshot.objects.removeValue(forKey: id)
 
-                // Remove from layer's objectIDs
                 let layerIndex = object.layerIndex
                 if layerIndex >= 0 && layerIndex < snapshot.layers.count {
                     snapshot.layers[layerIndex].objectIDs.removeAll { $0 == id }
@@ -117,7 +109,6 @@ extension VectorDocument {
             }
         }
 
-        // Trigger updates for all affected layers
         triggerLayerUpdates(for: affectedLayers)
     }
 }

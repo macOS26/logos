@@ -42,7 +42,6 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         nsView.currentTool = currentTool
         nsView.isPanActive = isPanActive
 
-        // Defer invalidateCursorRects to avoid layout recursion
         DispatchQueue.main.async {
             nsView.window?.invalidateCursorRects(for: nsView)
         }
@@ -126,7 +125,7 @@ private final class CursorOverlayNSView: NSView {
 
             if shouldForce {
                 self.applyForcedCursor()
-                // Consume .cursorUpdate events, pass through mouse events
+
                 return event.type == .cursorUpdate ? nil : event
             }
             return event
@@ -198,4 +197,4 @@ private final class CursorOverlayNSView: NSView {
     }
 }
 
-#endif // os(macOS)
+#endif

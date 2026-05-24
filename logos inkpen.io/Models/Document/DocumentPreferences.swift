@@ -1,7 +1,5 @@
 import SwiftUI
 
-// MARK: - Stroke Defaults
-
 struct StrokeDefaults: Equatable {
     var placement: StrokePlacement
     var lineJoin: CGLineJoin
@@ -39,8 +37,6 @@ extension StrokeDefaults: Codable {
         try container.encode(miterLimit, forKey: .miterLimit)
     }
 }
-
-// MARK: - Grid Settings
 
 struct GridSettings: Equatable {
     var showRulers: Bool
@@ -102,8 +98,6 @@ extension GridSettings: Codable {
         try container.encode(snapToGuides, forKey: .snapToGuides)
     }
 }
-
-// MARK: - Color Swatches
 
 struct ColorSwatches: Codable, Equatable {
     var rgb: [VectorColor]

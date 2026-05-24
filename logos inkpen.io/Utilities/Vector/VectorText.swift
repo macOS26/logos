@@ -2,8 +2,8 @@ import SwiftUI
 import Combine
 
 enum TextRenderMode: String, Codable, Hashable {
-    case nstext     // NSTextView (legacy)
-    case ctline     // CTLine/CTFrame (Canvas rendering)
+    case nstext
+    case ctline
 }
 
 enum TextBoxState: String, CaseIterable {
@@ -44,7 +44,6 @@ enum TextAlignment: String, CaseIterable, Codable {
         }
     }
 }
-
 
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
@@ -413,7 +412,7 @@ struct VectorText: Identifiable, Codable, Hashable {
 }
 
 class FontManager: ObservableObject {
-    // Font list is shared — system fonts don't change between documents.
+
     private static var sharedAvailableFonts: [String] = []
     private static var sharedSystemFonts: [String] = []
     private static var sharedFontsLoaded = false
@@ -609,16 +608,9 @@ class FontManager: ObservableObject {
 
         Self.sharedFontVariantsCache[family] = sortedVariants
 
-        // print("🔤 FONT VARIANTS FOR \(family):")
-        // for (index, variant) in sortedVariants.enumerated() {
-        //     let order = getWeightOrder(variant)
-        //     print("  \(index): \(variant) (order: \(order))")
-        // }
-
         return sortedVariants
     }
 
-    /// O(1) cached lookup of PostScript name by family+variant.
     func getPostScriptName(family: String, variant: String) -> String? {
         let cacheKey = "\(family)-\(variant)"
 

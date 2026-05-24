@@ -6,7 +6,7 @@ struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: Layer
     @ObservedObject var document: VectorDocument
-    @Binding var selectedLayerIndex: Int?  // DEPRECATED - kept for compatibility
+    @Binding var selectedLayerIndex: Int?
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var isExpanded: Bool
@@ -14,14 +14,12 @@ struct ProfessionalLayerRow: View {
     @State private var selectionAnchorID: UUID? = nil
     @State private var selectionRangeMin: Int? = nil
     @State private var selectionRangeMax: Int? = nil
-    @State private var cachedObjectIDs: [UUID] = []  // Cache UUIDs only, lookup objects O(1)
+    @State private var cachedObjectIDs: [UUID] = []
 
-    // Check if this layer is selected using settings.selectedLayerId
     private var isSelected: Bool {
         document.settings.selectedLayerId == layer.id
     }
 
-    // Lookup objects on-demand from snapshot - O(1) per object
     private var layerObjects: [VectorObject] {
         cachedObjectIDs.compactMap { document.snapshot.objects[$0] }
     }
@@ -66,12 +64,11 @@ struct ProfessionalLayerRow: View {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
 
-        // Initialize cached object IDs - just store UUIDs, not full objects
         _cachedObjectIDs = State(initialValue: Array(layer.objectIDs.reversed()))
     }
 
     private func updateCachedObjects() {
-        // Cache UUIDs only - objects are looked up O(1) on-demand
+
         cachedObjectIDs = Array(layer.objectIDs.reversed())
     }
 
@@ -115,7 +112,7 @@ struct ProfessionalLayerRow: View {
                 }
                 .padding(.leading, 2.5)
                 .padding(.trailing, 4)
-                
+
                 HStack(spacing: 2) {
                     Button(action: {
                         isVisibleBinding.wrappedValue.toggle()
@@ -143,7 +140,7 @@ struct ProfessionalLayerRow: View {
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
-                    
+
                     Button(action: {
                         isLockedBinding.wrappedValue.toggle()
                     }) {
@@ -170,7 +167,7 @@ struct ProfessionalLayerRow: View {
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
-                    
+
                     HStack(spacing: 4) {
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
@@ -194,7 +191,7 @@ struct ProfessionalLayerRow: View {
                         }
                         .buttonStyle(BorderlessButtonStyle())
                         .help("Click to expand/collapse layer. Option-click to expand/collapse all layers.")
-                        
+
                         ColorSwatchButton(
                             color: layerColor,
                             availableColors: Color.layerColorPalette
@@ -203,7 +200,7 @@ struct ProfessionalLayerRow: View {
                                 .fill(layerColor.wrappedValue)
                                 .frame(width: 4, height: 16)
                         }
-                        
+
                         HStack(spacing: 0) {
                             if isEditingName {
                                 TextField("Layer Name", text: $editedName, onCommit: {
@@ -228,9 +225,9 @@ struct ProfessionalLayerRow: View {
                                         editedName = layer.name
                                     }
                             }
-                            
+
                             Spacer()
-                            
+
                             let objectCount = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs.count : 0
                             Text("\(objectCount)")
                                 .font(.system(size: 9))
@@ -347,7 +344,7 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                // Canvas, Pasteboard, and Guides layers (0, 1, 2) cannot contain objects - redirect to layer 3
+
                 let targetIndex = layerIndex <= 2 ? 3 : layerIndex
 
                 if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
@@ -372,9 +369,7 @@ struct ProfessionalLayerRow: View {
                     guard let content = shape.textContent, !content.isEmpty else {
                         return "Text"
                     }
-                    // Show the FIRST LINE so multi-word text (e.g. "This is a Font")
-                    // previews meaningfully. The Text view's .lineLimit(1) +
-                    // truncationMode .tail clip it visually if it overflows.
+
                     let firstLine = content
                         .split(whereSeparator: { $0.isNewline })
                         .first
@@ -446,7 +441,7 @@ struct ProfessionalLayerRow: View {
             }
         } else if isShiftPressed {
             if let anchorID = selectionAnchorID {
-                // Work with UUIDs directly - no temporary VectorObject array
+
                 let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
                 let reversedIDs = Array(objectIDs.reversed())
 
@@ -487,7 +482,6 @@ struct ProfessionalLayerRow: View {
             selectionRangeMax = nil
         }
 
-        // Trigger update for the current layer (selection visualization)
         document.triggerLayerUpdate(for: layerIndex)
     }
 }

@@ -43,18 +43,13 @@ extension SVGParser {
         let spreadMethod = parseSpreadMethod(from: attributes)
 
         if gradientUnits == .userSpaceOnUse {
-            // userSpaceOnUse: pre-resolve coordinates into document space at parse time
-            // (usvg approach). cachedCGPath bakes the viewBox transform into paths,
-            // so gradient coordinates need the same transform applied.
 
-            // Apply gradientTransform first (in SVG user space)
             if let gradientTransformRaw = attributes["gradientTransform"] {
                 let gradTransform = parseTransform(gradientTransformRaw)
                 startPoint = startPoint.applying(gradTransform)
                 endPoint = endPoint.applying(gradTransform)
             }
 
-            // Then apply the viewBox/current transform to match path coordinate space
             if !currentTransform.isIdentity {
                 startPoint = startPoint.applying(currentTransform)
                 endPoint = endPoint.applying(currentTransform)
@@ -88,8 +83,6 @@ extension SVGParser {
             return VectorGradient.linear(linearGradient)
         }
 
-        // objectBoundingBox: bake the full gradientTransform into start/end points via
-        // parseTransform (supports translate/matrix/skew, not just rotate/scale).
         let gradTransform = attributes["gradientTransform"].map { parseTransform($0) } ?? .identity
         let transformedStart = startPoint.applying(gradTransform)
         let transformedEnd = endPoint.applying(gradTransform)

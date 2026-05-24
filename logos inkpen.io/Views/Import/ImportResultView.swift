@@ -35,15 +35,15 @@ extension View {
     func importResultHeader() -> some View {
         modifier(ImportResultHeaderStyle())
     }
-    
+
     func importResultSection() -> some View {
         modifier(ImportResultSectionStyle())
     }
-    
+
     func importResultWarning() -> some View {
         modifier(ImportResultWarningStyle())
     }
-    
+
     func importResultError() -> some View {
         modifier(ImportResultErrorStyle())
     }

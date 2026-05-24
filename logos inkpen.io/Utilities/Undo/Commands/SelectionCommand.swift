@@ -15,7 +15,7 @@ class SelectionCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        // Collect affected layers before changing selection
+
         var affectedLayers = Set<Int>()
         for objectID in document.viewState.selectedObjectIDs {
             if let object = document.snapshot.objects[objectID] {
@@ -35,7 +35,7 @@ class SelectionCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
-        // Collect affected layers before changing selection
+
         var affectedLayers = Set<Int>()
         for objectID in document.viewState.selectedObjectIDs {
             if let object = document.snapshot.objects[objectID] {
@@ -54,10 +54,9 @@ class SelectionCommand: BaseCommand {
         document.triggerLayerUpdates(for: affectedLayers)
     }
 
-    /// Selection commands can merge if they happen in quick succession
     func mergeWith(_ other: Command) -> Command? {
         guard let otherSelection = other as? SelectionCommand else { return nil }
-        // Merge consecutive selection changes - keep original old state, use latest new state
+
         return SelectionCommand(
             oldSelectedIDs: self.oldSelectedIDs,
             newSelectedIDs: otherSelection.newSelectedIDs,

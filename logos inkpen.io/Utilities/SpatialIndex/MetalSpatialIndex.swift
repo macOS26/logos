@@ -2,11 +2,8 @@ import Metal
 import MetalKit
 import SwiftUI
 
-/// GPU-accelerated spatial index using Metal compute shaders.
-/// Pipelines are shared across all instances (static); only per-document
-/// layer data is per-instance — saves ~20MB per additional tab.
 class MetalSpatialIndex {
-    // Shared Metal resources (initialized once, reused across all tabs)
+
     private static var sharedDevice: MTLDevice?
     private static var sharedCommandQueue: MTLCommandQueue?
     private static var sharedBuildPipeline: MTLComputePipelineState?
@@ -22,17 +19,14 @@ class MetalSpatialIndex {
     private var queryRectPipeline: MTLComputePipelineState { Self.sharedQueryRectPipeline! }
     private var clearGridPipeline: MTLComputePipelineState { Self.sharedClearGridPipeline! }
 
-    // Grid parameters
-    private let gridSize: Float = 50.0  // 50x50 pixel cells
-    private let maxObjectsPerCell: UInt32 = 256  // Max objects per cell
+    private let gridSize: Float = 50.0
+    private let maxObjectsPerCell: UInt32 = 256
 
-    // Per-layer spatial indices (instance data — unique per document)
     private var layerIndices: [UUID: LayerSpatialIndex] = [:]
-    // Static so multiple DrawingCanvas instances share one dedupe cache.
+
     private static let fingerprintLock = NSLock()
     private static var sharedLayerFingerprints: [UUID: Int] = [:]
 
-    // Per-layer index structure
     fileprivate struct LayerSpatialIndex {
         var objectBoundsBuffer: MTLBuffer?
         var gridCellCountsBuffer: MTLBuffer?
@@ -48,7 +42,7 @@ class MetalSpatialIndex {
     }
 
     init?() {
-        // Initialize shared Metal resources exactly once
+
         if !Self.sharedInitialized {
             let metal = SharedMetalDevice.shared
             guard let cmdQueue = metal.makeCommandQueue() else {
@@ -73,11 +67,6 @@ class MetalSpatialIndex {
         guard Self.sharedInitialized else { return nil }
     }
 
-    // Explicit nonisolated deinit. Project sets SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor,
-    // so without this the synthesized deinit hops to the main executor via the Swift 6
-    // back-deploy shim — which crashes in swift_getObjectType when SwiftUI releases an
-    // old DrawingCanvas copy from its gesture graph. Stored fields are MTLBuffers and
-    // Sendable value types; they release safely off-main.
     nonisolated deinit { }
 
     static func releaseSharedPipelines() {
@@ -93,11 +82,9 @@ class MetalSpatialIndex {
         fingerprintLock.unlock()
     }
 
-    /// Rebuild spatial index for specific layers only
     func rebuildLayers(_ layerIDs: Set<UUID>, from snapshot: DocumentSnapshot) {
         let includeStrokesInBounds = ApplicationSettings.shared.boundingBoxIncludesStrokes
 
-        // Build set of child IDs that are inside groups (needed for all layers)
         var groupedChildIDs = Set<UUID>()
         for object in snapshot.objects.values {
             switch object.objectType {
@@ -113,13 +100,9 @@ class MetalSpatialIndex {
         var totalObjectsRebuilt = 0
         var layersActuallyRebuilt = 0
 
-        // Rebuild only the specified layers
         for layer in snapshot.layers {
             guard layerIDs.contains(layer.id) else { continue }
 
-            // Cheap fingerprint of the layer inputs that affect the spatial index.
-            // When the caller asks to rebuild unchanged layers (startup + multiple
-            // SwiftUI onChange/onAppear callbacks), this lets us no-op per-layer.
             var fp = Hasher()
             fp.combine(layer.isVisible)
             fp.combine(includeStrokesInBounds)
@@ -155,7 +138,6 @@ class MetalSpatialIndex {
             }
             layersActuallyRebuilt += 1
 
-            // Collect bounds data for this layer only
             var boundsData: [(UUID, CGRect)] = []
             var minX: CGFloat = .infinity
             var minY: CGFloat = .infinity
@@ -163,7 +145,7 @@ class MetalSpatialIndex {
             var maxY: CGFloat = -.infinity
 
             guard layer.isVisible else {
-                // Layer is hidden, clear its index
+
                 layerIndices[layer.id] = LayerSpatialIndex()
                 continue
             }
@@ -216,7 +198,7 @@ class MetalSpatialIndex {
                     case .group, .clipGroup:
                         continue
                     }
-                    // Skip shapes with non-finite or empty bounds (degenerate transforms)
+
                     guard bounds.minX.isFinite && bounds.minY.isFinite
                             && bounds.maxX.isFinite && bounds.maxY.isFinite
                             && bounds.width > 0 && bounds.height > 0 else { continue }
@@ -230,14 +212,13 @@ class MetalSpatialIndex {
 
             totalObjectsRebuilt += boundsData.count
 
-            // Build per-layer index
             if boundsData.isEmpty {
                 layerIndices[layer.id] = LayerSpatialIndex()
                 continue
             }
 
             var layerIndex = LayerSpatialIndex()
-            // Guard against inf/NaN from degenerate transforms — skip layer if bounds are non-finite
+
             guard minX.isFinite && minY.isFinite && maxX.isFinite && maxY.isFinite else {
                 layerIndices[layer.id] = LayerSpatialIndex()
                 continue
@@ -249,7 +230,7 @@ class MetalSpatialIndex {
 
             let gridWidth = Int(layerIndex.gridMaxX - layerIndex.gridMinX + 1)
             let gridHeight = Int(layerIndex.gridMaxY - layerIndex.gridMinY + 1)
-            // Cap grid to prevent memory explosion from huge/degenerate bounds
+
             let maxGridCells = 10_000
             guard gridWidth > 0 && gridHeight > 0 && gridWidth * gridHeight <= maxGridCells else {
                 layerIndices[layer.id] = LayerSpatialIndex()
@@ -262,7 +243,6 @@ class MetalSpatialIndex {
                 layerIndex.objectIDToIndex[id] = UInt32(index)
             }
 
-            // Create GPU buffers for this layer
             let objectCount = boundsData.count
             var objectBoundsArray: [ObjectBounds] = boundsData.enumerated().map { index, data in
                 ObjectBounds(
@@ -305,13 +285,11 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
 
-            // Execute GPU build for this layer
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
             }
 
-            // Clear grid counts
             computeEncoder.setComputePipelineState(clearGridPipeline)
             computeEncoder.setBuffer(layerIndex.gridCellCountsBuffer, offset: 0, index: 0)
             let clearThreads = MTLSize(width: layerIndex.totalCells, height: 1, depth: 1)
@@ -321,7 +299,6 @@ class MetalSpatialIndex {
             )
             computeEncoder.dispatchThreads(clearThreads, threadsPerThreadgroup: clearThreadsPerGroup)
 
-            // Build spatial index
             computeEncoder.setComputePipelineState(pipelineState)
             computeEncoder.setBuffer(layerIndex.objectBoundsBuffer, offset: 0, index: 0)
             computeEncoder.setBuffer(layerIndex.gridCellCountsBuffer, offset: 0, index: 1)
@@ -347,16 +324,12 @@ class MetalSpatialIndex {
         }
     }
 
-    /// Invalidate cached fingerprints so the next rebuildLayers call is forced to rebuild.
-    /// Call this when the caller knows its cached state is stale (e.g. document replaced).
     func invalidateFingerprints() {
         Self.fingerprintLock.lock()
         Self.sharedLayerFingerprints.removeAll(keepingCapacity: true)
         Self.fingerprintLock.unlock()
     }
 
-    /// Drop cached per-layer indices for layers that no longer exist in the snapshot.
-    /// Without this, removed layers keep contributing phantom hit-test candidates.
     func purgeRemovedLayers(from snapshot: DocumentSnapshot) {
         let currentIDs = Set(snapshot.layers.map { $0.id })
         let staleIDs = Set(layerIndices.keys).subtracting(currentIDs)
@@ -373,11 +346,9 @@ class MetalSpatialIndex {
         Self.fingerprintLock.unlock()
     }
 
-    /// Get candidate objects at a specific point (GPU query)
     func candidateObjectIDs(at point: CGPoint) -> Set<UUID> {
         var result = Set<UUID>()
 
-        // Query each layer's spatial index
         for (_, layerIndex) in layerIndices {
             guard let gridCellCountsBuffer = layerIndex.gridCellCountsBuffer,
                   let gridCellObjectsBuffer = layerIndex.gridCellObjectsBuffer,
@@ -386,7 +357,6 @@ class MetalSpatialIndex {
                 continue
             }
 
-            // Output buffers
             let maxCandidates = Int(maxObjectsPerCell)
             let candidatesBuffer = device.makeBuffer(
                 length: MemoryLayout<UInt32>.stride * maxCandidates,
@@ -407,7 +377,6 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
 
-            // Execute GPU query
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
@@ -429,7 +398,6 @@ class MetalSpatialIndex {
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
 
-            // Read results
             guard let countPtr = candidateCountBuffer?.contents().bindMemory(to: UInt32.self, capacity: 1) else {
                 continue
             }
@@ -450,11 +418,9 @@ class MetalSpatialIndex {
         return result
     }
 
-    /// Get candidate objects in a rectangle (GPU query)
     func candidateObjectIDs(in rect: CGRect) -> Set<UUID> {
         var result = Set<UUID>()
 
-        // Query each layer's spatial index
         for (_, layerIndex) in layerIndices {
             guard let gridCellCountsBuffer = layerIndex.gridCellCountsBuffer,
                   let gridCellObjectsBuffer = layerIndex.gridCellObjectsBuffer,
@@ -463,7 +429,6 @@ class MetalSpatialIndex {
                 continue
             }
 
-            // Calculate query region dimensions — guard non-finite rects
             guard rect.minX.isFinite && rect.minY.isFinite && rect.maxX.isFinite && rect.maxY.isFinite else { continue }
             let minCellX = Int32(clamping: Int(floor(rect.minX / CGFloat(gridSize))))
             let maxCellX = Int32(clamping: Int(floor(rect.maxX / CGFloat(gridSize))))
@@ -473,7 +438,6 @@ class MetalSpatialIndex {
             let cellWidth = max(1, maxCellX - minCellX + 1)
             let cellHeight = max(1, maxCellY - minCellY + 1)
 
-            // Output buffers
             let maxCandidates = Int(maxObjectsPerCell) * Int(cellWidth) * Int(cellHeight)
             let candidatesBuffer = device.makeBuffer(
                 length: MemoryLayout<UInt32>.stride * maxCandidates,
@@ -494,7 +458,6 @@ class MetalSpatialIndex {
                 options: .storageModeShared
             )
 
-            // Execute GPU query
             guard let commandBuffer = commandQueue.makeCommandBuffer(),
                   let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
                 continue
@@ -520,7 +483,6 @@ class MetalSpatialIndex {
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
 
-            // Read results
             guard let countPtr = candidateCountBuffer?.contents().bindMemory(to: UInt32.self, capacity: 1) else {
                 continue
             }
@@ -542,11 +504,8 @@ class MetalSpatialIndex {
     }
 }
 
-// MARK: - Metal Structures (match shader definitions)
-
-// SIMD optimized: matches Metal shader ObjectBounds struct
 private struct ObjectBounds {
-    let bounds: SIMD4<Float>  // (minX, minY, maxX, maxY)
+    let bounds: SIMD4<Float>
     let objectIndex: UInt32
 }
 

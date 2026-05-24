@@ -38,7 +38,6 @@ extension ScaleHandles {
         scaleX = min(max(scaleX, minScale), maxScale)
         scaleY = min(max(scaleY, minScale), maxScale)
 
-        // Check shift key in real-time during drag for uniform scaling
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             let uniformScale = max(scaleX, scaleY)
@@ -56,7 +55,6 @@ extension ScaleHandles {
         liveScaleDimensions = .zero
         liveScaleTransform = .identity
 
-        // Collect ALL shape IDs that will be modified (group + all members recursively)
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
         collectShapesForUndo(shapeID: shape.id, into: &allShapeIDs, oldShapes: &oldShapes)
@@ -75,7 +73,6 @@ extension ScaleHandles {
             previewTransform = .identity
             finalMarqueeBounds = .zero
 
-            // Capture new state of ALL modified shapes
             var newShapes: [UUID: VectorShape] = [:]
             for shapeID in allShapeIDs {
                 if let transformedShape = document.findShape(by: shapeID) {
@@ -92,7 +89,6 @@ extension ScaleHandles {
                 document.executeCommand(command)
             }
 
-            // Force UI refresh
             document.triggerLayerUpdate(for: layerIndex)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -108,7 +104,6 @@ extension ScaleHandles {
         }
     }
 
-    /// Recursively collect shape and all member shapes for undo
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
 
@@ -158,7 +153,6 @@ extension ScaleHandles {
         scaleX = min(max(scaleX, minScale), maxScale)
         scaleY = min(max(scaleY, minScale), maxScale)
 
-        // Check shift key in real-time during drag for uniform scaling
         let isShiftCurrentlyPressed = NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
             let uniformScale = max(scaleX, scaleY)

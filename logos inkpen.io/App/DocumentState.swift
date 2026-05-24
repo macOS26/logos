@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 class DocumentState: ObservableObject {
     lazy var document: VectorDocument? = nil
 
-    /// Gets the document base name (without extension) for export filenames
     private func getDocumentBaseName() -> String {
         if let fileURL = NSDocumentController.shared.currentDocument?.fileURL {
             return fileURL.deletingPathExtension().lastPathComponent
@@ -36,7 +35,7 @@ class DocumentState: ObservableObject {
     private var pasteboardChangeCount: Int = 0
     private var pasteboardTimer: Timer?
     private var missingImageObserver: NSObjectProtocol?
-    private var promptedMissingImages = Set<UUID>()  // Track which images we've already prompted for
+    private var promptedMissingImages = Set<UUID>()
 
     init() {
 
@@ -44,7 +43,6 @@ class DocumentState: ObservableObject {
 
         startPasteboardMonitoring()
 
-        // Listen for missing linked images
         missingImageObserver = NotificationCenter.default.addObserver(
             forName: Notification.Name("MissingLinkedImage"),
             object: nil,
@@ -55,7 +53,6 @@ class DocumentState: ObservableObject {
                   let shapeID = userInfo["shapeID"] as? UUID,
                   let path = userInfo["path"] as? String else { return }
 
-            // Only prompt once per image
             guard !self.promptedMissingImages.contains(shapeID) else { return }
             self.promptedMissingImages.insert(shapeID)
 
@@ -85,7 +82,7 @@ class DocumentState: ObservableObject {
     }
 
     func cleanup() {
-        // Cancel Combine subscriptions FIRST — they hold refs to document.viewState/commandManager
+
         selectionCancellable?.cancel()
         selectionCancellable = nil
         commandManagerCancellable?.cancel()
@@ -93,7 +90,6 @@ class DocumentState: ObservableObject {
         pasteboardTimer?.invalidate()
         pasteboardTimer = nil
 
-        // Purge caches tied to this document
         if let doc = document {
             let docShapeIDs = Set(doc.snapshot.objects.keys)
             for id in docShapeIDs {
@@ -143,7 +139,7 @@ class DocumentState: ObservableObject {
     private var commandManagerCancellable: AnyCancellable?
 
     private func setupDocumentObserversAsync() async {
-        // Observe selection changes
+
         guard let document = document else { return }
 
         await MainActor.run {
@@ -151,7 +147,6 @@ class DocumentState: ObservableObject {
                 self?.updateAllStates()
             }
 
-            // Observe command manager changes (for undo/redo state)
             commandManagerCancellable = document.commandManager.objectWillChange.sink { [weak self] _ in
                 self?.updateAllStates()
             }
@@ -319,8 +314,7 @@ class DocumentState: ObservableObject {
                 await MainActor.run {
                     guard let self else { return }
                     if result.success {
-                        // Drop empty image shapes before they hit the command — keeps
-                        // the undo payload accurate and avoids invisible objects.
+
                         let isUsable: VectorImportResult.ShapeFilter = { shape in
                             let tempObj = VectorObject(shape: shape, layerIndex: 0)
                             if case .image = tempObj.objectType {
@@ -334,7 +328,6 @@ class DocumentState: ObservableObject {
                         let usableShapes = result.shapes.filter(isUsable)
                         let dispatched = result.dispatchAsImportCommand(into: document, filter: isUsable) != nil
 
-                        // Hydrate any image shapes after they're in snapshot.objects.
                         if dispatched {
                             var imagesHydrated = 0
                             for shape in usableShapes {
@@ -1045,25 +1038,21 @@ class DocumentState: ObservableObject {
         updateAllStates()
     }
 
-    /// Align selected objects by their transform origins; first stays, others move.
     func alignByOrigin() {
         document?.alignSelectedObjectsByOrigin()
         updateAllStates()
     }
 
-    /// Align selected objects horizontally by their transform origins (X axis only).
     func alignByOriginX() {
         document?.alignSelectedObjectsByOriginX()
         updateAllStates()
     }
 
-    /// Align selected objects vertically by their transform origins (Y axis only).
     func alignByOriginY() {
         document?.alignSelectedObjectsByOriginY()
         updateAllStates()
     }
 
-    /// Returns true if at least 2 objects are selected (needed for alignment)
     var canAlign: Bool {
         guard let doc = document else { return false }
         return doc.viewState.orderedSelectedObjectIDs.count >= 2
@@ -1208,7 +1197,6 @@ class DocumentState: ObservableObject {
                 }
                 guard let image = cgImage else { continue }
 
-                // Convert CGImage to PNG data
                 let mutableData = NSMutableData()
                 guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) else { continue }
                 CGImageDestinationAddImage(destination, image, nil)
@@ -1237,10 +1225,6 @@ class DocumentState: ObservableObject {
         ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
         updateAllStates()
     }
-
-    // func testDuplicatePointMerger() {
-    //     ProfessionalPathOperations.testDuplicatePointMerger()
-    // }
 
     func switchToTool(_ tool: DrawingTool) {
         guard let document = document else { return }
@@ -1291,7 +1275,6 @@ class DocumentState: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
 
-        // Try to start in the original directory if it exists
         let originalDir = URL(fileURLWithPath: originalPath).deletingLastPathComponent()
         if FileManager.default.fileExists(atPath: originalDir.path) {
             panel.directoryURL = originalDir
@@ -1301,23 +1284,19 @@ class DocumentState: ObservableObject {
             guard let self = self,
                   response == .OK,
                   let newURL = panel.url else {
-                // User cancelled or no selection
+
                 return
             }
 
-            // Update the shape with the new path and bookmark
             if var shape = document.snapshot.objects[shapeID]?.shape {
-                // Clear any old embedded data (we're linking now)
+
                 shape.embeddedImageData = nil
 
-                // Set new linked path
                 shape.linkedImagePath = newURL.path
 
-                // Update shape name to match new filename
                 let newFilename = newURL.lastPathComponent
                 shape.name = "[IMG] \(newFilename)"
 
-                // Create new security-scoped bookmark
                 if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                     shape.linkedImageBookmarkData = bookmark
                 }
@@ -1326,7 +1305,6 @@ class DocumentState: ObservableObject {
                 print("📝 Updated shape name: \(shape.name)")
                 print("🔖 Bookmark created: \(shape.linkedImageBookmarkData != nil)")
 
-                // Update the object in snapshot
                 if let existingObject = document.snapshot.objects[shapeID] {
                     let updatedObject = VectorObject(
                         id: shapeID,
@@ -1335,12 +1313,10 @@ class DocumentState: ObservableObject {
                     )
                     document.snapshot.objects[shapeID] = updatedObject
 
-                    // Trigger layer update for the layer containing this object
                     document.triggerLayerUpdate(for: existingObject.layerIndex)
                     print("✅ Layer \(existingObject.layerIndex) update triggered")
                 }
 
-                // Remove from prompted set so it can be prompted again if still missing
                 self.promptedMissingImages.remove(shapeID)
             }
         }

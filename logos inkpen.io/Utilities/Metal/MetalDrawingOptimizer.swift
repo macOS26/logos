@@ -12,7 +12,7 @@ class MetalDrawingOptimizer {
     }
 
     func optimizeRealTimeDrawing(enabled: Bool) {
-        // Optimization logic removed
+
     }
 
     private func cpuOptimizedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
@@ -77,7 +77,7 @@ class MetalDrawingOptimizer {
     }
 
     func trackDrawingStart() {
-        // Tracking removed
+
     }
 
     func optimizePointCollection(_ points: inout [CGPoint], maxPoints: Int = 500) {

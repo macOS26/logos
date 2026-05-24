@@ -197,9 +197,6 @@ extension SVGParser {
                     actualWidth = maxLineWidth
                 }
 
-                // Text renders center/right-aligned INSIDE the box, so offset by the
-                // box width (not the raw glyph width) so the box's center/right edge
-                // lands on the SVG anchor x.
                 var adjustedX = baseX
                 if textAnchor == "middle" {
                     adjustedX -= actualWidth / 2.0

@@ -34,11 +34,10 @@ class GPUCoordinateTransform {
         self.isMetalAvailable = (computePipeline != nil)
     }
 
-    /// Must match Metal shader struct CoordinateTransformParams
     struct CoordinateTransformParams {
         var offset: SIMD2<Float>
         var zoom: Float
-        var isScreenToCanvas: Bool  // true = screen->canvas, false = canvas->screen
+        var isScreenToCanvas: Bool
 
         init(offset: SIMD2<Float>, zoom: Float, isScreenToCanvas: Bool) {
             self.offset = offset
@@ -48,7 +47,7 @@ class GPUCoordinateTransform {
     }
 
     func transformPoints(_ points: [CGPoint], offset: CGPoint, zoom: CGFloat, screenToCanvas: Bool) -> [CGPoint] {
-        // For small batches, CPU SIMD is faster (no GPU transfer overhead)
+
         guard points.count > 100, isMetalAvailable else {
             return transformPointsCPU(points, offset: offset, zoom: zoom, screenToCanvas: screenToCanvas)
         }

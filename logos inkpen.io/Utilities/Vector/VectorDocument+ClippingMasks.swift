@@ -15,7 +15,6 @@ extension VectorDocument {
 
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
-        // Collect original layer indices for each object (for undo support)
         var originalLayerIndices: [UUID: Int] = [:]
         var removedShapes: [UUID: VectorShape] = [:]
         var allRemovedObjectIDs: [UUID] = []

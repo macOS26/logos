@@ -44,21 +44,20 @@ struct DocumentBasedMainView: View {
     @State var canvasOffset: CGPoint = .zero
     @State var viewportSize: CGSize = .zero
     @State private var viewWindow: NSWindow? = nil
-    @State private var isTabActive: Bool = true  // Starts active — suspended only when a sibling tab steals focus
-
+    @State private var isTabActive: Bool = true
 
     var body: some View {
         Group {
             if isTabActive {
                 fullDocumentView
             } else {
-                // Suspended tab — lightweight placeholder, no view tree overhead
+
                 Color(nsColor: .windowBackgroundColor)
             }
         }
         .background(HostingWindowFinder(callback: { window in
             self.viewWindow = window
-            // Activate on first window discovery if this is the key/main window
+
             if !isTabActive, let w = window, (w.isKeyWindow || w.isMainWindow) {
                 isTabActive = true
                 MemoryDiag.checkpoint("Tab ACTIVATED (first appear)")
@@ -74,7 +73,7 @@ struct DocumentBasedMainView: View {
                 }
                 AppEventMonitor.shared.setActiveDocument(document)
             } else if window.tabbingIdentifier == vw.tabbingIdentifier {
-                // A sibling tab became main — suspend this one
+
                 if isTabActive {
                     isTabActive = false
                     MemoryDiag.checkpoint("Tab SUSPENDED")
@@ -91,7 +90,7 @@ struct DocumentBasedMainView: View {
             AppEventMonitor.shared.setActiveDocument(document)
         }
         .onDisappear {
-            // Tab truly closed — release heavy resources
+
             documentState.cleanup()
             document.imageStorage.removeAll()
             document.lastDrawnImageHash.removeAll()
@@ -101,7 +100,6 @@ struct DocumentBasedMainView: View {
             document.commandManager.document = nil
             MemoryDiag.checkpoint("Tab CLOSED")
 
-            // Release Metal GPU singletons when no documents remain
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if NSDocumentController.shared.documents.isEmpty {
                     SharedMetalDevice.releaseAll()
@@ -148,7 +146,7 @@ struct DocumentBasedMainView: View {
                             .contentShape(Rectangle())
                             .background(Color.clear)
                             .zIndex(1)
-                            //.allowsHitTesting(true)
+
                             .onChange(of: geometry.size) { _, newSize in
                                 viewportSize = newSize
                             }
@@ -163,7 +161,7 @@ struct DocumentBasedMainView: View {
                             canvasOffset: canvasOffset
                         )
                         .zIndex(50)
-                        //.allowsHitTesting(true)
+
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300)
@@ -171,7 +169,6 @@ struct DocumentBasedMainView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500)
                 .contentShape(Rectangle())
-               // .allowsHitTesting(true)
 
                 RightPanel(
                     snapshot: document.snapshot,
@@ -200,9 +197,7 @@ struct DocumentBasedMainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400)
-            // TODO: Re-enable when properties are available
-            // .onAppear {
-            //     // Sync viewState colors from document defaults on appear
+
             StatusBar(zoomLevel: zoomLevel, document: document)
         }
         .frame(minHeight: 524)
@@ -334,8 +329,7 @@ struct DocumentBasedMainView: View {
             SFSymbolsPickerView(
                 isPresented: $showingSFSymbolsPicker,
                 onImport: { tempURL in
-                    /* Route the picked symbol's SVG through the shared dispatcher
-                       so Cmd+Z undoes the insertion atomically. */
+
                     let result = await VectorImportManager.shared.importVectorFile(from: tempURL)
                     result.dispatchAsImportCommand(into: document)
                 }
@@ -349,7 +343,6 @@ struct DocumentBasedMainView: View {
 
             documentState.setDocument(document)
 
-            // Set as active document if this view's window is key
             DispatchQueue.main.async {
                 if let window = self.viewWindow, window.isKeyWindow {
                     AppEventMonitor.shared.setActiveDocument(document)
@@ -363,9 +356,7 @@ struct DocumentBasedMainView: View {
             }
         }
         .onDisappear {
-            // Tab suspension just drops the views — don't clear document data.
-            // Data cleanup only happens when the tab is actually closed
-            // (detected by the outer body's onDisappear, not fullDocumentView's).
+
         }
         .focusedSceneObject(documentState)
     }
@@ -426,7 +417,6 @@ struct DocumentBasedMainView: View {
     }
 }
 
-// Helper to get the NSWindow for this view
 struct HostingWindowFinder: NSViewRepresentable {
     var callback: (NSWindow?) -> Void
 

@@ -34,18 +34,13 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var textBoxBounds: [String: CGRect] = [:]
     internal var pendingTextBoxRect: CGRect? = nil
 
-    // Start index into `shapes` + attrs for each in-progress <g>.
     internal var groupElementStack: [(startIndex: Int, attrs: [String: String])] = []
 
-    // Pattern fills: libfreehand emits <pattern><image data:image/svg+xml;...>.
-    // usvg resolves these inline at parse time; we do the same by recursively
-    // parsing the nested SVG into real VectorShapes.
     internal var currentPatternId: String? = nil
     internal var currentPatternWidth: CGFloat = 0
     internal var currentPatternHeight: CGFloat = 0
     internal var patternDefinitions: [String: [VectorShape]] = [:]
 
-    // Import telemetry.
     internal var statGroupsOpened: Int = 0
     internal var statGroupsWrapped: Int = 0
     internal var statGroupsEmpty: Int = 0
@@ -69,7 +64,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         return false
     }
 
-    /// True for librevenge's auto-generated "GroupN" ids (synthetic, not real FH names).
     static func isSyntheticGroupId(_ id: String) -> Bool {
         guard id.hasPrefix("Group") else { return false }
         let suffix = id.dropFirst(5)
@@ -99,8 +93,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var markerDefinitions: [String: MarkerDefinition] = [:]
     internal var markerStack: [(id: String?, startIndex: Int, attrs: [String: String])] = []
     internal var defsDepth: Int = 0
-    internal var hiddenDepth: Int = 0  // Tracks display:none / visibility:hidden nesting
-    internal var elementHiddenStack: [Bool] = []  // Per-element flag for whether this element marked hidden start
+    internal var hiddenDepth: Int = 0
+    internal var elementHiddenStack: [Bool] = []
     private var useRecursionDepth = 0
     private let maxUseRecursionDepth = 10
 
@@ -110,8 +104,8 @@ class SVGParser: NSObject, XMLParserDelegate {
         let refY: Double
         let markerWidth: Double
         let markerHeight: Double
-        let orient: String  // "auto", "auto-start-reverse", or angle in degrees
-        let unitsStrokeWidth: Bool  // markerUnits="strokeWidth" (default) vs "userSpaceOnUse"
+        let orient: String
+        let unitsStrokeWidth: Bool
     }
 
     private func isElementHidden(_ attributes: [String: String]) -> Bool {
@@ -145,7 +139,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
     func parse(_ xmlString: String) throws -> ParseResult {
 
-
         guard let data = xmlString.data(using: .utf8) else {
             throw VectorImportError.parsingError("Invalid SVG string", line: nil)
         }
@@ -162,7 +155,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = self
-
 
         if !xmlParser.parse() {
             if let error = xmlParser.parserError {
@@ -212,7 +204,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
 
-
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
 
         var topLevelGroups = 0
@@ -253,19 +244,16 @@ class SVGParser: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElementName = elementName
 
-        // Track display:none / visibility:hidden — skip rendering subtree
         let elementIsHidden = isElementHidden(attributeDict)
         elementHiddenStack.append(elementIsHidden)
         if elementIsHidden {
             hiddenDepth += 1
         }
 
-        // While hidden, skip all element parsing (but still track end tags)
         if hiddenDepth > 0 {
             return
         }
 
-        // Store elements by ID for <use> references
         if let id = attributeDict["id"] {
             switch elementName {
             case "path", "rect", "circle", "ellipse", "line", "polyline", "polygon":
@@ -300,11 +288,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
 
         case "symbol":
-            // Collect symbol body shapes under the symbol id for <use> reference.
+
             symbolStack.append((id: attributeDict["id"], startIndex: shapes.count))
 
         case "marker":
-            // Marker instantiation at path endpoints not yet implemented.
+
             markerStack.append((id: attributeDict["id"], startIndex: shapes.count, attrs: attributeDict))
 
         case "style":
@@ -379,7 +367,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseClipPath(attributes: attributeDict)
 
         case "mask":
-            // Treat <mask> like <clipPath> — stored in same dictionary for unified lookup.
+
             isParsingClipPath = true
             currentClipPathId = attributeDict["id"]
             currentClipPath = nil
@@ -400,12 +388,11 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-        // Pop the hidden flag for this element and decrement depth if it was hidden
+
         if let wasHidden = elementHiddenStack.popLast(), wasHidden {
             hiddenDepth = max(0, hiddenDepth - 1)
         }
 
-        // If still hidden (parent was), skip end-tag processing
         if hiddenDepth > 0 {
             return
         }
@@ -460,12 +447,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     $0.isClippingPath || $0.clippedByShapeID != nil
                 }
                 if allClippingRelated {
-                    /* Build a native Clipping Group container from the flat
-                       [masked, clip, masked, clip, ...] produced by per-shape
-                       applyClipPathToShape. The native format needs ONE mask at
-                       memberIDs[0] and every content shape following it without
-                       the clippedByShapeID flag (native renderer reads mask
-                       positionally from memberShapes[0]). */
+
                     let maskShape = children.first { $0.isClippingPath }
                     let contentShapes = children.filter { !$0.isClippingPath }
                         .map { shape -> VectorShape in
@@ -538,7 +520,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             currentClipPath = nil
 
         case "defs":
-            // Shapes inside <defs> should not render; gradients/clipPaths live in their own dicts.
+
             defsDepth = max(0, defsDepth - 1)
 
         case "pattern":
@@ -547,7 +529,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             currentPatternHeight = 0
 
         case "symbol":
-            // Pop the symbol entry, extract collected shapes, store under the symbol id
+
             if !symbolStack.isEmpty {
                 let entry = symbolStack.removeLast()
                 if entry.startIndex <= shapes.count {
@@ -555,13 +537,13 @@ class SVGParser: NSObject, XMLParserDelegate {
                     if let id = entry.id {
                         symbolDefinitions[id] = symbolShapes
                     }
-                    // Remove the symbol's shapes from the main array — they only render via <use>
+
                     shapes.removeSubrange(entry.startIndex..<shapes.count)
                 }
             }
 
         case "marker":
-            // Pop the marker entry, extract collected shapes, store as MarkerDefinition
+
             if !markerStack.isEmpty {
                 let entry = markerStack.removeLast()
                 if entry.startIndex <= shapes.count {
@@ -577,7 +559,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                             unitsStrokeWidth: (entry.attrs["markerUnits"] ?? "strokeWidth") == "strokeWidth"
                         )
                     }
-                    // Remove the marker's shapes from the main array — they only render via marker-* attrs
+
                     shapes.removeSubrange(entry.startIndex..<shapes.count)
                 }
             }
@@ -676,40 +658,37 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let scaleX = viewBoxScale.x
                 let scaleY = viewBoxScale.y
 
-                // Parse preserveAspectRatio (default: "xMidYMid meet")
                 let par = attributes["preserveAspectRatio"] ?? "xMidYMid meet"
                 let parParts = par.split(separator: " ").map { String($0) }
                 let alignment = parParts.first ?? "xMidYMid"
                 let meetOrSlice = parParts.count > 1 ? parParts[1] : "meet"
 
                 if alignment == "none" {
-                    // Non-uniform scaling (stretch to fill)
+
                     currentTransform = CGAffineTransform.identity
                         .translatedBy(x: -viewBoxX, y: -viewBoxY)
                         .scaledBy(x: scaleX, y: scaleY)
                 } else {
-                    // Uniform scaling with alignment
+
                     let uniformScale = meetOrSlice == "slice" ? max(scaleX, scaleY) : min(scaleX, scaleY)
                     let scaledWidth = viewBoxWidth * uniformScale
                     let scaledHeight = viewBoxHeight * uniformScale
 
-                    // X alignment
                     let translateX: Double
                     if alignment.hasPrefix("xMin") {
                         translateX = 0
                     } else if alignment.hasPrefix("xMax") {
                         translateX = documentSize.width - scaledWidth
-                    } else { // xMid
+                    } else {
                         translateX = (documentSize.width - scaledWidth) / 2.0
                     }
 
-                    // Y alignment
                     let translateY: Double
                     if alignment.contains("YMin") {
                         translateY = 0
                     } else if alignment.contains("YMax") {
                         translateY = documentSize.height - scaledHeight
-                    } else { // YMid
+                    } else {
                         translateY = (documentSize.height - scaledHeight) / 2.0
                     }
 
@@ -793,13 +772,12 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         useRecursionDepth += 1
 
-        // Check symbol definitions first — symbols hold pre-parsed groups of shapes
         if let symbolShapes = symbolDefinitions[refId] {
-            // Re-emit each symbol shape with the use's transform applied on top of its own
+
             for shape in symbolShapes {
                 var instance = shape
                 instance.id = UUID()
-                // Apply the use's positioning to the already-flattened shape coordinates
+
                 if !currentTransform.isIdentity {
                     let useTransform = CGAffineTransform(translationX: useX, y: useY)
                     var combined = useTransform
@@ -825,7 +803,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 shapes.append(instance)
             }
         } else if let def = elementDefinitions[refId] {
-            // Single element reference
+
             var mergedAttributes = def.attributes
             for (key, value) in attributes where key != "xlink:href" && key != "href" && key != "id" && key != "x" && key != "y" {
                 mergedAttributes[key] = value
@@ -860,7 +838,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             return
         }
 
-        /* Detect common geometric types from generic <path d="..."> data. */
         let detected = PathShapeDetector.detect(elements: pathData)
 
         let shape = createShape(
@@ -877,7 +854,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
-    /// Return pattern id from `fill="url(#id)"` or `style="fill: url(#id)"`.
     static func patternIdInFill(attributes: [String: String]) -> String? {
         func extract(_ s: String) -> String? {
             guard let urlStart = s.range(of: "url(#") else { return nil }
@@ -897,10 +873,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         return nil
     }
 
-    /// Inline the pattern's resolved shapes at the path's bbox origin.
-    /// Mirrors the usvg approach of resolving patterns into concrete content
-    /// at tree-build time. The path's outline is kept as a clipping mask so
-    /// the pattern fills render only inside the original shape.
     private func expandPatternInPlace(patternShapes: [VectorShape], pathElements: [PathElement], originalAttributes: [String: String]) {
         var minX: CGFloat = .infinity
         var minY: CGFloat = .infinity
@@ -929,8 +901,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
-    /// Recursively parse a nested SVG that libfreehand embedded as
-    /// data:image/svg+xml inside a <pattern>. usvg-style resolve-at-parse-time.
     private func resolvePatternImage(attributes: [String: String]) {
         guard let patternId = currentPatternId else { return }
         let href = attributes["href"] ?? attributes["xlink:href"] ?? ""
@@ -1201,8 +1171,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         var mergedAttributes = attributes
 
-        // Inline style="fill: #xxx; stroke: #yyy" wins over direct attributes
-        // (libfreehand and many other tools emit all paint via inline style).
         if let style = attributes["style"], !style.isEmpty {
             let styleDict = parseStyleAttribute(style)
             for (k, v) in styleDict { mergedAttributes[k] = v }
@@ -1253,14 +1221,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             transform = currentTransform.isIdentity ? .identity : currentTransform
         }
 
-        // Apply fill-rule to the path
         var resolvedPath = path
         let fillRuleAttr = mergedAttributes["fill-rule"] ?? "nonzero"
         if fillRuleAttr == "evenodd" {
             resolvedPath.fillRule = .evenOdd
         }
 
-        // Detect native compound path: 2+ move commands in one path data.
         let moveCount = resolvedPath.elements.reduce(0) { count, el in
             if case .move = el { return count + 1 }
             return count
@@ -1275,7 +1241,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             shapeName = name
         }
 
-        // Bake transform into path coordinates so imported shapes match native objects.
         if !transform.isIdentity {
             let flattenedElements = resolvedPath.elements.map { element -> PathElement in
                 switch element {
@@ -1300,7 +1265,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             resolvedPath = VectorPath(elements: flattenedElements, isClosed: resolvedPath.isClosed, fillRule: resolvedPath.fillRule.cgPathFillRule)
 
-            // Stroke width also needs to scale with the transform
             var resolvedStroke = stroke
             if var s = resolvedStroke {
                 let avgScale = (abs(transform.a) + abs(transform.d)) / 2.0
@@ -1347,8 +1311,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
 
-        // Check both clip-path and mask attributes — masks are stored alongside
-        // clip paths in clipPathDefinitions and resolved through the same path.
         let clipOrMaskAttr = mergedAttributes["clip-path"] ?? mergedAttributes["mask"]
         if let clipPathAttr = clipOrMaskAttr {
             if let range = clipPathAttr.range(of: "#") {
@@ -1360,9 +1322,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
 
-        /* Fall back to the enclosing <g clip-path="url(#...)">'s pending id.
-           Without this, child rects/paths/circles inside a clipping group never
-           pick up the clip — only <image> did, which had its own fallback. */
         if let pending = pendingClipPathId {
             return (true, pending)
         }

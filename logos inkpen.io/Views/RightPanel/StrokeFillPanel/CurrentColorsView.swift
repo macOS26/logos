@@ -52,7 +52,7 @@ struct CurrentColorsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Fill row: swatch
+
             HStack(spacing: 8) {
                 ColorSwatchView(
                     color: fillColor,
@@ -86,7 +86,6 @@ struct CurrentColorsView: View {
                 )
             }
 
-            // Stroke row: swatch
             HStack(spacing: 8) {
                 ColorSwatchView(
                     color: strokeColor,
@@ -188,13 +187,13 @@ private struct ColorSwatchView: View {
     var body: some View {
         VStack(spacing: 4) {
             Button(action: {
-                // Check if we're clicking the same swatch that has the popover open
+
                 if activeAnchorKey == anchorKey && popoverManager.isShown {
-                    // Close popover
+
                     popoverManager.dismiss()
                     activeAnchorKey = nil
                 } else {
-                    // Open or slide to this swatch
+
                     showPopover()
                 }
             }) {
@@ -210,7 +209,7 @@ private struct ColorSwatchView: View {
             .buttonStyle(BorderlessButtonStyle())
             .focusable(false)
             .onHover { hovering in
-                // If popover is open, slide to this swatch on hover
+
                 if hovering && popoverManager.isShown && activeAnchorKey != anchorKey {
                     showPopover()
                 }
@@ -230,7 +229,6 @@ private struct ColorSwatchView: View {
     private func showPopover() {
         guard let anchorView = anchorViews[anchorKey] else { return }
 
-        // Set active target based on which swatch we're hovering
         localActiveColorTarget = (anchorKey == "fill") ? .fill : .stroke
         onSetActiveColorTarget(localActiveColorTarget)
 

@@ -17,7 +17,6 @@ extension DrawingCanvas {
             #endif
         }
 
-        // SIMD optimization for pan delta calculation
         let currentLoc = SIMD2<Float>(Float(value.location.x), Float(value.location.y))
         let startLoc = SIMD2<Float>(Float(handToolDragStart.x), Float(handToolDragStart.y))
         let initialOffset = SIMD2<Float>(Float(initialCanvasOffset.x), Float(initialCanvasOffset.y))
@@ -31,12 +30,11 @@ extension DrawingCanvas {
         }
         #endif
 
-        // Update canvasOffset directly - Canvas needs this to render correctly
         canvasOffset = CGPoint(x: CGFloat(newOffset.x), y: CGFloat(newOffset.y))
     }
 
     internal func handlePanGestureEnd() {
-        // Reset state
+
         initialCanvasOffset = .zero
         handToolDragStart = .zero
         isPanGestureActive = false

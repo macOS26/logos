@@ -4,7 +4,6 @@ import simd
 
 struct GeometryUtils {
 
-    // SIMD-optimized angle constraint using simd_length
     static func constrainToAngle(from reference: CGPoint, to target: CGPoint, constraintAngles: [Double]) -> CGPoint {
         let delta = SIMD2<Double>(Double(target.x - reference.x), Double(target.y - reference.y))
         let distance = simd_length(delta)
@@ -40,62 +39,51 @@ struct GeometryUtils {
     }
 }
 
-// MARK: - SIMD4 Extensions for Performance
-
 extension CGRect {
-    /// Convert CGRect to SIMD4 for batch processing (x, y, width, height)
+
     @inline(__always)
     var simd: SIMD4<Double> {
         SIMD4(Double(origin.x), Double(origin.y), Double(size.width), Double(size.height))
     }
 
-    /// Create CGRect from SIMD4 (x, y, width, height)
     @inline(__always)
     init(simd: SIMD4<Double>) {
         self.init(x: CGFloat(simd.x), y: CGFloat(simd.y), width: CGFloat(simd.z), height: CGFloat(simd.w))
     }
 
-    /// Fast bounds intersection test using SIMD
     @inline(__always)
     func intersectsSIMD(_ other: CGRect) -> Bool {
         let a = self.simd
         let b = other.simd
 
-        // Extract min/max coordinates
         let aMin = SIMD2(a.x, a.y)
         let aMax = SIMD2(a.x + a.z, a.y + a.w)
         let bMin = SIMD2(b.x, b.y)
         let bMax = SIMD2(b.x + b.z, b.y + b.w)
 
-        // Check overlap: aMin < bMax && aMax > bMin
         let overlap = (aMin .< bMax) .& (aMax .> bMin)
         return all(overlap)
     }
 }
 
-// MARK: - SIMD2 Extensions for CGSize
-
 extension CGSize {
-    /// Convert CGSize to SIMD2 for batch processing (width, height)
+
     @inline(__always)
     var simd: SIMD2<Double> {
         SIMD2(Double(width), Double(height))
     }
 
-    /// Create CGSize from SIMD2 (width, height)
     @inline(__always)
     init(simd: SIMD2<Double>) {
         self.init(width: CGFloat(simd.x), height: CGFloat(simd.y))
     }
 
-    /// Fast area calculation using SIMD
     @inline(__always)
     var areaSIMD: CGFloat {
         let s = self.simd
         return CGFloat(s.x * s.y)
     }
 
-    /// Fast aspect ratio using SIMD
     @inline(__always)
     var aspectRatioSIMD: CGFloat {
         let s = self.simd
@@ -103,20 +91,17 @@ extension CGSize {
     }
 }
 
-/// Batch rect operations using SIMD
 struct SIMDRectOps {
-    /// SIMD-optimized union bounds using simd_min/simd_max
+
     @inline(__always)
     static func unionBounds(_ rects: [CGRect]) -> CGRect {
         guard !rects.isEmpty else { return .zero }
         guard rects.count > 1 else { return rects[0] }
 
-        // Initialize with first rect bounds
         let first = rects[0].simd
         var minVec = SIMD2<Double>(first.x, first.y)
         var maxVec = SIMD2<Double>(first.x + first.z, first.y + first.w)
 
-        // SIMD min/max operations for remaining rects
         for rect in rects.dropFirst() {
             let simd = rect.simd
             let rectMin = SIMD2<Double>(simd.x, simd.y)
@@ -134,7 +119,6 @@ struct SIMDRectOps {
         )
     }
 
-    /// Filter rects that intersect viewport using SIMD
     @inline(__always)
     static func filterIntersecting(_ rects: [CGRect], viewport: CGRect) -> [CGRect] {
         rects.filter { $0.intersectsSIMD(viewport) }

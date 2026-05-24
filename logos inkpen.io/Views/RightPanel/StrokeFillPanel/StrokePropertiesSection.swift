@@ -77,7 +77,7 @@ struct StrokePropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-                    
+
                     Slider(value: Binding(
                         get: { strokeOpacity },
                         set: { onUpdateStrokeOpacity($0) }
@@ -100,7 +100,7 @@ struct StrokePropertiesSection: View {
                     }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in
-                        // Only show center placement for text, all placements for shapes
+
                         if !isTextSelected || placement == .center {
                             HStack {
                                 Image(systemName: placement.iconName)

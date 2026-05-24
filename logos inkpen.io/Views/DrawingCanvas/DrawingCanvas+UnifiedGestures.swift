@@ -20,7 +20,7 @@ extension DrawingCanvas {
     }
 
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
-        // Update modifier key states at tap time
+
         let modifierFlags = NSEvent.modifierFlags
         isShiftPressed = modifierFlags.contains(.shift)
         isOptionPressed = modifierFlags.contains(.option)
@@ -62,21 +62,19 @@ extension DrawingCanvas {
             handleBezierPenTap(at: canvasLocation)
 
         case .font:
-            // print("🟢 Font tool tap at \(canvasLocation)")
-            // Same pattern as square tool - clear selection if no modifiers
+
             if !isShiftPressed && !isCommandPressed {
-                // print("🟢 No modifiers pressed, checking for text...")
+
                 if let existingTextID = findTextAt(location: canvasLocation) {
-                    // print("🟢 Found text at location: \(existingTextID)")
+
                     startEditingText(textID: existingTextID, at: canvasLocation)
                 } else {
-                    // print("🟢 No text found at location, clearing selection")
-                    // Click on empty canvas - deselect all text
+
                     document.viewState.selectedObjectIDs = []
                     handleAggressiveBackgroundTap(at: canvasLocation)
                 }
             } else {
-                // print("🟢 Modifiers pressed: shift=\(isShiftPressed), command=\(isCommandPressed)")
+
             }
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
@@ -125,25 +123,21 @@ extension DrawingCanvas {
             handlePanGesture(value: value, geometry: geometry)
 
         case .zoom:
-            // Zoom by dragging up/down at the magnifying glass location
+
             if zoomToolDragStartPoint == .zero {
-                // Start the drag
+
                 zoomToolDragStartPoint = value.startLocation
                 zoomToolInitialZoomLevel = zoomLevel
                 isActivelyZooming = true
             }
 
-            // Calculate vertical distance dragged (up = negative, down = positive)
             let dragDelta = value.location.y - zoomToolDragStartPoint.y
 
-            // Convert drag distance to zoom factor (drag 100pts = 2x zoom change)
-            // Negative dragDelta (drag up) = zoom in, positive = zoom out
-            let zoomSensitivity: CGFloat = 0.01 // 1% per pixel
+            let zoomSensitivity: CGFloat = 0.01
             let zoomFactor = 1.0 - (dragDelta * zoomSensitivity)
             let targetZoom = zoomToolInitialZoomLevel * zoomFactor
             let clampedZoom = max(0.75, min(640.0, targetZoom))
 
-            // Zoom at the starting point (where the magnifying glass was clicked)
             let focalPoint = zoomToolDragStartPoint
             handleZoomAtPoint(newZoomLevel: clampedZoom, focalPoint: focalPoint, geometry: geometry)
 
@@ -196,7 +190,7 @@ extension DrawingCanvas {
             finishPanGesture()
 
         case .zoom:
-            // Reset zoom tool state
+
             zoomToolDragStartPoint = .zero
             isActivelyZooming = false
             #if os(macOS)
@@ -261,14 +255,11 @@ extension DrawingCanvas {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
 
         if !isDrawing {
-            // DON'T re-read NSEvent.modifierFlags here - it's unreliable in SwiftUI gesture handlers
-            // Trust the values set during the tap gesture in handleUnifiedTap
 
-            // Don't change selection if shift-clicking to add to selection
             let shouldPreserveSelection = isShiftPressed || isCommandPressed
 
             if document.viewState.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
-                // Only call selectObjectAt if not preserving selection, or if selection is empty
+
                 if !shouldPreserveSelection || document.viewState.selectedObjectIDs.isEmpty {
                     selectObjectAt(startLocation)
                 }
@@ -287,7 +278,7 @@ extension DrawingCanvas {
     }
 
     private func finishPanGesture() {
-        // Use the optimized pan end handler that bakes livePanDelta into canvasOffset
+
         handlePanGestureEnd()
 
         #if os(macOS)
@@ -325,11 +316,9 @@ extension DrawingCanvas {
         var tappedObject: VectorObject?
         var tappedShape: VectorShape?
 
-        // O(1) iteration: layers from top to bottom
         for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
             let layer = document.snapshot.layers[layerIndex]
 
-            // Check layer visibility/lock using legacy layers array
             if layerIndex < document.snapshot.layers.count {
                 let legacyLayer = document.snapshot.layers[layerIndex]
                 if !legacyLayer.isVisible || legacyLayer.isLocked {
@@ -337,7 +326,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Iterate objects from top to bottom
             for objectID in layer.objectIDs.reversed() {
                 guard let object = document.snapshot.objects[objectID] else { continue }
 
@@ -361,7 +349,7 @@ extension DrawingCanvas {
                 break
             }
         }
-        // let _ = tappedObject, 
+
         guard let tappedShape else {
             return
         }
@@ -380,11 +368,9 @@ extension DrawingCanvas {
 
         var matchingObjectIDs = Set<UUID>()
 
-        // O(1) iteration: through all layers
         for layerIndex in 0..<document.snapshot.layers.count {
             let layer = document.snapshot.layers[layerIndex]
 
-            // Check layer visibility/lock using legacy layers array
             if layerIndex < document.snapshot.layers.count {
                 let legacyLayer = document.snapshot.layers[layerIndex]
                 if !legacyLayer.isVisible || legacyLayer.isLocked {
@@ -392,7 +378,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Check all objects in layer
             for objectID in layer.objectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
 

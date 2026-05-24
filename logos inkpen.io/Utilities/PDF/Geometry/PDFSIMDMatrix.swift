@@ -154,30 +154,30 @@ struct PDFSIMDMatrix {
 }
 
 extension PDFSIMDMatrix {
-    
+
     static func batchConcatenate(_ matrices: [PDFSIMDMatrix]) -> PDFSIMDMatrix {
         guard !matrices.isEmpty else { return PDFSIMDMatrix() }
         guard matrices.count > 1 else { return matrices[0] }
-        
+
         var pairs = [(PDFSIMDMatrix, PDFSIMDMatrix)]()
         let result = matrices[0]
-        
+
         for i in 1..<matrices.count {
             pairs.append((result, matrices[i]))
         }
-        
+
         if !pairs.isEmpty {
             let results = PDFMetalAccelerator.shared.multiplyMatrices(pairs)
             return results.last ?? result
         }
-        
+
         return result
     }
-    
+
     static func precomputeTextMatrix(fontSize: CGFloat, horizontalScaling: CGFloat) -> PDFSIMDMatrix {
         return PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
     }
-    
+
     static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         let scaleX = fontSize * horizontalScaling / 100.0
         let scaleY = fontSize
@@ -188,17 +188,17 @@ extension PDFSIMDMatrix {
         m.matrix[2][1] = Float(ty)
         return m
     }
-    
+
     static func batchTransformTextPositions(positions: [(x: CGFloat, y: CGFloat)],
                                             fontSize: CGFloat,
                                             horizontalScaling: CGFloat,
                                             baseTransform: PDFSIMDMatrix) -> [CGPoint] {
         guard !positions.isEmpty else { return [] }
-        
+
         let textScale = PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
         let combinedTransform = baseTransform.concatenating(textScale)
         let points = positions.map { CGPoint(x: $0.x, y: $0.y) }
-        
+
         return PDFMetalAccelerator.shared.transformPoints(points, with: combinedTransform)
     }
 }

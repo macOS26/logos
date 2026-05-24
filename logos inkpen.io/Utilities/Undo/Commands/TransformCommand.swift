@@ -49,7 +49,6 @@ class TransformCommand: BaseCommand {
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
 
-                // Update parent group if this child is in a group
                 document.updateChildInParentGroup(childID: id, updatedShape: shape)
 
             case .shape(var shape), .image(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape), .guide(var shape):
@@ -60,7 +59,6 @@ class TransformCommand: BaseCommand {
                 document.snapshot.objects[id] = obj
                 affectedLayers.insert(obj.layerIndex)
 
-                // Update parent group if this child is in a group
                 document.updateChildInParentGroup(childID: id, updatedShape: shape)
             }
         }

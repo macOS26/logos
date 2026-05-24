@@ -75,20 +75,19 @@ struct ColorPanel: View {
             if isLoaded {
                 loadedContent
             } else {
-                // Show minimal loading view instantly
+
                 VStack {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .onAppear {
-                    // Defer heavy content to next frame
+
                     DispatchQueue.main.async {
                         isLoaded = true
                     }
                 }
             }
 
-            // X button always visible
             if let dismiss = onDismiss {
                 GlassCloseButton(action: dismiss)
             }
@@ -184,10 +183,10 @@ struct ColorPanel: View {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         if hasInitialColor {
-                            // When initial color provided, call callback
+
                             onColorSelected?(color)
                         } else {
-                            // For regular color selection
+
                             selectColor(color)
                             currentPreviewColor = color
                         }
@@ -234,7 +233,7 @@ struct ColorPanel: View {
             }
         }
         .onChange(of: initialColor) { _, newInitialColor in
-            // Update local state when hovering to a new swatch (just like gradient stops)
+
             if let newColor = newInitialColor {
                 currentPreviewColor = newColor
             }

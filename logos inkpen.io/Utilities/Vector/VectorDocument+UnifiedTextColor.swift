@@ -111,7 +111,6 @@ extension VectorDocument {
         }
     }
 
-    // Direct preview methods that take typography directly (no findText call)
     func updateTextFontSizePreviewDirect(id: UUID, typography: TypographyProperties) {
         textPreviewTypography[id] = typography
         NotificationCenter.default.post(

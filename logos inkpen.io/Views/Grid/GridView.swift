@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import simd
 
-// Isolated Canvas-based grid view that doesn't update with VectorObject changes
 struct GridCanvasView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -12,7 +11,7 @@ struct GridCanvasView: View {
 
     var body: some View {
         Canvas { context, size in
-            // <=25% zoom: major only. 25-50%: both, same thickness. >50%: normal.
+
             let minorLineWidth: CGFloat = 0.5
             let majorLineWidth: CGFloat
             let shouldShowMinor: Bool
@@ -54,7 +53,7 @@ struct GridCanvasView: View {
                 canvasOffset: canvasOffset
             )
         }
-        // .drawingGroup() removed — saves ~33MB Retina backing store per doc
+
     }
 
     private func drawGridLines(
@@ -107,7 +106,6 @@ struct GridCanvasView: View {
             }
         }
 
-        // Scale line width: divide by zoom when zoomed out, clamp when zoomed in
         let adjustedLineWidth: CGFloat
         if zoomLevel < 1.0 {
             adjustedLineWidth = lineWidth / zoomLevel
@@ -123,7 +121,6 @@ struct GridCanvasView: View {
     }
 }
 
-// Equatable wrapper to prevent unnecessary updates
 struct GridView: View, Equatable {
     let gridSpacing: CGFloat
     let canvasSize: CGSize

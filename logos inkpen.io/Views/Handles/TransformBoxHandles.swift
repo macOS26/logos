@@ -34,7 +34,6 @@ struct TransformBoxHandles: View {
         return shape.isLocked
     }
 
-    // Curved scaling below 100% zoom for gradual handle size reduction
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -66,7 +65,6 @@ struct TransformBoxHandles: View {
                     ? transformedBounds.applying(previewTransform)
                     : transformedBounds
 
-                // dragPreviewDelta is applied in canvas space, scale it by zoom
                 let screenRect = CGRect(
                     x: displayBounds.origin.x * zoom + offset.x + (dragPreviewDelta.x * zoom),
                     y: displayBounds.origin.y * zoom + offset.y + (dragPreviewDelta.y * zoom),
@@ -80,7 +78,6 @@ struct TransformBoxHandles: View {
             .allowsHitTesting(false)
             .opacity(finalOpacity)
 
-            // Red preview lines shown only when live preview is disabled
             if isScaling && !previewTransform.isIdentity && !settings.liveScalingPreview {
                 Canvas { context, size in
                     let zoom = zoomLevel
@@ -236,7 +233,6 @@ struct TransformBoxHandles: View {
                         .fill(Color.clear)
                         .frame(width: scaledHitAreaSize, height: scaledHitAreaSize)
                         .contentShape(Circle())
-                        //.allowsHitTesting(true)
 
                     Circle()
                         .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
@@ -447,7 +443,7 @@ struct TransformBoxHandles: View {
 
             if settings.liveScalingPreview {
                 liveScaleTransform = scaleTransform
-                // Don't trigger layer updates during preview: spatial index rebuild per frame
+
             }
             return
         }
@@ -471,12 +467,6 @@ struct TransformBoxHandles: View {
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
 
-        // If the grabbed handle is within a handful of screen pixels of the
-        // anchor, the ratio currentDistance/startDistance blows up — a 50px
-        // drag divided by a 0.5px start distance becomes 100× scale. Require
-        // at least `minStart` pixels of anchor-to-handle distance on that
-        // axis before computing a scale factor; otherwise leave it at 1.0
-        // (no scaling along that axis).
         let minStart: CGFloat = 4.0
         func axisScale(_ cur: CGFloat, _ start: CGFloat) -> CGFloat {
             abs(start) > minStart ? cur / start : 1.0
@@ -509,7 +499,7 @@ struct TransformBoxHandles: View {
 
         if settings.liveScalingPreview {
             liveScaleTransform = scaleTransform
-            // Don't trigger layer updates during preview: spatial index rebuild per frame
+
         }
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -518,7 +508,7 @@ struct TransformBoxHandles: View {
     }
 
     private func endScaling() {
-        // print("🟢 END SCALING for shape \(shape.id)")
+
         isScaling = false
         document.isHandleScalingActive = false
         liveScaleDimensions = .zero
@@ -535,15 +525,13 @@ struct TransformBoxHandles: View {
         }
 
         guard let oldObj = document.snapshot.objects[shape.id] else {
-            // print("🔴 Cannot find shape \(shape.id) in snapshot.objects")
+
             return
         }
         let oldShape = oldObj.shape
-        // print("🟢 Found old shape in snapshot, transform: \(oldShape.transform)")
 
         if oldShape.typography != nil {
-            // print("🟢 Processing text box reflow")
-            // Text boxes reflow to new size instead of transforming
+
             if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
                 let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                 let transformedBounds = originalBounds.applying(previewTransform)
@@ -561,53 +549,50 @@ struct TransformBoxHandles: View {
                 }
             }
         } else {
-            // print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
+
             applyTransformToPath(shapeID: shape.id, transform: previewTransform)
-            // print("🟢 Applied transform to path")
+
         }
         previewTransform = .identity
 
         document.updateTransformPanelValues()
 
         guard let newObj = document.snapshot.objects[shape.id] else {
-            // print("🔴 Cannot find updated shape \(shape.id) in snapshot.objects")
+
             return
         }
         let newShape = newObj.shape
-        // print("🟢 Found new shape in snapshot, transform: \(newShape.transform)")
 
-        // print("🟢 Creating undo command")
         let command = ShapeModificationCommand(
             objectIDs: [shape.id],
             oldShapes: [shape.id: oldShape],
             newShapes: [shape.id: newShape]
         )
         document.executeCommand(command)
-        // print("🟢 Executed undo command")
+
     }
 
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
-        // print("🔵 applyTransformToPath for \(shapeID), transform: \(transform)")
+
         let t = transform
         if t.isIdentity {
-            // print("🔵 Transform is identity, skipping")
+
             return
         }
 
         guard let targetObj = document.snapshot.objects[shapeID] else {
-            // print("🔴 Cannot find shape \(shapeID) in snapshot for path transform")
+
             return
         }
         let targetShape = targetObj.shape
-        // print("🔵 Found target shape in snapshot")
 
         if targetShape.typography != nil {
-            // print("🔵 Text object, skipping path transform")
+
             return
         }
 
         if targetShape.isGroupContainer {
-            // print("🔵 Group container, transforming grouped shapes")
+
             var updatedShape = targetShape
             var transformedGroupedShapes: [VectorShape] = []
             for var groupedShape in updatedShape.groupedShapes {
@@ -641,13 +626,11 @@ struct TransformBoxHandles: View {
             updatedShape.transform = .identity
             updatedShape.updateBounds()
 
-            // Update snapshot directly
             let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
-            // print("🔵 Updated snapshot with transformed group")
-            // print("🔵 Finished group transform")
+
         } else {
-            // print("🔵 Regular shape, transforming path elements")
+
             var transformedElements: [PathElement] = []
             for element in targetShape.path.elements {
                 switch element {
@@ -672,23 +655,19 @@ struct TransformBoxHandles: View {
             }
 
             let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-            // print("🔵 Updating shape with new path, \(transformedElements.count) elements")
 
             var updatedShape = targetShape
             updatedShape.path = newPath
             updatedShape.transform = .identity
             updatedShape.updateBounds()
 
-            // Update snapshot directly
             let updatedObject = VectorObject(shape: updatedShape, layerIndex: targetObj.layerIndex)
             document.snapshot.objects[shapeID] = updatedObject
-            // print("🔵 Updated snapshot with transformed shape")
-            // print("🔵 Finished regular shape transform")
+
         }
     }
 
     private func applyMultiSelectionScaling() {
-        // print("🟣 MULTI-SELECTION SCALING")
 
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
@@ -696,7 +675,7 @@ struct TransformBoxHandles: View {
 
         for objectID in document.viewState.selectedObjectIDs {
             guard let oldObj = document.snapshot.objects[objectID] else {
-                // print("🔴 Cannot find object \(objectID) in snapshot")
+
                 continue
             }
 
@@ -705,7 +684,7 @@ struct TransformBoxHandles: View {
             affectedLayers.insert(oldObj.layerIndex)
 
             if oldShape.typography != nil {
-                // Text objects: transform areaSize and textPosition
+
                 if let originalAreaSize = oldShape.areaSize, let originalPosition = oldShape.textPosition {
                     let originalBounds = CGRect(
                         x: originalPosition.x,
@@ -724,10 +703,9 @@ struct TransformBoxHandles: View {
                     document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
                 }
             } else {
-                // Regular shapes: apply existing transform first, then preview transform
+
                 let combinedTransform = oldShape.transform.concatenating(previewTransform)
 
-                // Apply combined transform to path
                 if oldShape.isGroupContainer {
                     var updatedShape = oldShape
                     var transformedGroupedShapes: [VectorShape] = []
@@ -803,13 +781,11 @@ struct TransformBoxHandles: View {
                 }
             }
 
-            // Get the updated shape for undo
             if let updatedObj = document.snapshot.objects[objectID] {
                 newShapes[objectID] = updatedObj.shape
             }
         }
 
-        // Create undo command for all modified objects
         let command = ShapeModificationCommand(
             objectIDs: Array(document.viewState.selectedObjectIDs),
             oldShapes: oldShapes,
@@ -817,9 +793,7 @@ struct TransformBoxHandles: View {
         )
         document.executeCommand(command)
 
-        // Trigger layer updates
         document.triggerLayerUpdates(for: affectedLayers)
 
-        // print("🟣 Completed multi-selection scaling for \(document.viewState.selectedObjectIDs.count) objects")
     }
 }

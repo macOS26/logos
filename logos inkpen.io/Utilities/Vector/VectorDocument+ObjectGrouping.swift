@@ -8,7 +8,6 @@ extension VectorDocument {
 
         let selectedShapes = getSelectedShapesInStackingOrder()
 
-        // Use the first selected object's layer, not selectedLayerIndex.
         guard let firstObjectID = viewState.orderedSelectedObjectIDs.first ?? viewState.selectedObjectIDs.first,
               let firstObject = snapshot.objects[firstObjectID] else {
             return
@@ -69,7 +68,7 @@ extension VectorDocument {
                 combinedBounds = combinedBounds.union(shapeBounds)
             }
         }
-        
+
         let flattenedShape = VectorShape(
             name: "Flattened Group",
             path: VectorPath(cgPath: CGPath(rect: combinedBounds, transform: nil)),
@@ -80,7 +79,7 @@ extension VectorDocument {
             groupedShapes: selectedShapes,
             isCompoundPath: false
         )
-        
+
         let newSelectedIDs: Set<UUID> = [flattenedShape.id]
 
         let command = GroupCommand(
@@ -122,7 +121,7 @@ extension VectorDocument {
                         groupsToRemove.append(objectID)
 
                         if !shape.memberIDs.isEmpty {
-                            // Clipping groups store [mask, content...]; restore to [content..., mask].
+
                             var idsInStackingOrder = Array(shape.memberIDs)
                             if shape.isClippingGroup && idsInStackingOrder.count > 1 {
                                 let maskID = idsInStackingOrder.removeFirst()
@@ -133,7 +132,7 @@ extension VectorDocument {
                                 newSelectedShapeIDs.insert(memberID)
                             }
                         } else {
-                            // Legacy groupedShapes: extract embedded shapes as new objects.
+
                             for groupedShape in shape.groupedShapes {
                                 memberIDsToRestore.append(groupedShape.id)
                                 newSelectedShapeIDs.insert(groupedShape.id)
@@ -192,7 +191,6 @@ extension VectorDocument {
         }
 
         var addedShapes: [UUID: VectorShape] = [:]
-
 
         for shape in shapesToAdd {
             addedShapes[shape.id] = shape
@@ -295,7 +293,7 @@ extension VectorDocument {
         for shape in selectedShapes {
             loopingPath.addPath(shape.path.cgPath)
         }
-        
+
         let loopingShape = VectorShape(
             name: "Looping Path",
             path: VectorPath(cgPath: loopingPath, fillRule: .winding),
@@ -304,7 +302,7 @@ extension VectorDocument {
             transform: .identity,
             isCompoundPath: true
         )
-        
+
         let newSelectedIDs: Set<UUID> = [loopingShape.id]
 
         let command = GroupCommand(
@@ -357,7 +355,6 @@ extension VectorDocument {
 
         var addedShapes: [UUID: VectorShape] = [:]
 
-
         for shape in newShapes {
             addedShapes[shape.id] = shape
         }
@@ -395,7 +392,7 @@ extension VectorDocument {
         let subpaths = extractSubpaths(from: loopingShape.path.cgPath)
         var newShapes: [VectorShape] = []
         var newSelectedIDs: Set<UUID> = []
-        
+
         for (index, subpath) in subpaths.enumerated() {
             let individualShape = VectorShape(
                 name: "Path \(index + 1)",
@@ -410,7 +407,6 @@ extension VectorDocument {
         }
 
         var addedShapes: [UUID: VectorShape] = [:]
-
 
         for shape in newShapes {
             addedShapes[shape.id] = shape
@@ -435,10 +431,10 @@ extension VectorDocument {
     private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
-        
+
         cgPath.applyWithBlock { elementPointer in
             let element = elementPointer.pointee
-            
+
             switch element.type {
             case .moveToPoint:
                 if !currentPath.isEmpty {
@@ -446,30 +442,30 @@ extension VectorDocument {
                     currentPath = CGMutablePath()
                 }
                 currentPath.move(to: element.points[0])
-                
+
             case .addLineToPoint:
                 currentPath.addLine(to: element.points[0])
-                
+
             case .addQuadCurveToPoint:
                 currentPath.addQuadCurve(to: element.points[1], control: element.points[0])
-                
+
             case .addCurveToPoint:
                 currentPath.addCurve(to: element.points[2], control1: element.points[0], control2: element.points[1])
-                
+
             case .closeSubpath:
                 if !currentPath.isEmpty {
                     currentPath.closeSubpath()
                 }
-                
+
             @unknown default:
                 break
             }
         }
-        
+
         if !currentPath.isEmpty {
             subpaths.append(currentPath)
         }
-        
+
         return subpaths
     }
 }

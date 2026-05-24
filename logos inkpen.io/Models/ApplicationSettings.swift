@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-/// Alignment anchor options (locked items always trump this).
 enum AlignmentAnchorMode: String, CaseIterable {
     case firstSelected = "firstSelected"
     case lastSelected = "lastSelected"
@@ -21,7 +20,6 @@ enum AlignmentAnchorMode: String, CaseIterable {
 class ApplicationSettings: ObservableObject {
     static let shared = ApplicationSettings()
 
-    // MARK: - Brush Settings
     @Published var currentBrushThickness: Double = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0 {
         didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
     }
@@ -47,7 +45,6 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(brushCoincidentPointPasses, forKey: "brushCoincidentPointPasses") }
     }
 
-    // MARK: - Advanced Smoothing
     @Published var advancedSmoothingEnabled: Bool = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false {
         didSet { UserDefaults.standard.set(advancedSmoothingEnabled, forKey: "advancedSmoothingEnabled") }
     }
@@ -55,7 +52,6 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
     }
 
-    // MARK: - Freehand Settings
     @Published var freehandSmoothingTolerance: Double = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0 {
         didSet { UserDefaults.standard.set(freehandSmoothingTolerance, forKey: "freehandSmoothingTolerance") }
     }
@@ -78,7 +74,6 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(freehandClosePath, forKey: "freehandClosePath") }
     }
 
-    // MARK: - Marker Settings
     @Published var currentMarkerSmoothingTolerance: Double = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0 {
         didSet { UserDefaults.standard.set(currentMarkerSmoothingTolerance, forKey: "markerSmoothingTolerance") }
     }
@@ -110,7 +105,6 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
     }
 
-    // MARK: - Transform Settings
     @Published var liveScalingPreview: Bool = UserDefaults.standard.object(forKey: "liveScalingPreview") as? Bool ?? false {
         didSet { UserDefaults.standard.set(liveScalingPreview, forKey: "liveScalingPreview") }
     }
@@ -121,22 +115,14 @@ class ApplicationSettings: ObservableObject {
         didSet { UserDefaults.standard.set(boundingBoxIncludesStrokes, forKey: "boundingBoxIncludesStrokes") }
     }
 
-    // MARK: - Image Settings
     @Published var embedImagesByDefault: Bool = UserDefaults.standard.object(forKey: "embedImagesByDefault") as? Bool ?? false {
         didSet { UserDefaults.standard.set(embedImagesByDefault, forKey: "embedImagesByDefault") }
     }
 
-    // Image settings use @AppStorage in views directly; onChange handles cache clearing.
-
-    // MARK: - Alignment Settings
-    /// How to determine which object stays in place during alignment (locked items always trump this)
     @Published var alignmentAnchorMode: AlignmentAnchorMode = AlignmentAnchorMode(rawValue: UserDefaults.standard.string(forKey: "alignmentAnchorMode") ?? "firstSelected") ?? .firstSelected {
         didSet { UserDefaults.standard.set(alignmentAnchorMode.rawValue, forKey: "alignmentAnchorMode") }
     }
 
-    // MARK: - FreeHand Import Settings
-    /// When true, FH tile/pattern/lens fills import as solid dominant-color fallback.
-    /// When false, shapes with unresolvable effect fills are dropped entirely (no hairline bbox).
     @Published var importFreeHandEffects: Bool = UserDefaults.standard.object(forKey: "importFreeHandEffects") as? Bool ?? true {
         didSet { UserDefaults.standard.set(importFreeHandEffects, forKey: "importFreeHandEffects") }
     }

@@ -55,7 +55,7 @@ struct RotateHandles: View {
         let center = calculatedCenter
 
         ZStack {
-            // Render shape outline using Canvas
+
             Canvas { context, size in
                 let zoom = zoomLevel
                 let offset = canvasOffset
@@ -100,7 +100,6 @@ struct RotateHandles: View {
                     let offset = canvasOffset
                     let currentTransform = previewTransform
 
-                    // Build path from member shapes for groups, or shape path for regular shapes
                     var path = Path()
                     if shape.isGroupContainer && !shape.memberIDs.isEmpty {
                         for memberID in shape.memberIDs {
@@ -165,7 +164,7 @@ struct RotateHandles: View {
                     context.stroke(path, with: .color(.blue.opacity(0.8)), style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
                 }
                 .allowsHitTesting(false)
-                .id(previewTransform.a + previewTransform.d) // Force redraw on transform change
+                .id(previewTransform.a + previewTransform.d)
             }
 
             pathPointsView()
@@ -203,7 +202,7 @@ struct RotateHandles: View {
         .onDisappear {
             teardownRotationKeyEventMonitoring()
         }
-       // .id("rotation-handles-\(pointsRefreshTrigger)")
+
     }
 
     private func extractPathPoints() {
@@ -272,7 +271,7 @@ struct RotateHandles: View {
 
         let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
         if isShiftCurrentlyPressed {
-            let increment: CGFloat = .pi / 4  // 45 degrees
+            let increment: CGFloat = .pi / 4
             rotationAngle = round(rotationAngle / increment) * increment
         }
 
@@ -375,7 +374,6 @@ struct RotateHandles: View {
             return
         }
 
-        // For groups, use the proper group transform function
         if shape.isGroupContainer && !shape.memberIDs.isEmpty {
             document.applyTransformToGroup(groupID: shape.id, transform: currentTransform)
             return
@@ -472,7 +470,6 @@ struct RotateHandles: View {
         isRotating = false
         document.isHandleScalingActive = false
 
-        // Collect ALL shape IDs that will be modified (group + all members recursively)
         var allShapeIDs: [UUID] = []
         var oldShapes: [UUID: VectorShape] = [:]
 
@@ -494,7 +491,6 @@ struct RotateHandles: View {
             previewTransform = .identity
             document.updateTransformPanelValues()
 
-            // Capture new state of ALL modified shapes
             var newShapes: [UUID: VectorShape] = [:]
             for shapeID in allShapeIDs {
                 if let transformedShape = document.findShape(by: shapeID) {
@@ -511,7 +507,6 @@ struct RotateHandles: View {
                 document.executeCommand(command)
             }
 
-            // Force UI refresh
             document.triggerLayerUpdate(for: layerIndex)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -525,7 +520,6 @@ struct RotateHandles: View {
         previewTransform = .identity
     }
 
-    /// Recursively collect shape and all member shapes for undo
     private func collectShapesForUndo(shapeID: UUID, into ids: inout [UUID], oldShapes: inout [UUID: VectorShape]) {
         guard let object = document.findObject(by: shapeID) else { return }
 
@@ -536,7 +530,7 @@ struct RotateHandles: View {
             oldShapes[shapeID] = s
         case .group(let s), .clipGroup(let s):
             oldShapes[shapeID] = s
-            // Recursively collect members
+
             for memberID in s.memberIDs {
                 collectShapesForUndo(shapeID: memberID, into: &ids, oldShapes: &oldShapes)
             }
@@ -640,7 +634,6 @@ struct RotateHandles: View {
     private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }
 
-        // SIMD-optimized scale extraction
         let scaleX = simd_length(SIMD2(Double(transform.a), Double(transform.c)))
         let scaleY = simd_length(SIMD2(Double(transform.b), Double(transform.d)))
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)

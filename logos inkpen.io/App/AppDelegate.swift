@@ -2,9 +2,7 @@ import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // Disable window state restoration to prevent duplicate windows on launch.
-        // Without this, macOS restores the previous session's window AND
-        // DocumentGroup creates a new untitled document — doubling RAM usage.
+
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
     }
 

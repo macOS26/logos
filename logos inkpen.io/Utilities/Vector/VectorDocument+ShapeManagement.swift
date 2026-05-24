@@ -35,8 +35,6 @@ extension VectorDocument {
         executeCommand(command)
     }
 
-    /// Import-facing add. Unpacks <g>-carrier groups (inline groupedShapes)
-    /// into the native memberIDs model so children live in snapshot.objects.
     func addImportedShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
@@ -89,7 +87,6 @@ extension VectorDocument {
                 return false
             }
 
-            // Protect Canvas (0) and Pasteboard (1); guides layer (2) is deletable.
             if object.layerIndex <= 1 {
                 return false
             }
@@ -124,7 +121,7 @@ extension VectorDocument {
         }
 
         viewState.selectedObjectIDs.removeAll()
-        
+
     }
 
     func getSelectedShapes() -> [VectorShape] {
@@ -229,9 +226,6 @@ extension VectorDocument {
         return result
     }
 
-    // MARK: - Selection with Undo Support
-
-    /// Changes selection with undo/redo support.
     func setSelectionWithUndo(_ newSelectedIDs: Set<UUID>, ordered: [UUID]? = nil) {
         let oldSelectedIDs = viewState.selectedObjectIDs
         let oldOrderedIDs = viewState.orderedSelectedObjectIDs
@@ -249,7 +243,6 @@ extension VectorDocument {
         executeCommand(command)
     }
 
-    /// Adds to selection with undo/redo support
     func addToSelectionWithUndo(_ shapeID: UUID) {
         guard findObject(by: shapeID) != nil else { return }
 
@@ -264,7 +257,6 @@ extension VectorDocument {
         setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
     }
 
-    /// Removes from selection with undo/redo support
     func removeFromSelectionWithUndo(_ shapeID: UUID) {
         var newSelectedIDs = viewState.selectedObjectIDs
         newSelectedIDs.remove(shapeID)
@@ -275,7 +267,6 @@ extension VectorDocument {
         setSelectionWithUndo(newSelectedIDs, ordered: newOrderedIDs)
     }
 
-    /// Toggles selection with undo/redo support
     func toggleSelectionWithUndo(_ shapeID: UUID) {
         if viewState.selectedObjectIDs.contains(shapeID) {
             removeFromSelectionWithUndo(shapeID)
@@ -284,7 +275,6 @@ extension VectorDocument {
         }
     }
 
-    /// Clears selection with undo/redo support
     func clearSelectionWithUndo() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
         setSelectionWithUndo([], ordered: [])
@@ -318,7 +308,6 @@ extension VectorDocument {
             let layer = snapshot.layers[object.layerIndex]
             guard layer.isVisible && !layer.isLocked else { return false }
 
-            // Skip Canvas/Pasteboard/Guides layers.
             guard object.layerIndex > 2 else { return false }
 
             switch object.objectType {
@@ -404,9 +393,6 @@ extension VectorDocument {
         return newShape
     }
 
-    // MARK: - Guide Management
-
-    /// Adds a guide line to the Guides layer (index 2).
     func addGuideShape(position: CGFloat, orientation: Guide.Orientation) {
         let guidesLayerIndex = 2
         guard guidesLayerIndex < snapshot.layers.count else { return }
@@ -427,7 +413,6 @@ extension VectorDocument {
             ], isClosed: false)
         }
 
-        // Non-photo blue #a4dded.
         let nonPhotoBlue = VectorColor.rgb(RGBColor(red: 164/255, green: 221/255, blue: 237/255))
         var guideShape = VectorShape(
             name: "Guide",

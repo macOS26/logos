@@ -29,7 +29,6 @@ struct GradientStopColorPicker: View {
         ZStack(alignment: .topTrailing) {
             loadedContent
 
-            // X button always visible
             GlassCloseButton(action: onDismiss)
         }
         .frame(width: 300, height: 480)
@@ -40,7 +39,6 @@ struct GradientStopColorPicker: View {
             Spacer()
                 .frame(height: 8)
 
-                // Color Mode Picker
                 VStack(alignment: .leading, spacing: 4) {
                     Picker("Color Mode", selection: Binding(
                         get: { document.settings.colorMode },
@@ -63,7 +61,6 @@ struct GradientStopColorPicker: View {
                 }
                 .padding(.horizontal, 12)
 
-                // Color Input Sections
                 if document.settings.colorMode == .pms {
                     HSBInputSection(
                         sharedColor: $currentColor,
@@ -118,8 +115,8 @@ struct GradientStopColorPicker: View {
                         onSetActiveColor: { color in
                             document.setActiveColor(color)
                         },
-                        colorDeltaColor: .constant(nil), // No preview for gradient stops
-                        colorDeltaOpacity: .constant(nil), // No preview for gradient stops
+                        colorDeltaColor: .constant(nil),
+                        colorDeltaOpacity: .constant(nil),
                         sharedColor: $currentColor,
                         disableSetActiveColor: true,
                         onDismiss: onDismiss
@@ -135,12 +132,11 @@ struct GradientStopColorPicker: View {
                 }
                 .padding(.horizontal, 12)
 
-                // Color Swatches - limit to 40 swatches for performance
                 ScrollView {
                     LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                         ForEach(Array(document.currentSwatches.prefix(40).enumerated()), id: \.offset) { index, color in
                             Button {
-                                // Update the gradient stop color only - don't touch document active color
+
                                 currentColor = color
                                 onColorChanged(color)
                             } label: {
@@ -162,13 +158,13 @@ struct GradientStopColorPicker: View {
                 Spacer()
             }
             .onChange(of: currentColor) { _, newColor in
-                // Update gradient stop in real-time as sliders change (but not when dismissing)
+
                 if !isDismissing {
                     onColorChanged(newColor)
                 }
             }
             .onChange(of: stopColor) { _, newStopColor in
-                // Update local state when hovering to a new gradient stop
+
                 currentColor = newStopColor
             }
     }
@@ -221,7 +217,6 @@ struct GradientStopColorPicker: View {
             return color
         }
 
-        // Convert to RGB first
         let rgbColor: RGBColor
         switch color {
         case .rgb(let rgb):
@@ -248,7 +243,6 @@ struct GradientStopColorPicker: View {
             return color
         }
 
-        // Convert from RGB to target mode
         switch newMode {
         case .rgb:
             return .rgb(rgbColor)

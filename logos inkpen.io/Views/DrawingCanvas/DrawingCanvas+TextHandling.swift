@@ -5,9 +5,7 @@ extension DrawingCanvas {
 
     func handleFontToolTap(at location: CGPoint) {
         lastTapLocation = location
-        // print("🟡 handleFontToolTap at \(location)")
 
-        // Don't create new text if there's already a text object selected or in edit mode
         let hasSelectedOrEditingText = document.viewState.selectedObjectIDs.contains { id in
             if let obj = document.findObject(by: id),
                case .text = obj.objectType {
@@ -17,16 +15,15 @@ extension DrawingCanvas {
         }
 
         if hasSelectedOrEditingText {
-            // Ignore tap - text is already selected/editing
-            // print("🟡 Ignoring tap - text already selected/editing")
+
             return
         }
 
         if let existingTextID = findTextAt(location: location) {
-            // print("🟡 Found existing text at location: \(existingTextID)")
+
             startEditingText(textID: existingTextID, at: location)
         } else {
-            // print("🟡 Creating new text at location")
+
             createNewTextAt(location: location)
         }
     }
@@ -38,7 +35,6 @@ extension DrawingCanvas {
             case .text(let shape):
                 if !shape.isVisible || shape.isLocked { return false }
 
-                // Use transform.tx/ty for text position (consistent with findTextAt)
                 let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                 let exactBounds = CGRect(
                     x: textPos.x,
@@ -107,7 +103,6 @@ extension DrawingCanvas {
             case .text(let shape):
                 if !shape.isVisible || shape.isLocked { continue }
 
-                // Use transform.tx/ty for text position
                 let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                 let textBounds = CGRect(
                     x: textPos.x,
@@ -124,7 +119,6 @@ extension DrawingCanvas {
                     if childShape.typography != nil {
                         if !childShape.isVisible || childShape.isLocked { continue }
 
-                        // Use transform.tx/ty for text position (same as top-level text)
                         let textPos = CGPoint(x: childShape.transform.tx, y: childShape.transform.ty)
                         let textBounds = CGRect(
                             x: textPos.x,
@@ -147,7 +141,6 @@ extension DrawingCanvas {
     }
 
     func startEditingText(textID: UUID, at location: CGPoint, isDoubleClickFromArrow: Bool = false) {
-        // print("🔵 startEditingText: textID=\(textID), location=\(location)")
 
         for obj in document.snapshot.objects.values {
             if case .text(let shape) = obj.objectType,
@@ -163,10 +156,9 @@ extension DrawingCanvas {
             document.viewState.selectedObjectIDs = [textID]
             isEditingText = true
             editingTextID = textID
-            // print("🔵 startEditingText: DONE")
 
         } else {
-            // print("🔵 startEditingText: TEXT NOT FOUND!")
+
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }
@@ -195,7 +187,7 @@ extension DrawingCanvas {
 
             case .selected:
                 if isDoubleClick {
-                    // Double-clicking from Arrow tool -> need +1 adjustment
+
                     let needsAdjustment = document.viewState.currentTool != .font
                     document.viewState.currentTool = .font
 
@@ -262,8 +254,6 @@ extension DrawingCanvas {
     }
 
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
-        // Create text shape EXACTLY like how rectangles are created
-        // Use transform.tx/ty for position, NOT VectorText.position
 
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
@@ -282,14 +272,13 @@ extension DrawingCanvas {
 
         let emptyPath = VectorPath(elements: [], isClosed: false)
 
-        // Create shape directly with transform containing position
         var shape = VectorShape(
             name: "Text",
             path: emptyPath,
             geometricType: nil,
             strokeStyle: nil,
             fillStyle: nil,
-            transform: CGAffineTransform(translationX: location.x, y: location.y),  // Position in transform!
+            transform: CGAffineTransform(translationX: location.x, y: location.y),
             textContent: "",
             typography: typography,
             areaSize: CGSize(width: width, height: height),
@@ -412,7 +401,7 @@ extension DrawingCanvas {
 
     func finishTextEditing() {
         if let editingID = editingTextID {
-            // Update bounds
+
             if var textObj = document.findText(by: editingID) {
                 textObj.updateBounds()
                 document.updateTextBoundsInUnified(id: editingID, bounds: textObj.bounds)
@@ -640,7 +629,7 @@ extension DrawingCanvas {
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Don't create new text if there's already a text object selected (user is resizing via handles)
+
         let hasSelectedText = document.viewState.selectedObjectIDs.contains { id in
             if let obj = document.findObject(by: id),
                case .text = obj.objectType {
@@ -650,11 +639,10 @@ extension DrawingCanvas {
         }
 
         if hasSelectedText {
-            // User is resizing via TransformBoxHandles, not creating new text
+
             return
         }
 
-        // EXACT same pattern as finishShapeDrawing for rectangles
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let endLocation = screenToCanvas(value.location, geometry: geometry)
 
@@ -665,7 +653,6 @@ extension DrawingCanvas {
         let finalWidth = max(width, 100.0)
         let finalHeight = max(height, 50.0)
 
-        // Create typography
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontVariant: document.fontManager.selectedFontVariant,
@@ -681,10 +668,8 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
 
-        // Create empty path
         let emptyPath = VectorPath(elements: [], isClosed: false)
 
-        // Create shape with position in TRANSFORM (like rectangles!)
         var shape = VectorShape(
             name: "Text",
             path: emptyPath,
@@ -701,10 +686,8 @@ extension DrawingCanvas {
 
         shape.bounds = CGRect(x: 0, y: 0, width: finalWidth, height: finalHeight)
 
-        // Add to document (same as addShape)
         document.addShape(shape)
 
-        // Select it
         document.viewState.orderedSelectedObjectIDs = [shape.id]
         document.viewState.selectedObjectIDs = [shape.id]
 
@@ -729,7 +712,6 @@ extension DrawingCanvas {
             guard case .text(let shape) = obj.objectType else { continue }
             if !shape.isVisible || shape.isLocked { continue }
 
-            // Use transform.tx/ty for text position
             let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
             let textBounds = CGRect(
                 x: textPos.x,

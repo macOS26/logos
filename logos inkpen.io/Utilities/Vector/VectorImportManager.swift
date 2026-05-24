@@ -316,7 +316,7 @@ class VectorImportManager {
         let shouldEmbed = ApplicationSettings.shared.embedImagesByDefault
 
         if shouldEmbed {
-            // Embed the image data as PNG
+
             let mutableData = NSMutableData()
             if let destination = CGImageDestinationCreateWithData(mutableData, UTType.png.identifier as CFString, 1, nil) {
                 CGImageDestinationAddImage(destination, cgImage, nil)
@@ -325,7 +325,7 @@ class VectorImportManager {
                 }
             }
         } else {
-            // Link to the image file
+
             rectShape.linkedImagePath = url.path
             if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                 rectShape.linkedImageBookmarkData = bookmark

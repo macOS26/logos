@@ -45,7 +45,7 @@ struct FillPropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-                    
+
                     Slider(value: Binding(
                         get: { fillOpacity },
                         set: { onUpdateFillOpacity($0) }

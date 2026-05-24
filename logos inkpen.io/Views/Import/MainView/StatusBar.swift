@@ -156,7 +156,7 @@ struct StatusBar: View {
             case .shape(let shape), .image(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape), .guide(let shape):
                 totalPoints += countPointsInPath(shape.path)
             case .text:
-                // Text objects don't have vector points
+
                 break
             }
         }
@@ -165,14 +165,14 @@ struct StatusBar: View {
     }
 
     private func countPointsInPath(_ path: VectorPath) -> Int {
-        // Count only anchor points, not control handles
+
         var count = 0
         for element in path.elements {
             switch element {
             case .move, .line, .quadCurve, .curve:
-                count += 1  // Each adds one anchor point
+                count += 1
             case .close:
-                break  // Close doesn't add a point
+                break
             }
         }
         return count

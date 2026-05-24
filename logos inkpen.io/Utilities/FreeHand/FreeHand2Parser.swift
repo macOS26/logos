@@ -2,35 +2,29 @@ import Foundation
 import CoreGraphics
 
 enum FreeHand2Parser {
-    // MARK: - Constants
 
     private static let headerSize = 256
-    private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32] // "FHD2"
+    private static let magic: [UInt8] = [0x46, 0x48, 0x44, 0x32]
     private static let pathRecordType: UInt16 = 0x151C
     private static let ovalRecordType: UInt16 = 0x151A
     private static let rectRecordType: UInt16 = 0x1519
     private static let lineRecordType: UInt16 = 0x151D
-    private static let unitsPerPoint: Double = 10.0 // 720 DPI / 72 DPI
+    private static let unitsPerPoint: Double = 10.0
 
-    // Point type codes
     private static let cornerPointType: UInt16 = 0x001B
     private static let curvePointType: UInt16 = 0x0009
 
-    // MARK: - FH2 Point
-
     private struct FH2Point {
         let type: UInt16
-        /// Incoming control handle (or on-curve position for corner points)
+
         let controlIn: CGPoint
-        /// On-curve position
+
         let onCurve: CGPoint
-        /// Outgoing control handle (or on-curve position for corner points)
+
         let controlOut: CGPoint
 
         var isCorner: Bool { type == cornerPointType }
     }
-
-    // MARK: - Helpers
 
     private static func readUInt16BE(_ data: Data, offset: Int) -> UInt16 {
         let base = data.startIndex + offset
@@ -49,21 +43,17 @@ enum FreeHand2Parser {
              | UInt32(data[base + 3])
     }
 
-    // MARK: - Color Table
-
-    /// Record entry in the sequential ID table
     private struct RecordEntry {
         let offset: Int
         let type: UInt16
         let size: Int
     }
 
-    /// Build sequential ID → record offset table and extract colors
     enum GradientType { case linear, radial }
     struct GradientInfo {
         let type: GradientType
         let colors: [VectorColor]
-        // Legacy convenience init
+
         init(type: GradientType = .linear, colors: [VectorColor]) {
             self.type = type; self.colors = colors
         }
@@ -78,11 +68,6 @@ enum FreeHand2Parser {
         var gradientTable: [Int: GradientInfo] = [:]
         var nameTable: [Int: String] = [:]
 
-        // Read starting child ID from first TABLE (0x0005) record. Also pull
-        // the full child-ID list — those are the FH2-native slot IDs for the
-        // document's first N declared styles/colors (e.g. ungroup.fh2 lists
-        // [36, 37, 38] meaning rid 36=black, 37=purple, 38=peach). 14B5
-        // style records' innerRef values reference these slot IDs directly.
         var firstChildID = 18
         var tableChildIDs: [Int] = []
         for i in stride(from: headerSize, to: min(data.count - 10, headerSize + 2000), by: 1) {
@@ -93,7 +78,7 @@ enum FreeHand2Parser {
                     let count = Int(readUInt16BE(data, offset: i + 4))
                     if count > 0 && i + 10 < data.count {
                         firstChildID = Int(readUInt16BE(data, offset: i + 10))
-                        // Grab up to `count` child IDs from +10 onwards.
+
                         for k in 0..<count {
                             let off = i + 10 + k * 2
                             guard off + 2 <= data.count, off + 2 <= i + size else { break }
@@ -105,13 +90,6 @@ enum FreeHand2Parser {
             }
         }
 
-        // Scan EVERY plausible record by byte-walking. Each style/color record
-        // gets TWO IDs:
-        //   - styleRid: firstChildID + index-among-styles-only (matches what
-        //     style records' innerRef points at — black at firstChildID, etc).
-        //   - globalRid: byte-walk seq (matches what path records' fillRef
-        //     indexes into — the file's true global ID space).
-        // We store the color at both IDs in colorTable so both lookup paths work.
         var allRecords: [(offset: Int, type: UInt16, styleRid: Int, globalRid: Int)] = []
         var offset = headerSize
         var globalSeq = firstChildID
@@ -120,7 +98,7 @@ enum FreeHand2Parser {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
             var matched = false
-            // Color records
+
             if (rtype == 0x1452 && size == 30) ||
                (rtype == 0x1453 && size == 30) ||
                (rtype == 0x1454 && size == 32 && offset + 22 <= data.count) {
@@ -128,22 +106,20 @@ enum FreeHand2Parser {
                 styleIdx += 1
                 matched = true
             }
-            // Style/attribute records
+
             else if (rtype >= 0x14B0 && rtype <= 0x14FF && size >= 10 && size <= 100) ||
                     (rtype == 0x157D && size >= 10 && size <= 100) {
                 allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
                 styleIdx += 1
                 matched = true
             }
-            // Named-string records (fonts and color names share type 0x0006).
-            // They consume a styleIdx slot so their styleRid lines up with what
-            // text records reference at +90 (font) and color records at +104.
+
             else if rtype == 0x0006 && size >= 6 && size <= 60 {
                 allRecords.append((offset, rtype, firstChildID + styleIdx, globalSeq))
                 styleIdx += 1
                 matched = true
             }
-            // Other record types we don't index but still consume a global slot.
+
             else if (rtype == 0x1389 && size == 56) ||
                     (rtype == 0x0005 && size >= 16 && size < 300) ||
                     (rtype == 0x138A && size >= 20 && size <= 200) ||
@@ -162,14 +138,11 @@ enum FreeHand2Parser {
             offset += 1
         }
 
-        // Extract data using BOTH rids recorded during the scan.
         for rec in allRecords {
             let rid = rec.styleRid
             let gid = rec.globalRid
             let off = rec.offset
 
-            // Color extraction — store at both styleRid (for innerRef chain) and
-            // globalRid (for path's fillRef).
             func storeColor(_ color: VectorColor) {
                 colorTable[rid] = color
                 colorTable[gid] = color
@@ -190,8 +163,6 @@ enum FreeHand2Parser {
                 storeColor(VectorColor.rgb(RGBColor(red: r, green: g, blue: b)))
             }
 
-            // Style: follow inner_ref (uses styleRid scheme) to color, then
-            // mirror the resolved color into both rid AND gid slots.
             if rec.type >= 0x14B0 && off + 12 <= data.count {
                 let innerRef = Int(readUInt16BE(data, offset: off + 10))
 
@@ -221,7 +192,6 @@ enum FreeHand2Parser {
                 }
             }
 
-            // SB (0x14B6): stroke width at +18
             if rec.type == 0x14B6 && off + 20 <= data.count {
                 let rawWidth = Int(readUInt16BE(data, offset: off + 18))
                 if rawWidth > 0 {
@@ -230,7 +200,6 @@ enum FreeHand2Parser {
                 }
             }
 
-            // Named-string (0x0006): u8 length at +4, ASCII chars at +5.
             if rec.type == 0x0006, off + 5 <= data.count {
                 let nameLen = Int(data[off + 4])
                 if nameLen > 0, off + 5 + nameLen <= data.count {
@@ -243,10 +212,6 @@ enum FreeHand2Parser {
             }
         }
 
-        // Bind document-declared color slots from the first TABLE record.
-        // ungroup.fh2: tableChildIDs = [36, 37, 38] maps to [black, purple,
-        // peach] based on file order of the first 3 color records. Path
-        // styles reference these slot IDs via innerRef, so populate them.
         let colorRecords = allRecords
             .filter { $0.type == 0x1452 || $0.type == 0x1453 || $0.type == 0x1454 }
             .prefix(tableChildIDs.count)
@@ -270,15 +235,6 @@ enum FreeHand2Parser {
         return (colorTable, widthTable, gradientTable, nameTable)
     }
 
-    // MARK: - Layer Parsing
-
-    /// Parse 0x138A records into layer → [shapeID] mapping
-    /// For each 0x138A group record, find the adjacent 0x14B5 style record
-    /// batch and map every listed shape absID → that batch's color. Solves
-    /// the "per-shape color is wrong" problem: FH2 stores shapes in a
-    /// different file order than the style records that apply to them, so
-    /// looking up fillRef in isolation assigns the wrong color at batch
-    /// boundaries. Group membership is the authoritative source.
     private static func parseGroupColorsByAbsID(data: Data,
                                                  colorTable: [Int: VectorColor]) -> [Int: VectorColor] {
         var result: [Int: VectorColor] = [:]
@@ -292,7 +248,7 @@ enum FreeHand2Parser {
                 offset += 1
                 continue
             }
-            // Count + IDs live at +32 in every shape-carrying 0x138A we've seen.
+
             let count = Int(readUInt16BE(data, offset: offset + 32))
             guard count > 0, count < 100, offset + 34 + count * 2 <= data.count else {
                 offset += 1
@@ -307,9 +263,7 @@ enum FreeHand2Parser {
                 offset += 1
                 continue
             }
-            // Find the next 0x14B5 style record following this 138A and
-            // resolve its innerRef to a color. All members of this group
-            // share that color (FH2 style batches are uniform per group).
+
             if let groupColor = scanForwardForStyleColor(data: data,
                                                          startOffset: offset + size,
                                                          colorTable: colorTable) {
@@ -320,12 +274,6 @@ enum FreeHand2Parser {
         return result
     }
 
-    /// Scan all 0x0006 named-string records in file order. Format:
-    ///   u16 size | u16 type=0x0006 | u8 nameLen | name_chars[nameLen] | pad
-    /// FH2 stores font families first (Times, Helvetica, …) followed by
-    /// color names (Black, SpotGreen, Cyan, …). Returns the list of names
-    /// in declaration order; caller indexes by the text record's 1-based
-    /// font index (field +8).
     static func parseNamedStrings(data: Data) -> [String] {
         var names: [String] = []
         var offset = headerSize
@@ -346,28 +294,6 @@ enum FreeHand2Parser {
         return names
     }
 
-    /// Decode 0x13EE text records. `offset` = record start (size u16 at +0,
-    /// type 0x13EE at +2). Fields:
-    ///   +8   u16  1-based layer index
-    ///   +30  u16  xAnchor (1/10 pt)
-    ///   +32  u16  yAnchor (top-of-line, 1/10 pt)
-    ///   +58  i16  xDelta
-    ///   +62  i16  yDelta
-    ///   +90  u16  font-name ref — value is file-specific but the refs sort
-    ///             in the same order as the 0x0006 records are declared
-    ///             (Times first → smallest +90, Helvetica next → larger).
-    ///             Resolve by ranking the distinct +90 values seen in the
-    ///             file and mapping rank N → the Nth 0x0006 name.
-    ///   +92  u16  font size (points)
-    ///   +102 u16  style bits: bit 0 = Bold, bit 1 = Italic (dude3.fh2
-    ///             confirmed against EPS: Plain Times=0 → Times-Roman,
-    ///             ItalicTimes=2 → Times-Italic, Bold Italic=3 → Times-
-    ///             BoldItalic, Bold labels=1 → Times-Bold).
-    ///   +66  u16  alignment, in units of 256: 0 left, 1 center, 2 right,
-    ///             3 justified. (TopLeft/BtmLeft=0, TopRight/BtmRight=512=
-    ///             right, ItalicTimes=256=center, Bold-Italic-Justified=
-    ///             768=justified.)
-    ///   +104 u16  color ref (styleRid of a color/style record)
     static func parseTextRecords(data: Data,
                                   colorTable: [Int: VectorColor] = [:],
                                   nameTable: [Int: String] = [:])
@@ -375,7 +301,7 @@ enum FreeHand2Parser {
              fontFamily: String, color: VectorColor, layerIndex: Int,
              bold: Bool, italic: Bool, alignment: Int)]
     {
-        // Pass 1: collect distinct font-ref values from every text record.
+
         var distinctFontRefs: [Int] = []
         var seenFontRefs = Set<Int>()
         var scanOffset = headerSize
@@ -391,14 +317,13 @@ enum FreeHand2Parser {
             }
             scanOffset += 1
         }
-        // Rank them ascending: smallest → font #0, next → font #1, ...
+
         distinctFontRefs.sort()
         var fontRefToRank: [Int: Int] = [:]
         for (rank, ref) in distinctFontRefs.enumerated() {
             fontRefToRank[ref] = rank
         }
-        // Pass 2: scan 0x0006 records in file order — the first K are fonts
-        // where K == distinctFontRefs.count.
+
         let allNames = parseNamedStrings(data: data)
         let fontNames = Array(allNames.prefix(distinctFontRefs.count))
         var results: [(String, Double, Double, Double, String, VectorColor, Int, Bool, Bool, Int)] = []
@@ -449,9 +374,7 @@ enum FreeHand2Parser {
             let bold = (styleBits & 0x1) != 0
             let italic = (styleBits & 0x2) != 0
             let alignment = alignRaw / 256
-            // Text color ref lives at +104 — it's the same styleRid slot the
-            // path-fill chain uses, so colorTable has already been populated
-            // at that key by `buildColorAndWidthTables`.
+
             let color = colorTable[colorRef]
                         ?? scanForwardForStyleColor(data: data,
                                                      startOffset: offset + size,
@@ -472,14 +395,14 @@ enum FreeHand2Parser {
             let size = Int(readUInt16BE(data, offset: offset))
             let rtype = readUInt16BE(data, offset: offset + 2)
             if rtype == 0x138A && size >= 20 && size <= 200 {
-                // Read values after 6-byte header
+
                 var vals: [Int] = []
                 var j = offset + 6
                 while j + 1 < offset + size && j + 1 < data.count {
                     vals.append(Int(readUInt16BE(data, offset: j)))
                     j += 2
                 }
-                // Find count + child IDs: first non-zero value after header zeros (skip '16')
+
                 var children: [Int] = []
                 for (idx, v) in vals.enumerated() {
                     if idx > 0 && v > 0 && v != 16 && v < 10000 {
@@ -499,24 +422,12 @@ enum FreeHand2Parser {
         return layers
     }
 
-    // MARK: - Positional Style→Path Mapping
-    //
-    // Empirical pattern from ungroup.fh2 / torfont.fh2: the 0x14B5 style
-    // records that apply to paths are stored in FILE ORDER matching the path
-    // records they style — path[N] ↔ (path-style)[N]. "Path styles" are
-    // 14B5 records whose innerRef resolves to one of the document's named
-    // colors (i.e. innerRef == firstChildID+k for some k in the color table).
-    // Setup-phase 14B5 records with innerRef=0 or pointing at non-color
-    // records are skipped.
-    //
-    // Returns [pathIndex: VectorColor], applied as a post-pass override.
     private static func parsePathStylesByPosition(data: Data,
                                                    pathCount: Int,
                                                    colorTable: [Int: VectorColor])
         -> [Int: VectorColor]
     {
-        // Collect 14B5 style records that look like path styles. A path style
-        // has a non-zero innerRef that resolves to a known color.
+
         var pathStyleColors: [VectorColor] = []
         var offset = headerSize
         while offset + 22 <= data.count {
@@ -532,10 +443,8 @@ enum FreeHand2Parser {
             offset += 1
         }
 
-        // The last `pathCount` path-styles are the ones that matter — setup
-        // styles come before the batch that styles the drawing's paths.
         guard pathStyleColors.count >= pathCount else {
-            // Not enough styles to pair 1:1, fall back to forward-scan logic.
+
             return [:]
         }
         let startIdx = pathStyleColors.count - pathCount
@@ -545,8 +454,6 @@ enum FreeHand2Parser {
         }
         return result
     }
-
-    // MARK: - Debug
 
     static func debugColorTable(data: Data) -> ([Int: VectorColor], [Int: Double]) {
         let (ct, wt, _, _) = buildColorAndWidthTables(data: data)
@@ -563,10 +470,8 @@ enum FreeHand2Parser {
         return nt
     }
 
-    // MARK: - Public API
-
     static func parseToShapes(data: Data) throws -> FreeHandDirectImporter.Result {
-        // Validate minimum size and magic
+
         guard data.count >= headerSize + 4 else {
             throw FreeHandImportError.notSupported
         }
@@ -575,25 +480,19 @@ enum FreeHand2Parser {
                 throw FreeHandImportError.notSupported
             }
         }
-        
-        // Extract page dimensions (720 DPI units -> points)
+
         let pageWidthRaw = Double(readUInt16BE(data, offset: 8))
         let pageHeightRaw = Double(readUInt16BE(data, offset: 10))
         let pageWidth = pageWidthRaw / unitsPerPoint
         let pageHeight = pageHeightRaw / unitsPerPoint
         let pageSize = CGSize(width: pageWidth, height: pageHeight)
 
-        // Build color, width, gradient, and font-name lookup tables.
         let (colorTable, widthTable, gradientTable, nameTable) = buildColorAndWidthTables(data: data)
 
-        // Parse layer definitions (0x138A records → child shape ID lists)
-        _ = parseLayers(data: data)  // still run for stats/debug, ignore result
+        _ = parseLayers(data: data)
 
-        // Authoritative per-shape color from 0x138A groups + adjacent 0x14B5
-        // style batches. Overrides whatever fillRef lookup produced.
         let groupColorByAbsID = parseGroupColorsByAbsID(data: data, colorTable: colorTable)
 
-        // Pre-scan: build offset → absID map (count all records except 0x138A, starting at DOC=2)
         var offsetToAbsID: [Int: Int] = [:]
         var preAbsID = 2
         var preOff = headerSize
@@ -601,8 +500,8 @@ enum FreeHand2Parser {
             let sz = Int(readUInt16BE(data, offset: preOff))
             let rt = readUInt16BE(data, offset: preOff + 2)
             var found = false
-            // Match any known record type EXCEPT 0x138A
-            if rt == 0x138A { /* skip */ }
+
+            if rt == 0x138A {  }
             else if rt == 0x1389 && sz == 56 { found = true }
             else if rt == 0x0005 && sz >= 16 && sz < 300 { found = true }
             else if rt == pathRecordType && sz >= 44 && preOff + sz <= data.count && preOff + 29 < data.count {
@@ -621,8 +520,6 @@ enum FreeHand2Parser {
             preOff += 1
         }
 
-        // Scan for shape records. Each shape record's +8 u16 is its 1-based
-        // layer index (same field that text records use).
         var shapes: [VectorShape] = []
         var shapeAbsIDs: [Int] = []
         var shapeLayerIdx: [Int] = []
@@ -637,7 +534,6 @@ enum FreeHand2Parser {
                 return max(1, Int(readUInt16BE(data, offset: offset + 8)))
             }
 
-            // Look for a path record type at offset+2 (size at offset)
             if offset + 44 <= data.count {
                 if rtype == pathRecordType && word >= 44 && offset + Int(word) <= data.count {
                     let recordSize = Int(word)
@@ -680,8 +576,6 @@ enum FreeHand2Parser {
                 }
             }
 
-            // Records can overlap by design — always advance one byte so the
-            // next record start isn't missed.
             offset += 1
         }
 
@@ -689,9 +583,6 @@ enum FreeHand2Parser {
             throw FreeHandImportError.emptyOutput
         }
 
-        // Override each shape's fill with the authoritative group color (from
-        // 0x138A membership) when available. This corrects the per-path color
-        // assignment at batch boundaries.
         if !groupColorByAbsID.isEmpty {
             for i in 0..<shapes.count {
                 let absID = shapeAbsIDs[i]
@@ -701,11 +592,6 @@ enum FreeHand2Parser {
             }
         }
 
-        // Positional path→style pairing. For FH2 files where the 14B5 styles
-        // that apply to the drawing are stored contiguously in file order and
-        // there are exactly `shapes.count` of them (common in ungrouped
-        // drawings), path[N] uses style[N]'s color. Runs AFTER the 138A
-        // override so group-driven colors take precedence if both apply.
         let positionalColors = parsePathStylesByPosition(data: data,
                                                           pathCount: shapes.count,
                                                           colorTable: colorTable)
@@ -718,10 +604,6 @@ enum FreeHand2Parser {
             }
         }
 
-        // Build native InkPen Layers from each shape's +8 layer index. The
-        // single 0x138A "all shapes" record is NOT the layer source — per-
-        // shape +8 is (dude2.fh2 has paths with +8=1 and +8=3 mixed in one
-        // 0x138A list). Preserve file order within each layer.
         var nativeLayers: [Layer] = []
         let totalLayers = max(1, (shapeLayerIdx + [1]).max() ?? 1)
         for layer in 1...totalLayers {
@@ -750,14 +632,8 @@ enum FreeHand2Parser {
             contentIdPaths: 0
         )
 
-        // Parse text up-front so orientation detection can include text extents
-        // (e.g. stage.fh2 has text at x=696 which only makes sense on a 792-wide
-        // landscape page — paths alone wouldn't reveal the landscape layout).
         let textRuns = parseTextRecords(data: data, colorTable: colorTable, nameTable: nameTable)
 
-        // FH2 always stores the page as portrait (e.g. 612×792 for Letter),
-        // even when the document was set up landscape. Infer orientation from
-        // the combined drawing + text bbox.
         let effectiveSize = inferEffectivePageSize(shapes: shapes,
                                                     textRuns: textRuns,
                                                     storedPage: pageSize)
@@ -768,8 +644,6 @@ enum FreeHand2Parser {
             }
         }
 
-        // Emit text shapes. parseTextRecords returns EPS-style bottom-up
-        // coords; flip Y with the effective (post-orientation) page height.
         for run in textRuns {
             let flippedY = effectiveSize.height - CGFloat(run.y)
             let textOrigin = CGPoint(x: CGFloat(run.x), y: flippedY)
@@ -814,9 +688,7 @@ enum FreeHand2Parser {
             textShape.bounds = CGRect(x: 0, y: 0, width: estWidth, height: estHeight)
             shapes.append(textShape)
             shapeAbsIDs.append(0)
-            // Route to the layer encoded in the text record (+8, 1-based).
-            // Create missing layers on the fly so a Layer-2-only text doesn't
-            // disappear when the path-derived layer list only has Layer 1.
+
             let targetLayer = max(1, run.layerIndex)
             while nativeLayers.count < targetLayer {
                 nativeLayers.append(Layer(
@@ -841,10 +713,6 @@ enum FreeHand2Parser {
         )
     }
 
-    /// Decide whether to swap the stored page dimensions. Considers both
-    /// path shapes AND text runs — text alone may extend past the stored
-    /// portrait width (e.g. stage.fh2's TopRight at x=696 on a 612-wide page)
-    /// which is the giveaway that the layout is landscape.
     private static func inferEffectivePageSize(shapes: [VectorShape],
                                                 textRuns: [(text: String, x: Double, y: Double, fontSize: Double, fontFamily: String, color: VectorColor, layerIndex: Int, bold: Bool, italic: Bool, alignment: Int)],
                                                 storedPage: CGSize) -> CGSize {
@@ -871,7 +739,6 @@ enum FreeHand2Parser {
         return storedPage
     }
 
-    /// Translate every point + text position by (0, dy).
     private static func translateShapeY(_ shape: VectorShape, by dy: CGFloat) -> VectorShape {
         var s = shape
         let t = CGAffineTransform(translationX: 0, y: dy)
@@ -886,37 +753,28 @@ enum FreeHand2Parser {
         return s
     }
 
-    // MARK: - Record Parsing
-
     private static func parsePathRecord(data: Data, recordOffset: Int,
                                         recordSize: Int,
                                         pageHeight: Double,
                                         colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-        // Minimum path record: 44 bytes header + 0 points
+
         guard recordSize >= 44 else { return nil }
 
         let pointCount = Int(readUInt16BE(data, offset: recordOffset + 28))
         guard pointCount > 0 else { return nil }
 
-        // Validate record size matches expected: 44 + pointCount * 16
         let expectedSize = 44 + pointCount * 16
         guard recordSize >= expectedSize else { return nil }
 
-        // Parse points — data starts at +30 (the 0000 pad after point count
-        // serves as the first point's leading separator)
         let pointDataStart = recordOffset + 30
         var fh2Points: [FH2Point] = []
         fh2Points.reserveCapacity(pointCount)
 
-        // Offset within point block: each point is 16 bytes
-        // Layout: 2 bytes separator, 2 bytes type, then 6x Int16 coords
         for i in 0..<pointCount {
             let pOffset = pointDataStart + i * 16
 
-            // Skip 2-byte separator (always 0x0000)
             let pointType = readUInt16BE(data, offset: pOffset + 2)
 
-            // Read 3 coordinate pairs as Int16 BE
             let x1 = Double(readInt16BE(data, offset: pOffset + 4))
             let y1 = Double(readInt16BE(data, offset: pOffset + 6))
             let x2 = Double(readInt16BE(data, offset: pOffset + 8))
@@ -924,9 +782,6 @@ enum FreeHand2Parser {
             let x3 = Double(readInt16BE(data, offset: pOffset + 12))
             let y3 = Double(readInt16BE(data, offset: pOffset + 14))
 
-            // Convert from FH2 units (720/inch) to points (72/inch)
-            // Flip Y: y_screen = pageHeight - y_fh2_points
-            // FH2 point order: (onCurve, controlIn, controlOut)
             let onCurve = CGPoint(
                 x: x1 / unitsPerPoint,
                 y: pageHeight - y1 / unitsPerPoint
@@ -948,7 +803,6 @@ enum FreeHand2Parser {
             ))
         }
 
-        // Determine if path is closed: check +26 flag OR first==last on-curve
         let filledFlag = readUInt16BE(data, offset: recordOffset + 26)
         let firstOnCurve = fh2Points[0].onCurve
         let lastOnCurve = fh2Points[fh2Points.count - 1].onCurve
@@ -957,7 +811,6 @@ enum FreeHand2Parser {
             && abs(firstOnCurve.y - lastOnCurve.y) < 0.01
         let isClosed = pointsMatch || filledFlag == 1
 
-        // Convert FH2 points to path elements
         let elements = buildPathElements(from: fh2Points, closed: isClosed)
         guard !elements.isEmpty else { return nil }
 
@@ -967,15 +820,9 @@ enum FreeHand2Parser {
             fillRule: .winding
         )
 
-        // Extract fill and stroke colors from color table
         let (fillStyle, strokeStyle) = extractFillStroke(data: data, recordOffset: recordOffset,
                                                           colorTable: colorTable, widthTable: widthTable, gradientTable: gradientTable, isClosed: isClosed)
 
-        // Don't run PathShapeDetector on FH2-imported paths. FreeHand 2 has
-        // no concept of "octagon" / "rectangle" as a distinct shape kind —
-        // everything is a path of corner/curve points. Auto-classifying them
-        // as Octagons/Rectangles in the layer panel is misleading (e.g. "T"
-        // glyphs were getting tagged as Octagons).
         return VectorShape(
             name: "Path",
             path: path,
@@ -986,13 +833,6 @@ enum FreeHand2Parser {
         )
     }
 
-    // MARK: - Color Extraction from Record Attributes
-
-    /// FreeHand writes the style records that apply to a batch of paths right
-    /// after that batch. When a path's `fillRef` misses the color table, scan
-    /// forward from the path's end for the next 0x14B5 style record and
-    /// resolve via its innerRef → colorTable lookup. Capped at 2 KB to bound
-    /// cost.
     private static func scanForwardForStyleColor(data: Data, startOffset: Int,
                                                   colorTable: [Int: VectorColor]) -> VectorColor? {
         let limit = min(startOffset + 2048, data.count - 4)
@@ -1018,15 +858,13 @@ enum FreeHand2Parser {
         let fillRef = Int(readUInt16BE(data, offset: recordOffset + 18))
         let strokeRef = Int(readUInt16BE(data, offset: recordOffset + 20))
 
-        // Check +13 byte: 0x80 flag means "white/paper fill" (CMYK 0,0,0,0)
         let whiteFillFlag = data[recordOffset + 13] & 0x80 != 0
 
-        // Look up fill color from color table
         var fillStyle: FillStyle? = nil
         if isClosed && whiteFillFlag {
             fillStyle = FillStyle(color: .white)
         } else if isClosed && fillRef > 0 {
-            // Check gradient first
+
             if let grad = gradientTable[fillRef], grad.colors.count >= 2 {
                 var stops: [GradientStop] = []
                 for (idx, color) in grad.colors.enumerated() {
@@ -1044,24 +882,16 @@ enum FreeHand2Parser {
             } else if let fillColor = colorTable[fillRef] {
                 fillStyle = FillStyle(color: fillColor)
             } else if let scanned = Self.scanForwardForStyleColor(data: data, startOffset: recordOffset + 44, colorTable: colorTable) {
-                // When the fillRef doesn't resolve via the ID table, FreeHand's
-                // file convention is that the style record with the intended
-                // color follows shortly after the path. Scan forward for the
-                // next 0x14B5 and use its innerRef.
+
                 fillStyle = FillStyle(color: scanned)
             } else {
-                // Final fallback: grayscale byte at +12.
+
                 let fillGrayByte = data[recordOffset + 12]
                 let fillGray = 1.0 - Double(fillGrayByte) / 127.0
                 fillStyle = FillStyle(color: .rgb(RGBColor(red: fillGray, green: fillGray, blue: fillGray)))
             }
         }
 
-        // Look up stroke color and width from tables.
-        // FreeHand records strokeRef==0 for "no stroke" — don't invent a gray
-        // fallback in that case (the EPS export for the same drawing has no
-        // stroke either; inventing one was producing the light-grey outlines
-        // that don't exist in the source).
         let strokeStyle: StrokeStyle?
         if strokeRef > 0, let strokeColor = colorTable[strokeRef] {
             let strokeWidth = widthTable[strokeRef] ?? 0.5
@@ -1073,33 +903,29 @@ enum FreeHand2Parser {
         return (fillStyle, strokeStyle)
     }
 
-    // MARK: - Rectangle Record Parsing (0x1519)
-
     private static func parseRectRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-        // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
+
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
         let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
 
         let width = right - left
-        let height = top - bottom  // FH2 Y-up
+        let height = top - bottom
         guard width > 0.1 && height > 0.1 else { return nil }
 
-        // Corner radius at +38 and +40 (Int16 BE, FH2 units)
         let cornerRadiusX = Double(readUInt16BE(data, offset: recordOffset + 38)) / unitsPerPoint
         let cornerRadiusY = Double(readUInt16BE(data, offset: recordOffset + 40)) / unitsPerPoint
         let cr = min(cornerRadiusX, cornerRadiusY, width / 2, height / 2)
 
-        // Convert to screen coords (Y flip)
         let x = left
         let y = pageHeight - top
 
         let elements: [PathElement]
         if cr > 0.1 {
-            // Rounded rectangle
+
             let k: Double = 0.5522847498
             elements = [
                 .move(to: VectorPoint(x + cr, y)),
@@ -1145,12 +971,10 @@ enum FreeHand2Parser {
         )
     }
 
-    // MARK: - Line Record Parsing (0x151D)
-
     private static func parseLineRecord(data: Data, recordOffset: Int,
                                           pageHeight: Double,
                                           colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-        // Line endpoints at +26 to +33 (4 × Int16 BE): x1, y1, x2, y2
+
         let x1 = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let y1 = pageHeight - Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let x2 = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
@@ -1175,29 +999,25 @@ enum FreeHand2Parser {
         )
     }
 
-    // MARK: - Oval Record Parsing
-
     private static func parseOvalRecord(data: Data, recordOffset: Int,
                                          pageHeight: Double,
                                          colorTable: [Int: VectorColor] = [:], widthTable: [Int: Double] = [:], gradientTable: [Int: GradientInfo] = [:]) -> VectorShape? {
-        // Bounding box at +26 to +33 (4 × Int16 BE): left, top, right, bottom
+
         let left = Double(readInt16BE(data, offset: recordOffset + 26)) / unitsPerPoint
         let top = Double(readInt16BE(data, offset: recordOffset + 28)) / unitsPerPoint
         let right = Double(readInt16BE(data, offset: recordOffset + 30)) / unitsPerPoint
         let bottom = Double(readInt16BE(data, offset: recordOffset + 32)) / unitsPerPoint
 
         let width = right - left
-        let height = top - bottom  // FH2 Y-up: top > bottom
+        let height = top - bottom
         guard width > 0.1 && height > 0.1 else { return nil }
 
-        // Convert to screen coords (Y flip)
         let cx = left + width / 2.0
         let cy = pageHeight - (bottom + height / 2.0)
         let rx = width / 2.0
         let ry = height / 2.0
 
-        // Approximate ellipse with 4 cubic Bézier segments
-        let k: Double = 0.5522847498  // kappa for circular arc
+        let k: Double = 0.5522847498
         let elements: [PathElement] = [
             .move(to: VectorPoint(cx + rx, cy)),
             .curve(to: VectorPoint(cx, cy - ry),
@@ -1230,15 +1050,12 @@ enum FreeHand2Parser {
         )
     }
 
-    // MARK: - Path Element Construction
-
     private static func buildPathElements(from points: [FH2Point], closed: Bool = false) -> [PathElement] {
         guard let first = points.first else { return [] }
 
         var elements: [PathElement] = []
-        elements.reserveCapacity(points.count + 1) // +1 for potential close
+        elements.reserveCapacity(points.count + 1)
 
-        // First point is always a moveTo
         elements.append(.move(to: VectorPoint(first.onCurve.x, first.onCurve.y)))
 
         let segmentCount = points.count - 1
@@ -1247,8 +1064,6 @@ enum FreeHand2Parser {
             let prev = points[i]
             let next = points[(i + 1) % points.count]
 
-            // Check if both the outgoing control of prev and the incoming
-            // control of next are coincident with their on-curve points
             let prevOutCoincident =
                 abs(prev.controlOut.x - prev.onCurve.x) < 0.01
                 && abs(prev.controlOut.y - prev.onCurve.y) < 0.01
@@ -1257,10 +1072,10 @@ enum FreeHand2Parser {
                 && abs(next.controlIn.y - next.onCurve.y) < 0.01
 
             if prevOutCoincident && nextInCoincident {
-                // Straight line segment
+
                 elements.append(.line(to: VectorPoint(next.onCurve.x, next.onCurve.y)))
             } else {
-                // Cubic Bezier curve
+
                 elements.append(.curve(
                     to: VectorPoint(next.onCurve.x, next.onCurve.y),
                     control1: VectorPoint(prev.controlOut.x, prev.controlOut.y),
@@ -1270,7 +1085,7 @@ enum FreeHand2Parser {
         }
 
         if closed {
-            // Add closing curve segment from last point back to first
+
             let last = points[points.count - 1]
             let prevOutCoincident = abs(last.controlOut.x - last.onCurve.x) < 0.01
                 && abs(last.controlOut.y - last.onCurve.y) < 0.01

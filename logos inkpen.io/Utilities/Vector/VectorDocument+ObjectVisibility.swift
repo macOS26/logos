@@ -141,7 +141,7 @@ extension VectorDocument {
                     if case .text = obj.objectType {
                         showTextInUnified(id: shape.id)
                     } else {
-                        // For shapes, update via setShapeAtIndex
+
                         let shapes = getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                             var updatedShape = shape

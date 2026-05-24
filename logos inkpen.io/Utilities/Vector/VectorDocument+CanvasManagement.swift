@@ -27,7 +27,6 @@ extension VectorDocument {
             color: .blue
         ))
 
-        // Guides layer (index 2)
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Guides",
@@ -39,7 +38,6 @@ extension VectorDocument {
             color: .cyan
         ))
 
-        // Default working layer (index 3)
         snapshot.layers.append(Layer(
             id: UUID(),
             name: "Layer 1",
@@ -76,7 +74,6 @@ extension VectorDocument {
         gridSettings.gridSpacing = settings.gridSpacing
     }
 
-    /// Remove legacy background shapes; Canvas now renders them.
     func migrateBackgroundShapesToCanvas() {
         var needsMigration = false
 

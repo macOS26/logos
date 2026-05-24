@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-    /// Removes objects missing from layers and group memberIDs (cleanup for buggy ops).
     func cleanupOrphanedObjects() {
         var validObjectIDs = Set<UUID>()
         for layer in snapshot.layers {
@@ -68,7 +67,7 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
-        // Fast path: top-level object (most common).
+
         if let object = snapshot.objects[shapeID] {
             let layerIndex = object.layerIndex
             var updatedObject = object
@@ -262,9 +261,6 @@ extension VectorDocument {
         }
     }
 
-    // MARK: - Parent Group Cache Maintenance
-
-    /// Rebuild parent group cache after load.
     func rebuildParentGroupCache() {
         snapshot.parentGroupCache.removeAll()
         snapshot.clippedObjectsCache.removeAll()

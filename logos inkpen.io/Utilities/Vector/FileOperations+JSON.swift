@@ -106,7 +106,6 @@ extension FileOperations {
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
     }
 
-    /// Remove legacy "Canvas Background" / "Pasteboard Background" objects from layers.
     static func removeLegacyBackgroundObjects(from document: VectorDocument) {
         for layerIndex in 0..<document.snapshot.layers.count {
             var layer = document.snapshot.layers[layerIndex]
@@ -122,8 +121,6 @@ extension FileOperations {
                      .guide(let shape):
                     shapeName = shape.name
                 }
-
-                // print("🔍 Layer '\(layer.name)' object: '\(shapeName ?? "nil")'")
 
                 if shapeName == "Canvas Background" || shapeName == "Pasteboard Background" {
                     objectsToRemove.append(objectID)

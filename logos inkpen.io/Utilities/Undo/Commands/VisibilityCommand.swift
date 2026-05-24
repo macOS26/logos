@@ -6,27 +6,27 @@ class VisibilityCommand: BaseCommand {
         case visibility
         case locked
     }
-    
+
     private let objectIDs: [UUID]
     private let property: Property
     private let oldValues: [UUID: Bool]
     private let newValues: [UUID: Bool]
-    
+
     init(objectIDs: [UUID], property: Property, oldValues: [UUID: Bool], newValues: [UUID: Bool]) {
         self.objectIDs = objectIDs
         self.property = property
         self.oldValues = oldValues
         self.newValues = newValues
     }
-    
+
     override func execute(on document: VectorDocument) {
         applyValues(newValues, to: document)
     }
-    
+
     override func undo(on document: VectorDocument) {
         applyValues(oldValues, to: document)
     }
-    
+
     private func applyValues(_ values: [UUID: Bool], to document: VectorDocument) {
         var affectedLayers = Set<Int>()
 

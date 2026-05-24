@@ -483,7 +483,7 @@ extension DrawingCanvas {
     }
 
     private func generateMarkerOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
-        // SIMD-optimized marker offset calculation for real-time drawing
+
         var offsetPoints: [CGPoint] = []
 
         for i in 0..<centerPoints.count {
@@ -494,7 +494,7 @@ extension DrawingCanvas {
             if i == 0 {
                 if i + 1 < centerPoints.count {
                     let nextPoint = centerPoints[i + 1].location
-                    // SIMD vector math
+
                     let dir = nextPoint.simd - point.location.simd
                     perpVec = SIMD2(-dir.y, dir.x)
                 } else {
@@ -502,24 +502,22 @@ extension DrawingCanvas {
                 }
             } else if i == centerPoints.count - 1 {
                 let prevPoint = centerPoints[i - 1].location
-                // SIMD vector math
+
                 let dir = point.location.simd - prevPoint.simd
                 perpVec = SIMD2(-dir.y, dir.x)
             } else {
                 let prevPoint = centerPoints[i - 1].location
                 let nextPoint = centerPoints[i + 1].location
-                // SIMD vector math
+
                 let dir = nextPoint.simd - prevPoint.simd
                 perpVec = SIMD2(-dir.y, dir.x)
             }
 
-            // SIMD normalize
             let length = simd_length(perpVec)
             if length > 0 {
                 perpVec = simd_normalize(perpVec)
             }
 
-            // SIMD offset calculation
             let offsetDistance = thickness / 2.0
             let multiplier: Double = isLeftSide ? 1.0 : -1.0
             let offsetVec = point.location.simd + perpVec * offsetDistance * multiplier
@@ -665,7 +663,7 @@ extension DrawingCanvas {
     }
 
     private func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
-        // SIMD-optimized direction calculation
+
         let p0Vec = SIMD2<Double>(Double(p0.x), Double(p0.y))
         let p1Vec = SIMD2<Double>(Double(p1.x), Double(p1.y))
         let p2Vec = SIMD2<Double>(Double(p2.x), Double(p2.y))

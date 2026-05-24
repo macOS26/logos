@@ -317,17 +317,15 @@ class ProfessionalTextViewModel: ObservableObject {
 
         let targetLayerIndex = document.selectedLayerIndex ?? 2
 
-        // Find the position of the text object in the layer BEFORE converting
         let textPositionInLayer = document.snapshot.layers[targetLayerIndex].objectIDs.firstIndex(of: textObject.id)
 
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
-            // Union the path with itself to preserve curves properly
+
             let unionedPath = linePath.union(linePath, using: .winding)
             let vectorPath = convertCGPathToVectorPath(unionedPath.isEmpty ? linePath : unionedPath)
             let lineName = "Line \(lineIndex + 1)"
 
-            // Preserve stroke properties from text
             let strokeStyle: StrokeStyle? = textObject.typography.hasStroke ? StrokeStyle(
                 color: textObject.typography.strokeColor,
                 width: textObject.typography.strokeWidth,
@@ -357,20 +355,18 @@ class ProfessionalTextViewModel: ObservableObject {
                 textPosition: nil
             )
 
-            // Force type to .shape (NOT .text)
             let shapeObject = VectorObject(id: outlineShape.id, layerIndex: targetLayerIndex, objectType: .shape(outlineShape))
             document.snapshot.objects[outlineShape.id] = shapeObject
             createdShapeIDs.append(outlineShape.id)
         }
 
-        // Insert outline shapes at the same position as the original text
         if let insertIndex = textPositionInLayer {
-            // Insert all shapes at the text's position (in order)
+
             for (offset, shapeID) in createdShapeIDs.enumerated() {
                 document.snapshot.layers[targetLayerIndex].objectIDs.insert(shapeID, at: insertIndex + offset)
             }
         } else {
-            // Fallback: append if text position not found
+
             for shapeID in createdShapeIDs {
                 if !document.snapshot.layers[targetLayerIndex].objectIDs.contains(shapeID) {
                     document.snapshot.layers[targetLayerIndex].objectIDs.append(shapeID)
@@ -422,27 +418,23 @@ class ProfessionalTextViewModel: ObservableObject {
             }
         }
 
-        // Convert near-180-degree handles to perfectly smooth curves
         elements = makeCurvesSmooth(elements)
 
         return VectorPath(elements: elements, isClosed: false)
     }
 
-    /// Convert curves with nearly-aligned handles (close to 180 degrees) into perfectly smooth curves
     private func makeCurvesSmooth(_ elements: [PathElement]) -> [PathElement] {
         var smoothedElements: [PathElement] = []
-        let angleTolerance = 10.0 * .pi / 180.0  // 10 degrees tolerance
+        let angleTolerance = 10.0 * .pi / 180.0
 
         for i in 0..<elements.count {
             let currentElement = elements[i]
 
-            // Only process curve elements
             guard case .curve(let anchor, let incomingHandle, let outgoingHandle) = currentElement else {
                 smoothedElements.append(currentElement)
                 continue
             }
 
-            // Smooth curve: incoming and outgoing handles must be 180° apart from anchor.
             let incomingVec = CGVector(dx: incomingHandle.x - anchor.x, dy: incomingHandle.y - anchor.y)
             let outgoingVec = CGVector(dx: outgoingHandle.x - anchor.x, dy: outgoingHandle.y - anchor.y)
 
@@ -452,15 +444,12 @@ class ProfessionalTextViewModel: ObservableObject {
             var angleDiff = abs(incomingAngle - outgoingAngle)
             if angleDiff > .pi { angleDiff = 2 * .pi - angleDiff }
 
-            // If handles are close to 180 degrees apart (π radians), make them perfectly aligned
             if abs(angleDiff - .pi) < angleTolerance {
                 let incomingLength = sqrt(incomingVec.dx * incomingVec.dx + incomingVec.dy * incomingVec.dy)
                 let outgoingLength = sqrt(outgoingVec.dx * outgoingVec.dx + outgoingVec.dy * outgoingVec.dy)
 
-                // Use the average length for symmetry
                 let avgLength = (incomingLength + outgoingLength) / 2.0
 
-                // Make them perfectly opposite using the outgoing handle's direction
                 let outgoingNormalized = CGVector(
                     dx: outgoingVec.dx / outgoingLength,
                     dy: outgoingVec.dy / outgoingLength
@@ -480,7 +469,6 @@ class ProfessionalTextViewModel: ObservableObject {
                 continue
             }
 
-            // No smoothing needed
             smoothedElements.append(currentElement)
         }
 
@@ -510,7 +498,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
             case .selected:
                 if isDoubleClick {
-                    // Double-clicking from Arrow tool -> need +1 adjustment
+
                     let needsAdjustment = document.viewState.currentTool != .font
                     document.viewState.currentTool = .font
 

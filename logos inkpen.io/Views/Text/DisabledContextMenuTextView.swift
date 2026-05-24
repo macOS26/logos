@@ -4,7 +4,6 @@ class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
 
-    // Force cursor redraw when insertionPointColor changes
     override var insertionPointColor: PlatformColor? {
         didSet {
             if let layoutManager = layoutManager,

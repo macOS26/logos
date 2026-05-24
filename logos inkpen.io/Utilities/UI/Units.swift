@@ -31,46 +31,40 @@ enum MeasurementUnit: String, CaseIterable, Codable {
         }
     }
 
-    /// Default grid spacing in the unit's native measurement (not points).
     var defaultGridSpacing: Double {
         switch self {
-        case .inches: return 0.125      // 1/8 inch
-        case .centimeters: return 0.5   // 5mm
-        case .millimeters: return 1.0   // 1mm
-        case .points: return 9.0        // 9pt (1/8 inch)
-        case .pixels: return 10.0       // 10px
-        case .picas: return 1.0         // 1 pica
+        case .inches: return 0.125
+        case .centimeters: return 0.5
+        case .millimeters: return 1.0
+        case .points: return 9.0
+        case .pixels: return 10.0
+        case .picas: return 1.0
         }
     }
 
-    /// Default grid spacing converted to points
     var defaultGridSpacingInPoints: Double {
         return toPoints(defaultGridSpacing)
     }
 
-    /// Number of minor grid lines between major lines
     var majorGridInterval: Int {
         switch self {
-        case .inches: return 8       // Major line every 1" (8 × 1/8")
-        case .centimeters: return 2  // Major line every 1cm (2 × 5mm)
-        case .millimeters: return 5  // Major line every 5mm
-        case .points: return 8       // Major line every 72pt/1" (8 × 9pt)
-        case .pixels: return 10      // Major line every 100px
-        case .picas: return 6        // Major line every 6pc/1"
+        case .inches: return 8
+        case .centimeters: return 2
+        case .millimeters: return 5
+        case .points: return 8
+        case .pixels: return 10
+        case .picas: return 6
         }
     }
 
-    /// Convert points to this measurement unit
     func fromPoints(_ points: Double) -> Double {
         return points / pointsPerUnit
     }
 
-    /// Convert from this measurement unit to points
     func toPoints(_ value: Double) -> Double {
         return value * pointsPerUnit
     }
 
-    /// Format a value in this unit with appropriate decimal precision
     func format(_ value: Double) -> String {
         return String(format: "%.3f", value)
     }

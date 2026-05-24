@@ -136,7 +136,6 @@ class SVGToInkPenImporter: ObservableObject {
         let shapes = extractShapesFromSVG(svgDoc, svgData: svgData)
         let document = VectorDocument(settings: settings)
 
-        // Add imported layer
         document.snapshot.layers.append(Layer(
             name: name,
             objectIDs: [],
@@ -147,7 +146,6 @@ class SVGToInkPenImporter: ObservableObject {
             color: .blue
         ))
 
-        // Add shapes to the last layer (imported layer)
         let importedLayerIndex = document.snapshot.layers.count - 1
         for shape in shapes {
             document.addShapeToUnifiedSystem(shape, layerIndex: importedLayerIndex)

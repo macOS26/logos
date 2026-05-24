@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// Renders guide lines on the canvas in non-photo blue
-/// Guides are now stored as VectorShape objects in the Guides layer (index 2)
 struct GuidesView: View {
     @ObservedObject var document: VectorDocument
     let showGuides: Bool
@@ -11,7 +9,7 @@ struct GuidesView: View {
 
     var body: some View {
         if showGuides {
-            // Force refresh when objects are moved (including guides)
+
             let _ = document.viewState.objectPositionUpdateTrigger
 
             let guideShapes = document.getGuideShapes()
@@ -41,7 +39,6 @@ struct GuidesView: View {
     }
 }
 
-/// Individual guide line - reactive to dragOffset changes
 private struct GuideLineView: View {
     let shape: VectorShape
     let orientation: Guide.Orientation

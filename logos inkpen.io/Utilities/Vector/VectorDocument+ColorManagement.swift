@@ -65,13 +65,13 @@ extension VectorDocument {
             case .fill:
                 if shape.typography != nil {
                     shape.typography?.fillColor = color
-                    // Preserve existing opacity - don't overwrite it
+
                 }
             case .stroke:
                 if shape.typography != nil {
                     shape.typography?.hasStroke = true
                     shape.typography?.strokeColor = color
-                    // Preserve existing opacity - don't overwrite it
+
                 }
             }
         } else {
@@ -81,14 +81,14 @@ extension VectorDocument {
                     shape.fillStyle = FillStyle(color: color)
                 } else {
                     shape.fillStyle?.color = color
-                    // Preserve existing opacity - don't overwrite it
+
                 }
             case .stroke:
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: color, placement: .center)
                 } else {
                     shape.strokeStyle?.color = color
-                    // Preserve existing opacity - don't overwrite it
+
                 }
             }
         }
@@ -145,7 +145,6 @@ extension VectorDocument {
                         oldOpacities[objectID] = currentOpacity
                         newOpacities[objectID] = currentOpacity
 
-                        // Capture old colors of member shapes (modern groups with memberIDs)
                         if !shape.memberIDs.isEmpty {
                             for memberID in shape.memberIDs {
                                 if let memberObj = snapshot.objects[memberID] {
@@ -163,13 +162,13 @@ extension VectorDocument {
                                         oldOpacities[memberID] = childOpacity
                                         newOpacities[memberID] = childOpacity
                                     case .group, .clipGroup:
-                                        // Nested groups handled recursively
+
                                         break
                                     }
                                 }
                             }
                         } else {
-                            // Legacy groups with embedded groupedShapes
+
                             for childShape in shape.groupedShapes {
                                 if let typography = childShape.typography {
                                     oldColors[childShape.id] = typography.fillColor
@@ -194,7 +193,6 @@ extension VectorDocument {
                         oldOpacities[objectID] = currentOpacity
                         newOpacities[objectID] = currentOpacity
 
-                        // Capture old colors of member shapes (modern groups with memberIDs)
                         if !shape.memberIDs.isEmpty {
                             for memberID in shape.memberIDs {
                                 if let memberObj = snapshot.objects[memberID] {
@@ -212,13 +210,13 @@ extension VectorDocument {
                                         oldOpacities[memberID] = childOpacity
                                         newOpacities[memberID] = childOpacity
                                     case .group, .clipGroup:
-                                        // Nested groups handled recursively
+
                                         break
                                     }
                                 }
                             }
                         } else {
-                            // Legacy groups with embedded groupedShapes
+
                             for childShape in shape.groupedShapes {
                                 if let typography = childShape.typography {
                                     oldColors[childShape.id] = typography.strokeColor
@@ -264,7 +262,7 @@ extension VectorDocument {
             if let vectorObject = snapshot.objects[ objectID] {
                 switch vectorObject.objectType {
                 case .group(let groupShape), .clipGroup(let groupShape):
-                    // Modern groups with memberIDs
+
                     if !groupShape.memberIDs.isEmpty {
                         for memberID in groupShape.memberIDs {
                             if let memberObject = snapshot.objects[memberID] {
@@ -285,7 +283,7 @@ extension VectorDocument {
                             }
                         }
                     } else {
-                        // Legacy groups with embedded groupedShapes
+
                         for childShape in groupShape.groupedShapes {
                             if let childObject = snapshot.objects[ childShape.id] {
                                 switch childObject.objectType {

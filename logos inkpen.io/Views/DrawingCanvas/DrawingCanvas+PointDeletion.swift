@@ -67,10 +67,9 @@ extension DrawingCanvas {
 
         let closedPath = VectorPath(elements: finalElements, isClosed: true)
 
-        // Use active layer or find first non-special layer
         var targetLayerIndex = document.selectedLayerIndex
         if targetLayerIndex == nil {
-            // Find first non-special layer
+
             for (index, layer) in document.snapshot.layers.enumerated() {
                 if layer.name != "Pasteboard" && layer.name != "Canvas" && layer.name != "Guides" {
                     targetLayerIndex = index

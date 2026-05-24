@@ -137,7 +137,7 @@ struct CMYKInputSection: View {
                             .fill(cyanGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-                        
+
                         Slider(value: $cyanSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -183,7 +183,7 @@ struct CMYKInputSection: View {
                             .fill(magentaGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-                        
+
                         Slider(value: $magentaSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -229,7 +229,7 @@ struct CMYKInputSection: View {
                             .fill(yellowGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-                        
+
                         Slider(value: $yellowSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -270,12 +270,12 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
+
                         Capsule()
                             .fill(blackGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
-                        
+
                         Slider(value: $blackSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -353,10 +353,8 @@ struct CMYKInputSection: View {
             return
         }
 
-        // Update colorDelta for live preview
         colorDeltaColor = cmykColor
 
-        // Update the active color binding (fill or stroke)
         if activeColorTarget == .fill {
             defaultFillColor = cmykColor
         } else {
@@ -470,7 +468,6 @@ struct CMYKInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
 
-        // Only set active color if not editing a gradient stop
         if !disableSetActiveColor {
             onSetActiveColor(vectorColor)
         }

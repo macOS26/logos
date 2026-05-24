@@ -107,7 +107,6 @@ extension DrawingCanvas {
     internal func applyTransformToCornerRadii(shape: inout VectorShape) {
         guard !shape.transform.isIdentity else { return }
 
-        // SIMD-optimized transform scale calculation
         let colX = SIMD2<Double>(Double(shape.transform.a), Double(shape.transform.c))
         let colY = SIMD2<Double>(Double(shape.transform.b), Double(shape.transform.d))
         let scaleX = simd_length(colX)
@@ -387,12 +386,10 @@ extension DrawingCanvas {
     private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
         guard var obj = document.snapshot.objects[shape.id] else { return }
 
-        // Update the object with new shape data
         let objectType = VectorObject.determineType(for: shape)
         obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
         document.snapshot.objects[shape.id] = obj
 
-        // Trigger layer update for spatial index
         document.triggerLayerUpdate(for: layerIndex)
     }
 

@@ -134,7 +134,6 @@ extension VectorDocument {
             return VectorText.from(shape)
         }
 
-        // Save old state for undo
         let oldSelection = viewState.selectedObjectIDs
         let removedTextIDs = Array(viewState.selectedObjectIDs)
         var removedTextObjects: [UUID: VectorObject] = [:]
@@ -142,14 +141,13 @@ extension VectorDocument {
         for uuid in viewState.selectedObjectIDs {
             if let obj = snapshot.objects[uuid] {
                 removedTextObjects[uuid] = obj
-                // Store original position in layer
+
                 if let position = snapshot.layers[obj.layerIndex].objectIDs.firstIndex(of: uuid) {
                     removedPositions[uuid] = position
                 }
             }
         }
 
-        // Convert generates shapes (modifies document)
         var newShapeIDs: Set<UUID> = []
         let shapesBefore = Set(snapshot.objects.keys.filter {
             if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
@@ -161,7 +159,6 @@ extension VectorDocument {
             viewModel.convertToPath()
         }
 
-        // Find new shapes created by conversion
         let shapesAfter = Set(snapshot.objects.keys.filter {
             if let obj = snapshot.objects[$0], case .shape = obj.objectType { return true }
             return false
@@ -169,7 +166,7 @@ extension VectorDocument {
         newShapeIDs = shapesAfter.subtracting(shapesBefore)
 
         if !newShapeIDs.isEmpty {
-            // Capture added shapes for undo (already in snapshot from convertToPath)
+
             var addedShapeObjects: [UUID: VectorObject] = [:]
             for uuid in newShapeIDs {
                 if let obj = snapshot.objects[uuid] {
@@ -177,8 +174,6 @@ extension VectorDocument {
                 }
             }
 
-            // Store command for undo (conversion already happened via convertToPath)
-            // Command.undo() will restore text and remove shapes
             let command = TextManagementCommand(
                 operation: .convertToOutlines(
                     removedTextIDs: removedTextIDs,
@@ -191,7 +186,6 @@ extension VectorDocument {
                 newSelection: newShapeIDs
             )
 
-            // Record command without executing (conversion already done by convertToPath)
             commandManager.recordCompletedCommand(command)
             viewState.selectedObjectIDs = newShapeIDs
         } else {

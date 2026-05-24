@@ -93,12 +93,9 @@ extension SVGParser {
         let spreadMethod = parseSpreadMethod(from: attributes)
 
         if gradientUnits == .userSpaceOnUse {
-            // userSpaceOnUse: pre-resolve coordinates into document space at parse time
-            // (usvg approach). cachedCGPath bakes the viewBox transform into paths,
-            // so gradient coordinates need the same transform applied.
+
             r = finalRadius
 
-            // Apply gradientTransform first (in SVG user space)
             if let gradientTransformRaw = attributes["gradientTransform"] {
                 let gradTransform = parseTransform(gradientTransformRaw)
                 centerPoint = centerPoint.applying(gradTransform)
@@ -108,7 +105,6 @@ extension SVGParser {
                 r = xScale == yScale ? r * xScale : r * (xScale + yScale) / 2.0
             }
 
-            // Then apply the viewBox/current transform to match path coordinate space
             if !currentTransform.isIdentity {
                 centerPoint = centerPoint.applying(currentTransform)
                 focalPoint = focalPoint.applying(currentTransform)
@@ -133,7 +129,6 @@ extension SVGParser {
                 if attributes["spreadMethod"] == nil { radialGradient.spreadMethod = inh.spreadMethod }
             }
 
-            // Transform is baked into coordinates — no additional angle/scale needed
             radialGradient.originPoint = centerPoint
             radialGradient.angle = 0.0
             radialGradient.scaleX = 1.0
@@ -142,8 +137,6 @@ extension SVGParser {
             return VectorGradient.radial(radialGradient)
         }
 
-        // Decompose gradientTransform into (angle, scaleX, scaleY, translation) so the
-        // canvas's translate→rotate→scaleBy render path reproduces the exact ellipse.
         let gradTransform = attributes["gradientTransform"].map { parseTransform($0) } ?? .identity
         let decompScaleX = sqrt(gradTransform.a * gradTransform.a + gradTransform.b * gradTransform.b)
         let decompScaleY = sqrt(gradTransform.c * gradTransform.c + gradTransform.d * gradTransform.d)

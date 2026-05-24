@@ -1,10 +1,6 @@
 import SwiftUI
 import AppKit
 
-/// Sheet-presented picker for importing a bundled SF Symbol as SVG vector
-/// content. Uses the library loaded from `sf_symbols.lzfse` and routes the
-/// chosen symbol through `VectorImportManager.importVectorFile` via a temp
-/// file so it goes through the same SVG import path as a File → Open.
 struct SFSymbolsPickerView: View {
     @Binding var isPresented: Bool
     let onImport: (URL) async -> Void
@@ -185,8 +181,6 @@ struct SFSymbolsPickerView: View {
         .padding(10)
     }
 
-    // MARK: - Data
-
     private func loadLibrary() async {
         let names = await Task.detached(priority: .userInitiated) {
             await SFSymbolsLibrary.shared.allNames()
@@ -203,8 +197,6 @@ struct SFSymbolsPickerView: View {
         return Array(matches.prefix(Self.maxResults))
     }
 
-    // MARK: - Recents
-
     private var recentSymbols: [String] {
         (try? JSONDecoder().decode([String].self, from: recentSymbolsData)) ?? []
     }
@@ -219,8 +211,6 @@ struct SFSymbolsPickerView: View {
         recentSymbolsData = (try? JSONEncoder().encode(recents)) ?? Data()
     }
 
-    // MARK: - Import
-
     private func importSymbol(named name: String) async {
         guard let svg = SFSymbolsLibrary.shared.svg(named: name) else {
             NSSound.beep()
@@ -228,8 +218,6 @@ struct SFSymbolsPickerView: View {
         }
         addToRecents(name)
 
-        /* Round-trip through a temp file so the symbol goes through the same
-           VectorImportManager SVG path as File → Open. */
         let tempDir = FileManager.default.temporaryDirectory
         let sanitized = name.replacingOccurrences(of: "/", with: "_")
         let tempURL = tempDir.appendingPathComponent("sfsymbol-\(sanitized)-\(UUID().uuidString.prefix(8)).svg")

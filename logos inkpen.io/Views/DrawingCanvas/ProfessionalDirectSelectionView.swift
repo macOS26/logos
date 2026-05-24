@@ -17,7 +17,6 @@ struct ProfessionalDirectSelectionView: View {
     let liveHandlePositions: [HandleID: CGPoint]
     let draggedCurveSegment: (shapeID: UUID, elementIndex: Int)?
 
-    // Helper method for curved scaling below 100% zoom
     private func scaleForZoom(_ baseSize: CGFloat, zoom: CGFloat) -> CGFloat {
         if zoom < 1.0 {
             return baseSize * pow(zoom, 0.25)
@@ -30,14 +29,12 @@ struct ProfessionalDirectSelectionView: View {
             let zoom = zoomLevel
             let offset = canvasOffset
 
-            // Apply canvas transform GLOBALLY (EXACT same as LayerCanvasView)
             let baseTransform = CGAffineTransform.identity
                 .translatedBy(x: offset.x, y: offset.y)
                 .scaledBy(x: zoom, y: zoom)
 
             context.transform = baseTransform
 
-            // Draw outlines for selected shapes
             for objectID in selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID] else { continue }
 
@@ -51,7 +48,6 @@ struct ProfessionalDirectSelectionView: View {
                 }
             }
 
-            // Draw ALL anchor points AFTER outlines (so blue line shows through)
             for objectID in selectedObjectIDs {
                 guard let object = document.snapshot.objects[objectID],
                       case .shape(let shape) = object.objectType else { continue }
@@ -61,69 +57,61 @@ struct ProfessionalDirectSelectionView: View {
                         let pointID = PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                         let isSelected = selectedPoints.contains(pointID)
 
-                        // Use live position if available, otherwise use original position
                         let pointPosition = if let livePos = livePointPositions[pointID] {
                             livePos
                         } else {
                             CGPoint(x: point.x, y: point.y)
                         }
 
-                        // Transform position and apply drag preview + nudge offset
                         var shapeTransform = shape.transform
                         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
                         let transformed = pointPosition.applying(shapeTransform)
 
-                        // Scale down below 100% zoom using curve
                         let pointSize = scaleForZoom(7.0, zoom: zoom) / zoom
                         let rect = CGRect(x: transformed.x - pointSize/2, y: transformed.y - pointSize/2, width: pointSize, height: pointSize)
 
-                        // Selected points get orange fill, unselected get white fill
                         context.fill(Path(rect), with: .color(isSelected ? .orange : .white))
                         context.stroke(Path(rect), with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
                     }
                 }
             }
 
-            // Draw selected handles
             for handleID in selectedHandles {
                 guard let object = document.snapshot.objects[handleID.shapeID],
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                // Skip handles for corner anchor points
                 let anchorElementIndex = handleID.handleType == .control2 ? handleID.elementIndex : handleID.elementIndex - 1
                 if let anchorType = shape.anchorTypes[anchorElementIndex], anchorType == .corner {
-                    continue  // Don't draw handles for corner points
+                    continue
                 }
-                // Check coincident point (element 0)
+
                 if let anchorType = shape.anchorTypes[0], anchorType == .corner {
                     let isCoincidentHandle = (handleID.handleType == .control1 && handleID.elementIndex == 1) ||
                                             (handleID.handleType == .control2 && handleID.elementIndex == shape.path.elements.count - 1)
                     if isCoincidentHandle {
-                        continue  // Don't draw handles for coincident corner point
+                        continue
                     }
                 }
 
                 drawHandle(handleID, shape: shape, context: &context, zoom: zoom, isSelected: true)
             }
 
-            // Draw visible handles
             for handleID in visibleHandles where !selectedHandles.contains(handleID) {
                 guard let object = document.snapshot.objects[handleID.shapeID],
                       case .shape(let shape) = object.objectType,
                       handleID.elementIndex < shape.path.elements.count else { continue }
 
-                // Skip handles for corner anchor points
                 let anchorElementIndex = handleID.handleType == .control2 ? handleID.elementIndex : handleID.elementIndex - 1
                 if let anchorType = shape.anchorTypes[anchorElementIndex], anchorType == .corner {
-                    continue  // Don't draw handles for corner points
+                    continue
                 }
-                // Check coincident point (element 0)
+
                 if let anchorType = shape.anchorTypes[0], anchorType == .corner {
                     let isCoincidentHandle = (handleID.handleType == .control1 && handleID.elementIndex == 1) ||
                                             (handleID.handleType == .control2 && handleID.elementIndex == shape.path.elements.count - 1)
                     if isCoincidentHandle {
-                        continue  // Don't draw handles for coincident corner point
+                        continue
                     }
                 }
 
@@ -133,10 +121,9 @@ struct ProfessionalDirectSelectionView: View {
     }
 
     private func drawOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
-        // Check if we're dragging a curve segment on this shape
+
         let isDraggingSegmentOnThisShape = draggedCurveSegment?.shapeID == shape.id
 
-        // Build complete path in local coordinates, applying live positions
         var outlinePath = Path()
         var draggedSegmentPath: Path?
         var lastPoint: CGPoint?
@@ -158,7 +145,6 @@ struct ProfessionalDirectSelectionView: View {
                 let point = livePointPositions[pointID] ?? to.cgPoint
                 outlinePath.addLine(to: point)
 
-                // If this is the dragged segment, also build it separately for orange overlay
                 if isThisDraggedSegment {
                     var segPath = Path()
                     if let start = lastPoint {
@@ -180,7 +166,6 @@ struct ProfessionalDirectSelectionView: View {
 
                 outlinePath.addCurve(to: point, control1: control1, control2: control2)
 
-                // If this is the dragged segment, also build it separately for orange overlay
                 if isThisDraggedSegment {
                     var segPath = Path()
                     if let start = lastPoint {
@@ -200,7 +185,6 @@ struct ProfessionalDirectSelectionView: View {
 
                 outlinePath.addQuadCurve(to: point, control: controlPoint)
 
-                // If this is the dragged segment, also build it separately for orange overlay
                 if isThisDraggedSegment {
                     var segPath = Path()
                     if let start = lastPoint {
@@ -214,7 +198,6 @@ struct ProfessionalDirectSelectionView: View {
             case .close:
                 outlinePath.closeSubpath()
 
-                // If this is the dragged segment, build it separately for orange overlay
                 if isThisDraggedSegment, let last = lastPoint, let first = firstPoint {
                     var segPath = Path()
                     segPath.move(to: last)
@@ -224,27 +207,23 @@ struct ProfessionalDirectSelectionView: View {
             }
         }
 
-        // Apply shape transform and drag preview + nudge offset
         var ctx = context
         var shapeTransform = shape.transform
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         ctx.concatenate(shapeTransform)
 
-        // Draw complete path in blue
         ctx.stroke(outlinePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
 
-        // Draw dragged segment on top in orange (thicker)
         if let draggedPath = draggedSegmentPath {
             ctx.stroke(draggedPath, with: .color(.orange), lineWidth: scaleForZoom(2.0, zoom: zoom) / zoom)
         }
     }
 
     private func drawTextOutline(_ shape: VectorShape, context: inout GraphicsContext, zoom: CGFloat) {
-        // Determine outline color based on view mode
+
         let isKeylineMode = document.viewState.viewMode == .keyline
         let outlineColor: Color = isKeylineMode ? .black : .red
 
-        // Get text bounds from areaSize or bounds
         let textBounds: CGRect
         if let areaSize = shape.areaSize {
             textBounds = CGRect(origin: .zero, size: areaSize)
@@ -252,11 +231,9 @@ struct ProfessionalDirectSelectionView: View {
             textBounds = shape.bounds
         }
 
-        // Create rectangle path in local coordinates
         var outlinePath = Path()
         outlinePath.addRect(textBounds)
 
-        // Apply shape transform and drag preview + nudge offset
         var ctx = context
         var shapeTransform = shape.transform
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
@@ -293,7 +270,6 @@ struct ProfessionalDirectSelectionView: View {
 
         guard var anchor = anchorPoint, var handle = handlePoint else { return }
 
-        // Use live positions if available
         if let liveAnchor = anchorPointID, let livePos = livePointPositions[liveAnchor] {
             anchor = livePos
         }
@@ -301,14 +277,11 @@ struct ProfessionalDirectSelectionView: View {
             handle = livePos
         }
 
-        // Skip drawing if handle is collapsed (at same position as anchor)
-        // SIMD-optimized distance calculation
         let distance = simd_length(SIMD2(Double(handle.x - anchor.x), Double(handle.y - anchor.y)))
         if distance < 0.5 {
-            return  // Handle is collapsed, don't draw it
+            return
         }
 
-        // Transform positions and apply drag preview + nudge offset
         var shapeTransform = shape.transform
         shapeTransform = shapeTransform.translatedBy(x: dragPreviewDelta.x + liveNudgeOffset.dx, y: dragPreviewDelta.y + liveNudgeOffset.dy)
         let transformedAnchor = anchor.applying(shapeTransform)
@@ -319,7 +292,6 @@ struct ProfessionalDirectSelectionView: View {
         linePath.addLine(to: transformedHandle)
         context.stroke(linePath, with: .color(.blue), lineWidth: scaleForZoom(1.4, zoom: zoom) / zoom)
 
-        // Scale down below 100% zoom using curve
         let handleSize = scaleForZoom(5.6, zoom: zoom) / zoom
         let circle = Circle().path(in: CGRect(x: transformedHandle.x - handleSize/2, y: transformedHandle.y - handleSize/2, width: handleSize, height: handleSize))
         context.fill(circle, with: .color(isSelected ? .orange : .blue))

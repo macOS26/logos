@@ -2,23 +2,22 @@ import SwiftUI
 import Combine
 
 final class VectorDocument: ObservableObject, Codable {
-    // MARK: - New Structure
+
     var snapshot: DocumentSnapshot = DocumentSnapshot()
 
-    // MARK: - Legacy Structure (to be migrated)
     var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings = DocumentSettings()
-    var layerIndex: Int = 0  // DEPRECATED
+    var layerIndex: Int = 0
     var selectedLayerIndex: Int?
-    
+
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
-            
+
             settings.fillColor = documentColorDefaults.fillColor
             settings.strokeColor = documentColorDefaults.strokeColor
         }
     }
-    
+
     @Published var colorSwatches: ColorSwatches = .empty {
         didSet {
             settings.customRgbSwatches = colorSwatches.rgb
@@ -51,18 +50,16 @@ final class VectorDocument: ObservableObject, Codable {
     @Published var gridSettings: GridSettings = .default
 
     internal var isUndoRedoOperation: Bool = false
-    
+
     lazy var commandManager: CommandManager = {
         let manager = CommandManager(maxStackSize: maxUndoStackSize)
         manager.document = self
         return manager
     }()
 
-    // Per-document image storage.
     internal var imageStorage: [UUID: CGImage] = [:]
     internal var baseDirectoryURL: URL? = nil
 
-    // Per-shape hash of last drawn CGImage; skips cgContext.draw() when unchanged.
     internal var lastDrawnImageHash: [UUID: Int] = [:]
 
     @Published var fontManager: FontManager = FontManager()
@@ -83,7 +80,7 @@ final class VectorDocument: ObservableObject, Codable {
 
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
-        
+
         self.documentColorDefaults = ColorDefaults()
         self.colorSwatches = .empty
         self.gridSettings = .default
@@ -130,7 +127,7 @@ final class VectorDocument: ObservableObject, Codable {
         } else {
             self.documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
         }
-        
+
         if let strokeColor = settings.strokeColor {
             self.documentColorDefaults.strokeColor = strokeColor
         } else {
@@ -195,13 +192,13 @@ final class VectorDocument: ObservableObject, Codable {
 
         ensureGuidesLayerExists()
         validateSelectedLayer()
-        
+
         if let fillColor = settings.fillColor {
             documentColorDefaults.fillColor = fillColor
         } else {
             documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
         }
-        
+
         if let strokeColor = settings.strokeColor {
             documentColorDefaults.strokeColor = strokeColor
         } else {
@@ -241,9 +238,6 @@ final class VectorDocument: ObservableObject, Codable {
         changeNotifier.notifyGeneralChange()
     }
 
-    // MARK: - Layer Update Triggers
-
-    /// Triggers updates for specific layers by their indices
     func triggerLayerUpdates(for layerIndices: Set<Int>) {
         for layerIndex in layerIndices {
             guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { continue }
@@ -252,14 +246,12 @@ final class VectorDocument: ObservableObject, Codable {
         }
     }
 
-    /// Triggers update for a single layer by index
     func triggerLayerUpdate(for layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
         let layerID = snapshot.layers[layerIndex].id
         viewState.layerUpdateTriggers[layerID, default: 0] &+= 1
     }
 
-    /// Updates layer objectIDs and automatically triggers layer update
     func updateLayerObjectIDs(layerIndex: Int, newObjectIDs: [UUID]) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
@@ -270,7 +262,6 @@ final class VectorDocument: ObservableObject, Codable {
         triggerLayerUpdate(for: layerIndex)
     }
 
-    /// Appends object ID to layer and automatically triggers layer update
     func appendToLayer(layerIndex: Int, objectID: UUID) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
@@ -282,7 +273,6 @@ final class VectorDocument: ObservableObject, Codable {
         }
     }
 
-    /// Removes object ID from layer and automatically triggers layer update
     func removeFromLayer(layerIndex: Int, objectID: UUID) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
@@ -293,7 +283,6 @@ final class VectorDocument: ObservableObject, Codable {
         triggerLayerUpdate(for: layerIndex)
     }
 
-    /// Inserts object ID at specific index in layer and automatically triggers layer update
     func insertIntoLayer(layerIndex: Int, objectID: UUID, at index: Int) {
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
@@ -304,9 +293,6 @@ final class VectorDocument: ObservableObject, Codable {
         triggerLayerUpdate(for: layerIndex)
     }
 
-    // MARK: - Group Helpers
-
-    /// Finds the parent group object that contains the given child object ID
     func findParentGroup(for childID: UUID) -> VectorObject? {
         for object in snapshot.objects.values {
             switch object.objectType {
@@ -321,7 +307,6 @@ final class VectorDocument: ObservableObject, Codable {
         return nil
     }
 
-    /// Updates a child shape within its parent group's groupedShapes array.
     func updateChildInParentGroup(childID: UUID, updatedShape: VectorShape) {
         guard let parentGroup = findParentGroup(for: childID) else { return }
 
@@ -338,9 +323,6 @@ final class VectorDocument: ObservableObject, Codable {
         }
     }
 
-    // MARK: - Image Management
-
-    /// Drop cached images so they regenerate from source on next render.
     func regenerateAllImages() {
         imageStorage.removeAll()
         lastDrawnImageHash.removeAll()

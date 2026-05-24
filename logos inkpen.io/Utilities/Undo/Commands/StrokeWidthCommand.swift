@@ -44,7 +44,7 @@ class StrokeWidthCommand: BaseCommand {
                 affectedLayers.insert(obj.layerIndex)
 
             case .guide:
-                continue  // Guides don't support stroke width changes
+                continue
             }
         }
 

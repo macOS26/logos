@@ -1,11 +1,6 @@
 import SwiftUI
 import Combine
 
-/// Shared state for the split TransformationControls toolbar sections.
-/// Holds every user-editable transform field (position, size, scale,
-/// rotation, proportion/link toggles). One instance is created by the
-/// parent view so the four separate toolbar groups read/write the same
-/// values and stay synchronized.
 final class TransformationControlsState: ObservableObject {
     @Published var xValue: String = ""
     @Published var yValue: String = ""

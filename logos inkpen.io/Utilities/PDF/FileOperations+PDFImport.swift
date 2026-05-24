@@ -87,7 +87,6 @@ extension FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
-        // Dedicated "Imported PDF" layer — mirrors FileOperations+SVGImport.swift lines 116-128.
         let importedLayer = Layer(
             id: UUID(),
             name: "Imported PDF",

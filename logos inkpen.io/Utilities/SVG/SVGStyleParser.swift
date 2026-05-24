@@ -13,7 +13,6 @@ extension SVGParser {
         let stroke = attributes["stroke"] ?? "none"
         guard stroke != "none" else { return nil }
 
-        // Parse common stroke attributes
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
         let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
         let lineCap = parseLineCap(attributes["stroke-linecap"])
@@ -151,7 +150,6 @@ extension SVGParser {
         return nil
     }
 
-    // W3C SVG named colors — full 147-color set
     private static let svgNamedColors: [String: (Double, Double, Double)] = [
         "aliceblue": (240/255.0, 248/255.0, 255/255.0),
         "antiquewhite": (250/255.0, 235/255.0, 215/255.0),

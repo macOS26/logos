@@ -48,7 +48,7 @@ extension DrawingCanvas {
 
         switch element {
         case .curve(let to, let control1, let control2):
-            // Split curve into two curves
+
             let t = findParametricValueOnCurve(
                 start: CGPoint(x: startPoint.x, y: startPoint.y),
                 control1: control1.cgPoint,
@@ -81,11 +81,10 @@ extension DrawingCanvas {
             elements.insert(secondCurve, at: elementIndex + 1)
 
         case .line(let to):
-            // Split line into two lines
+
             let start = CGPoint(x: startPoint.x, y: startPoint.y)
             let end = to.cgPoint
 
-            // Find closest point on line to click location
             let t = closestPointOnLineSegment(point: location, start: start, end: end)
             let splitPoint = CGPoint(
                 x: start.x + t * (end.x - start.x),
@@ -99,7 +98,7 @@ extension DrawingCanvas {
             elements.insert(secondLine, at: elementIndex + 1)
 
         case .close:
-            // Convert close to line, split it, and add close at the end
+
             guard let firstElement = elements.first else { return }
             let endPoint: VectorPoint
             switch firstElement {
@@ -112,7 +111,6 @@ extension DrawingCanvas {
             let start = CGPoint(x: startPoint.x, y: startPoint.y)
             let end = CGPoint(x: endPoint.x, y: endPoint.y)
 
-            // Find closest point on line to click location
             let t = closestPointOnLineSegment(point: location, start: start, end: end)
             let splitPoint = CGPoint(
                 x: start.x + t * (end.x - start.x),
@@ -268,7 +266,7 @@ extension DrawingCanvas {
                     case .quadCurve(let to, _):
                         previousPoint = to
                     case .close:
-                        // Handle close segment - line from last point back to first point
+
                         if let prev = previousPoint,
                            let firstPoint = shape.path.elements.first,
                            case .move(let firstTo) = firstPoint {
@@ -346,7 +344,7 @@ extension DrawingCanvas {
     }
 
     private func isPointNearLineSegment(point: CGPoint, start: CGPoint, end: CGPoint, tolerance: Double) -> Bool {
-        // SIMD-optimized perpendicular distance calculation
+
         let pointVec = SIMD2<Double>(Double(point.x), Double(point.y))
         let startVec = SIMD2<Double>(Double(start.x), Double(start.y))
         let endVec = SIMD2<Double>(Double(end.x), Double(end.y))

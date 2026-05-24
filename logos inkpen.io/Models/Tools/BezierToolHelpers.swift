@@ -196,7 +196,7 @@ extension DrawingCanvas {
         updatePathWithHandles()
 
         if var currentPath = bezierPath {
-            // Save pending handles (first/last point outgoing) for path continuation.
+
             if let firstPointHandles = bezierHandles[0], let control2 = firstPointHandles.control2 {
                 currentPath.pendingStartHandle = control2
                 print("🔧 Saved pendingStartHandle: \(control2)")
@@ -207,9 +207,8 @@ extension DrawingCanvas {
                 print("🔧 Saved pendingEndHandle: \(control2)")
             }
 
-            // Save full bezier handle state for unclosed paths only.
             if !currentPath.isClosed {
-                // Int keys -> String keys for JSON compatibility.
+
                 var stringKeyedHandles: [String: BezierHandleInfo] = [:]
                 for (key, value) in bezierHandles {
                     stringKeyedHandles[String(key)] = value
@@ -331,7 +330,6 @@ extension DrawingCanvas {
         var bestIntersection: CGPoint?
         var bestScore = Double.infinity
 
-        // SIMD-optimized trig operations
         let dir1 = SIMD2<Double>(cos(angleFromCurrentRad), sin(angleFromCurrentRad))
         let currentVec = SIMD2<Double>(Double(currentPoint.x), Double(currentPoint.y))
         let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
@@ -366,7 +364,7 @@ extension DrawingCanvas {
     }
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
-        // SIMD-optimized vector operations
+
         let refVec = SIMD2<Double>(Double(reference.x), Double(reference.y))
         let targetVec = SIMD2<Double>(Double(target.x), Double(target.y))
         let delta = targetVec - refVec
@@ -399,7 +397,7 @@ extension DrawingCanvas {
         }
 
         let constrainedAngleRad = closestAngle * .pi / 180.0
-        // SIMD-optimized trig and vector operations
+
         let offset = SIMD2<Double>(cos(constrainedAngleRad), sin(constrainedAngleRad)) * distance
         let result = refVec + offset
 
@@ -515,7 +513,7 @@ extension DrawingCanvas {
                 currentIndex += 1
 
             case .quadCurve(to: let point, control: _):
-                // TODO: proper quadratic->cubic conversion.
+
                 points.append(point)
                 previousPoint = point
                 currentIndex += 1
@@ -527,7 +525,6 @@ extension DrawingCanvas {
 
         let lastPointIndex = points.count - 1
 
-        // First point: prefer pendingStartHandle, else fall back to path element.
         if let pendingStart = shape.path.pendingStartHandle {
             var handleInfo = handles[0] ?? BezierHandleInfo()
             handleInfo.control2 = pendingStart
@@ -549,7 +546,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Last point outgoing handle: use pendingEndHandle if set, else mirror incoming.
         var handleInfo = handles[lastPointIndex] ?? BezierHandleInfo()
         print("🔧 Last point existing handleInfo - control1: \(handleInfo.control1 != nil)")
 
@@ -562,7 +558,7 @@ extension DrawingCanvas {
             switch lastElement {
             case .curve(_, _, control2: let cp2):
                 let lastPoint = points[lastPointIndex]
-                // Mirror incoming handle: same length, opposite direction.
+
                 let mirroredControl2 = VectorPoint(
                     2 * lastPoint.x - cp2.x,
                     2 * lastPoint.y - cp2.y
@@ -592,7 +588,6 @@ extension DrawingCanvas {
         if isStartPoint {
             points.reverse()
 
-            // Rebuild handles with reversed indices; swap control1/control2.
             var reversedHandles: [Int: BezierHandleInfo] = [:]
             for (index, handleInfo) in handles {
                 let newIndex = points.count - 1 - index
@@ -604,7 +599,6 @@ extension DrawingCanvas {
             }
             handles = reversedHandles
 
-            // Mirror original pendingStartHandle to new last point's control2 for smooth continuation.
             let newLastIndex = points.count - 1
             if let pendingStart = pendingStartHandle {
                 let lastPoint = points[newLastIndex]
@@ -619,7 +613,7 @@ extension DrawingCanvas {
                 print("🔧 Applied mirrored pendingStartHandle to reversed last point \(newLastIndex)")
             }
         } else if isEndPoint {
-            // Continuing from end: handles already reconstructed from path elements + pendingEndHandle.
+
             let lastIdx = points.count - 1
             if let lastHandles = handles[lastIdx] {
                 print("🔧 End continuation: last point (\(lastIdx)) control2: \(lastHandles.control2 != nil ? "YES - smooth" : "NO - corner")")
@@ -645,13 +639,11 @@ extension DrawingCanvas {
             print("  Point \(index): control1=\(handleInfo.control1 != nil), control2=\(handleInfo.control2 != nil), hasHandles=\(handleInfo.hasHandles)")
         }
 
-        // Rebuild bezierPath from points/handles (critical when reversed).
         rebuildBezierPath()
 
         selectedPoints.removeAll()
     }
 
-    /// Rebuild bezierPath from bezierPoints and bezierHandles
     private func rebuildBezierPath() {
         guard !bezierPoints.isEmpty else {
             bezierPath = nil

@@ -36,15 +36,13 @@ struct ProfessionalTextCanvas: View {
     }
 
     var body: some View {
-        // Read directly from document, not viewModel
+
         let textObject = document.findText(by: textObjectID) ?? viewModel.textObject
         let bounds = textObject.bounds
         let position = textObject.position
 
-        // Apply deltas with proportional line height
         let fontSize = fontSizeDelta ?? textObject.typography.fontSize
 
-        // Explicit lineHeightDelta overrides proportional (ternary avoids control flow in body)
         let lineHeight: CGFloat
         if let delta = lineHeightDelta {
             lineHeight = CGFloat(delta)
@@ -59,7 +57,7 @@ struct ProfessionalTextCanvas: View {
 
         let fontFamily = textObject.typography.fontFamily
         let fontVariant = textObject.typography.fontVariant
-        // Included so view updates when fill color changes
+
         let fillColor = textObject.typography.fillColor
 
         let offsetVec = SIMD2<Float>(Float(canvasOffset.x), Float(canvasOffset.y))
@@ -86,7 +84,7 @@ struct ProfessionalTextCanvas: View {
         .offset(x: CGFloat(offsetVec.x), y: CGFloat(offsetVec.y))
         .offset(x: shouldApplyDragPreview() ? CGFloat(scaledDrag.x) : 0,
                 y: shouldApplyDragPreview() ? CGFloat(scaledDrag.y) : 0)
-        //.id(dragPreviewTrigger)
+
         .onKeyPress(action: handleKeyPress)
     }
 
@@ -123,19 +121,17 @@ struct ProfessionalTextCanvas: View {
         return .handled
     }
 
-    // MARK: - NSViewRepresentable
-
     struct TextViewRepresentable: NSViewRepresentable {
         @ObservedObject var viewModel: ProfessionalTextViewModel
         @State var isUpdatingFromTyping: Bool = false
         let viewMode: ViewMode
-        let letterSpacing: CGFloat  // Direct value, not from @ObservedObject
+        let letterSpacing: CGFloat
         let lineHeight: CGFloat
         let fontSize: CGFloat
         let lineSpacing: CGFloat
         let fontFamily: String
         let fontVariant: String?
-        let fillColor: VectorColor  // Track color changes
+        let fillColor: VectorColor
         let fontManager: FontManager
         @Binding var textContentDelta: (id: UUID, content: String)?
 
@@ -166,7 +162,7 @@ struct ProfessionalTextCanvas: View {
             textView.isAutomaticTextReplacementEnabled = false
             textView.menu = nil
             textView.delegate = context.coordinator
-            // Match CTLine rendering font logic
+
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
@@ -177,7 +173,7 @@ struct ProfessionalTextCanvas: View {
                 return PlatformFont(name: fontFamily, size: fontSize) ?? PlatformFont.systemFont(ofSize: fontSize)
             }()
             textView.font = liveFont
-            textView.textColor = CGColor.clear.platformColor  // DEBUG: Change to .systemPink to see NSTextView
+            textView.textColor = CGColor.clear.platformColor
             textView.allowsInteraction = true
             textView.shouldShowCursor = true
 
@@ -189,7 +185,6 @@ struct ProfessionalTextCanvas: View {
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
-                // Force redraw with kern attribute
                 textView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                 if let textContainer = textView.textContainer {
                     textView.layoutManager?.ensureLayout(for: textContainer)
@@ -223,8 +218,6 @@ struct ProfessionalTextCanvas: View {
                 nsView.string = viewModel.text
             }
 
-
-            // Always apply font; comparing PlatformFont objects is unreliable
             let liveFont: PlatformFont = {
                 if let variant = fontVariant,
                    let postScriptName = fontManager.getPostScriptName(family: fontFamily, variant: variant),
@@ -239,7 +232,7 @@ struct ProfessionalTextCanvas: View {
                 let range = NSRange(location: 0, length: nsView.string.count)
                 nsView.textStorage?.beginEditing()
                 nsView.textStorage?.addAttribute(.font, value: liveFont, range: range)
-                nsView.textStorage?.addAttribute(.foregroundColor, value: CGColor.clear.platformColor, range: range)  // DEBUG: Change to .systemPink
+                nsView.textStorage?.addAttribute(.foregroundColor, value: CGColor.clear.platformColor, range: range)
                 nsView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 nsView.textStorage?.endEditing()
 
@@ -275,7 +268,7 @@ struct ProfessionalTextCanvas: View {
             if viewMode == .keyline {
                 cursorColor = CGColor.black.platformColor
             } else {
-                // Use fill color with full opacity for cursor visibility
+
                 let fillCGColor = fillColor.cgColor
                 if let components = fillCGColor.components, components.count >= 3 {
                     let colorWithOpacity = CGColor(red: components[0], green: components[1], blue: components[2], alpha: 1.0)
@@ -304,7 +297,7 @@ struct ProfessionalTextCanvas: View {
             }()
             textView.typingAttributes = [
                 .font: textView.font ?? liveFont,
-                .foregroundColor: PlatformColor.clear,  // DEBUG: Change to .systemPink to see NSTextView
+                .foregroundColor: PlatformColor.clear,
                 .paragraphStyle: paragraphStyle,
                 .kern: letterSpacing
             ]
@@ -313,7 +306,7 @@ struct ProfessionalTextCanvas: View {
                 let range = NSRange(location: 0, length: textView.string.count)
                 textView.textStorage?.beginEditing()
                 textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-                textView.textStorage?.addAttribute(.foregroundColor, value: PlatformColor.clear, range: range)  // DEBUG: Change to .systemPink
+                textView.textStorage?.addAttribute(.foregroundColor, value: PlatformColor.clear, range: range)
                 textView.textStorage?.addAttribute(.kern, value: letterSpacing, range: range)
                 textView.textStorage?.endEditing()
 
@@ -335,7 +328,7 @@ struct ProfessionalTextCanvas: View {
             var isRestoringSelection: Bool = false
             weak var textView: DisabledContextMenuTextView?
             var updateTimer: Timer?
-            var originalText: String?  // Store original text for undo
+            var originalText: String?
 
             init(_ parent: TextViewRepresentable) {
                 self.parent = parent
@@ -356,12 +349,10 @@ struct ProfessionalTextCanvas: View {
                     self.parent.viewModel.text = newText
                     self.parent.viewModel.updateLastTypingTime()
 
-                    // Delta for live preview, like fontSizeDelta
                     self.parent.textContentDelta = (textObjectId, newText)
 
                     self.updateTimer?.invalidate()
 
-                    // Commit after 500ms idle
                     self.updateTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
                         guard let self = self else { return }
 
@@ -390,7 +381,6 @@ struct ProfessionalTextCanvas: View {
                 guard !isRestoringSelection, let textView = notification.object as? NSTextView else { return }
                 let selectedRange = textView.selectedRange()
 
-                // Include kern at current cursor position in typing attributes
                 if textView.string.count > 0, selectedRange.location < textView.string.count {
                     if let attrs = textView.textStorage?.attributes(at: selectedRange.location, effectiveRange: nil) {
                         textView.typingAttributes = attrs
@@ -415,7 +405,7 @@ struct ProfessionalTextCanvas: View {
                             textID: textObjectId,
                             oldContent: originalText,
                             newContent: finalText,
-                            oldBounds: nil,  // TODO: Store old bounds if needed
+                            oldBounds: nil,
                             newBounds: textFrame
                         )
                         self.parent.viewModel.document.executeCommand(command)

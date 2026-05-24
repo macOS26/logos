@@ -28,7 +28,6 @@ extension VectorDocument {
                 affectedIDs.append(shape.id)
                 layerIndices[shape.id] = obj.layerIndex
 
-                // Create new shape and store it
                 if let unwrappedShape = shape.unwrapWarpObject() {
                     newShapes[shape.id] = unwrappedShape
                 }
@@ -69,7 +68,6 @@ extension VectorDocument {
                 affectedIDs.append(shape.id)
                 layerIndices[shape.id] = obj.layerIndex
 
-                // Create new shape and store it
                 if let expandedShape = shape.expandWarpObject() {
                     newShapes[shape.id] = expandedShape
                 }

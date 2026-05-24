@@ -12,7 +12,6 @@ extension DrawingCanvas {
     func findNearestSnapPoint(to point: CGPoint, threshold: CGFloat = 10.0) -> SnapPoint? {
         guard document.gridSettings.snapToPoint else { return nil }
 
-        // Collect all snap points and their metadata
         var allSnapPoints: [CGPoint] = []
         var allObjectIDs: [UUID] = []
         var snapPointMetadata: [(objectID: UUID, isAnchor: Bool, description: String)] = []
@@ -40,7 +39,6 @@ extension DrawingCanvas {
 
         guard !allSnapPoints.isEmpty else { return nil }
 
-        // Use Metal GPU for parallel snap point detection
         if let result = MetalComputeEngine.shared.findNearestSnapPointGPU(
             snapPoints: allSnapPoints,
             objectIDs: allObjectIDs,

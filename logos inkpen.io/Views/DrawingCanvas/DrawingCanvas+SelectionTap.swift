@@ -12,19 +12,15 @@ extension DrawingCanvas {
             return
         }
 
-        // Note: Cmd key temporary switch to direct selection is handled by AppEventMonitor
-
         if isControlPressed && document.viewState.currentTool == .selection {
             var clickedShape: VectorShape?
 
-            // Iterate through layers from top to bottom (reversed)
             for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
                 let layer = document.snapshot.layers[layerIndex]
                 if layerIndex < document.snapshot.layers.count && document.snapshot.layers[layerIndex].isLocked {
                     continue
                 }
 
-                // Iterate through objects in layer from top to bottom (reversed)
                 for objectID in layer.objectIDs.reversed() {
                     guard let object = document.snapshot.objects[objectID] else { continue }
 
@@ -61,21 +57,19 @@ extension DrawingCanvas {
                 if !shape.isRoundedRectangle {
                 }
 
-                // Track previous selection to trigger only affected layers
                 let previousSelection = document.viewState.selectedObjectIDs
 
                 document.setSelectionWithUndo([shape.id], ordered: [shape.id])
                 isCornerRadiusEditMode = true
 
-                // Trigger updates for affected layers only
                 var affectedLayers = Set<Int>()
-                // Add layers from previously selected objects
+
                 for objectID in previousSelection {
                     if let object = document.snapshot.objects[objectID] {
                         affectedLayers.insert(object.layerIndex)
                     }
                 }
-                // Add layer from newly selected object
+
                 if let object = document.snapshot.objects[shape.id] {
                     affectedLayers.insert(object.layerIndex)
                 }
@@ -90,8 +84,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Clear direct selection state (points/handles) but DON'T sync to document yet
-        // We'll handle document.viewState.selectedObjectIDs based on the tap logic below
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         selectedObjectIDs.removeAll()
@@ -102,31 +94,29 @@ extension DrawingCanvas {
               document.viewState.currentTool == .rotate ||
               document.viewState.currentTool == .shear ||
               document.viewState.currentTool == .warp else {
-            // For non-selection tools, deselect when clicking empty space
+
             if !isShiftPressed && !isCommandPressed {
                 document.clearSelectionWithUndo()
             }
             return
         }
 
-        // Cmd+Click = Select Behind (cycle through stacked objects like Illustrator)
         if isCommandPressed {
             let objectsAtLocation = findAllObjectsAtLocation(validatedLocation)
             if !objectsAtLocation.isEmpty {
-                // Check if we're clicking at the same location (within tolerance)
+
                 let tolerance: CGFloat = 5.0
                 let isSameLocation = abs(validatedLocation.x - selectBehindLocation.x) < tolerance &&
                                      abs(validatedLocation.y - selectBehindLocation.y) < tolerance
 
                 if isSameLocation {
-                    // Cycle to next object behind
+
                     selectBehindIndex = (selectBehindIndex + 1) % objectsAtLocation.count
                 } else {
-                    // New location - check if top object is already selected
+
                     selectBehindLocation = validatedLocation
                     let topObject = objectsAtLocation[0]
 
-                    // If top object is already selected, start with the one behind it
                     if document.viewState.selectedObjectIDs.contains(topObject.id) && objectsAtLocation.count > 1 {
                         selectBehindIndex = 1
                     } else {
@@ -138,7 +128,6 @@ extension DrawingCanvas {
                 let previousSelection = document.viewState.selectedObjectIDs
                 document.setSelectionWithUndo([objectToSelect.id], ordered: [objectToSelect.id])
 
-                // Trigger updates for affected layers
                 var affectedLayers = Set<Int>()
                 for objectID in previousSelection {
                     if let object = document.snapshot.objects[objectID] {
@@ -153,10 +142,8 @@ extension DrawingCanvas {
             }
         }
 
-        // OPTIMIZED: Use direct UUID lookups instead of building array
         let hitObject = findObjectAtLocationOptimized(validatedLocation)
 
-        // Reset select behind state on normal click
         if !isCommandPressed {
             selectBehindIndex = 0
             selectBehindLocation = .zero
@@ -166,26 +153,24 @@ extension DrawingCanvas {
 
             let objectToSelect = hitObject
 
-            // Track previous selection to trigger only affected layers
             let previousSelection = document.viewState.selectedObjectIDs
 
             if isShiftPressed {
-                // Add to selection
+
                 document.addToSelectionWithUndo(objectToSelect.id)
             } else {
-                // Single selection
+
                 document.setSelectionWithUndo([objectToSelect.id], ordered: [objectToSelect.id])
             }
 
-            // Trigger updates for affected layers only
             var affectedLayers = Set<Int>()
-            // Add layers from previously selected objects
+
             for objectID in previousSelection {
                 if let object = document.snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
                 }
             }
-            // Add layers from newly selected objects
+
             for objectID in document.viewState.selectedObjectIDs {
                 if let object = document.snapshot.objects[objectID] {
                     affectedLayers.insert(object.layerIndex)
@@ -207,14 +192,13 @@ extension DrawingCanvas {
                 }
             }
         } else {
-            // Nothing was hit - deselect unless modifier keys pressed
+
             if !isShiftPressed && !isCommandPressed {
-                // Track previous selection to trigger only affected layers
+
                 let previousSelection = document.viewState.selectedObjectIDs
 
                 document.clearSelectionWithUndo()
 
-                // Trigger updates for previously selected layers only
                 var affectedLayers = Set<Int>()
                 for objectID in previousSelection {
                     if let object = document.snapshot.objects[objectID] {
@@ -223,26 +207,22 @@ extension DrawingCanvas {
                 }
                 document.triggerLayerUpdates(for: affectedLayers)
 
-                // Clear local selection state
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
                 selectedObjectIDs.removeAll()
 
-                // Sync with document to ensure UI updates
                 syncDirectSelectionWithDocument()
                 isCornerRadiusEditMode = false
             }
         }
     }
 
-    /// Hit test for direct selection - click anywhere on shape to select it
     internal func performPathOnlyHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        // Direct selection uses same hit test as arrow tool
+
         return performShapeHitTest(shape: shape, at: location)
     }
 
     internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        // Bounds-only hit testing - no tolerance
 
         if shape.typography != nil {
             let textBounds: CGRect
@@ -259,16 +239,13 @@ extension DrawingCanvas {
             return textBounds.contains(location)
         }
 
-        // Groups use groupBounds
         if shape.isGroupContainer {
             return shape.groupBounds.contains(location)
         }
 
-        // Special handling for guides - use tolerance-based hit testing
         if shape.isGuide, let orientation = shape.guideOrientation {
-            let guideTolerance: CGFloat = 5.0  // 5px tolerance for guide selection
+            let guideTolerance: CGFloat = 5.0
 
-            // Extract guide position from path
             guard let firstElement = shape.path.elements.first,
                   case .move(let point) = firstElement else {
                 return false
@@ -284,7 +261,6 @@ extension DrawingCanvas {
             }
         }
 
-        // Get transformed bounds - exact bounding box only
         let hitBounds = shape.bounds.applying(shape.transform)
         return hitBounds.contains(location)
     }
@@ -364,27 +340,22 @@ extension DrawingCanvas {
         }
     }
 
-    /// Find all objects at a location, ordered from top to bottom (for select behind)
     internal func findAllObjectsAtLocation(_ location: CGPoint) -> [VectorObject] {
         var results: [VectorObject] = []
 
-        // Iterate from top layer to bottom
         for layerIndex in stride(from: document.snapshot.layers.count - 1, through: 0, by: -1) {
             let layer = document.snapshot.layers[layerIndex]
             if layer.isLocked { continue }
 
-            // Iterate from top object to bottom within layer
             for objectID in layer.objectIDs.reversed() {
                 guard let object = document.snapshot.objects[objectID] else { continue }
                 let shape = object.shape
 
-                // Skip backgrounds
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     continue
                 }
                 if !shape.isVisible { continue }
 
-                // Hit test
                 if performShapeHitTest(shape: shape, at: location) {
                     results.append(object)
                 }

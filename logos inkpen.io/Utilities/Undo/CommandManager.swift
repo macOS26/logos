@@ -22,13 +22,12 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = true
         command.execute(on: document)
         document.changeNotifier.notifyGeneralChange()
-        //document.objectWillChange.send()
+
         document.isUndoRedoOperation = false
 
         addToUndoStack(command)
     }
 
-    /// Add command to undo stack without executing (work already done)
     func recordCompletedCommand(_ command: Command) {
         addToUndoStack(command)
     }
@@ -56,7 +55,7 @@ class CommandManager: ObservableObject {
         let command = undoStack.removeLast()
         command.undo(on: document)
         document.changeNotifier.notifyGeneralChange()
-       // document.objectWillChange.send()
+
         redoStack.append(command)
         document.isUndoRedoOperation = false
 
@@ -70,7 +69,7 @@ class CommandManager: ObservableObject {
         let command = redoStack.removeLast()
         command.execute(on: document)
         document.changeNotifier.notifyGeneralChange()
-        //document.objectWillChange.send()
+
         undoStack.append(command)
         document.isUndoRedoOperation = false
 

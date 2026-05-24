@@ -2,7 +2,7 @@ import SwiftUI
 
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        // Direct selection tool: always nudge points when any are selected.
+
         if viewState.currentTool == .directSelection && !viewState.selectedPoints.isEmpty {
             nudgeSelectedPoints(by: nudgeAmount)
             return

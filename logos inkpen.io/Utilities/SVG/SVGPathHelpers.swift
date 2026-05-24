@@ -429,7 +429,7 @@ extension SVGParser {
 
             case "A", "a":
                 let isRelative = currentCommand == "a"
-                // Expand concatenated arc flags before parsing
+
                 let arcTokens = expandArcTokens(tokens, from: i)
                 var ai = 0
                 while ai + 6 < arcTokens.count {
@@ -447,7 +447,7 @@ extension SVGParser {
                     lastControlPoint = nil
                     ai += 7
                 }
-                // Advance i past the consumed original tokens
+
                 while i < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
                     i += 1
                 }
@@ -459,9 +459,6 @@ extension SVGParser {
 
         return elements
     }
-
-    // MARK: - SVG Arc Parameter Parsing
-    // Arc flags can be concatenated without separators (e.g. "014.981" = flags 0,1 x=4.981).
 
     private func expandArcTokens(_ tokens: [String], from start: Int) -> [String] {
         var result: [String] = []
@@ -475,14 +472,14 @@ extension SVGParser {
             if (posInGroup == 3 || posInGroup == 4) && token.count > 1 {
                 let first = token.prefix(1)
                 if first == "0" || first == "1" {
-                    // Split off the flag digit
+
                     result.append(String(first))
                     paramIdx += 1
                     let rest = String(token.dropFirst())
-                    // If we're now at position 4 (second flag) and rest also starts with a flag digit
+
                     let newPos = paramIdx % 7
                     if newPos == 4 && rest.count > 1 && (rest.hasPrefix("0") || rest.hasPrefix("1")) {
-                        // Split the second flag too: "14.981" → "1", "4.981"
+
                         result.append(String(rest.prefix(1)))
                         paramIdx += 1
                         let rest2 = String(rest.dropFirst())
@@ -505,11 +502,8 @@ extension SVGParser {
         return result
     }
 
-    // MARK: - SVG Arc to Cubic Bezier Conversion
-    // SVG spec endpoint-to-center parameterization algorithm.
-
     func arcToBezierCurves(from p1: CGPoint, to p2: CGPoint, rx inputRx: Double, ry inputRy: Double, xRotation: Double, largeArc: Bool, sweep: Bool) -> [PathElement] {
-        // Degenerate cases
+
         if p1.x == p2.x && p1.y == p2.y { return [] }
         var rx = inputRx
         var ry = inputRy
@@ -521,13 +515,11 @@ extension SVGParser {
         let cosPhi = cos(phi)
         let sinPhi = sin(phi)
 
-        // Step 1: Compute (x1', y1') — transform to unit circle space
         let dx = (p1.x - p2.x) / 2.0
         let dy = (p1.y - p2.y) / 2.0
         let x1p = cosPhi * dx + sinPhi * dy
         let y1p = -sinPhi * dx + cosPhi * dy
 
-        // Step 2: Correct radii if too small
         let x1pSq = x1p * x1p
         let y1pSq = y1p * y1p
         var rxSq = rx * rx
@@ -541,18 +533,15 @@ extension SVGParser {
             rySq = ry * ry
         }
 
-        // Step 3: Compute center point (cx', cy')
         var sq = max(0.0, (rxSq * rySq - rxSq * y1pSq - rySq * x1pSq) / (rxSq * y1pSq + rySq * x1pSq))
         sq = sqrt(sq)
         if largeArc == sweep { sq = -sq }
         let cxp = sq * rx * y1p / ry
         let cyp = -sq * ry * x1p / rx
 
-        // Step 4: Compute center point (cx, cy) in original coordinates
         let cx = cosPhi * cxp - sinPhi * cyp + (p1.x + p2.x) / 2.0
         let cy = sinPhi * cxp + cosPhi * cyp + (p1.y + p2.y) / 2.0
 
-        // Step 5: Compute start angle and sweep angle
         let ux = (x1p - cxp) / rx
         let uy = (y1p - cyp) / ry
         let vx = (-x1p - cxp) / rx
@@ -567,7 +556,6 @@ extension SVGParser {
             sweepAngle += 2.0 * .pi
         }
 
-        // Step 6: Split into segments ≤ 90 degrees and convert each to bezier
         let segmentCount = max(1, Int(ceil(abs(sweepAngle) / (.pi / 2.0))))
         let segmentAngle = sweepAngle / Double(segmentCount)
 
@@ -585,7 +573,7 @@ extension SVGParser {
     }
 
     private func arcSegmentToBezier(cx: Double, cy: Double, rx: Double, ry: Double, phi: Double, startAngle: Double, segmentAngle: Double) -> [PathElement] {
-        // Approximate a single arc segment (≤ 90°) with a cubic bezier
+
         let alpha = sin(segmentAngle) * (sqrt(4.0 + 3.0 * tan(segmentAngle / 2.0) * tan(segmentAngle / 2.0)) - 1.0) / 3.0
 
         let cosPhi = cos(phi)
@@ -596,19 +584,16 @@ extension SVGParser {
         let cosEnd = cos(startAngle + segmentAngle)
         let sinEnd = sin(startAngle + segmentAngle)
 
-        // Control point 1
         let dx1 = -rx * sinStart
         let dy1 = ry * cosStart
         let cp1x = cx + cosPhi * (rx * cosStart + alpha * dx1) - sinPhi * (ry * sinStart + alpha * dy1)
         let cp1y = cy + sinPhi * (rx * cosStart + alpha * dx1) + cosPhi * (ry * sinStart + alpha * dy1)
 
-        // Control point 2
         let dx2 = -rx * sinEnd
         let dy2 = ry * cosEnd
         let cp2x = cx + cosPhi * (rx * cosEnd - alpha * dx2) - sinPhi * (ry * sinEnd - alpha * dy2)
         let cp2y = cy + sinPhi * (rx * cosEnd - alpha * dx2) + cosPhi * (ry * sinEnd - alpha * dy2)
 
-        // End point
         let endX = cx + cosPhi * rx * cosEnd - sinPhi * ry * sinEnd
         let endY = cy + sinPhi * rx * cosEnd + cosPhi * ry * sinEnd
 

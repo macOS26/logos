@@ -7,7 +7,7 @@ extension DrawingCanvas {
         for shapeID in selectedObjectIDs {
             if let object = document.snapshot.objects[shapeID],
                case .shape(let shape) = object.objectType {
-                // Use O(1) layer index lookup
+
                 let layer = object.layerIndex < document.snapshot.layers.count ? document.snapshot.layers[object.layerIndex] : nil
 
                 if layer?.isLocked == true || shape.isLocked {
@@ -41,7 +41,6 @@ extension DrawingCanvas {
         let pointSelectionRadius: Double = 6.0 / zoomLevel
         let handleSelectionRadius: Double = 4.0 / zoomLevel
 
-        // Always use Metal GPU for point selection
         var points: [CGPoint] = []
         var elementIndices: [Int] = []
 
@@ -86,7 +85,6 @@ extension DrawingCanvas {
             return true
         }
 
-        // Always use Metal GPU for handle selection
         var handlePoints: [CGPoint] = []
         var anchorPoints: [CGPoint] = []
         var handleMetadata: [(elementIndex: Int, handleType: HandleType)] = []
@@ -157,20 +155,16 @@ extension DrawingCanvas {
                 }
                 selectedHandles.insert(handleID)
 
-                // Make BOTH handles visible (the selected one and its opposite)
-                visibleHandles.insert(handleID)  // Selected handle must be visible too!
+                visibleHandles.insert(handleID)
 
-                // Find the opposite handle at the same anchor point
                 if handleID.handleType == .control2 {
-                    // control2 at element i = incoming handle to anchor at element i
-                    // Opposite is outgoing = control1 at element i+1
+
                     if handleID.elementIndex + 1 < shape.path.elements.count {
                         let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex + 1, handleType: .control1)
                         visibleHandles.insert(oppositeHandleID)
                     }
                 } else if handleID.handleType == .control1 {
-                    // control1 at element i = outgoing from anchor at element i-1
-                    // Opposite is incoming = control2 at element i-1
+
                     if handleID.elementIndex > 0 {
                         let oppositeHandleID = HandleID(shapeID: handleID.shapeID, pathIndex: handleID.pathIndex, elementIndex: handleID.elementIndex - 1, handleType: .control2)
                         visibleHandles.insert(oppositeHandleID)
@@ -187,13 +181,11 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Drill into groups to find the specific member shape clicked (FreeHand/Illustrator style)
 
         guard let hitShape = findShapeAtLocationForDirectSelect(at: location) else {
             return false
         }
 
-        // Check if locked
         if hitShape.isLocked {
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
@@ -205,14 +197,14 @@ extension DrawingCanvas {
         let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
 
         if isShiftCurrentlyPressed {
-            // Shift-select: toggle shape selection
+
             if selectedObjectIDs.contains(hitShape.id) {
                 selectedObjectIDs.remove(hitShape.id)
             } else {
                 selectedObjectIDs.insert(hitShape.id)
             }
         } else {
-            // Normal select: clear and select only this shape
+
             selectedObjectIDs.removeAll()
             selectedObjectIDs.insert(hitShape.id)
             selectedPoints.removeAll()
@@ -224,8 +216,6 @@ extension DrawingCanvas {
         return true
     }
 
-    /// Find the actual shape at a location, drilling into groups to find the specific member
-    /// This is how FreeHand/Illustrator work - select by what paint is clicked, not object order
     private func findShapeAtLocationForDirectSelect(at location: CGPoint) -> VectorShape? {
         var bestHit: (shape: VectorShape, zOrder: Int)? = nil
 
@@ -236,7 +226,6 @@ extension DrawingCanvas {
                 guard let obj = document.snapshot.objects[objectID] else { continue }
                 let shape = obj.shape
 
-                // Skip backgrounds
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     continue
                 }
@@ -244,9 +233,8 @@ extension DrawingCanvas {
                 if shape.isLocked { continue }
                 if !shape.isVisible { continue }
 
-                // If this is a group, check its members (drill into the group)
                 if shape.isGroupContainer {
-                    // Check modern memberIDs
+
                     for (memberIdx, memberID) in shape.memberIDs.enumerated().reversed() {
                         if let memberObj = document.snapshot.objects[memberID] {
                             let memberShape = memberObj.shape
@@ -262,7 +250,6 @@ extension DrawingCanvas {
                         }
                     }
 
-                    // Check legacy groupedShapes
                     for (idx, groupedShape) in shape.groupedShapes.enumerated().reversed() {
                         if !groupedShape.isVisible { continue }
                         if groupedShape.isLocked { continue }
@@ -275,7 +262,7 @@ extension DrawingCanvas {
                         }
                     }
                 } else {
-                    // Regular shape - check directly
+
                     if performPathOnlyHitTest(shape: shape, at: location) {
                         let zOrder = layerIndex * 100000 + objIndex * 1000
                         if bestHit.map({ zOrder > $0.zOrder }) ?? true {
@@ -295,24 +282,20 @@ extension DrawingCanvas {
         let tolerance: Double = screenTolerance / zoomLevel
         var foundSelection = false
 
-        // Option+Click = Select Behind (cycle through stacked shapes)
         let isOptionCurrentlyPressed = isOptionPressed || NSEvent.modifierFlags.contains(.option)
         if isOptionCurrentlyPressed {
             foundSelection = directSelectBehind(at: location)
             if foundSelection { return }
         }
 
-        // First, try to select a point/handle on currently selected shapes
         if !selectedObjectIDs.isEmpty {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
 
-        // If no point/handle was clicked, try to select a whole shape
         if !foundSelection {
             foundSelection = directSelectWholeShape(at: location)
         }
 
-        // If nothing was clicked, clear all selections
         if !foundSelection {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
@@ -322,9 +305,8 @@ extension DrawingCanvas {
         }
     }
 
-    /// Option+Click select behind for direct selection - cycles through shapes at location
     private func directSelectBehind(at location: CGPoint) -> Bool {
-        // Find all shapes at this location (drilling into groups)
+
         var shapesAtLocation: [VectorShape] = []
 
         for (_, layer) in document.snapshot.layers.enumerated().reversed() {
@@ -338,7 +320,6 @@ extension DrawingCanvas {
                 if shape.isLocked { continue }
                 if !shape.isVisible { continue }
 
-                // Check group members
                 if shape.isGroupContainer {
                     for memberID in shape.memberIDs.reversed() {
                         if let memberObj = document.snapshot.objects[memberID] {
@@ -367,16 +348,15 @@ extension DrawingCanvas {
 
         guard !shapesAtLocation.isEmpty else { return false }
 
-        // Check if clicking at same location
         let clickTolerance: CGFloat = 5.0
         let isSameLocation = abs(location.x - selectBehindLocation.x) < clickTolerance &&
                              abs(location.y - selectBehindLocation.y) < clickTolerance
 
         if isSameLocation {
-            // Cycle to next shape
+
             selectBehindIndex = (selectBehindIndex + 1) % shapesAtLocation.count
         } else {
-            // New location - check if top shape is already selected
+
             selectBehindLocation = location
             let topShape = shapesAtLocation[0]
 
@@ -389,7 +369,6 @@ extension DrawingCanvas {
 
         let shapeToSelect = shapesAtLocation[selectBehindIndex]
 
-        // Select this shape
         selectedObjectIDs.removeAll()
         selectedObjectIDs.insert(shapeToSelect.id)
         selectedPoints.removeAll()

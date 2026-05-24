@@ -3,7 +3,7 @@ import SwiftUI
 extension ProfessionalPathOperations {
 
     static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
-        // Use the existing unionMultiplePaths that handles any number of paths
+
         return CoreGraphicsPathOperations.unionMultiplePaths(paths, using: .winding)
     }
 

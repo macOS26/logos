@@ -1,7 +1,7 @@
 import Foundation
 
 class AddObjectCommand: BaseCommand {
-    private let objectsToAdd: [UUID: VectorObject]  // Store by UUID for O(1) lookup
+    private let objectsToAdd: [UUID: VectorObject]
 
     init(objects: [VectorObject]) {
         var dict: [UUID: VectorObject] = [:]

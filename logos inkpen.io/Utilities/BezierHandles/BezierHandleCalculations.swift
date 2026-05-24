@@ -22,7 +22,7 @@ func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, origina
 }
 
 private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
-    // SIMD-optimized vector operations
+
     let anchorVec = SIMD2<Double>(Double(anchorPoint.x), Double(anchorPoint.y))
     let draggedVec = SIMD2<Double>(Double(draggedHandle.x), Double(draggedHandle.y))
     let originalVec = SIMD2<Double>(Double(originalOppositeHandle.x), Double(originalOppositeHandle.y))

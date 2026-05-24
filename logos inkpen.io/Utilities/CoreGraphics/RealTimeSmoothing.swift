@@ -29,7 +29,7 @@ struct RealTimeSmoothing {
         var smoothedPoints = points
 
         for i in 1..<points.count - 1 {
-            // SIMD-optimized vector operations
+
             let prevVec = SIMD2<Double>(Double(points[i - 1].x), Double(points[i - 1].y))
             let currVec = SIMD2<Double>(Double(points[i].x), Double(points[i].y))
             let nextVec = SIMD2<Double>(Double(points[i + 1].x), Double(points[i + 1].y))

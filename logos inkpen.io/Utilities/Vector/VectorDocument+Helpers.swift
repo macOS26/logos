@@ -259,7 +259,6 @@ extension VectorDocument {
             return
         }
 
-        // For groups, use proper group transform function
         if let obj = snapshot.objects[shape.id] {
             switch obj.objectType {
             case .group, .clipGroup:
@@ -327,7 +326,6 @@ extension VectorDocument {
         }
     }
 
-    /// Resolves group members via memberIDs; falls back to groupedShapes for legacy groups.
     func resolveGroupMembers(_ groupShape: VectorShape) -> [VectorShape] {
         if !groupShape.memberIDs.isEmpty {
             let resolved = groupShape.memberIDs.compactMap { findShape(by: $0) }
@@ -344,7 +342,6 @@ extension VectorDocument {
         return groupShape.groupedShapes
     }
 
-    /// Flat array of all leaf shapes, recursing into nested groups.
     func resolveGroupMembersRecursively(_ groupShape: VectorShape) -> [VectorShape] {
         let members = resolveGroupMembers(groupShape)
         var result: [VectorShape] = []
@@ -360,7 +357,6 @@ extension VectorDocument {
         return result
     }
 
-    /// Combined bounds of group members in document coordinates.
     func calculateGroupBounds(_ groupShape: VectorShape) -> CGRect {
         guard groupShape.isGroupContainer else { return groupShape.bounds }
 
@@ -391,7 +387,6 @@ extension VectorDocument {
             }
         }
 
-        // Search inside groups using memberIDs.
         for object in snapshot.objects.values {
             if case .group(let shape) = object.objectType {
                 let members = resolveGroupMembers(shape)

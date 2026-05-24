@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Symbol-based grid using tiled pattern for memory efficiency
 struct OptimizedGridView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -29,7 +28,6 @@ struct OptimizedGridView: View {
 
             let tileSize = actualGridSpacing * CGFloat(majorGridInterval)
 
-            // At <=50% zoom: no minor lines, thinner major lines (0.3125 vs 0.625)
             let shouldShowMinor = zoomLevel > 0.5
             let minorLineWidth: CGFloat = 0.625
             let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.3125 : 0.625
@@ -46,7 +44,6 @@ struct OptimizedGridView: View {
             let visibleStartY = max(0, -canvasOffset.y / zoomLevel)
             let visibleEndY = min(canvasSize.height, (size.height - canvasOffset.y) / zoomLevel)
 
-            // Align tiles with page origin
             let offsetFromOriginX = (visibleStartX - pageOrigin.x) / tileSize
             let offsetFromOriginY = (visibleStartY - pageOrigin.y) / tileSize
 
@@ -57,7 +54,6 @@ struct OptimizedGridView: View {
 
             guard tileStartX <= tileEndX && tileStartY <= tileEndY else { return }
 
-            // Reuse tile patterns as symbols; only draw visible tiles
             for tileX in tileStartX...tileEndX {
                 for tileY in tileStartY...tileEndY {
                     let x = pageOrigin.x + CGFloat(tileX) * tileSize
@@ -91,9 +87,9 @@ struct OptimizedGridView: View {
                     }
                 }
             }
-          
+
         }
-        // .drawingGroup() removed — saves ~33MB Retina backing store per doc
+
     }
 
     private func createTilePatterns(
@@ -115,7 +111,6 @@ struct OptimizedGridView: View {
             }
         }
 
-        // Major lines at all four tile edges
         majorPath.move(to: CGPoint(x: 0, y: 0))
         majorPath.addLine(to: CGPoint(x: 0, y: tileSize))
         majorPath.move(to: CGPoint(x: 0, y: 0))

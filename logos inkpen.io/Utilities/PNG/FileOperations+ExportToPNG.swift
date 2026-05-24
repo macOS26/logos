@@ -207,7 +207,6 @@ extension FileOperations {
         let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: true)
         NSGraphicsContext.current = nsContext
 
-        // Flip the context to match AppKit/SwiftUI coordinate system (top-left origin)
         cgContext.translateBy(x: 0, y: outputSize.height)
         cgContext.scaleBy(x: 1, y: -1)
 
@@ -325,7 +324,7 @@ extension FileOperations {
         }
 
         if let imageData = shape.embeddedImageData {
-            // Create CGImage directly from data (cross-platform)
+
             if let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
                let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
                 let bounds = shape.bounds
@@ -374,7 +373,7 @@ extension FileOperations {
         }
 
         if hasValidFill, let fillStyle = shape.fillStyle {
-            // Check if fill is a gradient
+
             if case .gradient(let gradient) = fillStyle.color {
                 context.addPath(path)
                 context.saveGState()
@@ -384,7 +383,7 @@ extension FileOperations {
 
                 context.restoreGState()
             } else {
-                // Solid color fill
+
                 context.addPath(path)
                 if hasValidStroke, let strokeStyle = shape.strokeStyle {
                     FileOperations.setFillStyle(fillStyle, context: context)
@@ -398,7 +397,7 @@ extension FileOperations {
         }
 
         if hasValidStroke, let strokeStyle = shape.strokeStyle {
-            // Only stroke if we didn't already do fillStroke above
+
             let fillIsGradient: Bool
             if let fillStyle = shape.fillStyle, case .gradient = fillStyle.color {
                 fillIsGradient = true
@@ -443,7 +442,6 @@ extension FileOperations {
     }
 }
 
-// Helper view for PNG export with @State binding support
 private struct PNGExportView: View {
     let document: VectorDocument
     let scale: CGFloat
@@ -475,10 +473,9 @@ private struct PNGExportView: View {
                 )
             }
 
-            // Render layers directly
             ForEach(Array(document.snapshot.layers.indices), id: \.self) { layerIndex in
                 if document.snapshot.layers[layerIndex].isVisible,
-                   layerIndex >= 2 { // Skip background layers
+                   layerIndex >= 2 {
                     let layer = document.snapshot.layers[layerIndex]
                     IsolatedLayerView(
                         objectIDs: layer.objectIDs,
