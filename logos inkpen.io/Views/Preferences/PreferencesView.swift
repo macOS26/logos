@@ -12,6 +12,8 @@ struct PreferencesView: View {
 
     @AppStorage("imageInterpolationQuality") var interpolationQuality: Int = 1
 
+    @AppStorage("cropImageBoxInKeyline") var cropImageBoxInKeyline: Bool = true
+
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
@@ -125,6 +127,15 @@ struct PreferencesView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        Divider()
+                            .padding(.vertical, 4)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Toggle("Crop image box to clip path in keyline view", isOn: $cropImageBoxInKeyline)
+                                .font(.subheadline)
+                            Text("When enabled, the image placeholder box is cropped to its clipping path in keyline view.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding(.vertical, 8)
                 }
@@ -171,7 +182,11 @@ struct PreferencesView: View {
         .padding(24)
         .frame(minWidth: 850, minHeight: 500)
         .onAppear {
+            appState.cropImageBoxInKeyline = cropImageBoxInKeyline
             loadPressureCurve()
+        }
+        .onChange(of: cropImageBoxInKeyline) { _, newValue in
+            appState.cropImageBoxInKeyline = newValue
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
