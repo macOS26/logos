@@ -463,9 +463,7 @@ struct ObjectRow: View {
                         HStack(spacing: 2) {
                             Button(action: {
                                 let clickedShape = displayShapes[index]
-                                print("🎯 EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
                                 guard let obj = document.snapshot.objects[clickedShape.id] else {
-                                    print("   ❌ no object found in snapshot")
                                     return
                                 }
                                 let currentVisibility = obj.shape.isVisible
@@ -477,7 +475,6 @@ struct ObjectRow: View {
                                     newValues: [clickedShape.id: newValue]
                                 )
                                 document.commandManager.execute(command)
-                                print("   ✅ toggled \(clickedShape.name) to isVisible=\(newValue)")
                             }) {
                                 Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
                                     .visibilityButton(isVisible: childVisBinding.wrappedValue)
@@ -666,9 +663,7 @@ struct NestedGroupChildrenView: View {
                 HStack(spacing: 2) {
                     Button(action: {
                         let clickedShape = displayShapes[index]
-                        print("🎯 NESTED EYE CLICK idx=\(index) shapeName=\(clickedShape.name) shapeId=\(clickedShape.id) currentlyVisible=\(clickedShape.isVisible)")
                         guard let obj = document.snapshot.objects[clickedShape.id] else {
-                            print("   ❌ no object found in snapshot")
                             return
                         }
                         let currentVisibility = obj.shape.isVisible
@@ -680,7 +675,6 @@ struct NestedGroupChildrenView: View {
                             newValues: [clickedShape.id: newValue]
                         )
                         document.commandManager.execute(command)
-                        print("   ✅ toggled \(clickedShape.name) to isVisible=\(newValue)")
                     }) {
                         Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
                             .visibilityButton(isVisible: childVisBinding.wrappedValue)

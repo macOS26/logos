@@ -1115,23 +1115,17 @@ struct LayerCanvasView: View {
 
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
         guard let bookmarkData = bookmarkData else {
-            print("❌ No bookmark data for image: \(linkedPath)")
             return nil
         }
         var isStale = false
         guard let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) else {
-            print("❌ Failed to resolve bookmark for: \(linkedPath)")
             return nil
-        }
-        if isStale {
-            print("⚠️ Bookmark is stale for: \(url.path)")
         }
         let started = url.startAccessingSecurityScopedResource()
         defer { if started { url.stopAccessingSecurityScopedResource() } }
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
 
               let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
-            print("❌ Failed to load image from bookmark URL: \(url.path)")
             return nil
         }
         let width = sourceCGImage.width
@@ -1155,7 +1149,6 @@ struct LayerCanvasView: View {
             let mb = MemoryDiag.processMemoryMB()
             let delta = mb - Self.lastRenderImageMemMB
             if Self.lastRenderImageMemMB > 0 && delta > 5 {
-                print("🚨 [MemDiag] renderImage #\(Self.renderImageCallCount): \(mb)MB (+\(delta)MB!) embeddedData=\(shape.embeddedImageData?.count ?? 0)B cached=\(document.imageStorage[shape.id] != nil)")
             }
             Self.lastRenderImageMemMB = mb
         }
@@ -1227,11 +1220,8 @@ struct LayerCanvasView: View {
             } else {
                 finalImage = cgImage
             }
-            let beforeMB = MemoryDiag.processMemoryMB()
             document.imageStorage[shape.id] = finalImage
             image = finalImage
-            let afterMB = MemoryDiag.processMemoryMB()
-            print("🚨 [MemDiag] IMAGE CACHE MISS: \(finalImage.width)x\(finalImage.height) stored for \(shape.id), mem \(beforeMB)→\(afterMB)MB (+\(afterMB - beforeMB)MB)")
         }
         let imageHash = ObjectIdentifier(image).hashValue
         let lastHash = document.lastDrawnImageHash[shape.id]

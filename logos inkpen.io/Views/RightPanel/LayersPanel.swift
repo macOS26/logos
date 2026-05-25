@@ -393,7 +393,6 @@ struct LayersPanel: View {
                 }
             }
         case .childObject(let layerIndex, _, let childShapeId):
-            print("🟡 toggleVisibility childObject: \(childShapeId)")
             if !processedObjectsDuringDrag.contains(childShapeId) {
                 if let childObj = document.snapshot.objects[childShapeId] {
                     var shape = childObj.shape
@@ -406,9 +405,6 @@ struct LayersPanel: View {
                     document.snapshot.objects[childShapeId] = updatedObject
                     processedObjectsDuringDrag.insert(childShapeId)
                     document.triggerLayerUpdate(for: layerIndex)
-                    print("🟢 toggleVisibility childObject SUCCESS: \(childShapeId)")
-                } else {
-                    print("🔴 toggleVisibility childObject NOT FOUND: \(childShapeId)")
                 }
             }
         }

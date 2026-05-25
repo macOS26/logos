@@ -4,11 +4,7 @@ import SwiftUI
 struct logos_inken_ioApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @FocusedObject var documentState: DocumentState? {
-        didSet {
-            print("📋 documentState changed: \(documentState != nil ? "EXISTS" : "NIL"), hasSelection: \(documentState?.hasSelection ?? false)")
-        }
-    }
+    @FocusedObject var documentState: DocumentState?
     private var appState = AppState.shared
 
     @Environment(\.openWindow) private var openWindow
@@ -195,14 +191,10 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut("f", modifiers: [.command, .shift])
                     .disabled(documentState?.canPaste != true)
                     Button("Delete") {
-                        print("🗑️ Delete button pressed - documentState exists: \(documentState != nil), hasSelection: \(documentState?.hasSelection ?? false)")
                         documentState?.delete()
                     }
                     .keyboardShortcut(.delete)
                     .disabled(documentState?.hasSelection != true)
-                    .onChange(of: documentState?.hasSelection) { old, new in
-                        print("🗑️ Delete button - hasSelection changed: \(old ?? false) -> \(new ?? false), documentState: \(documentState != nil)")
-                    }
                 }
                 CommandGroup(replacing: .textEditing) {
                     Button("Select All") {

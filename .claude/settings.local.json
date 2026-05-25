@@ -198,7 +198,8 @@
       "Bash(clang++ -std=gnu++20 -c -I libfreehand -I librevenge -o /tmp/libfh-build/FreeHandDocument.o libfreehand/FreeHandDocument.cpp)",
       "Bash(clang++ -std=gnu++20 -c -I libfreehand -I librevenge -o /tmp/libfh-build/libfreehand_utils.o libfreehand/libfreehand_utils.cpp)",
       "Bash(clang++ -o /tmp/libfh-build/test_main /tmp/libfh-build/*.o -lz)",
-      "Bash(clang++ -std=c++17 -I__TRACKED_VAR__/libfreehand -I__TRACKED_VAR__/librevenge -w main.cpp '__TRACKED_VAR__/libfreehand/*.cpp' '__TRACKED_VAR__/librevenge/*.cpp' -o fhdump)"
+      "Bash(clang++ -std=c++17 -I__TRACKED_VAR__/libfreehand -I__TRACKED_VAR__/librevenge -w main.cpp '__TRACKED_VAR__/libfreehand/*.cpp' '__TRACKED_VAR__/librevenge/*.cpp' -o fhdump)",
+      "mcp__xcf-server__run_project"
     ],
     "deny": [],
     "ask": []

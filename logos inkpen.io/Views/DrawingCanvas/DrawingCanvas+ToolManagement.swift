@@ -4,7 +4,6 @@ import Combine
 extension DrawingCanvas {
 
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        print("🔧 Tool change: \(oldTool.rawValue) → \(newTool.rawValue), selectedPoints: \(selectedPoints.count)")
         let isCmdPressed = NSEvent.modifierFlags.contains(.command)
         if newTool == .selection && isCmdPressed {
             isTemporarySelectionViaCommand = true
@@ -119,12 +118,10 @@ extension DrawingCanvas {
             }
         }
         else if newTool == .bezierPen {
-            print("🔧 Preserving selections for bezier pen: points=\(selectedPoints.count), handles=\(selectedHandles.count)")
             if let selectedPointID = selectedPoints.first {
                 if getShapeForPoint(selectedPointID) != nil,
 
                    let pointPosition = getPointPosition(selectedPointID) {
-                    print("🔧 Auto-loading path for continuation from selected point")
                     continueExistingPath(from: pointPosition)
                 }
             }
@@ -149,7 +146,6 @@ extension DrawingCanvas {
         }
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus && newTool != .bezierPen && newTool != .font && newTool != .hand && newTool != .zoom && newTool != .scale && newTool != .rotate && newTool != .reflect && newTool != .shear && newTool != .warp {
-            print("🟡 CLEARING SELECTION (directSelection/convertAnchor/penPlusMinus cleanup) - oldTool: \(oldTool.rawValue), newTool: \(newTool.rawValue)")
             document.viewState.selectedObjectIDs.removeAll()
             selectedObjectIDs.removeAll()
             selectedPoints.removeAll()

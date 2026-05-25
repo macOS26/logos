@@ -202,16 +202,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             else if s.embeddedImageData != nil || s.linkedImagePath != nil { topLevelImages += 1 }
             else { topLevelPaths += 1 }
         }
-        print("""
-        🧾 SVGParser: groupsOpened=\(statGroupsOpened) wrapped=\(statGroupsWrapped) empty=\(statGroupsEmpty) allClip=\(statGroupsAllClip)
-           paths=\(statPaths) compoundPaths=\(statCompoundPaths) imagesTotal=\(statImagesTotal) imagesDropped=\(statImagesDropped)
-           topLevel: groups=\(topLevelGroups) compound=\(topLevelCompound) images=\(topLevelImages) paths=\(topLevelPaths)
-        """)
-        if !statImageHrefSamples.isEmpty {
-            for (i, sample) in statImageHrefSamples.prefix(5).enumerated() {
-                print("   <image>[\(i)] href prefix: \(sample)")
-            }
-        }
         return ParseResult(
             shapes: consolidatedShapes,
             textObjects: textObjects,
@@ -808,7 +798,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         let inner = SVGParser()
         guard let result = try? inner.parse(innerSVG) else { return }
         patternDefinitions[patternId] = result.shapes
-        print("🎨 Resolved pattern #\(patternId) → \(result.shapes.count) nested shapes")
     }
 
     private func parseImage(attributes: [String: String]) {

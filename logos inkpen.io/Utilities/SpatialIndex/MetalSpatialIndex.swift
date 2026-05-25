@@ -45,7 +45,6 @@ class MetalSpatialIndex {
         if !Self.sharedInitialized {
             let metal = SharedMetalDevice.shared
             guard let cmdQueue = metal.makeCommandQueue() else {
-                print("❌ Failed to create command queue")
                 return nil
             }
             guard let buildPipeline = metal.makePipeline(named: "build_spatial_index"),
@@ -53,7 +52,6 @@ class MetalSpatialIndex {
                   let qrPipeline = metal.makePipeline(named: "query_rect"),
 
                   let cgPipeline = metal.makePipeline(named: "clear_grid") else {
-                print("❌ Failed to create Metal pipelines")
                 return nil
             }
             Self.sharedDevice = metal.device
@@ -291,9 +289,6 @@ class MetalSpatialIndex {
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
             layerIndices[layer.id] = layerIndex
-        }
-        if layersActuallyRebuilt > 0 {
-            print("🔷 Rebuilt \(layersActuallyRebuilt) layer(s), \(totalObjectsRebuilt) objects")
         }
     }
 

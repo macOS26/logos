@@ -204,7 +204,6 @@ extension DrawingCanvas {
 
         var usedMetal = false
         if brushRawPoints.count > 10 {
-            print("🚀 FINAL: Using Metal GPU to simplify \(brushRawPoints.count) points")
             let pressures = brushRawPoints.map { Float($0.pressure) }
             let result = MetalComputeEngine.shared.removeCoincidentPointsGPU(
                 brushRawPoints.map { $0.location },
@@ -217,15 +216,13 @@ extension DrawingCanvas {
                     dedupedPoints = zip(cleanedPoints, pressures).map {
                         BrushPoint(location: $0.0, pressure: Double($0.1))
                     }
-                    print("✅ Metal GPU simplified: \(brushRawPoints.count) → \(dedupedPoints.count) points")
                 } else {
                     dedupedPoints = cleanedPoints.map {
                         BrushPoint(location: $0, pressure: 1.0)
                     }
                 }
                 usedMetal = true
-            case .failure(let error):
-                print("⚠️ Metal failed: \(error), using CPU fallback")
+            case .failure:
                 usedMetal = false
                 for point in brushRawPoints {
                     if let lastPoint = dedupedPoints.last {

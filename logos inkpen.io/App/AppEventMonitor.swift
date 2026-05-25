@@ -18,7 +18,6 @@ final class AppEventMonitor {
         lock.lock()
         defer { lock.unlock() }
         activeDocument = document
-        print("🎯 AppEventMonitor: activeDocument set to \(ObjectIdentifier(document))")
     }
 
     private func setupKeyEventMonitoring() {

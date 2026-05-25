@@ -75,7 +75,6 @@ class MetalImageTileRenderer {
         do {
             pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         } catch {
-            print("❌ Failed to create Metal pipeline: \(error)")
             return nil
         }
     }
@@ -94,12 +93,10 @@ class MetalImageTileRenderer {
             space: colorSpace,
             bitmapInfo: bitmapInfo
         ) else {
-            print("❌ Failed to create CGContext")
             return nil
         }
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         guard let data = context.data else {
-            print("❌ Failed to get context data")
             return nil
         }
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
@@ -111,7 +108,6 @@ class MetalImageTileRenderer {
         textureDescriptor.usage = [.shaderRead]
         textureDescriptor.storageMode = .shared
         guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
-            print("❌ Failed to create Metal texture")
             return nil
         }
         let region = MTLRegionMake2D(0, 0, width, height)
@@ -213,7 +209,6 @@ class MetalImageTileRenderer {
             diskCacheLock.lock()
             diskCachePaths[cacheKey] = diskPath
             diskCacheLock.unlock()
-            print("💾 MetalImageTileRenderer: CACHED to disk at \(diskPath)")
         }
         return resultImage
     }
@@ -286,7 +281,6 @@ class MetalImageTileRenderer {
         let indices: [UInt16] = [0, 1, 2, 2, 1, 3]
         encoder.setVertexBytes(vertices, length: vertices.count * MemoryLayout<Float>.size, index: 0)
         guard let indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.size, options: []) else {
-            print("❌ Failed to create index buffer")
             return
         }
         encoder.drawIndexedPrimitives(
@@ -316,11 +310,9 @@ class MetalImageTileRenderer {
         }
         let region = MTLRegionMake2D(0, 0, width, height)
         guard let data = context.data else {
-            print("❌ MetalImageTileRenderer: context.data is nil")
             return nil
         }
         texture.getBytes(data, bytesPerRow: width * 4, from: region, mipmapLevel: 0)
-        print("📊 Reading texture format: \(texture.pixelFormat.rawValue) - should be 10 (RGBA)")
         return context.makeImage()
     }
 
@@ -331,7 +323,6 @@ class MetalImageTileRenderer {
         }
         diskCachePaths.removeAll()
         diskCacheLock.unlock()
-        print("🗑️ MetalImageTileRenderer.clearCache() - cleared disk cache")
     }
 
     private func saveImageToDisk(image: CGImage, key: String) -> String? {
@@ -339,12 +330,10 @@ class MetalImageTileRenderer {
         let filename = "metal_tile_\(key).png"
         let filePath = (tmpDir as NSString).appendingPathComponent(filename)
         guard let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: filePath) as CFURL, UTType.png.identifier as CFString, 1, nil) else {
-            print("❌ Failed to create image destination for disk cache")
             return nil
         }
         CGImageDestinationAddImage(destination, image, nil)
         guard CGImageDestinationFinalize(destination) else {
-            print("❌ Failed to write image to disk cache")
             return nil
         }
         return filePath
@@ -354,7 +343,6 @@ class MetalImageTileRenderer {
         guard let imageSource = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
 
               let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
-            print("❌ Failed to load image from disk cache at \(path)")
             return nil
         }
         return image

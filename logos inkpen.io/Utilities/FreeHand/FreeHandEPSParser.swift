@@ -23,7 +23,6 @@ enum FreeHandEPSParser {
                 bbOriginY = nums[1]
                 pageWidth = nums[2] - nums[0]
                 pageHeight = nums[3] - nums[1]
-                print("BBox: \(nums) → page \(pageWidth)×\(pageHeight) origin (\(bbOriginX),\(bbOriginY))")
             }
         }
         let normalized = text.replacingOccurrences(of: "\r", with: "\n")
@@ -35,13 +34,6 @@ enum FreeHandEPSParser {
             throw FreeHandImportError.parseFailed(code: 2)
         }
         let drawingText = String(afterDef[vmsRange.upperBound...])
-        let debugTokens = tokenize(drawingText)
-        print("Drawing text length: \(drawingText.count)")
-        print("Token count: \(debugTokens.count)")
-        print("First 30 tokens: \(debugTokens.prefix(30))")
-        if debugTokens.count > 175 {
-            print("Tokens 155-175: \(Array(debugTokens[155..<175]))")
-        }
         let rawShapes = parsePostScript(drawingText, pageHeight: pageHeight, originX: bbOriginX, originY: bbOriginY)
         let groupRanges = inferGroupRanges(from: drawingText, totalShapes: rawShapes.count)
         let (preTextShapes, groupIDs): ([VectorShape], [UUID]) = {
@@ -51,7 +43,6 @@ enum FreeHandEPSParser {
             return wrapShapesIntoGroups(rawShapes, ranges: groupRanges)
         }()
         var shapes = preTextShapes
-        print("Shapes: \(rawShapes.count) raw → \(shapes.count) top-level (\(groupIDs.count) groups)")
         let textShapes = parseEPSTextRuns(in: drawingText, pageHeight: pageHeight,
                                           originX: bbOriginX, originY: bbOriginY,
                                           fontTable: extractFontTable(from: text))
@@ -432,7 +423,6 @@ enum FreeHandEPSParser {
                 }
                 stack.removeAll()
             case "rectfill":
-                print("RECTFILL: pendingGradient=\(pendingGradient != nil) elements=\(elements.count)")
                 if let grad = pendingGradient, !elements.isEmpty {
                     let path = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
                     let stop1 = GradientStop(position: 0, color: grad.color2)

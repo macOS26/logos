@@ -223,15 +223,7 @@ struct DrawingCanvas: View {
                         }
                     }
                     if !changedLayerIDs.isEmpty {
-                        let start = CFAbsoluteTimeGetCurrent()
                         spatialIndex.rebuildLayers(changedLayerIDs, from: document.snapshot)
-                        let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
-
-                        var layerObjectCount = 0
-                        for layer in document.snapshot.layers where changedLayerIDs.contains(layer.id) {
-                            layerObjectCount += layer.objectIDs.count
-                        }
-                        print("🔷 Spatial index rebuild: \(String(format: "%.1f", duration))ms for \(changedLayerIDs.count) layer(s), \(layerObjectCount) layer objects")
                         MemoryDiag.report("spatialIndex.rebuild", document: document)
                         rebuildLockedObjectsCache()
                     }

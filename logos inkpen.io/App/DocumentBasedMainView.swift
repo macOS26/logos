@@ -336,7 +336,6 @@ struct DocumentBasedMainView: View {
             DispatchQueue.main.async {
                 if let window = self.viewWindow, window.isKeyWindow {
                     AppEventMonitor.shared.setActiveDocument(document)
-                    print("🟢 onAppear: Set active document \(ObjectIdentifier(document))")
                 }
             }
             if let configured = appState.pendingNewDocument {

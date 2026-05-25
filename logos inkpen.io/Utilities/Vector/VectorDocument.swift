@@ -65,10 +65,7 @@ final class VectorDocument: ObservableObject, Codable {
     var originalHandlePositions: [String: VectorPoint] = [:]
 
     deinit {
-        let objCount = snapshot.objects.count
-        let imgCount = imageStorage.count
         imageStorage.removeAll()
-        print("🗑️ [MemDiag] VectorDocument.deinit: \(objCount) objects, \(imgCount) cached images freed, process=\(MemoryDiag.processMemoryMB())MB")
     }
 
     init(settings: DocumentSettings = DocumentSettings()) {
@@ -281,6 +278,5 @@ final class VectorDocument: ObservableObject, Codable {
         imageStorage.removeAll()
         lastDrawnImageHash.removeAll()
         objectWillChange.send()
-        print("🗑️ Cleared image cache - will regenerate from source on next render")
     }
 }

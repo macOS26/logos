@@ -29,7 +29,6 @@ class GradientCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        Thread.callStackSymbols.prefix(10).forEach { print("  \($0)") }
         applyGradients(newGradients, opacities: newOpacities, to: document)
     }
 

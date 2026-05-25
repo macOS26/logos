@@ -63,9 +63,6 @@ class DocumentState: ObservableObject {
         }
         pasteboardTimer?.invalidate()
         pasteboardTimer = nil
-        #if DEBUG
-        print("🧹 DocumentState.deinit — fully released")
-        #endif
     }
 
     func setDocument(_ document: VectorDocument) {
@@ -312,10 +309,6 @@ class DocumentState: ObservableObject {
                             var imagesHydrated = 0
                             for shape in usableShapes {
                                 self.hydrateGroupImagesRecursively(shape, document: document, count: &imagesHydrated)
-                            }
-                            let imagesDropped = result.shapes.count - usableShapes.count
-                            if imagesHydrated > 0 || imagesDropped > 0 {
-                                print("🖼️ Import: hydrated=\(imagesHydrated) dropped=\(imagesDropped)")
                             }
                             document.viewState.selectedObjectIDs = Set(usableShapes.map { $0.id })
                         }
@@ -1173,9 +1166,6 @@ class DocumentState: ObservableObject {
                 if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                     shape.linkedImageBookmarkData = bookmark
                 }
-                print("🔗 Updated image link: \(newURL.path)")
-                print("📝 Updated shape name: \(shape.name)")
-                print("🔖 Bookmark created: \(shape.linkedImageBookmarkData != nil)")
                 if let existingObject = document.snapshot.objects[shapeID] {
                     let updatedObject = VectorObject(
                         id: shapeID,
@@ -1184,7 +1174,6 @@ class DocumentState: ObservableObject {
                     )
                     document.snapshot.objects[shapeID] = updatedObject
                     document.triggerLayerUpdate(for: existingObject.layerIndex)
-                    print("✅ Layer \(existingObject.layerIndex) update triggered")
                 }
                 self.promptedMissingImages.remove(shapeID)
             }

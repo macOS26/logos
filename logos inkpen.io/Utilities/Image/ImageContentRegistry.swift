@@ -44,14 +44,10 @@ enum ImageContentRegistry {
 
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
-            print("✅ Loaded embedded image for shape: \(shape.id)")
         }
         else if let bookmark = shape.linkedImageBookmarkData {
             var isStale = false
             if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                if isStale {
-                    print("⚠️ [Registry] Bookmark is stale for: \(url.path)")
-                }
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
                 if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -65,27 +61,16 @@ enum ImageContentRegistry {
                         context.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
                         if let memoryCGImage = context.makeImage() {
                             loadedCGImage = memoryCGImage
-                            print("✅ [Registry] Loaded linked image via bookmark (forced to memory): \(url.path)")
                         } else {
                             loadedCGImage = sourceCGImage
-                            print("⚠️ [Registry] Using source image (failed to copy to memory): \(url.path)")
                         }
                     } else {
                         loadedCGImage = sourceCGImage
-                        print("⚠️ [Registry] Using source image (no context): \(url.path)")
                     }
-                } else {
-                    print("❌ [Registry] Failed to create CGImage from: \(url.path)")
                 }
-            } else {
-                print("❌ [Registry] Failed to resolve bookmark for shape: \(shape.id)")
             }
-        } else if let linkedImagePath = shape.linkedImagePath {
-            print("❌ [Registry] Shape has linkedImagePath but NO bookmark: \(linkedImagePath)")
         }
         if let cgImage = loadedCGImage {
-            let mb = cgImage.width * cgImage.height * 4 / (1024 * 1024)
-            print("🖼️ [MemDiag] imageStorage[\(shape.id)] = \(cgImage.width)x\(cgImage.height) (\(mb)MB uncompressed), total stored: \(document.imageStorage.count + 1)")
             document.imageStorage[shape.id] = cgImage
             return cgImage
         }
