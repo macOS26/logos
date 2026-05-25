@@ -229,7 +229,6 @@ struct LayerCanvasView: View {
                     if viewMode == .keyline {
                         let showClipped = appState.showClippingInKeyline
                         if showClipped {
-                            guard maskShape.isVisible else { break }
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
 
                             let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
@@ -237,10 +236,12 @@ struct LayerCanvasView: View {
                             } else {
                                 parentTransform
                             }
-                            context.transform = maskTransform
-                            let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                            let liveMaskShape = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
-                            renderShape(liveMaskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
+                            if maskShape.isVisible {
+                                context.transform = maskTransform
+                                let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
+                                let liveMaskShape = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
+                                renderShape(liveMaskShape, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
+                            }
                             for contentShape in contentShapes {
                                 guard contentShape.isVisible else { continue }
                                 let isChildSelected = selectedObjectIDs.contains(contentShape.id)
@@ -261,18 +262,20 @@ struct LayerCanvasView: View {
                                         let nestedMembers = document.resolveGroupMembers(shape)
                                         guard let nestedMask = nestedMembers.first else { return }
                                         let nestedContent = Array(nestedMembers.dropFirst())
-                                        guard nestedMask.isVisible else { return }
                                         let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
                                         let nestedMaskPath = liveNestedMask.cachedCGPath
                                         let savedTransform = lctx.transform
-                                        lctx.transform = savedTransform
-                                        renderShape(liveNestedMask, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
+                                        if nestedMask.isVisible {
+                                            renderShape(liveNestedMask, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
+                                        }
                                         for contentShape in nestedContent {
                                             guard contentShape.isVisible else { continue }
                                             let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                             lctx.drawLayer { innerContext in
                                                 innerContext.transform = savedTransform
-                                                innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                if nestedMask.isVisible {
+                                                    innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                }
                                                 renderKeylineClippedLeaf(liveContent, into: &innerContext)
                                             }
                                         }
@@ -327,9 +330,10 @@ struct LayerCanvasView: View {
                                     let nestedMembers = document.resolveGroupMembers(shape)
                                     guard let nestedMask = nestedMembers.first else { return }
                                     let nestedContent = Array(nestedMembers.dropFirst())
-                                    guard nestedMask.isVisible else { return }
                                     let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
-                                    renderShape(liveNestedMask, context: &context, isSelected: false, scaleTransform: .identity)
+                                    if nestedMask.isVisible {
+                                        renderShape(liveNestedMask, context: &context, isSelected: false, scaleTransform: .identity)
+                                    }
                                     for contentShape in nestedContent {
                                         guard contentShape.isVisible else { continue }
                                         let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
@@ -374,7 +378,6 @@ struct LayerCanvasView: View {
                             }
                         }
                     } else {
-                        guard maskShape.isVisible else { break }
                         let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
 
                         let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
@@ -397,8 +400,10 @@ struct LayerCanvasView: View {
                             let liveMaskColorMode = applyLivePositions(to: maskShape)
                             context.drawLayer { layerContext in
                                 layerContext.transform = maskTransform
-                                let maskPath = liveMaskColorMode.cachedCGPath
-                                layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskColorMode.clipFillRule == .evenOdd))
+                                if maskShape.isVisible {
+                                    let maskPath = liveMaskColorMode.cachedCGPath
+                                    layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskColorMode.clipFillRule == .evenOdd))
+                                }
                                 layerContext.transform = contentTransform
 
                                 func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
@@ -407,7 +412,6 @@ struct LayerCanvasView: View {
                                         let nestedMembers = document.resolveGroupMembers(shape)
                                         guard let nestedMask = nestedMembers.first else { return }
                                         let nestedContent = Array(nestedMembers.dropFirst())
-                                        guard nestedMask.isVisible else { return }
                                         let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
                                         let nestedMaskPath = liveNestedMask.cachedCGPath
                                         let savedTransform = lctx.transform
@@ -416,7 +420,9 @@ struct LayerCanvasView: View {
                                             let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
                                             lctx.drawLayer { innerContext in
                                                 innerContext.transform = savedTransform
-                                                innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                if nestedMask.isVisible {
+                                                    innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                }
                                                 renderClippedContent(liveContent, into: &innerContext)
                                             }
                                         }
