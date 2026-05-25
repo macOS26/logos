@@ -950,7 +950,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "path":
             if let d = attributes["d"] {
                 let pathData = parsePathData(d)
-                clipPath = VectorPath(elements: pathData, isClosed: true)
+                let fillRuleStr = attributes["clip-rule"] ?? attributes["fill-rule"] ?? "nonzero"
+                let fillRule: CGPathFillRule = (fillRuleStr == "evenodd") ? .evenOdd : .winding
+                clipPath = VectorPath(elements: pathData, isClosed: true, fillRule: fillRule)
             }
         case "rect":
             let x = parseLength(attributes["x"]) ?? 0

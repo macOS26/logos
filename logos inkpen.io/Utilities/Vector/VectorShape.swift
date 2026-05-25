@@ -843,6 +843,9 @@ extension VectorShape {
     }
 
     var clipFillRule: CGPathFillRule {
+        if isCompoundPath {
+            return .evenOdd
+        }
         return path.fillRule.cgPathFillRule
     }
 
