@@ -1,8 +1,15 @@
 import SwiftUI
 import AppKit
 import ImageIO
+import Darwin
 
 enum ImageContentRegistry {
+
+    private static let quarantineAttribute = "com.apple.quarantine"
+
+    public static func dequarantine(_ url: URL) {
+        _ = url.path.withCString { removexattr($0, quarantineAttribute, 0) }
+    }
 
     private static func isXMLPayload(_ data: Data) -> Bool {
         guard data.count >= 5 else { return false }
@@ -54,8 +61,7 @@ enum ImageContentRegistry {
                 let width = sourceCGImage.width
                 let height = sourceCGImage.height
                 let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-                let bitmapInfo = sourceCGImage.bitmapInfo
-                if let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+                if let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
                     ctx.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
                     return ctx.makeImage() ?? sourceCGImage
                 }
@@ -66,11 +72,14 @@ enum ImageContentRegistry {
                 if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                     let started = url.startAccessingSecurityScopedResource()
                     defer { if started { url.stopAccessingSecurityScopedResource() } }
+                    dequarantine(url)
                     loadedCGImage = loadFromURL(url as CFURL)
                 }
             }
             if loadedCGImage == nil, let path = shape.linkedImagePath {
-                loadedCGImage = loadFromURL(URL(fileURLWithPath: path) as CFURL)
+                let fileURL = URL(fileURLWithPath: path)
+                dequarantine(fileURL)
+                loadedCGImage = loadFromURL(fileURL as CFURL)
             }
         }
         if let cgImage = loadedCGImage {

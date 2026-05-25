@@ -42,37 +42,16 @@ struct DocumentBasedContentView: View {
         var imagesDeleted = 0
         var missingPaths: [String] = []
         var shapesToDelete: [UUID] = []
-        for (id, obj) in inkpenDocument.document.snapshot.objects {
+        for (_, obj) in inkpenDocument.document.snapshot.objects {
             var shape: VectorShape? = nil
-            if case .shape(let s) = obj.objectType { shape = s }
-            else if case .image(let s) = obj.objectType { shape = s }
+            switch obj.objectType {
+            case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                shape = s
+            case .text(let s):
+                shape = s
+            }
             guard let shape = shape else { continue }
-            let hasImageData = shape.embeddedImageData != nil ||
-                               shape.linkedImagePath != nil ||
-                               shape.linkedImageBookmarkData != nil
-            guard hasImageData else { continue }
-            if let data = shape.embeddedImageData,
-               shape.linkedImagePath == nil,
-               shape.linkedImageBookmarkData == nil,
-               (data.count < 16 || SVGParser.looksLikeXML(data)) {
-                shapesToDelete.append(id)
-                continue
-            }
-            if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: inkpenDocument.document) != nil {
-                imagesHydrated += 1
-                continue
-            }
-            if let path = shape.linkedImagePath {
-                imagesMissing += 1
-                missingPaths.append(path)
-                Log.fileOperation("  ⚠️ Missing linked image: \(path)", level: .warning)
-            } else if shape.linkedImageBookmarkData != nil {
-                imagesMissing += 1
-                missingPaths.append("<bookmark data>")
-                Log.fileOperation("  ⚠️ Missing linked image (from bookmark)", level: .warning)
-            } else {
-                shapesToDelete.append(id)
-            }
+            hydrateShapeImagesRecursive(shape, document: inkpenDocument.document, imagesHydrated: &imagesHydrated, imagesMissing: &imagesMissing, imagesDeleted: &imagesDeleted, missingPaths: &missingPaths, shapesToDelete: &shapesToDelete)
         }
         for id in shapesToDelete {
             inkpenDocument.document.removeShapeFromUnifiedSystem(id: id)
@@ -87,6 +66,53 @@ struct DocumentBasedContentView: View {
         if imagesMissing > 0 {
             Log.fileOperation("  ❌ Missing linked files: \(imagesMissing)", level: .error)
             Log.fileOperation("  Paths: \(missingPaths.joined(separator: ", "))", level: .error)
+        }
+    }
+
+    private func hydrateShapeImagesRecursive(_ shape: VectorShape, document: VectorDocument, imagesHydrated: inout Int, imagesMissing: inout Int, imagesDeleted: inout Int, missingPaths: inout [String], shapesToDelete: inout [UUID]) {
+        let hasImageData = shape.embeddedImageData != nil ||
+                           shape.linkedImagePath != nil ||
+                           shape.linkedImageBookmarkData != nil
+        if hasImageData {
+            if let data = shape.embeddedImageData,
+               shape.linkedImagePath == nil,
+               shape.linkedImageBookmarkData == nil,
+               (data.count < 16 || SVGParser.looksLikeXML(data)) {
+                shapesToDelete.append(shape.id)
+                return
+            }
+            if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
+                imagesHydrated += 1
+                return
+            }
+            if let path = shape.linkedImagePath {
+                imagesMissing += 1
+                missingPaths.append(path)
+                Log.fileOperation("  ⚠️ Missing linked image: \(path)", level: .warning)
+            } else if shape.linkedImageBookmarkData != nil {
+                imagesMissing += 1
+                missingPaths.append("<bookmark data>")
+                Log.fileOperation("  ⚠️ Missing linked image (from bookmark)", level: .warning)
+            } else {
+                shapesToDelete.append(shape.id)
+            }
+        }
+        if shape.isGroup || shape.isClippingGroup {
+            for child in shape.groupedShapes {
+                hydrateShapeImagesRecursive(child, document: document, imagesHydrated: &imagesHydrated, imagesMissing: &imagesMissing, imagesDeleted: &imagesDeleted, missingPaths: &missingPaths, shapesToDelete: &shapesToDelete)
+            }
+            for memberID in shape.memberIDs {
+                if let obj = document.snapshot.objects[memberID] {
+                    let childShape: VectorShape
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                        childShape = s
+                    case .text(let s):
+                        childShape = s
+                    }
+                    hydrateShapeImagesRecursive(childShape, document: document, imagesHydrated: &imagesHydrated, imagesMissing: &imagesMissing, imagesDeleted: &imagesDeleted, missingPaths: &missingPaths, shapesToDelete: &shapesToDelete)
+                }
+            }
         }
     }
 }
