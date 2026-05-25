@@ -21,6 +21,21 @@ extension VectorDocument {
         alignSelectedObjectsByOrigin(axis: .yOnly)
     }
 
+    private func shapesPositionInTransform(_ shape: VectorShape) -> Bool {
+        return shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil || !shape.transform.isIdentity
+    }
+
+    private func worldBounds(_ shape: VectorShape) -> CGRect {
+        if shape.isGroupContainer { return shape.groupBounds }
+        if shape.typography != nil {
+            if let pos = shape.textPosition, let size = shape.areaSize {
+                return CGRect(origin: pos, size: size)
+            }
+            return CGRect(x: shape.transform.tx, y: shape.transform.ty, width: shape.bounds.width, height: shape.bounds.height)
+        }
+        return shape.bounds.applying(shape.transform)
+    }
+
     private func alignSelectedObjectsByOrigin(axis: AlignmentAxis) {
         let orderedIDs = viewState.orderedSelectedObjectIDs
         guard orderedIDs.count >= 2 else { return }
@@ -28,7 +43,7 @@ extension VectorDocument {
         guard let anchorObj = snapshot.objects[anchorID] else { return }
         let anchorShape = anchorObj.shape
         let anchorOrigin = anchorShape.transformOrigin ?? .center
-        let anchorBounds = anchorShape.isGroupContainer ? anchorShape.groupBounds : anchorShape.bounds
+        let anchorBounds = worldBounds(anchorShape)
         let anchorPoint = CGPoint(
             x: anchorBounds.minX + anchorBounds.width * anchorOrigin.point.x,
             y: anchorBounds.minY + anchorBounds.height * anchorOrigin.point.y
@@ -40,7 +55,7 @@ extension VectorDocument {
                     var shape = obj.shape
 
                     let shapeOrigin = shape.transformOrigin ?? .center
-                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                    let shapeBounds = worldBounds(shape)
                     let currentOriginPoint = CGPoint(
                         x: shapeBounds.minX + shapeBounds.width * shapeOrigin.point.x,
                         y: shapeBounds.minY + shapeBounds.height * shapeOrigin.point.y
@@ -75,6 +90,9 @@ extension VectorDocument {
                             shape.textPosition = CGPoint(x: pos.x + offsetX, y: pos.y + offsetY)
                             shape.transform = CGAffineTransform(translationX: pos.x + offsetX, y: pos.y + offsetY)
                         }
+                    } else if shapesPositionInTransform(shape) {
+                        let translationTransform = CGAffineTransform(translationX: offsetX, y: offsetY)
+                        shape.transform = shape.transform.concatenating(translationTransform)
                     } else {
                         translateShapePath(&shape, dx: offsetX, dy: offsetY)
                     }
@@ -106,7 +124,7 @@ extension VectorDocument {
             for objectID in orderedIDs {
                 guard let obj = snapshot.objects[objectID] else { continue }
                 let shape = obj.shape
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let bounds = worldBounds(shape)
                 let area = bounds.width * bounds.height
                 if area > largestArea {
                     largestArea = area
@@ -120,7 +138,7 @@ extension VectorDocument {
             for objectID in orderedIDs {
                 guard let obj = snapshot.objects[objectID] else { continue }
                 let shape = obj.shape
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let bounds = worldBounds(shape)
                 let area = bounds.width * bounds.height
                 if area < smallestArea {
                     smallestArea = area
