@@ -270,8 +270,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
-            let unionedPath = linePath.union(linePath, using: .winding)
-            let vectorPath = convertCGPathToVectorPath(unionedPath.isEmpty ? linePath : unionedPath)
+            let vectorPath = convertCGPathToVectorPath(linePath)
             let lineName = "Line \(lineIndex + 1)"
             let strokeStyle: StrokeStyle? = textObject.typography.hasStroke ? StrokeStyle(
                 color: textObject.typography.strokeColor,
@@ -293,6 +292,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 ),
                 transform: .identity,
                 isGroup: false,
+                isCompoundPath: true,
                 textContent: nil,
                 typography: nil,
                 cursorPosition: nil,
@@ -353,7 +353,7 @@ class ProfessionalTextViewModel: ObservableObject {
             }
         }
         elements = makeCurvesSmooth(elements)
-        return VectorPath(elements: elements, isClosed: false)
+        return VectorPath(elements: elements, isClosed: false, fillRule: .evenOdd)
     }
 
     private func makeCurvesSmooth(_ elements: [PathElement]) -> [PathElement] {

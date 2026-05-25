@@ -88,10 +88,7 @@ extension VectorDocument {
     }
 
     func ungroupSelectedObjects() {
-        guard let layerIndex = selectedLayerIndex,
-              !viewState.selectedObjectIDs.isEmpty else {
-            return
-        }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
         var newSelectedShapeIDs: Set<UUID> = []
         var groupsToRemove: [UUID] = []
         var memberIDsToRestore: [UUID] = []
@@ -129,6 +126,7 @@ extension VectorDocument {
                 }
             }
         }
+        let layerIndex = groupsToRemove.first.flatMap { snapshot.objects[$0]?.layerIndex } ?? selectedLayerIndex ?? 0
         let command = GroupCommand(
             operation: .ungroup,
             layerIndex: layerIndex,
