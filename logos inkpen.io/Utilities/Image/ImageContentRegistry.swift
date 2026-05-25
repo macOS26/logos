@@ -45,29 +45,32 @@ enum ImageContentRegistry {
            let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
             loadedCGImage = cgImage
         }
-        else if let bookmark = shape.linkedImageBookmarkData {
-            var isStale = false
-            if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                let started = url.startAccessingSecurityScopedResource()
-                defer { if started { url.stopAccessingSecurityScopedResource() } }
-                if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
-
-                   let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                    let width = sourceCGImage.width
-                    let height = sourceCGImage.height
-                    let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-                    let bitmapInfo = sourceCGImage.bitmapInfo
-                    if let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
-                        context.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-                        if let memoryCGImage = context.makeImage() {
-                            loadedCGImage = memoryCGImage
-                        } else {
-                            loadedCGImage = sourceCGImage
-                        }
-                    } else {
-                        loadedCGImage = sourceCGImage
-                    }
+        else if shape.linkedImageBookmarkData != nil || shape.linkedImagePath != nil {
+            func loadFromURL(_ cfurl: CFURL) -> CGImage? {
+                guard let imageSource = CGImageSourceCreateWithURL(cfurl, nil),
+                      let sourceCGImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+                    return nil
                 }
+                let width = sourceCGImage.width
+                let height = sourceCGImage.height
+                let colorSpace = sourceCGImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+                let bitmapInfo = sourceCGImage.bitmapInfo
+                if let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+                    ctx.draw(sourceCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+                    return ctx.makeImage() ?? sourceCGImage
+                }
+                return sourceCGImage
+            }
+            if let bookmark = shape.linkedImageBookmarkData {
+                var isStale = false
+                if let url = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                    let started = url.startAccessingSecurityScopedResource()
+                    defer { if started { url.stopAccessingSecurityScopedResource() } }
+                    loadedCGImage = loadFromURL(url as CFURL)
+                }
+            }
+            if loadedCGImage == nil, let path = shape.linkedImagePath {
+                loadedCGImage = loadFromURL(URL(fileURLWithPath: path) as CFURL)
             }
         }
         if let cgImage = loadedCGImage {
