@@ -301,6 +301,7 @@ class VectorImportManager {
             if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                 rectShape.linkedImageBookmarkData = bookmark
             }
+            ImageContentRegistry.dequarantine(url)
         }
         let meta = VectorImportMetadata(
             originalFormat: .pdf,

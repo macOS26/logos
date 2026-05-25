@@ -36,21 +36,13 @@ extension FileOperations {
             Log.fileOperation("📦 Opened inkpen document version: \(document.snapshot.formatVersion)", level: .info)
             removeLegacyBackgroundObjects(from: document)
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
-            for obj in document.snapshot.objects.values {
-                if case .shape(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
-                }
-            }
+            hydrateAllObjectImages(in: document)
             return document
         }
         Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
         if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: jsonData) {
             ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: migratedDocument)
-            for obj in migratedDocument.snapshot.objects.values {
-                if case .shape(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
-                }
-            }
+            hydrateAllObjectImages(in: migratedDocument)
             return migratedDocument
         }
         Log.error("❌ JSON import failed: Unable to decode as current or legacy format", category: .error)
@@ -64,30 +56,54 @@ extension FileOperations {
             removeLegacyBackgroundObjects(from: document)
             let baseDirectory = sourceURL?.deletingLastPathComponent()
             ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
-            for obj in document.snapshot.objects.values {
-                if case .shape(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
-                } else if case .image(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
-                }
-            }
+            hydrateAllObjectImages(in: document)
             return document
         }
         Log.fileOperation("⚠️ Current format failed, attempting legacy migration...", level: .warning)
         if let migratedDocument = InkpenMigrator.migrateLegacyDocument(from: data) {
             let baseDirectory = sourceURL?.deletingLastPathComponent()
             ImageContentRegistry.setBaseDirectory(baseDirectory, for: migratedDocument)
-            for obj in migratedDocument.snapshot.objects.values {
-                if case .shape(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
-                } else if case .image(let shape) = obj.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: migratedDocument)
-                }
-            }
+            hydrateAllObjectImages(in: migratedDocument)
             return migratedDocument
         }
         Log.error("❌ JSON data import failed: Unable to decode as current or legacy format", category: .error)
         throw VectorImportError.parsingError("Failed to import JSON: Unable to decode document", line: nil)
+    }
+
+    private static func hydrateAllObjectImages(in document: VectorDocument) {
+        for obj in document.snapshot.objects.values {
+            let shape: VectorShape
+            switch obj.objectType {
+            case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                shape = s
+            case .text(let s):
+                shape = s
+            }
+            hydrateGroupImagesRecursive(shape, in: document)
+        }
+    }
+
+    private static func hydrateGroupImagesRecursive(_ shape: VectorShape, in document: VectorDocument) {
+        if shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+            ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
+        }
+        if shape.isGroup || shape.isClippingGroup {
+            for child in shape.groupedShapes {
+                hydrateGroupImagesRecursive(child, in: document)
+            }
+            for memberID in shape.memberIDs {
+                if let obj = document.snapshot.objects[memberID] {
+                    let childShape: VectorShape
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                        childShape = s
+                    case .text(let s):
+                        childShape = s
+                    }
+                    hydrateGroupImagesRecursive(childShape, in: document)
+                }
+            }
+        }
     }
 
     static func removeLegacyBackgroundObjects(from document: VectorDocument) {

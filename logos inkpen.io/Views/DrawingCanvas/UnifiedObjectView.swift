@@ -1049,7 +1049,7 @@ struct LayerCanvasView: View {
     }
 
     private func hasImageData(_ shape: VectorShape) -> Bool {
-        return shape.embeddedImageData != nil || shape.linkedImagePath != nil
+        return shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil
     }
 
     private func resolveLinkedImage(linkedPath: String, documentURL: URL?, bookmarkData: Data?, shapeID: UUID) -> CGImage? {
@@ -1073,10 +1073,13 @@ struct LayerCanvasView: View {
             if let url = try? URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI, .withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale) {
                 let started = url.startAccessingSecurityScopedResource()
                 defer { if started { url.stopAccessingSecurityScopedResource() } }
+                ImageContentRegistry.dequarantine(url)
                 if let image = loadFromURL(url as CFURL) { return image }
             }
         }
-        return loadFromURL(URL(fileURLWithPath: linkedPath) as CFURL)
+        let fileURL = URL(fileURLWithPath: linkedPath)
+        ImageContentRegistry.dequarantine(fileURL)
+        return loadFromURL(fileURL as CFURL)
     }
     private static var renderImageCallCount = 0
     private static var lastRenderImageMemMB = 0

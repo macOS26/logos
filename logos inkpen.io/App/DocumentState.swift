@@ -1166,6 +1166,7 @@ class DocumentState: ObservableObject {
                 if let bookmark = try? newURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
                     shape.linkedImageBookmarkData = bookmark
                 }
+                ImageContentRegistry.dequarantine(newURL)
                 if let existingObject = document.snapshot.objects[shapeID] {
                     let updatedObject = VectorObject(
                         id: shapeID,

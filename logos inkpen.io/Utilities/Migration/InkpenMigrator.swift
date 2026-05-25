@@ -206,18 +206,42 @@ struct InkpenMigrator {
         ImageContentRegistry.setBaseDirectory(baseDirectory, for: document)
         var imagesHydrated = 0
         for obj in document.snapshot.objects.values {
-            if case .shape(let shape) = obj.objectType {
-                if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
-                    imagesHydrated += 1
-                }
-            } else if case .image(let shape) = obj.objectType {
-                if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
-                    imagesHydrated += 1
-                }
+            let shape: VectorShape
+            switch obj.objectType {
+            case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                shape = s
+            case .text(let s):
+                shape = s
             }
+            hydrateGroupImagesRecursive(shape, in: document, count: &imagesHydrated)
         }
         if imagesHydrated > 0 {
             Log.fileOperation("  🖼️ Hydrated \(imagesHydrated) linked image(s)", level: .info)
+        }
+    }
+
+    private static func hydrateGroupImagesRecursive(_ shape: VectorShape, in document: VectorDocument, count: inout Int) {
+        if shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+            if ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document) != nil {
+                count += 1
+            }
+        }
+        if shape.isGroup || shape.isClippingGroup {
+            for child in shape.groupedShapes {
+                hydrateGroupImagesRecursive(child, in: document, count: &count)
+            }
+            for memberID in shape.memberIDs {
+                if let obj = document.snapshot.objects[memberID] {
+                    let childShape: VectorShape
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                        childShape = s
+                    case .text(let s):
+                        childShape = s
+                    }
+                    hydrateGroupImagesRecursive(childShape, in: document, count: &count)
+                }
+            }
         }
     }
 }

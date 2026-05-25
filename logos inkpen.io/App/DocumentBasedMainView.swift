@@ -270,9 +270,14 @@ struct DocumentBasedMainView: View {
             if let url = fileURL {
                 ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
                 for object in document.snapshot.objects.values {
-                    if case .shape(let shape) = object.objectType {
-                        ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
+                    let shape: VectorShape
+                    switch object.objectType {
+                    case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                        shape = s
+                    case .text(let s):
+                        shape = s
                     }
+                    hydrateGroupImagesRecursive(shape, in: document)
                 }
             }
         }
@@ -396,6 +401,29 @@ struct DocumentBasedMainView: View {
 
     private func calculateInitialZoom() {
         document.requestZoom(to: 0.0, mode: .fitToPage)
+    }
+
+    private func hydrateGroupImagesRecursive(_ shape: VectorShape, in document: VectorDocument) {
+        if shape.embeddedImageData != nil || shape.linkedImagePath != nil || shape.linkedImageBookmarkData != nil {
+            ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
+        }
+        if shape.isGroup || shape.isClippingGroup {
+            for child in shape.groupedShapes {
+                hydrateGroupImagesRecursive(child, in: document)
+            }
+            for memberID in shape.memberIDs {
+                if let obj = document.snapshot.objects[memberID] {
+                    let childShape: VectorShape
+                    switch obj.objectType {
+                    case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                        childShape = s
+                    case .text(let s):
+                        childShape = s
+                    }
+                    hydrateGroupImagesRecursive(childShape, in: document)
+                }
+            }
+        }
     }
 }
 

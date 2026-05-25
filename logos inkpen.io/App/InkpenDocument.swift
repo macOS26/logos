@@ -155,6 +155,7 @@ struct InkpenDocument: FileDocument {
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        dequarantineLinkedImages()
         if configuration.contentType == .svg ||
             configuration.contentType.conforms(to: .svg) ||
            configuration.contentType.identifier.contains("svg") {
@@ -183,6 +184,45 @@ struct InkpenDocument: FileDocument {
             } catch {
                 Log.error("❌ Failed to save JSON document: \(error)", category: .error)
                 throw error
+            }
+        }
+    }
+
+    private func dequarantineLinkedImages() {
+        for obj in document.snapshot.objects.values {
+            let shape: VectorShape
+            switch obj.objectType {
+            case .shape(let s), .image(let s), .clipGroup(let s), .clipMask(let s), .group(let s), .warp(let s), .guide(let s):
+                shape = s
+            case .text(let s):
+                shape = s
+            }
+            if let path = shape.linkedImagePath {
+                ImageContentRegistry.dequarantine(URL(fileURLWithPath: path))
+            }
+            if shape.isGroup || shape.isClippingGroup {
+                dequarantineGroupImages(shape)
+            }
+        }
+    }
+
+    private func dequarantineGroupImages(_ shape: VectorShape) {
+        for child in shape.groupedShapes {
+            if let path = child.linkedImagePath {
+                ImageContentRegistry.dequarantine(URL(fileURLWithPath: path))
+            }
+            if child.isGroup || child.isClippingGroup {
+                dequarantineGroupImages(child)
+            }
+        }
+        for memberID in shape.memberIDs {
+            guard let obj = document.snapshot.objects[memberID] else { continue }
+            let childShape = obj.shape
+            if let path = childShape.linkedImagePath {
+                ImageContentRegistry.dequarantine(URL(fileURLWithPath: path))
+            }
+            if childShape.isGroup || childShape.isClippingGroup {
+                dequarantineGroupImages(childShape)
             }
         }
     }
