@@ -378,7 +378,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let children = Array(shapes[childRange])
 
                 let allClippingRelated = children.allSatisfy {
-                    $0.isClippingPath || $0.clippedByShapeID != nil
+                    $0.isClippingPath || $0.clippedByShapeID != nil || $0.isClippingGroup
                 }
                 if allClippingRelated {
                     let maskShape = children.first { $0.isClippingPath }
@@ -632,7 +632,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         }
-        if pendingClipPathId == nil, let clipPathAttr = mergedAttributes["clip-path"] {
+        if let clipPathAttr = mergedAttributes["clip-path"] {
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
                 if let endRange = idPart.range(of: ")") {
@@ -645,7 +645,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                 }
             }
-        } else if pendingClipPathId != nil {
         }
     }
 
@@ -1021,6 +1020,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             if currentClipPath == nil {
                 currentClipPath = path
             } else {
+                let combined = CGMutablePath()
+                combined.addPath(currentClipPath!.cgPath)
+                combined.addPath(path.cgPath)
+                let rule: CGPathFillRule = (currentClipPath!.fillRule == .evenOdd || path.fillRule == .evenOdd) ? .evenOdd : .winding
+                currentClipPath = VectorPath(cgPath: combined, fillRule: rule)
             }
         }
     }

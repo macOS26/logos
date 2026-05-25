@@ -781,18 +781,19 @@ class SVGExporter {
             if candidate.isClippingPath && !processedClipPaths.contains(candidate.id) {
                 processedClipPaths.insert(candidate.id)
                 let pathData = generatePathData(from: candidate.path, transform: candidate.transform)
+                let clipRule = candidate.clipFillRule == .evenOdd ? " clip-rule=\"evenodd\"" : ""
                 defs += "<clipPath id=\"clip_\(candidate.id.uuidString)\" clipPathUnits=\"userSpaceOnUse\">\n"
-                defs += "  <path d=\"\(pathData)\"/>\n"
+                defs += "  <path d=\"\(pathData)\"\(clipRule)/>\n"
                 defs += "</clipPath>\n"
             }
             if candidate.isClippingGroup && !processedClipPaths.contains(candidate.id),
                let members = resolveClippingGroupMembers(candidate, in: document),
-
                let mask = members.first {
                 processedClipPaths.insert(candidate.id)
                 let pathData = generatePathData(from: mask.path, transform: mask.transform)
+                let clipRule = mask.clipFillRule == .evenOdd ? " clip-rule=\"evenodd\"" : ""
                 defs += "<clipPath id=\"clip_\(candidate.id.uuidString)\" clipPathUnits=\"userSpaceOnUse\">\n"
-                defs += "  <path d=\"\(pathData)\"/>\n"
+                defs += "  <path d=\"\(pathData)\"\(clipRule)/>\n"
                 defs += "</clipPath>\n"
             }
         }
