@@ -257,6 +257,27 @@ struct LayerCanvasView: View {
 
                                 func renderKeylineClippedLeaf(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
+                                    if shape.isClippingGroup {
+                                        let nestedMembers = document.resolveGroupMembers(shape)
+                                        guard let nestedMask = nestedMembers.first else { return }
+                                        let nestedContent = Array(nestedMembers.dropFirst())
+                                        guard nestedMask.isVisible else { return }
+                                        let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
+                                        let nestedMaskPath = liveNestedMask.cachedCGPath
+                                        let savedTransform = lctx.transform
+                                        lctx.transform = savedTransform
+                                        renderShape(liveNestedMask, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
+                                        for contentShape in nestedContent {
+                                            guard contentShape.isVisible else { continue }
+                                            let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
+                                            lctx.drawLayer { innerContext in
+                                                innerContext.transform = savedTransform
+                                                innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                renderKeylineClippedLeaf(liveContent, into: &innerContext)
+                                            }
+                                        }
+                                        return
+                                    }
                                     if shape.isGroupContainer {
                                         for m in document.resolveGroupMembers(shape) {
                                             renderKeylineClippedLeaf(m, into: &lctx)
@@ -302,6 +323,20 @@ struct LayerCanvasView: View {
 
                             func renderKeylineLeafOutline(_ shape: VectorShape) {
                                 guard shape.isVisible else { return }
+                                if shape.isClippingGroup {
+                                    let nestedMembers = document.resolveGroupMembers(shape)
+                                    guard let nestedMask = nestedMembers.first else { return }
+                                    let nestedContent = Array(nestedMembers.dropFirst())
+                                    guard nestedMask.isVisible else { return }
+                                    let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
+                                    renderShape(liveNestedMask, context: &context, isSelected: false, scaleTransform: .identity)
+                                    for contentShape in nestedContent {
+                                        guard contentShape.isVisible else { continue }
+                                        let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
+                                        renderKeylineLeafOutline(liveContent)
+                                    }
+                                    return
+                                }
                                 if shape.isGroupContainer {
                                     for m in document.resolveGroupMembers(shape) {
                                         renderKeylineLeafOutline(m)
@@ -368,6 +403,25 @@ struct LayerCanvasView: View {
 
                                 func renderClippedContent(_ shape: VectorShape, into lctx: inout GraphicsContext) {
                                     guard shape.isVisible else { return }
+                                    if shape.isClippingGroup {
+                                        let nestedMembers = document.resolveGroupMembers(shape)
+                                        guard let nestedMask = nestedMembers.first else { return }
+                                        let nestedContent = Array(nestedMembers.dropFirst())
+                                        guard nestedMask.isVisible else { return }
+                                        let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
+                                        let nestedMaskPath = liveNestedMask.cachedCGPath
+                                        let savedTransform = lctx.transform
+                                        for contentShape in nestedContent {
+                                            guard contentShape.isVisible else { continue }
+                                            let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
+                                            lctx.drawLayer { innerContext in
+                                                innerContext.transform = savedTransform
+                                                innerContext.clip(to: Path(nestedMaskPath), style: SwiftUI.FillStyle(eoFill: liveNestedMask.clipFillRule == .evenOdd))
+                                                renderClippedContent(liveContent, into: &innerContext)
+                                            }
+                                        }
+                                        return
+                                    }
                                     if shape.isGroupContainer {
                                         let members = document.resolveGroupMembers(shape)
                                         for m in members {
