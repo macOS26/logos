@@ -227,8 +227,7 @@ struct LayerCanvasView: View {
                     let contentShapes = Array(memberShapes.dropFirst())
                     let parentTransform = context.transform
                     if viewMode == .keyline {
-                        let showClipped = appState.showClippingInKeyline
-                        if showClipped {
+                        if true {
                             let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
 
                             let maskTransform = if isMaskSelected && dragPreviewDelta != .zero {
@@ -295,85 +294,25 @@ struct LayerCanvasView: View {
                                         renderShape(shape, context: &lctx, isSelected: false, scaleTransform: .identity, maskShape: nil)
                                     }
                                 }
-                                context.drawLayer { layerContext in
-                                    layerContext.transform = maskTransform
-                                    let maskPath = liveMaskForClip.cachedCGPath
-                                    layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskForClip.clipFillRule == .evenOdd))
-                                    layerContext.transform = contentTransform
-                                    if liveContentShape.isGroupContainer {
-                                        renderKeylineClippedLeaf(liveContentShape, into: &layerContext)
-                                    } else if VectorText.from(liveContentShape) != nil {
-                                        renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
-                                    } else if hasImageData(liveContentShape) {
-                                        renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
-                                    } else {
-                                        renderShape(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
-                                    }
-                                }
-                            }
-                        } else {
-                            if maskShape.isVisible {
-                                let isMaskSelected = selectedObjectIDs.contains(maskShape.id)
-                                if isMaskSelected && dragPreviewDelta != .zero {
-                                    context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
+                                if hasImageData(liveContentShape) && !appState.cropImageBoxInKeyline {
+                                    context.transform = contentTransform
+                                    renderImage(liveContentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
                                 } else {
-                                    context.transform = parentTransform
-                                }
-                                let maskScaleTransform = isMaskSelected ? liveScaleTransform : .identity
-                                let liveMaskShapeNoClip = applyLiveCornerRadii(to: applyLivePositions(to: maskShape))
-                                renderShape(liveMaskShapeNoClip, context: &context, isSelected: isMaskSelected, scaleTransform: maskScaleTransform)
-                            }
-
-                            func renderKeylineLeafOutline(_ shape: VectorShape) {
-                                guard shape.isVisible else { return }
-                                if shape.isClippingGroup {
-                                    let nestedMembers = document.resolveGroupMembers(shape)
-                                    guard let nestedMask = nestedMembers.first else { return }
-                                    let nestedContent = Array(nestedMembers.dropFirst())
-                                    let liveNestedMask = applyLiveCornerRadii(to: applyLivePositions(to: nestedMask))
-                                    if nestedMask.isVisible {
-                                        renderShape(liveNestedMask, context: &context, isSelected: false, scaleTransform: .identity)
+                                    context.drawLayer { layerContext in
+                                        layerContext.transform = maskTransform
+                                        let maskPath = liveMaskForClip.cachedCGPath
+                                        layerContext.clip(to: Path(maskPath), style: SwiftUI.FillStyle(eoFill: liveMaskForClip.clipFillRule == .evenOdd))
+                                        layerContext.transform = contentTransform
+                                        if liveContentShape.isGroupContainer {
+                                            renderKeylineClippedLeaf(liveContentShape, into: &layerContext)
+                                        } else if VectorText.from(liveContentShape) != nil {
+                                            renderText(liveContentShape, context: &layerContext, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
+                                        } else if hasImageData(liveContentShape) {
+                                            renderImage(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
+                                        } else {
+                                            renderShape(liveContentShape, context: &layerContext, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                        }
                                     }
-                                    for contentShape in nestedContent {
-                                        guard contentShape.isVisible else { continue }
-                                        let liveContent = applyLiveCornerRadii(to: applyLivePositions(to: contentShape))
-                                        renderKeylineLeafOutline(liveContent)
-                                    }
-                                    return
-                                }
-                                if shape.isGroupContainer {
-                                    for m in document.resolveGroupMembers(shape) {
-                                        renderKeylineLeafOutline(m)
-                                    }
-                                    return
-                                }
-                                if VectorText.from(shape) != nil {
-                                    renderText(shape, context: &context, isSelected: false, liveScaleTransform: .identity, fontSizeDelta: 0, lineSpacingDelta: 0, lineHeightDelta: 0, letterSpacingDelta: 0, fillDeltaOpacity: 0, textContentDelta: nil)
-                                } else if hasImageData(shape) {
-                                    renderImage(shape, context: &context, isSelected: false, scaleTransform: .identity, canvasSize: size)
-                                } else {
-                                    renderShape(shape, context: &context, isSelected: false, scaleTransform: .identity)
-                                }
-                            }
-                            for contentShape in contentShapes {
-                                guard contentShape.isVisible else { continue }
-                                let isChildSelected = selectedObjectIDs.contains(contentShape.id)
-                                let isChildText = contentShape.typography != nil
-                                if isChildSelected && dragPreviewDelta != .zero {
-                                    context.transform = baseTransform.translatedBy(x: CGFloat(dragDelta.x), y: CGFloat(dragDelta.y))
-                                } else {
-                                    context.transform = parentTransform
-                                }
-                                let childScaleTransform = (isChildSelected && !isChildText) ? liveScaleTransform : .identity
-                                let liveContentNoClip = applyLivePositions(to: contentShape)
-                                if liveContentNoClip.isGroupContainer {
-                                    renderKeylineLeafOutline(liveContentNoClip)
-                                } else if VectorText.from(liveContentNoClip) != nil {
-                                    renderText(liveContentNoClip, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta)
-                                } else if hasImageData(liveContentNoClip) {
-                                    renderImage(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, canvasSize: size)
-                                } else {
-                                    renderShape(liveContentNoClip, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform)
                                 }
                             }
                         }
@@ -1161,6 +1100,31 @@ struct LayerCanvasView: View {
         if !shape.transform.isIdentity {
             renderBounds = renderBounds.applying(shape.transform)
         }
+
+        if viewMode == .keyline {
+            let lineWidth = 1.0 / zoomLevel
+            var boxPath = Path()
+            boxPath.addRect(renderBounds)
+            boxPath.move(to: CGPoint(x: renderBounds.minX, y: renderBounds.minY))
+            boxPath.addLine(to: CGPoint(x: renderBounds.maxX, y: renderBounds.maxY))
+            boxPath.move(to: CGPoint(x: renderBounds.maxX, y: renderBounds.minY))
+            boxPath.addLine(to: CGPoint(x: renderBounds.minX, y: renderBounds.maxY))
+            if let maskShape = maskShape {
+                if appState.cropImageBoxInKeyline {
+                    context.drawLayer { layerCtx in
+                        layerCtx.clip(to: Path(maskShape.cachedCGPath), style: SwiftUI.FillStyle(eoFill: maskShape.clipFillRule == .evenOdd))
+                        layerCtx.stroke(boxPath, with: .color(.black), lineWidth: lineWidth)
+                    }
+                } else {
+                    context.stroke(boxPath, with: .color(.black), lineWidth: lineWidth)
+                }
+                context.stroke(Path(maskShape.cachedCGPath), with: .color(.black), lineWidth: lineWidth)
+            } else {
+                context.stroke(boxPath, with: .color(.black), lineWidth: lineWidth)
+            }
+            return
+        }
+
         let image: CGImage
         if let cachedImage = document.imageStorage[shape.id] {
             image = cachedImage
