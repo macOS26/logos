@@ -56,6 +56,7 @@ class SVGExporter {
         for (layerIndex, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
             if layer.name == "Pasteboard" { continue }
+            if layer.name == "Guides" { continue }
             if !includeBackground && layer.name == "Canvas" {
                 continue
             }

@@ -18,7 +18,7 @@ struct GuidesView: View {
             GeometryReader { geometry in
                 ZStack {
                     ForEach(guideShapes, id: \.id) { shape in
-                        if shape.isGuide, let orientation = shape.guideOrientation {
+                        if shape.isGuide && shape.isVisible, let orientation = shape.guideOrientation {
                             GuideLineView(
                                 shape: shape,
                                 orientation: orientation,

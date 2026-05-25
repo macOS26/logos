@@ -29,7 +29,7 @@ extension FileOperations {
         context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
         for (index, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
-            if index <= 1 { continue }
+            if index <= 1 || layer.name == "Guides" { continue }
             context.saveGState()
             if layer.blendMode != BlendMode.normal {
                 context.setBlendMode(layer.blendMode.cgBlendMode)
@@ -85,7 +85,7 @@ extension FileOperations {
             context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
             for (index, layer) in document.snapshot.layers.enumerated() {
                 if !layer.isVisible { continue }
-                if index <= 1 { continue }
+                if index <= 1 || layer.name == "Guides" { continue }
                 context.saveGState()
                 if layer.blendMode != BlendMode.normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
@@ -114,7 +114,7 @@ extension FileOperations {
     private static func calculateArtworkBounds(from document: VectorDocument) -> CGRect {
         var bounds = CGRect.null
         for (index, layer) in document.snapshot.layers.enumerated() {
-            if !layer.isVisible || index <= 1 { continue }
+            if !layer.isVisible || index <= 1 || layer.name == "Guides" { continue }
             let shapesInLayer = document.getShapesForLayer(index)
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
@@ -202,12 +202,9 @@ extension FileOperations {
         context.scaleBy(x: scale, y: -scale)
         for (index, layer) in document.snapshot.layers.enumerated() {
             if !layer.isVisible { continue }
-            if index == 0 {
-                continue
-            }
-            if !includeBackground && index == 1 {
-                continue
-            }
+            if index == 0 { continue }
+            if !includeBackground && index == 1 { continue }
+            if layer.name == "Guides" { continue }
             context.saveGState()
             context.beginTransparencyLayer(auxiliaryInfo: nil)
             if layer.blendMode != BlendMode.normal {
