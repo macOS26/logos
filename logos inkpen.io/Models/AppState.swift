@@ -35,6 +35,12 @@ class AppState {
             UserDefaults.standard.set(showClippingInKeyline, forKey: "showClippingInKeyline")
         }
     }
+
+    var cropImageBoxInKeyline: Bool = UserDefaults.standard.object(forKey: "cropImageBoxInKeyline") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(cropImageBoxInKeyline, forKey: "cropImageBoxInKeyline")
+        }
+    }
     internal var _pressureCurve: [CGPoint] = [
         CGPoint(x: 0.0, y: 0.0),
         CGPoint(x: 0.25, y: 0.25),
