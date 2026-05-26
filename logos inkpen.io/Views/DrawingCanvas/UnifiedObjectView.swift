@@ -297,6 +297,15 @@ struct LayerCanvasView: View {
                                 if hasImageData(liveContentShape) && !appState.cropImageBoxInKeyline {
                                     context.transform = contentTransform
                                     renderImage(liveContentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil, canvasSize: size)
+                                } else if !hasImageData(liveContentShape) && !appState.cropShapeClipInKeyline {
+                                    context.transform = contentTransform
+                                    if liveContentShape.isGroupContainer {
+                                        renderKeylineClippedLeaf(liveContentShape, into: &context)
+                                    } else if VectorText.from(liveContentShape) != nil {
+                                        renderText(liveContentShape, context: &context, isSelected: isChildSelected, liveScaleTransform: isChildSelected ? liveScaleTransform : .identity, fontSizeDelta: fontSizeDelta, lineSpacingDelta: lineSpacingDelta, lineHeightDelta: lineHeightDelta, letterSpacingDelta: letterSpacingDelta, fillDeltaOpacity: fillDeltaOpacity, textContentDelta: textContentDelta, maskShape: nil)
+                                    } else {
+                                        renderShape(liveContentShape, context: &context, isSelected: isChildSelected, scaleTransform: childScaleTransform, maskShape: nil)
+                                    }
                                 } else {
                                     context.drawLayer { layerContext in
                                         layerContext.transform = maskTransform

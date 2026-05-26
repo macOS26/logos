@@ -14,6 +14,8 @@ struct PreferencesView: View {
 
     @AppStorage("cropImageBoxInKeyline") var cropImageBoxInKeyline: Bool = true
 
+    @AppStorage("cropShapeClipInKeyline") var cropShapeClipInKeyline: Bool = true
+
     @ObservedObject private var settings = ApplicationSettings.shared
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
@@ -139,6 +141,18 @@ struct PreferencesView: View {
                     }
                     .padding(.vertical, 8)
                 }
+                GroupBox(label: Label("Keyline View", systemImage: "rectangle.dashed").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Toggle("Crop shapes to clip path in keyline view", isOn: $cropShapeClipInKeyline)
+                                .font(.subheadline)
+                            Text("When enabled, shapes inside a clipping group are cropped to the clip path in keyline view.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
                 Spacer()
             }
             .frame(maxWidth: .infinity)
@@ -183,10 +197,14 @@ struct PreferencesView: View {
         .frame(minWidth: 850, minHeight: 500)
         .onAppear {
             appState.cropImageBoxInKeyline = cropImageBoxInKeyline
+            appState.cropShapeClipInKeyline = cropShapeClipInKeyline
             loadPressureCurve()
         }
         .onChange(of: cropImageBoxInKeyline) { _, newValue in
             appState.cropImageBoxInKeyline = newValue
+        }
+        .onChange(of: cropShapeClipInKeyline) { _, newValue in
+            appState.cropShapeClipInKeyline = newValue
         }
         .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
