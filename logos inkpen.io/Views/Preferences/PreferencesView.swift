@@ -129,8 +129,11 @@ struct PreferencesView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        Divider()
-                            .padding(.vertical, 4)
+                    }
+                    .padding(.vertical, 8)
+                }
+                GroupBox(label: Label("Keyline View", systemImage: "rectangle.dashed").font(.headline)) {
+                    HStack(alignment: .top, spacing: 24) {
                         VStack(alignment: .leading, spacing: 4) {
                             Toggle("Crop image box to clip path in keyline view", isOn: $cropImageBoxInKeyline)
                                 .font(.subheadline)
@@ -138,11 +141,6 @@ struct PreferencesView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                    }
-                    .padding(.vertical, 8)
-                }
-                GroupBox(label: Label("Keyline View", systemImage: "rectangle.dashed").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
                             Toggle("Crop shapes to clip path in keyline view", isOn: $cropShapeClipInKeyline)
                                 .font(.subheadline)
